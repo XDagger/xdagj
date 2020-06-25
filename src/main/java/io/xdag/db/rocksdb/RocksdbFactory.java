@@ -1,6 +1,5 @@
 package io.xdag.db.rocksdb;
 
-
 import io.xdag.config.Config;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -9,43 +8,38 @@ import io.xdag.db.SimpleFileStore;
 
 import java.util.EnumMap;
 
-/**
- * @ClassName RocksdbFactory
- * @Description
- * @Author punk
- * @Date 2020/4/18 15:27
- * @Version V1.0
- **/
-
 public class RocksdbFactory implements DatabaseFactory {
 
-    private final EnumMap<DatabaseName, KVSource<byte[],byte[]>> databases = new EnumMap<>(DatabaseName.class);
+  private final EnumMap<DatabaseName, KVSource<byte[], byte[]>> databases =
+      new EnumMap<>(DatabaseName.class);
 
-    protected Config config;
+  protected Config config;
 
-    public RocksdbFactory(Config config){
-        this.config = config;
-    }
+  public RocksdbFactory(Config config) {
+    this.config = config;
+  }
 
-    @Override
-    public KVSource<byte[],byte[]> getDB(DatabaseName name) {
-        return databases.computeIfAbsent(name, k -> {
-            RocksdbKVSource dataSource = new RocksdbKVSource(name.toString());
-            dataSource.setConfig(config);
-            return dataSource;
+  @Override
+  public KVSource<byte[], byte[]> getDB(DatabaseName name) {
+    return databases.computeIfAbsent(
+        name,
+        k -> {
+          RocksdbKVSource dataSource = new RocksdbKVSource(name.toString());
+          dataSource.setConfig(config);
+          return dataSource;
         });
-    }
+  }
 
-    @Override
-    public void close() {
-        for (KVSource<byte[],byte[]> db : databases.values()) {
-            db.close();
-        }
-        databases.clear();
+  @Override
+  public void close() {
+    for (KVSource<byte[], byte[]> db : databases.values()) {
+      db.close();
     }
+    databases.clear();
+  }
 
-    @Override public SimpleFileStore getSumsDB(){
-        return new SimpleFileStore(Config.root + config.getStoreDir());
-    }
-
+  @Override
+  public SimpleFileStore getSumsDB() {
+    return new SimpleFileStore(Config.root + config.getStoreDir());
+  }
 }

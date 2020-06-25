@@ -9,10 +9,9 @@ public final class ECKeyFactory {
 
   public static final String ALGORITHM = "EC";
 
-  private static final String algorithmAssertionMsg =
-      "Assumed the JRE supports EC key factories";
+  private static final String algorithmAssertionMsg = "Assumed the JRE supports EC key factories";
 
-  private ECKeyFactory() { }
+  private ECKeyFactory() {}
 
   private static class Holder {
     private static final KeyFactory INSTANCE;

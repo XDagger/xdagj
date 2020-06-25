@@ -4,7 +4,7 @@ import io.xdag.core.Block;
 
 public interface FileSource {
 
-    void saveBlockSums(Block block);
+  void saveBlockSums(Block block);
 
-    byte[] loadSum(long starttime, long endtime);
+  byte[] loadSum(long starttime, long endtime);
 }

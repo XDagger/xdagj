@@ -31,181 +31,165 @@ import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
 
-/**
- * @ClassName NodeManager
- * @Description 管理连接节点，从netdb中获取更新节点进行连接
- * @Author punk
- * @Date 2020/5/2 13:09
- * @Version V1.0
- **/
 public class NodeManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(NodeManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(NodeManager.class);
 
-    private Kernel kernel;
-    private XdagClient client;
-    private XdagChannelManager channelMgr;
+  private Kernel kernel;
+  private XdagClient client;
+  private XdagChannelManager channelMgr;
 
-    private NetDBManager netDBManager;
-    private NetDB netDB;
-    private Config config;
+  private NetDBManager netDBManager;
+  private NetDB netDB;
+  private Config config;
 
-    private volatile boolean isRunning;
+  private volatile boolean isRunning;
 
-    private static final ThreadFactory factory = new ThreadFactory() {
+  private static final ThreadFactory factory =
+      new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
 
         @Override
         public Thread newThread(Runnable r) {
-            return new Thread(r, "node-" + cnt.getAndIncrement());
+          return new Thread(r, "node-" + cnt.getAndIncrement());
         }
-    };
+      };
 
+  private static final long MAX_QUEUE_SIZE = 1024;
+  private static final int LRU_CACHE_SIZE = 1024;
+  private static final long RECONNECT_WAIT = 60L * 1000L;
 
-    private static final long MAX_QUEUE_SIZE = 1024;
-    private static final int LRU_CACHE_SIZE = 1024;
-    private static final long RECONNECT_WAIT = 60L * 1000L;
+  private final Deque<Node> deque = new ConcurrentLinkedDeque<>();
+  // 记录对应节点节点最后一次连接的时间
+  private final Cache<Node, Long> lastConnect =
+      Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
 
+  // 定时处理
+  private final ScheduledExecutorService exec;
+  private ScheduledFuture<?> connectFuture;
+  private ScheduledFuture<?> fetchFuture;
 
-    private final Deque<Node> deque = new ConcurrentLinkedDeque<>();
-    //记录对应节点节点最后一次连接的时间
-    private final Cache<Node, Long> lastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
+  public NodeManager(Kernel kernel) {
+    this.kernel = kernel;
+    this.client = kernel.getClient();
+    this.channelMgr = kernel.getChannelManager();
+    this.netDB = kernel.getNetDB();
+    this.exec = Executors.newSingleThreadScheduledExecutor(factory);
+    this.config = kernel.getConfig();
+    this.netDBManager = kernel.getNetDBMgr();
+  }
 
-    //定时处理
-    private final ScheduledExecutorService exec;
-    private ScheduledFuture<?> connectFuture;
-    private ScheduledFuture<?> fetchFuture;
+  // start the node manager
+  public synchronized void start() {
+    if (!isRunning) {
+      //            addNodes(getSeedNodes(config.getWhiteListDir()));
+      addNodes(getSeedNodes(netDBManager.getWhiteDB()));
 
+      // every 0.5 seconds, delayed by 1 seconds (kernel boot up)
+      connectFuture = exec.scheduleAtFixedRate(this::doConnect, 1000, 500, TimeUnit.MILLISECONDS);
+      // every 100 seconds, delayed by 5 seconds (public IP lookup)
+      fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
-    public NodeManager(Kernel kernel){
-        this.kernel = kernel;
-        this.client = kernel.getClient();
-        this.channelMgr = kernel.getChannelManager();
-        this.netDB = kernel.getNetDB();
-        this.exec = Executors.newSingleThreadScheduledExecutor(factory);
-        this.config = kernel.getConfig();
-        this.netDBManager = kernel.getNetDBMgr();
-
+      isRunning = true;
+      logger.debug("Node manager started");
     }
+  }
 
-    //start the node manager
-    public synchronized void start(){
-        if (!isRunning) {
-//            addNodes(getSeedNodes(config.getWhiteListDir()));
-            addNodes(getSeedNodes(netDBManager.getWhiteDB()));
+  public synchronized void stop() {
+    if (isRunning) {
+      connectFuture.cancel(true);
+      fetchFuture.cancel(false);
 
-            // every 0.5 seconds, delayed by 1 seconds (kernel boot up)
-            connectFuture = exec.scheduleAtFixedRate(this::doConnect, 1000, 500, TimeUnit.MILLISECONDS);
-            // every 100 seconds, delayed by 5 seconds (public IP lookup)
-            fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
-
-            isRunning = true;
-            logger.debug("Node manager started");
-        }
+      isRunning = false;
+      exec.shutdown();
+      logger.debug("Node manager stop...");
     }
+  }
 
-    public synchronized void stop() {
-        if (isRunning) {
-            connectFuture.cancel(true);
-            fetchFuture.cancel(false);
+  public int queueSize() {
+    return deque.size();
+  }
 
-            isRunning = false;
-            exec.shutdown();
-            logger.debug("Node manager stop...");
-        }
+  public void addNodes(Collection<Node> nodes) {
+    if (nodes == null || nodes.size() == 0) {
+      return;
     }
-
-    public int queueSize() {
-        return deque.size();
+    for (Node node : nodes) {
+      addNode(node);
     }
+  }
 
-
-    public void addNodes(Collection<Node> nodes) {
-        if(nodes==null || nodes.size() ==0){
-            return;
-        }
-        for (Node node : nodes) {
-            addNode(node);
-        }
+  public void addNode(Node node) {
+    if (deque.contains(node)) {
+      return;
     }
-
-    public void addNode(Node node) {
-        if(deque.contains(node)){
-            return;
-        }
-        deque.addFirst(node);
-        while (queueSize() > MAX_QUEUE_SIZE) {
-            deque.removeLast();
-        }
+    deque.addFirst(node);
+    while (queueSize() > MAX_QUEUE_SIZE) {
+      deque.removeLast();
     }
+  }
 
-    //from net update seed nodes
-    protected void doFetch() {
-        logger.debug("Do fetch");
-        if(config.isEnableRefresh()){
-            netDBManager.refresh();
-        }
-        //从白名单获得新节点
-        addNodes(getSeedNodes(netDBManager.getWhiteDB()));
-        //从netdb获取新节点
-        addNodes(getSeedNodes(netDBManager.getNetDB()));
-        logger.debug("node size:"+deque.size());
+  // from net update seed nodes
+  protected void doFetch() {
+    logger.debug("Do fetch");
+    if (config.isEnableRefresh()) {
+      netDBManager.refresh();
     }
+    // 从白名单获得新节点
+    addNodes(getSeedNodes(netDBManager.getWhiteDB()));
+    // 从netdb获取新节点
+    addNodes(getSeedNodes(netDBManager.getNetDB()));
+    logger.debug("node size:" + deque.size());
+  }
 
-
-
-    public Set<Node> getSeedNodes(NetDB netDB){
-        if(netDB!=null && netDB.getSize()!=0){
-            return netDB.getIPList();
-        }else {
-            return null;
-        }
+  public Set<Node> getSeedNodes(NetDB netDB) {
+    if (netDB != null && netDB.getSize() != 0) {
+      return netDB.getIPList();
+    } else {
+      return null;
     }
+  }
 
-    public void doConnect(){
-        Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
-        Node node;
-        while ((node = deque.pollFirst())!=null && channelMgr.size()<config.getMAX_CHANNELS()){
-            Long lastCon = lastConnect.getIfPresent(node);
-            long now = System.currentTimeMillis();
+  public void doConnect() {
+    Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
+    Node node;
+    while ((node = deque.pollFirst()) != null && channelMgr.size() < config.getMAX_CHANNELS()) {
+      Long lastCon = lastConnect.getIfPresent(node);
+      long now = System.currentTimeMillis();
 
-
-            if(!client.getNode().equals(node)
-                    &&!(Objects.equals(node.getHost(),client.getNode().getHost())&& node.getPort()==client.getNode().getPort())
-                    && !activeAddress.contains(node.getAddress())
-                    && (lastCon == null || lastCon+RECONNECT_WAIT<now)){
-                XdagChannelInitializer initializer = new XdagChannelInitializer(kernel,false,node);
-                client.connect(node.getHost(),node.getPort(),initializer);
-                lastConnect.put(node,now);
-                break;
-            }
-        }
-
+      if (!client.getNode().equals(node)
+          && !(Objects.equals(node.getHost(), client.getNode().getHost())
+              && node.getPort() == client.getNode().getPort())
+          && !activeAddress.contains(node.getAddress())
+          && (lastCon == null || lastCon + RECONNECT_WAIT < now)) {
+        XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, node);
+        client.connect(node.getHost(), node.getPort(), initializer);
+        lastConnect.put(node, now);
+        break;
+      }
     }
+  }
 
-    public void doConnect(String ip,int port){
-        Node remotenode = new Node(ip,port);
-        if(!client.getNode().equals(remotenode)
-                && !channelMgr.containsNode(remotenode)){
-            XdagChannelInitializer initializer = new XdagChannelInitializer(kernel,false,remotenode);
-            client.connect(ip,port,initializer);
-        }
+  public void doConnect(String ip, int port) {
+    Node remotenode = new Node(ip, port);
+    if (!client.getNode().equals(remotenode) && !channelMgr.containsNode(remotenode)) {
+      XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, remotenode);
+      client.connect(ip, port, initializer);
     }
+  }
 
+  public Set<Node> getNewNode() {
+    return netDB.getIPList();
+  }
 
-    public Set<Node> getNewNode(){
-        return netDB.getIPList();
+  public Map<Node, Long> getActiveNode() {
+    Map<Node, Long> nodes = new HashMap<>();
+    List<XdagChannel> activeAddress = channelMgr.getActiveChannels();
+    for (XdagChannel address : activeAddress) {
+      Node node = address.getNode();
+      Long time = lastConnect.getIfPresent(node);
+      nodes.put(node, time);
     }
-
-
-    public Map<Node,Long> getActiveNode(){
-        Map<Node,Long> nodes = new HashMap<>();
-        List<XdagChannel> activeAddress = channelMgr.getActiveChannels();
-        for (XdagChannel address:activeAddress){
-            Node node = address.getNode();
-            Long time = lastConnect.getIfPresent(node);
-            nodes.put(node,time);
-        }
-        return nodes;
-    }
+    return nodes;
+  }
 }

@@ -16,120 +16,116 @@ import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @ClassName XdagHandshakeHandler
- * @Description
- * @Author punk
- * @Date 2020/4/21 23:36
- * @Version V1.0
- **/
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
 
-	private Config config;
+  private Config config;
 
-	private XdagChannel channel;
-	private Kernel kernel;
+  private XdagChannel channel;
+  private Kernel kernel;
 
-	private boolean isServer;
+  private boolean isServer;
 
-	public XdagHandshakeHandler(Kernel kernel, Config config, XdagChannel channel) {
-		this.kernel = kernel;
-		this.config = config;
-		this.channel = channel;
-	}
+  public XdagHandshakeHandler(Kernel kernel, Config config, XdagChannel channel) {
+    this.kernel = kernel;
+    this.config = config;
+    this.channel = channel;
+  }
 
-	public void setServer(boolean isServer) {
-		this.isServer = isServer;
-	}
+  public void setServer(boolean isServer) {
+    this.isServer = isServer;
+  }
 
-	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-		channel.initWithNode(remoteAddress.getHostName(), remoteAddress.getPort()); // 连接到对方的channel 并将对方记录为node
-		// TODO:如果为服务器端 发送pubkey
-		if (isServer) {
-			channel.sendPubkey(ctx);
-		}
-	}
+  @Override
+  public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+    channel.initWithNode(
+        remoteAddress.getHostName(), remoteAddress.getPort()); // 连接到对方的channel 并将对方记录为node
+    // TODO:如果为服务器端 发送pubkey
+    if (isServer) {
+      channel.sendPubkey(ctx);
+    }
+  }
 
-	@Override
-	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-		if (channel.getNode().getStat().Inbound.get() < 4) {
-			// 如果还未发送pubkey
-			if (channel.getNode().getStat().Inbound.get() < 1) {
-				byte[] remotePubKey = new byte[1024];
-				try {
-					in.readBytes(remotePubKey);
-				} catch (Exception e) {
-					return;
-				}
-				channel.getNode().getStat().Inbound.add(2); // 发送过pubkey后加2
-				if (!checkDnetPubkey(remotePubKey)) {
-					throw new RuntimeException("dnet key error!");
-				}
-				// 发送pubkey
-				if (isServer) {
-					if (channel.getNode().getStat().Outbound.get() == 2)// 如果已经发送了pubkey
-					{
-						channel.sendPassword(ctx);
-					}
-				} else {
-					channel.sendPubkey(ctx);
-				}
-			} else if (channel.getNode().getStat().Inbound.get() >= 1) {// 如果已经接收过pubkey
-				// 读取set0
-				byte[] word = new byte[512];
-				in.readBytes(word);
-				channel.getNode().getStat().Inbound.add();
-				if (!isServer) {
-					if (channel.getNode().getStat().Outbound.get() == 2) // 如果已经发送了pubkey
-					{
-						channel.sendPassword(ctx);
-					}
-				}
-				if (channel.getNode().getStat().Inbound.get() >= 3) {
+  @Override
+  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    if (channel.getNode().getStat().Inbound.get() < 4) {
+      // 如果还未发送pubkey
+      if (channel.getNode().getStat().Inbound.get() < 1) {
+        byte[] remotePubKey = new byte[1024];
+        try {
+          in.readBytes(remotePubKey);
+        } catch (Exception e) {
+          return;
+        }
+        channel.getNode().getStat().Inbound.add(2); // 发送过pubkey后加2
+        if (!checkDnetPubkey(remotePubKey)) {
+          throw new RuntimeException("dnet key error!");
+        }
+        // 发送pubkey
+        if (isServer) {
+          if (channel.getNode().getStat().Outbound.get() == 2) // 如果已经发送了pubkey
+          {
+            channel.sendPassword(ctx);
+          }
+        } else {
+          channel.sendPubkey(ctx);
+        }
+      } else if (channel.getNode().getStat().Inbound.get() >= 1) { // 如果已经接收过pubkey
+        // 读取set0
+        byte[] word = new byte[512];
+        in.readBytes(word);
+        channel.getNode().getStat().Inbound.add();
+        if (!isServer) {
+          if (channel.getNode().getStat().Outbound.get() == 2) // 如果已经发送了pubkey
+          {
+            channel.sendPassword(ctx);
+          }
+        }
+        if (channel.getNode().getStat().Inbound.get() >= 3) {
 
-					// logger.info("connect a new pool,
-					// host[{}]",channel.getInetSocketAddress().toString());
-					System.out.println("connect a new pool, host[" + channel.getInetSocketAddress().toString() + "]");
+          // logger.info("connect a new pool,
+          // host[{}]",channel.getInetSocketAddress().toString());
+          System.out.println(
+              "connect a new pool, host[" + channel.getInetSocketAddress().toString() + "]");
 
-					log.debug("握手协议结束，开始传输数据");
-					// 握手协议通过
-					kernel.getChannelManager().onChannelActive(channel, channel.getNode());
-					ctx.pipeline().remove(this);
-					channel.activateXdag(ctx, XdagVersion.V03);
+          log.debug("握手协议结束，开始传输数据");
+          // 握手协议通过
+          kernel.getChannelManager().onChannelActive(channel, channel.getNode());
+          ctx.pipeline().remove(this);
+          channel.activateXdag(ctx, XdagVersion.V03);
 
-					// test connect whether send a address
-					byte[] remoteAddress = new byte[512];
-					if (in.isReadable() && in.readableBytes() == 512) {
-						log.debug("有地址块发送");
-						in.readBytes(remoteAddress);
-						log.debug("Hex :" + Hex.encodeHexString(remoteAddress));
-					}
+          // test connect whether send a address
+          byte[] remoteAddress = new byte[512];
+          if (in.isReadable() && in.readableBytes() == 512) {
+            log.debug("有地址块发送");
+            in.readBytes(remoteAddress);
+            log.debug("Hex :" + Hex.encodeHexString(remoteAddress));
+          }
+        }
+      }
 
-				}
-			}
+    } else {
+      byte[] read = new byte[512];
+      in.readBytes(read);
+      log.debug("接受区块：" + Hex.encodeHexString(read));
+      // 接受区块
+      byte[] uncryptData =
+          Native.dfslib_uncrypt_byte_sector(
+              read, read.length, channel.getNode().getStat().Inbound.get() - 3 + 1);
+      log.debug(
+          "in="
+              + channel.getNode().getStat().Inbound.get()
+              + ", after  dfslib_uncrypt_sector : "
+              + Hex.encodeHexString(uncryptData));
+      channel.getNode().getStat().Inbound.add();
+    }
+  }
 
-		} else {
-			byte[] read = new byte[512];
-			in.readBytes(read);
-			log.debug("接受区块：" + Hex.encodeHexString(read));
-			// 接受区块
-			byte[] uncryptData = Native.dfslib_uncrypt_byte_sector(read, read.length,
-					channel.getNode().getStat().Inbound.get() - 3 + 1);
-			log.debug("in=" + channel.getNode().getStat().Inbound.get() + ", after  dfslib_uncrypt_sector : "
-					+ Hex.encodeHexString(uncryptData));
-			channel.getNode().getStat().Inbound.add();
-
-		}
-	}
-
-	public boolean checkDnetPubkey(byte[] pubkey) {
-		if (Arrays.equals(config.getXKeys().pub, pubkey)) {
-			return true;
-		}
-		return false;
-	}
-
+  public boolean checkDnetPubkey(byte[] pubkey) {
+    if (Arrays.equals(config.getXKeys().pub, pubkey)) {
+      return true;
+    }
+    return false;
+  }
 }

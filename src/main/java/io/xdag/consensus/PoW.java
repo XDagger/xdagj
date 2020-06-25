@@ -5,13 +5,13 @@ import io.xdag.net.message.Message;
 
 public interface PoW {
 
-    void start();
+  void start();
 
-    void stop();
+  void stop();
 
-    boolean isRunning();
+  boolean isRunning();
 
-    void receiveNewShare(MinerChannel channel, Message msg);
+  void receiveNewShare(MinerChannel channel, Message msg);
 
-    void receiveNewPretop(byte[] pretop);
+  void receiveNewPretop(byte[] pretop);
 }

@@ -1,53 +1,44 @@
 package io.xdag.mine.message;
 
-
 import static io.xdag.net.message.XdagMessageCodes.NEW_TASK;
-
 
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 
-
-/**
- * @Classname NewTaskMessage
- * @Description 发送新任务的
- * @Date 2020/5/7 22:23
- * @Created by Myron
- */
 public class NewTaskMessage extends Message {
 
-    private XdagField[] xdagFields = new XdagField[2];
+  private XdagField[] xdagFields = new XdagField[2];
 
-    public NewTaskMessage(byte[] bytes) {
-        super(bytes);
-        xdagFields[0] = new XdagField(BytesUtils.subArray(bytes,0,32));
-        xdagFields[1] = new XdagField(BytesUtils.subArray(bytes,32,32));
-    }
+  public NewTaskMessage(byte[] bytes) {
+    super(bytes);
+    xdagFields[0] = new XdagField(BytesUtils.subArray(bytes, 0, 32));
+    xdagFields[1] = new XdagField(BytesUtils.subArray(bytes, 32, 32));
+  }
 
-    @Override public byte[] getEncoded() {
+  @Override
+  public byte[] getEncoded() {
 
-        byte[] data = new byte[64];
-        System.arraycopy(xdagFields[0].getData(),0,data,0,32);
-        System.arraycopy(xdagFields[1].getData(),0,data,32,32);
+    byte[] data = new byte[64];
+    System.arraycopy(xdagFields[0].getData(), 0, data, 0, 32);
+    System.arraycopy(xdagFields[1].getData(), 0, data, 32, 32);
 
-        return data;
+    return data;
+  }
 
-    }
+  @Override
+  public Class<?> getAnswerMessage() {
+    return null;
+  }
 
-    @Override
-    public Class<?> getAnswerMessage() {
-        return null;
-    }
+  @Override
+  public XdagMessageCodes getCommand() {
+    return NEW_TASK;
+  }
 
-    @Override
-    public XdagMessageCodes getCommand() {
-        return NEW_TASK;
-    }
-
-    @Override
-    public String toString() {
-        return null;
-    }
+  @Override
+  public String toString() {
+    return null;
+  }
 }

@@ -9,10 +9,9 @@ public final class ECKeyAgreement {
 
   public static final String ALGORITHM = "ECDH";
 
-  private static final String algorithmAssertionMsg =
-      "Assumed the JRE supports EC key agreement";
+  private static final String algorithmAssertionMsg = "Assumed the JRE supports EC key agreement";
 
-  private ECKeyAgreement() { }
+  private ECKeyAgreement() {}
 
   public static KeyAgreement getInstance() {
     try {

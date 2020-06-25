@@ -9,9 +9,10 @@ public final class XdagProvider {
 
   private static class Holder {
     private static final Provider INSTANCE;
-    static{
-        Provider p = Security.getProvider("SC");
-        INSTANCE = (p != null) ? p : new BouncyCastleProvider();
+
+    static {
+      Provider p = Security.getProvider("SC");
+      INSTANCE = (p != null) ? p : new BouncyCastleProvider();
     }
   }
 

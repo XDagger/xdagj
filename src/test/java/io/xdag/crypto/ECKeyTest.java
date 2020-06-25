@@ -3,25 +3,17 @@ package io.xdag.crypto;
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
 
-/**
- * @Classname ECKeyTest
- * @Description TODO
- * @Date 2020/6/19 18:42
- * @Created by Myron
- */
 public class ECKeyTest {
 
-	@Test
-	public void generKeyTest() {
+  @Test
+  public void generKeyTest() {
 
-		String priv = "93c930b7a7260f4f896561417fbe54ff16b9e49112fb41a69f230c179f2048d0";
-		byte[] priv32 = Hex.decode(priv);
-		// priv32 = Arrays.reverse(priv32);
-		System.out.println(Hex.toHexString(priv32));
-		ECKey ecKey = ECKey.fromPrivate(priv32);
+    String priv = "93c930b7a7260f4f896561417fbe54ff16b9e49112fb41a69f230c179f2048d0";
+    byte[] priv32 = Hex.decode(priv);
+    // priv32 = Arrays.reverse(priv32);
+    System.out.println(Hex.toHexString(priv32));
+    ECKey ecKey = ECKey.fromPrivate(priv32);
 
-		System.out.println(Hex.toHexString(ecKey.pub.getEncoded(true)));
-
-	}
-
+    System.out.println(Hex.toHexString(ecKey.pub.getEncoded(true)));
+  }
 }

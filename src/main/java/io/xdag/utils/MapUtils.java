@@ -4,25 +4,18 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * @ClassName MapUtils
- * @Description
- * @Author punk
- * @Date 2020/5/7 00:23
- * @Version V1.0
- **/
 public class MapUtils {
 
-    public static <K, V> Map.Entry<K, V> getHead(LinkedHashMap<K, V> map) {
-        return map.entrySet().iterator().next();
-    }
+  public static <K, V> Map.Entry<K, V> getHead(LinkedHashMap<K, V> map) {
+    return map.entrySet().iterator().next();
+  }
 
-    public static <K, V> Map.Entry<K, V> getTail(LinkedHashMap<K, V> map) {
-        Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
-        Map.Entry<K, V> tail = null;
-        while (iterator.hasNext()) {
-            tail = iterator.next();
-        }
-        return tail;
+  public static <K, V> Map.Entry<K, V> getTail(LinkedHashMap<K, V> map) {
+    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
+    Map.Entry<K, V> tail = null;
+    while (iterator.hasNext()) {
+      tail = iterator.next();
     }
+    return tail;
+  }
 }

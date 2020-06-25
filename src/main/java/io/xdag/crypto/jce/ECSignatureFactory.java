@@ -12,7 +12,7 @@ public final class ECSignatureFactory {
   private static final String rawAlgorithmAssertionMsg =
       "Assumed the JRE supports NONEwithECDSA signatures";
 
-  private ECSignatureFactory() { }
+  private ECSignatureFactory() {}
 
   public static Signature getRawInstance() {
     try {

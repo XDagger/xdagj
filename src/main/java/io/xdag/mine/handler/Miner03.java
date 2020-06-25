@@ -29,140 +29,129 @@ import io.xdag.utils.FastByteComparisons;
 
 import org.spongycastle.util.encoders.Hex;
 
-/**
- * @Classname Miner03
- * @Description TODO
- * @Date 2020/5/10 19:17
- * @Created by Myron
- */
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
-	public static final Logger logger = LoggerFactory.getLogger(Miner03.class);
+  public static final Logger logger = LoggerFactory.getLogger(Miner03.class);
 
-	private Kernel kernel;
+  private Kernel kernel;
 
-	private MinerChannel channel;
+  private MinerChannel channel;
 
-	private ChannelHandlerContext ctx;
+  private ChannelHandlerContext ctx;
 
-	private MinerManager minerManager;
+  private MinerManager minerManager;
 
-	private SyncManager syncManager;
+  private SyncManager syncManager;
 
-	public Miner03(MinerChannel channel, Kernel kernel) {
-		this.channel = channel;
-		this.kernel = kernel;
+  public Miner03(MinerChannel channel, Kernel kernel) {
+    this.channel = channel;
+    this.kernel = kernel;
 
-		minerManager = kernel.getMinerManager();
-		syncManager = kernel.getSyncMgr();
-	}
+    minerManager = kernel.getMinerManager();
+    syncManager = kernel.getSyncMgr();
+  }
 
-	public void setMessageFactory(MessageFactory messageFactory) {
-	}
+  public void setMessageFactory(MessageFactory messageFactory) {}
 
-	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
+  @Override
+  protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
 
-		switch (msg.getCommand()) {
-		case NEW_BALANCE:
-			processNewBalance((NewBalanceMessage) msg);
-			break;
-		case TASK_SHARE:
-			processTaskShare((TaskShareMessage) msg);
-			break;
-		case NEW_TASK:
-			processNewTask((NewTaskMessage) msg);
-			break;
-		case NEW_BLOCK:
-			processNewBlock((MinerBlockMessage) msg);
-			break;
-		default:
-			logger.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
-			break;
-		}
-	}
+    switch (msg.getCommand()) {
+      case NEW_BALANCE:
+        processNewBalance((NewBalanceMessage) msg);
+        break;
+      case TASK_SHARE:
+        processTaskShare((TaskShareMessage) msg);
+        break;
+      case NEW_TASK:
+        processNewTask((NewTaskMessage) msg);
+        break;
+      case NEW_BLOCK:
+        processNewBlock((MinerBlockMessage) msg);
+        break;
+      default:
+        logger.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
+        break;
+    }
+  }
 
-	@Override
-	public void handlerAdded(ChannelHandlerContext ctx) {
-		channel.setCtx(ctx);
-		this.ctx = ctx;
-	}
+  @Override
+  public void handlerAdded(ChannelHandlerContext ctx) {
+    channel.setCtx(ctx);
+    this.ctx = ctx;
+  }
 
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 
-		if (cause instanceof IOException) {
-			logger.debug("远程主机关闭了一个连接");
-			ctx.channel().closeFuture();
-			channel.onDisconnect();
+    if (cause instanceof IOException) {
+      logger.debug("远程主机关闭了一个连接");
+      ctx.channel().closeFuture();
+      channel.onDisconnect();
 
-		} else {
-			cause.printStackTrace();
-		}
-	}
+    } else {
+      cause.printStackTrace();
+    }
+  }
 
-	/*************************
-	 * Message Processing *
-	 *************************/
+  /** *********************** Message Processing * *********************** */
+  protected synchronized void processNewBlock(MinerBlockMessage msg) {
+    logger.debug(" 处理矿池接受到的交易信息");
+    // 先进行简单的验证 有效的话再放到queue里面
 
-	protected synchronized void processNewBlock(MinerBlockMessage msg) {
-		logger.debug(" 处理矿池接受到的交易信息");
-		// 先进行简单的验证 有效的话再放到queue里面
+    byte[] uncryptData = msg.getEncoded();
+    long transportHeader = BytesUtils.bytesToLong(uncryptData, 0, true);
+    long dataLength = (transportHeader >> 16 & 0xffff);
+    int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
 
-		byte[] uncryptData = msg.getEncoded();
-		long transportHeader = BytesUtils.bytesToLong(uncryptData, 0, true);
-		long dataLength = (transportHeader >> 16 & 0xffff);
-		int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+    // 清除transportheader
+    System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+    // 验证 看是否可以加到本地的存储中
+    if (dataLength != 512 || !crc32Verify(uncryptData, crc)) {
+      Block block = new Block(new XdagBlock(uncryptData));
+      syncManager.validateAndAddNewBlock(new BlockWrapper(block, 1, kernel.getClient().getNode()));
+    }
+  }
 
-		// 清除transportheader
-		System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-		// 验证 看是否可以加到本地的存储中
-		if (dataLength != 512 || !crc32Verify(uncryptData, crc)) {
-			Block block = new Block(new XdagBlock(uncryptData));
-			syncManager.validateAndAddNewBlock(new BlockWrapper(block, 1, kernel.getClient().getNode()));
+  protected synchronized void processNewBalance(NewBalanceMessage msg) {
+    // TODO: 2020/5/9 处理矿工接受到的余额信息
+    logger.debug(" 处理矿池接受到的交易信息[{}]", Hex.toHexString(msg.getEncoded()));
+  }
 
-		}
+  protected synchronized void processNewTask(NewTaskMessage msg) {
+    // TODO: 2020/5/9 处理矿工收到的新任务
+    logger.debug(" 处理矿工收到的新任务[{}]", Hex.toHexString(msg.getEncoded()));
+  }
 
-	}
+  protected synchronized void processTaskShare(TaskShareMessage msg) {
+    logger.debug(" 处理矿池接收到的任务反馈");
 
-	protected synchronized void processNewBalance(NewBalanceMessage msg) {
-		// TODO: 2020/5/9 处理矿工接受到的余额信息
-		logger.debug(" 处理矿池接受到的交易信息[{}]", Hex.toHexString(msg.getEncoded()));
-	}
+    if (FastByteComparisons.compareTo(
+                msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
+            == 0
+        && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
 
-	protected synchronized void processNewTask(NewTaskMessage msg) {
-		// TODO: 2020/5/9 处理矿工收到的新任务
-		logger.debug(" 处理矿工收到的新任务[{}]", Hex.toHexString(msg.getEncoded()));
-	}
+      channel.addShareCounts(1);
+      minerManager.onNewShare(channel, msg);
 
-	protected synchronized void processTaskShare(TaskShareMessage msg) {
-		logger.debug(" 处理矿池接收到的任务反馈");
+    } else {
+      logger.debug("shares的值超过限制，不接受");
+    }
+  }
 
-		if (FastByteComparisons.compareTo(msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) == 0
-				&& channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
+  /** 发送任务消息 */
+  public void sendMessage(byte[] bytes) {
 
-			channel.addShareCounts(1);
-			minerManager.onNewShare(channel, msg);
+    // logger.debug("发送消息。。。。。{}",Hex.encodeHexString(bytes));
+    ctx.channel().writeAndFlush(bytes);
+  }
 
-		} else {
-			logger.debug("shares的值超过限制，不接受");
-		}
+  public synchronized void dropConnection() {
+    disconnect();
+  }
 
-	}
-
-	/** 发送任务消息 */
-	public void sendMessage(byte[] bytes) {
-
-		// logger.debug("发送消息。。。。。{}",Hex.encodeHexString(bytes));
-		ctx.channel().writeAndFlush(bytes);
-	}
-
-	public synchronized void dropConnection() {
-		disconnect();
-	}
-
-	public void disconnect() {
-		ctx.close();
-		this.channel.setActive(false);
-		minerManager.removeUnactivateChannel(this.channel);
-	}
+  public void disconnect() {
+    ctx.close();
+    this.channel.setActive(false);
+    minerManager.removeUnactivateChannel(this.channel);
+  }
 }

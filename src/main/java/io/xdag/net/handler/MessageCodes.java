@@ -16,28 +16,26 @@ import java.util.List;
 @Slf4j
 public class MessageCodes extends MessageToMessageCodec<Message, Message> {
 
-    private XdagChannel channel;
+  private XdagChannel channel;
 
-    public MessageCodes(XdagChannel channel){
-        this.channel = channel;
-    }
+  public MessageCodes(XdagChannel channel) {
+    this.channel = channel;
+  }
 
+  @Override
+  protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
+    log.debug("接收到消息：" + msg.getCommand());
+    out.add(msg);
+  }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
-        log.debug("接收到消息："+msg.getCommand());
-        out.add(msg);
-    }
+  @Override
+  protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
+    XdagBlock xdagblock = convertMessage(msg);
+    out.add(xdagblock);
+  }
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
-        XdagBlock xdagblock = convertMessage(msg);
-        out.add(xdagblock);
-    }
-
-    public static XdagBlock convertMessage(Message message) {
-        XdagBlock block = new XdagBlock(message.getEncoded());
-        return block;
-    }
-
+  public static XdagBlock convertMessage(Message message) {
+    XdagBlock block = new XdagBlock(message.getEncoded());
+    return block;
+  }
 }
