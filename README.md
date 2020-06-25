@@ -169,6 +169,11 @@ Update documentation when creating or modifying features. Test your documentatio
 
 The pull request must be as clear as possible and as detailed as possible, including all related issues. If the pull request is meant to close an issue please use the Github keyword conventions of [closes, fixes, or resolves](https://help.github.com/articles/closing-issues-via-commit-messages/). If the pull request only completes part of an issue use the connects keywords. This helps our tools properly link issues to pull requests.
 
+### Code Style
+
+use [google-java-format](https://github.com/google/google-java-format) to format code
+
+
 ### Code Review
 
 We value the quality and accuracy of the code. Therefor, we will review all the codes that need to be changed.
