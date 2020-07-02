@@ -103,7 +103,6 @@ public class AccountStore {
       long amountRelease = blockStore.getBlockInfoByHash(first).getAmount();
       if (amountRelease > 0) {
         ECKey key = wallet.getKeyByIndex(blockStore.getBlockKeyIndex(first));
-        //changge by myron
         long sendValue = Math.min(amountRelease, res);
         result.put(new Address(first, XdagField.FieldType.XDAG_FIELD_IN, sendValue), key);
         res -= amountRelease;

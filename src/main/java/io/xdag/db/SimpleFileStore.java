@@ -37,7 +37,7 @@ public class SimpleFileStore implements FileSource {
 
   public void updateSum(String filename, long size, long sum, long index) {
     StringBuffer filepath = new StringBuffer(basicPrefix);
-    if (!filename.equals("")) {
+    if (!"".equals(filename)) {
       filepath.append(filename);
     }
 

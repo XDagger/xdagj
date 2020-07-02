@@ -3,9 +3,9 @@ package io.xdag.consensus;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,7 +57,8 @@ public class XdagSync {
   public XdagSync(Kernel kernel) {
     this.channelMgr = kernel.getChannelManager();
     this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
-    sendTask = Executors.newSingleThreadScheduledExecutor(factory);
+    //sendTask = Executors.newSingleThreadScheduledExecutor(factory);
+    sendTask = new ScheduledThreadPoolExecutor(1,factory);
   }
   /** 不断发送send request */
   public void start() {

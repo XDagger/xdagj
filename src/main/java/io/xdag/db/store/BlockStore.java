@@ -18,26 +18,26 @@ public class BlockStore {
 
   private static final Logger logger = LoggerFactory.getLogger(BlockStore.class);
 
-  // <prefix-hash,value> eg:<diff-hash,blockdiff>
+  /**<prefix-hash,value> eg:<diff-hash,blockdiff>*/
   private KVSource<byte[], byte[]> indexSource;
-  // <hash,rawdata>
+  /**<hash,rawdata>*/
   private KVSource<byte[], byte[]> blockSource;
-  // <time-hash,hash>
+  /**<time-hash,hash>*/
   private KVSource<byte[], byte[]> timeSource;
   private SimpleFileStore simpleFileStore;
 
-  // block size key
+  /**block size key*/
   private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
-  // main size key
+  /**main size key*/
   private static final byte[] MAIN_SIZE = Hex.decode("EEEEEEEEEEEEEEEE");
-  // pretop
+  /** pretop*/
   private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD");
-  // pretop diff
+  /** pretop diff*/
   private static final byte[] PRETOPDIFF = Hex.decode("CCCCCCCCCCCCCCCC");
-  // origin pretop diff
+  /** origin pretop diff*/
   private static final byte[] ORIGINPRETOP = Hex.decode("FFFFFFFFFFFFFFFE");
-  private static final byte[] ORIGINPRETOPDIFF =
-      Hex.decode("FFFFFFFFFFFFFFEF"); // origin pretop diff
+  /**origin pretop diff*/
+  private static final byte[] ORIGINPRETOPDIFF = Hex.decode("FFFFFFFFFFFFFFEF");
   private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
   public static final byte BLOCK_MAXDIFF = 0x00;
   public static final byte BLOCK_MAXDIFFLINK = 0x01;
@@ -49,7 +49,7 @@ public class BlockStore {
   public static final byte BLOCK_KEY_INDEX = 0x07;
   public static final byte BLOCK_HASH = 0x08;
 
-  // 存sums
+  /** 存sums*/
   private BlockingQueue<Block> blockQueue = new LinkedBlockingQueue<>();
   private ExecutorService executorService = Executors.newSingleThreadExecutor();
   private Future<?> sumFuture;
@@ -185,7 +185,6 @@ public class BlockStore {
     long key = starttime >> 16;
     byte[] keyPrefix = BytesUtils.longToBytes(key, false);
     List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix, keyPrefix.length);
-    //change  for myron
     for (byte[] bytes : keys) {
       Block block = getBlockByHash(bytes, true);
       if (block != null) {
@@ -298,7 +297,8 @@ public class BlockStore {
       return BytesUtils.bytesToInt(
           indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)), 0, false);
     } else {
-      return -2; // 不存在
+      // 不存在
+      return -2;
     }
   }
 

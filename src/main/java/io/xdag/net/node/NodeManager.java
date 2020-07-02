@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,7 +76,10 @@ public class NodeManager {
     this.client = kernel.getClient();
     this.channelMgr = kernel.getChannelManager();
     this.netDB = kernel.getNetDB();
-    this.exec = Executors.newSingleThreadScheduledExecutor(factory);
+    //this.exec = Executors.newSingleThreadScheduledExecutor(factory);
+    //myron 修改线程池
+    this.exec = new ScheduledThreadPoolExecutor(1,factory);
+
     this.config = kernel.getConfig();
     this.netDBManager = kernel.getNetDBMgr();
   }

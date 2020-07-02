@@ -3,14 +3,19 @@ package io.xdag.consensus;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 import static org.spongycastle.util.Arrays.reverse;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -180,6 +185,7 @@ public class XdagPow implements PoW {
   public class Timer implements Runnable {
     private long timeout;
     private Thread t;
+
 
     @Override
     public void run() {

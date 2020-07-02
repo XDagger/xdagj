@@ -167,7 +167,6 @@ public class BlockchainImpl implements Blockchain {
             blockRef != null && ((blockRef.flags & BI_MAIN_CHAIN) == 0);
             blockRef = getMaxDiffLink(blockRef, false)) {
           Block tmpRef = getMaxDiffLink(blockRef, false);
-          //del by myron
           //if (tmpRef != null) {}
           if ((tmpRef == null || blockRef.getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0)
               && (blockRef0 == null
@@ -196,7 +195,6 @@ public class BlockchainImpl implements Blockchain {
       }
 
       // remove links
-      //修改for by myron
       for (Address address : all) {
         logger.debug("remove links");
         removeOrphan(
@@ -293,7 +291,6 @@ public class BlockchainImpl implements Blockchain {
       return 0;
     }
 
-    //修改for by myron
     for (Address link : links) {
       Block ref = getBlockByHash(link.getHashLow(), true);
       long ret = applyBlock(ref);
@@ -306,7 +303,6 @@ public class BlockchainImpl implements Blockchain {
         acceptAmount(block, link.getAmount().longValue());
       }
     }
-//修改for by myron
     for (Address link : links) {
       if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
         Block ref = getBlockByHash(link.getHashLow(), false);
@@ -331,7 +327,6 @@ public class BlockchainImpl implements Blockchain {
       logger.debug("执行块失败");
       return 0;
     }
-//修改for by myron
     for (Address link : links) {
       if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
         Block ref = getBlockByHash(link.getHashLow(), false);
@@ -355,7 +350,6 @@ public class BlockchainImpl implements Blockchain {
     List<Address> links = block.getLinks();
     if ((block.flags & BI_APPLIED) != 0) {
       long sum = 0;
-      //修改for by myron
       for (Address link : links) {
         if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
           Block ref = getBlockByHash(link.getHashLow(), false);
@@ -372,7 +366,6 @@ public class BlockchainImpl implements Blockchain {
     }
     updateBlockFlag(block, BI_MAIN_REF, false);
     updateBlockRef(block, null);
-//修改for by myron
     for (Address link : links) {
       Block ref = getBlockByHash(link.getHashLow(), true);
       if (ref.getRef() != null
@@ -647,7 +640,6 @@ public class BlockchainImpl implements Blockchain {
           saveBlock(removeBlockRaw);
           // 移除所有EXTRA块链接的块
           List<Address> all = removeBlockRaw.getLinks();
-          //修改for myron
           for (Address address : all) {
             removeOrphan(
                 getBlockByHash(address.getHashLow(), false),
