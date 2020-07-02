@@ -41,11 +41,11 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     this.channel = channel;
   }
 
-  // 加解密的过程outbound应该先用上一次结束后的值 发完才加 TODO 增加transportHeader
+  // 加解密的过程outbound应该先用上一次结束后的值 发完才加
+  // TODO 增加transportHeader
   @Override
   protected void encode(
-      ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out)
-      throws Exception {
+      ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
     byte[] uncryptData = xdagblock.getData();
 
     byte[] encryptData =
@@ -56,8 +56,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
   }
 
   @Override
-  protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out)
-      throws Exception {
+  protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out) {
     logger.debug("XdagBlockHandler readableBytes " + in.readableBytes() + " bytes");
     if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
       logger.trace("Decoding packet (" + in.readableBytes() + " bytes)");
@@ -66,8 +65,8 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
       byte[] uncryptData =
           Native.dfslib_uncrypt_byte_sector(
               encryptData, encryptData.length, channel.getNode().getStat().Inbound.get() - 3 + 1);
-
-      channel.getNode().getStat().Inbound.add(); // 该通道的输入记录加一
+      // 该通道的输入记录加一
+      channel.getNode().getStat().Inbound.add();
 
       // TODO:处理xdagblock的传输头
       // 8b010002f91eb6eb -> ebb61ef90200018b
@@ -75,7 +74,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
       // 转发次数
       int ttl = (int) ((transportHeader >> 8) & 0xff);
       // 数据长度 应该为512
-      long dataLength = (long) (transportHeader >> 16 & 0xffff);
+      long dataLength = (transportHeader >> 16 & 0xffff);
       // crc校验码
       int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
       // 清除transportheader
@@ -115,10 +114,6 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
   /**
    * 获取第i个的第n个字节
-   *
-   * @param xdagblock
-   * @param n
-   * @return
    */
   public static byte getMsgcode(XdagBlock xdagblock, int n) {
     byte[] data = xdagblock.getData();

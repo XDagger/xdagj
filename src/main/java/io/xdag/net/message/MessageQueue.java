@@ -2,10 +2,9 @@ package io.xdag.net.message;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,26 +12,30 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.net.XdagChannel;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class MessageQueue {
 
   boolean isRunning = false;
+  private static AtomicInteger cnt = new AtomicInteger(0);
 
   public static final ScheduledExecutorService timer =
-      Executors.newScheduledThreadPool(
-          4,
-          new ThreadFactory() {
-            private AtomicInteger cnt = new AtomicInteger(0);
+      new ScheduledThreadPoolExecutor(4,
+          new BasicThreadFactory.Builder().namingPattern("MessageQueueTimer-" + cnt.getAndIncrement()).daemon(true).build());
+  //myron 修改了线程的创建方式
+//      Executors.newScheduledThreadPool(
+//          4,
+//          new ThreadFactory() {
+//
+//
+//            @Override
+//            public Thread newThread(@Nonnull Runnable r) {
+//              return new Thread(r, "MessageQueueTimer-" + cnt.getAndIncrement());
+//            }
+//          });
 
-            @Override
-            public Thread newThread(Runnable r) {
-              return new Thread(r, "MessageQueueTimer-" + cnt.getAndIncrement());
-            }
-          });
-
-  public void receivedMessage(Message msg)
-      throws InterruptedException { // 负责打印记录信息 实际接收信息的业务操作在xdaghandler
+  public void receivedMessage(Message msg) { // 负责打印记录信息 实际接收信息的业务操作在xdaghandler
     log.debug("MessageQueue接收到新消息");
     if (requestQueue.peek() != null) {
       MessageRoundtrip messageRoundtrip = requestQueue.peek();

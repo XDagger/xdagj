@@ -6,31 +6,31 @@ import java.util.Set;
 
 public interface KVSource<K, V> {
 
-  public String getName();
+  String getName();
 
-  public void setName(String name);
+  void setName(String name);
 
-  public boolean isAlive();
+  boolean isAlive();
 
-  public void init();
+  void init();
 
-  public void close();
+  void close();
 
-  public void reset();
+  void reset();
 
-  public void put(K key, V val);
+  void put(K key, V val);
 
-  public V get(K key);
+  V get(K key);
 
-  public void delete(K key);
+  void delete(K key);
 
   boolean flush();
 
-  public Set<byte[]> keys() throws RuntimeException;
+  Set<byte[]> keys() throws RuntimeException;
 
-  public List<K> prefixKeyLookup(byte[] key, int prefixBytes);
+  List<K> prefixKeyLookup(byte[] key, int prefixBytes);
 
-  public List<V> prefixValueLookup(byte[] key, int prefixBytes);
+  List<V> prefixValueLookup(byte[] key, int prefixBytes);
 
-  public void updateBatch(Map<K, V> rows);
+  void updateBatch(Map<K, V> rows);
 }

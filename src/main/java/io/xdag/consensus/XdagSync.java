@@ -2,7 +2,6 @@ package io.xdag.consensus;
 
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
-import com.sun.istack.internal.NotNull;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -11,6 +10,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
@@ -43,7 +43,7 @@ public class XdagSync {
         private final AtomicInteger cnt = new AtomicInteger(0);
 
         @Override
-        public Thread newThread(Runnable r) {
+        public Thread newThread(@Nonnull Runnable r) {
           return new Thread(r, "sync(request)-" + cnt.getAndIncrement());
         }
       };
@@ -111,7 +111,7 @@ public class XdagSync {
     }
 
     @Override
-    public void onFailure(Throwable t) {
+    public void onFailure(@Nonnull Throwable t) {
       logger.debug("{}: Error receiving Sums. Dropping the peer.", "Sync", t);
       channel.getXdag().dropConnection();
     }

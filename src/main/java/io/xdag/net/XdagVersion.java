@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public enum XdagVersion {
+  /**基于 C V0.3*/
   V03((byte) 03);
 
   public static final byte LOWER = V03.getCode();

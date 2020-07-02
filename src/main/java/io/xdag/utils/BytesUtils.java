@@ -19,7 +19,7 @@ public class BytesUtils {
     return buffer.array();
   }
 
-  // 改为了4字节 原先为length 8
+  /**改为了4字节 原先为length 8*/
   public static int bytesToInt(byte[] input, int offset, boolean littleEndian) {
     ByteBuffer buffer = ByteBuffer.wrap(input, offset, 4);
     if (littleEndian) {
@@ -143,10 +143,6 @@ public class BytesUtils {
 
   /**
    * Merge byte and byte array.
-   *
-   * @param b1
-   * @param b2
-   * @return
    */
   public static byte[] merge(byte b1, byte[] b2) {
     byte[] res = new byte[1 + b2.length];
@@ -181,7 +177,7 @@ public class BytesUtils {
    * @return 转换后的byte[]
    */
   public static byte[] hexStringToBytes(String hexString) {
-    if (hexString == null || hexString.equals("")) {
+    if (hexString == null || "".equals(hexString)) {
       return null;
     }
     hexString = hexString.toUpperCase();
@@ -209,7 +205,7 @@ public class BytesUtils {
     return Integer.toBinaryString(b & 0xFF);
   }
 
-  // 数组逆序
+  /**数组逆序*/
   public static void arrayReverse(byte[] origin) {
     byte temp = 0;
     for (int i = 0; i < origin.length / 2; i++) {
@@ -219,14 +215,18 @@ public class BytesUtils {
     }
   }
 
-  // 生成随机32字节数组
+  /**
+   * 生成随机32字节数组
+   */
   public static byte[] generateRandomArray() {
     byte[] array = new byte[32];
     byte[] random = Native.generate_random_array(array, 32);
     return random;
   }
 
-  // 生成随机8字节数组
+  /**
+   * 生成随机8字节数组
+   */
   public static byte[] generateRandomBytes() {
     byte[] array = new byte[8];
     byte[] random = Native.generate_random_bytes(array, 8);
@@ -236,8 +236,6 @@ public class BytesUtils {
   /**
    * Convert a byte into an byte array.
    *
-   * @param b
-   * @return
    */
   public static byte[] of(byte b) {
     return new byte[] {b};
@@ -267,8 +265,8 @@ public class BytesUtils {
   }
 
   public static boolean isFullZero(byte[] input) {
-    for (int i = 0; i < input.length; i++) {
-      if (input[i] != 0) {
+    for (byte b : input) {
+      if (b != 0) {
         return false;
       }
     }
@@ -297,7 +295,6 @@ public class BytesUtils {
    * @param input byte[]类型的hash 这里的hash 是正向排序了的
    * @param offset 偏移位置
    * @param littleEndian 是否为大小端
-   * @return
    */
   public static double hexBytesToDouble(byte[] input, int offset, boolean littleEndian) {
     byte[] data = new byte[8];

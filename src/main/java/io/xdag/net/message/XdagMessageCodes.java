@@ -15,7 +15,8 @@ import static io.xdag.net.XdagVersion.V03;
  * XDAG_MESSAGE_BLOCKEXT_REPLY, XDAG_MESSAGE_BLOCK_REQUEST, };
  */
 public enum XdagMessageCodes {
-  NEW_BLOCK(-1), // add new block type here
+  // add new block type here
+  NEW_BLOCK(-1),
   BLOCKS_REQUEST(0x00),
   BLOCKS_REPLY(0x01),
   SUMS_REQUEST(0x02),

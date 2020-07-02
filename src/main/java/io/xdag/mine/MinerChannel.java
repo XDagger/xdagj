@@ -201,8 +201,6 @@ public class MinerChannel {
     logger.debug("激活其他处理器");
     MessageFactory messageFactory = createMinerMessageFactory(version);
     minerMessageHandler.setMessageFactory(messageFactory);
-    // 如果为空 则直接用本地的piple添加
-    miner03.setMessageFactory(messageFactory);
 
     ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
     ctx.pipeline().addLast("Miner03Handler", miner03);

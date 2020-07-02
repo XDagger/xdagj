@@ -33,11 +33,8 @@ public class WalletTest {
   public static void readDat(String path) throws IOException {
     File file = new File(path);
 
-    FileInputStream inputStream = new FileInputStream(file);
-
-    byte[] buffer = new byte[2048];
-
-    try {
+    try (FileInputStream inputStream = new FileInputStream(file)) {
+      byte[] buffer = new byte[2048];
       while (true) {
         int len = inputStream.read(buffer);
         if (len == -1) {
@@ -45,8 +42,6 @@ public class WalletTest {
         }
         System.out.println(Hex.toHexString(buffer));
       }
-    } finally {
-      inputStream.close();
     }
   }
 

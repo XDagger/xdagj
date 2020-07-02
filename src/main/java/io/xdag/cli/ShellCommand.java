@@ -29,91 +29,95 @@ public class ShellCommand {
     process(command, value);
   }
 
-  public void process(String command, String value) {
-    boolean running = cmd.getKernelState() == Kernel.State.RUNNING;
-    switch (command) {
-      case "account":
-        if (running) {
-          processAccount(value);
-        }
-        break;
-      case "balance":
-        if (running) {
-          processBalance(value);
-        }
-        break;
-      case "block":
-        if (running) {
-          processBlock(value);
-        }
-        break;
-      case "lastblocks":
-        if (running) {
-          processLastblocks(value);
-        }
-        break;
-      case "exit":
-      case "terminate":
-        cmd.stop();
-        onStop();
-        break;
-      case "help":
-        printHelp();
-        break;
-      case "net":
-        if (running) {
-          processNet(value);
-        }
-        break;
-      case "stats":
-        if (running) {
-          processStats();
-        }
-        break;
-      case "xfer":
-        if (running) {
-          processXfer(value);
-        }
-        break;
-      case "mainblocks":
-        if (running) {
-          processMainblocks(value);
-        }
-        break;
-      case "minedblocks":
-        if (running) {
-          processMinedblocks(value);
-        }
-        break;
-      case "run":
-        cmd.start();
-        break;
-      case "keygen":
-        System.out.println(cmd.keygen());
-        break;
-      case "reset":
-        cmd.resetStore();
-        break;
-      case "level":
-        System.out.println(cmd.getState());
-        break;
-      case "miners":
-        cmd.printfMiners();
-        break;
-      case "mining":
-        System.out.println(cmd.getState());
-        break;
-      case "state":
-        System.out.println(cmd.getState());
-        break;
-      case "disconnect":
-        System.out.println(cmd.disConnectMinerChannel(value));
-      case "rpc":
-        System.out.println("default");
-        break;
-      default:
-        System.out.println("default");
-        break;
+  public void process(String command, String value){
+    try{
+      boolean running = cmd.getKernelState() == Kernel.State.RUNNING;
+      switch (command) {
+        case "account":
+          if (running) {
+            processAccount(value);
+          }
+          break;
+        case "balance":
+          if (running) {
+            processBalance(value);
+          }
+          break;
+        case "block":
+          if (running) {
+            processBlock(value);
+          }
+          break;
+        case "lastblocks":
+          if (running) {
+            processLastblocks(value);
+          }
+          break;
+        case "exit":
+        case "terminate":
+          cmd.stop();
+          onStop();
+          break;
+        case "help":
+          printHelp();
+          break;
+        case "net":
+          if (running) {
+            processNet(value);
+          }
+          break;
+        case "stats":
+          if (running) {
+            processStats();
+          }
+          break;
+        case "xfer":
+          if (running) {
+            processXfer(value);
+          }
+          break;
+        case "mainblocks":
+          if (running) {
+            processMainblocks(value);
+          }
+          break;
+        case "minedblocks":
+          if (running) {
+            processMinedblocks(value);
+          }
+          break;
+        case "run":
+          cmd.start();
+          break;
+        case "keygen":
+          System.out.println(cmd.keygen());
+          break;
+        case "reset":
+          cmd.resetStore();
+          break;
+        case "level":
+          System.out.println(cmd.getState());
+          break;
+        case "miners":
+          cmd.printfMiners();
+          break;
+        case "mining":
+          System.out.println(cmd.getState());
+          break;
+        case "state":
+          System.out.println(cmd.getState());
+          break;
+        case "disconnect":
+          System.out.println(cmd.disConnectMinerChannel(value));
+        case "rpc":
+          System.out.println("default");
+          break;
+        default:
+          System.out.println("default");
+          break;
+      }
+    }catch (Exception e) {
+      System.out.println("Please enter the correct instructions");
     }
   }
 

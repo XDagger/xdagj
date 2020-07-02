@@ -42,8 +42,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     RocksDB.loadLibrary();
   }
 
-  public RocksdbKVSource() {}
-
   public RocksdbKVSource(String name) {
     this.name = name;
     log.debug("New RocksdbKVSource: " + name);
@@ -338,7 +336,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
       //            byte[] prefix = new byte[PREFIX_BYTES];
       //            arraycopy(key, 0, prefix, 0, PREFIX_BYTES);
 
-      List<byte[]> retList = new ArrayList<byte[]>();
+      List<byte[]> retList = new ArrayList<>();
       try (RocksIterator it = db.newIterator(readOpts)) {
         //                it.seek(prefix);
         it.seek(key);
@@ -372,10 +370,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
   @Override
   public List<byte[]> prefixKeyLookup(byte[] key, int prefixBytes) {
-    //		if (prefixBytes != PREFIX_BYTES)
-    //            throw new RuntimeException("RocksdbKVSource.prefixLookup() supports only " +
-    // prefixBytes + "-bytes prefix");
-
     resetDbLock.readLock().lock();
     try {
 
@@ -384,7 +378,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             "~> RocksdbKVSource.prefixLookup(): " + name + ", key: " + Hex.encodeHexString(key));
       }
 
-      List<byte[]> retList = new ArrayList<byte[]>();
+      List<byte[]> retList = new ArrayList<>();
       try (RocksIterator it = db.newIterator(readOpts)) {
         it.seek(key);
         for (; it.isValid(); it.next()) {

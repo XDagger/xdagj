@@ -61,9 +61,7 @@ public class AccountStore {
   }
 
   /**
-   * @Author punk @Description 账户形成链表 @Date 2020/4/23 @Param [block]
-   *
-   * @return void
+   * 账户形成链表
    */
   public synchronized void addNewAccount(Block block, int keyIndex) {
     // 第一个
@@ -105,12 +103,8 @@ public class AccountStore {
       long amountRelease = blockStore.getBlockInfoByHash(first).getAmount();
       if (amountRelease > 0) {
         ECKey key = wallet.getKeyByIndex(blockStore.getBlockKeyIndex(first));
-        long sendValue;
-        if (amountRelease > res) {
-          sendValue = res;
-        } else {
-          sendValue = amountRelease;
-        }
+        //changge by myron
+        long sendValue = Math.min(amountRelease, res);
         result.put(new Address(first, XdagField.FieldType.XDAG_FIELD_IN, sendValue), key);
         res -= amountRelease;
       }

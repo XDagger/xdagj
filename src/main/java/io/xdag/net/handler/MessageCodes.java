@@ -23,19 +23,18 @@ public class MessageCodes extends MessageToMessageCodec<Message, Message> {
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out)  {
     log.debug("接收到消息：" + msg.getCommand());
     out.add(msg);
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) throws Exception {
+  protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out)  {
     XdagBlock xdagblock = convertMessage(msg);
     out.add(xdagblock);
   }
 
   public static XdagBlock convertMessage(Message message) {
-    XdagBlock block = new XdagBlock(message.getEncoded());
-    return block;
+    return new XdagBlock(message.getEncoded());
   }
 }

@@ -32,7 +32,6 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import lombok.Data;
 
-/** @ClassName Block @Description @Author punk @Date 2020/4/19 00:05 @Version V1.0 */
 @Data
 public class Block implements Cloneable {
 
@@ -110,31 +109,31 @@ public class Block implements Cloneable {
     }
 
     if (links != null && links.size() != 0) {
-      for (int i = 0; i < links.size(); i++) {
-        XdagField.FieldType type = links.get(i).getType();
+      for (Address link : links) {
+        XdagField.FieldType type = link.getType();
         setType(type, lenghth++);
         if (type == XDAG_FIELD_OUT) {
-          outputs.add(links.get(i));
+          outputs.add(link);
         } else {
-          inputs.add(links.get(i));
+          inputs.add(link);
         }
       }
     }
 
     if (pendings != null && pendings.size() != 0) {
-      for (int i = 0; i < pendings.size(); i++) {
+      for (Address pending : pendings) {
         setType(XDAG_FIELD_OUT, lenghth++);
-        outputs.add(pendings.get(i));
+        outputs.add(pending);
       }
     }
 
     if (keys != null && keys.size() != 0) {
-      for (int i = 0; i < keys.size(); i++) {
-        byte[] keydata = keys.get(i).getPubKeybyCompress();
+      for (ECKey key : keys) {
+        byte[] keydata = key.getPubKeybyCompress();
         boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
         XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
         setType(type, lenghth++);
-        pubKeys.add(keys.get(i));
+        pubKeys.add(key);
       }
       for (int i = 0; i < keys.size(); i++) {
         if (i != defKeyIndex) {

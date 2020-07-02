@@ -33,7 +33,7 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
   }
 
   @Override
-  protected void initChannel(NioSocketChannel ch) throws Exception {
+  protected void initChannel(NioSocketChannel ch) {
     try {
       //            logger.debug("new input channel");
       InetSocketAddress address = isServer ? ch.remoteAddress() : remoteNode.getAddress();
@@ -46,7 +46,8 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
       }
 
       XdagChannel channel = new XdagChannel(ch);
-      channel.init(ch.pipeline(), kernel, isServer, address); // 把管道注册到channel上
+      // 把管道注册到channel上
+      channel.init(ch.pipeline(), kernel, isServer, address);
 
       ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(256 * 1024));
       ch.config().setOption(ChannelOption.TCP_NODELAY, true);

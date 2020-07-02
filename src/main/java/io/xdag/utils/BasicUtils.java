@@ -54,8 +54,8 @@ public class BasicUtils {
   /**
    * 返回低192bit的hash hashlow
    *
-   * @param address
-   * @return
+   * @param address 256bit hash
+   * @return 前64位置0的hashlow
    */
   public static byte[] address2Hash(String address) {
     byte[] hashlow = new byte[32];
@@ -94,12 +94,14 @@ public class BasicUtils {
     return (long) (res + tmp);
   }
 
-  // Xfer: transferred 4479658898 10.430000000 XDAG to the address
-  // 0000002f28322e9d817fd94a1357e51a. 10.43
-  // Xfer: transferred 42949672960 10.000000000 XDAG to the address
-  // 0000002f28322e9d817fd94a1357e51a. 10
-  // Xfer: transferred 4398046511104 1024.000000000 XDAG to the address
-  // 0000002f28322e9d817fd94a1357e51a. 1024
+  /**
+   * Xfer: transferred 4479658898 10.430000000 XDAG to the address
+   * 0000002f28322e9d817fd94a1357e51a. 10.43
+   * Xfer: transferred 42949672960 10.000000000 XDAG to the address
+   * 0000002f28322e9d817fd94a1357e51a. 10
+   * Xfer: transferred 4398046511104 1024.000000000 XDAG to the address
+   * 0000002f28322e9d817fd94a1357e51a. 1024
+   */
   public static double amount2xdag(long xdag) {
     long first = xdag >> 32;
     long temp = xdag - (first << 32);
@@ -141,7 +143,6 @@ public class BasicUtils {
     }
   }
 
-  // todo 待验证
   public static BigDecimal xdag_hashrate(BigInteger[] diffs) {
     BigInteger sum = BigInteger.ZERO;
 
@@ -154,7 +155,7 @@ public class BasicUtils {
 
     BigDecimal E = BigDecimal.ZERO;
 
-    for (BigInteger i = BigInteger.ZERO; i.compareTo(sum) < 0; i.add(BigInteger.ONE)) {
+    for (BigInteger i = BigInteger.ZERO; i.compareTo(sum) < 0; i = i.add(BigInteger.ONE)) {
       E = E.multiply(BigDecimal.valueOf(Math.E));
     }
 

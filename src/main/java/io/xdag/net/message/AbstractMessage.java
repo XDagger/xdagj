@@ -26,8 +26,10 @@ public abstract class AbstractMessage extends Message {
   protected long random;
   protected byte[] hash;
 
-  protected NetStatus netStatus; // 获取对方节点的netstatus
-  protected NetDB netDB; // 获取对方节点的netdb
+  /**获取对方节点的netstatus*/
+  protected NetStatus netStatus;
+  /**获取对方节点的netdb*/
+  protected NetDB netDB;
   protected XdagMessageCodes codes;
 
   public AbstractMessage(
@@ -106,10 +108,11 @@ public abstract class AbstractMessage extends Message {
     // TODO：后续根据ip替换
     String tmp =
         "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
-    byte[] tmpbyte = Hex.decode(tmp); // net 相关
+    // net 相关
+    byte[] tmpbyte = Hex.decode(tmp);
 
     // add netdb
-    //        byte[] iplist = netDB.encode(netDB.getActiveIP());
+    // byte[] iplist = netDB.encode(netDB.getActiveIP());
 
     // field 0 and field1
     byte[] first =

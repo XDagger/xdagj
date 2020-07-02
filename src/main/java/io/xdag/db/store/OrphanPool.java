@@ -17,7 +17,8 @@ public class OrphanPool {
 
   private static final Logger logger = LoggerFactory.getLogger(OrphanPool.class);
 
-  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF"); // size key
+  // size key
+  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
   public static final byte ORPHAN_PREFEX = 0x00;
 
   private KVSource<byte[], byte[]> orphanSource; // <hash,nexthash>
@@ -53,7 +54,7 @@ public class OrphanPool {
       long addNum = Math.min(orphanSize, num);
       byte[] key = BytesUtils.of(ORPHAN_PREFEX);
       List<byte[]> ans = orphanSource.prefixKeyLookup(key, key.length);
-      for (int i = 0; i < ans.size(); i++) {
+      for (byte[] an : ans) {
         if (addNum == 0) {
           break;
         }
@@ -61,7 +62,7 @@ public class OrphanPool {
         addNum--;
         res.add(
             new Address(
-                BytesUtils.subArray(ans.get(i), 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+                BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
       }
       return res;
     }

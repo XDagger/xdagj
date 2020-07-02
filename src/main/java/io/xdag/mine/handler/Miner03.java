@@ -21,7 +21,6 @@ import io.xdag.mine.message.NewBalanceMessage;
 import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.MessageFactory;
 
 import io.xdag.utils.BytesUtils;
 
@@ -50,7 +49,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     syncManager = kernel.getSyncMgr();
   }
 
-  public void setMessageFactory(MessageFactory messageFactory) {}
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, Message msg) {

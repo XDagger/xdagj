@@ -21,7 +21,8 @@ import io.xdag.utils.BytesUtils;
 public class NetDB {
   private static final Logger logger = LoggerFactory.getLogger(NetDB.class);
 
-  List<IP> ipList = new ArrayList<>(); // remote
+  /**remote*/
+  List<IP> ipList = new ArrayList<>();
   Config config;
 
   public NetDB() {}
@@ -81,7 +82,7 @@ public class NetDB {
   /**
    * 解析字节数组到List中
    *
-   * @param data
+   * @param data 消息内容
    */
   public void parse(byte[] data) {
     int size = data.length / 6;

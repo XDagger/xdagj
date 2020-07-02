@@ -153,8 +153,7 @@ public class XdagChannelManager {
   }
 
   public boolean isAcceptable(InetSocketAddress address) {
-    // todo:
-    //        boolean res = netDBManager.canAccept(address);
+    //todo:boolean res = netDBManager.canAccept(address);
     return true;
   }
 

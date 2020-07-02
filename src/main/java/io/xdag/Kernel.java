@@ -124,7 +124,7 @@ public class Kernel {
     // ====================================
     System.out.println(
         "Xdag clinet/server system booting up: network = "
-            + (Config.MainNet == true ? "MainNet" : "TestNet")
+            + (Config.MainNet ? "MainNet" : "TestNet")
             + ", version "
             + XdagVersion.V03
             + ", user host = ["

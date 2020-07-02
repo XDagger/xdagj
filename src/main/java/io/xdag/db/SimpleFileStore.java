@@ -37,7 +37,7 @@ public class SimpleFileStore implements FileSource {
 
   public void updateSum(String filename, long size, long sum, long index) {
     StringBuffer filepath = new StringBuffer(basicPrefix);
-    if (filename != "") {
+    if (!filename.equals("")) {
       filepath.append(filename);
     }
 
@@ -118,9 +118,9 @@ public class SimpleFileStore implements FileSource {
       long dir3 = (filedir >> 24) & 0xff;
       filename =
           new StringBuffer(basicPrefix)
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)) + "/")
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)) + "/")
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir3, true)) + "/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true))).append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true))).append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir3, true))).append("/")
               .append("sums.dat");
 
     } else if (level < 4) {
@@ -129,8 +129,8 @@ public class SimpleFileStore implements FileSource {
       long dir2 = (filedir >> 32) & 0xff;
       filename =
           new StringBuffer(basicPrefix)
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)) + "/")
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)) + "/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true))).append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true))).append("/")
               .append("sums.dat");
 
     } else if (level < 6) {
@@ -138,7 +138,7 @@ public class SimpleFileStore implements FileSource {
       long dir1 = (filedir >> 40) & 0xff;
       filename =
           new StringBuffer(basicPrefix)
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)) + "/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true))).append("/")
               .append("sums.dat");
     } else {
       filename = new StringBuffer(basicPrefix).append("sums.dat");

@@ -29,8 +29,6 @@ public class WalletImpl implements Wallet {
 
   private int keysNum = 0;
 
-  public static final int DNET_KEY_SIZE = 4096;
-  public static final int DNET_KEYLEN = 32;
   // TODO：File 路径 修改至resources
   /** 保存得密钥文件 */
   public static final String DNET_KEY_FILE =
@@ -99,7 +97,7 @@ public class WalletImpl implements Wallet {
     return key_internal;
   }
 
-  private int addKey(BigInteger priv) {
+  private void addKey(BigInteger priv) {
     if (priv == null) {
       File walletDatFile = new File(WALLET_KEY_FILE);
 
@@ -141,7 +139,6 @@ public class WalletImpl implements Wallet {
         }
       }
     }
-    return 0;
   }
 
   private Pair<String, String> getPassword(boolean fileExist) {

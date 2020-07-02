@@ -13,10 +13,12 @@ import java.util.List;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 public class OrphanPool2 {
-
-  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF"); // size key
-  private static final byte[] ORPHAN_FIRST = Hex.decode("EEEEEEEEEEEEEEEE"); // size key
-  private static final byte[] ORPHAN_LAST = Hex.decode("DDDDDDDDDDDDDDDD"); // size key
+  /** size key*/
+  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+  /** size key*/
+  private static final byte[] ORPHAN_FIRST = Hex.decode("EEEEEEEEEEEEEEEE");
+  /** size key*/
+  private static final byte[] ORPHAN_LAST = Hex.decode("DDDDDDDDDDDDDDDD");
   public static final byte ORPHAN_PREV_PREFEX = 0x00;
   public static final byte ORPHAN_NEXT_PREFEX = 0x01;
 

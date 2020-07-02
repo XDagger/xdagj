@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,7 @@ public class Xdag03 extends XdagHandler {
         private final AtomicInteger cnt = new AtomicInteger(0);
 
         @Override
-        public Thread newThread(Runnable r) {
+        public Thread newThread(@Nonnull Runnable r) {
           return new Thread(r, "sendThread-" + cnt.getAndIncrement());
         }
       };
@@ -99,19 +100,20 @@ public class Xdag03 extends XdagHandler {
   }
 
   @Override
-  public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-    msgQueue.activate(ctx); // 这里的ctx是最后一个handler的
+  public void handlerAdded(ChannelHandlerContext ctx) {
+    // 这里的ctx是最后一个handler的
+    msgQueue.activate(ctx);
   }
 
   @Override
-  public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-    log.debug("channel inactive: ", ctx.toString());
+  public void channelInactive(ChannelHandlerContext ctx) {
+    log.debug("channel inactive:[{}] ", ctx.toString());
     this.killTimers();
     disconnect();
   }
 
   @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
     log.debug("Xdag handling failed");
     ctx.close();
     killTimers();
@@ -166,7 +168,7 @@ public class Xdag03 extends XdagHandler {
           }
 
           @Override
-          public void onFailure(Throwable throwable) {
+          public void onFailure(@Nonnull Throwable throwable) {
             log.debug("发送失败");
           }
         },
@@ -186,7 +188,7 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call()  {
       if (blockchain == null) {
         return 1;
       }
@@ -205,7 +207,6 @@ public class Xdag03 extends XdagHandler {
   /**
    * Reply 可以不用处理
    *
-   * @param msg
    */
   protected synchronized void processBlocksReply(BlocksReplyMessage msg) {
     log.debug("Process BlocksReply:" + msg);

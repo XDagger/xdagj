@@ -43,7 +43,8 @@ public class AwardManagerImpl implements AwardManager {
 
   private List<Miner> miners;
 
-  @Setter private MinerManager minerManager;
+  @Setter
+  private MinerManager minerManager;
 
   /** 内部类 用于计算支付数据 */
   public static class PayData {
@@ -149,7 +150,7 @@ public class AwardManagerImpl implements AwardManager {
    *
    * @param share 接收到的满足最小hash 的shares
    * @param hash 主块的hash
-   * @param generateTime
+   * @param generateTime generate
    */
   @Override
   public void payAndaddNewAwardBlock(byte[] share, byte[] hash, long generateTime) {

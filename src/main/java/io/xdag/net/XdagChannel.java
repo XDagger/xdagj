@@ -37,15 +37,22 @@ public class XdagChannel {
 
   private Config config;
 
-  private XdagHandshakeHandler handshakeHandler; // 握手 密钥
-  private MessageCodes messageCodec; // 信息编码处理
-  private XdagBlockHandler blockHandler; // 处理区块
-  private Xdag xdag = new XdagAdapter(); // 获取xdag03handler
-  private XdagHandlerFactory xdagHandlerFactory; // 用来创建xdag03handler处理message 实际的逻辑操作
+  /**握手 密钥*/
+  private XdagHandshakeHandler handshakeHandler;
+  /**信息编码处理*/
+  private MessageCodes messageCodec;
+  /**处理区块*/
+  private XdagBlockHandler blockHandler;
+  /**获取xdag03handler*/
+  private Xdag xdag = new XdagAdapter();
+  /**用来创建xdag03handler处理message 实际的逻辑操作*/
+  private XdagHandlerFactory xdagHandlerFactory;
 
-  private MessageQueue msgQueue; // 发送message的线程 针对每个channel
+  /**发送message的线程 针对每个channel*/
+  private MessageQueue msgQueue;
 
-  private Node node; // 该channel对应的节点
+  /**该channel对应的节点*/
+  private Node node;
 
   public XdagChannel(NioSocketChannel socketChannel) {
     this.socket = socketChannel;

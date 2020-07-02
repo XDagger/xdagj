@@ -18,16 +18,24 @@ public class BlockStore {
 
   private static final Logger logger = LoggerFactory.getLogger(BlockStore.class);
 
-  private KVSource<byte[], byte[]> indexSource; // <prefix-hash,value> eg:<diff-hash,blockdiff>
-  private KVSource<byte[], byte[]> blockSource; // <hash,rawdata>
-  private KVSource<byte[], byte[]> timeSource; // <time-hash,hash>
+  // <prefix-hash,value> eg:<diff-hash,blockdiff>
+  private KVSource<byte[], byte[]> indexSource;
+  // <hash,rawdata>
+  private KVSource<byte[], byte[]> blockSource;
+  // <time-hash,hash>
+  private KVSource<byte[], byte[]> timeSource;
   private SimpleFileStore simpleFileStore;
 
-  private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF"); // block size key
-  private static final byte[] MAIN_SIZE = Hex.decode("EEEEEEEEEEEEEEEE"); // main size key
-  private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD"); // pretop
-  private static final byte[] PRETOPDIFF = Hex.decode("CCCCCCCCCCCCCCCC"); // pretop diff
-  private static final byte[] ORIGINPRETOP = Hex.decode("FFFFFFFFFFFFFFFE"); // origin pretop diff
+  // block size key
+  private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+  // main size key
+  private static final byte[] MAIN_SIZE = Hex.decode("EEEEEEEEEEEEEEEE");
+  // pretop
+  private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD");
+  // pretop diff
+  private static final byte[] PRETOPDIFF = Hex.decode("CCCCCCCCCCCCCCCC");
+  // origin pretop diff
+  private static final byte[] ORIGINPRETOP = Hex.decode("FFFFFFFFFFFFFFFE");
   private static final byte[] ORIGINPRETOPDIFF =
       Hex.decode("FFFFFFFFFFFFFFEF"); // origin pretop diff
   private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
@@ -177,8 +185,9 @@ public class BlockStore {
     long key = starttime >> 16;
     byte[] keyPrefix = BytesUtils.longToBytes(key, false);
     List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix, keyPrefix.length);
-    for (int i = 0; i < keys.size(); i++) {
-      Block block = getBlockByHash(keys.get(i), true);
+    //change  for myron
+    for (byte[] bytes : keys) {
+      Block block = getBlockByHash(bytes, true);
       if (block != null) {
         blocks.add(block);
       }

@@ -167,7 +167,8 @@ public class BlockchainImpl implements Blockchain {
             blockRef != null && ((blockRef.flags & BI_MAIN_CHAIN) == 0);
             blockRef = getMaxDiffLink(blockRef, false)) {
           Block tmpRef = getMaxDiffLink(blockRef, false);
-          if (tmpRef != null) {}
+          //del by myron
+          //if (tmpRef != null) {}
           if ((tmpRef == null || blockRef.getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0)
               && (blockRef0 == null
                   || XdagTime.getEpoch(blockRef0.getTimestamp())
@@ -195,10 +196,11 @@ public class BlockchainImpl implements Blockchain {
       }
 
       // remove links
-      for (int i = 0; i < all.size(); i++) {
+      //修改for by myron
+      for (Address address : all) {
         logger.debug("remove links");
         removeOrphan(
-            getBlockByHash(all.get(i).getHashLow(), false),
+            getBlockByHash(address.getHashLow(), false),
             (block.flags & BI_EXTRA) != 0
                 ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                 : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
@@ -291,35 +293,36 @@ public class BlockchainImpl implements Blockchain {
       return 0;
     }
 
-    for (int i = 0; i < links.size(); i++) {
-      Block ref = getBlockByHash(links.get(i).getHashLow(), true);
+    //修改for by myron
+    for (Address link : links) {
+      Block ref = getBlockByHash(link.getHashLow(), true);
       long ret = applyBlock(ref);
       if (ret == -1) {
         continue;
       }
       updateBlockRef(ref, new Address(block));
-      if (amount2xdag(block.getAmount() + links.get(i).getAmount().longValue())
+      if (amount2xdag(block.getAmount() + link.getAmount().longValue())
           >= amount2xdag(block.getAmount())) {
-        acceptAmount(block, links.get(i).getAmount().longValue());
+        acceptAmount(block, link.getAmount().longValue());
       }
     }
+//修改for by myron
+    for (Address link : links) {
+      if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
+        Block ref = getBlockByHash(link.getHashLow(), false);
 
-    for (int i = 0; i < links.size(); i++) {
-      if (links.get(i).getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-        Block ref = getBlockByHash(links.get(i).getHashLow(), false);
-
-        if (amount2xdag(ref.getAmount()) < amount2xdag(links.get(i).getAmount().longValue())) {
+        if (amount2xdag(ref.getAmount()) < amount2xdag(link.getAmount().longValue())) {
           return 0;
         }
-        if (amount2xdag(sumIn + links.get(i).getAmount().longValue()) < amount2xdag(sumIn)) {
+        if (amount2xdag(sumIn + link.getAmount().longValue()) < amount2xdag(sumIn)) {
           return 0;
         }
-        sumIn += links.get(i).getAmount().longValue();
+        sumIn += link.getAmount().longValue();
       } else {
-        if (amount2xdag(sumOut + links.get(i).getAmount().longValue()) < amount2xdag(sumOut)) {
+        if (amount2xdag(sumOut + link.getAmount().longValue()) < amount2xdag(sumOut)) {
           return 0;
         }
-        sumOut += links.get(i).getAmount().longValue();
+        sumOut += link.getAmount().longValue();
       }
     }
 
@@ -328,14 +331,14 @@ public class BlockchainImpl implements Blockchain {
       logger.debug("执行块失败");
       return 0;
     }
-
-    for (int i = 0; i < links.size(); i++) {
-      if (links.get(i).getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-        Block ref = getBlockByHash(links.get(i).getHashLow(), false);
-        acceptAmount(ref, -links.get(i).getAmount().longValue());
+//修改for by myron
+    for (Address link : links) {
+      if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
+        Block ref = getBlockByHash(link.getHashLow(), false);
+        acceptAmount(ref, -link.getAmount().longValue());
       } else {
-        Block ref = getBlockByHash(links.get(i).getHashLow(), false);
-        acceptAmount(ref, links.get(i).getAmount().longValue());
+        Block ref = getBlockByHash(link.getHashLow(), false);
+        acceptAmount(ref, link.getAmount().longValue());
       }
     }
 
@@ -352,15 +355,16 @@ public class BlockchainImpl implements Blockchain {
     List<Address> links = block.getLinks();
     if ((block.flags & BI_APPLIED) != 0) {
       long sum = 0;
-      for (int i = 0; i < links.size(); i++) {
-        if (links.get(i).getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-          Block ref = getBlockByHash(links.get(i).getHashLow(), false);
-          acceptAmount(ref, links.get(i).getAmount().longValue());
-          sum -= links.get(i).getAmount().longValue();
+      //修改for by myron
+      for (Address link : links) {
+        if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
+          Block ref = getBlockByHash(link.getHashLow(), false);
+          acceptAmount(ref, link.getAmount().longValue());
+          sum -= link.getAmount().longValue();
         } else {
-          Block ref = getBlockByHash(links.get(i).getHashLow(), false);
-          acceptAmount(ref, -links.get(i).getAmount().longValue());
-          sum += links.get(i).getAmount().longValue();
+          Block ref = getBlockByHash(link.getHashLow(), false);
+          acceptAmount(ref, -link.getAmount().longValue());
+          sum += link.getAmount().longValue();
         }
       }
       acceptAmount(block, sum);
@@ -368,9 +372,9 @@ public class BlockchainImpl implements Blockchain {
     }
     updateBlockFlag(block, BI_MAIN_REF, false);
     updateBlockRef(block, null);
-
-    for (int i = 0; i < links.size(); i++) {
-      Block ref = getBlockByHash(links.get(i).getHashLow(), true);
+//修改for by myron
+    for (Address link : links) {
+      Block ref = getBlockByHash(link.getHashLow(), true);
       if (ref.getRef() != null
           && equalBytes(ref.getRef().getHashLow(), block.getHashLow())
           && ((ref.getFlags() & BI_MAIN_REF) != 0)) {
@@ -643,9 +647,10 @@ public class BlockchainImpl implements Blockchain {
           saveBlock(removeBlockRaw);
           // 移除所有EXTRA块链接的块
           List<Address> all = removeBlockRaw.getLinks();
-          for (int i = 0; i < all.size(); i++) {
+          //修改for myron
+          for (Address address : all) {
             removeOrphan(
-                getBlockByHash(all.get(i).getHashLow(), false),
+                getBlockByHash(address.getHashLow(), false),
                 OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
           }
         }
