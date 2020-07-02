@@ -23,6 +23,7 @@ public class Application {
     config.setStoreMaxThreads(1);
     config.setStoreMaxOpenFiles(1024);
     config.setPara(config, args);
+    config.changeDir();
 
     log.info(
         "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",

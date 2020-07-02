@@ -31,7 +31,7 @@
         </logger>
 
 
-        <Root level="DEBUG">
+        <Root level="INFO">
             <AppenderRef ref="Console" />
         </Root>
 

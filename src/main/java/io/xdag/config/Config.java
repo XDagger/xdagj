@@ -73,10 +73,14 @@ public class Config {
   private byte[] dnetKeyBytes = new byte[2048];
 
   /** 配置存储root */
-  public static String root = Config.MainNet ? "./mainnet" : "./testnet";
-
-  private String storeDir = "/rocksdb/xdagdb";
-  private String storeBackupDir = "/rocksdb/Xdagdb/backupdata";
+  public static String root = MainNet ? "./mainnet" : "./testnet";
+  private String storeDir;
+  private String storeBackupDir;
+  private String whiteListDirTest;
+  private String whiteListDir;
+  /**存放网络接收到的新节点地址*/
+  private String netDBDirTest;
+  private String netDBDir;
 
   /** 用于测试加载已有区块数据 从C版本生成的数据 请将所需要的数据放在该目录下 */
   private String originStoreDir = "./testdate";
@@ -96,11 +100,6 @@ public class Config {
 
   private int storeMaxThreads = 2;
 
-  private String whiteListDirTest = "/netdb-white-testnet.txt";
-  private String whiteListDir = "/netdb-white.txt";
-  /**存放网络接收到的新节点地址*/
-  private String netDBDirTest = "/netdb-testnet.txt";
-  private String netDBDir = "/netdb.txt";
 
   private DnetKeys xKeys;
 
@@ -210,5 +209,19 @@ public class Config {
     config.rewardRation = Double.parseDouble(args[6]);
     config.directRation = Double.parseDouble(args[7]);
     config.fundRation = Double.parseDouble(args[8]);
+  }
+
+  /**
+   * 设置存储的路径
+   */
+  public void changeDir(){
+    //配置存储root
+    root = Config.MainNet ? "./mainnet" : "./testnet";
+    storeDir = root + "/rocksdb/xdagdb";
+    storeBackupDir = root +  "/rocksdb/Xdagdb/backupdata";
+    whiteListDirTest = root + "/netdb-white-testnet.txt";
+    whiteListDir = root + "/netdb-white.txt";
+    netDBDirTest = root + "/netdb-testnet.txt";
+    netDBDir = root + "/netdb.txt";
   }
 }

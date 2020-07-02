@@ -96,7 +96,7 @@ public class XdagPow implements PoW {
       status = Status.RUNNING;
 
       minerManager = kernel.getMinerManager();
-      kernel.getPoolMiner();
+      //kernel.getPoolMiner();
 
       // 容器的初始化
       for (int i = 0; i < 16; i++) {
@@ -118,9 +118,9 @@ public class XdagPow implements PoW {
   public void stop() {
     logger.debug("pow stop");
     if (status != Status.STOPPED) {
-      // interrupt sync
+      //interrupt sync
       if (status == Status.SYNCING) {
-        //                syncMgr.stop();
+        //syncMgr.stop();
       }
 
       timer.stop();
@@ -143,7 +143,7 @@ public class XdagPow implements PoW {
     sendTime = XdagTime.getMainTime();
     resetTimeout(sendTime);
     generateBlock = generateBlock();
-    //        status = Status.BLOCK_PRODUCTION_ON;
+//    status = Status.BLOCK_PRODUCTION_ON;
   }
 
   public Block generateBlock() {

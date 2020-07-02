@@ -2,6 +2,7 @@ package io.xdag.consensus;
 
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
+import com.sun.istack.internal.NotNull;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

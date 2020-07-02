@@ -40,6 +40,6 @@ public class RocksdbFactory implements DatabaseFactory {
 
   @Override
   public SimpleFileStore getSumsDB() {
-    return new SimpleFileStore(Config.root + config.getStoreDir());
+    return new SimpleFileStore(config.getStoreDir());
   }
 }

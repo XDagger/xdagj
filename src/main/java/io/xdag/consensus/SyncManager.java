@@ -63,6 +63,7 @@ public class SyncManager {
           },
           throwable -> logger.error("Unexpected exception: ", throwable));
 
+  /**用于存放接收到的区块，便于后续的查找*/
   private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(1, 1, new Consumer<BlockWrapper>() {
     @Override
     public void accept(BlockWrapper block) {

@@ -90,10 +90,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         final BlockBasedTableConfig tableCfg;
         options.setTableFormatConfig(tableCfg = new BlockBasedTableConfig());
         tableCfg.setBlockSize(16 * 1024);
-        tableCfg.setBlockCacheSize(32 * 1024 * 1024);
+        //tableCfg.setBlockCacheSize(32 * 1024 * 1024);
+        ClockCache clockCache = new ClockCache(32 * 1024 * 1024);
+        tableCfg.setBlockCache(clockCache);
         tableCfg.setCacheIndexAndFilterBlocks(true);
         tableCfg.setPinL0FilterAndIndexBlocksInCache(true);
-        tableCfg.setFilter(new BloomFilter(10, false));
+        tableCfg.setFilterPolicy(new BloomFilter(10, false));
 
         // read options
         readOpts = new ReadOptions();
@@ -447,11 +449,11 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
   }
 
   private Path getPath() {
-    return Paths.get(Config.root + config.getStoreDir(), name);
+    return Paths.get(config.getStoreDir(), name);
   }
 
   private Path backupPath() {
-    return Paths.get(Config.root + config.getStoreDir(), "backup", name);
+    return Paths.get(config.getStoreDir(), "backup", name);
   }
 
   private void hintOnTooManyOpenFiles(Exception e) {

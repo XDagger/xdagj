@@ -301,8 +301,7 @@ public class Command {
       return "No match ans";
     }
     StringBuilder ans = new StringBuilder();
-    for (int i = 0; i < res.size(); i++) {
-      Block blockInfo = res.get(i);
+    for (Block blockInfo : res) {
       Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
       // ans.append(Hex.toHexString(blockInfo.getHash())).append("
       // ").append(simpleDateFormat.format(date)).append("
@@ -313,8 +312,8 @@ public class Command {
           .append("     ")
           .append(simpleDateFormat.format(date))
           .append(" ")
-          .append(getStateByFlags(blockInfo.getFlags()))
-          .append("   epoch:[" + XdagTime.getEpoch(blockInfo.getTimestamp()) + "]")
+          .append(getStateByFlags(blockInfo.getFlags())).append("   epoch:[")
+          .append(XdagTime.getEpoch(blockInfo.getTimestamp())).append("]")
           .append("\n");
     }
     return ans.toString();
@@ -332,13 +331,12 @@ public class Command {
       return "No match ans";
     }
     StringBuilder ans = new StringBuilder();
-    for (int i = 0; i < res.size(); i++) {
-      Block blockInfo = res.get(i);
+    for (Block blockInfo : res) {
       Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
       ans.append(Hex.toHexString(blockInfo.getHash())).append("  ")
-              .append(simpleDateFormat.format(date)).append(" ")
-              .append(getStateByFlags(blockInfo.getFlags()))
-              .append("\n");
+          .append(simpleDateFormat.format(date)).append(" ")
+          .append(getStateByFlags(blockInfo.getFlags()))
+          .append("\n");
     }
     return ans.toString();
   }

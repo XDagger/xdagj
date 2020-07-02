@@ -31,11 +31,11 @@ public class NetDBManager {
 
   public NetDBManager(Config config) {
     database =
-        MainNet ? Config.root + config.getNetDBDir() : Config.root + config.getNetDBDirTest();
+        MainNet ? config.getNetDBDir() :config.getNetDBDirTest();
     databaseWhite =
         MainNet
-            ? Config.root + config.getWhiteListDir()
-            : Config.root + config.getWhiteListDirTest();
+            ? config.getWhiteListDir()
+            : config.getWhiteListDirTest();
     whiteUrl = MainNet ? WHITELIST_URL : WHITELIST_URL_TESTNET;
     whiteDB = new NetDB();
     netDB = new NetDB();
