@@ -46,10 +46,10 @@ public class Block implements Cloneable {
   private long type;
 
   /** 连接本区块的区块地址* */
-  private Address ref; // 指向引用本区块的区块 fee给该区块
+  private Address ref;
 
   /** 区块标志* */
-  public int flags = 0; // 标志区块类型 1f 主块 1c 接收 18 拒绝
+  public int flags = 0;
 
   /** 区块hash* */
   private byte[] hash;
@@ -227,6 +227,7 @@ public class Block implements Cloneable {
         }
       } else if (eachType == XDAG_FIELD_IN) {
         inputs.add(new Address(xdagBlock.getField(i)));
+
       } else if (eachType == XDAG_FIELD_SIGN_IN || eachType == XDAG_FIELD_SIGN_OUT) {
         // 最后一个字段如果是signIn的类型则作为nonce
         if (i == MAX_LINKS && eachType == XDAG_FIELD_SIGN_IN) {
@@ -349,9 +350,6 @@ public class Block implements Cloneable {
   // 只匹配输入签名 并返回有用的key
   public List<ECKey> verifiedKeys() {
     List<ECKey> keys = getPubKeys();
-    for (ECKey key : keys) {
-      logger.debug("myron 获取到key[{}]", Hex.toHexString(key.getPubKeybyCompress()));
-    }
     List<ECKey> res = new ArrayList<>();
     byte[] digest = null;
     byte[] hash = null;

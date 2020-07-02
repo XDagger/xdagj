@@ -7,7 +7,7 @@ XDAGJ is a Java implementation of XDAG. It is rebuilt on the basis of C Version 
 ## Development environment
 
 ```yaml
-JDK   : V1.8
+JDK   : v1.8
 Maven : 3.6.3
 ```
 
@@ -56,7 +56,7 @@ Configure a new library file for it.
 
 ## Run XDAGJ
 
-In XDAGJ， Config.java is a global configuration class. If specify configuration parameters are not configured，the default parameters will be used.
+In XDAGJ， Config.java is a global configuration class. If specified configuration parameters are not configured，the default parameters will be used.
 
 To avoid stack overflow, increase the STACK value of the JVM to at least 4096k when loading the test network data.
 
@@ -84,11 +84,11 @@ For more commands:
 start para:
 
 ```yaml
--t  		  	[Use testnet]
--f yourpath	  	[Change the file storage path to yourpath ]
--p ip:port	  	[Bind ip:port as whitelist address]
+-t              [Use testnet]
+-f yourpath     [Change the file storage path to yourpath ]
+-p ip:port      [Bind ip:port as whitelist address]
 -P (CFG)
-[set pool config; CFG is miners:maxip:maxconn:fee:reward:direct:fund
+                [set pool config; CFG is miners:maxip:maxconn:fee:reward:direct:fund
                   miners - maximum allowed number of miners
                   maxip - maximum allowed number of miners connected from single ip
                   maxconn - maximum allowed number of miners with the same address
@@ -114,8 +114,7 @@ xdag> net conn                  [List connections]
 xdag> net connect ip:port       [connect a new pool]
 xdag> miners                    [Printf list of activite miners in our pool]
 xdag> xfer N A                  [Transfer N XDAG to the address A]
-xdag> disconnect all|ip:port
-[all : disconnect all miners / ip:port  disconnect the specified miner]
+xdag> disconnect all|ip:port    [all : disconnect all miners / ip:port  disconnect the specified miner]
 xdag> exit                      [Terminate xdag process]
 xdag> terminate                 [Terminate xdag process]
 ```

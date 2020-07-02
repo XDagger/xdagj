@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,15 @@ public class SyncManager {
             return blockWrapper;
           },
           throwable -> logger.error("Unexpected exception: ", throwable));
+
+  private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(1, 1, new Consumer<BlockWrapper>() {
+    @Override
+    public void accept(BlockWrapper block) {
+      logger.debug("Accept a blockWrapper");
+      blockQueue.add(block);
+      //estimateBlockSize(blockWrapper);
+    }
+  });
 
   public SyncManager(Kernel kernel) {
     this.kernel = kernel;
@@ -218,11 +228,10 @@ public class SyncManager {
   public boolean validateAndAddNewBlock(BlockWrapper blockWrapper) {
 
     if (blockchain.hasBlock(blockWrapper.getBlock().getHashLow())) {
-      //            logger.debug("Block have exist");
+      logger.debug("Block have exist");
       return true;
     }
-    logger.debug(
-        "Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+    logger.debug("Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
 
     synchronized (this) {
       pushBlocks(Collections.singletonList(blockWrapper));
@@ -304,7 +313,7 @@ public class SyncManager {
   public void stop() {
     // logger.debug("sync manager stop");
     System.out.println("sync manager stop");
-    //        if(isRunning.compareAndSet(true,false)){
+    // if(isRunning.compareAndSet(true,false)){
     if (exec1 != null) {
       try {
         exec1.shutdown();

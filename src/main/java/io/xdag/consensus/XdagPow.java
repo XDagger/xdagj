@@ -382,8 +382,8 @@ public class XdagPow implements PoW {
       while (!Thread.currentThread().isInterrupted()) {
         try {
           NewBlockMessage msg = queue.take();
-          logger.debug("myron  queue 取出的区块 hash【{}】", Hex.toHexString(msg.getBlock().getHash()));
-          logger.debug("myron  queue 取出的区块数据【{}】", Hex.toHexString(msg.getBlock().getHash()));
+          logger.debug("queue 取出的区块 hash【{}】", Hex.toHexString(msg.getBlock().getHash()));
+          logger.debug("queue 取出的区块数据【{}】", Hex.toHexString(msg.getBlock().getHash()));
           List<XdagChannel> channels = channelMgr.getActiveChannels();
           if (channels != null) {
             // 全部广播

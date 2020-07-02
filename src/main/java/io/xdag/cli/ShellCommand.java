@@ -30,25 +30,25 @@ public class ShellCommand {
   }
 
   public void process(String command, String value) {
-    boolean runing = cmd.getKernelState() == Kernel.State.RUNNING;
+    boolean running = cmd.getKernelState() == Kernel.State.RUNNING;
     switch (command) {
       case "account":
-        if (runing) {
+        if (running) {
           processAccount(value);
         }
         break;
       case "balance":
-        if (runing) {
+        if (running) {
           processBalance(value);
         }
         break;
       case "block":
-        if (runing) {
+        if (running) {
           processBlock(value);
         }
         break;
       case "lastblocks":
-        if (runing) {
+        if (running) {
           processLastblocks(value);
         }
         break;
@@ -61,27 +61,27 @@ public class ShellCommand {
         printHelp();
         break;
       case "net":
-        if (runing) {
+        if (running) {
           processNet(value);
         }
         break;
       case "stats":
-        if (runing) {
+        if (running) {
           processStats();
         }
         break;
       case "xfer":
-        if (runing) {
+        if (running) {
           processXfer(value);
         }
         break;
       case "mainblocks":
-        if (runing) {
+        if (running) {
           processMainblocks(value);
         }
         break;
       case "minedblocks":
-        if (runing) {
+        if (running) {
           processMinedblocks(value);
         }
         break;

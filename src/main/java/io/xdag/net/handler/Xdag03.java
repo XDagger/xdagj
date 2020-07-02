@@ -2,25 +2,11 @@ package io.xdag.net.handler;
 
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
-
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
@@ -39,9 +25,19 @@ import io.xdag.net.message.impl.BlocksRequestMessage;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.net.message.impl.SumRequestMessage;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.spongycastle.util.Arrays;
+import org.spongycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -140,8 +136,7 @@ public class Xdag03 extends XdagHandler {
     log.debug("New block received: block.index [{}]", block.toString());
     log.debug("Block data:" + Hex.toHexString(block.getXdagBlock().getData()));
     log.debug("ttl:" + msg.getTtl());
-    if (!syncMgr.validateAndAddNewBlock(
-        new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
+    if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
       dropConnection();
     }
   }
@@ -161,7 +156,7 @@ public class Xdag03 extends XdagHandler {
         future,
         new FutureCallback<Integer>() {
           @Override
-          public void onSuccess(@NullableDecl Integer integer) {
+          public void onSuccess(Integer integer) {
             if (integer == 1) {
               sendMessage(new BlocksReplyMessage(integer, endtime, random, kernel.getNetStatus()));
             } else {

@@ -1,5 +1,11 @@
+#for eclipse
 /target/
 .classpath
 .project
 /.settings/
 /bin/
+
+#for idea
+xdagj.iml
+.idea
+error.log

@@ -122,6 +122,7 @@ public class AccountStore {
       logger.debug("No match account");
       return null;
     }
+
     return result;
   }
 

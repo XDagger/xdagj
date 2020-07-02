@@ -17,7 +17,7 @@ public class BasicUtilsTest {
     BigDecimal b = BigDecimal.valueOf(51.2);
     System.out.println(BasicUtils.xdag2amount(b.doubleValue()));
 
-    BigDecimal c = BigDecimal.valueOf(1024.0);
+    BigDecimal c = BigDecimal.valueOf(100);
     System.out.println(BasicUtils.xdag2amount(c.doubleValue()));
   }
 
@@ -34,11 +34,11 @@ public class BasicUtilsTest {
 
     long c = 4398046511104L;
     // 400 0000 0000?
-    System.out.println(BasicUtils.amount2xdag(43980465111L));
+    System.out.println(BasicUtils.amount2xdag(6400000000L));
 
     long d = 4398046511106L;
     // 400 0000 0001
-    System.out.println(BasicUtils.amount2xdag(4134163720438L));
+    System.out.println(BasicUtils.amount2xdag(6400000000L));
   }
 
   @Test

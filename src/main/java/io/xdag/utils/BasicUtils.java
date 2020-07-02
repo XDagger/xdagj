@@ -22,9 +22,10 @@ public class BasicUtils {
 
   public static BigInteger getDiffByHash(byte[] hash) {
     byte[] data = new byte[16];
-    System.arraycopy(hash, 0, data, 4, 12); // 实现了右移32位 4个字节
+    // 实现了右移32位 4个字节
+    System.arraycopy(hash, 0, data, 4, 12);
     BigInteger res = new BigInteger(Hex.toHexString(data), 16);
-    /** max是2的128次方减1 这样效率高吗 * */
+    //max是2的128次方减1 这样效率高吗
     BigInteger max = new BigInteger("ffffffffffffffffffffffffffffffff", 16);
     BigInteger ans = max.divide(res);
     return ans;

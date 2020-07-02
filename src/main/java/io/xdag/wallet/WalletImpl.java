@@ -105,7 +105,8 @@ public class WalletImpl implements Wallet {
 
       ECKey ecKey = new ECKey();
       byte lastByte = ecKey.getPubKey()[ecKey.getPubKey().length - 1];
-      boolean pubKeyParity = (lastByte & 1) == 0; // 奇偶
+      // 奇偶
+      boolean pubKeyParity = (lastByte & 1) == 0;
 
       key_internal_item newKey = new key_internal_item();
       newKey.ecKey = ecKey;
@@ -144,6 +145,7 @@ public class WalletImpl implements Wallet {
   }
 
   private Pair<String, String> getPassword(boolean fileExist) {
+
 
     if (fileExist) {
       System.out.println("Pleasr set Your Password :");
@@ -221,6 +223,7 @@ public class WalletImpl implements Wallet {
         newKey.ecKey = ecKey;
         newKey.pubKeyParity = pubKeyParity;
         key_internal.add(newKey);
+
       }
       // 最后一个
       defKey = key_internal.get(key_internal.size() - 1);

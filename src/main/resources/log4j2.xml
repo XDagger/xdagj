@@ -10,44 +10,28 @@
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </File>
 
-<!--        <File name="File" fileName="D:\\Program\\xdagj\\xdagj.log">-->
-<!--            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
-<!--        </File>-->
-<!--        <File name="pay" fileName="D:\\Program\\xdagj\\xdagj_pay.log">-->
-<!--            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
-<!--        </File>-->
-<!--        <File name="BlockchainImpl" fileName="D:\\Program\\xdagj\\xdagj_BlockchainImpl.log">-->
-<!--            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
-<!--        </File>-->
-
     </Appenders>
 
 
     <Loggers>
-<!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG">-->
-<!--            <AppenderRef ref="pay"/>-->
-<!--        </logger>-->
-<!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG">-->
-<!--            <AppenderRef ref="pay"/>-->
-<!--        </logger>-->
-<!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG">-->
-<!--            <AppenderRef ref="BlockchainImpl"/>-->
-<!--        </logger>-->
-<!--        <logger name="io.xdag.consensus.SyncManager" level="INFO">-->
-<!--            <AppenderRef ref="pay"/>-->
-<!--        </logger>-->
+<!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
+<!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
+<!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
+<!--        <logger name="io.xdag.consensus.SyncManager" level="INFO"></logger>-->
 <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
 <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
 <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
 <!--        <logger name="io.xdag.net.handler" level="INFO"/>-->
 <!--        <logger name="io.xdag.core.Block" level="DEBUG"/>-->
+<!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
+<!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
 
         <logger name="io.xdag" level="WARN">
             <AppenderRef ref="Error"/>
         </logger>
 
 
-        <Root level="INFO">
+        <Root level="DEBUG">
             <AppenderRef ref="Console" />
         </Root>
 

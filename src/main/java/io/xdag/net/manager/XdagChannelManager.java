@@ -68,7 +68,7 @@ public class XdagChannelManager {
       try {
         wrapper = newForeignBlocks.take();
         log.debug("no problem..");
-        sendNewBlock(wrapper); // 不发送给接收来的
+        sendNewBlock(wrapper);
       } catch (InterruptedException e) {
         break;
       } catch (Throwable e) {

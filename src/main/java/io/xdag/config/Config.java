@@ -43,7 +43,6 @@ public class Config {
 
   private boolean enableRefresh = false;
 
-  // add by myron
   /** 一个矿池最多允许接入的channel */
   private int globalMinerLimit = 8192;
 
@@ -74,13 +73,13 @@ public class Config {
   private byte[] dnetKeyBytes = new byte[2048];
 
   /** 配置存储root */
-  public static String root = Config.MainNet ? "./MainNet" : "./TestNet";
+  public static String root = Config.MainNet ? "./mainnet" : "./testnet";
 
-  private String storeDir = "/Rocksdb/XdagDB";
-  private String storeBackupDir = "/Rocksdb/XdagDB/backupdata";
+  private String storeDir = "/rocksdb/xdagdb";
+  private String storeBackupDir = "/rocksdb/Xdagdb/backupdata";
 
-  /** 用于测试加载已有区块数据 从C版本生成的数据 */
-  private String originStoreDir = "D:\\Program\\xdagj\\storage-testnet-big/";
+  /** 用于测试加载已有区块数据 从C版本生成的数据 请将所需要的数据放在该目录下 */
+  private String originStoreDir = "./testdate";
 
   private int TTL = 5;
 
@@ -97,10 +96,10 @@ public class Config {
 
   private int storeMaxThreads = 2;
 
-  private String whiteListDir_Test = "/netdb-white-testnet.txt";
+  private String whiteListDirTest = "/netdb-white-testnet.txt";
   private String whiteListDir = "/netdb-white.txt";
-  // 存放网络接收到的新节点地址
-  private String netDBDir_Test = "/netdb-testnet.txt";
+  /**存放网络接收到的新节点地址*/
+  private String netDBDirTest = "/netdb-testnet.txt";
   private String netDBDir = "/netdb.txt";
 
   private DnetKeys xKeys;
@@ -137,7 +136,7 @@ public class Config {
     if (MainNet) {
       return whiteListDir;
     } else {
-      return whiteListDir_Test;
+      return whiteListDirTest;
     }
   }
 

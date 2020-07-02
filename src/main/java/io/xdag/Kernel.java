@@ -96,7 +96,6 @@ public class Kernel {
   protected MinerManager minerManager;
   protected MinerServer minerServer;
 
-  // add by myron
   protected XdagState xdagState;
 
   public Kernel(Config config, Wallet wallet) {
@@ -123,10 +122,6 @@ public class Kernel {
     // ====================================
     // print system info
     // ====================================
-    // logger.info("Xdag clinet/server system booting up: network = {}, version {},
-    // user host = [{}:{}]", Config.MainNet ==true ? "MainNet" : "TestNet",
-    // XdagVersion.V03, config.getNodeIp(),config.getNodePort());
-
     System.out.println(
         "Xdag clinet/server system booting up: network = "
             + (Config.MainNet == true ? "MainNet" : "TestNet")
@@ -235,7 +230,6 @@ public class Kernel {
     // poolnode open
     // ====================================
     minerServer = new MinerServer(this);
-    //        minerServer.start();
 
     connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
 
@@ -263,7 +257,6 @@ public class Kernel {
       return;
     } else {
       state = State.STOPPING;
-      // logger.info("try to shut down the program");
       System.out.println("try to shut down the program");
     }
 

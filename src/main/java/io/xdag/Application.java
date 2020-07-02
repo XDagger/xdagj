@@ -46,7 +46,6 @@ public class Application {
     }
 
     // 启动前先要判断dnet_keys.dat 与 wallet.dat是否生成
-    // todo change by myron
     WalletImpl wallet = new WalletImpl();
     for (int i = 1; i <= 5; i++) {
       try {

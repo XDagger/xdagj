@@ -4,6 +4,7 @@ import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
 import static io.xdag.net.XdagVersion.V03;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
+import io.xdag.utils.BasicUtils;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -102,7 +103,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
       // TODO: 2020/5/8  这里可能还有一点小bug  如果无限加入 岂不是会无线创建了
       System.out.println(
-          "add a new miner,miner address [" + Hex.toHexString(addressBlock.getHash()) + "]");
+          "add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
     }
   }
 

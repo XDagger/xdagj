@@ -216,7 +216,7 @@ public class BlockTest {
       boolean canUse = false;
       // 获取签名与hash
       byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
-      System.out.println("myron " + Hex.toHexString(subdata));
+      System.out.println(Hex.toHexString(subdata));
 
       ECKey.ECDSASignature sig = inBlock.getOutsig();
       for (ECKey ecKey : ecKeys) {

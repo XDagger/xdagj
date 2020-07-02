@@ -121,7 +121,7 @@ public class BlockchainImpl implements Blockchain {
 
       // 检查区块合法性 检查input是否能使用
       if (!canUseInput(block)) {
-        logger.debug("myron this is a invalid block");
+        logger.debug("this is a invalid block");
         return ImportResult.INVALID_BLOCK;
       }
 
@@ -141,7 +141,7 @@ public class BlockchainImpl implements Blockchain {
       setPretop(block);
       if (top_main_chain != null) {
         logger.debug(
-            "myron top main chain,这个时候的top main chain为【{}】", Hex.toHexString(top_main_chain));
+            "top main chain,这个时候的top main chain为【{}】", Hex.toHexString(top_main_chain));
         setPretop(getBlockByHash(top_main_chain, false));
       }
 
@@ -731,7 +731,7 @@ public class BlockchainImpl implements Blockchain {
   }
 
   private boolean canUseInput(Block block) {
-    logger.debug("myron verifiedKeys【{}】 ", Hex.toHexString(block.getHash()));
+    logger.debug("verifiedKeys【{}】 ", Hex.toHexString(block.getHash()));
     List<ECKey> ecKeys = block.verifiedKeys();
     List<Address> input = block.getInputs();
     if (input == null || input.size() == 0) {
@@ -766,8 +766,7 @@ public class BlockchainImpl implements Blockchain {
     for (int i = 0; i < ourkeys.size(); i++) {
       ECKey ecKey = ourkeys.get(i).ecKey;
       byte[] digest =
-          BytesUtils.merge(
-              block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKeybyCompress());
+          BytesUtils.merge(block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKeybyCompress());
       byte[] hash = Sha256Hash.hashTwice(digest);
       if (ecKey.verify(hash, signature)) {
         logger.debug("Validate Success");
@@ -803,9 +802,6 @@ public class BlockchainImpl implements Blockchain {
   }
 
   public void setTopMainchain(Block block) {
-    //        logger.debug("myron top_main_chain，对应的区块hash为【{}】,区块的时间戳【{}】,epoch[{}]",
-    //
-    // Hex.toHexString(block.getHash()),block.getTimestamp(),XdagTime.getEpoch(block.getTimestamp()));
     this.top_main_chain = block.getHashLow();
   }
 

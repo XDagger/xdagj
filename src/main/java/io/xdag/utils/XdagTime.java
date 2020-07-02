@@ -28,13 +28,13 @@ public class XdagTime {
     return epoch;
   }
 
-  // 获取时间戳所属epoch的最后一个时间戳 主要用于mainblock
+  /**获取时间戳所属epoch的最后一个时间戳 主要用于mainblock*/
   public static long getEndOfEpoch(long time) {
     long result = time | 0xffff;
     return result;
   }
 
-  // 获取当前时间所属epoch的最后一个时间戳
+  /**获取当前时间所属epoch的最后一个时间戳*/
   public static long getMainTime() {
     return getEndOfEpoch(getCurrentTimestamp());
   }
@@ -63,9 +63,6 @@ public class XdagTime {
   }
 
   public static boolean isStartOfEpoch(long timestamp) {
-    if ((timestamp & 0xff) == 0x00) {
-      return true;
-    }
-    return false;
+    return (timestamp & 0xff) == 0x00;
   }
 }

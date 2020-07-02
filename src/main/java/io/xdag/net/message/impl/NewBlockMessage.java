@@ -62,7 +62,6 @@ public class NewBlockMessage extends Message {
     CRC32 crc32 = new CRC32();
     crc32.update(encoded, 0, 512);
     System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
-    // add by myron
 
   }
 

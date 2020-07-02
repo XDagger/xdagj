@@ -10,7 +10,8 @@ import io.xdag.net.message.*;
 import io.xdag.net.message.impl.*;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.XdagWallet;
+import io.xdag.wallet.Wallet;
+import io.xdag.wallet.WalletImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
@@ -24,7 +25,7 @@ import java.util.List;
 public class MessageTest {
 
   Config config = new Config();
-  XdagWallet xdagWallet;
+  Wallet xdagWallet;
   //
   @Before
   public void setUp() throws Exception {
@@ -37,8 +38,8 @@ public class MessageTest {
     if (Native.dnet_crypt_init() < 0) {
       throw new Exception("dnet crypt init failed");
     }
-    xdagWallet = new XdagWallet();
-    xdagWallet.init();
+    xdagWallet = new WalletImpl();
+    xdagWallet.init(new Config());
   }
   // blocksrequest
   // 8b010002f91eb6eb 0000000000000000 0000000000000000 0000000000100000 修改starttime

@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -42,6 +44,10 @@ import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
 
 public class Command {
+
+  public static final Logger logger = LoggerFactory.getLogger(Command.class);
+
+
   private Kernel kernel;
   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
   DecimalFormat df = new DecimalFormat("######0.00");
@@ -53,7 +59,7 @@ public class Command {
   /**
    * list address + balance
    *
-   * @param num
+   * @param num Number of prints
    * @return address + balance
    */
   public String account(int num) {
@@ -116,8 +122,8 @@ public class Command {
   /**
    * Process xfer command
    *
-   * @param command
-   * @return
+   * @param command amount + address
+   * @return Transaction hash
    */
   public String xfer(String command) {
 
@@ -161,9 +167,9 @@ public class Command {
   /**
    * Real make a transaction for given amount and address
    *
-   * @param sendAmount
-   * @param address
-   * @return
+   * @param sendAmount amount
+   * @param address receiver address
+   * @return Transaction hash
    */
   public String xfer(double sendAmount, byte[] address) {
     long amount = xdag2amount(sendAmount);
@@ -173,19 +179,30 @@ public class Command {
     List<Address> tos = new ArrayList<>();
     tos.add(new Address(to, XDAG_FIELD_OUT, amount));
     Map<Address, ECKey> ans = kernel.getAccountStore().getAccountListByAmount(amount);
+
     if (ans == null || ans.size() == 0) {
       return "Balance not enough";
     }
     Block block = kernel.getBlockchain().createNewBlock(ans, tos, false);
+    ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
+    boolean isdefaultKey = false;
     // 签名
     for (ECKey ecKey : ans.values()) {
-      if (ecKey.equals(kernel.getWallet().getDefKey().ecKey)) {
+
+      if (ecKey.equals(defaultKey)) {
+        isdefaultKey = true;
         block.signOut(ecKey);
       } else {
         block.signIn(ecKey);
       }
     }
+    //如果默认密钥被更改，需要重新对输出签名签属
+    if (!isdefaultKey) {
+      block.signOut(kernel.getWallet().getDefKey().ecKey);
+    }
+
     BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL(), null);
+
 
     // blockWrapper.setTransaction(true);
     kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
@@ -193,10 +210,11 @@ public class Command {
     // logger.info("Transfer [{}]Xdag from [{}] to [{}]",sendAmount,
     // BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()),
     // BasicUtils.hash2Address(to));
+
     System.out.println(
         "Transfer " + sendAmount + "XDAG   to Address [" + BasicUtils.hash2Address(to) + "]");
 
-    return "Transaction :" + Hex.toHexString(block.getHashLow()) + " waiting to be processed";
+    return "Transaction :" + BasicUtils.hash2Address(block.getHashLow()) + " waiting to be processed";
   }
 
   /** Current Blockchain Status */
@@ -238,8 +256,8 @@ public class Command {
   /**
    * Connect to Node
    *
-   * @param server
-   * @param port
+   * @param server ip
+   * @param port port
    */
   public void connect(String server, int port) {
     kernel.getNodeMgr().doConnect(server, port);
@@ -248,8 +266,8 @@ public class Command {
   /**
    * Query block by hash
    *
-   * @param blockhash
-   * @return
+   * @param blockhash blockhash
+   * @return  block info
    */
   public String block(byte[] blockhash) {
     try {
@@ -274,8 +292,8 @@ public class Command {
   /**
    * Print Main blocks by given number
    *
-   * @param n
-   * @return
+   * @param n Number of prints
+   * @return Mainblock info
    */
   public String mainblocks(int n) {
     List<Block> res = kernel.getBlockchain().listMainBlocks(n);
@@ -305,8 +323,8 @@ public class Command {
   /**
    * Print Mined Block by given number
    *
-   * @param n
-   * @return
+   * @param n Number of prints
+   * @return minedblock info
    */
   public String minedblocks(int n) {
     List<Block> res = kernel.getBlockchain().listMinedBlocks(n);
@@ -317,13 +335,10 @@ public class Command {
     for (int i = 0; i < res.size(); i++) {
       Block blockInfo = res.get(i);
       Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
-      ans.append(
-          Hex.toHexString(blockInfo.getHash())
-              + "  "
-              + simpleDateFormat.format(date)
-              + " "
-              + getStateByFlags(blockInfo.getFlags())
-              + "\n");
+      ans.append(Hex.toHexString(blockInfo.getHash())).append("  ")
+              .append(simpleDateFormat.format(date)).append(" ")
+              .append(getStateByFlags(blockInfo.getFlags()))
+              .append("\n");
     }
     return ans.toString();
   }
@@ -391,12 +406,11 @@ public class Command {
     StringBuilder stringBuilder = new StringBuilder();
     for (Node node : map.keySet()) {
       stringBuilder
-          .append(node.getAddress())
-          .append(" ")
-          .append(map.get(node) == null ? null : simpleDateFormat.format(new Date(map.get(node))))
-          .append(
-              " " + node.getStat().Inbound.get() + " in/" + node.getStat().Outbound.get() + " out")
-          .append("\n");
+              .append(node.getAddress())
+              .append(" ")
+              .append(map.get(node) == null ? null : simpleDateFormat.format(new Date(map.get(node)))).append(" ")
+              .append(node.getStat().Inbound.get()).append(" in/").append(node.getStat().Outbound.get()).append(" out")
+              .append("\n");
     }
     return stringBuilder.toString();
   }
