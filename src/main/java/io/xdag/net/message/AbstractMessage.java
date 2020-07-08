@@ -84,7 +84,8 @@ public abstract class AbstractMessage extends Message {
 
     // test netdb
     int length = getCommand() == SUMS_REPLY ? 6 : 14;
-    byte[] netdb = new byte[length * 32 - 80]; // 80 是sizeof(xdag_stats)
+    // 80 是sizeof(xdag_stats)
+    byte[] netdb = new byte[length * 32 - 80];
     System.arraycopy(encoded, 144, netdb, 0, length * 32 - 80);
     netDB = new NetDB(netdb);
 

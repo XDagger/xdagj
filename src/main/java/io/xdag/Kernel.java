@@ -1,5 +1,6 @@
 package io.xdag;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import io.xdag.config.Config;
@@ -26,7 +27,7 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.manager.MinerManagerImpl;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
-import io.xdag.net.ConnectionLimitHandler;
+import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
 import io.xdag.net.XdagVersion;
@@ -98,6 +99,8 @@ public class Kernel {
 
   protected XdagState xdagState;
 
+  protected AtomicInteger channelsAccount = new AtomicInteger(0);
+
   public Kernel(Config config, Wallet wallet) {
     this.config = config;
     this.wallet = wallet;
@@ -123,10 +126,10 @@ public class Kernel {
     // print system info
     // ====================================
     System.out.println(
-        "Xdag clinet/server system booting up: network = "
+        "Xdag Server system booting up: network = "
             + (Config.MainNet ? "MainNet" : "TestNet")
             + ", version "
-            + XdagVersion.V03
+            + "Alpha"
             + ", user host = ["
             + config.getNodeIp()
             + ":"
@@ -229,9 +232,11 @@ public class Kernel {
     // ====================================
     // poolnode open
     // ====================================
+    connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
+
     minerServer = new MinerServer(this);
 
-    connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
+
 
     // ====================================
     // pow
@@ -532,4 +537,12 @@ public class Kernel {
   public XdagState getXdagState() {
     return this.xdagState;
   }
+
+
+  public AtomicInteger getChannelsAccount() {
+    return channelsAccount;
+  }
+
+
+
 }

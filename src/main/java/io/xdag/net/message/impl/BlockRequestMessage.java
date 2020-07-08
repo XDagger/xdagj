@@ -84,7 +84,7 @@ public class BlockRequestMessage extends AbstractMessage {
     // TODO：后续根据ip替换
     String tmp =
         "04000000040000003ef47801000000007f000001611e7f000001b8227f000001" + "5f767f000001d49d";
-    byte[] tmpbyte = Hex.decode(tmp); // net 相关
+    byte[] tmpbyte = Hex.decode(tmp);
 
     // field 0 and field1
     byte[] first =

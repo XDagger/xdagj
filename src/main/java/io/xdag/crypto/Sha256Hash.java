@@ -43,7 +43,8 @@ public class Sha256Hash {
     try {
       return MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e); // Can't happen.
+      // Can't happen.
+      throw new RuntimeException(e);
     }
   }
 

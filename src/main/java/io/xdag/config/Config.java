@@ -29,9 +29,9 @@ public class Config {
 
   private int channelReadTimeout = 10;
 
-  private String nodeKeyPrivate = "123";
-
-  private String nodeKeyPassword = "123456";
+//  private String nodeKeyPrivate = "123";
+//
+//  private String nodeKeyPassword = "123456";
 
   private boolean nodeDiscoveryEnabled = true;
 
@@ -43,17 +43,17 @@ public class Config {
 
   private boolean enableRefresh = false;
 
-  /** 一个矿池最多允许接入的channel */
+  /** 一个矿池最多允许接入的矿工数量 */
   private int globalMinerLimit = 8192;
 
-  /** 允许最大的接入连接 */
+  /** 允许最大的接入连接 g_max_connections_count */
   private int globalMinerChannelLimit = 8192;
 
   /** 同一ip地址允许同时接入的客户端数量 */
-  private int maxConnectPerIp = 5;
+  private int maxConnectPerIp = 1;
 
-  /** 拥有相同地址块的矿工最多允许同时在线的数量 */
-  private int maxMinerPerAccount = 5;
+  /** 拥有相同地址块的矿工最多允许同时在线的数量 g_connections_per_miner_limit */
+  private int maxMinerPerAccount = 100;
 
   /** 同一个channel 某一个任务种最多允许发share的次数 */
   private int maxShareCountPerChannel = 20;
@@ -202,7 +202,7 @@ public class Config {
     }
     config.setPoolIp(args[0]);
     config.setPoolPort(Integer.parseInt(args[1]));
-    config.globalMinerLimit = Integer.parseInt(args[2]);
+    config.globalMinerChannelLimit = Integer.parseInt(args[2]);
     config.maxConnectPerIp = Integer.parseInt(args[3]);
     config.maxMinerPerAccount = Integer.parseInt(args[4]);
     config.poolRation = Double.parseDouble(args[5]);
@@ -218,7 +218,7 @@ public class Config {
     //配置存储root
     root = Config.MainNet ? "./mainnet" : "./testnet";
     storeDir = root + "/rocksdb/xdagdb";
-    storeBackupDir = root +  "/rocksdb/Xdagdb/backupdata";
+    storeBackupDir = root +  "/rocksdb/xdagdb/backupdata";
     whiteListDirTest = root + "/netdb-white-testnet.txt";
     whiteListDir = root + "/netdb-white.txt";
     netDBDirTest = root + "/netdb-testnet.txt";

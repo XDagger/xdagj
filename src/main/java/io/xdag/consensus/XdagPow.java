@@ -67,7 +67,7 @@ public class XdagPow implements PoW {
   /** 存放的是最小的hash */
   protected List<byte[]> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
 
-  // 引入矿工与奖励
+  /**引入矿工与奖励*/
   protected AwardManager awardManager;
   protected MinerManager minerManager;
   protected long taskIndex = 0;
@@ -93,8 +93,7 @@ public class XdagPow implements PoW {
     // 当状态 production_on false 同时 stop_mining false 不执行下面的代码
     // 当stop_mining false时执行
 
-    // logger.info("Strat producing blocks");
-    System.out.println("Strat producing blocks");
+    logger.info("Strat producing blocks");
 
     if (status == Status.STOPPED && !Thread.interrupted()) {
       logger.debug("====Main block thread run=====");
@@ -348,12 +347,11 @@ public class XdagPow implements PoW {
   }
 
   protected void onTimeout() {
-    // logger.info("Broadcast locally generated blockchain, waiting to be verified.
-    // block hash = [{}]",Hex.toHexString(generateBlock.getHash()));
-    System.out.println(
-        "Broadcast locally generated blockchain, waiting to be verified. block hash =["
-            + Hex.toHexString(generateBlock.getHash())
-            + "]");
+    logger.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",Hex.toHexString(generateBlock.getHash()));
+//    System.out.println(
+//        "Broadcast locally generated blockchain, waiting to be verified. block hash =["
+//            + Hex.toHexString(generateBlock.getHash())
+//            + "]");
     // 发送区块 如果有的话 然后开始生成新区块
     logger.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(sendTime));
     logger.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));

@@ -31,7 +31,7 @@ public class NetDB {
     this.config = config;
   }
 
-  // 从remote节点获取的iplist
+  /**从remote节点获取的iplist*/
   public NetDB(byte[] data) {
     parse(data);
   }
@@ -58,7 +58,7 @@ public class NetDB {
     }
   }
 
-  // address 6字节 4字节ip+2字节port
+  /**address 6字节 4字节ip+2字节port*/
   public void addNewIP(byte[] address) {
     byte[] ip = BytesUtils.subArray(address, 0, 4);
     byte[] port = BytesUtils.subArray(address, 4, 2);
@@ -68,7 +68,7 @@ public class NetDB {
     addNewIP(ip, port);
   }
 
-  // 获取remote接收到的新IP
+  /** 获取remote接收到的新IP*/
   public Set<Node> getIPList() {
     Set<Node> res = new HashSet<>();
     if (ipList.size() != 0) {
@@ -92,7 +92,7 @@ public class NetDB {
     }
   }
 
-  // test
+
   public byte[] getEncoded() {
     return encode(ipList);
   }

@@ -40,7 +40,8 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
     channel.initWithNode(
-        remoteAddress.getHostName(), remoteAddress.getPort()); // 连接到对方的channel 并将对方记录为node
+        // 连接到对方的channel 并将对方记录为node
+        remoteAddress.getHostName(), remoteAddress.getPort());
     // TODO:如果为服务器端 发送pubkey
     if (isServer) {
       channel.sendPubkey(ctx);
@@ -58,34 +59,37 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         } catch (Exception e) {
           return;
         }
-        channel.getNode().getStat().Inbound.add(2); // 发送过pubkey后加2
+        // 发送过pubkey后加2
+        channel.getNode().getStat().Inbound.add(2);
         if (!checkDnetPubkey(remotePubKey)) {
           throw new RuntimeException("dnet key error!");
         }
         // 发送pubkey
         if (isServer) {
-          if (channel.getNode().getStat().Outbound.get() == 2) // 如果已经发送了pubkey
+          // 如果已经发送了pubkey
+          if (channel.getNode().getStat().Outbound.get() == 2)
           {
             channel.sendPassword(ctx);
           }
         } else {
           channel.sendPubkey(ctx);
         }
-      } else if (channel.getNode().getStat().Inbound.get() >= 1) { // 如果已经接收过pubkey
+        // 如果已经接收过pubkey
+      } else if (channel.getNode().getStat().Inbound.get() >= 1) {
         // 读取set0
         byte[] word = new byte[512];
         in.readBytes(word);
         channel.getNode().getStat().Inbound.add();
         if (!isServer) {
-          if (channel.getNode().getStat().Outbound.get() == 2) // 如果已经发送了pubkey
+          // 如果已经发送了pubkey
+          if (channel.getNode().getStat().Outbound.get() == 2)
           {
             channel.sendPassword(ctx);
           }
         }
         if (channel.getNode().getStat().Inbound.get() >= 3) {
 
-          // logger.info("connect a new pool,
-          // host[{}]",channel.getInetSocketAddress().toString());
+          log.info("connect a new pool,host[{}]",channel.getInetSocketAddress().toString());
           System.out.println(
               "connect a new pool, host[" + channel.getInetSocketAddress().toString() + "]");
 

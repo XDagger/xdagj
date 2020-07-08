@@ -48,7 +48,7 @@ public class AccountStore {
     this.accountSource.reset();
   }
 
-  // 存放第一个地址块
+  /**存放第一个地址块*/
   public synchronized void addFirstAccount(Block block, int keyIndex) {
     logger.debug(
         "Add new account:"

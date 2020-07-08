@@ -207,12 +207,9 @@ public class Command {
     // blockWrapper.setTransaction(true);
     kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
 
-    // logger.info("Transfer [{}]Xdag from [{}] to [{}]",sendAmount,
-    // BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()),
-    // BasicUtils.hash2Address(to));
+    logger.info("Transfer [{}]Xdag from [{}] to [{}]",sendAmount, BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()), BasicUtils.hash2Address(to));
 
-    System.out.println(
-        "Transfer " + sendAmount + "XDAG   to Address [" + BasicUtils.hash2Address(to) + "]");
+    System.out.println("Transfer " + sendAmount + "XDAG   to Address [" + BasicUtils.hash2Address(to) + "]");
 
     return "Transaction :" + BasicUtils.hash2Address(block.getHashLow()) + " waiting to be processed";
   }

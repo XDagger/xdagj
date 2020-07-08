@@ -2,6 +2,7 @@ package io.xdag.mine;
 
 import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
+import io.xdag.mine.handler.ConnectionLimitHandler;
 import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.List;
@@ -26,7 +27,6 @@ import io.xdag.mine.handler.MinerMessageHandler;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.MinerMessageFactory;
 import io.xdag.mine.miner.Miner;
-import io.xdag.net.ConnectionLimitHandler;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.ByteArrayWrapper;
@@ -243,7 +243,7 @@ public class MinerChannel {
   }
 
   public void onDisconnect() {
-    isActive = false;
+    miner03.dropConnection();
   }
 
   public StatHandle getInBound() {

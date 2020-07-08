@@ -28,11 +28,17 @@ public class XdagField {
   }
 
   public static enum FieldType {
+    //nonce字段
     XDAG_FIELD_NONCE(0x00),
+    //头部字段
     XDAG_FIELD_HEAD(0x01),
+    //输入
     XDAG_FIELD_IN(0x02),
+    //输入
     XDAG_FIELD_OUT(0x03),
+    //输入签名
     XDAG_FIELD_SIGN_IN(0x04),
+    //输出签名
     XDAG_FIELD_SIGN_OUT(0x05),
     XDAG_FIELD_PUBLIC_KEY_0(0x06),
     XDAG_FIELD_PUBLIC_KEY_1(0x07),

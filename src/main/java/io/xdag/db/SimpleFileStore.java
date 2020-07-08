@@ -62,8 +62,8 @@ public class SimpleFileStore implements FileSource {
       }
       return;
     }
-
-    byte[] data = new byte[16]; // size + sum
+    // size + sum
+    byte[] data = new byte[16];
     try {
       randomAccessFile = new RandomAccessFile(file, "rw");
       randomAccessFile.seek(16 * index);
@@ -104,7 +104,8 @@ public class SimpleFileStore implements FileSource {
 
     StringBuffer filename;
     endtime -= starttime;
-    if (endtime == 0) { // || (endtime & (endtime-1))!=0
+    // || (endtime & (endtime-1))!=0
+    if (endtime == 0) {
       return null;
     }
 

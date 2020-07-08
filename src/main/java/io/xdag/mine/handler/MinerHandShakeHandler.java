@@ -5,6 +5,7 @@ import static io.xdag.net.XdagVersion.V03;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
 import io.xdag.utils.BasicUtils;
+import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -109,9 +110,14 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    logger.debug("抛出异常 :" + cause.getMessage());
-    cause.printStackTrace();
-    ctx.close();
+    if (cause instanceof IOException) {
+      logger.debug("远程主机关闭了一个连接");
+      ctx.channel().closeFuture();
+
+    } else {
+      cause.printStackTrace();
+    }
+
     channel.onDisconnect();
   }
 

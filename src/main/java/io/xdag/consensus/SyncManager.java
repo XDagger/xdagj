@@ -64,7 +64,6 @@ public class SyncManager {
           },
           throwable -> logger.error("Unexpected exception: ", throwable));
 
-  /**用于存放接收到的区块，便于后续的查找*/
   private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(1, 1, new Consumer<BlockWrapper>() {
     @Override
     public void accept(BlockWrapper block) {
@@ -73,6 +72,7 @@ public class SyncManager {
       //estimateBlockSize(blockWrapper);
     }
   });
+
 
   public SyncManager(Kernel kernel) {
     this.kernel = kernel;
@@ -144,8 +144,7 @@ public class SyncManager {
           //                    }
 
           if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
-            // logger.info("Current
-            // Maxdiff:"+kernel.getNetStatus().getMaxdifficulty().toString(16));
+            logger.info("Current Maxdiff:"+kernel.getNetStatus().getMaxdifficulty().toString(16));
             // 只有同步完成的时候 才能开始线程  再一次
 
             if (!syncDone) {
@@ -230,10 +229,11 @@ public class SyncManager {
   public boolean validateAndAddNewBlock(BlockWrapper blockWrapper) {
 
     if (blockchain.hasBlock(blockWrapper.getBlock().getHashLow())) {
-      logger.debug("Block have exist");
+      //            logger.debug("Block have exist");
       return true;
     }
-    logger.debug("Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+    logger.debug(
+        "Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
 
     synchronized (this) {
       pushBlocks(Collections.singletonList(blockWrapper));
@@ -315,7 +315,7 @@ public class SyncManager {
   public void stop() {
     // logger.debug("sync manager stop");
     System.out.println("sync manager stop");
-    // if(isRunning.compareAndSet(true,false)){
+    //        if(isRunning.compareAndSet(true,false)){
     if (exec1 != null) {
       try {
         exec1.shutdown();

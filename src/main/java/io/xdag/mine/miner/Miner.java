@@ -246,7 +246,7 @@ public class Miner {
     this.channels.put(inetSocketAddress, channel);
   }
 
-  // Todo:后续改为atomic
+  /**Todo:后续改为atomic*/
   public void increaseTaskIndex() {
     taskIndex++;
   }

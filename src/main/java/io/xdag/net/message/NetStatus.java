@@ -22,7 +22,7 @@ public class NetStatus {
     this.nmain = this.totalnmain = totalnmain;
   }
 
-  // 用于记录remote node的
+  /**用于记录remote node的*/
   public NetStatus(
       BigInteger maxdifficulty,
       long totalnblocks,
@@ -148,7 +148,7 @@ public class NetStatus {
         + " ]";
   }
 
-  // 仅在新block加入时执行 可以不考虑并行的情况
+  /**仅在新block加入时执行 可以不考虑并行的情况*/
   public void incMain() {
     this.nmain++;
   }

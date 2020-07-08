@@ -64,10 +64,11 @@ public class MessageQueue {
             },
             10,
             10,
-            TimeUnit.MILLISECONDS); // 10毫米执行一次
+            // 10毫秒执行一次
+            TimeUnit.MILLISECONDS);
   }
 
-  // 每十毫秒执行一次
+  /** 每十毫秒执行一次*/
   private void nudgeQueue() {
     removeAnsweredMessage(requestQueue.peek());
     // Now send the next message

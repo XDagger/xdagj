@@ -136,7 +136,7 @@ public class XdagChannel {
     xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
   }
 
-  // 激活xdaghandler
+  /**激活xdaghandler*/
   public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
 
     XdagHandler handler = xdagHandlerFactory.create(version);
@@ -144,7 +144,8 @@ public class XdagChannel {
     blockHandler.setMessageFactory(messageFactory);
     ctx.pipeline().addLast("blockHandler", blockHandler);
     ctx.pipeline().addLast("messageCodec", messageCodec);
-    handler.setMsgQueue(msgQueue); // 注册进消息队列 用来收发消息
+    // 注册进消息队列 用来收发消息
+    handler.setMsgQueue(msgQueue);
     ctx.pipeline().addLast("xdag", handler);
     handler.setChannel(this);
     xdag = handler;

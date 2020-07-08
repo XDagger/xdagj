@@ -32,10 +32,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
   private ReadOptions readOpts;
   private boolean alive;
 
-  // The native RocksDB insert/update/delete are normally thread-safe
-  // However close operation is not thread-safe.
-  // This ReadWriteLock still permits concurrent execution of insert/delete/update operations
-  // however blocks them on init/close/delete operations
+  /**
+   * The native RocksDB insert/update/delete are normally thread-safe
+   * However closeoperation is not thread-safe.
+   * This ReadWriteLock still permits concurrent execution of insert/delete/update operations
+   * however blocks them on init/close/delete operations
+   */
   private ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
 
   static {
@@ -454,7 +456,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     if (e.getMessage() != null && e.getMessage().toLowerCase().contains("too many open files")) {
       log.info("");
       log.info("       Mitigating 'Too many open files':");
-      log.info("       either decrease value of xdag.store.max.openfiles parameter in xdagj.conf");
+      log.info("       either decrease value of xdag.store.max.openfiles parameter ");
       log.info("       or set higher limit by using 'ulimit -n' command in command line");
       log.info("");
     }

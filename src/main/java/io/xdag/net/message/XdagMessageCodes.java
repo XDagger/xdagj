@@ -25,7 +25,8 @@ public enum XdagMessageCodes {
   BLOCKEXT_REPLY(0x05),
   BLOCK_REQUEST(0x06),
 
-  Receive_Block(0x07), // add new block type here
+  // add new block type here
+  Receive_Block(0x07),
   TASK_SHARE(0x08),
   NEW_TASK(0x09),
   NEW_BALANCE(0x0A);

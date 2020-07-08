@@ -78,7 +78,8 @@ public class SumReplyMessage extends AbstractMessage {
 
     // test netdb
     int length = 6;
-    byte[] netdb = new byte[length * 32 - 80]; // 80 是sizeof(xdag_stats)
+    // 80 是sizeof(xdag_stats)
+    byte[] netdb = new byte[length * 32 - 80];
     System.arraycopy(encoded, 144, netdb, 0, length * 32 - 80);
     netDB = new NetDB(netdb);
 

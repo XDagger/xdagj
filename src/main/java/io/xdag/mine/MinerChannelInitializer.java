@@ -1,7 +1,9 @@
 package io.xdag.mine;
 
+import io.xdag.config.Config;
 import java.net.InetSocketAddress;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,13 +30,18 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
 
   @Override
   protected void initChannel(NioSocketChannel ch) {
+    AtomicInteger channelsAccount = kernel.getChannelsAccount();
+    if (channelsAccount.get() >= kernel.getConfig().getGlobalMinerChannelLimit()) {
+      ch.close();
+      System.out.println("too many channels in this pool");
+      return;
+    }
+
     logger.debug("init a new MinerChannel......" + "是否是客户端：" + isServer);
     // 如果是服务器 就会获取到的是外部的地址 否则获取到自己本地的地址
+    channelsAccount.getAndIncrement();
     InetSocketAddress channelAddress =
-        isServer
-            ? ch.remoteAddress()
-            : new InetSocketAddress(
-                kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
+        isServer ? ch.remoteAddress() : new InetSocketAddress(kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
     MinerChannel minerChannel = new MinerChannel(kernel, ch, isServer);
     minerChannel.init(ch.pipeline(), channelAddress);
 

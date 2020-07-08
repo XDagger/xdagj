@@ -17,12 +17,13 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
 
   private static final Logger logger = LoggerFactory.getLogger(ConnectionLimitHandler.class);
 
+  /**这里保存了一个地址和对应的数量*/
   private static final Map<InetAddress, AtomicInteger> connectionCount = new ConcurrentHashMap<>();
 
   private final int maxInboundConnectionsPerIp;
 
   /**
-   * The constructor of ConnectionLimitHandler.
+   *
    *
    * @param maxConnectionsPerIp Maximum allowed connections of each unique IP address.
    */

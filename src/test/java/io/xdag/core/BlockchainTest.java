@@ -1,6 +1,7 @@
 package io.xdag.core;
 
-import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.MAIN_START_AMOUNT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
@@ -330,10 +331,10 @@ public class BlockchainTest {
         System.out.println(
             "orphan block:"
                 + Hex.toHexString(
-                    blockchain
-                        .getBlockFromOrphanPool((int) blockchain.getOrphanSize())
-                        .get(i)
-                        .getHashLow()));
+                blockchain
+                    .getBlockFromOrphanPool((int) blockchain.getOrphanSize())
+                    .get(i)
+                    .getHashLow()));
       }
     }
   }
@@ -443,8 +444,8 @@ public class BlockchainTest {
     System.out.println(
         amount2xdag(
             xdag2amount(
-                    1024 - 500.2 - 234.4 - 312.2 - 10.3 - 1.1 - 2.2 - 3.3 - 2.2 - 4.4 - 10.3 - 1.1
-                        - 2.2 - 3.3 - 2.2 - 4.4)
+                1024 - 500.2 - 234.4 - 312.2 - 10.3 - 1.1 - 2.2 - 3.3 - 2.2 - 4.4 - 10.3 - 1.1
+                    - 2.2 - 3.3 - 2.2 - 4.4)
                 + xdag2amount(500.2)
                 + xdag2amount(234.4)
                 + xdag2amount(312.2)

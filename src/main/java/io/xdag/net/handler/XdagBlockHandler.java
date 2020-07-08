@@ -41,8 +41,11 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     this.channel = channel;
   }
 
-  // 加解密的过程outbound应该先用上一次结束后的值 发完才加
-  // TODO 增加transportHeader
+
+  /**T
+   * 加解密的过程outbound应该先用上一次结束后的值 发完才加
+   * TODO 增加transportHeader
+   * */
   @Override
   protected void encode(
       ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {

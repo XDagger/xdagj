@@ -32,6 +32,7 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import lombok.Data;
 
+@SuppressWarnings("ALL")
 @Data
 public class Block implements Cloneable {
 
@@ -156,7 +157,7 @@ public class Block implements Cloneable {
     }
   }
 
-  // 主块
+  /**主块*/
   public Block(long timestamp, byte[] pretop, List<Address> pendings, boolean mining) {
     this(timestamp, new Address(pretop, XDAG_FIELD_OUT), null, pendings, mining, null, -1);
   }
@@ -286,7 +287,7 @@ public class Block implements Cloneable {
     }
     return encoder.toBytes();
   }
-  // without signature
+  /** without signature*/
   private byte[] getEncodedBody() {
     if (encoded != null) {
       return encoded;
@@ -346,7 +347,7 @@ public class Block implements Cloneable {
     }
   }
 
-  // 只匹配输入签名 并返回有用的key
+  /** 只匹配输入签名 并返回有用的key*/
   public List<ECKey> verifiedKeys() {
     List<ECKey> keys = getPubKeys();
     List<ECKey> res = new ArrayList<>();
@@ -376,7 +377,7 @@ public class Block implements Cloneable {
     return res;
   }
 
-  // 获取输出签名在字段的索引
+  /**取输出签名在字段的索引*/
   public int getOutsigIndex() {
     parse();
     int i = 1;

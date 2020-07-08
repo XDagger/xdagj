@@ -46,8 +46,7 @@ public class MinerClient {
       channelFuture.sync();
     } catch (Exception e) {
       if (e instanceof IOException) {
-        logger.warn(
-            "MinerClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
+        logger.warn("MinerClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
         logger.warn("MinerClient.connect(" + host + ":" + port + ") exception:", e);
       } else {
         logger.warn("Exception:", e);
@@ -55,8 +54,7 @@ public class MinerClient {
     }
   }
 
-  public ChannelFuture connectAsync(
-      String host, int port, MinerChannelInitializer minerChannelInitializer) {
+  public ChannelFuture connectAsync(String host, int port, MinerChannelInitializer minerChannelInitializer) {
     Bootstrap b = new Bootstrap();
     b.group(workerGroup);
     b.channel(NioSocketChannel.class);

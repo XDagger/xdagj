@@ -62,11 +62,11 @@ public class NodeManager {
   private static final long RECONNECT_WAIT = 60L * 1000L;
 
   private final Deque<Node> deque = new ConcurrentLinkedDeque<>();
-  // 记录对应节点节点最后一次连接的时间
+  /**记录对应节点节点最后一次连接的时间*/
   private final Cache<Node, Long> lastConnect =
       Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
 
-  // 定时处理
+  /**定时处理*/
   private final ScheduledExecutorService exec;
   private ScheduledFuture<?> connectFuture;
   private ScheduledFuture<?> fetchFuture;
@@ -84,7 +84,7 @@ public class NodeManager {
     this.netDBManager = kernel.getNetDBMgr();
   }
 
-  // start the node manager
+  /**start the node manager*/
   public synchronized void start() {
     if (!isRunning) {
       //            addNodes(getSeedNodes(config.getWhiteListDir()));
@@ -134,7 +134,7 @@ public class NodeManager {
     }
   }
 
-  // from net update seed nodes
+  /**from net update seed nodes*/
   protected void doFetch() {
     logger.debug("Do fetch");
     if (config.isEnableRefresh()) {

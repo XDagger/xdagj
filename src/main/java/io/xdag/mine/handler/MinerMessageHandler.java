@@ -4,6 +4,7 @@ import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BLOCK;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.codec.binary.Hex;
@@ -123,5 +124,18 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
     } else {
       throw new IllegalArgumentException("receive unknown block, msg len = [{}]");
     }
+  }
+
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)  {
+    if (cause instanceof IOException) {
+      logger.debug("远程主机关闭了一个连接");
+      ctx.channel().closeFuture();
+
+    } else {
+      cause.printStackTrace();
+    }
+
+    channel.onDisconnect();
   }
 }

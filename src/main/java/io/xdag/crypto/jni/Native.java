@@ -117,14 +117,14 @@ public class Native {
 
   // public static native byte[] dfslib_uncrypt_array();
 
-  // 这个是矿工之间的解密函数
+  /**这个是矿工之间的解密函数
   /* 参数1  加密的数据
    * 参数2   一共有多少个字段
    * 参数3   是第几个发送的 这里的sectorNo 是每一个字段加一次
    * */
   public static native byte[] dfslib_uncrypt_array(byte[] encrypted, int nfiled, long sectorNo);
 
-  // 这个矿工的加密函数
+  /** 这个矿工的加密函数*/
   public static native byte[] dfslib_encrypt_array(byte[] uncrypted, int nfiled, long sectorNo);
 
   public static native long get_user_dnet_crypt();
@@ -137,7 +137,7 @@ public class Native {
 
   public static native byte[] make_dnet_keys(int keylen);
 
-  // encrypt_wallet_key
+  /**encrypt_wallet_key*/
   public static native byte[] encrypt_wallet_key(byte[] privkey, int n);
 
   public static native byte[] uncrypt_wallet_key(byte[] privkey, int n);

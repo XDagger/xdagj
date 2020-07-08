@@ -84,11 +84,12 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     if (cause instanceof IOException) {
       logger.debug("远程主机关闭了一个连接");
       ctx.channel().closeFuture();
-      channel.onDisconnect();
 
     } else {
       cause.printStackTrace();
     }
+
+    channel.onDisconnect();
   }
 
   /** *********************** Message Processing * *********************** */
@@ -123,9 +124,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
   protected synchronized void processTaskShare(TaskShareMessage msg) {
     logger.debug(" 处理矿池接收到的任务反馈");
 
-    if (FastByteComparisons.compareTo(
-                msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
-            == 0
+    if (FastByteComparisons.compareTo(msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) == 0
         && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
 
       channel.addShareCounts(1);
@@ -150,6 +149,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
   public void disconnect() {
     ctx.close();
     this.channel.setActive(false);
+    kernel.getChannelsAccount().getAndDecrement();
     minerManager.removeUnactivateChannel(this.channel);
   }
 }

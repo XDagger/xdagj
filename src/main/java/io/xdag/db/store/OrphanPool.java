@@ -17,11 +17,12 @@ public class OrphanPool {
 
   private static final Logger logger = LoggerFactory.getLogger(OrphanPool.class);
 
-  // size key
+  /** size key*/
   private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
   public static final byte ORPHAN_PREFEX = 0x00;
 
-  private KVSource<byte[], byte[]> orphanSource; // <hash,nexthash>
+  // <hash,nexthash>
+  private KVSource<byte[], byte[]> orphanSource;
 
   public OrphanPool(KVSource<byte[], byte[]> orphan) {
     this.orphanSource = orphan;
@@ -38,13 +39,8 @@ public class OrphanPool {
     this.orphanSource.reset();
     this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
   }
-  /*
-   * @Author punk
-   * @Description 获取orphan块hash进行引用
-   * @Date 2020/4/21
-   * @Param [hash]
-   * @return java.util.List<io.xdag.core.Address>
-   **/
+
+
   public List<Address> getOrphan(long num) {
     List<Address> res = new ArrayList<>();
     if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {

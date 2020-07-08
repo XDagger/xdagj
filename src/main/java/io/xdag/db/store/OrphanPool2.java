@@ -39,13 +39,7 @@ public class OrphanPool2 {
     this.orphanSource.reset();
     this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
   }
-  /*
-   * @Author punk
-   * @Description 获取orphan块hash进行引用
-   * @Date 2020/4/21
-   * @Param [hash]
-   * @return java.util.List<io.xdag.core.Address>
-   **/
+
   public List<Address> getOrphan(int num, long time) {
     List<Address> res = new ArrayList<>();
     if (orphanSource.get(ORPHAN_SIZE) == null

@@ -35,6 +35,7 @@ public class MinerManagerImpl implements MinerManager {
   private Task currentTask = null;
 
   @Setter private PoW poW;
+  private Kernel kernel;
 
   private ScheduledExecutorService server =
       new ScheduledThreadPoolExecutor(
@@ -48,16 +49,18 @@ public class MinerManagerImpl implements MinerManager {
   private ScheduledFuture<?> cleanChannelFuture;
   private ScheduledFuture<?> cleanMinerFuture;
 
-  public MinerManagerImpl(Kernel kernel) {}
+  public MinerManagerImpl(Kernel kernel) {
+    this.kernel = kernel;
+  }
 
   /** 启动 函数 开启遍历和server */
   @Override
   public void start() {
     updateFuture = server.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
     cleanChannelFuture =
-        server.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 64, TimeUnit.SECONDS);
+        server.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
     cleanMinerFuture =
-        server.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 64, TimeUnit.SECONDS);
+        server.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
   }
 
   private void updataBalance() {
@@ -113,6 +116,7 @@ public class MinerManagerImpl implements MinerManager {
       Miner miner = activateMiners.get(new ByteArrayWrapper(channel.getAccountAddressHash()));
       miner.removeChannel(channel.getInetAddress());
       miner.subChannelCounts();
+      kernel.getChannelsAccount().getAndDecrement();
       if (miner.getConnChannelCounts() == 0) {
         miner.setMinerStates(MinerStates.MINER_ARCHIVE);
       }

@@ -44,7 +44,7 @@ public class XdagSha256Digest {
     return origin;
   }
 
-  // 获取可以发送给C的state
+  /**获取可以发送给C的state*/
   public byte[] getState() {
     byte[] encodedState = sha256Digest.getEncodedState();
 
