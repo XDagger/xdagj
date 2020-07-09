@@ -4,6 +4,8 @@ import static io.xdag.config.Config.MainNet;
 import static io.xdag.config.Config.WHITELIST_URL;
 import static io.xdag.config.Config.WHITELIST_URL_TESTNET;
 
+import io.xdag.config.Config;
+import io.xdag.net.message.NetDB;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -11,13 +13,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import org.apache.commons.io.FileUtils;
-
-import io.xdag.config.Config;
-import io.xdag.net.message.NetDB;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
 @Slf4j
 public class NetDBManager {
@@ -30,35 +28,11 @@ public class NetDBManager {
   private @Getter NetDB netDB;
 
   public NetDBManager(Config config) {
-    database =
-        MainNet ? config.getNetDBDir() :config.getNetDBDirTest();
-    databaseWhite =
-        MainNet
-            ? config.getWhiteListDir()
-            : config.getWhiteListDirTest();
+    database = MainNet ? config.getNetDBDir() : config.getNetDBDirTest();
+    databaseWhite = MainNet ? config.getWhiteListDir() : config.getWhiteListDirTest();
     whiteUrl = MainNet ? WHITELIST_URL : WHITELIST_URL_TESTNET;
     whiteDB = new NetDB();
     netDB = new NetDB();
-  }
-
-  enum HostFlags {
-    // our host
-    HOST_OUR(1),
-    // host connected
-    HOST_CONNECTED(2),
-    // host from init command
-    HOST_SET(4),
-    // host in netdb.txt
-    HOST_INDB(8),
-    // host not added
-    HOST_NOT_ADD(0x10),
-    // host in whitelist
-    HOST_WHITE(0x20);
-    private final int cmd;
-
-    HostFlags(int cmd) {
-      this.cmd = cmd;
-    }
   }
 
   public void init() {
@@ -157,6 +131,26 @@ public class NetDBManager {
       }
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+
+  enum HostFlags {
+    // our host
+    HOST_OUR(1),
+    // host connected
+    HOST_CONNECTED(2),
+    // host from init command
+    HOST_SET(4),
+    // host in netdb.txt
+    HOST_INDB(8),
+    // host not added
+    HOST_NOT_ADD(0x10),
+    // host in whitelist
+    HOST_WHITE(0x20);
+    private final int cmd;
+
+    HostFlags(int cmd) {
+      this.cmd = cmd;
     }
   }
 }

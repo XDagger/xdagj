@@ -6,25 +6,6 @@ import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.ImportResult.NO_PARENT;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
-import java.math.BigInteger;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
@@ -36,6 +17,22 @@ import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.ExecutorPipeline;
+import java.math.BigInteger;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class SyncManager {
 
@@ -64,15 +61,18 @@ public class SyncManager {
           },
           throwable -> logger.error("Unexpected exception: ", throwable));
 
-  private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(1, 1, new Consumer<BlockWrapper>() {
-    @Override
-    public void accept(BlockWrapper block) {
-      logger.debug("Accept a blockWrapper");
-      blockQueue.add(block);
-      //estimateBlockSize(blockWrapper);
-    }
-  });
-
+  private ExecutorPipeline<BlockWrapper, Void> exec2 =
+      exec1.add(
+          1,
+          1,
+          new Consumer<BlockWrapper>() {
+            @Override
+            public void accept(BlockWrapper block) {
+              logger.debug("Accept a blockWrapper");
+              blockQueue.add(block);
+              // estimateBlockSize(blockWrapper);
+            }
+          });
 
   public SyncManager(Kernel kernel) {
     this.kernel = kernel;
@@ -144,7 +144,7 @@ public class SyncManager {
           //                    }
 
           if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
-            logger.info("Current Maxdiff:"+kernel.getNetStatus().getMaxdifficulty().toString(16));
+            logger.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
             // 只有同步完成的时候 才能开始线程  再一次
 
             if (!syncDone) {

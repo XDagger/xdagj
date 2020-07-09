@@ -13,19 +13,6 @@ import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
-import java.net.InetSocketAddress;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -42,15 +29,24 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
+import java.net.InetSocketAddress;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class Command {
 
   public static final Logger logger = LoggerFactory.getLogger(Command.class);
-
-
-  private Kernel kernel;
   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
   DecimalFormat df = new DecimalFormat("######0.00");
+  private Kernel kernel;
 
   public Command(Kernel kernel) {
     this.kernel = kernel;
@@ -196,22 +192,28 @@ public class Command {
         block.signIn(ecKey);
       }
     }
-    //如果默认密钥被更改，需要重新对输出签名签属
+    // 如果默认密钥被更改，需要重新对输出签名签属
     if (!isdefaultKey) {
       block.signOut(kernel.getWallet().getDefKey().ecKey);
     }
 
     BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL(), null);
 
-
     // blockWrapper.setTransaction(true);
     kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
 
-    logger.info("Transfer [{}]Xdag from [{}] to [{}]",sendAmount, BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()), BasicUtils.hash2Address(to));
+    logger.info(
+        "Transfer [{}]Xdag from [{}] to [{}]",
+        sendAmount,
+        BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()),
+        BasicUtils.hash2Address(to));
 
-    System.out.println("Transfer " + sendAmount + "XDAG   to Address [" + BasicUtils.hash2Address(to) + "]");
+    System.out.println(
+        "Transfer " + sendAmount + "XDAG   to Address [" + BasicUtils.hash2Address(to) + "]");
 
-    return "Transaction :" + BasicUtils.hash2Address(block.getHashLow()) + " waiting to be processed";
+    return "Transaction :"
+        + BasicUtils.hash2Address(block.getHashLow())
+        + " waiting to be processed";
   }
 
   /** Current Blockchain Status */
@@ -264,7 +266,7 @@ public class Command {
    * Query block by hash
    *
    * @param blockhash blockhash
-   * @return  block info
+   * @return block info
    */
   public String block(byte[] blockhash) {
     try {
@@ -309,8 +311,10 @@ public class Command {
           .append("     ")
           .append(simpleDateFormat.format(date))
           .append(" ")
-          .append(getStateByFlags(blockInfo.getFlags())).append("   epoch:[")
-          .append(XdagTime.getEpoch(blockInfo.getTimestamp())).append("]")
+          .append(getStateByFlags(blockInfo.getFlags()))
+          .append("   epoch:[")
+          .append(XdagTime.getEpoch(blockInfo.getTimestamp()))
+          .append("]")
           .append("\n");
     }
     return ans.toString();
@@ -330,8 +334,10 @@ public class Command {
     StringBuilder ans = new StringBuilder();
     for (Block blockInfo : res) {
       Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
-      ans.append(Hex.toHexString(blockInfo.getHash())).append("  ")
-          .append(simpleDateFormat.format(date)).append(" ")
+      ans.append(Hex.toHexString(blockInfo.getHash()))
+          .append("  ")
+          .append(simpleDateFormat.format(date))
+          .append(" ")
           .append(getStateByFlags(blockInfo.getFlags()))
           .append("\n");
     }
@@ -401,11 +407,15 @@ public class Command {
     StringBuilder stringBuilder = new StringBuilder();
     for (Node node : map.keySet()) {
       stringBuilder
-              .append(node.getAddress())
-              .append(" ")
-              .append(map.get(node) == null ? null : simpleDateFormat.format(new Date(map.get(node)))).append(" ")
-              .append(node.getStat().Inbound.get()).append(" in/").append(node.getStat().Outbound.get()).append(" out")
-              .append("\n");
+          .append(node.getAddress())
+          .append(" ")
+          .append(map.get(node) == null ? null : simpleDateFormat.format(new Date(map.get(node))))
+          .append(" ")
+          .append(node.getStat().Inbound.get())
+          .append(" in/")
+          .append(node.getStat().Outbound.get())
+          .append(" out")
+          .append("\n");
     }
     return stringBuilder.toString();
   }

@@ -1,11 +1,10 @@
 package io.xdag.core;
 
 import io.xdag.utils.BytesUtils;
-import lombok.Data;
-
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class XdagField {
@@ -27,18 +26,29 @@ public class XdagField {
     this.data = new byte[32];
   }
 
+  public long getSum() {
+    if (sum == 0) {
+      for (int i = 0; i < 4; i++) {
+        sum += BytesUtils.bytesToLong(getData(), i * 8, true);
+      }
+      return sum;
+    } else {
+      return sum;
+    }
+  }
+
   public static enum FieldType {
-    //nonce字段
+    // nonce字段
     XDAG_FIELD_NONCE(0x00),
-    //头部字段
+    // 头部字段
     XDAG_FIELD_HEAD(0x01),
-    //输入
+    // 输入
     XDAG_FIELD_IN(0x02),
-    //输入
+    // 输入
     XDAG_FIELD_OUT(0x03),
-    //输入签名
+    // 输入签名
     XDAG_FIELD_SIGN_IN(0x04),
-    //输出签名
+    // 输出签名
     XDAG_FIELD_SIGN_OUT(0x05),
     XDAG_FIELD_PUBLIC_KEY_0(0x06),
     XDAG_FIELD_PUBLIC_KEY_1(0x07),
@@ -51,8 +61,6 @@ public class XdagField {
     XDAG_FIELD_RESERVE5(0x0E),
     XDAG_FIELD_RESERVE6(0x0F);
 
-    private final int cmd;
-
     private static final Map<Integer, FieldType> intToTypeMap = new HashMap<>();
 
     static {
@@ -60,6 +68,8 @@ public class XdagField {
         intToTypeMap.put(type.cmd, type);
       }
     }
+
+    private final int cmd;
 
     private FieldType(int cmd) {
       this.cmd = cmd;
@@ -75,17 +85,6 @@ public class XdagField {
 
     public byte asByte() {
       return (byte) (cmd);
-    }
-  }
-
-  public long getSum() {
-    if (sum == 0) {
-      for (int i = 0; i < 4; i++) {
-        sum += BytesUtils.bytesToLong(getData(), i * 8, true);
-      }
-      return sum;
-    } else {
-      return sum;
     }
   }
 }

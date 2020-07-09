@@ -15,20 +15,18 @@ import java.util.function.Function;
 
 public class ExecutorPipeline<In, Out> {
 
+  private static AtomicInteger pipeNumber = new AtomicInteger(1);
   private BlockingQueue<Runnable> queue;
   private ThreadPoolExecutor exec;
   private boolean preserveOrder = false;
   private Function<In, Out> processor;
   private Consumer<Throwable> exceptionHandler;
   private ExecutorPipeline<Out, ?> next;
-
   private AtomicLong orderCounter = new AtomicLong();
   private long nextOutTaskNumber = 0;
   private Map<Long, Out> orderMap = new HashMap<>();
   private ReentrantLock lock = new ReentrantLock();
   private String threadPoolName;
-
-  private static AtomicInteger pipeNumber = new AtomicInteger(1);
   private AtomicInteger threadNumber = new AtomicInteger(1);
 
   public ExecutorPipeline(

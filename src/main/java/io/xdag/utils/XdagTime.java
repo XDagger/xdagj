@@ -2,7 +2,7 @@ package io.xdag.utils;
 
 public class XdagTime {
 
-  /**获取当前的xdag时间戳*/
+  /** 获取当前的xdag时间戳 */
   public static long getCurrentTimestamp() {
     long time_ms = System.currentTimeMillis();
     double ms_tmp = (double) (time_ms << 10);
@@ -10,7 +10,7 @@ public class XdagTime {
     return time_xdag;
   }
 
-  /**把毫秒转为xdag时间戳*/
+  /** 把毫秒转为xdag时间戳 */
   public static long msToXdagtimestamp(long ms) {
     double ms_tmp = (double) (ms << 10);
     long xdag_timestamp = (long) Math.ceil(ms_tmp / 1000 + 0.5);
@@ -22,19 +22,19 @@ public class XdagTime {
     return (ms >> 10) - 1;
   }
 
-  /**获取该时间戳所属的epoch*/
+  /** 获取该时间戳所属的epoch */
   public static long getEpoch(long time) {
     long epoch = time >> 16;
     return epoch;
   }
 
-  /**获取时间戳所属epoch的最后一个时间戳 主要用于mainblock*/
+  /** 获取时间戳所属epoch的最后一个时间戳 主要用于mainblock */
   public static long getEndOfEpoch(long time) {
     long result = time | 0xffff;
     return result;
   }
 
-  /**获取当前时间所属epoch的最后一个时间戳*/
+  /** 获取当前时间所属epoch的最后一个时间戳 */
   public static long getMainTime() {
     return getEndOfEpoch(getCurrentTimestamp());
   }

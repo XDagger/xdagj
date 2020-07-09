@@ -1,26 +1,26 @@
 package io.xdag.core;
 
-import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_EXTRA;
+import static io.xdag.config.Constants.BI_MAIN;
+import static io.xdag.config.Constants.BI_MAIN_CHAIN;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.MAIN_APOLLO_AMOUNT;
+import static io.xdag.config.Constants.MAIN_APOLLO_HEIGHT;
+import static io.xdag.config.Constants.MAIN_APOLLO_TESTNET_HEIGHT;
+import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
+import static io.xdag.config.Constants.MAIN_START_AMOUNT;
+import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 import static io.xdag.utils.MapUtils.getHead;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import io.xdag.config.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
+import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
 import io.xdag.crypto.Sha256Hash;
 import io.xdag.db.DatabaseFactory;
@@ -33,19 +33,23 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.key_internal_item;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class BlockchainImpl implements Blockchain {
 
-  enum OrphanRemoveActions {
-    ORPHAN_REMOVE_NORMAL,
-    ORPHAN_REMOVE_REUSE,
-    ORPHAN_REMOVE_EXTRA
-  };
+    private static final Logger logger = LoggerFactory.getLogger(BlockchainImpl.class);;
+  private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
 
-  private static final Logger logger = LoggerFactory.getLogger(BlockchainImpl.class);
-
-//  private static long g_apollo_fork_time = 0;
-
+  //  private static long g_apollo_fork_time = 0;
   private Wallet wallet;
 
   private BlockStore blockStore;
@@ -56,16 +60,11 @@ public class BlockchainImpl implements Blockchain {
   private LinkedHashMap<ByteArrayWrapper, Block> MemOrphanPool = new LinkedHashMap<>();
 
   private Map<ByteArrayWrapper, Integer> MemAccount = new ConcurrentHashMap<>();
-
-  private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
-
   private BigInteger topDiff;
   /** 存放的是一个可能是最大难度的block hash */
   private byte[] top_main_chain;
-
   private byte[] pretop;
   private BigInteger pretopDiff;
-
   private NetStatus netStatus;
 
   public BlockchainImpl(Kernel kernel, DatabaseFactory dbFactory) {
@@ -163,8 +162,8 @@ public class BlockchainImpl implements Blockchain {
           if (tmpRef != null) {}
           if ((tmpRef == null || blockRef.getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0)
               && (blockRef0 == null
-              || XdagTime.getEpoch(blockRef0.getTimestamp())
-              > XdagTime.getEpoch(blockRef.getTimestamp()))) {
+                  || XdagTime.getEpoch(blockRef0.getTimestamp())
+                      > XdagTime.getEpoch(blockRef.getTimestamp()))) {
             updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
             blockRef0 = blockRef;
           }
@@ -174,7 +173,7 @@ public class BlockchainImpl implements Blockchain {
             && blockRef0 != null
             && !blockRef.equals(blockRef0)
             && XdagTime.getEpoch(blockRef.getTimestamp())
-            == XdagTime.getEpoch(blockRef0.getTimestamp())) {
+                == XdagTime.getEpoch(blockRef0.getTimestamp())) {
           blockRef = getMaxDiffLink(blockRef, false);
         }
         // 将主链回退到blockref
@@ -383,9 +382,9 @@ public class BlockchainImpl implements Blockchain {
     long time = block.getTimestamp();
     long mainNumber = blockStore.getMainNumber();
 
-    long reward = getReward(time,mainNumber);
+    long reward = getReward(time, mainNumber);
 
-//    long reward = getCurrentReward();
+    //    long reward = getCurrentReward();
 
     updateBlockFlag(block, BI_MAIN, true);
 
@@ -406,8 +405,8 @@ public class BlockchainImpl implements Blockchain {
     blockStore.mainNumberDec();
     netStatus.decMain();
 
-//    long amount = getCurrentReward();
-    long amount = getReward(block.getTimestamp(),blockStore.getMainNumber());
+    //    long amount = getCurrentReward();
+    long amount = getReward(block.getTimestamp(), blockStore.getMainNumber());
     updateBlockFlag(block, BI_MAIN, false);
 
     // 去掉奖励和引用块的手续费
@@ -568,12 +567,12 @@ public class BlockchainImpl implements Blockchain {
         BigInteger curDiff = refBlock.getDifficulty();
         while ((tmpBlock != null)
             && XdagTime.getEpoch(tmpBlock.getTimestamp())
-            == XdagTime.getEpoch(block.getTimestamp())) {
+                == XdagTime.getEpoch(block.getTimestamp())) {
           tmpBlock = getMaxDiffLink(tmpBlock, false);
         }
         if (tmpBlock != null
             && (XdagTime.getEpoch(tmpBlock.getTimestamp())
-            < XdagTime.getEpoch(block.getTimestamp()))) {
+                < XdagTime.getEpoch(block.getTimestamp()))) {
           curDiff = tmpBlock.getDifficulty().add(diff0);
         }
         if (curDiff.compareTo(maxDiff) > 0) {
@@ -611,6 +610,10 @@ public class BlockchainImpl implements Blockchain {
     return topDiff;
   }
 
+  public void setTopDiff(BigInteger diff) {
+    topDiff = diff;
+  }
+
   @Override
   public BigInteger getPretopDiff() {
     return blockStore.getPretopDiff();
@@ -624,7 +627,7 @@ public class BlockchainImpl implements Blockchain {
   public void removeOrphan(Block removeBlockInfo, OrphanRemoveActions action) {
     if (((removeBlockInfo.getFlags() & BI_REF) == 0)
         && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
-        || (removeBlockInfo.getFlags() & BI_EXTRA) != 0)) {
+            || (removeBlockInfo.getFlags() & BI_EXTRA) != 0)) {
       // 如果removeBlock是BI_EXTRA
       if ((removeBlockInfo.getFlags() & BI_EXTRA) != 0) {
         logger.debug("移除Extra");
@@ -796,10 +799,6 @@ public class BlockchainImpl implements Blockchain {
     }
   }
 
-  public void setTopDiff(BigInteger diff) {
-    topDiff = diff;
-  }
-
   public void setTopMainchain(Block block) {
     this.top_main_chain = block.getHashLow();
   }
@@ -809,21 +808,21 @@ public class BlockchainImpl implements Blockchain {
     return xdag2amount(1024);
   }
 
-  public long getReward(long time,long num){
-    long start = getStartAmount(time,num);
+  public long getReward(long time, long num) {
+    long start = getStartAmount(time, num);
     long amount = start >> (num >> MAIN_BIG_PERIOD_LOG);
     return amount;
   }
 
-  private long getStartAmount(long time,long num){
-    long forkHeight = Config.MainNet?MAIN_APOLLO_HEIGHT:MAIN_APOLLO_TESTNET_HEIGHT;
+  private long getStartAmount(long time, long num) {
+    long forkHeight = Config.MainNet ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
     long startAmount = 0;
-    if(num >= forkHeight){
-//      if(g_apollo_fork_time == 0) {
-//        g_apollo_fork_time = time;
-//      }
+    if (num >= forkHeight) {
+      //      if(g_apollo_fork_time == 0) {
+      //        g_apollo_fork_time = time;
+      //      }
       startAmount = MAIN_APOLLO_AMOUNT;
-    }else {
+    } else {
       startAmount = MAIN_START_AMOUNT;
     }
 
@@ -927,5 +926,11 @@ public class BlockchainImpl implements Blockchain {
   @Override
   public Block getExtraBlock(byte[] hashlow) {
     return MemOrphanPool.getOrDefault(new ByteArrayWrapper(hashlow), null);
+  }
+
+enum OrphanRemoveActions {
+    ORPHAN_REMOVE_NORMAL,
+    ORPHAN_REMOVE_REUSE,
+    ORPHAN_REMOVE_EXTRA
   }
 }

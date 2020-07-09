@@ -5,9 +5,22 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class NodeStat {
 
+  public final StatHandler Inbound = new StatHandler();
+  public final StatHandler Outbound = new StatHandler();
   private BigInteger xdagTotalDifficulty;
-
   private boolean isPredefined = false;
+
+  public void disconnected() {
+    System.currentTimeMillis();
+  }
+
+  public boolean isPredefined() {
+    return isPredefined;
+  }
+
+  public BigInteger getXdagTotalDifficulty() {
+    return xdagTotalDifficulty;
+  }
 
   public class StatHandler {
     AtomicLong count = new AtomicLong(0);
@@ -28,20 +41,5 @@ public class NodeStat {
     public String toString() {
       return count.toString();
     }
-  }
-
-  public final StatHandler Inbound = new StatHandler();
-  public final StatHandler Outbound = new StatHandler();
-
-  public void disconnected() {
-    System.currentTimeMillis();
-  }
-
-  public boolean isPredefined() {
-    return isPredefined;
-  }
-
-  public BigInteger getXdagTotalDifficulty() {
-    return xdagTotalDifficulty;
   }
 }

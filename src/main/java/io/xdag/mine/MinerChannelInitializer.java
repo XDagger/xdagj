@@ -1,17 +1,14 @@
 package io.xdag.mine;
 
-import io.xdag.config.Config;
-import java.net.InetSocketAddress;
-
-import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
+import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel> {
 
@@ -41,7 +38,10 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
     // 如果是服务器 就会获取到的是外部的地址 否则获取到自己本地的地址
     channelsAccount.getAndIncrement();
     InetSocketAddress channelAddress =
-        isServer ? ch.remoteAddress() : new InetSocketAddress(kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
+        isServer
+            ? ch.remoteAddress()
+            : new InetSocketAddress(
+                kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
     MinerChannel minerChannel = new MinerChannel(kernel, ch, isServer);
     minerChannel.init(ch.pipeline(), channelAddress);
 

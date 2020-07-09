@@ -2,6 +2,15 @@ package io.xdag.consensus;
 
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import io.xdag.Kernel;
+import io.xdag.db.SimpleFileStore;
+import io.xdag.net.XdagChannel;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.message.impl.SumReplyMessage;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -9,35 +18,14 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-
-import io.xdag.Kernel;
-import io.xdag.db.SimpleFileStore;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.impl.SumReplyMessage;
-
 public class XdagSync {
 
   private static final Logger logger = LoggerFactory.getLogger(XdagSync.class);
-  private XdagChannelManager channelMgr;
-  private SimpleFileStore simpleFileStore;
-
-  private Status status;
-
-  private ScheduledExecutorService sendTask;
-  private ScheduledFuture<?> sendFuture;
-
-  private volatile boolean isRunning;
   private static final ThreadFactory factory =
       new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
@@ -47,19 +35,20 @@ public class XdagSync {
           return new Thread(r, "sync(request)-" + cnt.getAndIncrement());
         }
       };
-
-  public enum Status {
-    /** syncing */
-    SYNCING,
-    SYNCDONE
-  }
+  private XdagChannelManager channelMgr;
+  private SimpleFileStore simpleFileStore;
+  private Status status;
+  private ScheduledExecutorService sendTask;
+  private ScheduledFuture<?> sendFuture;
+  private volatile boolean isRunning;
 
   public XdagSync(Kernel kernel) {
     this.channelMgr = kernel.getChannelManager();
     this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
-    //sendTask = Executors.newSingleThreadScheduledExecutor(factory);
-    sendTask = new ScheduledThreadPoolExecutor(1,factory);
+    // sendTask = Executors.newSingleThreadScheduledExecutor(factory);
+    sendTask = new ScheduledThreadPoolExecutor(1, factory);
   }
+
   /** 不断发送send request */
   public void start() {
     if (status != Status.SYNCING) {
@@ -95,28 +84,6 @@ public class XdagSync {
     }
   }
 
-  class SumCallback implements FutureCallback<SumReplyMessage> {
-    private XdagChannel channel;
-    private long starttime;
-    private long endtime;
-
-    public SumCallback(XdagChannel channel, long starttime, long endtime) {
-      this.channel = channel;
-      this.starttime = starttime;
-      this.endtime = endtime;
-    }
-
-    @Override
-    public void onSuccess(SumReplyMessage reply) {
-      processSumsReply(reply, channel, starttime, endtime);
-    }
-
-    @Override
-    public void onFailure(@Nonnull Throwable t) {
-      logger.debug("{}: Error receiving Sums. Dropping the peer.", "Sync", t);
-      channel.getXdag().dropConnection();
-    }
-  }
   /**
    * 处理响应 在响应的时间范围在1<<20的时候就可以发送请求区块了，其他时间慢慢缩短所需要的区块范围
    *
@@ -181,5 +148,34 @@ public class XdagSync {
 
   public boolean isRunning() {
     return isRunning;
+  }
+
+  public enum Status {
+    /** syncing */
+    SYNCING,
+    SYNCDONE
+  }
+
+  class SumCallback implements FutureCallback<SumReplyMessage> {
+    private XdagChannel channel;
+    private long starttime;
+    private long endtime;
+
+    public SumCallback(XdagChannel channel, long starttime, long endtime) {
+      this.channel = channel;
+      this.starttime = starttime;
+      this.endtime = endtime;
+    }
+
+    @Override
+    public void onSuccess(SumReplyMessage reply) {
+      processSumsReply(reply, channel, starttime, endtime);
+    }
+
+    @Override
+    public void onFailure(@Nonnull Throwable t) {
+      logger.debug("{}: Error receiving Sums. Dropping the peer.", "Sync", t);
+      channel.getXdag().dropConnection();
+    }
   }
 }

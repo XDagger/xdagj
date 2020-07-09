@@ -9,21 +9,17 @@ import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
 
 public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel> {
 
   private static final Logger logger = LoggerFactory.getLogger("net");
-
-  private XdagChannelManager channelMgr;
-
-  private boolean isServer = false;
-  protected Kernel kernel;
-
   private final Node remoteNode;
+  protected Kernel kernel;
+  private XdagChannelManager channelMgr;
+  private boolean isServer = false;
 
   public XdagChannelInitializer(Kernel kernel, boolean isServer, Node remoteNode) {
     this.kernel = kernel;

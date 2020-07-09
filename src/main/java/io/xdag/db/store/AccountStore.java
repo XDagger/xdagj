@@ -1,5 +1,7 @@
 package io.xdag.db.store;
 
+import static io.xdag.utils.FastByteComparisons.equalBytes;
+
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
@@ -7,30 +9,23 @@ import io.xdag.crypto.ECKey;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.Wallet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static io.xdag.utils.FastByteComparisons.equalBytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class AccountStore {
 
   private static final Logger logger = LoggerFactory.getLogger(AccountStore.class);
-
-  /** <hash->nexthash> */
-  private KVSource<byte[], byte[]> accountSource;
-
-  private BlockStore blockStore;
-
   private static final byte[] ACCOUNT_ORIGIN_KEY = Hex.decode("FFFFFFFFFFFFFFFF");
   private static final byte[] ACCOUNT_GLOBAL_BALANCE = Hex.decode("EEEEEEEEEEEEEEEE");
   private static final byte[] ACCOUNT_GLOBAL_MINER = Hex.decode("FFFFFFFFFFFFFFFE");
-
+  /** <hash->nexthash> */
+  private KVSource<byte[], byte[]> accountSource;
+  private BlockStore blockStore;
   private Wallet wallet;
 
   public AccountStore(
@@ -48,7 +43,7 @@ public class AccountStore {
     this.accountSource.reset();
   }
 
-  /**存放第一个地址块*/
+  /** 存放第一个地址块 */
   public synchronized void addFirstAccount(Block block, int keyIndex) {
     logger.debug(
         "Add new account:"
@@ -60,9 +55,7 @@ public class AccountStore {
     blockStore.updateBlockKeyIndex(block.getHashLow(), keyIndex);
   }
 
-  /**
-   * 账户形成链表
-   */
+  /** 账户形成链表 */
   public synchronized void addNewAccount(Block block, int keyIndex) {
     // 第一个
     if (getAllAccount().size() == 0) {

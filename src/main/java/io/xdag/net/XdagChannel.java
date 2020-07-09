@@ -1,9 +1,5 @@
 package io.xdag.net;
 
-import java.net.InetSocketAddress;
-
-import org.spongycastle.util.encoders.Hex;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -23,35 +19,36 @@ import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.spongycastle.util.encoders.Hex;
 
 @Data
 @Slf4j
 public class XdagChannel {
-  private InetSocketAddress inetSocketAddress;
   private final NioSocketChannel socket;
-
+  private InetSocketAddress inetSocketAddress;
   private boolean isActive;
   private boolean isDisconnected = false;
 
   private Config config;
 
-  /**握手 密钥*/
+  /** 握手 密钥 */
   private XdagHandshakeHandler handshakeHandler;
-  /**信息编码处理*/
+  /** 信息编码处理 */
   private MessageCodes messageCodec;
-  /**处理区块*/
+  /** 处理区块 */
   private XdagBlockHandler blockHandler;
-  /**获取xdag03handler*/
+  /** 获取xdag03handler */
   private Xdag xdag = new XdagAdapter();
-  /**用来创建xdag03handler处理message 实际的逻辑操作*/
+  /** 用来创建xdag03handler处理message 实际的逻辑操作 */
   private XdagHandlerFactory xdagHandlerFactory;
 
-  /**发送message的线程 针对每个channel*/
+  /** 发送message的线程 针对每个channel */
   private MessageQueue msgQueue;
 
-  /**该channel对应的节点*/
+  /** 该channel对应的节点 */
   private Node node;
 
   public XdagChannel(NioSocketChannel socketChannel) {
@@ -136,7 +133,7 @@ public class XdagChannel {
     xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
   }
 
-  /**激活xdaghandler*/
+  /** 激活xdaghandler */
   public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
 
     XdagHandler handler = xdagHandlerFactory.create(version);

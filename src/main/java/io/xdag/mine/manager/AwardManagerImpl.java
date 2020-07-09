@@ -4,16 +4,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static java.lang.Math.E;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.consensus.Task;
@@ -29,70 +19,44 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import io.xdag.wallet.Wallet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class AwardManagerImpl implements AwardManager {
   private static final Logger logger = LoggerFactory.getLogger(AwardManagerImpl.class);
 
   /** 每一轮的确认数是16 */
   private static final int CONFIRMATIONS_COUNT = 16;
-
-  private final double DBL = 2.2204460492503131E-016;
-
-  protected Miner poolMiner;
-
-  private List<Miner> miners;
-
-  @Setter
-  private MinerManager minerManager;
-
-  /** 内部类 用于计算支付数据 */
-  public static class PayData {
-    // 整个区块用于支付的金额
-    long balance;
-    // 每一次扣除后剩余的钱 回合所用矿工平分
-    long unusedBalance;
-    // 矿池自己的收入
-    long poolFee;
-    // 出块矿工的奖励
-    long minerReward;
-    // 参与挖矿的奖励
-    long directIncome;
-    // 基金会的奖励
-    long fundIncome;
-    // 所有矿工diff 的难度之和
-    double diffSums;
-    // 所有矿工prevdiff的难度之和
-    double prevDiffSums;
-    // 记录奖励矿工的位置
-    byte[] rewardMiner = null;
-  }
-
-  // 定义每一个部分的收益占比
   /** 矿池自己的收益 */
   private static double poolRation;
-
   /** 出块矿工占比 */
   private static double minerRewardRation;
-
   /** 基金会的奖励 */
   private static double fundRation;
-
   /** 矿工的参与奖励 */
   private static double directRation;
+  private final double DBL = 2.2204460492503131E-016;
 
+  // 定义每一个部分的收益占比
+  protected Miner poolMiner;
   /** 存放的是过去十六个区块的hash */
   protected List<ByteArrayWrapper> blockHashs = new CopyOnWriteArrayList<ByteArrayWrapper>();
-
   protected List<ByteArrayWrapper> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
   protected long currentTaskTime;
   protected long currentTaskIndex;
-
+  protected Config config;
+  private List<Miner> miners;
+  @Setter private MinerManager minerManager;
   private Kernel kernel;
   private Blockchain blockchain;
   private Wallet xdagWallet;
-  protected Config config;
-
   public AwardManagerImpl(Kernel kernel) {
     this.kernel = kernel;
     this.config = kernel.getConfig();
@@ -103,6 +67,37 @@ public class AwardManagerImpl implements AwardManager {
     init();
 
     setPoolConfig();
+  }
+
+  /** 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值 */
+  private static double processOutdatedMiner(Miner miner) {
+
+    logger.debug("processOutdatedMiner");
+    double sum = 0.0;
+    int diffcount = 0;
+    double temp;
+    for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
+      if ((temp = miner.getMaxDiffs(i)) > 0) {
+        sum += temp;
+        miner.setMaxDiffs(i, 0.0);
+        ++diffcount;
+      }
+    }
+
+    if (diffcount > 0) {
+      sum /= diffcount;
+    }
+    return sum;
+  }
+
+  /** 实现一个由难度转换为pay 的函数 */
+  private static double diffToPay(double sum, int diffCount) {
+    double result = 0.0;
+
+    if (diffCount > 0) {
+      result = Math.pow(E, ((sum / diffCount) - 20)) * diffCount;
+    }
+    return result;
   }
 
   public void init() {
@@ -163,13 +158,13 @@ public class AwardManagerImpl implements AwardManager {
   }
 
   @Override
-  public void setPoolMiner(byte[] hash) {
-    this.poolMiner = new Miner(hash);
+  public Miner getPoolMiner() {
+    return poolMiner;
   }
 
   @Override
-  public Miner getPoolMiner() {
-    return poolMiner;
+  public void setPoolMiner(byte[] hash) {
+    this.poolMiner = new Miner(hash);
   }
 
   @Override
@@ -481,34 +476,25 @@ public class AwardManagerImpl implements AwardManager {
     // kernel.getBlockchain().tryToConnect(block);
   }
 
-  /** 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值 */
-  private static double processOutdatedMiner(Miner miner) {
-
-    logger.debug("processOutdatedMiner");
-    double sum = 0.0;
-    int diffcount = 0;
-    double temp;
-    for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
-      if ((temp = miner.getMaxDiffs(i)) > 0) {
-        sum += temp;
-        miner.setMaxDiffs(i, 0.0);
-        ++diffcount;
-      }
-    }
-
-    if (diffcount > 0) {
-      sum /= diffcount;
-    }
-    return sum;
-  }
-
-  /** 实现一个由难度转换为pay 的函数 */
-  private static double diffToPay(double sum, int diffCount) {
-    double result = 0.0;
-
-    if (diffCount > 0) {
-      result = Math.pow(E, ((sum / diffCount) - 20)) * diffCount;
-    }
-    return result;
+  /** 内部类 用于计算支付数据 */
+  public static class PayData {
+    // 整个区块用于支付的金额
+    long balance;
+    // 每一次扣除后剩余的钱 回合所用矿工平分
+    long unusedBalance;
+    // 矿池自己的收入
+    long poolFee;
+    // 出块矿工的奖励
+    long minerReward;
+    // 参与挖矿的奖励
+    long directIncome;
+    // 基金会的奖励
+    long fundIncome;
+    // 所有矿工diff 的难度之和
+    double diffSums;
+    // 所有矿工prevdiff的难度之和
+    double prevDiffSums;
+    // 记录奖励矿工的位置
+    byte[] rewardMiner = null;
   }
 }

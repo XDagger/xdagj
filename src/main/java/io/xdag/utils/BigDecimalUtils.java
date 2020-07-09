@@ -43,7 +43,8 @@ public class BigDecimalUtils {
     }
 
     BigDecimal b1 = BigDecimal.valueOf(v1);
-    BigDecimal b2 = BigDecimal.valueOf(v2);;
+    BigDecimal b2 = BigDecimal.valueOf(v2);
+    ;
     return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
   }
 

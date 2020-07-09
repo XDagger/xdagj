@@ -1,10 +1,9 @@
 package io.xdag.crypto;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 
 public class Sha256Hash {
 
@@ -48,10 +47,6 @@ public class Sha256Hash {
     }
   }
 
-  public byte[] getBytes() {
-    return bytes;
-  }
-
   public static byte[] bytesToSHA256(byte[] bytes) {
     byte[] encrypt = new byte[256];
     try {
@@ -70,5 +65,9 @@ public class Sha256Hash {
     System.arraycopy(data2, 0, bytes, data1.length, data2.length);
 
     return bytesToSHA256(bytes);
+  }
+
+  public byte[] getBytes() {
+    return bytes;
   }
 }

@@ -1,36 +1,33 @@
 package io.xdag.net.message;
 
+import static io.xdag.config.Constants.DNET_PKT_XDAG;
+import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
+import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
+
 import io.xdag.utils.BytesUtils;
+import java.math.BigInteger;
+import java.util.zip.CRC32;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
-import java.util.zip.CRC32;
-
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
-import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
-import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
-
 @EqualsAndHashCode(callSuper = false)
 @Data
 public abstract class AbstractMessage extends Message {
-
-  Logger logger = LoggerFactory.getLogger(AbstractMessage.class);
 
   protected long starttime;
   protected long endtime;
   protected long random;
   protected byte[] hash;
-
-  /**获取对方节点的netstatus*/
+  /** 获取对方节点的netstatus */
   protected NetStatus netStatus;
-  /**获取对方节点的netdb*/
+  /** 获取对方节点的netdb */
   protected NetDB netDB;
   protected XdagMessageCodes codes;
+  Logger logger = LoggerFactory.getLogger(AbstractMessage.class);
 
   public AbstractMessage(
       XdagMessageCodes type, long starttime, long endtime, long random, NetStatus netStatus) {

@@ -1,33 +1,30 @@
 package io.xdag.wallet;
 
+import io.xdag.config.Config;
+import io.xdag.crypto.jni.Native;
 import io.xdag.utils.RSAUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import org.spongycastle.util.encoders.Hex;
 
-import io.xdag.config.Config;
-import io.xdag.crypto.jni.Native;
-
 public class WalletTest {
 
   public static void main(String[] args) throws Exception {
-//    Config config = new Config();
-//    Native.init();
-//    if (Native.dnet_crypt_init() < 0) {
-//      throw new Exception("dnet crypt init failed");
-//    }
-//
-//    WalletImpl wallet = new WalletImpl();
-//    wallet.init(config);
+    //    Config config = new Config();
+    //    Native.init();
+    //    if (Native.dnet_crypt_init() < 0) {
+    //      throw new Exception("dnet crypt init failed");
+    //    }
+    //
+    //    WalletImpl wallet = new WalletImpl();
+    //    wallet.init(config);
 
     WalletTest walletTest = new WalletTest();
-
   }
 
   public static void readDat(String path) throws IOException {

@@ -2,17 +2,6 @@ package io.xdag.mine;
 
 import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
-import io.xdag.mine.handler.ConnectionLimitHandler;
-import java.net.InetSocketAddress;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.codec.binary.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -21,6 +10,7 @@ import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.store.BlockStore;
+import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.handler.Miner03;
 import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.mine.handler.MinerMessageHandler;
@@ -31,55 +21,48 @@ import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
+import java.net.InetSocketAddress;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Data;
+import org.apache.commons.codec.binary.Hex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Data
 public class MinerChannel {
 
   public static final Logger logger = LoggerFactory.getLogger(MinerChannel.class);
-
+  /** 对应的是服务端的还是客户端的 */
+  private final boolean isServer;
   private Kernel kernel;
   private Config config;
-
   /** 这个channel是否是活跃的 仅当连接成功后变为true */
   private boolean isActive;
-
   /** 记录对应的矿工对象 */
   private Miner miner;
-
   /** 当前接受的最近的任务编号 */
   private long taskIndex;
-
   private long taskTime = 0;
-
   /** 每一轮任务分享share的次数 接收一次加1 */
   private int sharesCounts;
-
   /** 上一次发送shares 的时间 接收到shares 的时候会更新 */
   private long lastSharesTime;
-
   /** 连接成功的时间 暂时只适用于打印 没有其他用途 */
   private Date connectTime;
-
   /** 如果是服务端端 则保存的是远程连接的客户端地址 若是客户端，则保存的是本地的地址 */
   private InetSocketAddress inetAddress;
-
   /** 发起连接的账户的地址块 */
   private byte[] accountAddressHash;
-
   private byte[] accountAddressHashLow;
-
   /** 保存上一轮的share */
   private byte[] share = new byte[32];
   /** 跟新为当前最小的hash 每收到一个share 后跟新 */
   private byte[] lastMinHash = new byte[32];
-
   /** 记录prevDiff的次数 实际上类似于进行了多少次计算 */
   private int prevDiffCounts;
-
-  /** 对应的是服务端的还是客户端的 */
-  private final boolean isServer;
-
   private ChannelHandlerContext ctx;
 
   private BlockStore blockStore;
@@ -98,41 +81,14 @@ public class MinerChannel {
 
   /** 保存这个channel 最后的计算的hash */
   private byte[] minHash;
-
-  /** 内部类 用于计算这个channel 的入栈和出战信息 */
-  public static class StatHandle {
-    AtomicLong count = new AtomicLong(0);
-
-    public void add() {
-      count.getAndIncrement();
-    }
-
-    public void add(long delta) {
-      count.addAndGet(delta);
-    }
-
-    public long get() {
-      return count.get();
-    }
-
-    @Override
-    public String toString() {
-      return count.toString();
-    }
-  }
-
   /** 记录的是出入站的消息 */
   private StatHandle inBound;
-
   private StatHandle outBound;
-
   /** 各种处理器* */
   private MinerHandShakeHandler minerHandShakeHandler;
-
   private MinerMessageHandler minerMessageHandler;
   private Miner03 miner03;
   private ConnectionLimitHandler connectionLimitHandler;
-
   /** 初始化 同时需要判断是服务器端还是客户端 */
   public MinerChannel(Kernel kernel, NioSocketChannel socket, boolean isServer) {
     this.kernel = kernel;
@@ -149,8 +105,6 @@ public class MinerChannel {
       maxDiffs.add(0.0);
     }
   }
-
-  // 初始化这个channel
 
   /**
    * 初始化一个channel 并且注册到管道上
@@ -174,6 +128,8 @@ public class MinerChannel {
     this.minerHandShakeHandler = new MinerHandShakeHandler(this, kernel);
     pipeline.addLast("MinerHandShake", minerHandShakeHandler);
   }
+
+  // 初始化这个channel
 
   /**
    * 根据版本创建一个信息工厂
@@ -332,5 +288,27 @@ public class MinerChannel {
 
   public void dropConnection() {
     miner03.dropConnection();
+  }
+
+  /** 内部类 用于计算这个channel 的入栈和出战信息 */
+  public static class StatHandle {
+    AtomicLong count = new AtomicLong(0);
+
+    public void add() {
+      count.getAndIncrement();
+    }
+
+    public void add(long delta) {
+      count.addAndGet(delta);
+    }
+
+    public long get() {
+      return count.get();
+    }
+
+    @Override
+    public String toString() {
+      return count.toString();
+    }
   }
 }

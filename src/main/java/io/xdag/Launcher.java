@@ -1,14 +1,13 @@
 package io.xdag;
 
 import io.xdag.event.PubSubFactory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class Launcher {
   private static final Logger logger = LoggerFactory.getLogger(Launcher.class);
@@ -23,12 +22,6 @@ public class Launcher {
 
   static {
     Runtime.getRuntime().addShutdownHook(new Thread(Launcher::shutdownHook, "shutdown-hook"));
-  }
-
-  /** Set up pubsub service. */
-  protected void setupPubSub() {
-    PubSubFactory.getDefault().start();
-    registerShutdownHook("pubsub-default", () -> PubSubFactory.getDefault().stop());
   }
 
   /**
@@ -54,5 +47,11 @@ public class Launcher {
     }
     // flush log4j async loggers
     LogManager.shutdown();
+  }
+
+  /** Set up pubsub service. */
+  protected void setupPubSub() {
+    PubSubFactory.getDefault().start();
+    registerShutdownHook("pubsub-default", () -> PubSubFactory.getDefault().stop());
   }
 }

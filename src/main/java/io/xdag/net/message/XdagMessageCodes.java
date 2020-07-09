@@ -1,11 +1,10 @@
 package io.xdag.net.message;
 
-import io.xdag.net.XdagVersion;
+import static io.xdag.net.XdagVersion.V03;
 
+import io.xdag.net.XdagVersion;
 import java.util.HashMap;
 import java.util.Map;
-
-import static io.xdag.net.XdagVersion.V03;
 
 /**
  * xdag block.h
@@ -30,8 +29,6 @@ public enum XdagMessageCodes {
   TASK_SHARE(0x08),
   NEW_TASK(0x09),
   NEW_BALANCE(0x0A);
-
-  private final int cmd;
 
   private static final Map<XdagVersion, Map<Integer, XdagMessageCodes>> intToTypeMap =
       new HashMap<>();
@@ -64,12 +61,14 @@ public enum XdagMessageCodes {
     }
   }
 
-  public static XdagMessageCodes[] values(XdagVersion v) {
-    return versionToValuesMap.get(v);
-  }
+  private final int cmd;
 
   private XdagMessageCodes(int cmd) {
     this.cmd = cmd;
+  }
+
+  public static XdagMessageCodes[] values(XdagVersion v) {
+    return versionToValuesMap.get(v);
   }
 
   public static XdagMessageCodes fromByte(byte i, XdagVersion v) {

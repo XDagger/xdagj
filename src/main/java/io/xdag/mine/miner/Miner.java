@@ -1,73 +1,54 @@
 package io.xdag.mine.miner;
 
+import io.xdag.core.XdagField;
+import io.xdag.mine.MinerChannel;
+import io.xdag.utils.BytesUtils;
 import java.net.InetSocketAddress;
 import java.sql.Time;
 import java.util.Calendar;
 import java.util.Date;
-
-import io.xdag.core.XdagField;
-import io.xdag.utils.BytesUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.xdag.mine.MinerChannel;
 import lombok.Data;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 @Data
 public class Miner {
 
   private static final Logger logger = LoggerFactory.getLogger(Miner.class);
-
+  protected int boundedTaskCounter;
   /** 保存这个矿工的地址 */
   private byte[] addressHash;
-
   /** 这个保存的是前8位为0 的地址 主要用于查询 */
   private byte[] addressHashLow;
-
   /** 相同账户地址的channel数量 */
   private AtomicInteger connChannelCounts = new AtomicInteger(0);
-
   /** 保存的时该矿工每一次进行任务计算的nonce + 低192bites的hash */
   private XdagField id = new XdagField();
-
   /** 记录收到任务的时间 */
   private long taskTime;
-
   /** 记录任务索引 * */
   private long taskIndex;
-
   /** 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个 */
   private double prevDiff;
-
   /** 记录prevDiff的次数 实际上类似于进行了多少次计算 */
   private int prevDiffCounts;
-
   /** 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs */
   private List<Double> maxDiffs = new CopyOnWriteArrayList<>();
-
   /** 记录这个矿工的状态 */
   private MinerStates minerStates;
-
   /** 类似于id 也是保存的nonce +hasholow的值 */
   private byte[] nonce = new byte[32];
-
   /** 记录上一轮任务中最小的hash */
   private byte[] lastMinHash = new byte[32];
-
   /** 将hash转换后的难度 可以认为是算力 */
   private double meanLogDiff;
-
   private Date registeredTime;
-
-  protected int boundedTaskCounter;
-
   /** 保存的是这个矿工对应的channel */
   private Map<InetSocketAddress, MinerChannel> channels = new ConcurrentHashMap<>();
 
@@ -132,12 +113,12 @@ public class Miner {
     }
   }
 
-  public void setTaskTime(long time) {
-    this.taskTime = time;
-  }
-
   public long getTaskTime() {
     return this.taskTime;
+  }
+
+  public void setTaskTime(long time) {
+    this.taskTime = time;
   }
 
   public double getMaxDiffs(int index) {
@@ -156,20 +137,20 @@ public class Miner {
     maxDiffs.set(index, diff);
   }
 
-  public void setPrevDiffCounts(int i) {
-    this.prevDiffCounts = i;
+  public double getPrevDiff() {
+    return prevDiff;
   }
 
   public void setPrevDiff(double i) {
     this.prevDiff = i;
   }
 
-  public double getPrevDiff() {
-    return prevDiff;
-  }
-
   public int getPrevDiffCounts() {
     return prevDiffCounts;
+  }
+
+  public void setPrevDiffCounts(int i) {
+    this.prevDiffCounts = i;
   }
 
   public Date getRegTime() {
@@ -246,7 +227,7 @@ public class Miner {
     this.channels.put(inetSocketAddress, channel);
   }
 
-  /**Todo:后续改为atomic*/
+  /** Todo:后续改为atomic */
   public void increaseTaskIndex() {
     taskIndex++;
   }

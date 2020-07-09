@@ -2,16 +2,16 @@
 
 ## Prepare
 
-* Learn from [XDagger/Getting started](https://github.com/XDagger/xdag/wiki/Getting-started) to build a C pool
-* Learn from [README](../README.md) to build a Java pool
+* Refer [XDagger/Getting started](https://github.com/XDagger/xdag/wiki/Getting-started) to build a C pool
+* Refer [README](../README.md) to build a Java pool
 
 
 
 ## Use a C and Java pool
 
-**1、Set up test network environment for C** 
+**1、Set up test environment for C** 
 
-* Instead of netdb-testnet.txt and netdb-white-testnet.txt with your IPs.(Including Java version ip for providing service);
+* Replace the ips in the netdb-testnet.txt and netdb-white-testnet.txt with yours.(Including Java pool ip for providing service);
 
 * Launch your hosts with `-t -disable-refresh` options;
 
@@ -25,9 +25,9 @@
 
   [ip2: port2] :Miner connection IP.
 
-**2、Set up test network environment for Java**
+**2、Set up test environment for Java**
 
-​	Modify the NodeIP attribute in the Config class to the IP set in netdb-testnet.txt and netdb-white-testnet.txt.
+​	Modify the NodeIP attribute in the Config class to the ip set in netdb-testnet.txt and netdb-white-testnet.txt.
 
 ​	①Start  in IDEA
 
@@ -41,7 +41,7 @@ Then turn it on with  `run` command. C pool will automatically connect to the Ja
 
 
 
-## Both are Java pool
+## Both are Java pools
 
 Java version does not hava a whitelist function,so there is no need to configure IP.
 

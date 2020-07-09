@@ -10,13 +10,12 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.node.Node;
-import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class XdagClient {
   private static final Logger logger = LoggerFactory.getLogger("net");
@@ -32,11 +31,10 @@ public class XdagClient {
       };
 
   private final EventLoopGroup workerGroup;
+  private final int port;
   private Config config;
   private ChannelFuture f;
-
   private String ip;
-  private final int port;
   private Node node;
 
   public XdagClient(Config config) {

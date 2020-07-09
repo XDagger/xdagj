@@ -4,14 +4,6 @@ import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
 import static io.xdag.net.XdagVersion.V03;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
-import io.xdag.utils.BasicUtils;
-import java.io.IOException;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -26,9 +18,14 @@ import io.xdag.core.XdagBlock;
 import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-
 import io.xdag.utils.DateUtils;
+import java.io.IOException;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
@@ -104,7 +101,9 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
       // TODO: 2020/5/8  这里可能还有一点小bug  如果无限加入 岂不是会无线创建了
       System.out.println(
-          "add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
+          "add a new miner,miner address ["
+              + BasicUtils.hash2Address(addressBlock.getHash())
+              + "]");
     }
   }
 

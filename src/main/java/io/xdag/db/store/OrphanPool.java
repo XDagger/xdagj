@@ -1,26 +1,22 @@
 package io.xdag.db.store;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
+import java.util.ArrayList;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class OrphanPool {
 
-  private static final Logger logger = LoggerFactory.getLogger(OrphanPool.class);
-
-  /** size key*/
-  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
   public static final byte ORPHAN_PREFEX = 0x00;
-
+  private static final Logger logger = LoggerFactory.getLogger(OrphanPool.class);
+  /** size key */
+  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
   // <hash,nexthash>
   private KVSource<byte[], byte[]> orphanSource;
 
@@ -40,7 +36,6 @@ public class OrphanPool {
     this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
   }
 
-
   public List<Address> getOrphan(long num) {
     List<Address> res = new ArrayList<>();
     if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
@@ -56,9 +51,7 @@ public class OrphanPool {
         }
         // TODO:判断时间
         addNum--;
-        res.add(
-            new Address(
-                BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+        res.add(new Address(BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
       }
       return res;
     }

@@ -1,13 +1,11 @@
 package io.xdag.net.handler;
 
-import java.math.BigInteger;
-
 import com.google.common.util.concurrent.ListenableFuture;
-
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.SumReplyMessage;
+import java.math.BigInteger;
 
 public class XdagAdapter implements Xdag {
   @Override

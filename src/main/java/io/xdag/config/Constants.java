@@ -42,12 +42,12 @@ public class Constants {
   /** 每一轮的确认数是16 */
   public static final int CONFIRMATIONS_COUNT = 16;
 
-  /**Apollo*/
+  /** Apollo */
   public static final int MAIN_BIG_PERIOD_LOG = 21;
+
   public static final long MAIN_APOLLO_HEIGHT = 1017323;
   public static final long MAIN_APOLLO_TESTNET_HEIGHT = 196250;
 
   public static final long MAIN_START_AMOUNT = 1L << 42;
   public static final long MAIN_APOLLO_AMOUNT = 1L << 39;
-
 }

@@ -4,13 +4,6 @@ import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BLOCK;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 
-import java.io.IOException;
-import java.util.List;
-
-import org.apache.commons.codec.binary.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -19,6 +12,11 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.BytesUtils;
+import java.io.IOException;
+import java.util.List;
+import org.apache.commons.codec.binary.Hex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
@@ -127,7 +125,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
   }
 
   @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)  {
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
     if (cause instanceof IOException) {
       logger.debug("远程主机关闭了一个连接");
       ctx.channel().closeFuture();

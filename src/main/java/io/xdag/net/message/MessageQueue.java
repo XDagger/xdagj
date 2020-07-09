@@ -1,5 +1,8 @@
 package io.xdag.net.message;
 
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.xdag.net.XdagChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -7,22 +10,29 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.xdag.net.XdagChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class MessageQueue {
 
-  boolean isRunning = false;
   private static AtomicInteger cnt = new AtomicInteger(0);
-
   public static final ScheduledExecutorService timer =
-      new ScheduledThreadPoolExecutor(4,
-          new BasicThreadFactory.Builder().namingPattern("MessageQueueTimer-" + cnt.getAndIncrement()).daemon(true).build());
+      new ScheduledThreadPoolExecutor(
+          4,
+          new BasicThreadFactory.Builder()
+              .namingPattern("MessageQueueTimer-" + cnt.getAndIncrement())
+              .daemon(true)
+              .build());
+  boolean isRunning = false;
+  private Queue<MessageRoundtrip> requestQueue = new ConcurrentLinkedQueue<>();
+  private Queue<MessageRoundtrip> respondQueue = new ConcurrentLinkedQueue<>();
+  private ChannelHandlerContext ctx = null;
+  private ScheduledFuture<?> timerTask;
+  private XdagChannel channel;
+  public MessageQueue(XdagChannel channel) {
+    this.channel = channel;
+  }
 
   public void receivedMessage(Message msg) { // 负责打印记录信息 实际接收信息的业务操作在xdaghandler
     log.debug("MessageQueue接收到新消息");
@@ -36,18 +46,6 @@ public class MessageQueue {
         log.trace("Message round trip covered: [{}] ", messageRoundtrip.getMsg().getClass());
       }
     }
-  }
-
-  private Queue<MessageRoundtrip> requestQueue = new ConcurrentLinkedQueue<>();
-  private Queue<MessageRoundtrip> respondQueue = new ConcurrentLinkedQueue<>();
-
-  private ChannelHandlerContext ctx = null;
-
-  private ScheduledFuture<?> timerTask;
-  private XdagChannel channel;
-
-  public MessageQueue(XdagChannel channel) {
-    this.channel = channel;
   }
 
   public void activate(ChannelHandlerContext ctx) {
@@ -68,7 +66,7 @@ public class MessageQueue {
             TimeUnit.MILLISECONDS);
   }
 
-  /** 每十毫秒执行一次*/
+  /** 每十毫秒执行一次 */
   private void nudgeQueue() {
     removeAnsweredMessage(requestQueue.peek());
     // Now send the next message

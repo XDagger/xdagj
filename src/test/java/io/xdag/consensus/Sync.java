@@ -29,8 +29,6 @@ public class Sync {
   //
   @Before
   public void setUp() throws Exception {
-    config.setStoreMaxThreads(1);
-    config.setStoreMaxOpenFiles(1024);
     config.setStoreDir("/Users/punk/testRocksdb/XdagDB");
     config.setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
 

@@ -5,7 +5,6 @@ import static io.xdag.utils.FastByteComparisons.equalBytes;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.zip.CRC32;
-
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
@@ -25,7 +24,7 @@ public class BasicUtils {
     // 实现了右移32位 4个字节
     System.arraycopy(hash, 0, data, 4, 12);
     BigInteger res = new BigInteger(Hex.toHexString(data), 16);
-    //max是2的128次方减1 这样效率高吗
+    // max是2的128次方减1 这样效率高吗
     BigInteger max = new BigInteger("ffffffffffffffffffffffffffffffff", 16);
     BigInteger ans = max.divide(res);
     return ans;
@@ -95,12 +94,10 @@ public class BasicUtils {
   }
 
   /**
-   * Xfer: transferred 4479658898 10.430000000 XDAG to the address
-   * 0000002f28322e9d817fd94a1357e51a. 10.43
-   * Xfer: transferred 42949672960 10.000000000 XDAG to the address
-   * 0000002f28322e9d817fd94a1357e51a. 10
-   * Xfer: transferred 4398046511104 1024.000000000 XDAG to the address
-   * 0000002f28322e9d817fd94a1357e51a. 1024
+   * Xfer: transferred 4479658898 10.430000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a.
+   * 10.43 Xfer: transferred 42949672960 10.000000000 XDAG to the address
+   * 0000002f28322e9d817fd94a1357e51a. 10 Xfer: transferred 4398046511104 1024.000000000 XDAG to the
+   * address 0000002f28322e9d817fd94a1357e51a. 1024
    */
   public static double amount2xdag(long xdag) {
     long first = xdag >> 32;

@@ -1,5 +1,9 @@
 package io.xdag.wallet;
 
+import io.xdag.config.Config;
+import io.xdag.crypto.ECKey;
+import io.xdag.crypto.jni.Native;
+import io.xdag.utils.FileUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -8,34 +12,25 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.xdag.config.Config;
-import io.xdag.crypto.ECKey;
-import io.xdag.crypto.jni.Native;
-import io.xdag.utils.FileUtils;
-
 public class WalletImpl implements Wallet {
 
   public static final Logger logger = LoggerFactory.getLogger(WalletImpl.class);
-
-  private List<key_internal_item> key_internal = new ArrayList<>();
-
-  private key_internal_item defKey;
-
-  private int keysNum = 0;
-
-  // TODO：File 路径 修改至resources
   /** 保存得密钥文件 */
   public static final String DNET_KEY_FILE =
       Config.MainNet ? Config.root + "/dnet_key.dat" : Config.root + "/dnet_key.dat";
   /** 钱包文件 */
   public static final String WALLET_KEY_FILE =
       Config.MainNet ? Config.root + "/wallet.dat" : Config.root + "/wallet-testnet.dat";
+  private List<key_internal_item> key_internal = new ArrayList<>();
+
+  // TODO：File 路径 修改至resources
+  private key_internal_item defKey;
+  private int keysNum = 0;
 
   @Override
   public int init(Config config) throws Exception {
@@ -143,7 +138,6 @@ public class WalletImpl implements Wallet {
 
   private Pair<String, String> getPassword(boolean fileExist) {
 
-
     if (fileExist) {
       System.out.println("Pleasr set Your Password :");
     } else {
@@ -220,7 +214,6 @@ public class WalletImpl implements Wallet {
         newKey.ecKey = ecKey;
         newKey.pubKeyParity = pubKeyParity;
         key_internal.add(newKey);
-
       }
       // 最后一个
       defKey = key_internal.get(key_internal.size() - 1);

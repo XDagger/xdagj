@@ -2,7 +2,6 @@ package io.xdag.core;
 
 import io.xdag.crypto.ECKey;
 import io.xdag.utils.ByteArrayWrapper;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;

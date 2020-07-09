@@ -1,13 +1,12 @@
 package io.xdag.event;
 
 import io.xdag.utils.exception.UnreachableException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PubSub {
 
@@ -21,10 +20,8 @@ public class PubSub {
   private final ConcurrentHashMap<
           Class<? extends PubSubEvent>, ConcurrentLinkedQueue<PubSubSubscriber>>
       subscribers;
-
-  private Thread eventProcessingThread;
-
   private final AtomicBoolean isRunning;
+  private Thread eventProcessingThread;
 
   protected PubSub(String name) {
     this.name = name;

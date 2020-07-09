@@ -1,10 +1,9 @@
 package io.xdag.utils;
 
+import java.io.IOException;
 import org.spongycastle.crypto.digests.SHA256Digest;
 import org.spongycastle.crypto.io.DigestOutputStream;
 import org.spongycastle.util.Arrays;
-
-import java.io.IOException;
 
 public class XdagSha256Digest {
 
@@ -44,7 +43,7 @@ public class XdagSha256Digest {
     return origin;
   }
 
-  /**获取可以发送给C的state*/
+  /** 获取可以发送给C的state */
   public byte[] getState() {
     byte[] encodedState = sha256Digest.getEncodedState();
 

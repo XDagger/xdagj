@@ -1,19 +1,18 @@
 package io.xdag.net.message.impl;
 
+import static io.xdag.config.Constants.DNET_PKT_XDAG;
+import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
+
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetStatus;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
+import java.math.BigInteger;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
-
-import java.math.BigInteger;
-
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
-import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 
 @EqualsAndHashCode(callSuper = false)
 @Data

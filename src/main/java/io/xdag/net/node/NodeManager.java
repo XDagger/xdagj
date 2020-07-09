@@ -1,5 +1,15 @@
 package io.xdag.net.node;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.net.XdagChannel;
+import io.xdag.net.XdagClient;
+import io.xdag.net.handler.XdagChannelInitializer;
+import io.xdag.net.manager.NetDBManager;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.message.NetDB;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Deque;
@@ -9,44 +19,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.XdagClient;
-import io.xdag.net.handler.XdagChannelInitializer;
-import io.xdag.net.manager.NetDBManager;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.NetDB;
-
 public class NodeManager {
 
   private static final Logger logger = LoggerFactory.getLogger(NodeManager.class);
-
-  private Kernel kernel;
-  private XdagClient client;
-  private XdagChannelManager channelMgr;
-
-  private NetDBManager netDBManager;
-  private NetDB netDB;
-  private Config config;
-
-  private volatile boolean isRunning;
-
   private static final ThreadFactory factory =
       new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
@@ -56,18 +41,22 @@ public class NodeManager {
           return new Thread(r, "node-" + cnt.getAndIncrement());
         }
       };
-
   private static final long MAX_QUEUE_SIZE = 1024;
   private static final int LRU_CACHE_SIZE = 1024;
   private static final long RECONNECT_WAIT = 60L * 1000L;
-
   private final Deque<Node> deque = new ConcurrentLinkedDeque<>();
-  /**记录对应节点节点最后一次连接的时间*/
+  /** 记录对应节点节点最后一次连接的时间 */
   private final Cache<Node, Long> lastConnect =
       Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
-
-  /**定时处理*/
+  /** 定时处理 */
   private final ScheduledExecutorService exec;
+  private Kernel kernel;
+  private XdagClient client;
+  private XdagChannelManager channelMgr;
+  private NetDBManager netDBManager;
+  private NetDB netDB;
+  private Config config;
+  private volatile boolean isRunning;
   private ScheduledFuture<?> connectFuture;
   private ScheduledFuture<?> fetchFuture;
 
@@ -76,15 +65,15 @@ public class NodeManager {
     this.client = kernel.getClient();
     this.channelMgr = kernel.getChannelManager();
     this.netDB = kernel.getNetDB();
-    //this.exec = Executors.newSingleThreadScheduledExecutor(factory);
-    //myron 修改线程池
-    this.exec = new ScheduledThreadPoolExecutor(1,factory);
+    // this.exec = Executors.newSingleThreadScheduledExecutor(factory);
+    // myron 修改线程池
+    this.exec = new ScheduledThreadPoolExecutor(1, factory);
 
     this.config = kernel.getConfig();
     this.netDBManager = kernel.getNetDBMgr();
   }
 
-  /**start the node manager*/
+  /** start the node manager */
   public synchronized void start() {
     if (!isRunning) {
       //            addNodes(getSeedNodes(config.getWhiteListDir()));
@@ -134,7 +123,7 @@ public class NodeManager {
     }
   }
 
-  /**from net update seed nodes*/
+  /** from net update seed nodes */
   protected void doFetch() {
     logger.debug("Do fetch");
     if (config.isEnableRefresh()) {

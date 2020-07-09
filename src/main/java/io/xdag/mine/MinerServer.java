@@ -1,8 +1,5 @@
 package io.xdag.mine;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -12,6 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import io.xdag.Kernel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MinerServer {
 

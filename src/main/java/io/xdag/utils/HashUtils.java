@@ -1,29 +1,25 @@
 package io.xdag.utils;
 
+import static java.util.Arrays.copyOfRange;
+
 import io.xdag.crypto.jce.XdagProvider;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
+import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.crypto.Digest;
 import org.spongycastle.crypto.digests.RIPEMD160Digest;
 import org.spongycastle.util.encoders.Hex;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
-import java.security.Security;
-import java.util.Random;
-
-import static java.util.Arrays.copyOfRange;
-
 public class HashUtils {
-
-  private static final Logger LOG = LoggerFactory.getLogger(HashUtils.class);
 
   public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
   public static final byte[] ZERO_BYTE_ARRAY = new byte[] {0};
-
   public static final byte[] EMPTY_DATA_HASH;
-
+  private static final Logger LOG = LoggerFactory.getLogger(HashUtils.class);
   private static final Provider CRYPTO_PROVIDER;
 
   private static final String HASH_256_ALGORITHM_NAME;

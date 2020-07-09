@@ -2,6 +2,9 @@ package io.xdag.net.message;
 
 import static io.xdag.utils.BytesUtils.isFullZero;
 
+import io.xdag.config.Config;
+import io.xdag.net.node.Node;
+import io.xdag.utils.BytesUtils;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -10,19 +13,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.xdag.config.Config;
-import io.xdag.net.node.Node;
-import io.xdag.utils.BytesUtils;
 
 public class NetDB {
   private static final Logger logger = LoggerFactory.getLogger(NetDB.class);
 
-  /**remote*/
+  /** remote */
   List<IP> ipList = new ArrayList<>();
+
   Config config;
 
   public NetDB() {}
@@ -31,7 +30,7 @@ public class NetDB {
     this.config = config;
   }
 
-  /**从remote节点获取的iplist*/
+  /** 从remote节点获取的iplist */
   public NetDB(byte[] data) {
     parse(data);
   }
@@ -58,7 +57,7 @@ public class NetDB {
     }
   }
 
-  /**address 6字节 4字节ip+2字节port*/
+  /** address 6字节 4字节ip+2字节port */
   public void addNewIP(byte[] address) {
     byte[] ip = BytesUtils.subArray(address, 0, 4);
     byte[] port = BytesUtils.subArray(address, 4, 2);
@@ -68,7 +67,7 @@ public class NetDB {
     addNewIP(ip, port);
   }
 
-  /** 获取remote接收到的新IP*/
+  /** 获取remote接收到的新IP */
   public Set<Node> getIPList() {
     Set<Node> res = new HashSet<>();
     if (ipList.size() != 0) {
@@ -92,7 +91,6 @@ public class NetDB {
     }
   }
 
-
   public byte[] getEncoded() {
     return encode(ipList);
   }
@@ -108,6 +106,46 @@ public class NetDB {
       System.arraycopy(ipList.get(i).getData(), 0, res, i * 6, 6);
     }
     return res;
+  }
+
+  public int getSize() {
+    return ipList.size();
+  }
+
+  public List<IP> getIpList() {
+    return ipList;
+  }
+
+  public void updateNetDB(NetDB netDB) {
+    // TODO:更新netdb
+
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder stringBuilder = new StringBuilder();
+    for (IP ip : ipList) {
+      stringBuilder.append(ip).append("\n");
+    }
+    return stringBuilder.toString();
+  }
+
+  public void appendNetDB(NetDB netDB) {
+    if (netDB.ipList.size() == 0) {
+      logger.debug("size 0");
+      return;
+    }
+    for (IP ip : netDB.ipList) {
+      if (this.ipList.contains(ip)) {
+        continue;
+      }
+      this.ipList.add(ip);
+    }
+  }
+
+  public boolean contains(InetSocketAddress address) {
+    IP ip = new IP(address.getAddress(), address.getPort());
+    return this.ipList.contains(ip);
   }
 
   class IP {
@@ -169,45 +207,5 @@ public class NetDB {
     public int hashCode() {
       return Objects.hash(ip, port);
     }
-  }
-
-  public int getSize() {
-    return ipList.size();
-  }
-
-  public List<IP> getIpList() {
-    return ipList;
-  }
-
-  public void updateNetDB(NetDB netDB) {
-    // TODO:更新netdb
-
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder stringBuilder = new StringBuilder();
-    for (IP ip : ipList) {
-      stringBuilder.append(ip).append("\n");
-    }
-    return stringBuilder.toString();
-  }
-
-  public void appendNetDB(NetDB netDB) {
-    if (netDB.ipList.size() == 0) {
-      logger.debug("size 0");
-      return;
-    }
-    for (IP ip : netDB.ipList) {
-      if (this.ipList.contains(ip)) {
-        continue;
-      }
-      this.ipList.add(ip);
-    }
-  }
-
-  public boolean contains(InetSocketAddress address) {
-    IP ip = new IP(address.getAddress(), address.getPort());
-    return this.ipList.contains(ip);
   }
 }

@@ -1,13 +1,13 @@
 package io.xdag.net.message.impl;
 
+import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REQUEST;
+
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetStatus;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REQUEST;
 
 @EqualsAndHashCode(callSuper = false)
 @Data

@@ -1,13 +1,12 @@
 package io.xdag.core;
 
+import static io.xdag.utils.BytesUtils.bytesToBigInteger;
+
 import io.xdag.utils.BytesUtils;
+import java.math.BigInteger;
 import lombok.Data;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
-
-import java.math.BigInteger;
-
-import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 
 @Data
 public class Address {

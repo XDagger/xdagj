@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public enum XdagVersion {
-  /**基于 C V0.3*/
+  /** 基于 C V0.3 */
   V03((byte) 03);
 
   public static final byte LOWER = V03.getCode();
@@ -14,10 +14,6 @@ public enum XdagVersion {
 
   XdagVersion(byte code) {
     this.code = code;
-  }
-
-  public byte getCode() {
-    return code;
   }
 
   public static XdagVersion fromCode(int code) {
@@ -42,6 +38,10 @@ public enum XdagVersion {
       }
     }
     return supported;
+  }
+
+  public byte getCode() {
+    return code;
   }
 
   public boolean isCompatible(XdagVersion version) {

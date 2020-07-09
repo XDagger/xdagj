@@ -13,12 +13,12 @@ public enum ImportResult {
 
   byte[] hashLow;
 
-  public void setHashLow(byte[] hashLow) {
-    this.hashLow = hashLow;
-  }
-
   public byte[] getHashLow() {
     return hashLow;
+  }
+
+  public void setHashLow(byte[] hashLow) {
+    this.hashLow = hashLow;
   }
 
   public boolean isSuccessful() {

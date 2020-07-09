@@ -1,10 +1,10 @@
 package io.xdag.core;
 
+import static io.xdag.core.XdagField.FieldType.fromByte;
+
 import io.xdag.utils.BytesUtils;
 import lombok.Data;
 import org.spongycastle.util.Arrays;
-
-import static io.xdag.core.XdagField.FieldType.fromByte;
 
 @Data
 public class XdagBlock {

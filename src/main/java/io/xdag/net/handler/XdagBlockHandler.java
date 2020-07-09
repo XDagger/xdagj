@@ -4,11 +4,6 @@ import static io.xdag.config.Config.MainNet;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -21,8 +16,11 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** xdag net packet netty handler */
 @EqualsAndHashCode(callSuper = false)
@@ -41,11 +39,15 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     this.channel = channel;
   }
 
+  /** 获取第i个的第n个字节 */
+  public static byte getMsgcode(XdagBlock xdagblock, int n) {
+    byte[] data = xdagblock.getData();
+    long type = BytesUtils.bytesToLong(data, 8, true);
 
-  /**T
-   * 加解密的过程outbound应该先用上一次结束后的值 发完才加
-   * TODO 增加transportHeader
-   * */
+    return (byte) (type >> (n << 2) & 0xf);
+  }
+
+  /** T 加解密的过程outbound应该先用上一次结束后的值 发完才加 TODO 增加transportHeader */
   @Override
   protected void encode(
       ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
@@ -113,15 +115,5 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     } else {
       logger.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
     }
-  }
-
-  /**
-   * 获取第i个的第n个字节
-   */
-  public static byte getMsgcode(XdagBlock xdagblock, int n) {
-    byte[] data = xdagblock.getData();
-    long type = BytesUtils.bytesToLong(data, 8, true);
-
-    return (byte) (type >> (n << 2) & 0xf);
   }
 }

@@ -5,40 +5,21 @@ import io.xdag.core.XdagBlock;
 import io.xdag.db.KVSource;
 import io.xdag.db.SimpleFileStore;
 import io.xdag.utils.BytesUtils;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
-
 public class BlockStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(BlockStore.class);
-
-  /**<prefix-hash,value> eg:<diff-hash,blockdiff>*/
-  private KVSource<byte[], byte[]> indexSource;
-  /**<hash,rawdata>*/
-  private KVSource<byte[], byte[]> blockSource;
-  /**<time-hash,hash>*/
-  private KVSource<byte[], byte[]> timeSource;
-  private SimpleFileStore simpleFileStore;
-
-  /**block size key*/
-  private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
-  /**main size key*/
-  private static final byte[] MAIN_SIZE = Hex.decode("EEEEEEEEEEEEEEEE");
-  /** pretop*/
-  private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD");
-  /** pretop diff*/
-  private static final byte[] PRETOPDIFF = Hex.decode("CCCCCCCCCCCCCCCC");
-  /** origin pretop diff*/
-  private static final byte[] ORIGINPRETOP = Hex.decode("FFFFFFFFFFFFFFFE");
-  /**origin pretop diff*/
-  private static final byte[] ORIGINPRETOPDIFF = Hex.decode("FFFFFFFFFFFFFFEF");
-  private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
   public static final byte BLOCK_MAXDIFF = 0x00;
   public static final byte BLOCK_MAXDIFFLINK = 0x01;
   public static final byte BLOCK_AMOUNT = 0x02;
@@ -48,9 +29,30 @@ public class BlockStore {
   public static final byte BLOCK_FEE = 0x06;
   public static final byte BLOCK_KEY_INDEX = 0x07;
   public static final byte BLOCK_HASH = 0x08;
-
-  /** 存sums*/
+  private static final Logger logger = LoggerFactory.getLogger(BlockStore.class);
+  /** block size key */
+  private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+  /** main size key */
+  private static final byte[] MAIN_SIZE = Hex.decode("EEEEEEEEEEEEEEEE");
+  /** pretop */
+  private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD");
+  /** pretop diff */
+  private static final byte[] PRETOPDIFF = Hex.decode("CCCCCCCCCCCCCCCC");
+  /** origin pretop diff */
+  private static final byte[] ORIGINPRETOP = Hex.decode("FFFFFFFFFFFFFFFE");
+  /** origin pretop diff */
+  private static final byte[] ORIGINPRETOPDIFF = Hex.decode("FFFFFFFFFFFFFFEF");
+  private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
+  /** <prefix-hash,value> eg:<diff-hash,blockdiff> */
+  private KVSource<byte[], byte[]> indexSource;
+  /** <hash,rawdata> */
+  private KVSource<byte[], byte[]> blockSource;
+  /** <time-hash,hash> */
+  private KVSource<byte[], byte[]> timeSource;
+  private SimpleFileStore simpleFileStore;
+  /** 存sums */
   private BlockingQueue<Block> blockQueue = new LinkedBlockingQueue<>();
+
   private ExecutorService executorService = Executors.newSingleThreadExecutor();
   private Future<?> sumFuture;
 
@@ -320,18 +322,6 @@ public class BlockStore {
     return BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false);
   }
 
-  public synchronized void setPretop(Block block) {
-    indexSource.put(PRETOP, block.getHashLow());
-  }
-
-  public synchronized void setOriginpretop(Block block) {
-    indexSource.put(ORIGINPRETOP, block.getHashLow());
-  }
-
-  public synchronized void setPretopDiff(BigInteger pretopDiff) {
-    indexSource.put(PRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
-  }
-
   public synchronized void setOriginpretopdiff(BigInteger pretopDiff) {
     indexSource.put(ORIGINPRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
   }
@@ -343,8 +333,16 @@ public class BlockStore {
     return BigInteger.ZERO;
   }
 
+  public synchronized void setPretopDiff(BigInteger pretopDiff) {
+    indexSource.put(PRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
+  }
+
   public byte[] getPretop() {
     return indexSource.get(PRETOP);
+  }
+
+  public synchronized void setPretop(Block block) {
+    indexSource.put(PRETOP, block.getHashLow());
   }
 
   public BigInteger getOriginpretopDiff() {
@@ -356,6 +354,10 @@ public class BlockStore {
 
   public byte[] getOriginpretop() {
     return indexSource.get(ORIGINPRETOP);
+  }
+
+  public synchronized void setOriginpretop(Block block) {
+    indexSource.put(ORIGINPRETOP, block.getHashLow());
   }
 
   public SimpleFileStore getSimpleFileStore() {

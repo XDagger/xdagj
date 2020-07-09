@@ -2,15 +2,13 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.config.Constants.DNET_PKT_XDAG;
 
-import java.util.zip.CRC32;
-
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
+import java.util.zip.CRC32;
+import org.spongycastle.util.encoders.Hex;
 
 public class NewBlockMessage extends Message {
 
@@ -18,12 +16,12 @@ public class NewBlockMessage extends Message {
   private Block block;
   private int ttl;
 
-  /**不处理crc*/
+  /** 不处理crc */
   public NewBlockMessage(byte[] bytes) {
     super(bytes);
   }
 
-  /**处理crc 创建新的用于发送Block的message*/
+  /** 处理crc 创建新的用于发送Block的message */
   public NewBlockMessage(Block block, int ttl) {
     this.block = block;
     this.ttl = ttl;
@@ -31,7 +29,7 @@ public class NewBlockMessage extends Message {
     encode();
   }
 
-  /**不处理crc*/
+  /** 不处理crc */
   public NewBlockMessage(XdagBlock xdagBlock, int ttl) {
     super(xdagBlock.getData());
     this.xdagBlock = xdagBlock;
@@ -62,7 +60,6 @@ public class NewBlockMessage extends Message {
     CRC32 crc32 = new CRC32();
     crc32.update(encoded, 0, 512);
     System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
-
   }
 
   public int getTtl() {

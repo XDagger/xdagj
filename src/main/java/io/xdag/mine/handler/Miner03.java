@@ -2,11 +2,6 @@ package io.xdag.mine.handler;
 
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -21,11 +16,11 @@ import io.xdag.mine.message.NewBalanceMessage;
 import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
 import io.xdag.net.message.Message;
-
 import io.xdag.utils.BytesUtils;
-
 import io.xdag.utils.FastByteComparisons;
-
+import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
@@ -48,7 +43,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     minerManager = kernel.getMinerManager();
     syncManager = kernel.getSyncMgr();
   }
-
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
@@ -124,7 +118,9 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
   protected synchronized void processTaskShare(TaskShareMessage msg) {
     logger.debug(" 处理矿池接收到的任务反馈");
 
-    if (FastByteComparisons.compareTo(msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) == 0
+    if (FastByteComparisons.compareTo(
+                msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
+            == 0
         && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
 
       channel.addShareCounts(1);

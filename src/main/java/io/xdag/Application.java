@@ -1,7 +1,11 @@
 package io.xdag;
 
+import io.xdag.cli.Command;
+import io.xdag.cli.ShellCommand;
+import io.xdag.config.Config;
+import io.xdag.wallet.WalletImpl;
 import java.io.IOException;
-
+import lombok.extern.slf4j.Slf4j;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -9,21 +13,13 @@ import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
-import io.xdag.cli.Command;
-import io.xdag.cli.ShellCommand;
-import io.xdag.config.Config;
-import io.xdag.wallet.WalletImpl;
-import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 public class Application {
   public static void main(String[] args) throws IOException {
 
     Config config = new Config();
-    config.setStoreMaxThreads(1);
-    config.setStoreMaxOpenFiles(1024);
-    config.setPara(config, args);
-    config.changeDir();
+    config.changePara(config, args);
+    config.setDir();
 
     log.info(
         "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",

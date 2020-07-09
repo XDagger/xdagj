@@ -13,18 +13,6 @@ public final class ECKeyFactory {
 
   private ECKeyFactory() {}
 
-  private static class Holder {
-    private static final KeyFactory INSTANCE;
-
-    static {
-      try {
-        INSTANCE = KeyFactory.getInstance(ALGORITHM);
-      } catch (NoSuchAlgorithmException ex) {
-        throw new AssertionError(algorithmAssertionMsg, ex);
-      }
-    }
-  }
-
   public static KeyFactory getInstance() {
     return Holder.INSTANCE;
   }
@@ -42,6 +30,18 @@ public final class ECKeyFactory {
       return KeyFactory.getInstance(ALGORITHM, provider);
     } catch (NoSuchAlgorithmException ex) {
       throw new AssertionError(algorithmAssertionMsg, ex);
+    }
+  }
+
+  private static class Holder {
+    private static final KeyFactory INSTANCE;
+
+    static {
+      try {
+        INSTANCE = KeyFactory.getInstance(ALGORITHM);
+      } catch (NoSuchAlgorithmException ex) {
+        throw new AssertionError(algorithmAssertionMsg, ex);
+      }
     }
   }
 }

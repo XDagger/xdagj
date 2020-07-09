@@ -25,12 +25,12 @@ public class BlockWrapper {
     this.block = block;
   }
 
-  public void setTtl(int ttl) {
-    this.ttl = ttl;
-  }
-
   public int getTtl() {
     return ttl;
+  }
+
+  public void setTtl(int ttl) {
+    this.ttl = ttl;
   }
 
   public Node getRemoteNode() {

@@ -1,10 +1,10 @@
 package io.xdag.net.message.impl;
 
+import static io.xdag.net.XdagVersion.V03;
+
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
-
-import static io.xdag.net.XdagVersion.V03;
 
 public class Xdag03MessageFactory implements MessageFactory {
   @Override

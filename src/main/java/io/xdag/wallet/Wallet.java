@@ -1,9 +1,8 @@
 package io.xdag.wallet;
 
-import java.util.List;
-
 import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
+import java.util.List;
 
 public interface Wallet {
 

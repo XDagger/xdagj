@@ -1,12 +1,11 @@
 package io.xdag.utils;
 
 import io.xdag.crypto.jni.Native;
-import org.spongycastle.util.encoders.Hex;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import org.spongycastle.util.encoders.Hex;
 
 public class BytesUtils {
 
@@ -19,7 +18,7 @@ public class BytesUtils {
     return buffer.array();
   }
 
-  /**改为了4字节 原先为length 8*/
+  /** 改为了4字节 原先为length 8 */
   public static int bytesToInt(byte[] input, int offset, boolean littleEndian) {
     ByteBuffer buffer = ByteBuffer.wrap(input, offset, 4);
     if (littleEndian) {
@@ -141,9 +140,7 @@ public class BytesUtils {
     return mergedArray;
   }
 
-  /**
-   * Merge byte and byte array.
-   */
+  /** Merge byte and byte array. */
   public static byte[] merge(byte b1, byte[] b2) {
     byte[] res = new byte[1 + b2.length];
     res[0] = b1;
@@ -200,12 +197,7 @@ public class BytesUtils {
     return 0;
   }
 
-  public String byteToBinaryString(byte b) {
-
-    return Integer.toBinaryString(b & 0xFF);
-  }
-
-  /**数组逆序*/
+  /** 数组逆序 */
   public static void arrayReverse(byte[] origin) {
     byte temp = 0;
     for (int i = 0; i < origin.length / 2; i++) {
@@ -215,28 +207,21 @@ public class BytesUtils {
     }
   }
 
-  /**
-   * 生成随机32字节数组
-   */
+  /** 生成随机32字节数组 */
   public static byte[] generateRandomArray() {
     byte[] array = new byte[32];
     byte[] random = Native.generate_random_array(array, 32);
     return random;
   }
 
-  /**
-   * 生成随机8字节数组
-   */
+  /** 生成随机8字节数组 */
   public static byte[] generateRandomBytes() {
     byte[] array = new byte[8];
     byte[] random = Native.generate_random_bytes(array, 8);
     return random;
   }
 
-  /**
-   * Convert a byte into an byte array.
-   *
-   */
+  /** Convert a byte into an byte array. */
   public static byte[] of(byte b) {
     return new byte[] {b};
   }
@@ -304,5 +289,10 @@ public class BytesUtils {
       data = org.spongycastle.util.Arrays.reverse(data);
     }
     return BytesUtils.bytesToBigInteger(data).doubleValue();
+  }
+
+  public String byteToBinaryString(byte b) {
+
+    return Integer.toBinaryString(b & 0xFF);
   }
 }

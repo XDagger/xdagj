@@ -1,11 +1,5 @@
 package io.xdag.net.handler;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-
-import org.apache.commons.codec.binary.Hex;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -14,7 +8,11 @@ import io.xdag.config.Config;
 import io.xdag.crypto.jni.Native;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
@@ -67,8 +65,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         // 发送pubkey
         if (isServer) {
           // 如果已经发送了pubkey
-          if (channel.getNode().getStat().Outbound.get() == 2)
-          {
+          if (channel.getNode().getStat().Outbound.get() == 2) {
             channel.sendPassword(ctx);
           }
         } else {
@@ -82,14 +79,13 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         channel.getNode().getStat().Inbound.add();
         if (!isServer) {
           // 如果已经发送了pubkey
-          if (channel.getNode().getStat().Outbound.get() == 2)
-          {
+          if (channel.getNode().getStat().Outbound.get() == 2) {
             channel.sendPassword(ctx);
           }
         }
         if (channel.getNode().getStat().Inbound.get() >= 3) {
 
-          log.info("connect a new pool,host[{}]",channel.getInetSocketAddress().toString());
+          log.info("connect a new pool,host[{}]", channel.getInetSocketAddress().toString());
           System.out.println(
               "connect a new pool, host[" + channel.getInetSocketAddress().toString() + "]");
 

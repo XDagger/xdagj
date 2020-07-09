@@ -5,7 +5,6 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.SimpleFileStore;
-
 import java.util.EnumMap;
 
 public class RocksdbFactory implements DatabaseFactory {

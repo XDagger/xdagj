@@ -2,12 +2,6 @@ package io.xdag.mine.miner;
 
 import static java.lang.Math.E;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.xdag.config.Constants;
 import io.xdag.consensus.Task;
 import io.xdag.mine.MinerChannel;
@@ -16,6 +10,10 @@ import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.DateUtils;
 import io.xdag.utils.FastByteComparisons;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MinerCalculate {
 
@@ -99,7 +97,8 @@ public class MinerCalculate {
         .append("   unpaid: ")
         .append(String.format("%.6f", unpaid))
         .append("   HashRate: ")
-        .append(String.format("%.6f", BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff())))
+        .append(
+            String.format("%.6f", BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff())))
         .append("\n");
 
     Map<InetSocketAddress, MinerChannel> channels = miner.getChannels();
@@ -233,7 +232,7 @@ public class MinerCalculate {
 
   public static double welfordOnePass(double mean, double sample, int nsamples) {
     if (nsamples > 0) {
-      double temp = BigDecimalUtils.div(BigDecimalUtils.sub(sample, mean),  nsamples);
+      double temp = BigDecimalUtils.div(BigDecimalUtils.sub(sample, mean), nsamples);
       mean = BigDecimalUtils.add(mean, temp);
     }
 

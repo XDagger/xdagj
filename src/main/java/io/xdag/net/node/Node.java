@@ -1,20 +1,19 @@
 package io.xdag.net.node;
 
 import io.xdag.utils.BytesUtils;
-import lombok.Data;
-import org.apache.commons.codec.binary.Hex;
-
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Random;
+import lombok.Data;
+import org.apache.commons.codec.binary.Hex;
 
 @Data
 public class Node {
 
-  private byte[] id;
   private final String host;
   private final int port;
+  private byte[] id;
   private NodeStat stat = new NodeStat();
 
   public Node(String host, int port) {
@@ -32,6 +31,10 @@ public class Node {
   public Node(InetAddress address, int port) {
     this.host = address.getHostAddress();
     this.port = port;
+  }
+
+  public static String getNodeIdShort(String nodeId) {
+    return nodeId == null ? "<null>" : nodeId.substring(0, 8);
   }
 
   public String getHexId() {
@@ -53,10 +56,6 @@ public class Node {
 
   public String getHexIdShort() {
     return getNodeIdShort(getHexId());
-  }
-
-  public static String getNodeIdShort(String nodeId) {
-    return nodeId == null ? "<null>" : nodeId.substring(0, 8);
   }
 
   public BigInteger getTotalDifficulty() {

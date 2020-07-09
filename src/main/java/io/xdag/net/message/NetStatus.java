@@ -16,13 +16,7 @@ public class NetStatus {
 
   public NetStatus() {}
 
-  public void init(BigInteger diff, long totalnmain, long totalnblocks) {
-    this.difficulty = this.maxdifficulty = diff;
-    this.nblocks = this.totalnblocks = totalnblocks;
-    this.nmain = this.totalnmain = totalnmain;
-  }
-
-  /**用于记录remote node的*/
+  /** 用于记录remote node的 */
   public NetStatus(
       BigInteger maxdifficulty,
       long totalnblocks,
@@ -45,6 +39,12 @@ public class NetStatus {
     this.totalnmain = netStatus.totalnmain;
     this.nhosts = netStatus.nhosts;
     this.totalnhosts = netStatus.totalnhosts;
+  }
+
+  public void init(BigInteger diff, long totalnmain, long totalnblocks) {
+    this.difficulty = this.maxdifficulty = diff;
+    this.nblocks = this.totalnblocks = totalnblocks;
+    this.nmain = this.totalnmain = totalnmain;
   }
 
   public void updateNetStatus(NetStatus remoteNetStatus) {
@@ -148,7 +148,7 @@ public class NetStatus {
         + " ]";
   }
 
-  /**仅在新block加入时执行 可以不考虑并行的情况*/
+  /** 仅在新block加入时执行 可以不考虑并行的情况 */
   public void incMain() {
     this.nmain++;
   }

@@ -1,7 +1,6 @@
 package io.xdag.utils;
 
 import java.math.BigDecimal;
-
 import org.spongycastle.util.encoders.Hex;
 
 public class StringUtils {

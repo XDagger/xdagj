@@ -1,13 +1,5 @@
 package io.xdag.mine;
 
-import java.io.IOException;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -16,12 +8,15 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
+import java.io.IOException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MinerClient {
   private static final Logger logger = LoggerFactory.getLogger(MinerClient.class);
-
-  private Config config;
-
   private static final ThreadFactory FACTORY =
       new ThreadFactory() {
         AtomicInteger cnt = new AtomicInteger(0);
@@ -31,8 +26,8 @@ public class MinerClient {
           return new Thread(r, "XdagJMinerWorker-" + cnt.getAndIncrement());
         }
       };
-
   private final EventLoopGroup workerGroup;
+  private Config config;
 
   public MinerClient(Config config) {
     this.config = config;
@@ -46,7 +41,8 @@ public class MinerClient {
       channelFuture.sync();
     } catch (Exception e) {
       if (e instanceof IOException) {
-        logger.warn("MinerClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
+        logger.warn(
+            "MinerClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
         logger.warn("MinerClient.connect(" + host + ":" + port + ") exception:", e);
       } else {
         logger.warn("Exception:", e);
@@ -54,7 +50,8 @@ public class MinerClient {
     }
   }
 
-  public ChannelFuture connectAsync(String host, int port, MinerChannelInitializer minerChannelInitializer) {
+  public ChannelFuture connectAsync(
+      String host, int port, MinerChannelInitializer minerChannelInitializer) {
     Bootstrap b = new Bootstrap();
     b.group(workerGroup);
     b.channel(NioSocketChannel.class);

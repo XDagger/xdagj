@@ -13,49 +13,43 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
+import io.xdag.crypto.ECKey;
+import io.xdag.crypto.Sha256Hash;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
-import io.xdag.crypto.ECKey;
-import io.xdag.crypto.Sha256Hash;
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.BytesUtils;
-import lombok.Data;
-
 @SuppressWarnings("ALL")
 @Data
 public class Block implements Cloneable {
 
-  private static final Logger logger = LoggerFactory.getLogger(Block.class);
   public static final int MAX_LINKS = 15;
-
-  /** 区块生成时间 区块手续费 区块字段类型* */
-  private long timestamp;
-
-  private long fee = 0;
-  private long type;
-
-  /** 连接本区块的区块地址* */
-  private Address ref;
-
+  private static final Logger logger = LoggerFactory.getLogger(Block.class);
   /** 区块标志* */
   public int flags = 0;
-
+  /** 区块是否存在于本地* */
+  public boolean isSaved = false;
+  /** 区块生成时间 区块手续费 区块字段类型* */
+  private long timestamp;
+  private long fee = 0;
+  private long type;
+  /** 连接本区块的区块地址* */
+  private Address ref;
   /** 区块hash* */
   private byte[] hash;
   /** 区块低192bit hash用作地址* */
   private byte[] hashLow;
-
   /** 区块包含的金额 cheato 用于计算balance* */
   private long amount;
   /** 区块难度* */
@@ -70,19 +64,12 @@ public class Block implements Cloneable {
   private Address maxDifflink;
   /** 记录公钥 前缀+压缩公钥* */
   private List<ECKey> pubKeys = new CopyOnWriteArrayList<>();
-
   private Map<ECKey.ECDSASignature, Integer> insigs = new LinkedHashMap<>();
   private ECKey.ECDSASignature outsig;
-
   /** 主块的nonce记录矿工地址跟nonce* */
   private byte[] nonce;
-
   private XdagBlock xdagBlock;
   private boolean parsed = false;
-
-  /** 区块是否存在于本地* */
-  public boolean isSaved = false;
-
   private long sum;
 
   private byte[] encoded;
@@ -157,7 +144,7 @@ public class Block implements Cloneable {
     }
   }
 
-  /**主块*/
+  /** 主块 */
   public Block(long timestamp, byte[] pretop, List<Address> pendings, boolean mining) {
     this(timestamp, new Address(pretop, XDAG_FIELD_OUT), null, pendings, mining, null, -1);
   }
@@ -287,7 +274,7 @@ public class Block implements Cloneable {
     }
     return encoder.toBytes();
   }
-  /** without signature*/
+  /** without signature */
   private byte[] getEncodedBody() {
     if (encoded != null) {
       return encoded;
@@ -347,7 +334,7 @@ public class Block implements Cloneable {
     }
   }
 
-  /** 只匹配输入签名 并返回有用的key*/
+  /** 只匹配输入签名 并返回有用的key */
   public List<ECKey> verifiedKeys() {
     List<ECKey> keys = getPubKeys();
     List<ECKey> res = new ArrayList<>();
@@ -377,7 +364,7 @@ public class Block implements Cloneable {
     return res;
   }
 
-  /**取输出签名在字段的索引*/
+  /** 取输出签名在字段的索引 */
   public int getOutsigIndex() {
     parse();
     int i = 1;

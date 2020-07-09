@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -46,8 +45,6 @@ import org.spongycastle.util.encoders.Hex;
 @Slf4j
 public class Xdag03 extends XdagHandler {
 
-  private XdagVersion version = XdagVersion.V03;
-
   private static final ThreadFactory factory =
       new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
@@ -57,10 +54,10 @@ public class Xdag03 extends XdagHandler {
           return new Thread(r, "sendThread-" + cnt.getAndIncrement());
         }
       };
-
-  //ExecutorService sendThreads = Executors.newSingleThreadExecutor(factory);
-  ExecutorService sendThreads = new ScheduledThreadPoolExecutor(1,factory);
+  // ExecutorService sendThreads = Executors.newSingleThreadExecutor(factory);
+  ExecutorService sendThreads = new ScheduledThreadPoolExecutor(1, factory);
   List<ListenableFuture<Integer>> futures = new ArrayList<>();
+  private XdagVersion version = XdagVersion.V03;
 
   public Xdag03(Kernel kernel, XdagChannel channel) {
     this.kernel = kernel;
@@ -140,7 +137,8 @@ public class Xdag03 extends XdagHandler {
     log.debug("New block received: block.index [{}]", block.toString());
     log.debug("Block data:" + Hex.toHexString(block.getXdagBlock().getData()));
     log.debug("ttl:" + msg.getTtl());
-    if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
+    if (!syncMgr.validateAndAddNewBlock(
+        new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
       dropConnection();
     }
   }
@@ -178,38 +176,7 @@ public class Xdag03 extends XdagHandler {
     log.debug("futures size:" + futures.size());
   }
 
-  class SendTask implements Callable<Integer> {
-    private Blockchain blockchain;
-    private long starttime;
-    private long endtime;
-
-    public SendTask(Blockchain blockchain, long starttime, long endtime) {
-      this.blockchain = blockchain;
-      this.starttime = starttime;
-      this.endtime = endtime;
-    }
-
-    @Override
-    public Integer call()  {
-      if (blockchain == null) {
-        return 1;
-      }
-      List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
-      if (blocks == null || blocks.size() == 0) {
-        log.debug("Nothing to send");
-        return 1;
-      }
-      for (Block block : blocks) {
-        sendNewBlock(block, 1);
-      }
-      return 1;
-    }
-  }
-
-  /**
-   * Reply 可以不用处理
-   *
-   */
+  /** Reply 可以不用处理 */
   protected synchronized void processBlocksReply(BlocksReplyMessage msg) {
     log.debug("Process BlocksReply:" + msg);
     updateNetStatus(msg);
@@ -362,6 +329,34 @@ public class Xdag03 extends XdagHandler {
     log.debug("Remote netdb:" + remoteNetDB);
     synchronized (kernel.getNetDB()) {
       kernel.getNetDB().updateNetDB(remoteNetDB);
+    }
+  }
+
+  class SendTask implements Callable<Integer> {
+    private Blockchain blockchain;
+    private long starttime;
+    private long endtime;
+
+    public SendTask(Blockchain blockchain, long starttime, long endtime) {
+      this.blockchain = blockchain;
+      this.starttime = starttime;
+      this.endtime = endtime;
+    }
+
+    @Override
+    public Integer call() {
+      if (blockchain == null) {
+        return 1;
+      }
+      List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
+      if (blocks == null || blocks.size() == 0) {
+        log.debug("Nothing to send");
+        return 1;
+      }
+      for (Block block : blocks) {
+        sendNewBlock(block, 1);
+      }
+      return 1;
     }
   }
 }

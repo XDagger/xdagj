@@ -1,27 +1,25 @@
 package io.xdag.db.store;
 
+import static io.xdag.utils.FastByteComparisons.equalBytes;
+
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
-import org.spongycastle.util.encoders.Hex;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.xdag.utils.FastByteComparisons.equalBytes;
+import org.spongycastle.util.encoders.Hex;
 
 public class OrphanPool2 {
-  /** size key*/
-  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
-  /** size key*/
-  private static final byte[] ORPHAN_FIRST = Hex.decode("EEEEEEEEEEEEEEEE");
-  /** size key*/
-  private static final byte[] ORPHAN_LAST = Hex.decode("DDDDDDDDDDDDDDDD");
   public static final byte ORPHAN_PREV_PREFEX = 0x00;
   public static final byte ORPHAN_NEXT_PREFEX = 0x01;
-
+  /** size key */
+  private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+  /** size key */
+  private static final byte[] ORPHAN_FIRST = Hex.decode("EEEEEEEEEEEEEEEE");
+  /** size key */
+  private static final byte[] ORPHAN_LAST = Hex.decode("DDDDDDDDDDDDDDDD");
   private KVSource<byte[], byte[]> orphanSource;
 
   public OrphanPool2(KVSource<byte[], byte[]> orphan) {

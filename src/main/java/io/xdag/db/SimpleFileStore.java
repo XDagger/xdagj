@@ -1,5 +1,7 @@
 package io.xdag.db;
 
+import io.xdag.core.Block;
+import io.xdag.utils.BytesUtils;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,17 +10,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.spongycastle.util.encoders.Hex;
-
-import io.xdag.core.Block;
-import io.xdag.utils.BytesUtils;
 
 public class SimpleFileStore implements FileSource {
 
-  private String basicPrefix;
-
   BufferedInputStream reader;
+  private String basicPrefix;
 
   public SimpleFileStore(String storePath) {
     basicPrefix = storePath + "/sums/";
@@ -119,9 +116,12 @@ public class SimpleFileStore implements FileSource {
       long dir3 = (filedir >> 24) & 0xff;
       filename =
           new StringBuffer(basicPrefix)
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true))).append("/")
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true))).append("/")
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir3, true))).append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
+              .append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)))
+              .append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir3, true)))
+              .append("/")
               .append("sums.dat");
 
     } else if (level < 4) {
@@ -130,8 +130,10 @@ public class SimpleFileStore implements FileSource {
       long dir2 = (filedir >> 32) & 0xff;
       filename =
           new StringBuffer(basicPrefix)
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true))).append("/")
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true))).append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
+              .append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)))
+              .append("/")
               .append("sums.dat");
 
     } else if (level < 6) {
@@ -139,7 +141,8 @@ public class SimpleFileStore implements FileSource {
       long dir1 = (filedir >> 40) & 0xff;
       filename =
           new StringBuffer(basicPrefix)
-              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true))).append("/")
+              .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
+              .append("/")
               .append("sums.dat");
     } else {
       filename = new StringBuffer(basicPrefix).append("sums.dat");

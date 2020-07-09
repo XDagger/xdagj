@@ -20,12 +20,12 @@ public class FastByteComparisons {
     return LexicographicalComparerHolder.BEST_COMPARER.compareTo(b1, s1, l1, b2, s2, l2);
   }
 
-  private interface Comparer<T> {
-    int compareTo(T buffer1, int offset1, int length1, T buffer2, int offset2, int length2);
-  }
-
   private static Comparer<byte[]> lexicographicalComparerJavaImpl() {
     return LexicographicalComparerHolder.PureJavaComparer.INSTANCE;
+  }
+
+  private interface Comparer<T> {
+    int compareTo(T buffer1, int offset1, int length1, T buffer2, int offset2, int length2);
   }
 
   /**

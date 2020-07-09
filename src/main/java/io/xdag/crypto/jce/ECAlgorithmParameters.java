@@ -14,6 +14,22 @@ public final class ECAlgorithmParameters {
 
   private ECAlgorithmParameters() {}
 
+  public static ECParameterSpec getParameterSpec() {
+    try {
+      return Holder.INSTANCE.getParameterSpec(ECParameterSpec.class);
+    } catch (InvalidParameterSpecException ex) {
+      throw new AssertionError("Assumed correct key spec statically", ex);
+    }
+  }
+
+  public static byte[] getASN1Encoding() {
+    try {
+      return Holder.INSTANCE.getEncoded();
+    } catch (IOException ex) {
+      throw new AssertionError("Assumed algo params has been initialized", ex);
+    }
+  }
+
   private static class Holder {
     private static final AlgorithmParameters INSTANCE;
 
@@ -28,22 +44,6 @@ public final class ECAlgorithmParameters {
       } catch (InvalidParameterSpecException ex) {
         throw new AssertionError("Assumed correct key spec statically", ex);
       }
-    }
-  }
-
-  public static ECParameterSpec getParameterSpec() {
-    try {
-      return Holder.INSTANCE.getParameterSpec(ECParameterSpec.class);
-    } catch (InvalidParameterSpecException ex) {
-      throw new AssertionError("Assumed correct key spec statically", ex);
-    }
-  }
-
-  public static byte[] getASN1Encoding() {
-    try {
-      return Holder.INSTANCE.getEncoded();
-    } catch (IOException ex) {
-      throw new AssertionError("Assumed algo params has been initialized", ex);
     }
   }
 }

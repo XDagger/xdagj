@@ -4,18 +4,35 @@ import io.xdag.config.Config;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FileUtils;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Hex;
-import org.rocksdb.*;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
+import org.rocksdb.BackupEngine;
+import org.rocksdb.BackupableDBOptions;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.ClockCache;
+import org.rocksdb.CompressionType;
+import org.rocksdb.Env;
+import org.rocksdb.Options;
+import org.rocksdb.ReadOptions;
+import org.rocksdb.RestoreOptions;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
+import org.rocksdb.WriteBatch;
+import org.rocksdb.WriteOptions;
 
 @Data
 @Slf4j
@@ -25,24 +42,21 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
   public static final int PREFIX_BYTES = 8;
   //    public static final int PREFIX_BYTES = 8;
 
-  private Config config;
+  static {
+    RocksDB.loadLibrary();
+  }
 
+  private Config config;
   private String name;
   private RocksDB db;
   private ReadOptions readOpts;
   private boolean alive;
-
   /**
-   * The native RocksDB insert/update/delete are normally thread-safe
-   * However closeoperation is not thread-safe.
-   * This ReadWriteLock still permits concurrent execution of insert/delete/update operations
-   * however blocks them on init/close/delete operations
+   * The native RocksDB insert/update/delete are normally thread-safe However closeoperation is not
+   * thread-safe. This ReadWriteLock still permits concurrent execution of insert/delete/update
+   * operations however blocks them on init/close/delete operations
    */
   private ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
-
-  static {
-    RocksDB.loadLibrary();
-  }
 
   public RocksdbKVSource(String name) {
     this.name = name;
@@ -90,7 +104,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         final BlockBasedTableConfig tableCfg;
         options.setTableFormatConfig(tableCfg = new BlockBasedTableConfig());
         tableCfg.setBlockSize(16 * 1024);
-        //tableCfg.setBlockCacheSize(32 * 1024 * 1024);
+        // tableCfg.setBlockCacheSize(32 * 1024 * 1024);
         ClockCache clockCache = new ClockCache(32 * 1024 * 1024);
         tableCfg.setBlockCache(clockCache);
         tableCfg.setCacheIndexAndFilterBlocks(true);

@@ -1,8 +1,5 @@
 package io.xdag;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -21,16 +18,15 @@ import io.xdag.event.KernelBootingEvent;
 import io.xdag.event.PubSub;
 import io.xdag.event.PubSubFactory;
 import io.xdag.mine.MinerServer;
+import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.manager.MinerManagerImpl;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
-import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
-import io.xdag.net.XdagVersion;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
@@ -40,32 +36,15 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Kernel {
   private static final PubSub pubSub = PubSubFactory.getDefault();
-
-  public enum State {
-    STOPPED,
-    BOOTING,
-    RUNNING,
-    STOPPING
-  }
-
   protected State state = State.STOPPED;
-
-  public enum Status {
-    STOPPED,
-    SYNCING,
-    BLOCK_PRODUCTION_ON,
-    SYNCDONE
-  }
-
   protected Status status = Status.STOPPED;
-
   protected Config config;
-
   protected Wallet wallet;
-
   protected DatabaseFactory dbFactory;
   protected BlockStore blockStore;
   protected AccountStore accountStore;
@@ -73,32 +52,22 @@ public class Kernel {
   protected Blockchain chain;
   protected NetStatus netStatus;
   protected NetDB netDB;
-
   protected XdagClient client;
   protected XdagChannelManager channelMgr;
   protected NodeManager nodeMgr;
-
   protected NetDBManager netDBMgr;
-
   protected XdagServer p2p;
-
   protected XdagSync sync;
   protected XdagPow pow;
-
   protected SyncManager syncMgr;
-
   /** 初始化一个后续都可以用的handler */
   protected ConnectionLimitHandler connectionLimitHandler;
-
   protected Block firstAccount;
-
   protected Miner poolMiner;
   protected AwardManager awardManager;
   protected MinerManager minerManager;
   protected MinerServer minerServer;
-
   protected XdagState xdagState;
-
   protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
   public Kernel(Config config, Wallet wallet) {
@@ -236,8 +205,6 @@ public class Kernel {
 
     minerServer = new MinerServer(this);
 
-
-
     // ====================================
     // pow
     // ====================================
@@ -317,6 +284,10 @@ public class Kernel {
     return wallet;
   }
 
+  public void setWallet(Wallet wallet) {
+    this.wallet = wallet;
+  }
+
   /**
    * Returns the blockchain.
    *
@@ -324,6 +295,10 @@ public class Kernel {
    */
   public Blockchain getBlockchain() {
     return chain;
+  }
+
+  public void setBlockchain(Blockchain chain) {
+    this.chain = chain;
   }
 
   /**
@@ -380,6 +355,10 @@ public class Kernel {
     return blockStore;
   }
 
+  public void setBlockStore(BlockStore blockStore) {
+    this.blockStore = blockStore;
+  }
+
   /**
    * Returns accountStore
    *
@@ -387,6 +366,10 @@ public class Kernel {
    */
   public AccountStore getAccountStore() {
     return accountStore;
+  }
+
+  public void setAccountStore(AccountStore accountStore) {
+    this.accountStore = accountStore;
   }
 
   /**
@@ -398,6 +381,10 @@ public class Kernel {
     return orphanPool;
   }
 
+  public void setOrphanPool(OrphanPool orphanPool) {
+    this.orphanPool = orphanPool;
+  }
+
   /**
    * Returns NetStatus
    *
@@ -405,6 +392,10 @@ public class Kernel {
    */
   public NetStatus getNetStatus() {
     return netStatus;
+  }
+
+  public void setNetStatus(NetStatus netStatus) {
+    this.netStatus = netStatus;
   }
 
   /**
@@ -416,6 +407,10 @@ public class Kernel {
     return syncMgr;
   }
 
+  public void setSyncMgr(SyncManager syncMgr) {
+    this.syncMgr = syncMgr;
+  }
+
   /**
    * Returns NodeManager
    *
@@ -423,6 +418,10 @@ public class Kernel {
    */
   public NodeManager getNodeMgr() {
     return nodeMgr;
+  }
+
+  public void setNodeMgr(NodeManager nodeMgr) {
+    this.nodeMgr = nodeMgr;
   }
 
   /**
@@ -434,6 +433,10 @@ public class Kernel {
     return pow;
   }
 
+  public void setPow(XdagPow pow) {
+    this.pow = pow;
+  }
+
   /**
    * Returns NetDB
    *
@@ -441,6 +444,10 @@ public class Kernel {
    */
   public NetDB getNetDB() {
     return netDB;
+  }
+
+  public void setNetDB(NetDB netDB) {
+    this.netDB = netDB;
   }
 
   /**
@@ -458,46 +465,6 @@ public class Kernel {
 
   public void setNetDBMgr(NetDBManager netDBMgr) {
     this.netDBMgr = netDBMgr;
-  }
-
-  public void setWallet(Wallet wallet) {
-    this.wallet = wallet;
-  }
-
-  public void setBlockStore(BlockStore blockStore) {
-    this.blockStore = blockStore;
-  }
-
-  public void setAccountStore(AccountStore accountStore) {
-    this.accountStore = accountStore;
-  }
-
-  public void setOrphanPool(OrphanPool orphanPool) {
-    this.orphanPool = orphanPool;
-  }
-
-  public void setNetStatus(NetStatus netStatus) {
-    this.netStatus = netStatus;
-  }
-
-  public void setBlockchain(Blockchain chain) {
-    this.chain = chain;
-  }
-
-  public void setSyncMgr(SyncManager syncMgr) {
-    this.syncMgr = syncMgr;
-  }
-
-  public void setNodeMgr(NodeManager nodeMgr) {
-    this.nodeMgr = nodeMgr;
-  }
-
-  public void setPow(XdagPow pow) {
-    this.pow = pow;
-  }
-
-  public void setNetDB(NetDB netDB) {
-    this.netDB = netDB;
   }
 
   public void onSyncDone() {
@@ -538,11 +505,21 @@ public class Kernel {
     return this.xdagState;
   }
 
-
   public AtomicInteger getChannelsAccount() {
     return channelsAccount;
   }
 
+  public enum State {
+    STOPPED,
+    BOOTING,
+    RUNNING,
+    STOPPING
+  }
 
-
+  public enum Status {
+    STOPPED,
+    SYNCING,
+    BLOCK_PRODUCTION_ON,
+    SYNCDONE
+  }
 }

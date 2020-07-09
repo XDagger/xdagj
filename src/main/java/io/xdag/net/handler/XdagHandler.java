@@ -1,12 +1,6 @@
 package io.xdag.net.handler;
 
-import java.math.BigInteger;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-
 import com.google.common.util.concurrent.SettableFuture;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -19,6 +13,10 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.net.message.impl.SumReplyMessage;
+import java.math.BigInteger;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;

@@ -3,23 +3,6 @@ package io.xdag.consensus;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 import static org.spongycastle.util.Arrays.reverse;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
@@ -35,42 +18,43 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Hex;
 
 public class XdagPow implements PoW {
 
   private static final Logger logger = LoggerFactory.getLogger(XdagPow.class);
-
-  private Kernel kernel;
   /** 事件队列 */
   protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
-
   protected Status status;
-
   protected Timer timer;
   protected Broadcaster broadcaster;
-
   protected Block generateBlock;
   protected byte[] minShare;
   protected byte[] minHash;
   protected Task currentTask;
   protected XdagSha256Digest currentTaskDigest;
   protected long sendTime;
-
   protected XdagChannelManager channelMgr;
   protected Blockchain blockchain;
-
   protected Thread consThread;
-
   /** 存放的是过去十六个区块的hash */
   protected List<byte[]> blockHashs = new CopyOnWriteArrayList<byte[]>();
-
   /** 存放的是最小的hash */
   protected List<byte[]> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-
-  /**引入矿工与奖励*/
+  /** 引入矿工与奖励 */
   protected AwardManager awardManager;
   protected MinerManager minerManager;
   protected long taskIndex = 0;
+  private Kernel kernel;
 
   public XdagPow(Kernel kernel) {
     this.kernel = kernel;
@@ -100,7 +84,7 @@ public class XdagPow implements PoW {
       status = Status.RUNNING;
 
       minerManager = kernel.getMinerManager();
-      //kernel.getPoolMiner();
+      // kernel.getPoolMiner();
 
       // 容器的初始化
       for (int i = 0; i < 16; i++) {
@@ -122,9 +106,9 @@ public class XdagPow implements PoW {
   public void stop() {
     logger.debug("pow stop");
     if (status != Status.STOPPED) {
-      //interrupt sync
+      // interrupt sync
       if (status == Status.SYNCING) {
-        //syncMgr.stop();
+        // syncMgr.stop();
       }
 
       timer.stop();
@@ -147,7 +131,7 @@ public class XdagPow implements PoW {
     sendTime = XdagTime.getMainTime();
     resetTimeout(sendTime);
     generateBlock = generateBlock();
-//    status = Status.BLOCK_PRODUCTION_ON;
+    //    status = Status.BLOCK_PRODUCTION_ON;
   }
 
   public Block generateBlock() {
@@ -179,62 +163,6 @@ public class XdagPow implements PoW {
   protected void resetTimeout(long timeout) {
     timer.timeout(timeout);
     events.removeIf(e -> e.type == Event.Type.TIMEOUT);
-  }
-
-  public class Timer implements Runnable {
-    private long timeout;
-    private Thread t;
-
-
-    @Override
-    public void run() {
-      while (!Thread.currentThread().isInterrupted()) {
-        synchronized (this) {
-          if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
-            events.add(new Event(Event.Type.TIMEOUT));
-            timeout = -1;
-            continue;
-          }
-        }
-        try {
-          Thread.sleep(10);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-      }
-    }
-
-    public synchronized void start() {
-      if (t == null) {
-        t = new Thread(this, "pow-timer");
-        t.start();
-      }
-    }
-
-    public synchronized void stop() {
-      if (t != null) {
-        try {
-          t.interrupt();
-          t.join(10000);
-        } catch (InterruptedException e) {
-          logger.warn("Failed to stop consensus timer");
-          Thread.currentThread().interrupt();
-        }
-        t = null;
-      }
-    }
-
-    public synchronized void timeout(long sendtime) {
-      if (sendtime < 0) {
-        throw new IllegalArgumentException("Timeout can not be negative");
-      }
-      timeout = sendtime;
-    }
-
-    public synchronized void clear() {
-      timeout = -1;
-    }
   }
 
   /** Pause the pow manager, and do synchronization. */
@@ -347,11 +275,13 @@ public class XdagPow implements PoW {
   }
 
   protected void onTimeout() {
-    logger.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",Hex.toHexString(generateBlock.getHash()));
-//    System.out.println(
-//        "Broadcast locally generated blockchain, waiting to be verified. block hash =["
-//            + Hex.toHexString(generateBlock.getHash())
-//            + "]");
+    logger.info(
+        "Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
+        Hex.toHexString(generateBlock.getHash()));
+    //    System.out.println(
+    //        "Broadcast locally generated blockchain, waiting to be verified. block hash =["
+    //            + Hex.toHexString(generateBlock.getHash())
+    //            + "]");
     // 发送区块 如果有的话 然后开始生成新区块
     logger.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(sendTime));
     logger.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
@@ -374,6 +304,146 @@ public class XdagPow implements PoW {
   protected void onNewPreTop() {
     logger.debug("Receive New PreTop");
     newBlock();
+  }
+
+  public Task createTaskByNewBlock(Block block) {
+    Task newTask = new Task();
+    XdagField[] task = new XdagField[2];
+    task[1] = block.getXdagBlock().getField(14);
+    byte[] data = new byte[448];
+    System.arraycopy(block.getXdagBlock().getData(), 0, data, 0, 448);
+    currentTaskDigest = new XdagSha256Digest();
+    try {
+      currentTaskDigest.sha256Update(data);
+      byte[] state = currentTaskDigest.getState();
+      task[0] = new XdagField(state);
+      currentTaskDigest.sha256Update(block.getXdagBlock().getField(14).getData());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    newTask.setTask(task);
+    newTask.setTaskTime(XdagTime.getMainTime());
+    newTask.setTaskIndex(taskIndex++);
+    return newTask;
+  }
+
+  public void onStart() {
+    consThread.start();
+  }
+
+  public enum Status {
+    /** 停止 */
+    STOPPED,
+    RUNNING,
+    SYNCING,
+    BLOCK_PRODUCTION_ON
+  }
+
+  public static class Event {
+    private final Type type;
+    private final Object data;
+    private Object channel;
+    public Event(Type type) {
+      this(type, null);
+    }
+
+    public Event(Type type, Object data) {
+      this.type = type;
+      this.data = data;
+    }
+
+    public Event(Type type, Object data, Object channel) {
+      this.type = type;
+      this.data = data;
+      this.channel = channel;
+    }
+
+    public Type getType() {
+      return type;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T getData() {
+      return (T) data;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T getChannel() {
+      return (T) channel;
+    }
+
+    @Override
+    public String toString() {
+      return "Event [type=" + type + ", data=" + data + "]";
+    }
+
+    public enum Type {
+      /** Stop signal */
+      STOP,
+      /** Received a timeout signal. */
+      TIMEOUT,
+      /** Received a new share message. */
+      NEW_SHARE,
+      /** Received a new pretop message. */
+      NEW_PRETOP,
+      /** Received a new largest diff message. */
+      NEW_DIFF,
+    }
+  }
+
+  public class Timer implements Runnable {
+    private long timeout;
+    private Thread t;
+
+    @Override
+    public void run() {
+      while (!Thread.currentThread().isInterrupted()) {
+        synchronized (this) {
+          if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
+            events.add(new Event(Event.Type.TIMEOUT));
+            timeout = -1;
+            continue;
+          }
+        }
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
+    }
+
+    public synchronized void start() {
+      if (t == null) {
+        t = new Thread(this, "pow-timer");
+        t.start();
+      }
+    }
+
+    public synchronized void stop() {
+      if (t != null) {
+        try {
+          t.interrupt();
+          t.join(10000);
+        } catch (InterruptedException e) {
+          logger.warn("Failed to stop consensus timer");
+          Thread.currentThread().interrupt();
+        }
+        t = null;
+      }
+    }
+
+    public synchronized void timeout(long sendtime) {
+      if (sendtime < 0) {
+        throw new IllegalArgumentException("Timeout can not be negative");
+      }
+      timeout = sendtime;
+    }
+
+    public synchronized void clear() {
+      timeout = -1;
+    }
   }
 
   public class Broadcaster implements Runnable {
@@ -429,91 +499,5 @@ public class XdagPow implements PoW {
         logger.error("Failed to add a message to the broadcast queue: msg = {}", msg);
       }
     }
-  }
-
-  public Task createTaskByNewBlock(Block block) {
-    Task newTask = new Task();
-    XdagField[] task = new XdagField[2];
-    task[1] = block.getXdagBlock().getField(14);
-    byte[] data = new byte[448];
-    System.arraycopy(block.getXdagBlock().getData(), 0, data, 0, 448);
-    currentTaskDigest = new XdagSha256Digest();
-    try {
-      currentTaskDigest.sha256Update(data);
-      byte[] state = currentTaskDigest.getState();
-      task[0] = new XdagField(state);
-      currentTaskDigest.sha256Update(block.getXdagBlock().getField(14).getData());
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    newTask.setTask(task);
-    newTask.setTaskTime(XdagTime.getMainTime());
-    newTask.setTaskIndex(taskIndex++);
-    return newTask;
-  }
-
-  public enum Status {
-    /** 停止 */
-    STOPPED,
-    RUNNING,
-    SYNCING,
-    BLOCK_PRODUCTION_ON
-  }
-
-  public static class Event {
-    public enum Type {
-      /** Stop signal */
-      STOP,
-      /** Received a timeout signal. */
-      TIMEOUT,
-      /** Received a new share message. */
-      NEW_SHARE,
-      /** Received a new pretop message. */
-      NEW_PRETOP,
-      /** Received a new largest diff message. */
-      NEW_DIFF,
-    }
-
-    private final Type type;
-    private final Object data;
-    private Object channel;
-
-    public Event(Type type) {
-      this(type, null);
-    }
-
-    public Event(Type type, Object data) {
-      this.type = type;
-      this.data = data;
-    }
-
-    public Event(Type type, Object data, Object channel) {
-      this.type = type;
-      this.data = data;
-      this.channel = channel;
-    }
-
-    public Type getType() {
-      return type;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T getData() {
-      return (T) data;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T getChannel() {
-      return (T) channel;
-    }
-
-    @Override
-    public String toString() {
-      return "Event [type=" + type + ", data=" + data + "]";
-    }
-  }
-
-  public void onStart() {
-    consThread.start();
   }
 }

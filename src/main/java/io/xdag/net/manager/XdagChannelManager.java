@@ -1,5 +1,9 @@
 package io.xdag.net.manager;
 
+import io.xdag.Kernel;
+import io.xdag.core.BlockWrapper;
+import io.xdag.net.XdagChannel;
+import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,20 +12,13 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagChannelManager {
-  private Kernel kernel;
-
   protected ConcurrentHashMap<InetSocketAddress, XdagChannel> channels = new ConcurrentHashMap<>();
   protected ConcurrentHashMap<String, XdagChannel> activeChannels = new ConcurrentHashMap<>();
-
+  private Kernel kernel;
   /** Queue with new blocks from other peers */
   private BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
   // 广播区块
@@ -153,7 +150,7 @@ public class XdagChannelManager {
   }
 
   public boolean isAcceptable(InetSocketAddress address) {
-    //todo:boolean res = netDBManager.canAccept(address);
+    // todo:boolean res = netDBManager.canAccept(address);
     return true;
   }
 
