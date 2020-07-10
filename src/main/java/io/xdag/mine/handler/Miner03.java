@@ -8,15 +8,13 @@ import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
-import io.xdag.core.XdagBlock;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
-import io.xdag.mine.message.MinerBlockMessage;
 import io.xdag.mine.message.NewBalanceMessage;
 import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
 import io.xdag.net.message.Message;
-import io.xdag.utils.BytesUtils;
+import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.FastByteComparisons;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -58,7 +56,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         processNewTask((NewTaskMessage) msg);
         break;
       case NEW_BLOCK:
-        processNewBlock((MinerBlockMessage) msg);
+        processNewBlock((NewBlockMessage) msg);
         break;
       default:
         logger.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
@@ -87,54 +85,39 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
   }
 
   /** *********************** Message Processing * *********************** */
-  protected synchronized void processNewBlock(MinerBlockMessage msg) {
-    logger.debug(" 处理矿池接受到的交易信息");
-    // 先进行简单的验证 有效的话再放到queue里面
+  protected synchronized void processNewBlock(NewBlockMessage msg) {
+    logger.debug(" Receive a Tx");
+    Block block = msg.getBlock();
+    syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL(), null));
 
-    byte[] uncryptData = msg.getEncoded();
-    long transportHeader = BytesUtils.bytesToLong(uncryptData, 0, true);
-    long dataLength = (transportHeader >> 16 & 0xffff);
-    int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-
-    // 清除transportheader
-    System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-    // 验证 看是否可以加到本地的存储中
-    if (dataLength != 512 || !crc32Verify(uncryptData, crc)) {
-      Block block = new Block(new XdagBlock(uncryptData));
-      syncManager.validateAndAddNewBlock(new BlockWrapper(block, 1, kernel.getClient().getNode()));
-    }
   }
 
   protected synchronized void processNewBalance(NewBalanceMessage msg) {
-    // TODO: 2020/5/9 处理矿工接受到的余额信息
-    logger.debug(" 处理矿池接受到的交易信息[{}]", Hex.toHexString(msg.getEncoded()));
+    // TODO: 2020/5/9 处理矿工接受到的余额信息 矿工功能
+    logger.debug(" Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
   }
 
   protected synchronized void processNewTask(NewTaskMessage msg) {
-    // TODO: 2020/5/9 处理矿工收到的新任务
-    logger.debug(" 处理矿工收到的新任务[{}]", Hex.toHexString(msg.getEncoded()));
+    // TODO: 2020/5/9 处理矿工收到的新任务 矿工功能
+    logger.debug(" Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
   }
 
   protected synchronized void processTaskShare(TaskShareMessage msg) {
-    logger.debug(" 处理矿池接收到的任务反馈");
+    logger.debug(" Pool Receive Share");
 
-    if (FastByteComparisons.compareTo(
-                msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
-            == 0
+    if (FastByteComparisons.compareTo(msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)== 0
         && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
 
       channel.addShareCounts(1);
       minerManager.onNewShare(channel, msg);
 
     } else {
-      logger.debug("shares的值超过限制，不接受");
+      logger.debug("Too many Shares,Reject...");
     }
   }
 
   /** 发送任务消息 */
   public void sendMessage(byte[] bytes) {
-
-    // logger.debug("发送消息。。。。。{}",Hex.encodeHexString(bytes));
     ctx.channel().writeAndFlush(bytes);
   }
 

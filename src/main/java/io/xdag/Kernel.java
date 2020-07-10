@@ -27,6 +27,7 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
+import io.xdag.net.XdagVersion;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
@@ -98,7 +99,7 @@ public class Kernel {
         "Xdag Server system booting up: network = "
             + (Config.MainNet ? "MainNet" : "TestNet")
             + ", version "
-            + "Alpha"
+            + XdagVersion.V03 + "(base Xdagger V0.3.1)"
             + ", user host = ["
             + config.getNodeIp()
             + ":"
@@ -204,6 +205,7 @@ public class Kernel {
     connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
 
     minerServer = new MinerServer(this);
+
 
     // ====================================
     // pow

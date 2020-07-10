@@ -19,7 +19,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
   private boolean isServer;
 
   public MinerChannelInitializer(Kernel kernel, boolean isServer) {
-    logger.debug("初始化");
+    logger.debug("init a minerchannelInitilizer");
 
     this.kernel = kernel;
     this.isServer = isServer;

@@ -47,7 +47,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-    logger.debug("接受到一个地址块");
+    logger.debug("Receive a address block");
     Native.crypt_start();
     byte[] address = new byte[512];
     in.readBytes(address);
@@ -57,10 +57,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     /*解密数据*/
     byte[] uncryptData = Native.dfslib_uncrypt_array(address, 16, sectorNo);
 
-    logger.debug("uncryptData [{}] ", Hex.toHexString(uncryptData));
-
     int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-    logger.debug("crc : {}", crc);
     int head = BytesUtils.bytesToInt(uncryptData, 0, true);
 
     // 清除transportheader
@@ -78,11 +75,9 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
       syncManager.validateAndAddNewBlock(
           new BlockWrapper(addressBlock, kernel.getConfig().getTTL(), null));
 
-      // 初始化一个 矿工也会再一次进行判断
       if (!channel.initMiner(addressBlock.getHash())) {
         logger.debug("too many connect for a miner");
 
-        // 关闭这个channel
         ctx.close();
       }
 
@@ -100,10 +95,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
       channel.activateHadnler(ctx, V03);
 
       // TODO: 2020/5/8  这里可能还有一点小bug  如果无限加入 岂不是会无线创建了
-      System.out.println(
-          "add a new miner,miner address ["
-              + BasicUtils.hash2Address(addressBlock.getHash())
-              + "]");
+      logger.info("add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
     }
   }
 
@@ -130,16 +122,12 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         if (e.state() == IdleState.READER_IDLE) {
           nettyChannel.closeFuture();
           if (logger.isDebugEnabled()) {
-            logger.debug(
-                nettyChannel.remoteAddress()
-                    + "---No data was received for a while ,read time out... ...");
+            logger.debug(nettyChannel.remoteAddress()+ "---No data was received for a while ,read time out... ...");
           }
         } else if (e.state() == IdleState.WRITER_IDLE) {
           nettyChannel.closeFuture();
           if (logger.isDebugEnabled()) {
-            logger.debug(
-                nettyChannel.remoteAddress()
-                    + "---No data was sent for a while.write time out... ...");
+            logger.debug(nettyChannel.remoteAddress() + "---No data was sent for a while.write time out... ...");
           }
         }
       }

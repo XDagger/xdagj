@@ -86,8 +86,6 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         if (channel.getNode().getStat().Inbound.get() >= 3) {
 
           log.info("connect a new pool,host[{}]", channel.getInetSocketAddress().toString());
-          System.out.println(
-              "connect a new pool, host[" + channel.getInetSocketAddress().toString() + "]");
 
           log.debug("握手协议结束，开始传输数据");
           // 握手协议通过

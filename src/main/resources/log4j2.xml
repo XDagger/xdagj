@@ -38,7 +38,7 @@
     <!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
     <!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
     <!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
-    <!--        <logger name="io.xdag.consensus.SyncManager" level="INFO"></logger>-->
+    <!--    <logger name="io.xdag.consensus.SyncManager" level="DEBUG"/>-->
     <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
     <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
     <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
@@ -56,7 +56,8 @@
     </logger>
 
 
-    <Root level="INFO"/>
+    <Root level="INFO">
+    </Root>
 
   </Loggers>
 </Configuration>

@@ -246,10 +246,8 @@ public class MinerChannel {
     long amount = block.getAmount();
 
     byte[] data =
-        BytesUtils.merge(
-            BytesUtils.longToBytes(amount, false),
-            BytesUtils.subArray(accountAddressHashLow, 8, 24));
-    logger.debug("更新用户的余额，余额信息为{}", Hex.encodeHexString(data));
+        BytesUtils.merge(BytesUtils.longToBytes(amount, false),BytesUtils.subArray(accountAddressHashLow, 8, 24));
+    logger.debug("update miner balance {}", Hex.encodeHexString(data));
     miner03.sendMessage(data);
   }
 

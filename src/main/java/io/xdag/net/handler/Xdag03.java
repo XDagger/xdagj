@@ -37,6 +37,8 @@ import javax.annotation.Nonnull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
@@ -44,6 +46,8 @@ import org.spongycastle.util.encoders.Hex;
 @Data
 @Slf4j
 public class Xdag03 extends XdagHandler {
+
+  public static final Logger logger  = LoggerFactory.getLogger(Xdag03.class);
 
   private static final ThreadFactory factory =
       new ThreadFactory() {
@@ -121,8 +125,7 @@ public class Xdag03 extends XdagHandler {
 
   @Override
   public synchronized void dropConnection() {
-    // logger.info("Peer {}: is a bad one, drop", channel.getNode().getAddress());
-    System.out.println("Peer {" + channel.getNode().getAddress() + "}: is a bad one, drop");
+    logger.info("Peer {}: is a bad one, drop", channel.getNode().getAddress());
     disconnect();
   }
 
@@ -137,8 +140,7 @@ public class Xdag03 extends XdagHandler {
     log.debug("New block received: block.index [{}]", block.toString());
     log.debug("Block data:" + Hex.toHexString(block.getXdagBlock().getData()));
     log.debug("ttl:" + msg.getTtl());
-    if (!syncMgr.validateAndAddNewBlock(
-        new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
+    if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
       dropConnection();
     }
   }

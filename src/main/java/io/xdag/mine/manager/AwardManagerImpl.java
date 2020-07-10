@@ -183,13 +183,10 @@ public class AwardManagerImpl implements AwardManager {
 
     // 获取到的是当前任务的对应的+1的位置 以此延迟16轮
     int index = (int) (((time >> 16) + 1) & 0xf);
-    // int index = (int ) (((time>> 16)+1)& 7);
 
     int keyPos = -1;
 
-    // 记录矿工的数量
     int minerCounts = 0;
-    // 初始化一个记录支付情况的paydata
     PayData payData = new PayData();
 
     // 每一个区块最多可以放多少交易 这个要由密钥的位置来决定
@@ -219,7 +216,6 @@ public class AwardManagerImpl implements AwardManager {
 
     // 获取到这个区块 查询时要把前面的置0
     byte[] hashlow = BytesUtils.fixBytes(hash, 8, 24);
-    logger.debug("要查找的区块的hash【{}】", Hex.toHexString(hashlow));
     Block block = blockchain.getBlockByHash(hashlow, false);
 
     keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
@@ -232,15 +228,14 @@ public class AwardManagerImpl implements AwardManager {
     }
 
     if (block == null) {
-      logger.debug("找不到对应的区块");
+      logger.debug("can't find the block");
       return -3;
     }
 
     payData.balance = block.getAmount();
-    logger.debug("要支付的区块的金额为 ：[{}]", payData.balance);
 
     if (payData.balance <= 0) {
-      logger.debug("这个块不是主块，不可用于支付");
+      logger.debug("no main block,can't pay");
       return -4;
     }
 
@@ -250,12 +245,12 @@ public class AwardManagerImpl implements AwardManager {
 
     // 进行各部分奖励的计算
     if (payData.unusedBalance <= 0) {
-      logger.debug("余额不足");
+      logger.debug("Balance no enough");
       return -5;
     }
 
     if (keyPos < 0) {
-      logger.debug("不存在对应的密钥。。。。");
+      logger.debug("can't find the key");
       return -6;
     }
 
@@ -291,8 +286,6 @@ public class AwardManagerImpl implements AwardManager {
       byte[] hash, byte[] nonce, int index, PayData payData, long time) {
 
     logger.debug("precalculatePayments........");
-    // 计算矿池中矿工的奖励
-
     for (Miner miner : miners) {
       countpay(miner, index, payData, time);
 
@@ -400,8 +393,6 @@ public class AwardManagerImpl implements AwardManager {
         double per = BigDecimalUtils.div(miner.getPrevDiffSum(time), payData.prevDiffSums);
         // paymentSum += (long)payData.unusedBalance * per;
         paymentSum += BigDecimalUtils.mul(payData.unusedBalance, per);
-        logger.debug(
-            "这个矿工的prevDiff为【{}】，占的比例为【{}】,支付的金额为【{}】", miner.getPrevDiffSum(time), per, paymentSum);
       }
 
       // 计算当前这一轮
@@ -409,19 +400,11 @@ public class AwardManagerImpl implements AwardManager {
         double per = BigDecimalUtils.div(miner.getDiffSum(time), payData.diffSums);
         // paymentSum += (long)payData.directIncome * per;
         paymentSum += BigDecimalUtils.mul(payData.directIncome, per);
-        logger.debug(
-            "这个矿工的Diff为【{}】，占的比例为【{}】,支付的金额为【{}】",
-            miner.getDiffSum(time),
-            BigDecimalUtils.div(miner.getDiffSum(time), payData.diffSums),
-            paymentSum);
       }
 
       if (payData.rewardMiner != null
-          && FastByteComparisons.compareTo(
-                  payData.rewardMiner, 8, 24, miner.getAddressHash(), 8, 24)
-              == 0) {
+          && FastByteComparisons.compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash(), 8, 24)== 0) {
         paymentSum += payData.minerReward;
-        logger.debug("获取到奖励的矿工的地址为【{}】", Hex.toHexString(miner.getAddressHaashLow()));
       }
 
       if (paymentSum < 0.000000001) {
@@ -450,9 +433,9 @@ public class AwardManagerImpl implements AwardManager {
 
   public void transaction(byte[] hashLow, ArrayList<Address> receipt, long payAmount, int keypos) {
 
-    logger.debug("汇总的金额为【{}】", payAmount);
+    logger.debug("All Payment【{}】", payAmount);
     for (Address address : receipt) {
-      logger.debug("要支付的数据为：【{}】", Hex.toHexString(address.getData()));
+      logger.debug("pay data：【{}】", Hex.toHexString(address.getData()));
     }
 
     Map<Address, ECKey> inputMap = new HashMap<>();
@@ -469,7 +452,7 @@ public class AwardManagerImpl implements AwardManager {
       block.signIn(inputKey);
       block.signOut(xdagWallet.getDefKey().ecKey);
     }
-    logger.debug("支付块的hash【{}】", Hex.toHexString(block.getHash()));
+    logger.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
 
     // todo 需要验证还是直接connect
     kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5, null));

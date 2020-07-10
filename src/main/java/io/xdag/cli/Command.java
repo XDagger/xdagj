@@ -213,7 +213,7 @@ public class Command {
 
     return "Transaction :"
         + BasicUtils.hash2Address(block.getHashLow())
-        + " waiting to be processed";
+        + " it will take several minutes to complete the transaction.";
   }
 
   /** Current Blockchain Status */
@@ -254,9 +254,6 @@ public class Command {
 
   /**
    * Connect to Node
-   *
-   * @param server ip
-   * @param port port
    */
   public void connect(String server, int port) {
     kernel.getNodeMgr().doConnect(server, port);
@@ -312,9 +309,7 @@ public class Command {
           .append(simpleDateFormat.format(date))
           .append(" ")
           .append(getStateByFlags(blockInfo.getFlags()))
-          .append("   epoch:[")
-          .append(XdagTime.getEpoch(blockInfo.getTimestamp()))
-          .append("]")
+
           .append("\n");
     }
     return ans.toString();
@@ -345,6 +340,7 @@ public class Command {
   }
 
   public String printBlockInfo(Block blockInfo) {
+    blockInfo.parse();
     long time = XdagTime.xdagtimestampToMs(blockInfo.getTimestamp());
     Date date = new Date(time);
 

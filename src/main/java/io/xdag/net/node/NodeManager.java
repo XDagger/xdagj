@@ -65,8 +65,6 @@ public class NodeManager {
     this.client = kernel.getClient();
     this.channelMgr = kernel.getChannelManager();
     this.netDB = kernel.getNetDB();
-    // this.exec = Executors.newSingleThreadScheduledExecutor(factory);
-    // myron 修改线程池
     this.exec = new ScheduledThreadPoolExecutor(1, factory);
 
     this.config = kernel.getConfig();

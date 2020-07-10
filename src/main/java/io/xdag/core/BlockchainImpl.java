@@ -28,6 +28,7 @@ import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.net.message.NetStatus;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -782,7 +783,6 @@ public class BlockchainImpl implements Blockchain {
   public void addNewAccount(Block block, int keyIndex) {
     if (!block.isSaved()) {
       logger.debug("Add into Mem,size:" + MemAccount.size());
-      //            MemAccount.put(new ByteArrayWrapper(block.getHashLow()),keyIndex);
       MemAccount.put(new ByteArrayWrapper(block.getHash()), keyIndex);
     } else {
       logger.debug("Add into storage");
@@ -792,7 +792,6 @@ public class BlockchainImpl implements Blockchain {
 
   public void removeAccount(Block block) {
     if (!block.isSaved) {
-      //            MemAccount.remove(new ByteArrayWrapper(block.getHashLow()));
       MemAccount.remove(new ByteArrayWrapper(block.getHash()));
     } else {
       accountStore.removeAccount(block);
@@ -818,9 +817,6 @@ public class BlockchainImpl implements Blockchain {
     long forkHeight = Config.MainNet ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
     long startAmount = 0;
     if (num >= forkHeight) {
-      //      if(g_apollo_fork_time == 0) {
-      //        g_apollo_fork_time = time;
-      //      }
       startAmount = MAIN_APOLLO_AMOUNT;
     } else {
       startAmount = MAIN_START_AMOUNT;
@@ -834,9 +830,7 @@ public class BlockchainImpl implements Blockchain {
     block.setAmount(block.getAmount() + amount);
     blockStore.updateBlockInfo(BlockStore.BLOCK_AMOUNT, block);
     if ((block.flags & BI_OURS) != 0) {
-      logger.debug(
-          "====Our balance add new amount:" + amount + "====,获取到amount的hash【{}】",
-          Hex.toHexString(block.getHashLow()));
+      logger.debug("====Our balance add new amount:" + amount + "====,获取到amount的hash【{}】",Hex.toHexString(block.getHashLow()));
       accountStore.updateGBanlance(amount);
     }
   }
@@ -906,9 +900,7 @@ public class BlockchainImpl implements Blockchain {
   @Override
   public List<byte[]> getAllAccount() {
     List<byte[]> res = new ArrayList<>();
-    //        List<byte[]> memAccount = getMemAcccount();
     List<byte[]> storeAccount = accountStore.getAllAccount();
-    //        res.addAll(memAccount);
     res.addAll(storeAccount);
     return res;
   }

@@ -19,8 +19,6 @@ public class MinerMessageFactory implements MessageFactory {
     XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, XdagVersion.V03);
 
     switch (receivedCommand) {
-      case Receive_Block:
-        return new MinerBlockMessage(encoded);
       case TASK_SHARE:
         return new TaskShareMessage(encoded);
       case NEW_TASK:
@@ -29,7 +27,7 @@ public class MinerMessageFactory implements MessageFactory {
         return new NewBalanceMessage(encoded);
       default:
         logger.debug(Hex.toHexString(encoded));
-        throw new IllegalArgumentException("No such message code" + code);
+        throw new IllegalArgumentException("No such message code" + receivedCommand);
     }
   }
 }

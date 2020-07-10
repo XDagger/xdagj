@@ -62,8 +62,7 @@ public class MinerServer {
       isListening = true;
       // channelFuture.channel().closeFuture().sync();
 
-      // logger.info("start listening the pool,host:[{}:{}]",ip,port);
-      System.out.println("start listening the pool,host:[" + ip + ":" + port + "]");
+      logger.info("start listening the pool,host:[{}:{}]",ip,port);
 
     } catch (Exception e) {
       logger.error("miner server error: {} ({})", e.getMessage(), e.getClass().getName());

@@ -302,10 +302,8 @@ public class SyncManager {
       kernel.getXdagState().setState(XdagState.STST);
     }
 
-    // logger.info("sync finish! tha last mainblocsk number = {}",kernel.getNetStatus().getNmain());
-    // logger.debug("Start pow");
-    System.out.println(
-        "sync finish! tha last mainblocsk number = {" + kernel.getNetStatus().getNmain() + "}");
+    logger.info("sync finish! tha last mainblocsk number = {}",kernel.getNetStatus().getNmain());
+    System.out.println("sync finish! tha last mainblocsk number = {" + kernel.getNetStatus().getNmain() + "}");
     System.out.println("Start PoW");
 
     kernel.getMinerServer().start();
@@ -313,14 +311,13 @@ public class SyncManager {
   }
 
   public void stop() {
-    // logger.debug("sync manager stop");
+    logger.debug("sync manager stop");
     System.out.println("sync manager stop");
     //        if(isRunning.compareAndSet(true,false)){
     if (exec1 != null) {
       try {
         exec1.shutdown();
         exec1.join();
-        // 除了中断
         if (syncQueueThread != null) {
           syncQueueThread.interrupt();
           syncQueueThread.join(10 * 1000);

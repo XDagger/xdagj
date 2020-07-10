@@ -56,7 +56,7 @@ Configure a new library file for it.
 
 ## Run XDAGJ
 
-In XDAGJ， Config.java is a global configuration class. If specified configuration parameters are not configured，the default parameters will be used.
+In XDAGJ，`resource/conf.setting` is a global configuration file. If specified configuration parameters are not configured，the default parameters will be used.Refer [hutool](https://www.hutool.cn/docs/#/setting/%E6%A6%82%E8%BF%B0)
 
 To avoid stack overflow, increase the STACK value of the JVM to at least 4096k when loading the test network data.
 
@@ -78,6 +78,9 @@ For more commands:
 ```shell
 > java -jar xdagj.jar -h
 ```
+
+#### Build test enviroment
+Refer [How to build a test environment](./docs/Build_Test_Environment.md)
 
 #### Commands currently implemented
 

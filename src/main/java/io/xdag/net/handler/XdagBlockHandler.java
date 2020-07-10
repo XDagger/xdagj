@@ -47,15 +47,13 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     return (byte) (type >> (n << 2) & 0xf);
   }
 
-  /** T 加解密的过程outbound应该先用上一次结束后的值 发完才加 TODO 增加transportHeader */
+  /** T 加解密的过程outbound应该先用上一次结束后的值 发完才加  */
   @Override
   protected void encode(
       ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
     byte[] uncryptData = xdagblock.getData();
 
-    byte[] encryptData =
-        Native.dfslib_encrypt_byte_sector(
-            uncryptData, uncryptData.length, channel.getNode().getStat().Outbound.get() - 3 + 1);
+    byte[] encryptData = Native.dfslib_encrypt_byte_sector(uncryptData, uncryptData.length, channel.getNode().getStat().Outbound.get() - 3 + 1);
     out.writeBytes(encryptData);
     channel.getNode().getStat().Outbound.add();
   }
@@ -67,9 +65,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
       logger.trace("Decoding packet (" + in.readableBytes() + " bytes)");
       byte[] encryptData = new byte[512];
       in.readBytes(encryptData);
-      byte[] uncryptData =
-          Native.dfslib_uncrypt_byte_sector(
-              encryptData, encryptData.length, channel.getNode().getStat().Inbound.get() - 3 + 1);
+      byte[] uncryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length, channel.getNode().getStat().Inbound.get() - 3 + 1);
       // 该通道的输入记录加一
       channel.getNode().getStat().Inbound.add();
 
@@ -89,6 +85,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
       if (dataLength != 512 || !crc32Verify(uncryptData, crc)) {
         logger.debug(dataLength + " length");
         logger.debug("receive not block");
+        System.out.println("myron block 验证不通过");
       }
 
       System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
@@ -97,8 +94,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
       byte first_field_type = getMsgcode(xdagBlock, 0);
       Message msg = null;
       // 普通区块
-      XdagField.FieldType netType =
-          MainNet ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
+      XdagField.FieldType netType = MainNet ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
       if (netType.asByte() == first_field_type) {
         msg = new NewBlockMessage(xdagBlock, ttl);
       }

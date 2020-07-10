@@ -12,7 +12,6 @@ public class BlockWrapper {
 
   public BlockWrapper(Block block, int ttl, Node remoteNode) {
     this.block = block;
-    //        this.broadcast = broadcast;
     this.ttl = ttl;
     this.remoteNode = remoteNode;
   }

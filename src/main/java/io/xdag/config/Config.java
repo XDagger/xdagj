@@ -200,6 +200,7 @@ public class Config {
 
   public void getSetting() {
 
+    //获取对应的配置文件以及默认组
     Setting setting = new Setting("conf.setting");
     setting = setting.getSetting("default");
 

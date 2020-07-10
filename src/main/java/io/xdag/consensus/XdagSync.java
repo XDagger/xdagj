@@ -45,7 +45,6 @@ public class XdagSync {
   public XdagSync(Kernel kernel) {
     this.channelMgr = kernel.getChannelManager();
     this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
-    // sendTask = Executors.newSingleThreadScheduledExecutor(factory);
     sendTask = new ScheduledThreadPoolExecutor(1, factory);
   }
 

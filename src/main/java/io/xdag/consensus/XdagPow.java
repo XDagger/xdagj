@@ -84,7 +84,6 @@ public class XdagPow implements PoW {
       status = Status.RUNNING;
 
       minerManager = kernel.getMinerManager();
-      // kernel.getPoolMiner();
 
       // 容器的初始化
       for (int i = 0; i < 16; i++) {
@@ -244,7 +243,6 @@ public class XdagPow implements PoW {
       XdagSha256Digest digest = new XdagSha256Digest(currentTaskDigest);
       byte[] hash = digest.sha256Final(reverse(share.getData()));
 
-      // awardManager.calculateNopaidShares(channel.getMiner(),hash,currentTask.getTaskTime());
       MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
       MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
 
@@ -275,13 +273,7 @@ public class XdagPow implements PoW {
   }
 
   protected void onTimeout() {
-    logger.info(
-        "Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
-        Hex.toHexString(generateBlock.getHash()));
-    //    System.out.println(
-    //        "Broadcast locally generated blockchain, waiting to be verified. block hash =["
-    //            + Hex.toHexString(generateBlock.getHash())
-    //            + "]");
+    logger.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",Hex.toHexString(generateBlock.getHash()));
     // 发送区块 如果有的话 然后开始生成新区块
     logger.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(sendTime));
     logger.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
@@ -291,13 +283,9 @@ public class XdagPow implements PoW {
     synchronized (kernel.getBlockchain()) {
       kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
     }
-    awardManager.payAndaddNewAwardBlock(
-        minShare.clone(), generateBlock.getHash().clone(), generateBlock.getTimestamp());
+    awardManager.payAndaddNewAwardBlock(minShare.clone(), generateBlock.getHash().clone(), generateBlock.getTimestamp());
 
-    broadcaster.broadcast(
-        new NewBlockMessage(
-            new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL()));
-
+    broadcaster.broadcast(new NewBlockMessage(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL()));
     newBlock();
   }
 
@@ -456,8 +444,8 @@ public class XdagPow implements PoW {
       while (!Thread.currentThread().isInterrupted()) {
         try {
           NewBlockMessage msg = queue.take();
-          logger.debug("queue 取出的区块 hash【{}】", Hex.toHexString(msg.getBlock().getHash()));
-          logger.debug("queue 取出的区块数据【{}】", Hex.toHexString(msg.getBlock().getHash()));
+          logger.debug("queue take hash[{}]", Hex.toHexString(msg.getBlock().getHash()));
+          logger.debug("queue take block date [{}]", Hex.toHexString(msg.getBlock().getHash()));
           List<XdagChannel> channels = channelMgr.getActiveChannels();
           if (channels != null) {
             // 全部广播

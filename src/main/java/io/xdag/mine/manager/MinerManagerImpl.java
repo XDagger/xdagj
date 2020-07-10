@@ -36,9 +36,7 @@ public class MinerManagerImpl implements MinerManager {
   private Kernel kernel;
 
   private ScheduledExecutorService server =
-      new ScheduledThreadPoolExecutor(
-          3,
-          new BasicThreadFactory.Builder()
+      new ScheduledThreadPoolExecutor(3,new BasicThreadFactory.Builder()
               .namingPattern("MinerManagerThread")
               .daemon(true)
               .build());
@@ -109,7 +107,7 @@ public class MinerManagerImpl implements MinerManager {
   @Override
   public void removeUnactivateChannel(MinerChannel channel) {
     if (!channel.isActive()) {
-      logger.debug("移除了一个channel");
+      logger.debug("remove a channel");
       activateMinerChannels.remove(channel.getInetAddress(), channel);
       Miner miner = activateMiners.get(new ByteArrayWrapper(channel.getAccountAddressHash()));
       miner.removeChannel(channel.getInetAddress());
@@ -132,7 +130,7 @@ public class MinerManagerImpl implements MinerManager {
   public void cleanUnactivateMiner() {
     for (Miner miner : activateMiners.values()) {
       if (miner.canRemove()) {
-        logger.debug("移除了一个无效的矿工，");
+        logger.debug("remove a miner");
         activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash()));
       }
     }

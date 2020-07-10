@@ -6,12 +6,7 @@ import org.junit.Test;
 import static io.xdag.config.Constants.*;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
-/**
- * @Classname MintTest
- * @Description TODO
- * @Date 2020/7/6 19:23
- * @Created by Myron
- */
+
 public class MintTest {
   @Test
   public void testMint(){

@@ -130,7 +130,7 @@ public class ShellCommand {
           cmd.resetStore();
           break;
         case "level":
-          System.out.println(cmd.getState());
+          System.out.println("default");
           break;
         case "miners":
           cmd.printfMiners();
@@ -227,6 +227,11 @@ public class ShellCommand {
 
   public void processNet(String command) {
     if (command == null) {
+      System.out.println(
+          "Commands:\n"
+              + "  conn                          - list connections\n"
+              + "  connect ip:port               - connect to this host\n"
+              + "  help                          - print this help");
       return;
     }
     if ("conn".equals(command)) {
@@ -270,3 +275,4 @@ public class ShellCommand {
     return stopFlag;
   }
 }
+
