@@ -5,25 +5,28 @@ import io.xdag.net.message.Message;
 
 public interface PoW {
 
-  /** Start thread */
-  void start();
-  /** Stop thread */
-  void stop();
+    /** Start thread */
+    void start();
 
-  /**
-   * is running
-   *
-   * @return .
-   */
-  boolean isRunning();
+    /** Stop thread */
+    void stop();
 
-  /**
-   * Receive and process shares sent by miners
-   *
-   * @param channel minerchannel
-   * @param msg share
-   */
-  void receiveNewShare(MinerChannel channel, Message msg);
+    /**
+     * is running
+     *
+     * @return .
+     */
+    boolean isRunning();
 
-  void receiveNewPretop(byte[] pretop);
+    /**
+     * Receive and process shares sent by miners
+     *
+     * @param channel
+     *            minerchannel
+     * @param msg
+     *            share
+     */
+    void receiveNewShare(MinerChannel channel, Message msg);
+
+    void receiveNewPretop(byte[] pretop);
 }

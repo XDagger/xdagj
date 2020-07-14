@@ -5,25 +5,25 @@ import org.spongycastle.util.encoders.Hex;
 
 public class StringUtils {
 
-  public static double getDouble(String value) {
-    double num = Double.parseDouble(value);
-    BigDecimal bigDecimal = new BigDecimal(num);
-    return bigDecimal.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-  }
-
-  public static byte[] getHash(String address) {
-    byte[] hash = null;
-    if (address != null) {
-      hash = Hex.decode(address);
+    public static double getDouble(String value) {
+        double num = Double.parseDouble(value);
+        BigDecimal bigDecimal = new BigDecimal(num);
+        return bigDecimal.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
     }
-    return hash;
-  }
 
-  public static int getNum(String value) {
-    int num = 20;
-    if (value != null) {
-      num = Integer.parseInt(value);
+    public static byte[] getHash(String address) {
+        byte[] hash = null;
+        if (address != null) {
+            hash = Hex.decode(address);
+        }
+        return hash;
     }
-    return num;
-  }
+
+    public static int getNum(String value) {
+        int num = 20;
+        if (value != null) {
+            num = Integer.parseInt(value);
+        }
+        return num;
+    }
 }

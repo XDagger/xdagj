@@ -8,31 +8,31 @@ import io.xdag.net.message.XdagMessageCodes;
 
 public class NewBalanceMessage extends Message {
 
-  private XdagField xdagField;
+    private XdagField xdagField;
 
-  public NewBalanceMessage(byte[] encoded) {
-    super(encoded);
-    this.xdagField = new XdagField(encoded);
-  }
+    public NewBalanceMessage(byte[] encoded) {
+        super(encoded);
+        this.xdagField = new XdagField(encoded);
+    }
 
-  @Override
-  public byte[] getEncoded() {
-    return xdagField.getData();
-  }
+    @Override
+    public byte[] getEncoded() {
+        return xdagField.getData();
+    }
 
-  @Override
-  public Class<?> getAnswerMessage() {
-    return null;
-  }
+    @Override
+    public Class<?> getAnswerMessage() {
+        return null;
+    }
 
-  @Override
-  public XdagMessageCodes getCommand() {
-    return NEW_BALANCE;
-  }
+    @Override
+    public XdagMessageCodes getCommand() {
+        return NEW_BALANCE;
+    }
 
-  @Override
-  public String toString() {
+    @Override
+    public String toString() {
 
-    return null;
-  }
+        return null;
+    }
 }

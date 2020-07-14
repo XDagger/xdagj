@@ -12,47 +12,47 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class SumRequestMessage extends AbstractMessage {
-  public SumRequestMessage(long starttime, long endtime, NetStatus netStatus) {
-    super(
-        SUMS_REQUEST,
-        starttime,
-        endtime,
-        BytesUtils.bytesToLong(BytesUtils.generateRandomBytes(), 0, true),
-        netStatus);
-    updateCrc();
-  }
-
-  public SumRequestMessage(byte[] bytes) {
-    super(bytes);
-  }
-
-  @Override
-  public byte[] getEncoded() {
-    return encoded;
-  }
-
-  @Override
-  public Class<?> getAnswerMessage() {
-    return SumReplyMessage.class;
-  }
-
-  @Override
-  public XdagMessageCodes getCommand() {
-    return XdagMessageCodes.SUMS_REQUEST;
-  }
-
-  @Override
-  public String toString() {
-    if (!parsed) {
-      parse();
+    public SumRequestMessage(long starttime, long endtime, NetStatus netStatus) {
+        super(
+                SUMS_REQUEST,
+                starttime,
+                endtime,
+                BytesUtils.bytesToLong(BytesUtils.generateRandomBytes(), 0, true),
+                netStatus);
+        updateCrc();
     }
-    return "["
-        + this.getCommand().name()
-        + " starttime="
-        + starttime
-        + " endtime="
-        + this.endtime
-        + " netstatus="
-        + netStatus;
-  }
+
+    public SumRequestMessage(byte[] bytes) {
+        super(bytes);
+    }
+
+    @Override
+    public byte[] getEncoded() {
+        return encoded;
+    }
+
+    @Override
+    public Class<?> getAnswerMessage() {
+        return SumReplyMessage.class;
+    }
+
+    @Override
+    public XdagMessageCodes getCommand() {
+        return XdagMessageCodes.SUMS_REQUEST;
+    }
+
+    @Override
+    public String toString() {
+        if (!parsed) {
+            parse();
+        }
+        return "["
+                + this.getCommand().name()
+                + " starttime="
+                + starttime
+                + " endtime="
+                + this.endtime
+                + " netstatus="
+                + netStatus;
+    }
 }

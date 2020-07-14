@@ -10,24 +10,24 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 public interface MinerManager {
-  void updateNewTaskandBroadcast(Task task);
+    void updateNewTaskandBroadcast(Task task);
 
-  Map<ByteArrayWrapper, Miner> getActivateMiners();
+    Map<ByteArrayWrapper, Miner> getActivateMiners();
 
-  /** 接收到share */
-  void onNewShare(MinerChannel channel, Message msg);
+    /** 接收到share */
+    void onNewShare(MinerChannel channel, Message msg);
 
-  void setPoW(PoW pow);
+    void setPoW(PoW pow);
 
-  void start();
+    void start();
 
-  void addActivateChannel(MinerChannel channel);
+    void addActivateChannel(MinerChannel channel);
 
-  void close();
+    void close();
 
-  MinerChannel getChannelByHost(InetSocketAddress host);
+    MinerChannel getChannelByHost(InetSocketAddress host);
 
-  Map<InetSocketAddress, MinerChannel> getActivateMinerChannels();
+    Map<InetSocketAddress, MinerChannel> getActivateMinerChannels();
 
-  void removeUnactivateChannel(MinerChannel channel);
+    void removeUnactivateChannel(MinerChannel channel);
 }

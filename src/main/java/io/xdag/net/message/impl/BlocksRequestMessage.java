@@ -13,50 +13,50 @@ import lombok.EqualsAndHashCode;
 @Data
 public class BlocksRequestMessage extends AbstractMessage {
 
-  public BlocksRequestMessage(byte[] bytes) {
-    super(bytes);
-  }
-
-  public BlocksRequestMessage(long starttime, long endtime, NetStatus netStatus) {
-    // 调用jni的generate_random
-    super(
-        BLOCKS_REQUEST,
-        starttime,
-        endtime,
-        BytesUtils.bytesToLong(BytesUtils.generateRandomBytes(), 0, true),
-        netStatus);
-    updateCrc();
-  }
-
-  @Override
-  public byte[] getEncoded() {
-    if (encoded == null) {
-      encode();
+    public BlocksRequestMessage(byte[] bytes) {
+        super(bytes);
     }
-    return encoded;
-  }
 
-  @Override
-  public Class<BlocksReplyMessage> getAnswerMessage() {
-    return BlocksReplyMessage.class;
-  }
-
-  @Override
-  public XdagMessageCodes getCommand() {
-    return XdagMessageCodes.BLOCKS_REQUEST;
-  }
-
-  @Override
-  public String toString() {
-    if (!parsed) {
-      parse();
+    public BlocksRequestMessage(long starttime, long endtime, NetStatus netStatus) {
+        // 调用jni的generate_random
+        super(
+                BLOCKS_REQUEST,
+                starttime,
+                endtime,
+                BytesUtils.bytesToLong(BytesUtils.generateRandomBytes(), 0, true),
+                netStatus);
+        updateCrc();
     }
-    return "["
-        + this.getCommand().name()
-        + " starttime="
-        + this.starttime
-        + " endtime="
-        + this.endtime
-        + "]";
-  }
+
+    @Override
+    public byte[] getEncoded() {
+        if (encoded == null) {
+            encode();
+        }
+        return encoded;
+    }
+
+    @Override
+    public Class<BlocksReplyMessage> getAnswerMessage() {
+        return BlocksReplyMessage.class;
+    }
+
+    @Override
+    public XdagMessageCodes getCommand() {
+        return XdagMessageCodes.BLOCKS_REQUEST;
+    }
+
+    @Override
+    public String toString() {
+        if (!parsed) {
+            parse();
+        }
+        return "["
+                + this.getCommand().name()
+                + " starttime="
+                + this.starttime
+                + " endtime="
+                + this.endtime
+                + "]";
+    }
 }

@@ -8,36 +8,38 @@ import io.xdag.net.message.impl.SumReplyMessage;
 import java.math.BigInteger;
 
 public interface Xdag {
-  void sendNewBlock(Block newBlock, int TTL);
+    void sendNewBlock(Block newBlock, int TTL);
 
-  void sendGetblocks(long starttime, long endtime);
+    void sendGetblocks(long starttime, long endtime);
 
-  void sendGetblock(byte[] hash);
+    void sendGetblock(byte[] hash);
 
-  ListenableFuture<SumReplyMessage> sendGetsums(long starttime, long endtime);
+    ListenableFuture<SumReplyMessage> sendGetsums(long starttime, long endtime);
 
-  void dropConnection();
+    void dropConnection();
 
-  boolean isIdle();
+    boolean isIdle();
 
-  BigInteger getTotalDifficulty();
+    BigInteger getTotalDifficulty();
 
-  void activate();
+    void activate();
 
-  XdagVersion getVersion();
+    XdagVersion getVersion();
 
-  /** Disables pending block processing */
-  void disableBlocks();
+    /** Disables pending block processing */
+    void disableBlocks();
 
-  /** Enables pending block processing */
-  void enableBlocks();
+    /** Enables pending block processing */
+    void enableBlocks();
 
-  /**
-   * Fires inner logic related to long sync done or undone event
-   *
-   * @param done true notifies that long sync is finished, false notifies that it's enabled again
-   */
-  void onSyncDone(boolean done);
+    /**
+     * Fires inner logic related to long sync done or undone event
+     *
+     * @param done
+     *            true notifies that long sync is finished, false notifies that it's
+     *            enabled again
+     */
+    void onSyncDone(boolean done);
 
-  void sendMessage(Message message);
+    void sendMessage(Message message);
 }

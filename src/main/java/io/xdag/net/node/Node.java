@@ -11,68 +11,68 @@ import org.apache.commons.codec.binary.Hex;
 @Data
 public class Node {
 
-  private final String host;
-  private final int port;
-  private byte[] id;
-  private NodeStat stat = new NodeStat();
+    private final String host;
+    private final int port;
+    private byte[] id;
+    private NodeStat stat = new NodeStat();
 
-  public Node(String host, int port) {
-    this.host = host;
-    this.port = port;
-    this.id = BytesUtils.longToBytes(new Random().nextLong(), true);
-  }
+    public Node(String host, int port) {
+        this.host = host;
+        this.port = port;
+        this.id = BytesUtils.longToBytes(new Random().nextLong(), true);
+    }
 
-  public Node(byte[] id, String host, int port) {
-    this.id = id;
-    this.host = host;
-    this.port = port;
-  }
+    public Node(byte[] id, String host, int port) {
+        this.id = id;
+        this.host = host;
+        this.port = port;
+    }
 
-  public Node(InetAddress address, int port) {
-    this.host = address.getHostAddress();
-    this.port = port;
-  }
+    public Node(InetAddress address, int port) {
+        this.host = address.getHostAddress();
+        this.port = port;
+    }
 
-  public static String getNodeIdShort(String nodeId) {
-    return nodeId == null ? "<null>" : nodeId.substring(0, 8);
-  }
+    public static String getNodeIdShort(String nodeId) {
+        return nodeId == null ? "<null>" : nodeId.substring(0, 8);
+    }
 
-  public String getHexId() {
-    return Hex.encodeHexString(id);
-  }
+    public String getHexId() {
+        return Hex.encodeHexString(id);
+    }
 
-  public InetSocketAddress getAddress() {
-    return new InetSocketAddress(this.getHost(), this.getPort());
-  }
+    public InetSocketAddress getAddress() {
+        return new InetSocketAddress(this.getHost(), this.getPort());
+    }
 
-  public String getAddressAsString() {
-    InetSocketAddress address = this.getAddress();
-    InetAddress addr = address.getAddress();
-    // addr == null if the hostname can't be resolved
-    return (addr == null ? address.getHostString() : addr.getHostAddress())
-        + ":"
-        + address.getPort();
-  }
+    public String getAddressAsString() {
+        InetSocketAddress address = this.getAddress();
+        InetAddress addr = address.getAddress();
+        // addr == null if the hostname can't be resolved
+        return (addr == null ? address.getHostString() : addr.getHostAddress())
+                + ":"
+                + address.getPort();
+    }
 
-  public String getHexIdShort() {
-    return getNodeIdShort(getHexId());
-  }
+    public String getHexIdShort() {
+        return getNodeIdShort(getHexId());
+    }
 
-  public BigInteger getTotalDifficulty() {
-    return null;
-  }
+    public BigInteger getTotalDifficulty() {
+        return null;
+    }
 
-  public double getAvgLatency() {
-    return 0.0;
-  }
+    public double getAvgLatency() {
+        return 0.0;
+    }
 
-  @Override
-  public boolean equals(Object o) {
-    return o instanceof Node && getAddress().equals(((Node) o).getAddress());
-  }
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Node && getAddress().equals(((Node) o).getAddress());
+    }
 
-  @Override
-  public int hashCode() {
-    return getAddress().hashCode();
-  }
+    @Override
+    public int hashCode() {
+        return getAddress().hashCode();
+    }
 }

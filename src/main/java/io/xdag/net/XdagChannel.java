@@ -27,153 +27,153 @@ import org.spongycastle.util.encoders.Hex;
 @Data
 @Slf4j
 public class XdagChannel {
-  private final NioSocketChannel socket;
-  private InetSocketAddress inetSocketAddress;
-  private boolean isActive;
-  private boolean isDisconnected = false;
+    private final NioSocketChannel socket;
+    private InetSocketAddress inetSocketAddress;
+    private boolean isActive;
+    private boolean isDisconnected = false;
 
-  private Config config;
+    private Config config;
 
-  /** 握手 密钥 */
-  private XdagHandshakeHandler handshakeHandler;
-  /** 信息编码处理 */
-  private MessageCodes messageCodec;
-  /** 处理区块 */
-  private XdagBlockHandler blockHandler;
-  /** 获取xdag03handler */
-  private Xdag xdag = new XdagAdapter();
-  /** 用来创建xdag03handler处理message 实际的逻辑操作 */
-  private XdagHandlerFactory xdagHandlerFactory;
+    /** 握手 密钥 */
+    private XdagHandshakeHandler handshakeHandler;
+    /** 信息编码处理 */
+    private MessageCodes messageCodec;
+    /** 处理区块 */
+    private XdagBlockHandler blockHandler;
+    /** 获取xdag03handler */
+    private Xdag xdag = new XdagAdapter();
+    /** 用来创建xdag03handler处理message 实际的逻辑操作 */
+    private XdagHandlerFactory xdagHandlerFactory;
 
-  /** 发送message的线程 针对每个channel */
-  private MessageQueue msgQueue;
+    /** 发送message的线程 针对每个channel */
+    private MessageQueue msgQueue;
 
-  /** 该channel对应的节点 */
-  private Node node;
+    /** 该channel对应的节点 */
+    private Node node;
 
-  public XdagChannel(NioSocketChannel socketChannel) {
-    this.socket = socketChannel;
-  }
-
-  public void init(
-      ChannelPipeline pipeline,
-      Kernel kernel,
-      boolean isServer,
-      InetSocketAddress inetSocketAddress) {
-
-    this.config = kernel.getConfig();
-    this.inetSocketAddress = inetSocketAddress;
-
-    this.handshakeHandler = new XdagHandshakeHandler(kernel, config, this);
-    handshakeHandler.setServer(isServer);
-
-    pipeline.addLast("handshakeHandler", handshakeHandler);
-
-    this.msgQueue = new MessageQueue(this);
-    this.messageCodec = new MessageCodes(this);
-    this.blockHandler = new XdagBlockHandler(this);
-
-    this.xdagHandlerFactory = new XdagHandlerFactoryImpl(kernel, this);
-  }
-
-  public void initWithNode(final String host, final int port) {
-    node = new Node(host, port);
-    log.debug("Initwith Node host:" + host + " port:" + port + " node:" + node.getHexId());
-  }
-
-  public void notifyDisconnect(XdagChannel channel) {
-    log.debug("Node {}: notifies about disconnect", channel);
-    channel.onDisconnect();
-  }
-
-  public void onSyncDone(boolean done) {
-
-    if (done) {
-      xdag.enableBlocks();
-    } else {
-      xdag.disableBlocks();
+    public XdagChannel(NioSocketChannel socketChannel) {
+        this.socket = socketChannel;
     }
 
-    xdag.onSyncDone(done);
-  }
+    public void init(
+            ChannelPipeline pipeline,
+            Kernel kernel,
+            boolean isServer,
+            InetSocketAddress inetSocketAddress) {
 
-  public String getIp() {
-    return inetSocketAddress.getAddress().getHostAddress();
-  }
+        this.config = kernel.getConfig();
+        this.inetSocketAddress = inetSocketAddress;
 
-  public int getPort() {
-    return inetSocketAddress.getPort();
-  }
+        this.handshakeHandler = new XdagHandshakeHandler(kernel, config, this);
+        handshakeHandler.setServer(isServer);
 
-  public void onDisconnect() {
-    isDisconnected = true;
-  }
+        pipeline.addLast("handshakeHandler", handshakeHandler);
 
-  public boolean isDisconnected() {
-    return isDisconnected;
-  }
+        this.msgQueue = new MessageQueue(this);
+        this.messageCodec = new MessageCodes(this);
+        this.blockHandler = new XdagBlockHandler(this);
 
-  public void sendPubkey(ChannelHandlerContext ctx) throws Exception {
-    ByteBuf buffer = ctx.alloc().buffer(1024);
-    buffer.writeBytes(config.getXKeys().pub);
-    ctx.writeAndFlush(buffer).sync();
-    node.getStat().Outbound.add(2);
-  }
-
-  public void sendPassword(ChannelHandlerContext ctx) throws Exception {
-    ByteBuf buffer = ctx.alloc().buffer(512);
-    buffer.writeBytes(config.getXKeys().sect0_encoded);
-    ctx.writeAndFlush(buffer).sync();
-    node.getStat().Outbound.add(1);
-  }
-
-  public void sendNewBlock(BlockWrapper blockWrapper) {
-    log.debug("send a block hash is:+" + Hex.toHexString(blockWrapper.getBlock().getHashLow()));
-    log.debug("ttl:" + blockWrapper.getTtl());
-    xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
-  }
-
-  /** 激活xdaghandler */
-  public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
-
-    XdagHandler handler = xdagHandlerFactory.create(version);
-    MessageFactory messageFactory = createXdagMessageFactory(version);
-    blockHandler.setMessageFactory(messageFactory);
-    ctx.pipeline().addLast("blockHandler", blockHandler);
-    ctx.pipeline().addLast("messageCodec", messageCodec);
-    // 注册进消息队列 用来收发消息
-    handler.setMsgQueue(msgQueue);
-    ctx.pipeline().addLast("xdag", handler);
-    handler.setChannel(this);
-    xdag = handler;
-
-    handler.activate();
-  }
-
-  private MessageFactory createXdagMessageFactory(XdagVersion version) {
-    switch (version) {
-      case V03:
-        return new Xdag03MessageFactory();
-
-      default:
-        throw new IllegalArgumentException("Xdag" + version + " is not supported");
+        this.xdagHandlerFactory = new XdagHandlerFactoryImpl(kernel, this);
     }
-  }
 
-  @Override
-  public String toString() {
-    String format = "new channel";
-    if (node != null) {
-      format = String.format("%s:%s", node.getHost(), node.getPort());
+    public void initWithNode(final String host, final int port) {
+        node = new Node(host, port);
+        log.debug("Initwith Node host:" + host + " port:" + port + " node:" + node.getHexId());
     }
-    return format;
-  }
 
-  public Xdag getXdag() {
-    return xdag;
-  }
+    public void notifyDisconnect(XdagChannel channel) {
+        log.debug("Node {}: notifies about disconnect", channel);
+        channel.onDisconnect();
+    }
 
-  public void dropConnection() {
-    xdag.dropConnection();
-  }
+    public void onSyncDone(boolean done) {
+
+        if (done) {
+            xdag.enableBlocks();
+        } else {
+            xdag.disableBlocks();
+        }
+
+        xdag.onSyncDone(done);
+    }
+
+    public String getIp() {
+        return inetSocketAddress.getAddress().getHostAddress();
+    }
+
+    public int getPort() {
+        return inetSocketAddress.getPort();
+    }
+
+    public void onDisconnect() {
+        isDisconnected = true;
+    }
+
+    public boolean isDisconnected() {
+        return isDisconnected;
+    }
+
+    public void sendPubkey(ChannelHandlerContext ctx) throws Exception {
+        ByteBuf buffer = ctx.alloc().buffer(1024);
+        buffer.writeBytes(config.getXKeys().pub);
+        ctx.writeAndFlush(buffer).sync();
+        node.getStat().Outbound.add(2);
+    }
+
+    public void sendPassword(ChannelHandlerContext ctx) throws Exception {
+        ByteBuf buffer = ctx.alloc().buffer(512);
+        buffer.writeBytes(config.getXKeys().sect0_encoded);
+        ctx.writeAndFlush(buffer).sync();
+        node.getStat().Outbound.add(1);
+    }
+
+    public void sendNewBlock(BlockWrapper blockWrapper) {
+        log.debug("send a block hash is:+" + Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+        log.debug("ttl:" + blockWrapper.getTtl());
+        xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
+    }
+
+    /** 激活xdaghandler */
+    public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
+
+        XdagHandler handler = xdagHandlerFactory.create(version);
+        MessageFactory messageFactory = createXdagMessageFactory(version);
+        blockHandler.setMessageFactory(messageFactory);
+        ctx.pipeline().addLast("blockHandler", blockHandler);
+        ctx.pipeline().addLast("messageCodec", messageCodec);
+        // 注册进消息队列 用来收发消息
+        handler.setMsgQueue(msgQueue);
+        ctx.pipeline().addLast("xdag", handler);
+        handler.setChannel(this);
+        xdag = handler;
+
+        handler.activate();
+    }
+
+    private MessageFactory createXdagMessageFactory(XdagVersion version) {
+        switch (version) {
+        case V03:
+            return new Xdag03MessageFactory();
+
+        default:
+            throw new IllegalArgumentException("Xdag" + version + " is not supported");
+        }
+    }
+
+    @Override
+    public String toString() {
+        String format = "new channel";
+        if (node != null) {
+            format = String.format("%s:%s", node.getHost(), node.getPort());
+        }
+        return format;
+    }
+
+    public Xdag getXdag() {
+        return xdag;
+    }
+
+    public void dropConnection() {
+        xdag.dropConnection();
+    }
 }

@@ -25,31 +25,31 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> implements Xdag {
-  protected Kernel kernel;
+    protected Kernel kernel;
 
-  protected Blockchain blockchain;
+    protected Blockchain blockchain;
 
-  protected XdagVersion version = XdagVersion.V03;
+    protected XdagVersion version = XdagVersion.V03;
 
-  protected XdagChannel channel;
+    protected XdagChannel channel;
 
-  protected MessageQueue msgQueue;
+    protected MessageQueue msgQueue;
 
-  protected Block bestKnownBlock;
+    protected Block bestKnownBlock;
 
-  protected BigInteger totalDifficulty;
+    protected BigInteger totalDifficulty;
 
-  protected SyncManager syncMgr;
+    protected SyncManager syncMgr;
 
-  protected SettableFuture<List<Block>> futureBlocks;
-  protected SettableFuture<SumReplyMessage> futureSum;
-  protected Queue<SettableFuture<SumReplyMessage>> futureSumSublist = new LinkedList<>();
+    protected SettableFuture<List<Block>> futureBlocks;
+    protected SettableFuture<SumReplyMessage> futureSum;
+    protected Queue<SettableFuture<SumReplyMessage>> futureSumSublist = new LinkedList<>();
 
-  @Override
-  protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-    if (XdagMessageCodes.inRange(msg.getCommand().asByte(), version)) {
-      log.trace("XdagHandler invoke: [{}]", msg.getCommand());
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+        if (XdagMessageCodes.inRange(msg.getCommand().asByte(), version)) {
+            log.trace("XdagHandler invoke: [{}]", msg.getCommand());
+        }
+        msgQueue.receivedMessage(msg);
     }
-    msgQueue.receivedMessage(msg);
-  }
 }

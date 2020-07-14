@@ -9,36 +9,35 @@ import java.util.EnumMap;
 
 public class RocksdbFactory implements DatabaseFactory {
 
-  private final EnumMap<DatabaseName, KVSource<byte[], byte[]>> databases =
-      new EnumMap<>(DatabaseName.class);
+    private final EnumMap<DatabaseName, KVSource<byte[], byte[]>> databases = new EnumMap<>(DatabaseName.class);
 
-  protected Config config;
+    protected Config config;
 
-  public RocksdbFactory(Config config) {
-    this.config = config;
-  }
-
-  @Override
-  public KVSource<byte[], byte[]> getDB(DatabaseName name) {
-    return databases.computeIfAbsent(
-        name,
-        k -> {
-          RocksdbKVSource dataSource = new RocksdbKVSource(name.toString());
-          dataSource.setConfig(config);
-          return dataSource;
-        });
-  }
-
-  @Override
-  public void close() {
-    for (KVSource<byte[], byte[]> db : databases.values()) {
-      db.close();
+    public RocksdbFactory(Config config) {
+        this.config = config;
     }
-    databases.clear();
-  }
 
-  @Override
-  public SimpleFileStore getSumsDB() {
-    return new SimpleFileStore(config.getStoreDir());
-  }
+    @Override
+    public KVSource<byte[], byte[]> getDB(DatabaseName name) {
+        return databases.computeIfAbsent(
+                name,
+                k -> {
+                    RocksdbKVSource dataSource = new RocksdbKVSource(name.toString());
+                    dataSource.setConfig(config);
+                    return dataSource;
+                });
+    }
+
+    @Override
+    public void close() {
+        for (KVSource<byte[], byte[]> db : databases.values()) {
+            db.close();
+        }
+        databases.clear();
+    }
+
+    @Override
+    public SimpleFileStore getSumsDB() {
+        return new SimpleFileStore(config.getStoreDir());
+    }
 }

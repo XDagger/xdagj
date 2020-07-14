@@ -9,42 +9,42 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public interface Blockchain {
 
-  /** 连接一个新区块 */
-  ImportResult tryToConnect(Block block);
+    /** 连接一个新区块 */
+    ImportResult tryToConnect(Block block);
 
-  Block createNewBlock(Map<Address, ECKey> pairs, List<Address> to, boolean mining);
+    Block createNewBlock(Map<Address, ECKey> pairs, List<Address> to, boolean mining);
 
-  Block getBlockByHash(byte[] hash, boolean isRaw);
+    Block getBlockByHash(byte[] hash, boolean isRaw);
 
-  BigInteger getTopDiff();
+    BigInteger getTopDiff();
 
-  BigInteger getPretopDiff();
+    BigInteger getPretopDiff();
 
-  boolean hasBlock(byte[] hash);
+    boolean hasBlock(byte[] hash);
 
-  byte[] getTop_main_chain();
+    byte[] getTop_main_chain();
 
-  long getMainBlockSize();
+    long getMainBlockSize();
 
-  long getBlockSize();
+    long getBlockSize();
 
-  long getOrphanSize();
+    long getOrphanSize();
 
-  long getExtraSize();
+    long getExtraSize();
 
-  List<Block> getBlockByTime(long starttime, long endtime);
+    List<Block> getBlockByTime(long starttime, long endtime);
 
-  void checkNewMain();
+    void checkNewMain();
 
-  List<Block> listMainBlocks(int count);
+    List<Block> listMainBlocks(int count);
 
-  List<Block> listMinedBlocks(int count);
+    List<Block> listMinedBlocks(int count);
 
-  List<byte[]> getAllAccount();
+    List<byte[]> getAllAccount();
 
-  Map<ByteArrayWrapper, Integer> getMemAccount();
+    Map<ByteArrayWrapper, Integer> getMemAccount();
 
-  ReentrantReadWriteLock getStateLock();
+    ReentrantReadWriteLock getStateLock();
 
-  Block getExtraBlock(byte[] hash);
+    Block getExtraBlock(byte[] hash);
 }

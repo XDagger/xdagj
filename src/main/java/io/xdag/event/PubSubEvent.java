@@ -1,3 +1,4 @@
 package io.xdag.event;
 
-public interface PubSubEvent {}
+public interface PubSubEvent {
+}

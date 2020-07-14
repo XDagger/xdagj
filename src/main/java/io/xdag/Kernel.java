@@ -41,487 +41,480 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Kernel {
-  private static final PubSub pubSub = PubSubFactory.getDefault();
-  protected State state = State.STOPPED;
-  protected Status status = Status.STOPPED;
-  protected Config config;
-  protected Wallet wallet;
-  protected DatabaseFactory dbFactory;
-  protected BlockStore blockStore;
-  protected AccountStore accountStore;
-  protected OrphanPool orphanPool;
-  protected Blockchain chain;
-  protected NetStatus netStatus;
-  protected NetDB netDB;
-  protected XdagClient client;
-  protected XdagChannelManager channelMgr;
-  protected NodeManager nodeMgr;
-  protected NetDBManager netDBMgr;
-  protected XdagServer p2p;
-  protected XdagSync sync;
-  protected XdagPow pow;
-  protected SyncManager syncMgr;
-  /** 初始化一个后续都可以用的handler */
-  protected ConnectionLimitHandler connectionLimitHandler;
-  protected Block firstAccount;
-  protected Miner poolMiner;
-  protected AwardManager awardManager;
-  protected MinerManager minerManager;
-  protected MinerServer minerServer;
-  protected XdagState xdagState;
-  protected AtomicInteger channelsAccount = new AtomicInteger(0);
+    private static final PubSub pubSub = PubSubFactory.getDefault();
+    protected State state = State.STOPPED;
+    protected Status status = Status.STOPPED;
+    protected Config config;
+    protected Wallet wallet;
+    protected DatabaseFactory dbFactory;
+    protected BlockStore blockStore;
+    protected AccountStore accountStore;
+    protected OrphanPool orphanPool;
+    protected Blockchain chain;
+    protected NetStatus netStatus;
+    protected NetDB netDB;
+    protected XdagClient client;
+    protected XdagChannelManager channelMgr;
+    protected NodeManager nodeMgr;
+    protected NetDBManager netDBMgr;
+    protected XdagServer p2p;
+    protected XdagSync sync;
+    protected XdagPow pow;
+    protected SyncManager syncMgr;
+    /** 初始化一个后续都可以用的handler */
+    protected ConnectionLimitHandler connectionLimitHandler;
+    protected Block firstAccount;
+    protected Miner poolMiner;
+    protected AwardManager awardManager;
+    protected MinerManager minerManager;
+    protected MinerServer minerServer;
+    protected XdagState xdagState;
+    protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
-  public Kernel(Config config, Wallet wallet) {
-    this.config = config;
-    this.wallet = wallet;
+    public Kernel(Config config, Wallet wallet) {
+        this.config = config;
+        this.wallet = wallet;
 
-    // 启动的时候就是在初始化
-    this.xdagState = XdagState.INIT;
-  }
-
-  public Kernel(Config config) {
-    this.config = config;
-  }
-
-  /** Start the kernel. */
-  public synchronized void testStart() throws Exception {
-    if (state != State.STOPPED) {
-      return;
-    } else {
-      state = State.BOOTING;
-      pubSub.publish(new KernelBootingEvent());
+        // 启动的时候就是在初始化
+        this.xdagState = XdagState.INIT;
     }
 
-    // ====================================
-    // print system info
-    // ====================================
-    System.out.println(
-        "Xdag Server system booting up: network = "
-            + (Config.MainNet ? "MainNet" : "TestNet")
-            + ", version "
-            + XdagVersion.V03 + "(base Xdagger V0.3.1)"
-            + ", user host = ["
-            + config.getNodeIp()
-            + ":"
-            + config.getNodePort()
-            + "]");
-
-    //        try {
-    //            //初始密钥
-    //            config.initKeys();
-    //        } catch (Exception e) {
-    //            e.printStackTrace();
-    //        }
-
-    // ====================================
-    // start channel manager
-    // ====================================
-    channelMgr = new XdagChannelManager(this);
-
-    netDBMgr = new NetDBManager(config);
-    netDBMgr.init();
-
-    // ====================================
-    // wallet init
-    // ====================================
-    if (wallet == null) {
-      wallet = new WalletImpl();
-      wallet.init(config);
+    public Kernel(Config config) {
+        this.config = config;
     }
 
-    dbFactory = new RocksdbFactory(config);
-    blockStore =
-        new BlockStore(
-            dbFactory.getDB(DatabaseName.INDEX),
-            dbFactory.getDB(DatabaseName.BLOCK),
-            dbFactory.getDB(DatabaseName.TIME),
-            dbFactory.getSumsDB());
-    blockStore.reset();
-    accountStore = new AccountStore(wallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
-    accountStore.reset();
-    orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-    orphanPool.reset();
+    /** Start the kernel. */
+    public synchronized void testStart() throws Exception {
+        if (state != State.STOPPED) {
+            return;
+        } else {
+            state = State.BOOTING;
+            pubSub.publish(new KernelBootingEvent());
+        }
 
-    // ====================================
-    // netstatus netdb init
-    // ====================================
-    netStatus = new NetStatus();
-    netDB = new NetDB();
+        // ====================================
+        // print system info
+        // ====================================
+        System.out.println(
+                "Xdag Server system booting up: network = "
+                        + (Config.MainNet ? "MainNet" : "TestNet")
+                        + ", version "
+                        + XdagVersion.V03 + "(base Xdagger V0.3.1)"
+                        + ", user host = ["
+                        + config.getNodeIp()
+                        + ":"
+                        + config.getNodePort()
+                        + "]");
 
-    // ====================================
-    // initialize blockchain database
-    // ====================================
-    chain = new BlockchainImpl(this, dbFactory);
-    // 如果是第一次启动，则新建第一个地址块
-    if (chain.getAllAccount().size() == 0) {
-      firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, null, false, null, -1);
-      firstAccount.signOut(wallet.getDefKey().ecKey);
-      chain.tryToConnect(firstAccount);
-      poolMiner = new Miner(firstAccount.getHash());
-    } else {
-      poolMiner = new Miner(accountStore.getGlobalMiner());
+        // try {
+        // //初始密钥
+        // config.initKeys();
+        // } catch (Exception e) {
+        // e.printStackTrace();
+        // }
+
+        // ====================================
+        // start channel manager
+        // ====================================
+        channelMgr = new XdagChannelManager(this);
+
+        netDBMgr = new NetDBManager(config);
+        netDBMgr.init();
+
+        // ====================================
+        // wallet init
+        // ====================================
+        if (wallet == null) {
+            wallet = new WalletImpl();
+            wallet.init(config);
+        }
+
+        dbFactory = new RocksdbFactory(config);
+        blockStore = new BlockStore(
+                dbFactory.getDB(DatabaseName.INDEX),
+                dbFactory.getDB(DatabaseName.BLOCK),
+                dbFactory.getDB(DatabaseName.TIME),
+                dbFactory.getSumsDB());
+        blockStore.reset();
+        accountStore = new AccountStore(wallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
+        accountStore.reset();
+        orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanPool.reset();
+
+        // ====================================
+        // netstatus netdb init
+        // ====================================
+        netStatus = new NetStatus();
+        netDB = new NetDB();
+
+        // ====================================
+        // initialize blockchain database
+        // ====================================
+        chain = new BlockchainImpl(this, dbFactory);
+        // 如果是第一次启动，则新建第一个地址块
+        if (chain.getAllAccount().size() == 0) {
+            firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, null, false, null, -1);
+            firstAccount.signOut(wallet.getDefKey().ecKey);
+            chain.tryToConnect(firstAccount);
+            poolMiner = new Miner(firstAccount.getHash());
+        } else {
+            poolMiner = new Miner(accountStore.getGlobalMiner());
+        }
+
+        // logger.debug("Net Status:"+netStatus);
+
+        // ====================================
+        // set up client
+        // ====================================
+        p2p = new XdagServer(this);
+        p2p.start();
+        client = new XdagClient(config);
+
+        // ====================================
+        // start node manager
+        // ====================================
+        nodeMgr = new NodeManager(this);
+        nodeMgr.start();
+
+        // ====================================
+        // send request
+        // ====================================
+        sync = new XdagSync(this);
+        sync.start();
+
+        // ====================================
+        // sync block
+        // ====================================
+        syncMgr = new SyncManager(this);
+        syncMgr.start();
+
+        // ====================================
+        // set up pool miner
+        // ====================================
+        poolMiner.setMinerStates(MinerStates.MINER_SERVICE);
+
+        // ====================================
+        // set up minermanager awardmanager
+        // ====================================
+        minerManager = new MinerManagerImpl(this);
+        awardManager = new AwardManagerImpl(this);
+        // ====================================
+        // poolnode open
+        // ====================================
+        connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
+
+        minerServer = new MinerServer(this);
+
+        // ====================================
+        // pow
+        // ====================================
+        pow = new XdagPow(this);
+
+        minerManager.setPoW(pow);
+        minerManager.start();
+
+        if (Config.MainNet) {
+            xdagState.setState(XdagState.WAIT);
+        } else {
+            xdagState.setState(XdagState.WTST);
+        }
+
+        Launcher.registerShutdownHook("kernel", this::testStop);
+        state = State.RUNNING;
     }
 
-    //        logger.debug("Net Status:"+netStatus);
+    /** Stops the kernel. */
+    public synchronized void testStop() {
+        if (state != State.RUNNING) {
+            return;
+        } else {
+            state = State.STOPPING;
+            System.out.println("try to shut down the program");
+        }
 
-    // ====================================
-    // set up client
-    // ====================================
-    p2p = new XdagServer(this);
-    p2p.start();
-    client = new XdagClient(config);
+        // stop consensus
+        sync.stop();
+        syncMgr.stop();
+        pow.stop();
 
-    // ====================================
-    // start node manager
-    // ====================================
-    nodeMgr = new NodeManager(this);
-    nodeMgr.start();
+        // stop node manager and channel manager
+        channelMgr.stop();
+        nodeMgr.stop();
 
-    // ====================================
-    // send request
-    // ====================================
-    sync = new XdagSync(this);
-    sync.start();
+        // close timer
+        MessageQueue.timer.shutdown();
 
-    // ====================================
-    // sync block
-    // ====================================
-    syncMgr = new SyncManager(this);
-    syncMgr.start();
+        // close server
+        p2p.close();
+        // close client
+        client.close();
 
-    // ====================================
-    // set up pool miner
-    // ====================================
-    poolMiner.setMinerStates(MinerStates.MINER_SERVICE);
+        ReentrantReadWriteLock.WriteLock lock = chain.getStateLock().writeLock();
+        lock.lock();
+        try {
+            for (DatabaseName name : DatabaseName.values()) {
+                dbFactory.getDB(name).close();
+            }
+            // close save sums
+            blockStore.closeSum();
+        } finally {
+            lock.unlock();
+        }
 
-    // ====================================
-    // set up minermanager awardmanager
-    // ====================================
-    minerManager = new MinerManagerImpl(this);
-    awardManager = new AwardManagerImpl(this);
-    // ====================================
-    // poolnode open
-    // ====================================
-    connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
-
-    minerServer = new MinerServer(this);
-
-
-    // ====================================
-    // pow
-    // ====================================
-    pow = new XdagPow(this);
-
-    minerManager.setPoW(pow);
-    minerManager.start();
-
-    if (Config.MainNet) {
-      xdagState.setState(XdagState.WAIT);
-    } else {
-      xdagState.setState(XdagState.WTST);
+        minerServer.close();
+        minerManager.close();
+        state = State.STOPPED;
     }
 
-    Launcher.registerShutdownHook("kernel", this::testStop);
-    state = State.RUNNING;
-  }
-
-  /** Stops the kernel. */
-  public synchronized void testStop() {
-    if (state != State.RUNNING) {
-      return;
-    } else {
-      state = State.STOPPING;
-      System.out.println("try to shut down the program");
+    /**
+     * Returns the kernel state.
+     *
+     * @return
+     */
+    public State state() {
+        return state;
     }
 
-    // stop consensus
-    sync.stop();
-    syncMgr.stop();
-    pow.stop();
-
-    // stop node manager and channel manager
-    channelMgr.stop();
-    nodeMgr.stop();
-
-    // close timer
-    MessageQueue.timer.shutdown();
-
-    // close server
-    p2p.close();
-    // close client
-    client.close();
-
-    ReentrantReadWriteLock.WriteLock lock = chain.getStateLock().writeLock();
-    lock.lock();
-    try {
-      for (DatabaseName name : DatabaseName.values()) {
-        dbFactory.getDB(name).close();
-      }
-      // close save sums
-      blockStore.closeSum();
-    } finally {
-      lock.unlock();
+    /**
+     * Returns the wallet.
+     *
+     * @return
+     */
+    public Wallet getWallet() {
+        return wallet;
     }
 
-    minerServer.close();
-    minerManager.close();
-    state = State.STOPPED;
-  }
+    public void setWallet(Wallet wallet) {
+        this.wallet = wallet;
+    }
 
-  /**
-   * Returns the kernel state.
-   *
-   * @return
-   */
-  public State state() {
-    return state;
-  }
+    /**
+     * Returns the blockchain.
+     *
+     * @return
+     */
+    public Blockchain getBlockchain() {
+        return chain;
+    }
 
-  /**
-   * Returns the wallet.
-   *
-   * @return
-   */
-  public Wallet getWallet() {
-    return wallet;
-  }
+    public void setBlockchain(Blockchain chain) {
+        this.chain = chain;
+    }
 
-  public void setWallet(Wallet wallet) {
-    this.wallet = wallet;
-  }
+    /**
+     * Returns the client.
+     *
+     * @return
+     */
+    public XdagClient getClient() {
+        return client;
+    }
 
-  /**
-   * Returns the blockchain.
-   *
-   * @return
-   */
-  public Blockchain getBlockchain() {
-    return chain;
-  }
+    /**
+     * Returns the channel manager.
+     *
+     * @return
+     */
+    public XdagChannelManager getChannelManager() {
+        return channelMgr;
+    }
 
-  public void setBlockchain(Blockchain chain) {
-    this.chain = chain;
-  }
+    /**
+     * Returns the config.
+     *
+     * @return
+     */
+    public Config getConfig() {
+        return config;
+    }
 
-  /**
-   * Returns the client.
-   *
-   * @return
-   */
-  public XdagClient getClient() {
-    return client;
-  }
+    /**
+     * Returns the p2p server instance.
+     *
+     * @return a {@link XdagServer} instance or null
+     */
+    public XdagServer getP2p() {
+        return p2p;
+    }
 
-  /**
-   * Returns the channel manager.
-   *
-   * @return
-   */
-  public XdagChannelManager getChannelManager() {
-    return channelMgr;
-  }
+    /**
+     * Returns the database factory.
+     *
+     * @return
+     */
+    public DatabaseFactory getDbFactory() {
+        return dbFactory;
+    }
 
-  /**
-   * Returns the config.
-   *
-   * @return
-   */
-  public Config getConfig() {
-    return config;
-  }
+    /**
+     * Returns blockStore
+     *
+     * @return
+     */
+    public BlockStore getBlockStore() {
+        return blockStore;
+    }
 
-  /**
-   * Returns the p2p server instance.
-   *
-   * @return a {@link XdagServer} instance or null
-   */
-  public XdagServer getP2p() {
-    return p2p;
-  }
+    public void setBlockStore(BlockStore blockStore) {
+        this.blockStore = blockStore;
+    }
 
-  /**
-   * Returns the database factory.
-   *
-   * @return
-   */
-  public DatabaseFactory getDbFactory() {
-    return dbFactory;
-  }
+    /**
+     * Returns accountStore
+     *
+     * @return
+     */
+    public AccountStore getAccountStore() {
+        return accountStore;
+    }
 
-  /**
-   * Returns blockStore
-   *
-   * @return
-   */
-  public BlockStore getBlockStore() {
-    return blockStore;
-  }
+    public void setAccountStore(AccountStore accountStore) {
+        this.accountStore = accountStore;
+    }
 
-  public void setBlockStore(BlockStore blockStore) {
-    this.blockStore = blockStore;
-  }
+    /**
+     * Returns OrphanPool
+     *
+     * @return
+     */
+    public OrphanPool getOrphanPool() {
+        return orphanPool;
+    }
 
-  /**
-   * Returns accountStore
-   *
-   * @return
-   */
-  public AccountStore getAccountStore() {
-    return accountStore;
-  }
+    public void setOrphanPool(OrphanPool orphanPool) {
+        this.orphanPool = orphanPool;
+    }
 
-  public void setAccountStore(AccountStore accountStore) {
-    this.accountStore = accountStore;
-  }
+    /**
+     * Returns NetStatus
+     *
+     * @return
+     */
+    public NetStatus getNetStatus() {
+        return netStatus;
+    }
 
-  /**
-   * Returns OrphanPool
-   *
-   * @return
-   */
-  public OrphanPool getOrphanPool() {
-    return orphanPool;
-  }
+    public void setNetStatus(NetStatus netStatus) {
+        this.netStatus = netStatus;
+    }
 
-  public void setOrphanPool(OrphanPool orphanPool) {
-    this.orphanPool = orphanPool;
-  }
+    /**
+     * Returns SyncManager
+     *
+     * @return
+     */
+    public SyncManager getSyncMgr() {
+        return syncMgr;
+    }
 
-  /**
-   * Returns NetStatus
-   *
-   * @return
-   */
-  public NetStatus getNetStatus() {
-    return netStatus;
-  }
+    public void setSyncMgr(SyncManager syncMgr) {
+        this.syncMgr = syncMgr;
+    }
 
-  public void setNetStatus(NetStatus netStatus) {
-    this.netStatus = netStatus;
-  }
+    /**
+     * Returns NodeManager
+     *
+     * @return
+     */
+    public NodeManager getNodeMgr() {
+        return nodeMgr;
+    }
 
-  /**
-   * Returns SyncManager
-   *
-   * @return
-   */
-  public SyncManager getSyncMgr() {
-    return syncMgr;
-  }
+    public void setNodeMgr(NodeManager nodeMgr) {
+        this.nodeMgr = nodeMgr;
+    }
 
-  public void setSyncMgr(SyncManager syncMgr) {
-    this.syncMgr = syncMgr;
-  }
+    /**
+     * Returns PoW
+     *
+     * @return
+     */
+    public XdagPow getPow() {
+        return pow;
+    }
 
-  /**
-   * Returns NodeManager
-   *
-   * @return
-   */
-  public NodeManager getNodeMgr() {
-    return nodeMgr;
-  }
+    public void setPow(XdagPow pow) {
+        this.pow = pow;
+    }
 
-  public void setNodeMgr(NodeManager nodeMgr) {
-    this.nodeMgr = nodeMgr;
-  }
+    /**
+     * Returns NetDB
+     *
+     * @return
+     */
+    public NetDB getNetDB() {
+        return netDB;
+    }
 
-  /**
-   * Returns PoW
-   *
-   * @return
-   */
-  public XdagPow getPow() {
-    return pow;
-  }
+    public void setNetDB(NetDB netDB) {
+        this.netDB = netDB;
+    }
 
-  public void setPow(XdagPow pow) {
-    this.pow = pow;
-  }
+    /**
+     * Returns State
+     *
+     * @return
+     */
+    public State getState() {
+        return state;
+    }
 
-  /**
-   * Returns NetDB
-   *
-   * @return
-   */
-  public NetDB getNetDB() {
-    return netDB;
-  }
+    public NetDBManager getNetDBMgr() {
+        return netDBMgr;
+    }
 
-  public void setNetDB(NetDB netDB) {
-    this.netDB = netDB;
-  }
+    public void setNetDBMgr(NetDBManager netDBMgr) {
+        this.netDBMgr = netDBMgr;
+    }
 
-  /**
-   * Returns State
-   *
-   * @return
-   */
-  public State getState() {
-    return state;
-  }
+    public void onSyncDone() {
+        status = Status.SYNCDONE;
+    }
 
-  public NetDBManager getNetDBMgr() {
-    return netDBMgr;
-  }
+    public void onPow() {
+        status = Status.BLOCK_PRODUCTION_ON;
+    }
 
-  public void setNetDBMgr(NetDBManager netDBMgr) {
-    this.netDBMgr = netDBMgr;
-  }
+    public Block getFirstAccount() {
+        return firstAccount;
+    }
 
-  public void onSyncDone() {
-    status = Status.SYNCDONE;
-  }
+    public void resetStore() {
+    }
 
-  public void onPow() {
-    status = Status.BLOCK_PRODUCTION_ON;
-  }
+    public Miner getPoolMiner() {
+        return poolMiner;
+    }
 
-  public Block getFirstAccount() {
-    return firstAccount;
-  }
+    public MinerManager getMinerManager() {
+        return minerManager;
+    }
 
-  public void resetStore() {}
+    public AwardManager getAwardManager() {
+        return awardManager;
+    }
 
-  public Miner getPoolMiner() {
-    return poolMiner;
-  }
+    public MinerServer getMinerServer() {
+        return minerServer;
+    }
 
-  public MinerManager getMinerManager() {
-    return minerManager;
-  }
+    public ConnectionLimitHandler getConnectionLimitHandler() {
+        return connectionLimitHandler;
+    }
 
-  public AwardManager getAwardManager() {
-    return awardManager;
-  }
+    public XdagState getXdagState() {
+        return this.xdagState;
+    }
 
-  public MinerServer getMinerServer() {
-    return minerServer;
-  }
+    public AtomicInteger getChannelsAccount() {
+        return channelsAccount;
+    }
 
-  public ConnectionLimitHandler getConnectionLimitHandler() {
-    return connectionLimitHandler;
-  }
+    public enum State {
+        STOPPED, BOOTING, RUNNING, STOPPING
+    }
 
-  public XdagState getXdagState() {
-    return this.xdagState;
-  }
-
-  public AtomicInteger getChannelsAccount() {
-    return channelsAccount;
-  }
-
-  public enum State {
-    STOPPED,
-    BOOTING,
-    RUNNING,
-    STOPPING
-  }
-
-  public enum Status {
-    STOPPED,
-    SYNCING,
-    BLOCK_PRODUCTION_ON,
-    SYNCDONE
-  }
+    public enum Status {
+        STOPPED, SYNCING, BLOCK_PRODUCTION_ON, SYNCDONE
+    }
 }

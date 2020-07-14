@@ -4,45 +4,45 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class SimpleEncoder {
-  private final ByteArrayOutputStream out;
+    private final ByteArrayOutputStream out;
 
-  public SimpleEncoder() {
-    this.out = new ByteArrayOutputStream(512);
-  }
-
-  public void writeField(byte[] field) {
-    try {
-      out.write(field);
-    } catch (IOException e) {
-      e.printStackTrace();
+    public SimpleEncoder() {
+        this.out = new ByteArrayOutputStream(512);
     }
-  }
 
-  public void writeSignature(byte[] sig) {
-    try {
-      out.write(sig);
-    } catch (IOException e) {
-      e.printStackTrace();
+    public void writeField(byte[] field) {
+        try {
+            out.write(field);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-  }
 
-  public void write(byte[] input) {
-    try {
-      out.write(input);
-    } catch (IOException e) {
-      e.printStackTrace();
+    public void writeSignature(byte[] sig) {
+        try {
+            out.write(sig);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-  }
 
-  public byte[] toBytes() {
-    return out.toByteArray();
-  }
+    public void write(byte[] input) {
+        try {
+            out.write(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-  private int getWriteIndex() {
-    return out.size();
-  }
+    public byte[] toBytes() {
+        return out.toByteArray();
+    }
 
-  public int getWriteFieldIndex() {
-    return getWriteIndex() / 32;
-  }
+    private int getWriteIndex() {
+        return out.size();
+    }
+
+    public int getWriteFieldIndex() {
+        return getWriteIndex() / 32;
+    }
 }

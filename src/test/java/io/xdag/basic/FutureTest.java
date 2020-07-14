@@ -14,37 +14,36 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 public class FutureTest {
 
-  class Task implements Callable<String> {
+    class Task implements Callable<String> {
 
-    @Override
-    public String call() throws Exception {
-      TimeUnit.SECONDS.sleep(1);
-      // int a =1/0;
-      return "task done";
+        @Override
+        public String call() throws Exception {
+            TimeUnit.SECONDS.sleep(1);
+            // int a =1/0;
+            return "task done";
+        }
     }
-  }
 
-  @Test
-  public void TestFuture() {
-    System.out.println("主任务执行完，开始异步执行副任务1.....");
-    ListeningExecutorService pool =
-        MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
-    ListenableFuture<String> future = pool.submit(new Task());
-    Futures.addCallback(
-        future,
-        new FutureCallback<String>() {
-          @Override
-          public void onSuccess(String result) {
-            System.out.println("成功,结果是:" + result);
-          }
+    @Test
+    public void TestFuture() {
+        System.out.println("主任务执行完，开始异步执行副任务1.....");
+        ListeningExecutorService pool = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
+        ListenableFuture<String> future = pool.submit(new Task());
+        Futures.addCallback(
+                future,
+                new FutureCallback<String>() {
+                    @Override
+                    public void onSuccess(String result) {
+                        System.out.println("成功,结果是:" + result);
+                    }
 
-          @Override
-          public void onFailure(Throwable t) {
-            System.out.println("出错,业务回滚或补偿");
-          }
-        },
-        MoreExecutors.directExecutor());
+                    @Override
+                    public void onFailure(Throwable t) {
+                        System.out.println("出错,业务回滚或补偿");
+                    }
+                },
+                MoreExecutors.directExecutor());
 
-    System.out.println("副本任务启动,回归主任务线，主业务正常返回2.....");
-  }
+        System.out.println("副本任务启动,回归主任务线，主业务正常返回2.....");
+    }
 }
