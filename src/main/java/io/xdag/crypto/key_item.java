@@ -1,5 +1,7 @@
 package io.xdag.crypto;
 
+import java.util.Arrays;
+
 public class key_item {
     byte[] pubKey;
     /** 0:even 1:odd */
@@ -10,14 +12,22 @@ public class key_item {
         this.pubKeyParity = pubKeyParity;
     }
 
-    public boolean equals(key_item other) {
+    @Override
+    public boolean equals(Object obj) {
+        key_item other = null;
+        if(obj != null && obj instanceof key_item) {
+            other = (key_item) obj;
+        } else {
+            return false;
+        }
         if (other.pubKeyParity != this.pubKeyParity) {
             return false;
         } else {
-            if (this.pubKey == other.pubKey) {
+            if (Arrays.equals(this.pubKey,other.pubKey)) {
                 return true;
             }
             return false;
         }
     }
+    
 }

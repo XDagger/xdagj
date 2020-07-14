@@ -14,6 +14,7 @@ import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -148,7 +149,7 @@ public class Command {
             }
             // 数据检验都合法 请求用户输入密码
             System.out.println("please input your password");
-            Scanner scanner = new Scanner(System.in);
+            Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8.name());
             String pwd = scanner.nextLine();
             int err = Native.verify_dnet_key(pwd, kernel.getConfig().getDnetKeyBytes());
             if (err < 0) {

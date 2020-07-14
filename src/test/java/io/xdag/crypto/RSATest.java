@@ -3,6 +3,7 @@ package io.xdag.crypto;
 import io.xdag.utils.RSAUtils;
 import org.junit.Test;
 
+import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -27,7 +28,7 @@ public class RSATest {
         System.out.println("-----decrypt result----\n" + decodeResult);
     }
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
         Map<String, String> keyPairMap = RSAUtils.createKeys(1024);
         RSAPublicKey pub = RSAUtils.getPublicKey(keyPairMap.get("publicKey"));
 

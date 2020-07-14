@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -127,7 +128,7 @@ public class WalletImpl implements Wallet {
         } else {
             System.out.println("Pleasr Input Your Password :");
         }
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8.name());
         String password = scanner.nextLine();
         String random = null;
         // 文件存在 仅需要输入一次密码 不存在 则需要重复输入一次

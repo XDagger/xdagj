@@ -6,6 +6,7 @@ import io.xdag.utils.RSAUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -55,7 +56,7 @@ public class WalletTest {
         System.out.println(Hex.toHexString(random));
     }
 
-    public static void main1(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static void main1(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
         Map<String, String> keyPairMap = RSAUtils.createKeys(1024);
         RSAPublicKey pub = RSAUtils.getPublicKey(keyPairMap.get("publicKey"));
         System.out.println("getModulus length:" + pub.getModulus().bitLength() + " bits");

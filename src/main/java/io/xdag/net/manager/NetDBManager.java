@@ -4,33 +4,37 @@ import static io.xdag.config.Config.MainNet;
 import static io.xdag.config.Config.WHITELIST_URL;
 import static io.xdag.config.Config.WHITELIST_URL_TESTNET;
 
-import io.xdag.config.Config;
-import io.xdag.net.message.NetDB;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.io.FileUtils;
+
+import io.xdag.config.Config;
+import io.xdag.net.message.NetDB;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 @Slf4j
 public class NetDBManager {
     @Getter
     private String database;
-    
+
     @Getter
     private String databaseWhite;
-    
+
     @Getter
     private String whiteUrl;
 
     @Getter
     private NetDB whiteDB;
-    
+
     @Getter
     private NetDB netDB;
 
@@ -45,8 +49,7 @@ public class NetDBManager {
     public void init() {
         // List<NetDB.IP> res = new ArrayList<>();
         File file = new File(databaseWhite);
-        FileReader fr = null;
-        BufferedReader br = null;
+        BufferedReader reader = null;
         try {
             if (!file.exists()) {
                 if (!file.createNewFile()) {
@@ -56,24 +59,23 @@ public class NetDBManager {
                 URL url = new URL(WHITELIST_URL_TESTNET);
                 FileUtils.copyURLToFile(url, file);
                 if (file.exists() && file.isFile()) {
-                    fr = new FileReader(file);
-                    br = new BufferedReader(fr);
+                    reader = new BufferedReader(
+                            new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
                     String temp = null;
                     String ip = null;
                     int port;
-                    while ((temp = br.readLine()) != null) {
+                    while ((temp = reader.readLine()) != null) {
                         ip = temp.split(":")[0];
                         port = Integer.parseInt(temp.split(":")[1]);
                         whiteDB.addNewIP(ip, port);
                     }
                 }
             } else {
-                fr = new FileReader(file);
-                br = new BufferedReader(fr);
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
                 String temp = null;
                 String ip = null;
                 int port;
-                while ((temp = br.readLine()) != null) {
+                while ((temp = reader.readLine()) != null) {
                     ip = temp.split(":")[0];
                     port = Integer.parseInt(temp.split(":")[1]);
                     whiteDB.addNewIP(ip, port);
@@ -88,11 +90,8 @@ public class NetDBManager {
             System.out.println(true);
         } finally {
             try {
-                if (br != null) {
-                    br.close();
-                }
-                if (fr != null) {
-                    fr.close();
+                if (reader != null) {
+                    reader.close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -116,20 +115,19 @@ public class NetDBManager {
     public void refresh() {
         try {
             File file = new File(databaseWhite);
-            FileReader fr = null;
-            BufferedReader br = null;
+            BufferedReader reader = null;
             // 白名单的地址 并且读取
             URL url = null;
             url = new URL(WHITELIST_URL_TESTNET);
 
             FileUtils.copyURLToFile(url, file);
             if (file.exists() && file.isFile()) {
-                fr = new FileReader(file);
-                br = new BufferedReader(fr);
+                reader = new BufferedReader(
+                        new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
                 String temp = null;
                 String ip = null;
                 int port;
-                while ((temp = br.readLine()) != null) {
+                while ((temp = reader.readLine()) != null) {
                     ip = temp.split(":")[0];
                     port = Integer.parseInt(temp.split(":")[1]);
                     whiteDB = new NetDB();

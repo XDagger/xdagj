@@ -46,7 +46,7 @@ public class IpUtils {
     }
 
     private static InetSocketAddress parseMatch(Matcher matcher) {
-        return new InetSocketAddress(matcher.group(1), Integer.valueOf(matcher.group(2)));
+        return new InetSocketAddress(matcher.group(1), Integer.parseInt(matcher.group(2)));
     }
 
     /**

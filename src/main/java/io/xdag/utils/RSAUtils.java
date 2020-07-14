@@ -1,7 +1,9 @@
 package io.xdag.utils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -99,7 +101,7 @@ public class RSAUtils {
         return resultDatas;
     }
 
-    public static Map<String, String> createKeys(int keySize) {
+    public static Map<String, String> createKeys(int keySize) throws UnsupportedEncodingException {
         KeyPairGenerator kpg = null;
         try {
             kpg = KeyPairGenerator.getInstance(RSA_ALGORITHM);
@@ -124,7 +126,7 @@ public class RSAUtils {
         BigInteger bit = rsp.getModulus();
         byte[] b = bit.toByteArray();
         byte[] deBase64Value = Base64.encodeBase64(b);
-        String retValue = new String(deBase64Value);
+        String retValue = new String(deBase64Value, StandardCharsets.UTF_8.name());
         keyPairMap.put("model", retValue);
         return keyPairMap;
     }

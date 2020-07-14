@@ -1,25 +1,33 @@
 package io.xdag.net.node;
 
-import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Random;
-import lombok.Data;
-import org.apache.commons.codec.binary.Hex;
 
-@Data
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.RandomUtils;
+
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
+
 public class Node {
 
+    @Getter
     private final String host;
+    
+    @Getter
     private final int port;
+    
+    @Getter
     private byte[] id;
+    
+    @Getter
     private NodeStat stat = new NodeStat();
 
     public Node(String host, int port) {
         this.host = host;
         this.port = port;
-        this.id = BytesUtils.longToBytes(new Random().nextLong(), true);
+        this.id = BytesUtils.longToBytes(RandomUtils.nextLong(), true);
     }
 
     public Node(byte[] id, String host, int port) {
