@@ -9,15 +9,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import io.xdag.Kernel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MinerServer {
-
-    private static final Logger logger = LoggerFactory.getLogger(MinerServer.class);
-
     protected Kernel kernel;
-
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
@@ -33,18 +29,14 @@ public class MinerServer {
 
     /** 开启监听的事件 */
     public void start() {
-
         start(kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
     }
 
     public void start(String ip, int port) {
-
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup();
-
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
-
             bootstrap.group(bossGroup, workerGroup);
             bootstrap.channel(NioServerSocketChannel.class);
             bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
@@ -55,43 +47,29 @@ public class MinerServer {
             // 这个是这是可以远程主动关闭？
             // bootstrap.childOption(ChannelOption.ALLOW_HALF_CLOSURE,true);
             bootstrap.handler(new LoggingHandler());
-
             bootstrap.childHandler(new MinerChannelInitializer(kernel, true));
-
             channelFuture = bootstrap.bind(ip, port).sync();
             isListening = true;
             // channelFuture.channel().closeFuture().sync();
-
-            logger.info("start listening the pool,host:[{}:{}]", ip, port);
-
+            log.info("start listening the pool,host:[{}:{}]", ip, port);
         } catch (Exception e) {
-            logger.error("miner server error: {} ({})", e.getMessage(), e.getClass().getName());
+            log.error("miner server error: {} ({})", e.getMessage(), e.getClass().getName());
             throw new Error("minerServer Disconnected");
         }
-
-        // }finally {
-        // workerGroup.shutdownGracefully();
-        // bossGroup.shutdownGracefully();
-        // }
     }
 
     /** 关闭连接 */
     public void close() {
         if (isListening && channelFuture != null && channelFuture.channel().isOpen()) {
             try {
-                // logger.info("Closing MinerServer...");
-                System.out.println("Closing MinerServer...");
+                log.info("Closing MinerServer...");
                 channelFuture.channel().close().sync();
-
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
-
                 isListening = false;
-
-                // logger.info("MinerServer closed.");
-                System.out.println("MinerServer closed.");
+                log.info("MinerServer closed.");
             } catch (Exception e) {
-                logger.warn("Problems closing server channel", e);
+                log.warn("Problems closing server channel", e);
             }
         }
     }

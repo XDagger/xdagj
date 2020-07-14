@@ -115,20 +115,15 @@ public class BasicUtils {
     }
 
     public static double xdag_diff2log(BigInteger diff) {
-
         byte[] bytes = BytesUtils.bigIntegerToBytes(diff, 16, false);
-
         byte[] resByte = new byte[8];
         System.arraycopy(bytes, 8, resByte, 0, 8);
         BigInteger res = new BigInteger(Hex.toHexString(resByte), 16);
-
         byte[] data = new byte[16];
         Arrays.fill(data, (byte) 0);
         System.arraycopy(bytes, 0, data, 0, 8);
         BigInteger diffI = new BigInteger(Hex.toHexString(data), 16);
-
         if (diffI.compareTo(BigInteger.ZERO) > 0) {
-
             BigInteger temp = BigInteger.valueOf(2 ^ 64);
             res = res.add(diffI.multiply(temp));
         }
@@ -142,22 +137,16 @@ public class BasicUtils {
 
     public static BigDecimal xdag_hashrate(BigInteger[] diffs) {
         BigInteger sum = BigInteger.ZERO;
-
         for (int i = 0; i < HASHRATE_LAST_MAX_TIME; i++) {
             sum = sum.add(diffs[i]);
         }
         // todo 怎么计算e为底 大数为幂级数的
-
         sum = sum.multiply(BigInteger.valueOf(HASHRATE_LAST_MAX_TIME));
-
         BigDecimal E = BigDecimal.ZERO;
-
         for (BigInteger i = BigInteger.ZERO; i.compareTo(sum) < 0; i = i.add(BigInteger.ONE)) {
             E = E.multiply(BigDecimal.valueOf(Math.E));
         }
-
         BigDecimal cont = BigDecimal.valueOf(Math.pow(2, -58));
-
         BigDecimal res = E.add(cont);
         return res;
     }

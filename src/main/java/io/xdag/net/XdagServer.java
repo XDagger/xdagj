@@ -16,7 +16,6 @@ public class XdagServer {
     protected Kernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
-
     private ChannelFuture channelFuture;
     private boolean listening;
 
@@ -29,28 +28,20 @@ public class XdagServer {
     }
 
     public void start(String ip, int port) {
-
         bossGroup = new NioEventLoopGroup(1);
         workerGroup = new NioEventLoopGroup();
-
         try {
             ServerBootstrap b = new ServerBootstrap();
-
             b.group(bossGroup, workerGroup);
             b.channel(NioServerSocketChannel.class);
-
             b.childOption(ChannelOption.SO_KEEPALIVE, true);
             b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
             b.childOption(
                     ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getConnectionTimeout());
-
             // b.handler(new LoggingHandler());
             b.childHandler(new XdagChannelInitializer(kernel, true, null));
-
             log.debug("Listening for incoming connections, address: {}:{} ", ip, port);
-
             channelFuture = b.bind(ip, port).sync();
-
             listening = true;
             log.debug("Connection listen true");
         } catch (Exception e) {
@@ -64,13 +55,10 @@ public class XdagServer {
             try {
                 log.debug("Closing XdagServer...");
                 channelFuture.channel().close().sync();
-
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
-
                 workerGroup.terminationFuture().sync();
                 bossGroup.terminationFuture().sync();
-
                 log.debug("XdagServer closed.");
             } catch (Exception e) {
                 log.warn("Problems closing server channel", e);

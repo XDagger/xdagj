@@ -4,7 +4,6 @@ import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class NodeStat {
-
     public final StatHandler Inbound = new StatHandler();
     public final StatHandler Outbound = new StatHandler();
     private BigInteger xdagTotalDifficulty;

@@ -1,5 +1,7 @@
 package io.xdag.net.handler;
 
+import java.net.InetSocketAddress;
+
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -9,13 +11,10 @@ import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.node.Node;
-import java.net.InetSocketAddress;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel> {
-
-    private static final Logger logger = LoggerFactory.getLogger("net");
     private final Node remoteNode;
     protected Kernel kernel;
     private XdagChannelManager channelMgr;
@@ -36,7 +35,7 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
 
             // 判断进来的是不是白名单上的节点
             if (isServer && !channelMgr.isAcceptable(address)) {
-                logger.debug("Disallowed inbound connection: {}", address.toString());
+                log.debug("Disallowed inbound connection: {}", address.toString());
                 ch.disconnect();
                 return;
             }
@@ -59,7 +58,7 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
                             });
 
         } catch (Exception e) {
-            logger.error("Unexpected error: ", e);
+            log.error("Unexpected error: ", e);
         }
     }
 }

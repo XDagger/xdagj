@@ -19,13 +19,20 @@ import org.apache.commons.io.FileUtils;
 
 @Slf4j
 public class NetDBManager {
+    @Getter
+    private String database;
+    
+    @Getter
+    private String databaseWhite;
+    
+    @Getter
+    private String whiteUrl;
 
-    private @Getter String database;
-    private @Getter String databaseWhite;
-    private @Getter String whiteUrl;
-
-    private @Getter NetDB whiteDB;
-    private @Getter NetDB netDB;
+    @Getter
+    private NetDB whiteDB;
+    
+    @Getter
+    private NetDB netDB;
 
     public NetDBManager(Config config) {
         database = MainNet ? config.getNetDBDir() : config.getNetDBDirTest();
@@ -136,21 +143,21 @@ public class NetDBManager {
 
     enum HostFlags {
         // our host
-        HOST_OUR(1),
+        HOST_OUR(0x01),
         // host connected
-        HOST_CONNECTED(2),
+        HOST_CONNECTED(0x02),
         // host from init command
-        HOST_SET(4),
+        HOST_SET(0x04),
         // host in netdb.txt
-        HOST_INDB(8),
+        HOST_INDB(0x08),
         // host not added
         HOST_NOT_ADD(0x10),
         // host in whitelist
         HOST_WHITE(0x20);
 
-        private final int cmd;
+        private int cmd;
 
-        HostFlags(int cmd) {
+        private HostFlags(int cmd) {
             this.cmd = cmd;
         }
     }

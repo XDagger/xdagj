@@ -13,28 +13,29 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
-import io.xdag.crypto.ECKey;
-import io.xdag.crypto.Sha256Hash;
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
+import io.xdag.crypto.ECKey;
+import io.xdag.crypto.Sha256Hash;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.BytesUtils;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Data
 public class Block implements Cloneable {
 
     public static final int MAX_LINKS = 15;
-    private static final Logger logger = LoggerFactory.getLogger(Block.class);
     /** 区块标志* */
     public int flags = 0;
     /** 区块是否存在于本地* */
@@ -240,7 +241,7 @@ public class Block implements Cloneable {
             } else if (eachType == XDAG_FIELD_NONCE) {
                 // do nothing
             } else {
-                logger.debug("no match information");
+                log.debug("no match information");
             }
         }
         parsed = true;
@@ -352,10 +353,10 @@ public class Block implements Cloneable {
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKey ecKey : keys) {
             hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKeybyCompress()));
-            logger.debug("验证的块的hash【{}】", Hex.toHexString(this.getHash()));
-            logger.debug(Hex.toHexString(hash) + ":hash");
-            logger.debug(outsig + ":outsig");
-            logger.debug(ecKey + ":eckey");
+            log.debug("验证的块的hash【{}】", Hex.toHexString(this.getHash()));
+            log.debug(Hex.toHexString(hash) + ":hash");
+            log.debug(outsig + ":outsig");
+            log.debug(ecKey + ":eckey");
 
             if (ecKey.verify(hash, this.getOutsig())) {
                 res.add(ecKey);

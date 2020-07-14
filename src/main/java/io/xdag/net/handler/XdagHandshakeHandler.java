@@ -16,12 +16,9 @@ import org.apache.commons.codec.binary.Hex;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
-
     private Config config;
-
     private XdagChannel channel;
     private Kernel kernel;
-
     private boolean isServer;
 
     public XdagHandshakeHandler(Kernel kernel, Config config, XdagChannel channel) {

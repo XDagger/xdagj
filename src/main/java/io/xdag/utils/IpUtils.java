@@ -11,7 +11,6 @@ import org.spongycastle.util.encoders.Hex;
 
 @Slf4j
 public class IpUtils {
-
     private static final String IPV6_INPUT_FORMAT = "^\\[(.*)\\]:([0-9]{1,})";
     private static final String IPV4_INPUT_FORMAT = "^([^:]*):([0-9]{1,})";
     private static final Pattern ipv6Pattern = Pattern.compile(IPV6_INPUT_FORMAT);
@@ -21,17 +20,14 @@ public class IpUtils {
         if (StringUtils.isBlank(address)) {
             return null;
         }
-
         Matcher matcher = ipv6Pattern.matcher(address);
         if (matcher.matches()) {
             return parseMatch(matcher);
         }
-
         matcher = ipv4Pattern.matcher(address);
         if (matcher.matches() && matcher.groupCount() == 2) {
             return parseMatch(matcher);
         }
-
         log.debug(
                 "Invalid address: {}. For ipv6 use de convention [address]:port. For ipv4 address:port",
                 address);

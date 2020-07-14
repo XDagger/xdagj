@@ -2,6 +2,9 @@ package io.xdag.mine.miner;
 
 import static java.lang.Math.E;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+
 import io.xdag.config.Constants;
 import io.xdag.consensus.Task;
 import io.xdag.mine.MinerChannel;
@@ -10,15 +13,10 @@ import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.DateUtils;
 import io.xdag.utils.FastByteComparisons;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MinerCalculate {
-
-    public static final Logger logger = LoggerFactory.getLogger(MinerCalculate.class);
-
     private static final int NSAMPLES_MAX = 255;
 
     /** 每一轮的确认数是16 */
@@ -27,7 +25,6 @@ public class MinerCalculate {
     /** 实现一个由难度转换为pay 的函数 */
     public static double diffToPay(double sum, int diffCount) {
         double result = 0.0;
-
         if (diffCount > 0) {
             result = Math.pow(E, ((sum / diffCount) - 20)) * diffCount;
         }
@@ -46,7 +43,6 @@ public class MinerCalculate {
                 ++diffcount;
             }
         }
-
         if (diffcount > 0) {
             sum /= diffcount;
         }
@@ -57,38 +53,31 @@ public class MinerCalculate {
     public static double calculateUnpaidShares(Miner miner) {
         double sum = miner.getPrevDiff();
         int count = miner.getPrevDiffCounts();
-
         for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
             if (miner.getMaxDiffs(i) > 0) {
                 sum = BigDecimalUtils.add(sum, miner.getMaxDiffs(i));
             }
             ++count;
         }
-
         return diffToPay(sum, count);
     }
 
     public static double calculateUnpaidShares(MinerChannel channel) {
-
         double sum = channel.getPrevDiff();
         int count = channel.getPrevDiffCounts();
-
         for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
             if (channel.getMaxDiffs(i) > 0) {
                 sum = BigDecimalUtils.add(sum, channel.getMaxDiffs(i));
             }
             ++count;
         }
-
         return diffToPay(sum, count);
     }
 
     public static void printfMinerStats(Miner miner) {
         StringBuilder res = new StringBuilder();
-
         String address = BasicUtils.hash2Address(miner.getAddressHash());
         double unpaid = calculateUnpaidShares(miner);
-
         String minerRegTime = DateUtils.dateToString(miner.getRegTime());
         res.append("miner: ")
                 .append(address)
@@ -139,37 +128,27 @@ public class MinerCalculate {
      *            提交的nonce 计算后的hash
      */
     public static void calculateNopaidShares(Miner miner, byte[] hash, long currentTaskTime) {
-
         double diff = 0.0;
-
         // 不可能出现大于的情况 防止对老的任务重复计算
-
         long minerTaskTime = miner.getTaskTime();
         if (minerTaskTime <= currentTaskTime) {
             // 获取到位置
             int i = (int) (((currentTaskTime >> 16) + 1) & 0xf);
             // int i = (int) (((currentTaskTime>> 16) +1 ) & 7);
-
             diff = BytesUtils.hexBytesToDouble(hash, 8, false);
-
             diff *= Math.pow(2, -64);
-
             diff += BytesUtils.hexBytesToDouble(hash, 0, false);
-
             if (diff < 1) {
                 diff = 1;
             }
             diff = 46 - Math.log(diff);
-
             if (minerTaskTime < currentTaskTime) {
                 miner.setTaskTime(currentTaskTime);
-
                 if (miner.getMaxDiffs(i) > 0) {
                     miner.addPrevDiff(miner.getMaxDiffs(i));
                     miner.addPrevDiffCounts();
                 }
                 miner.setMaxDiffs(i, diff);
-
             } else if (diff > miner.getMaxDiffs(i)) {
                 miner.setMaxDiffs(i, diff);
             }
@@ -178,54 +157,41 @@ public class MinerCalculate {
 
     public static void calculateNopaidShares(
             MinerChannel channel, byte[] hash, long currentTaskTime) {
-
         Miner miner = channel.getMiner();
-
         double diff = 0.0;
-
         // 不可能出现大于的情况 防止对老的任务重复计算
-
         long minerTaskTime = miner.getTaskTime();
         long channelTaskTime = channel.getTaskTime();
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置
             int i = (int) (((currentTaskTime >> 16) + 1) & 0xf);
             // int i = (int) (((currentTaskTime>> 16) +1 ) & 7);
-
             diff = BytesUtils.hexBytesToDouble(hash, 8, false);
-
             diff *= Math.pow(2, -64);
-
             diff += BytesUtils.hexBytesToDouble(hash, 0, false);
 
             if (diff < 1) {
                 diff = 1;
             }
             diff = 46 - Math.log(diff);
-
             if (channelTaskTime < currentTaskTime) {
                 channel.setTaskTime(currentTaskTime);
-
                 if (channel.getMaxDiffs(i) > 0) {
                     channel.addPrevDiff(miner.getMaxDiffs(i));
                     channel.addPrevDiffCounts();
                 }
                 channel.setMaxDiffs(i, diff);
-
             } else if (diff > miner.getMaxDiffs(i)) {
                 channel.setMaxDiffs(i, diff);
             }
-
             // 给对应的矿工设置
             if (minerTaskTime < currentTaskTime) {
                 miner.setTaskTime(currentTaskTime);
-
                 if (miner.getMaxDiffs(i) > 0) {
                     miner.addPrevDiff(miner.getMaxDiffs(i));
                     miner.addPrevDiffCounts();
                 }
                 miner.setMaxDiffs(i, diff);
-
             } else if (diff > miner.getMaxDiffs(i)) {
                 miner.setMaxDiffs(i, diff);
             }
@@ -237,7 +203,6 @@ public class MinerCalculate {
             double temp = BigDecimalUtils.div(BigDecimalUtils.sub(sample, mean), nsamples);
             mean = BigDecimalUtils.add(mean, temp);
         }
-
         return mean;
     }
 
@@ -250,7 +215,6 @@ public class MinerCalculate {
         } else {
             mean = welfordOnePass(mean, sample, nsamples);
         }
-
         return mean;
     }
 
@@ -265,39 +229,28 @@ public class MinerCalculate {
      *            接收到矿工发送的share后计算的hash
      */
     public static void updateMeanLogDiff(MinerChannel channel, Task task, byte[] hash) {
-
         long taskTime = task.getTaskTime();
-
         long channelTime = channel.getTaskTime();
-
         if (channelTime < taskTime) {
             if (channelTime != 0) {
                 double meanLogDiff = movingAverageDouble(
                         channel.getMeanLogDiff(),
                         BasicUtils.xdag_diff2log(BasicUtils.getDiffByHash(channel.getMinHash())),
                         channel.getBoundedTaskCounter());
-
-                logger.debug("channel updateMeanLogDiff [{}]", meanLogDiff);
-
+                log.debug("channel updateMeanLogDiff [{}]", meanLogDiff);
                 channel.setMeanLogDiff(meanLogDiff);
-
-                logger.debug("channel updateMeanLogDiff [{}]", channel.getMeanLogDiff());
-
+                log.debug("channel updateMeanLogDiff [{}]", channel.getMeanLogDiff());
                 if (channel.getBoundedTaskCounter() < NSAMPLES_MAX) {
                     channel.addBoundedTaskCounter();
                 }
             }
-
             channel.setMinHash(hash);
-
         } else if (FastByteComparisons.equalBytes(hash, channel.getMinHash())) {
             channel.setMinHash(hash);
         }
 
         Miner miner = channel.getMiner();
-
         long minerTaskTime = miner.getTaskTime();
-
         if (minerTaskTime < taskTime) {
             if (minerTaskTime != 0) {
                 double meanLogDiff = movingAverageDouble(
@@ -305,13 +258,10 @@ public class MinerCalculate {
                         BasicUtils.xdag_diff2log(BasicUtils.getDiffByHash(miner.getLastMinHash())),
                         miner.getBoundedTaskCounter());
 
-                logger.debug("miner updateMeanLogDiff [{}]", meanLogDiff);
-
+                log.debug("miner updateMeanLogDiff [{}]", meanLogDiff);
                 miner.setMeanLogDiff(meanLogDiff);
-
-                logger.debug("miner updateMeanLogDiff [{}]", miner.getMeanLogDiff());
+                log.debug("miner updateMeanLogDiff [{}]", miner.getMeanLogDiff());
             }
-
             miner.setLastMinHash(hash);
         } else if (FastByteComparisons.equalBytes(hash, miner.getLastMinHash())) {
             miner.setLastMinHash(hash);

@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public class BigDecimalUtils {
-
     /** 默认的除法运算的精度 */
     private static final int DEF_DIV_SCALE = 6;
 
@@ -40,14 +39,11 @@ public class BigDecimalUtils {
      * @return 四舍五入后的结果
      */
     public static double div(double v1, double v2, int scale) {
-
         if (scale < 0) {
             throw new IllegalArgumentException("The scale must be a positive integer or zero");
         }
-
         BigDecimal b1 = BigDecimal.valueOf(v1);
         BigDecimal b2 = BigDecimal.valueOf(v2);
-        ;
         return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
     }
 
@@ -64,7 +60,6 @@ public class BigDecimalUtils {
         if (scale < 0) {
             throw new IllegalArgumentException("The scale must be a positive integer or zero");
         }
-
         BigDecimal b = BigDecimal.valueOf(value);
         BigDecimal one = BigDecimal.ONE;
         return b.divide(one, scale, RoundingMode.HALF_UP).doubleValue();

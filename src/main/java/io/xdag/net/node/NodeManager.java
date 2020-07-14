@@ -1,15 +1,5 @@
 package io.xdag.net.node;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.XdagClient;
-import io.xdag.net.handler.XdagChannelInitializer;
-import io.xdag.net.manager.NetDBManager;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.NetDB;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Deque;
@@ -25,13 +15,24 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.net.XdagChannel;
+import io.xdag.net.XdagClient;
+import io.xdag.net.handler.XdagChannelInitializer;
+import io.xdag.net.manager.NetDBManager;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.message.NetDB;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class NodeManager {
-
-    private static final Logger logger = LoggerFactory.getLogger(NodeManager.class);
     private static final ThreadFactory factory = new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -64,7 +65,6 @@ public class NodeManager {
         this.channelMgr = kernel.getChannelManager();
         this.netDB = kernel.getNetDB();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
-
         this.config = kernel.getConfig();
         this.netDBManager = kernel.getNetDBMgr();
     }
@@ -81,7 +81,7 @@ public class NodeManager {
             fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
             isRunning = true;
-            logger.debug("Node manager started");
+            log.debug("Node manager started");
         }
     }
 
@@ -92,7 +92,7 @@ public class NodeManager {
 
             isRunning = false;
             exec.shutdown();
-            logger.debug("Node manager stop...");
+            log.debug("Node manager stop...");
         }
     }
 
@@ -121,7 +121,7 @@ public class NodeManager {
 
     /** from net update seed nodes */
     protected void doFetch() {
-        logger.debug("Do fetch");
+        log.debug("Do fetch");
         if (config.isEnableRefresh()) {
             netDBManager.refresh();
         }
@@ -129,7 +129,7 @@ public class NodeManager {
         addNodes(getSeedNodes(netDBManager.getWhiteDB()));
         // 从netdb获取新节点
         addNodes(getSeedNodes(netDBManager.getNetDB()));
-        logger.debug("node size:" + deque.size());
+        log.debug("node size:" + deque.size());
     }
 
     public Set<Node> getSeedNodes(NetDB netDB) {

@@ -2,9 +2,6 @@ package io.xdag.net.message;
 
 import static io.xdag.utils.BytesUtils.isFullZero;
 
-import io.xdag.config.Config;
-import io.xdag.net.node.Node;
-import io.xdag.utils.BytesUtils;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -13,12 +10,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.xdag.config.Config;
+import io.xdag.net.node.Node;
+import io.xdag.utils.BytesUtils;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class NetDB {
-    private static final Logger logger = LoggerFactory.getLogger(NetDB.class);
-
     /** remote */
     List<IP> ipList = new ArrayList<>();
 
@@ -134,7 +133,7 @@ public class NetDB {
 
     public void appendNetDB(NetDB netDB) {
         if (netDB.ipList.size() == 0) {
-            logger.debug("size 0");
+            log.debug("size 0");
             return;
         }
         for (IP ip : netDB.ipList) {

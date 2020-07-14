@@ -1,16 +1,17 @@
 package io.xdag;
 
-import io.xdag.event.PubSubFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.xdag.event.PubSubFactory;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Launcher {
-    private static final Logger logger = LoggerFactory.getLogger(Launcher.class);
 
     /**
      * Here we make sure that all shutdown hooks will be executed in the order of
@@ -40,10 +41,10 @@ public class Launcher {
         // shutdown hooks
         for (Pair<String, Runnable> r : shutdownHooks) {
             try {
-                logger.debug("Shutting down {}", r.getLeft());
+                log.debug("Shutting down {}", r.getLeft());
                 r.getRight().run();
             } catch (Exception e) {
-                logger.debug("Failed to shutdown {}", r.getLeft(), e);
+                log.debug("Failed to shutdown {}", r.getLeft(), e);
             }
         }
         // flush log4j async loggers

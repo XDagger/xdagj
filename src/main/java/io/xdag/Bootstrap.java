@@ -16,11 +16,9 @@ import org.jline.terminal.TerminalBuilder;
 @Slf4j
 public class Bootstrap {
     public static void main(String[] args) throws IOException {
-
         Config config = new Config();
         config.changePara(config, args);
         config.setDir();
-
         log.info(
                 "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
                 config.getNodeIp(),
@@ -53,7 +51,6 @@ public class Bootstrap {
                     System.out.println("Too many wrong passwords, exit！");
                     System.exit(0);
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(0);
@@ -61,14 +58,9 @@ public class Bootstrap {
         }
 
         Terminal terminal = TerminalBuilder.builder().system(true).build();
-
         LineReader lineReader = LineReaderBuilder.builder().terminal(terminal).build();
-
-        Kernel kernel;
-        kernel = new Kernel(config, wallet);
-
+        Kernel kernel = new Kernel(config, wallet);
         ShellCommand shellCommand = new ShellCommand(new Command(kernel));
-
         String prompt = "xdag> ";
         while (true) {
             String line = null;

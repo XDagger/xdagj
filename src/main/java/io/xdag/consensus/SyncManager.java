@@ -6,17 +6,6 @@ import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.ImportResult.NO_PARENT;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagState;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.ExecutorPipeline;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -29,14 +18,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.util.encoders.Hex;
 
-public class SyncManager {
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.Blockchain;
+import io.xdag.core.ImportResult;
+import io.xdag.core.XdagState;
+import io.xdag.net.XdagChannel;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.ExecutorPipeline;
+import lombok.extern.slf4j.Slf4j;
 
-    private static final Logger logger = LoggerFactory.getLogger(SyncManager.class);
+@Slf4j
+public class SyncManager {
 
     private Kernel kernel;
     private Blockchain blockchain;
@@ -58,19 +57,19 @@ public class SyncManager {
                 blockWrapper.getBlock().parse();
                 return blockWrapper;
             },
-            throwable -> logger.error("Unexpected exception: ", throwable));
+            throwable -> log.error("Unexpected exception: ", throwable));
 
-    private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(
-            1,
-            1,
-            new Consumer<BlockWrapper>() {
-                @Override
-                public void accept(BlockWrapper block) {
-                    logger.debug("Accept a blockWrapper");
-                    blockQueue.add(block);
-                    // estimateBlockSize(blockWrapper);
-                }
-            });
+//    private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(
+//            1,
+//            1,
+//            new Consumer<BlockWrapper>() {
+//                @Override
+//                public void accept(BlockWrapper block) {
+//                    log.debug("Accept a blockWrapper");
+//                    blockQueue.add(block);
+//                    // estimateBlockSize(blockWrapper);
+//                }
+//            });
 
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
@@ -85,7 +84,7 @@ public class SyncManager {
     private ConcurrentHashMap<ByteArrayWrapper, List<BlockWrapper>> waitingblockQueue = new ConcurrentHashMap<>();
 
     public void start() {
-        logger.debug("Download receiveBlock run...");
+        log.debug("Download receiveBlock run...");
 
         syncQueueThread = new Thread(this::produceQueue, "SyncThread");
         syncQueueThread.start();
@@ -93,7 +92,7 @@ public class SyncManager {
 
     /** Processing the queue adding blocks to the chain. */
     private void produceQueue() {
-        logger.debug("produceQueue");
+        log.debug("produceQueue");
 
         DecimalFormat timeFormat = new DecimalFormat("0.000");
         timeFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.US));
@@ -121,7 +120,7 @@ public class SyncManager {
                     importResult = blockchain.tryToConnect(blockWrapper.getBlock());
                 }
 
-                logger.debug("impore result:" + String.valueOf(importResult));
+                log.debug("impore result:" + String.valueOf(importResult));
 
                 long f = System.nanoTime();
                 long t = (f - s) / 1_000_000;
@@ -140,7 +139,7 @@ public class SyncManager {
                     // }
 
                     if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
-                        logger.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
+                        log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
                         // 只有同步完成的时候 才能开始线程 再一次
 
                         if (!syncDone) {
@@ -155,14 +154,14 @@ public class SyncManager {
                     }
 
                     if (importResult == IMPORTED_BEST) {
-                        logger.debug(
+                        log.debug(
                                 "Success importing : block.hash: {},, time: {}",
                                 Hex.toHexString(blockWrapper.getBlock().getHash()),
                                 ts);
                     }
 
                     if (importResult == IMPORTED_NOT_BEST) {
-                        logger.debug(
+                        log.debug(
                                 "Success importing NOT_BEST: block.hash: {}, time: {}",
                                 Hex.toHexString(blockWrapper.getBlock().getHash()),
                                 ts);
@@ -179,12 +178,9 @@ public class SyncManager {
                         }
                     }
                 }
-                // In case we don't have a parent on the chain
-                // return the try and wait for more blocks to come.
+
                 if (importResult == NO_PARENT) {
-                    // log.error("No parent on the chain for block.hash:
-                    // {}",wrapper.getBlock().getHash());
-                    logger.debug(
+                    log.debug(
                             "No parent on the chain for block.hash: {}",
                             Hex.toHexString(blockWrapper.getBlock().getHash()));
                     // TODO:添加进sync队列 后续请求区块
@@ -196,23 +192,21 @@ public class SyncManager {
                     }
                 }
                 if (importResult == EXIST) {
-                    logger.debug("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+                    log.debug("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
                 }
 
             } catch (InterruptedException e) {
                 break;
             } catch (Throwable e) {
                 if (blockWrapper != null) {
-                    // log.error("Error processing block {}: ",
-                    // wrapper.getBlock().getHash(), e);
-                    logger.error(
+                    log.error(
                             "Error processing block {}: ",
                             Hex.toHexString(blockWrapper.getBlock().getHashLow()),
                             e);
-                    logger.error(
+                    log.error(
                             "Block dump1: {}", Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
                 } else {
-                    logger.error("Error processing unknown block", e);
+                    log.error("Error processing unknown block", e);
                 }
             }
         }
@@ -228,21 +222,21 @@ public class SyncManager {
             // logger.debug("Block have exist");
             return true;
         }
-        logger.debug(
+        log.debug(
                 "Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
 
         synchronized (this) {
             pushBlocks(Collections.singletonList(blockWrapper));
         }
 
-        logger.debug("Blocks waiting to be proceed:  queue.size: [{}] ", blockQueue.size());
+        log.debug("Blocks waiting to be proceed:  queue.size: [{}] ", blockQueue.size());
         return true;
     }
 
     protected void pushBlocks(List<BlockWrapper> blockWrappers) {
         if (!exec1.isShutdown()) {
             exec1.pushAll(blockWrappers);
-            logger.debug("push blocks ....");
+            log.debug("push blocks ....");
             blocksInMem.addAndGet(blockWrappers.size());
         }
     }
@@ -257,7 +251,7 @@ public class SyncManager {
      */
     public void syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
 
-        logger.debug("Add a new block without parent:" + Hex.toHexString(hashLow));
+        log.debug("Add a new block without parent:" + Hex.toHexString(hashLow));
         ByteArrayWrapper key = new ByteArrayWrapper(hashLow);
         // 获取所有缺少hashlow的区块
         List<BlockWrapper> list = waitingblockQueue.get(key);
@@ -278,7 +272,7 @@ public class SyncManager {
 
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
-        logger.debug("A block as parent connect:" + Hex.toHexString(block.getHashLow()));
+        log.debug("A block as parent connect:" + Hex.toHexString(block.getHashLow()));
         ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
         // 把所有block为parent的区块重新进行添加
         List<BlockWrapper> list = waitingblockQueue.get(key);
@@ -288,7 +282,7 @@ public class SyncManager {
     }
 
     public void makeSyncDone() {
-        logger.debug("Sync Done");
+        log.debug("Sync Done");
         if (syncDone) {
             return;
         }
@@ -300,7 +294,7 @@ public class SyncManager {
             kernel.getXdagState().setState(XdagState.STST);
         }
 
-        logger.info("sync finish! tha last mainblocsk number = {}", kernel.getNetStatus().getNmain());
+        log.info("sync finish! tha last mainblocsk number = {}", kernel.getNetStatus().getNmain());
         System.out.println("sync finish! tha last mainblocsk number = {" + kernel.getNetStatus().getNmain() + "}");
         System.out.println("Start PoW");
 
@@ -309,7 +303,7 @@ public class SyncManager {
     }
 
     public void stop() {
-        logger.debug("sync manager stop");
+        log.debug("sync manager stop");
         System.out.println("sync manager stop");
         // if(isRunning.compareAndSet(true,false)){
         if (exec1 != null) {

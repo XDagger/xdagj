@@ -8,6 +8,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,8 +17,8 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class MinerClient {
-    private static final Logger logger = LoggerFactory.getLogger(MinerClient.class);
     private static final ThreadFactory FACTORY = new ThreadFactory() {
         AtomicInteger cnt = new AtomicInteger(0);
 
@@ -40,11 +42,11 @@ public class MinerClient {
             channelFuture.sync();
         } catch (Exception e) {
             if (e instanceof IOException) {
-                logger.warn(
+                log.warn(
                         "MinerClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-                logger.warn("MinerClient.connect(" + host + ":" + port + ") exception:", e);
+                log.warn("MinerClient.connect(" + host + ":" + port + ") exception:", e);
             } else {
-                logger.warn("Exception:", e);
+                log.warn("Exception:", e);
             }
         }
     }
@@ -58,17 +60,13 @@ public class MinerClient {
         b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
         b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectionTimeout());
         b.option(ChannelOption.ALLOW_HALF_CLOSURE, true);
-
         b.remoteAddress(host, port);
-
         b.handler(minerChannelInitializer);
-
         return b.connect();
     }
 
     public void close() {
-        // logger.info("Shutdown XdagClient");
-        System.out.println("Shutdown XdagClient");
+        log.info("Shutdown XdagClient");
         workerGroup.shutdownGracefully();
         workerGroup.terminationFuture().syncUninterruptibly();
     }

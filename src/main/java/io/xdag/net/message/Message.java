@@ -1,7 +1,6 @@
 package io.xdag.net.message;
 
 public abstract class Message {
-
     protected boolean parsed;
     protected byte[] encoded;
     protected byte code;

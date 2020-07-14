@@ -9,8 +9,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.codec.binary.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -33,10 +31,10 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MinerChannel {
-
-    public static final Logger logger = LoggerFactory.getLogger(MinerChannel.class);
     /** 对应的是服务端的还是客户端的 */
     private final boolean isServer;
     private Kernel kernel;
@@ -191,10 +189,9 @@ public class MinerChannel {
      *            版本号
      */
     public void activateHadnler(ChannelHandlerContext ctx, XdagVersion version) {
-        logger.debug("激活其他处理器");
+        log.debug("激活其他处理器");
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
-
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
         ctx.pipeline().addLast("Miner03Handler", miner03);
     }
@@ -202,13 +199,11 @@ public class MinerChannel {
     public boolean initMiner(byte[] accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
         this.accountAddressHashLow = BytesUtils.fixBytes(accountAddressHash, 8, 24);
-
-        logger.debug("init a Miner:" + Hex.encodeHexString(accountAddressHash));
-
+        log.debug("init a Miner:" + Hex.encodeHexString(accountAddressHash));
         // 判断这个矿工是否已经存在了
         if (minerManager.getActivateMiners().containsKey(new ByteArrayWrapper(accountAddressHash))) {
             // 存在 但是会不会超过限制数
-            logger.debug("已经存在一个对应的矿工了");
+            log.debug("已经存在一个对应的矿工了");
             this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash));
             if (miner.getConnChannelCounts() < config.getMaxMinerPerAccount()) {
                 this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash));
@@ -217,7 +212,7 @@ public class MinerChannel {
                 this.miner.setMinerStates(MINER_ACTIVE);
                 return true;
             } else {
-                logger.debug("同一个矿工连接了太多啦");
+                log.debug("同一个矿工连接了太多啦");
                 return false;
             }
         } else {
@@ -232,7 +227,7 @@ public class MinerChannel {
 
     /** 通知断开连接 */
     public void notifyDisconnect() {
-        logger.debug("Notify to disconnect" + this);
+        log.debug("Notify to disconnect" + this);
     }
 
     public void onDisconnect() {
@@ -275,12 +270,10 @@ public class MinerChannel {
         if (block == null) {
             return;
         }
-
         long amount = block.getAmount();
-
         byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false),
                 BytesUtils.subArray(accountAddressHashLow, 8, 24));
-        logger.debug("update miner balance {}", Hex.encodeHexString(data));
+        log.debug("update miner balance {}", Hex.encodeHexString(data));
         miner03.sendMessage(data);
     }
 

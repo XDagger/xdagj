@@ -1,20 +1,19 @@
 package io.xdag.mine.handler;
 
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @ChannelHandler.Sharable
 public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
-
-    private static final Logger logger = LoggerFactory.getLogger(ConnectionLimitHandler.class);
 
     /** 这里保存了一个地址和对应的数量 */
     private static final Map<String, AtomicInteger> connectionCount = new ConcurrentHashMap<>();
@@ -62,7 +61,7 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
         InetAddress address = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress();
         AtomicInteger cnt = connectionCount.computeIfAbsent(address.getHostAddress(), k -> new AtomicInteger(0));
         if (cnt.incrementAndGet() > maxInboundConnectionsPerIp) {
-            logger.debug("Too many connections from {}", address.getHostAddress());
+            log.debug("Too many connections from {}", address.getHostAddress());
             ctx.close();
         } else {
             super.channelActive(ctx);

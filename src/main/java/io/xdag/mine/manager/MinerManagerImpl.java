@@ -1,5 +1,15 @@
 package io.xdag.mine.manager;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+
 import io.xdag.Kernel;
 import io.xdag.consensus.PoW;
 import io.xdag.consensus.Task;
@@ -8,22 +18,11 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.utils.ByteArrayWrapper;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import lombok.Setter;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MinerManagerImpl implements MinerManager {
-
-    private static final Logger logger = LoggerFactory.getLogger(MinerManager.class);
-
     /** 保存活跃的channel */
     protected Map<InetSocketAddress, MinerChannel> activateMinerChannels = new ConcurrentHashMap<>();
 
@@ -35,7 +34,6 @@ public class MinerManagerImpl implements MinerManager {
     @Setter
     private PoW poW;
     private Kernel kernel;
-
     private ScheduledExecutorService server = new ScheduledThreadPoolExecutor(3, new BasicThreadFactory.Builder()
             .namingPattern("MinerManagerThread")
             .daemon(true)
@@ -66,14 +64,14 @@ public class MinerManagerImpl implements MinerManager {
                 }
             }
         } catch (Exception e) {
-            logger.warn("update balance error");
+            log.warn("update balance error");
             e.printStackTrace();
         }
     }
 
     @Override
     public void addActivateChannel(MinerChannel channel) {
-        logger.debug("add a new active channel");
+        log.debug("add a new active channel");
         // 一般来讲 地址可能相同 但是端口不同
         activateMinerChannels.put(channel.getInetAddress(), channel);
     }
@@ -105,7 +103,7 @@ public class MinerManagerImpl implements MinerManager {
     @Override
     public void removeUnactivateChannel(MinerChannel channel) {
         if (!channel.isActive()) {
-            logger.debug("remove a channel");
+            log.debug("remove a channel");
             activateMinerChannels.remove(channel.getInetAddress(), channel);
             Miner miner = activateMiners.get(new ByteArrayWrapper(channel.getAccountAddressHash()));
             miner.removeChannel(channel.getInetAddress());
@@ -128,7 +126,7 @@ public class MinerManagerImpl implements MinerManager {
     public void cleanUnactivateMiner() {
         for (Miner miner : activateMiners.values()) {
             if (miner.canRemove()) {
-                logger.debug("remove a miner");
+                log.debug("remove a miner");
                 activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash()));
             }
         }

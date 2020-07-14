@@ -18,9 +18,7 @@ import javax.crypto.Cipher;
 import org.apache.commons.codec.binary.Base64;
 
 public class RSAUtils {
-
     public static final String CHARSET = "UTF-8";
-
     public static final String RSA_ALGORITHM = "RSA";
 
     public static RSAPublicKey getPublicKey(String publicKey)
@@ -59,7 +57,6 @@ public class RSAUtils {
     public static String privateDecrypt(String data, RSAPrivateKey privateKey) {
         try {
             Cipher cipher = Cipher.getInstance(RSA_ALGORITHM);
-
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             return new String(
                     rsaSplitCodec(
@@ -80,7 +77,6 @@ public class RSAUtils {
         } else {
             maxBlock = keySize / 8 - 11;
         }
-
         int offSet = 0;
         byte[] buff = null;
         int i = 0;

@@ -2,24 +2,24 @@ package io.xdag.utils;
 
 import static java.util.Arrays.copyOfRange;
 
-import io.xdag.crypto.jce.XdagProvider;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.crypto.Digest;
 import org.spongycastle.crypto.digests.RIPEMD160Digest;
 import org.spongycastle.util.encoders.Hex;
 
-public class HashUtils {
+import io.xdag.crypto.jce.XdagProvider;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+public class HashUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final byte[] ZERO_BYTE_ARRAY = new byte[] { 0 };
     public static final byte[] EMPTY_DATA_HASH;
-    private static final Logger LOG = LoggerFactory.getLogger(HashUtils.class);
     private static final Provider CRYPTO_PROVIDER;
 
     private static final String HASH_256_ALGORITHM_NAME;
@@ -43,7 +43,7 @@ public class HashUtils {
             MessageDigest sha256digest = MessageDigest.getInstance("SHA-256");
             return sha256digest.digest(input);
         } catch (NoSuchAlgorithmException e) {
-            LOG.error("Can't find such algorithm", e);
+            log.error("Can't find such algorithm", e);
             throw new RuntimeException(e);
         }
     }
@@ -55,7 +55,7 @@ public class HashUtils {
             digest.update(input);
             return digest.digest();
         } catch (NoSuchAlgorithmException e) {
-            LOG.error("Can't find such algorithm", e);
+            log.error("Can't find such algorithm", e);
             throw new RuntimeException(e);
         }
     }
@@ -78,7 +78,7 @@ public class HashUtils {
             digest.update(input, start, length);
             return digest.digest();
         } catch (NoSuchAlgorithmException e) {
-            LOG.error("Can't find such algorithm", e);
+            log.error("Can't find such algorithm", e);
             throw new RuntimeException(e);
         }
     }
@@ -90,7 +90,7 @@ public class HashUtils {
             digest.update(input);
             return digest.digest();
         } catch (NoSuchAlgorithmException e) {
-            LOG.error("Can't find such algorithm", e);
+            log.error("Can't find such algorithm", e);
             throw new RuntimeException(e);
         }
     }
@@ -160,14 +160,13 @@ public class HashUtils {
             byte[] first = sha256digest.digest();
             return sha256digest.digest(first);
         } catch (NoSuchAlgorithmException e) {
-            LOG.error("Can't find such algorithm", e);
+            log.error("Can't find such algorithm", e);
             throw new RuntimeException(e);
         }
     }
 
     /** @return - generate random 32 byte hash */
     public static byte[] randomHash() {
-
         byte[] randomHash = new byte[32];
         Random random = new Random();
         random.nextBytes(randomHash);

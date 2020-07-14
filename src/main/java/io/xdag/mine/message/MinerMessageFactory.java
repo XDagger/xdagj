@@ -1,17 +1,15 @@
 package io.xdag.mine.message;
 
-import io.xdag.mine.handler.MinerMessageHandler;
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MinerMessageFactory implements MessageFactory {
-
-    private static final Logger logger = LoggerFactory.getLogger(MinerMessageHandler.class);
 
     @Override
     public Message create(byte code, byte[] encoded) {
@@ -26,7 +24,7 @@ public class MinerMessageFactory implements MessageFactory {
         case NEW_BALANCE:
             return new NewBalanceMessage(encoded);
         default:
-            logger.debug(Hex.toHexString(encoded));
+            log.debug(Hex.toHexString(encoded));
             throw new IllegalArgumentException("No such message code" + receivedCommand);
         }
     }

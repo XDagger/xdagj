@@ -15,9 +15,7 @@ import java.util.List;
 public class FileUtils {
 
     public static List<String> recursiveList(String path) throws IOException {
-
         final List<String> files = new ArrayList<>();
-
         Files.walkFileTree(
                 Paths.get(path),
                 new FileVisitor<Path>() {
@@ -42,7 +40,6 @@ public class FileUtils {
                         return FileVisitResult.CONTINUE;
                     }
                 });
-
         return files;
     }
 
@@ -68,15 +65,8 @@ public class FileUtils {
     }
 
     public static byte[] readDnetDat(File file) throws IOException {
-        // if (".".equals(root)) {
-        // path = root+"/" +path;
-        // }
-        // File file = new File(path);
-
         FileInputStream inputStream = new FileInputStream(file);
-
         byte[] buffer = new byte[2048];
-
         try {
             while (true) {
                 int len = inputStream.read(buffer);
@@ -87,7 +77,6 @@ public class FileUtils {
         } finally {
             inputStream.close();
         }
-
         return buffer;
     }
 }

@@ -26,21 +26,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> implements Xdag {
     protected Kernel kernel;
-
     protected Blockchain blockchain;
-
     protected XdagVersion version = XdagVersion.V03;
-
     protected XdagChannel channel;
-
     protected MessageQueue msgQueue;
-
     protected Block bestKnownBlock;
-
     protected BigInteger totalDifficulty;
-
     protected SyncManager syncMgr;
-
     protected SettableFuture<List<Block>> futureBlocks;
     protected SettableFuture<SumReplyMessage> futureSum;
     protected Queue<SettableFuture<SumReplyMessage>> futureSumSublist = new LinkedList<>();

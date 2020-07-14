@@ -24,7 +24,7 @@ public class WalletTest {
         // WalletImpl wallet = new WalletImpl();
         // wallet.init(config);
 
-        WalletTest walletTest = new WalletTest();
+//        WalletTest walletTest = new WalletTest();
     }
 
     public static void readDat(String path) throws IOException {
@@ -58,7 +58,6 @@ public class WalletTest {
     public static void main1(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException {
         Map<String, String> keyPairMap = RSAUtils.createKeys(1024);
         RSAPublicKey pub = RSAUtils.getPublicKey(keyPairMap.get("publicKey"));
-
         System.out.println("getModulus length:" + pub.getModulus().bitLength() + " bits");
     }
 }

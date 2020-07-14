@@ -4,6 +4,8 @@ import static io.xdag.config.Config.MainNet;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
+import java.util.List;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -16,23 +18,16 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
-import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
-/** xdag net packet netty handler */
 @EqualsAndHashCode(callSuper = false)
+@Slf4j
 @Data
 public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
-
-    private static final Logger logger = LoggerFactory.getLogger(XdagBlockHandler.class);
-
     private XdagChannel channel;
-
     private Config config;
-
     private MessageFactory messageFactory;
 
     public XdagBlockHandler(XdagChannel channel) {
@@ -61,9 +56,9 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out) {
-        logger.debug("XdagBlockHandler readableBytes " + in.readableBytes() + " bytes");
+        log.debug("XdagBlockHandler readableBytes " + in.readableBytes() + " bytes");
         if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
-            logger.trace("Decoding packet (" + in.readableBytes() + " bytes)");
+            log.trace("Decoding packet (" + in.readableBytes() + " bytes)");
             byte[] encryptData = new byte[512];
             in.readBytes(encryptData);
             byte[] uncryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length,
@@ -85,9 +80,8 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
             // 验证长度和crc校验
             if (dataLength != 512 || !crc32Verify(uncryptData, crc)) {
-                logger.debug(dataLength + " length");
-                logger.debug("receive not block");
-                System.out.println("myron block 验证不通过");
+                log.debug(dataLength + " length");
+                log.debug("receive not block verify error!");
             }
 
             System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
@@ -107,11 +101,11 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             if (msg != null) {
                 out.add(msg);
             } else {
-                logger.debug("receive unknown block first_field_type :" + first_field_type);
+                log.debug("receive unknown block first_field_type :" + first_field_type);
             }
 
         } else {
-            logger.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
+            log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
         }
     }
 }

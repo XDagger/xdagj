@@ -1,16 +1,15 @@
 package io.xdag.event;
 
-import io.xdag.utils.exception.UnreachableException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.xdag.utils.exception.UnreachableException;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class PubSub {
-
-    private static final Logger logger = LoggerFactory.getLogger(PubSub.class);
 
     private final String name;
 
@@ -103,7 +102,7 @@ public class PubSub {
 
         eventProcessingThread = new Thread(new EventProcessor(), "event-processor-" + name);
         eventProcessingThread.start();
-        logger.info("PubSub service started");
+        log.info("PubSub service started");
     }
 
     /** Stop the {@link this#eventProcessingThread}. */
@@ -112,11 +111,11 @@ public class PubSub {
         try {
             eventProcessingThread.join(10_000L);
         } catch (InterruptedException e) {
-            logger.error("Interrupted while joining the PubSub processing thread");
+            log.error("Interrupted while joining the PubSub processing thread");
         }
 
         isRunning.set(false);
-        logger.info("PubSub service stopped");
+        log.info("PubSub service stopped");
     }
 
     /**
@@ -140,7 +139,7 @@ public class PubSub {
                         try {
                             subscriber.onPubSubEvent(event);
                         } catch (Exception e) {
-                            logger.error("Event processing error", e);
+                            log.error("Event processing error", e);
                         }
                     }
                 }

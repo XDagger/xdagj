@@ -1,7 +1,5 @@
 package io.xdag.mine.miner;
 
-import io.xdag.mine.MinerChannel;
-import io.xdag.utils.BytesUtils;
 import java.net.InetSocketAddress;
 import java.sql.Time;
 import java.util.Calendar;
@@ -11,13 +9,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.util.encoders.Hex;
 
-public class Miner {
+import io.xdag.mine.MinerChannel;
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
-    private static final Logger logger = LoggerFactory.getLogger(Miner.class);
+@Slf4j
+public class Miner {
     protected int boundedTaskCounter;
     /** 保存这个矿工的地址 */
     private byte[] addressHash;
@@ -26,9 +28,12 @@ public class Miner {
     /** 相同账户地址的channel数量 */
     private AtomicInteger connChannelCounts = new AtomicInteger(0);
     /** 保存的时该矿工每一次进行任务计算的nonce + 低192bites的hash */
-//    private XdagField id = new XdagField();
+    // private XdagField id = new XdagField();
     /** 记录收到任务的时间 */
     private long taskTime;
+    
+    @Getter
+    @Setter
     /** 记录任务索引 * */
     private long taskIndex;
     /** 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个 */
@@ -40,6 +45,8 @@ public class Miner {
     /** 记录这个矿工的状态 */
     private MinerStates minerStates;
     /** 类似于id 也是保存的nonce +hasholow的值 */
+    @Getter
+    @Setter
     private byte[] nonce = new byte[32];
     /** 记录上一轮任务中最小的hash */
     private byte[] lastMinHash = new byte[32];
@@ -55,8 +62,7 @@ public class Miner {
     private Map<Long, Double> prevDiffSum = new ConcurrentHashMap<>();
 
     public Miner(byte[] addressHash) {
-
-        logger.debug("init a new miner {}", Hex.toHexString(addressHash));
+        log.debug("init a new miner {}", Hex.toHexString(addressHash));
         this.addressHash = addressHash;
         this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
         this.minerStates = MinerStates.MINER_UNKNOWN;

@@ -7,6 +7,7 @@ import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
 
 public class Xdag03MessageFactory implements MessageFactory {
+    
     @Override
     public Message create(byte code, byte[] encoded) {
         XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, V03);
@@ -30,4 +31,5 @@ public class Xdag03MessageFactory implements MessageFactory {
             throw new IllegalArgumentException("No such message code" + code);
         }
     }
+    
 }

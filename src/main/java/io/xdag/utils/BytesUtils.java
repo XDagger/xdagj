@@ -236,21 +236,17 @@ public class BytesUtils {
     }
 
     public static boolean keyStartsWith(byte[] key, byte[] part) {
-
         if (part.length > key.length) {
             return false;
         }
-
         for (int i = 0; i < part.length; i++) {
             if (key[i] != part[i]) {
                 return false;
             }
         }
-
         if (part.length == key.length) {
             return true;
         }
-
         return true;
     }
 
@@ -277,7 +273,6 @@ public class BytesUtils {
     public static byte[] fixBytes(byte[] bytes, int index, int length) {
         byte[] temp = new byte[index];
         Arrays.fill(temp, (byte) 0x0);
-
         byte[] result = merge(temp, subArray(bytes, index, length));
         return result;
     }
@@ -295,7 +290,6 @@ public class BytesUtils {
     public static double hexBytesToDouble(byte[] input, int offset, boolean littleEndian) {
         byte[] data = new byte[8];
         System.arraycopy(input, offset, data, 0, 8);
-
         if (littleEndian) {
             data = org.spongycastle.util.Arrays.reverse(data);
         }
@@ -303,7 +297,6 @@ public class BytesUtils {
     }
 
     public String byteToBinaryString(byte b) {
-
         return Integer.toBinaryString(b & 0xFF);
     }
 }

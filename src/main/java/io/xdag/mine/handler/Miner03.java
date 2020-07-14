@@ -1,5 +1,9 @@
 package io.xdag.mine.handler;
 
+import java.io.IOException;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -14,14 +18,11 @@ import io.xdag.mine.message.TaskShareMessage;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.FastByteComparisons;
-import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
-    public static final Logger logger = LoggerFactory.getLogger(Miner03.class);
-
+    
     private Kernel kernel;
 
     private MinerChannel channel;
@@ -57,7 +58,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             processNewBlock((NewBlockMessage) msg);
             break;
         default:
-            logger.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
+            log.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
             break;
         }
     }
@@ -72,7 +73,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 
         if (cause instanceof IOException) {
-            logger.debug("远程主机关闭了一个连接");
+            log.debug("远程主机关闭了一个连接");
             ctx.channel().closeFuture();
 
         } else {
@@ -84,7 +85,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     /** *********************** Message Processing * *********************** */
     protected synchronized void processNewBlock(NewBlockMessage msg) {
-        logger.debug(" Receive a Tx");
+        log.debug(" Receive a Tx");
         Block block = msg.getBlock();
         syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL(), null));
 
@@ -92,16 +93,16 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     protected synchronized void processNewBalance(NewBalanceMessage msg) {
         // TODO: 2020/5/9 处理矿工接受到的余额信息 矿工功能
-        logger.debug(" Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
+        log.debug(" Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
     }
 
     protected synchronized void processNewTask(NewTaskMessage msg) {
         // TODO: 2020/5/9 处理矿工收到的新任务 矿工功能
-        logger.debug(" Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
+        log.debug(" Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
     }
 
     protected synchronized void processTaskShare(TaskShareMessage msg) {
-        logger.debug(" Pool Receive Share");
+        log.debug(" Pool Receive Share");
 
         if (FastByteComparisons.compareTo(msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) == 0
                 && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
@@ -110,7 +111,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             minerManager.onNewShare(channel, msg);
 
         } else {
-            logger.debug("Too many Shares,Reject...");
+            log.debug("Too many Shares,Reject...");
         }
     }
 

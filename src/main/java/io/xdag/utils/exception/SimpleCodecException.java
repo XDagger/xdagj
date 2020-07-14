@@ -1,6 +1,7 @@
 package io.xdag.utils.exception;
 
 public class SimpleCodecException extends RuntimeException {
+    
     private static final long serialVersionUID = 1L;
 
     public SimpleCodecException() {

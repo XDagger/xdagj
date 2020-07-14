@@ -9,7 +9,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public interface Blockchain {
 
-    /** 连接一个新区块 */
     ImportResult tryToConnect(Block block);
 
     Block createNewBlock(Map<Address, ECKey> pairs, List<Address> to, boolean mining);

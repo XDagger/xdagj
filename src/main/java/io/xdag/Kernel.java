@@ -1,5 +1,8 @@
 package io.xdag;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -37,8 +40,6 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Kernel {
     private static final PubSub pubSub = PubSubFactory.getDefault();
@@ -74,7 +75,6 @@ public class Kernel {
     public Kernel(Config config, Wallet wallet) {
         this.config = config;
         this.wallet = wallet;
-
         // 启动的时候就是在初始化
         this.xdagState = XdagState.INIT;
     }
@@ -117,7 +117,6 @@ public class Kernel {
         // start channel manager
         // ====================================
         channelMgr = new XdagChannelManager(this);
-
         netDBMgr = new NetDBManager(config);
         netDBMgr.init();
 
@@ -202,23 +201,19 @@ public class Kernel {
         // poolnode open
         // ====================================
         connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
-
         minerServer = new MinerServer(this);
 
         // ====================================
         // pow
         // ====================================
         pow = new XdagPow(this);
-
         minerManager.setPoW(pow);
         minerManager.start();
-
         if (Config.MainNet) {
             xdagState.setState(XdagState.WAIT);
         } else {
             xdagState.setState(XdagState.WTST);
         }
-
         Launcher.registerShutdownHook("kernel", this::testStop);
         state = State.RUNNING;
     }

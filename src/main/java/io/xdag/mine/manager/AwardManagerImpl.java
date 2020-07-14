@@ -4,6 +4,14 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static java.lang.Math.E;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.consensus.Task;
@@ -19,19 +27,11 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import io.xdag.wallet.Wallet;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AwardManagerImpl implements AwardManager {
-    private static final Logger logger = LoggerFactory.getLogger(AwardManagerImpl.class);
-
     /** 每一轮的确认数是16 */
     private static final int CONFIRMATIONS_COUNT = 16;
     /** 矿池自己的收益 */
@@ -73,8 +73,7 @@ public class AwardManagerImpl implements AwardManager {
 
     /** 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值 */
     private static double processOutdatedMiner(Miner miner) {
-
-        logger.debug("processOutdatedMiner");
+        log.debug("processOutdatedMiner");
         double sum = 0.0;
         int diffcount = 0;
         double temp;
@@ -95,7 +94,6 @@ public class AwardManagerImpl implements AwardManager {
     /** 实现一个由难度转换为pay 的函数 */
     private static double diffToPay(double sum, int diffCount) {
         double result = 0.0;
-
         if (diffCount > 0) {
             result = Math.pow(E, ((sum / diffCount) - 20)) * diffCount;
         }
@@ -112,7 +110,6 @@ public class AwardManagerImpl implements AwardManager {
 
     /** 给矿池设置一些支付上的参数 */
     private void setPoolConfig() {
-
         poolRation = BigDecimalUtils.div(config.getPoolRation(), 100);
         if (poolRation < 0) {
             poolRation = 0;
@@ -154,10 +151,9 @@ public class AwardManagerImpl implements AwardManager {
      */
     @Override
     public void payAndaddNewAwardBlock(byte[] share, byte[] hash, long generateTime) {
-        // 支付矿工奖励
-        logger.debug("Pay miner");
+        log.debug("Pay miner");
         payMiners(generateTime);
-        logger.debug("set index:" + (int) ((generateTime >> 16) & 0xf));
+        log.debug("set index:" + (int) ((generateTime >> 16) & 0xf));
         blockHashs.set((int) ((generateTime >> 16) & 0xf), new ByteArrayWrapper(hash));
         minShares.set((int) ((generateTime >> 16) & 0xf), new ByteArrayWrapper(share));
     }
@@ -185,8 +181,7 @@ public class AwardManagerImpl implements AwardManager {
      *         区块余额不足，不是主块不进行支付 -5 余额分配失败 -6 找不到签名密钥 -7 难度太小 不予支付
      */
     public int payMiners(long time) {
-        logger.debug("this is payMiners........");
-
+        log.debug("this is payMiners........");
         // 获取到的是当前任务的对应的+1的位置 以此延迟16轮
         int index = (int) (((time >> 16) + 1) & 0xf);
 
@@ -207,7 +202,7 @@ public class AwardManagerImpl implements AwardManager {
 
         // 没有矿工挖矿，直接全部收入交由地址块
         if (minerCounts <= 0) {
-            logger.debug("no miners");
+            log.debug("no miners");
             return -1;
         }
 
@@ -216,7 +211,7 @@ public class AwardManagerImpl implements AwardManager {
         byte[] nonce = minShares.get(index) == null ? null : minShares.get(index).getData();
 
         if (hash == null || nonce == null) {
-            logger.debug("找不到对应的hash or nonce ,hash为空吗[{}],nonce为空吗[{}]", hash == null, nonce == null);
+            log.debug("找不到对应的hash or nonce ,hash为空吗[{}],nonce为空吗[{}]", hash == null, nonce == null);
             return -2;
         }
 
@@ -233,14 +228,14 @@ public class AwardManagerImpl implements AwardManager {
         }
 
         if (block == null) {
-            logger.debug("can't find the block");
+            log.debug("can't find the block");
             return -3;
         }
 
         payData.balance = block.getAmount();
 
         if (payData.balance <= 0) {
-            logger.debug("no main block,can't pay");
+            log.debug("no main block,can't pay");
             return -4;
         }
 
@@ -250,12 +245,12 @@ public class AwardManagerImpl implements AwardManager {
 
         // 进行各部分奖励的计算
         if (payData.unusedBalance <= 0) {
-            logger.debug("Balance no enough");
+            log.debug("Balance no enough");
             return -5;
         }
 
         if (keyPos < 0) {
-            logger.debug("can't find the key");
+            log.debug("can't find the key");
             return -6;
         }
 
@@ -277,7 +272,7 @@ public class AwardManagerImpl implements AwardManager {
         double prevDiffSum = precalculatePayments(hash, nonce, index, payData, time);
 
         if (prevDiffSum <= DBL) {
-            logger.debug("diff is too low");
+            log.debug("diff is too low");
             return -7;
         }
 
@@ -290,7 +285,7 @@ public class AwardManagerImpl implements AwardManager {
     private double precalculatePayments(
             byte[] hash, byte[] nonce, int index, PayData payData, long time) {
 
-        logger.debug("precalculatePayments........");
+        log.debug("precalculatePayments........");
         for (Miner miner : miners) {
             countpay(miner, index, payData, time);
 
@@ -334,10 +329,8 @@ public class AwardManagerImpl implements AwardManager {
      *            对应的要计算的难度编号
      */
     private void countpay(Miner miner, int index, PayData payData, long time) {
-
         double diffSum = 0.0;
         int diffCount = 0;
-
         // 这里是如果矿工的
         if (miner.getMinerStates() == MinerStates.MINER_ARCHIVE
                 &&
@@ -350,33 +343,24 @@ public class AwardManagerImpl implements AwardManager {
             diffSum += miner.getMaxDiffs(index);
             ++diffCount;
         }
-
         double diff = diffToPay(diffSum, diffCount);
-
         diffSum += miner.getPrevDiff();
         diffCount += miner.getPrevDiffCounts();
-
         miner.setPrevDiff(0.0);
-
         miner.setDiffSum(time, diff);
         miner.setPrevDiffSum(time, diffToPay(diffSum, diffCount));
-
         payData.diffSums += diff;
-
         payData.prevDiffSums += diffToPay(diffSum, diffCount);
     }
 
     public void doPayments(
             byte[] hash, int paymentsPerBlock, PayData payData, int keyPos, long time) {
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-
         Map<Address, ECKey> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
         ECKey inputKey = xdagWallet.getKeyByIndex(keyPos);
         inputMap.put(input, inputKey);
-
         long payAmount = 0L;
-
         /**
          * 基金会和转账矿池部分代码 暂时不用 //先支付给基金会 long fundpay =
          * BasicUtils.xdag2amount(payData.fundIncome); byte[] fund =
@@ -392,40 +376,31 @@ public class AwardManagerImpl implements AwardManager {
          * Address(poolMiner.getAddressLow(),XDAG_FIELD_OUT,payData.poolFee)); payAmount
          * += payData.poolFee;
          */
-
         // 不断循环 支付给矿工
         for (Miner miner : miners) {
-
             // 保存的是一个矿工所有的收入
             long paymentSum = 0L;
-
             // 根据以前的情况分发奖励
             if (payData.prevDiffSums > 0) {
                 double per = BigDecimalUtils.div(miner.getPrevDiffSum(time), payData.prevDiffSums);
                 // paymentSum += (long)payData.unusedBalance * per;
                 paymentSum += BigDecimalUtils.mul(payData.unusedBalance, per);
             }
-
             // 计算当前这一轮
             if (payData.diffSums > 0) {
                 double per = BigDecimalUtils.div(miner.getDiffSum(time), payData.diffSums);
                 // paymentSum += (long)payData.directIncome * per;
                 paymentSum += BigDecimalUtils.mul(payData.directIncome, per);
             }
-
             if (payData.rewardMiner != null
                     && FastByteComparisons.compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash(), 8, 24) == 0) {
                 paymentSum += payData.minerReward;
             }
-
             if (paymentSum < 0.000000001) {
                 continue;
             }
-
             payAmount += paymentSum;
-
             receipt.add(new Address(miner.getAddressHaashLow(), XDAG_FIELD_OUT, paymentSum));
-
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hash, receipt, payAmount, keyPos);
@@ -433,9 +408,7 @@ public class AwardManagerImpl implements AwardManager {
                 receipt.clear();
             }
         }
-
         if (receipt.size() > 0) {
-
             transaction(hash, receipt, payAmount, keyPos);
             payAmount = 0L;
             receipt.clear();
@@ -443,28 +416,22 @@ public class AwardManagerImpl implements AwardManager {
     }
 
     public void transaction(byte[] hashLow, ArrayList<Address> receipt, long payAmount, int keypos) {
-
-        logger.debug("All Payment【{}】", payAmount);
+        log.debug("All Payment: {}", payAmount);
         for (Address address : receipt) {
-            logger.debug("pay data：【{}】", Hex.toHexString(address.getData()));
+            log.debug("pay data: {}", Hex.toHexString(address.getData()));
         }
-
         Map<Address, ECKey> inputMap = new HashMap<>();
-
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
         ECKey inputKey = xdagWallet.getKeyByIndex(keypos);
         inputMap.put(input, inputKey);
-
         Block block = blockchain.createNewBlock(inputMap, receipt, false);
-
         if (inputKey.equals(xdagWallet.getDefKey().ecKey)) {
             block.signOut(inputKey);
         } else {
             block.signIn(inputKey);
             block.signOut(xdagWallet.getDefKey().ecKey);
         }
-        logger.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
-
+        log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5, null));
         // kernel.getBlockchain().tryToConnect(block);

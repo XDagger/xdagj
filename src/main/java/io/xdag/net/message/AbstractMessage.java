@@ -17,7 +17,6 @@ import org.spongycastle.util.encoders.Hex;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public abstract class AbstractMessage extends Message {
-
     protected long starttime;
     protected long endtime;
     protected long random;

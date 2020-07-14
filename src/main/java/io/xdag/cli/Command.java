@@ -13,6 +13,17 @@ import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
+import java.net.InetSocketAddress;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.Kernel;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -29,21 +40,11 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
-import java.net.InetSocketAddress;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Command {
 
-    public static final Logger logger = LoggerFactory.getLogger(Command.class);
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     DecimalFormat df = new DecimalFormat("######0.00");
     private Kernel kernel;
@@ -150,13 +151,12 @@ public class Command {
             System.out.println("please input your password");
             Scanner scanner = new Scanner(System.in);
             String pwd = scanner.nextLine();
-
             int err = Native.verify_dnet_key(pwd, kernel.getConfig().getDnetKeyBytes());
-
             if (err < 0) {
+                scanner.close();
                 return "The password is incorrect";
             }
-
+            scanner.close();
             return xfer(amount, hash);
         } catch (Exception e) {
             return ("Argument is incorrect.");
@@ -207,7 +207,7 @@ public class Command {
         // blockWrapper.setTransaction(true);
         kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
 
-        logger.info(
+        log.info(
                 "Transfer [{}]Xdag from [{}] to [{}]",
                 sendAmount,
                 BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()),

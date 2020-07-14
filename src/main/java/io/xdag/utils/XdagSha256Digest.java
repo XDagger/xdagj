@@ -6,7 +6,6 @@ import org.spongycastle.crypto.io.DigestOutputStream;
 import org.spongycastle.util.Arrays;
 
 public class XdagSha256Digest {
-
     private SHA256Digest sha256Digest;
     private DigestOutputStream outputStream;
 
@@ -46,10 +45,8 @@ public class XdagSha256Digest {
     /** 获取可以发送给C的state */
     public byte[] getState() {
         byte[] encodedState = sha256Digest.getEncodedState();
-
         byte[] state = new byte[32];
         System.arraycopy(encodedState, encodedState.length - 32 - 4, state, 0, 32);
-
         for (int i = 0; i < 32; i += 4) {
             int temp = BytesUtils.bytesToInt(state, i, false);
             System.arraycopy(BytesUtils.intToBytes(temp, true), 0, state, i, 4);

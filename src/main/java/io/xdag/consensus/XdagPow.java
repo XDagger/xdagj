@@ -3,6 +3,16 @@ package io.xdag.consensus;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 import static org.spongycastle.util.Arrays.reverse;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
@@ -18,20 +28,10 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class XdagPow implements PoW {
-
-    private static final Logger logger = LoggerFactory.getLogger(XdagPow.class);
     /** 事件队列 */
     protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
     protected Status status;
@@ -58,17 +58,13 @@ public class XdagPow implements PoW {
 
     public XdagPow(Kernel kernel) {
         this.kernel = kernel;
-
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelManager();
-
         this.timer = new Timer();
         this.broadcaster = new Broadcaster();
-
         this.status = Status.STOPPED;
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
-
         consThread = new Thread(this::start, "consensus");
     }
 
@@ -77,10 +73,9 @@ public class XdagPow implements PoW {
         // 当状态 production_on false 同时 stop_mining false 不执行下面的代码
         // 当stop_mining false时执行
 
-        logger.info("Strat producing blocks");
-
+        log.info("Strat producing blocks");
         if (status == Status.STOPPED && !Thread.interrupted()) {
-            logger.debug("====Main block thread run=====");
+            log.debug("====Main block thread run=====");
             status = Status.RUNNING;
 
             minerManager = kernel.getMinerManager();
@@ -97,13 +92,13 @@ public class XdagPow implements PoW {
             newBlock();
             eventLoop();
 
-            logger.debug("====Main Block thread stopped====");
+            log.debug("====Main Block thread stopped====");
         }
     }
 
     @Override
     public void stop() {
-        logger.debug("pow stop");
+        log.debug("pow stop");
         if (status != Status.STOPPED) {
             // interrupt sync
             if (status == Status.SYNCING) {
@@ -116,7 +111,7 @@ public class XdagPow implements PoW {
             status = Status.STOPPED;
             Event ev = new Event(Event.Type.STOP);
             if (!events.offer(ev)) {
-                logger.error("Failed to add an event to message queue: ev = {}", ev);
+                log.error("Failed to add an event to message queue: ev = {}", ev);
             }
 
             if (consThread != null) {
@@ -126,7 +121,7 @@ public class XdagPow implements PoW {
     }
 
     public void newBlock() {
-        logger.debug("===New Block===");
+        log.debug("===New Block===");
         sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
         generateBlock = generateBlock();
@@ -134,8 +129,8 @@ public class XdagPow implements PoW {
     }
 
     public Block generateBlock() {
-        logger.debug("Generate New Block sendTime:" + Long.toHexString(sendTime));
-        logger.debug("=Start time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
+        log.debug("Generate New Block sendTime:" + Long.toHexString(sendTime));
+        log.debug("=Start time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
         // 固定sendtime
         Block block = blockchain.createNewBlock(null, null, true);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
@@ -147,7 +142,7 @@ public class XdagPow implements PoW {
         minHash = block.calcHash();
         // 发送给矿工
         currentTask = createTaskByNewBlock(block);
-        logger.debug("Send Task to Miners");
+        log.debug("Send Task to Miners");
 
         // 更新poolminer的贡献
         minerManager.updateNewTaskandBroadcast(currentTask);
@@ -182,19 +177,19 @@ public class XdagPow implements PoW {
     /** 每收到一个miner的信息 之后都会在这里进行一次计算 */
     @Override
     public void receiveNewShare(MinerChannel channel, Message msg) {
-        logger.debug("Receive share From PoolChannel");
+        log.debug("Receive share From PoolChannel");
         if (!isRunning()) {
             return;
         }
 
         XdagField shareInfo = new XdagField(msg.getEncoded());
-        logger.debug("shareinfo:" + Hex.toHexString(shareInfo.getData()));
+        log.debug("shareinfo:" + Hex.toHexString(shareInfo.getData()));
         events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 
     @Override
     public void receiveNewPretop(byte[] pretop) {
-        logger.debug("ReceiveNewPretop");
+        log.debug("ReceiveNewPretop");
         if (!isRunning()) {
             return;
         }
@@ -228,11 +223,11 @@ public class XdagPow implements PoW {
                 }
 
             } catch (InterruptedException e) {
-                logger.debug("BftManager got interrupted");
+                log.debug("BftManager got interrupted");
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                logger.warn("Unexpected exception in event loop", e);
+                log.warn("Unexpected exception in event loop", e);
             }
         }
     }
@@ -261,11 +256,11 @@ public class XdagPow implements PoW {
                 minShares.set(index, minShare);
                 blockHashs.set(index, minHash);
 
-                logger.debug("New MinHash :" + Hex.toHexString(minHash));
-                logger.debug("New MinShare :" + Hex.toHexString(minShare));
-                logger.debug("区块放入的对应的hash 为【{}】", Hex.toHexString(generateBlock.getHash()));
-                logger.debug("区块放入的对应的hash 为【{}】", Hex.toHexString(generateBlock.getHashLow()));
-                logger.debug("对应的区块【{}】", Hex.toHexString(generateBlock.toBytes()));
+                log.debug("New MinHash :" + Hex.toHexString(minHash));
+                log.debug("New MinShare :" + Hex.toHexString(minShare));
+                log.debug("区块放入的对应的hash 为【{}】", Hex.toHexString(generateBlock.getHash()));
+                log.debug("区块放入的对应的hash 为【{}】", Hex.toHexString(generateBlock.getHashLow()));
+                log.debug("对应的区块【{}】", Hex.toHexString(generateBlock.toBytes()));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -273,14 +268,14 @@ public class XdagPow implements PoW {
     }
 
     protected void onTimeout() {
-        logger.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
+        log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                 Hex.toHexString(generateBlock.getHash()));
         // 发送区块 如果有的话 然后开始生成新区块
-        logger.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(sendTime));
-        logger.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
-        logger.debug("发送区块:" + Hex.toHexString(generateBlock.toBytes()));
-        logger.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
-        logger.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
+        log.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(sendTime));
+        log.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
+        log.debug("发送区块:" + Hex.toHexString(generateBlock.toBytes()));
+        log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
+        log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
         synchronized (kernel.getBlockchain()) {
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
         }
@@ -293,7 +288,7 @@ public class XdagPow implements PoW {
     }
 
     protected void onNewPreTop() {
-        logger.debug("Receive New PreTop");
+        log.debug("Receive New PreTop");
         newBlock();
     }
 
@@ -416,7 +411,7 @@ public class XdagPow implements PoW {
                     t.interrupt();
                     t.join(10000);
                 } catch (InterruptedException e) {
-                    logger.warn("Failed to stop consensus timer");
+                    log.warn("Failed to stop consensus timer");
                     Thread.currentThread().interrupt();
                 }
                 t = null;
@@ -445,8 +440,8 @@ public class XdagPow implements PoW {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     NewBlockMessage msg = queue.take();
-                    logger.debug("queue take hash[{}]", Hex.toHexString(msg.getBlock().getHash()));
-                    logger.debug("queue take block date [{}]", Hex.toHexString(msg.getBlock().getHash()));
+                    log.debug("queue take hash[{}]", Hex.toHexString(msg.getBlock().getHash()));
+                    log.debug("queue take block date [{}]", Hex.toHexString(msg.getBlock().getHash()));
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     if (channels != null) {
                         // 全部广播
@@ -476,7 +471,7 @@ public class XdagPow implements PoW {
                     t.interrupt();
                     t.join();
                 } catch (InterruptedException e) {
-                    logger.error("Failed to stop consensus broadcaster");
+                    log.error("Failed to stop consensus broadcaster");
                     Thread.currentThread().interrupt();
                 }
                 t = null;
@@ -485,7 +480,7 @@ public class XdagPow implements PoW {
 
         public void broadcast(NewBlockMessage msg) {
             if (!queue.offer(msg)) {
-                logger.error("Failed to add a message to the broadcast queue: msg = {}", msg);
+                log.error("Failed to add a message to the broadcast queue: msg = {}", msg);
             }
         }
     }

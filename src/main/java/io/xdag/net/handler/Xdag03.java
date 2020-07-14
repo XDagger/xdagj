@@ -2,11 +2,26 @@ package io.xdag.net.handler;
 
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nonnull;
+
+import org.spongycastle.util.Arrays;
+import org.spongycastle.util.encoders.Hex;
+
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
@@ -25,30 +40,14 @@ import io.xdag.net.message.impl.BlocksRequestMessage;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.net.message.impl.SumRequestMessage;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nonnull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
 public class Xdag03 extends XdagHandler {
-
-    public static final Logger logger = LoggerFactory.getLogger(Xdag03.class);
-
     private static final ThreadFactory factory = new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -124,7 +123,7 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public synchronized void dropConnection() {
-        logger.info("Peer {}: is a bad one, drop", channel.getNode().getAddress());
+        log.info("Peer {}: is a bad one, drop", channel.getNode().getAddress());
         disconnect();
     }
 
@@ -263,7 +262,6 @@ public class Xdag03 extends XdagHandler {
     @Override
     public void sendMessage(Message message) {
         if (msgQueue.isRunning()) {
-
             msgQueue.sendMessage(message);
         } else {
             log.debug("msgQueue is close");

@@ -1,5 +1,11 @@
 package io.xdag.net;
 
+import java.io.IOException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nonnull;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -10,16 +16,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.node.Node;
-import java.io.IOException;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class XdagClient {
-    private static final Logger logger = LoggerFactory.getLogger("net");
-
     private static final ThreadFactory factory = new ThreadFactory() {
         AtomicInteger cnt = new AtomicInteger(0);
 
@@ -41,7 +41,7 @@ public class XdagClient {
         this.ip = config.getNodeIp();
         this.port = config.getNodePort();
         this.workerGroup = new NioEventLoopGroup(0, factory);
-        logger.debug("XdagClient nodeId:" + getNode().getHexId());
+        log.debug("XdagClient nodeId:" + getNode().getHexId());
     }
 
     // public Node getNode(){
@@ -55,11 +55,11 @@ public class XdagClient {
             f.sync();
         } catch (Exception e) {
             if (e instanceof IOException) {
-                logger.debug(
+                log.debug(
                         "XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-                logger.debug("XdagClient.connect(" + host + ":" + port + ") exception:");
+                log.debug("XdagClient.connect(" + host + ":" + port + ") exception:");
             } else {
-                logger.error("Exception:", e);
+                log.error("Exception:", e);
             }
         }
     }
@@ -82,7 +82,7 @@ public class XdagClient {
     }
 
     public void close() {
-        logger.debug("Shutdown XdagClient");
+        log.debug("Shutdown XdagClient");
         workerGroup.shutdownGracefully();
         workerGroup.terminationFuture().syncUninterruptibly();
     }

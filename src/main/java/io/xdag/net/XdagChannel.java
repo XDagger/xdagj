@@ -63,16 +63,12 @@ public class XdagChannel {
 
         this.config = kernel.getConfig();
         this.inetSocketAddress = inetSocketAddress;
-
         this.handshakeHandler = new XdagHandshakeHandler(kernel, config, this);
         handshakeHandler.setServer(isServer);
-
         pipeline.addLast("handshakeHandler", handshakeHandler);
-
         this.msgQueue = new MessageQueue(this);
         this.messageCodec = new MessageCodes(this);
         this.blockHandler = new XdagBlockHandler(this);
-
         this.xdagHandlerFactory = new XdagHandlerFactoryImpl(kernel, this);
     }
 
@@ -87,13 +83,11 @@ public class XdagChannel {
     }
 
     public void onSyncDone(boolean done) {
-
         if (done) {
             xdag.enableBlocks();
         } else {
             xdag.disableBlocks();
         }
-
         xdag.onSyncDone(done);
     }
 
@@ -135,7 +129,6 @@ public class XdagChannel {
 
     /** 激活xdaghandler */
     public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
-
         XdagHandler handler = xdagHandlerFactory.create(version);
         MessageFactory messageFactory = createXdagMessageFactory(version);
         blockHandler.setMessageFactory(messageFactory);
@@ -146,7 +139,6 @@ public class XdagChannel {
         ctx.pipeline().addLast("xdag", handler);
         handler.setChannel(this);
         xdag = handler;
-
         handler.activate();
     }
 
@@ -154,7 +146,6 @@ public class XdagChannel {
         switch (version) {
         case V03:
             return new Xdag03MessageFactory();
-
         default:
             throw new IllegalArgumentException("Xdag" + version + " is not supported");
         }

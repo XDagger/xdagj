@@ -4,13 +4,17 @@ import io.xdag.core.XdagField;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
 public class Task {
-    /** 包含两个字段 */
+    @Getter
+    @Setter
     private XdagField[] task;
 
+    @Getter
+    @Setter
     private long taskTime;
+
+    @Getter
+    @Setter
     private long taskIndex;
 
     @Override

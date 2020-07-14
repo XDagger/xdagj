@@ -19,6 +19,16 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 import static io.xdag.utils.MapUtils.getHead;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
@@ -33,20 +43,11 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.key_internal_item;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class BlockchainImpl implements Blockchain {
 
-    private static final Logger logger = LoggerFactory.getLogger(BlockchainImpl.class);;
     private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
 
     // private static long g_apollo_fork_time = 0;
@@ -82,7 +83,7 @@ public class BlockchainImpl implements Blockchain {
     /** 尝试去连接这个块 */
     @Override
     public ImportResult tryToConnect(Block block) {
-        logger.debug("======Connect New Block:" + Hex.toHexString(block.getHashLow()) + "======");
+        log.debug("======Connect New Block:" + Hex.toHexString(block.getHashLow()) + "======");
         ReentrantReadWriteLock.WriteLock writeLock = this.stateLock.writeLock();
         writeLock.lock();
         try {
@@ -102,7 +103,7 @@ public class BlockchainImpl implements Blockchain {
             for (Address ref : all) {
                 if (ref != null) {
                     if (!isExist(ref.getHashLow())) {
-                        logger.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
+                        log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
                         result = ImportResult.NO_PARENT;
                         result.setHashLow(ref.getHashLow());
                         return result;
@@ -121,7 +122,7 @@ public class BlockchainImpl implements Blockchain {
 
             // 如果是自己的区块
             if (checkMineAndAdd(block)) {
-                logger.debug("A block hash:" + Hex.toHexString(block.getHashLow()) + " become mine");
+                log.debug("A block hash:" + Hex.toHexString(block.getHashLow()) + " become mine");
                 updateBlockFlag(block, BI_OURS, true);
             }
 
@@ -140,7 +141,7 @@ public class BlockchainImpl implements Blockchain {
             // TODO:extra 处理
             if (MemOrphanPool.size() > MAX_ALLOWED_EXTRA) {
                 Block reuse = getHead(MemOrphanPool).getValue();
-                logger.debug("remove when extra too big");
+                log.debug("remove when extra too big");
                 removeOrphan(reuse, OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
                 netStatus.decBlock();
                 if ((reuse.getFlags() & BI_OURS) != 0) {
@@ -187,7 +188,7 @@ public class BlockchainImpl implements Blockchain {
 
             // remove links
             for (int i = 0; i < all.size(); i++) {
-                logger.debug("remove links");
+                log.debug("remove links");
                 removeOrphan(
                         getBlockByHash(all.get(i).getHashLow(), false),
                         (block.flags & BI_EXTRA) != 0
@@ -205,16 +206,16 @@ public class BlockchainImpl implements Blockchain {
                 netStatus.setTotalnblocks(netStatus.getNblocks());
             }
 
-            logger.debug("======New block waiting to link======");
+            log.debug("======New block waiting to link======");
             if ((block.flags & BI_EXTRA) != 0) {
-                logger.debug(Hex.toHexString(block.getHashLow()) + " into extra");
+                log.debug(Hex.toHexString(block.getHashLow()) + " into extra");
                 MemOrphanPool.put(new ByteArrayWrapper(block.getHashLow()), block);
             } else {
-                logger.debug(Hex.toHexString(block.getHashLow()) + " into orphan");
+                log.debug(Hex.toHexString(block.getHashLow()) + " into orphan");
                 saveBlock(block);
                 orphanPool.addOrphan(block);
             }
-            logger.debug("Current diff:" + getTopDiff().toString(16));
+            log.debug("Current diff:" + getTopDiff().toString(16));
 
             return result;
         } finally {
@@ -225,7 +226,7 @@ public class BlockchainImpl implements Blockchain {
     /** 检查更新主链 * */
     @Override
     public synchronized void checkNewMain() {
-        logger.debug("Check New Main...");
+        log.debug("Check New Main...");
         Block p = null;
         int i = 0;
         if (top_main_chain != null) {
@@ -314,7 +315,7 @@ public class BlockchainImpl implements Blockchain {
 
         if (amount2xdag(sumIn + block.getAmount()) < amount2xdag(sumOut)
                 || amount2xdag(sumIn + block.getAmount()) < amount2xdag(sumIn)) {
-            logger.debug("执行块失败");
+            log.debug("exec fail!");
             return 0;
         }
 
@@ -527,7 +528,7 @@ public class BlockchainImpl implements Blockchain {
     public BigInteger calculateBlockDiff(Block block) {
 
         if (block.getDifficulty() != null) {
-            logger.debug("block 的难度不为空，hash[{}]", Hex.toHexString(block.getHash()));
+            log.debug("block 的难度不为空，hash[{}]", Hex.toHexString(block.getHash()));
             return block.getDifficulty();
         }
 
@@ -626,7 +627,7 @@ public class BlockchainImpl implements Blockchain {
                         || (removeBlockInfo.getFlags() & BI_EXTRA) != 0)) {
             // 如果removeBlock是BI_EXTRA
             if ((removeBlockInfo.getFlags() & BI_EXTRA) != 0) {
-                logger.debug("移除Extra");
+                log.debug("移除Extra");
                 // 那removeBlockInfo就是完整的
                 // 从MemOrphanPool中去除
                 ByteArrayWrapper key = new ByteArrayWrapper(removeBlockInfo.getHashLow());
@@ -653,7 +654,7 @@ public class BlockchainImpl implements Blockchain {
             } else {
                 // 从orphanPool中移除
                 // noref减1 因为非BI_EXTRA的块已经存储了所以不用存储操作
-                logger.debug("移除orphan");
+                log.debug("移除orphan");
                 if (!orphanPool.containsKey(removeBlockInfo.getHashLow())) {
                     return;
                 }
@@ -686,11 +687,11 @@ public class BlockchainImpl implements Blockchain {
 
     public void saveBlock(Block block) {
         block.isSaved = true;
-        logger.debug("save a block block hash [{}]", Hex.toHexString(block.getHashLow()));
+        log.debug("save a block block hash [{}]", Hex.toHexString(block.getHashLow()));
         blockStore.saveBlock(block);
         // 如果是自己的账户
         if (MemAccount.containsKey(new ByteArrayWrapper(block.getHash()))) {
-            logger.debug("new account");
+            log.debug("new account");
             addNewAccount(block, MemAccount.get(new ByteArrayWrapper(block.getHash())));
             MemAccount.remove(new ByteArrayWrapper(block.getHash()));
         }
@@ -766,7 +767,7 @@ public class BlockchainImpl implements Blockchain {
                     block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKeybyCompress());
             byte[] hash = Sha256Hash.hashTwice(digest);
             if (ecKey.verify(hash, signature)) {
-                logger.debug("Validate Success");
+                log.debug("Validate Success");
                 addNewAccount(block, i);
                 return true;
             }
@@ -776,10 +777,10 @@ public class BlockchainImpl implements Blockchain {
 
     public void addNewAccount(Block block, int keyIndex) {
         if (!block.isSaved()) {
-            logger.debug("Add into Mem,size:" + MemAccount.size());
+            log.debug("Add into Mem,size:" + MemAccount.size());
             MemAccount.put(new ByteArrayWrapper(block.getHash()), keyIndex);
         } else {
-            logger.debug("Add into storage");
+            log.debug("Add into storage");
             accountStore.addNewAccount(block, keyIndex);
         }
     }
@@ -824,7 +825,7 @@ public class BlockchainImpl implements Blockchain {
         block.setAmount(block.getAmount() + amount);
         blockStore.updateBlockInfo(BlockStore.BLOCK_AMOUNT, block);
         if ((block.flags & BI_OURS) != 0) {
-            logger.debug("====Our balance add new amount:" + amount + "====,获取到amount的hash【{}】",
+            log.debug("====Our balance add new amount:" + amount + "====,获取到amount的hash【{}】",
                     Hex.toHexString(block.getHashLow()));
             accountStore.updateGBanlance(amount);
         }
