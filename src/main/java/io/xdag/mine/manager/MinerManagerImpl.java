@@ -59,7 +59,7 @@ public class MinerManagerImpl implements MinerManager {
         try {
             for (MinerChannel channel : activateMinerChannels.values()) {
                 if (channel.isActive()) {
-                    // logger.debug("给channel发送余额");
+                    // log.debug("给channel发送余额");
                     channel.sendBalance();
                 }
             }

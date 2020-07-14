@@ -333,7 +333,7 @@ public class BlockchainImpl implements Blockchain {
         long remain = sumIn - sumOut;
         acceptAmount(block, remain);
         updateBlockFlag(block, BI_APPLIED, true);
-        // logger.debug("====Apply block["+Hex.toHexString(block.getHashLow())+"]
+        // log.debug("====Apply block["+Hex.toHexString(block.getHashLow())+"]
         // done====");
 
         return 0;
@@ -395,7 +395,7 @@ public class BlockchainImpl implements Blockchain {
 
         // 主块REF指向自身
         updateBlockRef(block, new Address(block));
-        // logger.info("set mainblock [{}]", Hex.toHexString(block.getHash()));
+        // log.info("set mainblock [{}]", Hex.toHexString(block.getHash()));
 
     }
 
@@ -666,14 +666,13 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void updateBlockFlag(Block block, byte flag, boolean direction) {
-        // logger.debug("update flag");
+        // log.debug("update flag");
         if (direction) {
             block.flags |= flag;
         } else {
             block.flags &= ~flag;
         }
         if (block.isSaved) {
-
             blockStore.updateBlockInfo(BlockStore.BLOCK_FLAG, block);
         }
     }

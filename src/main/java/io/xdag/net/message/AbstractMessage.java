@@ -5,28 +5,40 @@ import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 
-import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.util.zip.CRC32;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.util.encoders.Hex;
 
+import io.xdag.utils.BytesUtils;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+
 @EqualsAndHashCode(callSuper = false)
-@Data
 public abstract class AbstractMessage extends Message {
+    @Getter
+    @Setter
     protected long starttime;
+    
+    @Getter
+    @Setter
     protected long endtime;
+    
+    @Getter
+    @Setter
     protected long random;
+    
+    @Getter
+    @Setter
     protected byte[] hash;
+    
     /** 获取对方节点的netstatus */
+    @Setter
     protected NetStatus netStatus;
     /** 获取对方节点的netdb */
     protected NetDB netDB;
     protected XdagMessageCodes codes;
-    Logger logger = LoggerFactory.getLogger(AbstractMessage.class);
 
     public AbstractMessage(
             XdagMessageCodes type, long starttime, long endtime, long random, NetStatus netStatus) {

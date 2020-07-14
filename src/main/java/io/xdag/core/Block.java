@@ -28,31 +28,47 @@ import io.xdag.crypto.ECKey;
 import io.xdag.crypto.Sha256Hash;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Data
 public class Block implements Cloneable {
 
     public static final int MAX_LINKS = 15;
     /** 区块标志* */
+    @Getter
     public int flags = 0;
+    
     /** 区块是否存在于本地* */
+    @Getter
+    @Setter
     public boolean isSaved = false;
     /** 区块生成时间 区块手续费 区块字段类型* */
     private long timestamp;
     private long fee = 0;
     private long type;
+    
     /** 连接本区块的区块地址* */
+    @Getter
+    @Setter
     private Address ref;
     /** 区块hash* */
+    @Setter
     private byte[] hash;
+    
     /** 区块低192bit hash用作地址* */
+    @Setter
     private byte[] hashLow;
+    
     /** 区块包含的金额 cheato 用于计算balance* */
+    @Getter
+    @Setter
     private long amount;
+    
     /** 区块难度* */
+    @Getter
+    @Setter
     private BigInteger difficulty;
     /** 第一个输出 主块见证块第一个输出为pretop 其他块为自己的上一个地址块* */
     private Address firstOutput;
@@ -60,15 +76,24 @@ public class Block implements Cloneable {
     private List<Address> inputs = new CopyOnWriteArrayList<>();
     /** ouput包含pretop */
     private List<Address> outputs = new CopyOnWriteArrayList<>();
+    
     /** 指向最大难度的链接块* */
+    @Getter
+    @Setter
     private Address maxDifflink;
     /** 记录公钥 前缀+压缩公钥* */
     private List<ECKey> pubKeys = new CopyOnWriteArrayList<>();
     private Map<ECKey.ECDSASignature, Integer> insigs = new LinkedHashMap<>();
     private ECKey.ECDSASignature outsig;
+    
     /** 主块的nonce记录矿工地址跟nonce* */
+    @Setter
     private byte[] nonce;
+    
+    @Setter
     private XdagBlock xdagBlock;
+    
+    @Setter
     private boolean parsed = false;
     private long sum;
 

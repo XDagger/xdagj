@@ -1,12 +1,5 @@
 package io.xdag.crypto;
 
-import io.xdag.crypto.jce.ECKeyFactory;
-import io.xdag.crypto.jce.ECKeyPairGenerator;
-import io.xdag.crypto.jce.ECSignatureFactory;
-import io.xdag.crypto.jce.XdagProvider;
-import io.xdag.utils.BIUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.HashUtils;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -24,8 +17,7 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.asn1.ASN1InputStream;
 import org.spongycastle.asn1.ASN1Integer;
 import org.spongycastle.asn1.DLSequence;
@@ -48,11 +40,21 @@ import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.encoders.Base64;
 import org.spongycastle.util.encoders.Hex;
 
+import io.xdag.crypto.jce.ECKeyFactory;
+import io.xdag.crypto.jce.ECKeyPairGenerator;
+import io.xdag.crypto.jce.ECSignatureFactory;
+import io.xdag.crypto.jce.XdagProvider;
+import io.xdag.utils.BIUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.HashUtils;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ECKey implements Serializable {
 
     /** The parameters of the secp256k1 curve that Ethereum uses. */
-    public static final ECDomainParameters CURVE;
-    public static final ECParameterSpec CURVE_SPEC;
+    static final ECDomainParameters CURVE;
+    static final ECParameterSpec CURVE_SPEC;
     /**
      * Equal to CURVE.getN().shiftRight(1), used for canonicalising the S value of a
      * signature. ECDSA signatures are mutable in the sense that for a given (R, S)
@@ -63,14 +65,12 @@ public class ECKey implements Serializable {
      * See
      * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
      */
-    public static final BigInteger HALF_CURVE_ORDER;
-    public static final ECKey DUMMY;
-    private static final long serialVersionUID = -6632834828111610783L;
-    private static final SecureRandom secureRandom;
-    private static final BigInteger SECP256K1N = new BigInteger(
+    static final BigInteger HALF_CURVE_ORDER;
+    static final ECKey DUMMY;
+    static final long serialVersionUID = -6632834828111610783L;
+    static final SecureRandom secureRandom;
+    static final BigInteger SECP256K1N = new BigInteger(
             "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
-    static Logger logger = LoggerFactory.getLogger(ECKey.class);
-
     static {
         // All clients must agree on the curve to use by agreement. Ethereum uses
         // secp256k1.
@@ -513,7 +513,7 @@ public class ECKey implements Serializable {
             // Those signatures are inherently invalid/attack sigs so we just fail them here
             // rather than
             // crash the thread.
-            logger.error("Caught NPE inside bouncy castle", npe);
+            log.error("Caught NPE inside bouncy castle", npe);
             return false;
         }
     }

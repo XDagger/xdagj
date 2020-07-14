@@ -1,20 +1,20 @@
 package io.xdag.db.store;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
-import java.util.ArrayList;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class OrphanPool {
-
     public static final byte ORPHAN_PREFEX = 0x00;
-    private static final Logger logger = LoggerFactory.getLogger(OrphanPool.class);
     /** size key */
     private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
     // <hash,nexthash>
@@ -58,7 +58,7 @@ public class OrphanPool {
     }
 
     public synchronized void deleteByHash(byte[] hashlow) {
-        logger.debug("deleteByhash");
+        log.debug("deleteByhash");
         orphanSource.delete(BytesUtils.merge(ORPHAN_PREFEX, hashlow));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
@@ -67,15 +67,15 @@ public class OrphanPool {
     public synchronized void addOrphan(Block block) {
         orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), new byte[0]);
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
-        logger.debug("orphan current size:" + currentsize);
-        logger.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
+        log.debug("orphan current size:" + currentsize);
+        log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
         orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
     }
 
     public long getOrphanSize() {
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
-        logger.debug("current orphan size:" + currentsize);
-        logger.debug("Hex:" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
+        log.debug("current orphan size:" + currentsize);
+        log.debug("Hex:" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
         return currentsize;
     }
 

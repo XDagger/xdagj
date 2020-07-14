@@ -2,6 +2,13 @@ package io.xdag.db.store;
 
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.spongycastle.util.encoders.Hex;
+
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
@@ -9,17 +16,10 @@ import io.xdag.crypto.ECKey;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.Wallet;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Hex;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AccountStore {
-
-    private static final Logger logger = LoggerFactory.getLogger(AccountStore.class);
     private static final byte[] ACCOUNT_ORIGIN_KEY = Hex.decode("FFFFFFFFFFFFFFFF");
     private static final byte[] ACCOUNT_GLOBAL_BALANCE = Hex.decode("EEEEEEEEEEEEEEEE");
     private static final byte[] ACCOUNT_GLOBAL_MINER = Hex.decode("FFFFFFFFFFFFFFFE");
@@ -45,7 +45,7 @@ public class AccountStore {
 
     /** 存放第一个地址块 */
     public synchronized void addFirstAccount(Block block, int keyIndex) {
-        logger.debug(
+        log.debug(
                 "Add new account:"
                         + Hex.toHexString(block.getHashLow())
                         + " singed by "
@@ -59,10 +59,10 @@ public class AccountStore {
     public synchronized void addNewAccount(Block block, int keyIndex) {
         // 第一个
         if (getAllAccount().size() == 0) {
-            logger.debug("Global miner");
+            log.debug("Global miner");
             accountSource.put(ACCOUNT_GLOBAL_MINER, block.getHash());
         }
-        logger.debug(
+        log.debug(
                 "Add new account:"
                         + Hex.toHexString(block.getHashLow())
                         + " singed by "
@@ -74,7 +74,7 @@ public class AccountStore {
     }
 
     public synchronized void removeAccount(Block block) {
-        logger.debug("Remove an account:" + Hex.toHexString(block.getHashLow()));
+        log.debug("Remove an account:" + Hex.toHexString(block.getHashLow()));
         byte[] value = accountSource.get(block.getHashLow());
         byte[] key = ACCOUNT_ORIGIN_KEY;
         while (!equalBytes(accountSource.get(key), block.getHashLow())) {
@@ -105,7 +105,7 @@ public class AccountStore {
         }
         // 没有足够的账户去支付
         if (res > 0) {
-            logger.debug("No match account");
+            log.debug("No match account");
             return null;
         }
 

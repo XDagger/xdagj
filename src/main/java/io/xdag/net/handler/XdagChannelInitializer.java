@@ -30,7 +30,7 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
     @Override
     protected void initChannel(NioSocketChannel ch) {
         try {
-            // logger.debug("new input channel");
+            // log.debug("new input channel");
             InetSocketAddress address = isServer ? ch.remoteAddress() : remoteNode.getAddress();
 
             // 判断进来的是不是白名单上的节点

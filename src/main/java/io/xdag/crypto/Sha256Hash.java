@@ -6,12 +6,9 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
 public class Sha256Hash {
-
     /** bytes 消息长度为32字节 */
     public static final int LENGTH = 32;
-
     public static final Sha256Hash ZERO_HASH = wrap(new byte[LENGTH]);
-
     private final byte[] bytes;
 
     public Sha256Hash(byte[] rawHashBytes) {

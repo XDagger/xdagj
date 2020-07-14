@@ -160,7 +160,7 @@ public class Kernel {
             poolMiner = new Miner(accountStore.getGlobalMiner());
         }
 
-        // logger.debug("Net Status:"+netStatus);
+        // log.debug("Net Status:"+netStatus);
 
         // ====================================
         // set up client

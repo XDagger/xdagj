@@ -47,7 +47,6 @@ public class Launcher {
                 log.debug("Failed to shutdown {}", r.getLeft(), e);
             }
         }
-        // flush log4j async loggers
         LogManager.shutdown();
     }
 

@@ -1,8 +1,5 @@
 package io.xdag.crypto;
 
-import lombok.Data;
-
-@Data
 public class DnetKeys {
 
     public byte[] prv;

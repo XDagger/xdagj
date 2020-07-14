@@ -1,10 +1,5 @@
 package io.xdag.db.store;
 
-import io.xdag.core.Block;
-import io.xdag.core.XdagBlock;
-import io.xdag.db.KVSource;
-import io.xdag.db.SimpleFileStore;
-import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +9,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.spongycastle.util.encoders.Hex;
 
-public class BlockStore {
+import io.xdag.core.Block;
+import io.xdag.core.XdagBlock;
+import io.xdag.db.KVSource;
+import io.xdag.db.SimpleFileStore;
+import io.xdag.utils.BytesUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+public class BlockStore {
     public static final byte BLOCK_MAXDIFF = 0x00;
     public static final byte BLOCK_MAXDIFFLINK = 0x01;
     public static final byte BLOCK_AMOUNT = 0x02;
@@ -29,7 +30,7 @@ public class BlockStore {
     public static final byte BLOCK_FEE = 0x06;
     public static final byte BLOCK_KEY_INDEX = 0x07;
     public static final byte BLOCK_HASH = 0x08;
-    private static final Logger logger = LoggerFactory.getLogger(BlockStore.class);
+
     /** block size key */
     private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
     /** main size key */
@@ -93,7 +94,7 @@ public class BlockStore {
     }
 
     public void processQueue() {
-        logger.debug("Sum save thread run...");
+        log.debug("Sum save thread run...");
         while (!Thread.currentThread().isInterrupted()) {
             if (!blockQueue.isEmpty()) {
                 try {
@@ -108,7 +109,7 @@ public class BlockStore {
 
     // 存储block的过程
     public synchronized void saveBlock(Block block) {
-        logger.debug("Save Block:" + block);
+        log.debug("Save Block:" + block);
         blockQueue.add(block);
         long timeIndex = block.getTimestamp();
         timeSource.put(getTimeKey(timeIndex, block.getHashLow()), block.getHashLow());
@@ -364,7 +365,7 @@ public class BlockStore {
     }
 
     public void closeSum() {
-        logger.debug("Sums service close...");
+        log.debug("Sums service close...");
         if (executorService != null) {
             try {
                 if (sumFuture != null) {

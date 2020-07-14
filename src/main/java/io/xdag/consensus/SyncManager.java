@@ -42,11 +42,8 @@ public class SyncManager {
     private long importStart;
     private AtomicLong importIdleTime = new AtomicLong();
     private AtomicInteger blocksInMem = new AtomicInteger(0);
-
     private boolean syncDone = false;
-
     private XdagChannelManager channelMgr;
-
     private Thread syncQueueThread;
 
     private ExecutorPipeline<BlockWrapper, BlockWrapper> exec1 = new ExecutorPipeline<>(
@@ -141,7 +138,6 @@ public class SyncManager {
                     if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
                         log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
                         // 只有同步完成的时候 才能开始线程 再一次
-
                         if (!syncDone) {
                             if (Config.MainNet) {
                                 kernel.getXdagState().setState(XdagState.CONN);
@@ -149,7 +145,6 @@ public class SyncManager {
                                 kernel.getXdagState().setState(XdagState.CTST);
                             }
                         }
-
                         makeSyncDone();
                     }
 
@@ -170,7 +165,6 @@ public class SyncManager {
 
                 if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
                     // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
-
                     if (blockWrapper.getRemoteNode() == null
                             || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
                         if (blockWrapper.getTtl() > 0) {
@@ -217,9 +211,8 @@ public class SyncManager {
     }
 
     public boolean validateAndAddNewBlock(BlockWrapper blockWrapper) {
-
         if (blockchain.hasBlock(blockWrapper.getBlock().getHashLow())) {
-            // logger.debug("Block have exist");
+            // log.debug("Block have exist");
             return true;
         }
         log.debug(
@@ -250,7 +243,6 @@ public class SyncManager {
      *            缺失的parent
      */
     public void syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
-
         log.debug("Add a new block without parent:" + Hex.toHexString(hashLow));
         ByteArrayWrapper key = new ByteArrayWrapper(hashLow);
         // 获取所有缺少hashlow的区块

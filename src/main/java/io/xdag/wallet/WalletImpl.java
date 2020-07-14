@@ -11,8 +11,6 @@ import java.util.Scanner;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
@@ -20,8 +18,6 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.utils.FileUtils;
 
 public class WalletImpl implements Wallet {
-
-    public static final Logger logger = LoggerFactory.getLogger(WalletImpl.class);
     /** 保存得密钥文件 */
     public static final String DNET_KEY_FILE = Config.MainNet ? Config.root + "/dnet_key.dat"
             : Config.root + "/dnet_key.dat";

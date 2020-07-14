@@ -11,14 +11,11 @@ import java.security.spec.ECGenParameterSpec;
 
 public final class ECKeyPairGenerator {
 
-    public static final String ALGORITHM = "EC";
-    public static final String CURVE_NAME = "secp256k1";
-
-    private static final String algorithmAssertionMsg = "Assumed JRE supports EC key pair generation";
-
-    private static final String keySpecAssertionMsg = "Assumed correct key spec statically";
-
-    private static final ECGenParameterSpec SECP256K1_CURVE = new ECGenParameterSpec(CURVE_NAME);
+    static final String ALGORITHM = "EC";
+    static final String CURVE_NAME = "secp256k1";
+    static final String algorithmAssertionMsg = "Assumed JRE supports EC key pair generation";
+    static final String keySpecAssertionMsg = "Assumed correct key spec statically";
+    static final ECGenParameterSpec SECP256K1_CURVE = new ECGenParameterSpec(CURVE_NAME);
 
     private ECKeyPairGenerator() {
     }
@@ -54,7 +51,6 @@ public final class ECKeyPairGenerator {
 
     private static class Holder {
         private static final KeyPairGenerator INSTANCE;
-
         static {
             try {
                 INSTANCE = KeyPairGenerator.getInstance(ALGORITHM);

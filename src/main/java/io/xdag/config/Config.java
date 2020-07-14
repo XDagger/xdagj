@@ -165,7 +165,6 @@ public class Config {
     /** 设置矿池的分配奖励 */
     public void changePoolPara(Config config, String para) {
         String[] args = para.split(":");
-
         if (args.length != 9) {
             ShellCommand.printHelp();
             throw new IllegalArgumentException("Illegal instruction");
@@ -194,7 +193,6 @@ public class Config {
     }
 
     public void getSetting() {
-
         // 获取对应的配置文件以及默认组
         Setting setting = new Setting("conf.setting");
         setting = setting.getSetting("default");

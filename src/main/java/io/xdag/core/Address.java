@@ -2,17 +2,20 @@ package io.xdag.core;
 
 import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 
-import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
-import lombok.Data;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
-@Data
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
+import lombok.Setter;
+
 public class Address {
     /** 放入字段的数据 正常顺序 */
     protected byte[] data;
     /** 输入or输出or不带amount的输出 */
+    @Getter
+    @Setter
     protected XdagField.FieldType type;
     /** 转账金额（输入or输出） */
     protected BigInteger amount;
@@ -22,6 +25,7 @@ public class Address {
     protected boolean parsed = false;
 
     /** in mem */
+    @Setter
     private Block block;
 
     public Address(XdagField field) {

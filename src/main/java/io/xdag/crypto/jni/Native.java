@@ -1,18 +1,17 @@
 package io.xdag.crypto.jni;
 
-import io.xdag.config.Config;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import org.apache.commons.lang3.SystemUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.xdag.config.Config;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Native {
-
-    private static final Logger logger = LoggerFactory.getLogger(Native.class);
-
     private static final String LIB_FILE_PATH = "/native/";
 
     /** Initializes the native libraries */
@@ -39,7 +38,7 @@ public class Native {
             System.load(absolutePath);
             return true;
         } catch (Exception | UnsatisfiedLinkError e) {
-            logger.warn("Failed to load native library: {}", name, e);
+            log.warn("Failed to load native library: {}", name, e);
             return false;
         }
     }
@@ -51,7 +50,7 @@ public class Native {
             System.load("/" + absolutePath);
             return true;
         } catch (Exception | UnsatisfiedLinkError e) {
-            logger.warn("Failed to load native library: {}", name, e);
+            log.warn("Failed to load native library: {}", name, e);
             return false;
         }
     }
@@ -62,18 +61,17 @@ public class Native {
         File temp = new File(root);
         if (!temp.exists()) {
             if (!temp.mkdirs()) {
-                logger.debug("Create Dir Failed..");
+                log.debug("Create Dir Failed..");
                 throw new Exception();
             }
         }
         temp = new File(root + fileName);
         if (!temp.exists()) {
             if (!temp.createNewFile()) {
-                logger.debug("Create File Failed..");
+                log.debug("Create File Failed..");
                 throw new Exception();
             }
         }
-
         FileOutputStream fos = new FileOutputStream(temp);
         int read = -1;
         while ((read = in.read(buffer)) != -1) {
@@ -82,7 +80,6 @@ public class Native {
         fos.close();
         in.close();
         String abPath = temp.getAbsolutePath();
-
         return abPath;
     }
 
@@ -98,7 +95,6 @@ public class Native {
         fos.close();
         in.close();
         String abPath = temp.getAbsolutePath();
-
         return abPath;
     }
 
