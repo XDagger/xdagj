@@ -15,7 +15,6 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import java.net.InetSocketAddress;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -38,14 +37,14 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.FormatDateUtils;
 import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Command {
-
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    
     DecimalFormat df = new DecimalFormat("######0.00");
     private Kernel kernel;
 
@@ -305,14 +304,11 @@ public class Command {
         StringBuilder ans = new StringBuilder();
         for (Block blockInfo : res) {
             Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
-            // ans.append(Hex.toHexString(blockInfo.getHash())).append("
-            // ").append(simpleDateFormat.format(date)).append("
-            // ").append(getStateByFlags(blockInfo.getFlags())).append("\n");
             ans.append(Hex.toHexString(blockInfo.getHash()))
                     .append("  ")
                     .append(BasicUtils.hash2Address(blockInfo.getHash()))
                     .append("     ")
-                    .append(simpleDateFormat.format(date))
+                    .append(FormatDateUtils.format(date))
                     .append(" ")
                     .append(getStateByFlags(blockInfo.getFlags()))
 
@@ -338,7 +334,7 @@ public class Command {
             Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
             ans.append(Hex.toHexString(blockInfo.getHash()))
                     .append("  ")
-                    .append(simpleDateFormat.format(date))
+                    .append(FormatDateUtils.format(date))
                     .append(" ")
                     .append(getStateByFlags(blockInfo.getFlags()))
                     .append("\n");
@@ -352,7 +348,7 @@ public class Command {
         Date date = new Date(time);
 
         return "time: "
-                + simpleDateFormat.format(date)
+                + FormatDateUtils.format(date)
                 + "\n"
                 + "timestamp: "
                 + Long.toHexString(blockInfo.getTimestamp())
@@ -412,7 +408,7 @@ public class Command {
             stringBuilder
                     .append(node.getAddress())
                     .append(" ")
-                    .append(map.get(node) == null ? null : simpleDateFormat.format(new Date(map.get(node))))
+                    .append(map.get(node) == null ? null : FormatDateUtils.format(new Date(map.get(node))))
                     .append(" ")
                     .append(node.getStat().Inbound.get())
                     .append(" in/")
@@ -429,29 +425,22 @@ public class Command {
 
     public String keygen() {
         kernel.getXdagState().tempSet(XdagState.KEYS);
-
         kernel.getWallet().createNewKey();
         int size = kernel.getWallet().getKey_internal().size();
-
         kernel.getXdagState().rollback();
-
         return "Key " + (size - 1) + " generated and set as default,now key size is:" + size;
     }
 
     public void resetStore() {
         // TODO 在这里更改是不是可以的 会不会存在线程问题
         kernel.getXdagState().tempSet(XdagState.REST);
-
         kernel.resetStore();
-
         kernel.getXdagState().rollback();
     }
 
     public void printfMiners() {
-
         Miner poolMiner = kernel.getPoolMiner();
         System.out.println("fee : " + BasicUtils.hash2Address(poolMiner.getAddressHash()));
-
         if (kernel.getMinerManager().getActivateMiners().size() == 0) {
             System.out.println(" without activate miners");
         } else {
@@ -469,7 +458,6 @@ public class Command {
 
     public String disConnectMinerChannel(String command) {
         // TODO: 2020/6/13 判断输入的ip地址是否是合法的 端口 然后找到特定的channel 断开连接
-
         if ("all".equals(command)) {
             Map<InetSocketAddress, MinerChannel> channels = kernel.getMinerManager().getActivateMinerChannels();
             for (MinerChannel channel : channels.values()) {

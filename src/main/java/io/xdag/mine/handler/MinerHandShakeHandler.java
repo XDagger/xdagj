@@ -23,7 +23,7 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.DateUtils;
+import io.xdag.utils.FormatDateUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -84,7 +84,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             minerManager.addActivateChannel(channel);
 
             channel.setIsActivate(true);
-            channel.setConnectTime(DateUtils.getCurrentTime());
+            channel.setConnectTime(FormatDateUtils.getCurrentTime());
 
             channel.setAccountAddressHash(addressBlock.getHash());
 
