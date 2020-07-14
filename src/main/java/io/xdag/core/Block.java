@@ -39,7 +39,7 @@ public class Block implements Cloneable {
     /** 区块标志* */
     @Getter
     public int flags = 0;
-    
+
     /** 区块是否存在于本地* */
     @Getter
     @Setter
@@ -48,7 +48,7 @@ public class Block implements Cloneable {
     private long timestamp;
     private long fee = 0;
     private long type;
-    
+
     /** 连接本区块的区块地址* */
     @Getter
     @Setter
@@ -56,16 +56,16 @@ public class Block implements Cloneable {
     /** 区块hash* */
     @Setter
     private byte[] hash;
-    
+
     /** 区块低192bit hash用作地址* */
     @Setter
     private byte[] hashLow;
-    
+
     /** 区块包含的金额 cheato 用于计算balance* */
     @Getter
     @Setter
     private long amount;
-    
+
     /** 区块难度* */
     @Getter
     @Setter
@@ -76,7 +76,7 @@ public class Block implements Cloneable {
     private List<Address> inputs = new CopyOnWriteArrayList<>();
     /** ouput包含pretop */
     private List<Address> outputs = new CopyOnWriteArrayList<>();
-    
+
     /** 指向最大难度的链接块* */
     @Getter
     @Setter
@@ -85,14 +85,14 @@ public class Block implements Cloneable {
     private List<ECKey> pubKeys = new CopyOnWriteArrayList<>();
     private Map<ECKey.ECDSASignature, Integer> insigs = new LinkedHashMap<>();
     private ECKey.ECDSASignature outsig;
-    
+
     /** 主块的nonce记录矿工地址跟nonce* */
     @Setter
     private byte[] nonce;
-    
+
     @Setter
     private XdagBlock xdagBlock;
-    
+
     @Setter
     private boolean parsed = false;
     private long sum;

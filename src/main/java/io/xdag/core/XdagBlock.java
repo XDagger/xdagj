@@ -7,7 +7,6 @@ import org.spongycastle.util.Arrays;
 import io.xdag.utils.BytesUtils;
 
 public class XdagBlock {
-
     public static final int XDAG_BLOCK_FIELDS = 16;
     public static final int XDAG_BLOCK_SIZE = 512;
 

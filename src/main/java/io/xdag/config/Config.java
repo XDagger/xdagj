@@ -10,9 +10,7 @@ import org.apache.commons.io.IOUtils;
 
 @Data
 public class Config {
-
     public static boolean MainNet = false;
-
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
@@ -79,10 +77,8 @@ public class Config {
             throw new Exception("can not find dnet_key.bin file.");
         } else {
             xKeys = new DnetKeys();
-
             byte[] data = new byte[3072];
             IOUtils.read(inputStream, data);
-
             System.arraycopy(data, 0, xKeys.prv, 0, 1024);
             System.arraycopy(data, 1024, xKeys.pub, 0, 1024);
             System.arraycopy(data, 2048, xKeys.sect0_encoded, 0, 512);
@@ -108,7 +104,6 @@ public class Config {
     }
 
     public void changePara(Config config, String[] args) {
-
         if (args == null || args.length == 0) {
             System.out.println("Use default configuration");
             return;
