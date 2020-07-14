@@ -158,6 +158,14 @@ public class NetDBManager {
         private int cmd;
 
         private HostFlags(int cmd) {
+            this.setCmd(cmd);
+        }
+
+        public int getCmd() {
+            return cmd;
+        }
+
+        public void setCmd(int cmd) {
             this.cmd = cmd;
         }
     }

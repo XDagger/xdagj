@@ -1,7 +1,6 @@
 package io.xdag.utils;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
@@ -32,11 +31,11 @@ public class BasicUtilsTest {
         // 3333333334
         System.out.println(BasicUtils.amount2xdag(b));
 
-        long c = 4398046511104L;
+//        long c = 4398046511104L;
         // 400 0000 0000?
         System.out.println(BasicUtils.amount2xdag(6400000000L));
 
-        long d = 4398046511106L;
+//        long d = 4398046511106L;
         // 400 0000 0001
         System.out.println(BasicUtils.amount2xdag(6400000000L));
     }
@@ -52,8 +51,8 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_hashrate() {
-        BigInteger diff = BasicUtils.getDiffByHash(
-                Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
+//        BigInteger diff = BasicUtils.getDiffByHash(
+//                Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
     }
 
     @Test
