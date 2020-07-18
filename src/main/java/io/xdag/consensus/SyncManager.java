@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.spongycastle.util.encoders.Hex;
 
@@ -56,17 +57,17 @@ public class SyncManager {
             },
             throwable -> log.error("Unexpected exception: ", throwable));
 
-//    private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(
-//            1,
-//            1,
-//            new Consumer<BlockWrapper>() {
-//                @Override
-//                public void accept(BlockWrapper block) {
-//                    log.debug("Accept a blockWrapper");
-//                    blockQueue.add(block);
-//                    // estimateBlockSize(blockWrapper);
-//                }
-//            });
+    private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(
+            1,
+            1,
+            new Consumer<BlockWrapper>() {
+                @Override
+                public void accept(BlockWrapper block) {
+                    log.debug("Accept a blockWrapper");
+                    blockQueue.add(block);
+                    // estimateBlockSize(blockWrapper);
+                }
+            });
 
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;

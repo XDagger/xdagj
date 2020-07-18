@@ -137,13 +137,13 @@ public class WalletImpl implements Wallet {
             String replacePassword = scanner.nextLine();
             if (!replacePassword.equals(password)) {
                 System.out.println("passwords are inconsistent, please check");
-                scanner.close();
+                //scanner.close();
                 return null;
             }
             System.out.println("Please Input random:");
             random = scanner.nextLine();
         }
-        scanner.close();
+        //scanner.close();
         return Pair.of(password, random);
     }
 

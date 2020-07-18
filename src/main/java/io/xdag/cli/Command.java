@@ -153,10 +153,10 @@ public class Command {
             String pwd = scanner.nextLine();
             int err = Native.verify_dnet_key(pwd, kernel.getConfig().getDnetKeyBytes());
             if (err < 0) {
-                scanner.close();
+                //scanner.close();
                 return "The password is incorrect";
             }
-            scanner.close();
+            //scanner.close();
             return xfer(amount, hash);
         } catch (Exception e) {
             return ("Argument is incorrect.");
@@ -214,7 +214,7 @@ public class Command {
                 BasicUtils.hash2Address(to));
 
         System.out.println(
-                "Transfer " + sendAmount + "XDAG   to Address [" + BasicUtils.hash2Address(to) + "]");
+                "Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
 
         return "Transaction :"
                 + BasicUtils.hash2Address(block.getHashLow())
