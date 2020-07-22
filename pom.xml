@@ -6,7 +6,7 @@
 
 	<groupId>io.xdag</groupId>
 	<artifactId>xdagj</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>0.4.0</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -14,44 +14,44 @@
 		<java.version>1.8</java.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+		<dist.phase>package</dist.phase>
+		<dist.base>${project.basedir}/dist</dist.base>
 	</properties>
-	
+
 	<organization>
-        <name>Xdag Foundation</name>
-        <url>https://xdag.io</url>
-    </organization>
-    
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>https://opensource.org/licenses/MIT</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+		<name>Xdag Foundation</name>
+		<url>https://xdag.io</url>
+	</organization>
+
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<repositories>
+		<repository>
+			<id>bintray</id>
+			<url>https://jcenter.bintray.com</url>
+		</repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>bintray</id>
+			<url>https://jcenter.bintray.com</url>
+		</pluginRepository>
+	</pluginRepositories>
 
 	<build>
 		<plugins>
-	        <plugin>
-	            <groupId>org.codehaus.mojo</groupId>
-	            <artifactId>findbugs-maven-plugin</artifactId>
-	            <version>3.0.5</version>
-	            <configuration>
-	                <effort>Max</effort>
-	                <threshold>High</threshold>
-	                <xmlOutput>true</xmlOutput>
-	                <excludeFilterFile>${project.basedir}/findbugs-exclude.xml</excludeFilterFile>
-	            </configuration>
-	            <executions>
-	                <execution>
-	                    <id>run-findbugs</id>
-	                    <phase>package</phase>
-	                    <goals>
-	                        <goal>check</goal>
-	                    </goals>
-	                </execution>
-	            </executions>
-	        </plugin>
-	        
+			<!-- compile -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -61,6 +61,75 @@
 					<target>8</target>
 					<skip>true</skip>
 				</configuration>
+			</plugin>
+
+			<!-- build fat jar -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.0.2</version>
+				<configuration>
+					<archive>
+						<index>true</index>
+						<manifestEntries>
+							<Main-Class>io.xdag.Bootstrap</Main-Class>
+							<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
+							<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+							<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<!-- license header check -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>4.0.rc1</version>
+				<configuration>
+					<licenseSets>
+						<licenseSet>
+							<header>LICENSE</header>
+							<includes>
+								<include>src/main/**/*.java</include>
+								<include>src/test/**/*.java</include>
+							</includes>
+						</licenseSet>
+					</licenseSets>
+					<properties>
+						<owner>Mycila</owner>
+						<email>mathieu.carbou@gmail.com</email>
+					</properties>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- FindBugs -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>findbugs-maven-plugin</artifactId>
+				<version>3.0.5</version>
+				<configuration>
+					<effort>Max</effort>
+					<threshold>High</threshold>
+					<xmlOutput>true</xmlOutput>
+					<excludeFilterFile>${project.basedir}/findbugs-exclude.xml</excludeFilterFile>
+				</configuration>
+				<executions>
+					<execution>
+						<id>run-findbugs</id>
+						<phase>package</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 
 			<plugin>
@@ -74,14 +143,50 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>module-info.class</exclude>
+										<exclude>META-INF/versions/9/*.class</exclude>
+										<exclude>META-INF/NOTICE</exclude>
+										<exclude>META-INF/NOTICE.txt</exclude>
+										<exclude>META-INF/NOTICE.md</exclude>
+										<exclude>META-INF/LICENSE</exclude>
+										<exclude>META-INF/LICENSE.txt</exclude>
+										<exclude>META-INF/LICENSE.md</exclude>
+										<exclude>META-INF/DEPENDENCIES</exclude>
+										<exclude>META-INF/AL2.0</exclude>
+										<exclude>META-INF/LGPL2.1</exclude>
+										<exclude>META-INF/*.MF</exclude>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
 							<shadedArtifactAttached>true</shadedArtifactAttached>
-							<shadedClassifierName>executable</shadedClassifierName>
-							<outputDirectory>./</outputDirectory>
-							<finalName>xdagj</finalName>
+                    		<shadedClassifierName>shaded</shadedClassifierName>
 							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
+		                            <resource>.SF</resource>
+		                            <resource>NOTICE</resource>
+		                            <resource>AL2.0</resource>
+		                            <resource>LGPL2.1</resource>
+		                            <resource>LICENSE.txt</resource>
+		                            <resource>NOTICE.txt</resource>
+		                        </transformer>
+		                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+		                            <resource>LICENSE</resource>
+		                        </transformer>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
 										<Main-Class>io.xdag.Bootstrap</Main-Class>
+										<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
+		                                <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+		                                <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+		                                <Multi-Release>true</Multi-Release>
 									</manifestEntries>
 								</transformer>
 							</transformers>
@@ -89,10 +194,55 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>4.0.0</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>validate-the-git-infos</id>
+                        <goals>
+                            <goal>validateRevision</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <abbrevLength>40</abbrevLength>
+                    <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+                    <verbose>false</verbose>
+                    <dateFormat>yyyy-MM-dd HH:mm:ss</dateFormat>
+                    <prefix>git</prefix>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                </configuration>
+            </plugin>
+			
+			<!-- clean -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${dist.base}</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
 		</plugins>
 	</build>
 
 	<dependencies>
+		<!-- Spongy Castle -->
 		<dependency>
 			<groupId>com.madgag.spongycastle</groupId>
 			<artifactId>core</artifactId>
@@ -105,6 +255,7 @@
 			<version>1.58.0.0</version>
 		</dependency>
 
+		<!-- Logging framework -->
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
@@ -123,10 +274,17 @@
 			<version>2.13.3</version>
 		</dependency>
 
+		<!-- Apache Commons -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.10</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.4</version>
 		</dependency>
 
 		<dependency>
@@ -139,12 +297,6 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.7</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-collections4</artifactId>
-			<version>4.4</version>
 		</dependency>
 
 		<dependency>
@@ -209,6 +361,6 @@
 			<artifactId>hutool-all</artifactId>
 			<version>5.3.8</version>
 		</dependency>
-		
+
 	</dependencies>
 </project>
