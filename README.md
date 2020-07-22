@@ -174,7 +174,7 @@ The pull request must be as clear as possible and as detailed as possible, inclu
 
 ### Code Style
 
-use xdagj code style formatter_eclipse.xml or formatter_intellij.xml at project misc folder import to your ide for format code.
+use xdagj code style formatter_eclipse.xml or formatter_intellij.xml at misc/code-style folder import to your IDE for format code.
 
 
 ### Code Review
