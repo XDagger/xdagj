@@ -86,6 +86,14 @@ public class Block implements Cloneable {
     private Map<ECKey.ECDSASignature, Integer> insigs = new LinkedHashMap<>();
     private ECKey.ECDSASignature outsig;
 
+    @Getter
+    @Setter
+    private boolean pretopCandidate;
+    @Getter
+    @Setter
+    private BigInteger pretopCandidateDiff;
+
+
     /** 主块的nonce记录矿工地址跟nonce* */
     @Setter
     private byte[] nonce;

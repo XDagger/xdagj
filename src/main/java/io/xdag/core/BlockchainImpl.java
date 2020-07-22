@@ -73,8 +73,8 @@ public class BlockchainImpl implements Blockchain {
         this.accountStore = kernel.getAccountStore();
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
-        this.pretop = this.top_main_chain = blockStore.getOriginpretop();
-        this.pretopDiff = this.topDiff = blockStore.getOriginpretopDiff();
+        this.pretop = this.top_main_chain = blockStore.getPretop();
+        this.pretopDiff = this.topDiff = blockStore.getPretopDiff();
         // this.blockNumber = blockStore.getBlockNumber();
         this.netStatus = kernel.getNetStatus();
         this.netStatus.init(pretopDiff, blockStore.getMainNumber(), blockStore.getBlockNumber());
@@ -163,8 +163,8 @@ public class BlockchainImpl implements Blockchain {
                     }
                     if ((tmpRef == null || blockRef.getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0)
                             && (blockRef0 == null
-                                    || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
-                                            .getEpoch(blockRef.getTimestamp()))) {
+                            || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
+                            .getEpoch(blockRef.getTimestamp()))) {
                         updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
                         blockRef0 = blockRef;
                     }
@@ -506,21 +506,18 @@ public class BlockchainImpl implements Blockchain {
         }
         BigInteger blockDiff = calculateBlockDiff(block);
         if (pretop == null) {
-            blockStore.setPretop(block);
-            blockStore.setPretopDiff(blockDiff);
-            // if ((block.flags & BI_EXTRA) == 0) { //存进来
-            // blockStore.setOriginpretop(block);
-            // blockStore.setOriginpretopdiff(blockDiff);
-            // }
+            pretop = block.getHashLow().clone();
+            pretopDiff = blockDiff;
+            block.setPretopCandidate(true);
+            block.setPretopCandidateDiff(pretopDiff);
             return;
         }
-        if (blockDiff.compareTo(getPretopDiff()) > 0) {
-            blockStore.setPretop(block);
-            blockStore.setPretopDiff(blockDiff);
-            // if ((block.flags & BI_EXTRA) == 0) { //存进来
-            // blockStore.setOriginpretop(block);
-            // blockStore.setOriginpretopdiff(blockDiff);
-            // }
+
+        if (blockDiff.compareTo(pretopDiff) > 0) {
+            pretop = block.getHashLow().clone();
+            pretopDiff = blockDiff;
+            block.setPretopCandidate(true);
+            block.setPretopCandidateDiff(pretopDiff);
         }
     }
 
@@ -624,7 +621,7 @@ public class BlockchainImpl implements Blockchain {
     public void removeOrphan(Block removeBlockInfo, OrphanRemoveActions action) {
         if (((removeBlockInfo.getFlags() & BI_REF) == 0)
                 && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
-                        || (removeBlockInfo.getFlags() & BI_EXTRA) != 0)) {
+                || (removeBlockInfo.getFlags() & BI_EXTRA) != 0)) {
             // 如果removeBlock是BI_EXTRA
             if ((removeBlockInfo.getFlags() & BI_EXTRA) != 0) {
                 log.debug("移除Extra");
@@ -693,6 +690,11 @@ public class BlockchainImpl implements Blockchain {
             log.debug("new account");
             addNewAccount(block, MemAccount.get(new ByteArrayWrapper(block.getHash())));
             MemAccount.remove(new ByteArrayWrapper(block.getHash()));
+        }
+
+        if  (block.isPretopCandidate()) {
+            blockStore.setPretop(block);
+            blockStore.setPretopDiff(block.getPretopCandidateDiff());
         }
     }
 

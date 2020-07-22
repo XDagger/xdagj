@@ -134,11 +134,11 @@ public class Kernel {
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getSumsDB());
-        blockStore.reset();
+        blockStore.init();
         accountStore = new AccountStore(wallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
-        accountStore.reset();
+        accountStore.init();
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
+        orphanPool.init();
 
         // ====================================
         // netstatus netdb init
