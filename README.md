@@ -63,7 +63,7 @@ To avoid stack overflow, increase the STACK value of the JVM to at least 4096k w
 
 The startup method based on the default configuration file :
 ```shell
-> java -jar xdaj.jar
+> java -jar xdagj.jar
 > run ##start the program
 > terminate ##trun off
 ```
