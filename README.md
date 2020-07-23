@@ -50,7 +50,7 @@ Configure a new library file for it.
 ##### Building an executable JAR
 
 ```shell
-> git clone https://github.com/Holt666/xdagj.git
+> git clone https://github.com/XDagger/xdagj.git
 > cd xdagj
 > mvn clean package 
 ```
@@ -135,7 +135,7 @@ Whether you find any errors, bugs or inconsistencies in the code or documents of
 
 The main Issues for bug reporting are as follows:
 
-* [XDAGJ/issues](https://github.com/Holt666/xdagj/issues)
+* [XDAGJ/issues](https://github.com/XDagger/xdagj/issues)
 
 ## Implementation Design
 
