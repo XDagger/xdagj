@@ -23,25 +23,22 @@
  */
 package io.xdag;
 
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+
 import io.xdag.cli.Command;
 import io.xdag.cli.ShellCommand;
 import io.xdag.config.Config;
 import io.xdag.wallet.WalletImpl;
-import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
+
 
 @Slf4j
 public class Bootstrap {
-    public static void main(String[] args) throws IOException {
-        Config config = new Config();
-        config.changePara(config, args);
-        config.setDir();
+    
+    public static void logPoolInfo(Config config) {
         log.info(
                 "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
                 config.getNodeIp(),
@@ -55,13 +52,16 @@ public class Bootstrap {
                 config.getRewardRation(),
                 config.getDirectRation(),
                 config.getFundRation());
+    }
+    
+    public static void main(String[] args) throws Exception {
+        Config config = new Config();
+        config.changePara(config, args);
+        config.setDir();
+        logPoolInfo(config);
 
-        try {
-            // 初始密钥
-            config.initKeys();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // 初始密钥
+        config.initKeys();
 
         // 启动前先要判断dnet_keys.dat 与 wallet.dat是否生成
         WalletImpl wallet = new WalletImpl();
@@ -80,25 +80,16 @@ public class Bootstrap {
             }
         }
 
-        Terminal terminal = TerminalBuilder.builder().system(true).build();
+        Terminal terminal = TerminalBuilder.builder().dumb(true).system(true).build();
         LineReader lineReader = LineReaderBuilder.builder().terminal(terminal).build();
         Kernel kernel = new Kernel(config, wallet);
         ShellCommand shellCommand = new ShellCommand(new Command(kernel));
         String prompt = "xdag> ";
-        while (true) {
-            String line = null;
-            try {
-                line = lineReader.readLine(prompt);
-                shellCommand.handle(line);
-                if (shellCommand.getStopFlag()) {
-                    throw new EndOfFileException();
-                }
-            } catch (UserInterruptException e) {
-                // Do nothing
-            } catch (EndOfFileException e) {
-                System.out.println("\nBye.");
-                return;
-            }
+        while (!shellCommand.getStopFlag()) {
+            String line = lineReader.readLine(prompt);
+            shellCommand.handle(line);
+
         }
+        System.out.println("\nBye.");
     }
 }

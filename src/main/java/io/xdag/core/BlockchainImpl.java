@@ -65,7 +65,7 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import io.xdag.wallet.key_internal_item;
+import io.xdag.wallet.KeyInternalItem;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -781,7 +781,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<key_internal_item> ourkeys = wallet.getKey_internal();
+        List<KeyInternalItem> ourkeys = wallet.getKey_internal();
         // 输出签名只有一个
         ECKey.ECDSASignature signature = block.getOutsig();
         // 遍历所有key

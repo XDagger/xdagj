@@ -42,21 +42,14 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.utils.FileUtils;
 
 public class WalletImpl implements Wallet {
-    /** 保存得密钥文件 */
-    public static final String DNET_KEY_FILE = Config.MainNet ? Config.root + "/dnet_key.dat"
-            : Config.root + "/dnet_key.dat";
-    /** 钱包文件 */
-    public static final String WALLET_KEY_FILE = Config.MainNet ? Config.root + "/wallet.dat"
-            : Config.root + "/wallet-testnet.dat";
-    private List<key_internal_item> key_internal = new ArrayList<>();
-
-    // TODO：File 路径 修改至resources
-    private key_internal_item defKey;
+    
+    private List<KeyInternalItem> keyLists = new ArrayList<>();
+    private KeyInternalItem defKey;
     private int keysNum = 0;
 
     @Override
     public int init(Config config) throws Exception {
-        File dnetDatFile = new File(DNET_KEY_FILE);
+        File dnetDatFile = new File(Config.DNET_KEY_FILE);
         Native.dfslib_random_init();
         Native.crc_init();
         boolean fileExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
@@ -87,7 +80,7 @@ public class WalletImpl implements Wallet {
     }
 
     @Override
-    public key_internal_item getDefKey() {
+    public KeyInternalItem getDefKey() {
         return defKey;
     }
 
@@ -98,26 +91,26 @@ public class WalletImpl implements Wallet {
 
     @Override
     public ECKey getKeyByIndex(int index) {
-        return key_internal.get(index).ecKey;
+        return keyLists.get(index).ecKey;
     }
 
     @Override
-    public List<key_internal_item> getKey_internal() {
-        return key_internal;
+    public List<KeyInternalItem> getKey_internal() {
+        return keyLists;
     }
 
     private void addKey(BigInteger priv) {
         if (priv == null) {
-            File walletDatFile = new File(WALLET_KEY_FILE);
+            File walletDatFile = new File(Config.WALLET_KEY_FILE);
             ECKey ecKey = new ECKey();
             byte lastByte = ecKey.getPubKey()[ecKey.getPubKey().length - 1];
             // 奇偶
             boolean pubKeyParity = (lastByte & 1) == 0;
-            key_internal_item newKey = new key_internal_item();
+            KeyInternalItem newKey = new KeyInternalItem();
             newKey.ecKey = ecKey;
             newKey.pubKeyParity = pubKeyParity;
             defKey = newKey;
-            key_internal.add(newKey);
+            keyLists.add(newKey);
             FileOutputStream fileOutputStream = null;
             try {
                 fileOutputStream = new FileOutputStream(walletDatFile, true);
@@ -171,18 +164,18 @@ public class WalletImpl implements Wallet {
     }
 
     private void pasreWalletDat() throws Exception {
-        File walletDatFile = new File(WALLET_KEY_FILE);
+        File walletDatFile = new File(Config.WALLET_KEY_FILE);
         if (!walletDatFile.exists() || walletDatFile.length() == 0) {
             // if wallet.dat not exist create it
             ECKey ecKey = new ECKey();
             byte lastByte = ecKey.getPubKey()[ecKey.getPubKey().length - 1];
             // 奇偶
             boolean pubKeyParity = (lastByte & 1) == 0;
-            key_internal_item newKey = new key_internal_item();
+            KeyInternalItem newKey = new KeyInternalItem();
             newKey.ecKey = ecKey;
             newKey.pubKeyParity = pubKeyParity;
             defKey = newKey;
-            key_internal.add(newKey);
+            keyLists.add(newKey);
             if (!walletDatFile.exists()) {
                 if (!walletDatFile.createNewFile()) {
                     System.out.println("create new file wallet.dat failed");
@@ -205,13 +198,13 @@ public class WalletImpl implements Wallet {
                 byte lastByte = ecKey.getPubKey()[ecKey.getPubKey().length - 1];
                 // 奇偶
                 boolean pubKeyParity = (lastByte & 1) == 0;
-                key_internal_item newKey = new key_internal_item();
+                KeyInternalItem newKey = new KeyInternalItem();
                 newKey.ecKey = ecKey;
                 newKey.pubKeyParity = pubKeyParity;
-                key_internal.add(newKey);
+                keyLists.add(newKey);
             }
             // 最后一个
-            defKey = key_internal.get(key_internal.size() - 1);
+            defKey = keyLists.get(keyLists.size() - 1);
             fileInputStream.close();
         }
     }

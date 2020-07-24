@@ -33,7 +33,7 @@ public interface Wallet {
     int init(Config config) throws Exception;
 
     /** 获取到一个新的key */
-    key_internal_item getDefKey();
+    KeyInternalItem getDefKey();
 
     /** 创建一个新的key */
     void createNewKey();
@@ -41,5 +41,5 @@ public interface Wallet {
     /** 通过编号获取密钥对 */
     ECKey getKeyByIndex(int index);
 
-    List<key_internal_item> getKey_internal();
+    List<KeyInternalItem> getKey_internal();
 }
