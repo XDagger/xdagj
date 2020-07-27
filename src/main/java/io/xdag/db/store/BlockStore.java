@@ -79,6 +79,7 @@ public class BlockStore {
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Future<?> sumFuture;
+    private boolean isRuning = false;
 
     public BlockStore(
             KVSource<byte[], byte[]> index,
@@ -101,8 +102,10 @@ public class BlockStore {
         if (indexSource.get(MAIN_SIZE) == null) {
             indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(0, false));
         }
-        Runnable queueProducer = this::processQueue;
-        sumFuture = executorService.submit(queueProducer);
+
+        Runnable consumerTask = this::processQueue;
+        isRuning = true;
+        sumFuture = executorService.submit(consumerTask);
     }
 
     public void reset() {
@@ -117,23 +120,20 @@ public class BlockStore {
     }
 
     public void processQueue() {
-        log.debug("Sum save thread run...");
-        while (!Thread.currentThread().isInterrupted()) {
-            if (!blockQueue.isEmpty()) {
-                try {
-                    Block block = blockQueue.take();
-                    simpleFileStore.saveBlockSums(block);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        try {
+            while (isRuning) {
+                Block block = blockQueue.take();
+                simpleFileStore.saveBlockSums(block);
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
     // 存储block的过程
     public synchronized void saveBlock(Block block) {
         log.debug("Save Block:" + block);
-        blockQueue.add(block);
+        blockQueue.offer(block);
         long timeIndex = block.getTimestamp();
         timeSource.put(getTimeKey(timeIndex, block.getHashLow()), block.getHashLow());
         blockSource.put(block.getHashLow(), block.getXdagBlock().getData());
@@ -146,7 +146,6 @@ public class BlockStore {
             // 赋值localaddress
             indexSource.put(GLOBAL_ADDRESS, block.getHashLow());
         }
-
         saveBlockInfo(block);
     }
 
@@ -389,6 +388,7 @@ public class BlockStore {
 
     public void closeSum() {
         log.debug("Sums service close...");
+        isRuning = false;
         if (executorService != null) {
             try {
                 if (sumFuture != null) {
