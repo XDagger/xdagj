@@ -38,7 +38,6 @@ public class MinerMessageFactory implements MessageFactory {
     public Message create(byte code, byte[] encoded) {
         // 从当前版本中获取到有用的信息
         XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, XdagVersion.V03);
-
         switch (receivedCommand) {
         case TASK_SHARE:
             return new TaskShareMessage(encoded);

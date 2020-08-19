@@ -1,9 +1,9 @@
 [default]
 #矿池地址及端口
 nodeIp = 127.0.0.1
-nodePort = 30303
+nodePort = 8001
 poolIp = 127.0.0.1
-poolPort = 50505
+poolPort = 9001
 
 #对矿工的限制
 globalMinerLimit = 8192

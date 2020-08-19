@@ -23,7 +23,7 @@
  */
 package io.xdag.core;
 
-import static io.xdag.config.Config.MainNet;
+import static io.xdag.config.Config.MAINNET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
@@ -146,7 +146,7 @@ public class Block implements Cloneable {
         this.firstOutput = pretop;
         int lenghth = 0;
 
-        setType(MainNet ? XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST, lenghth++);
+        setType(MAINNET ? XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST, lenghth++);
 
         if (pretop != null) {
             setType(XDAG_FIELD_OUT, lenghth++);
@@ -538,10 +538,8 @@ public class Block implements Cloneable {
     /** 根据length获取前length个字段的数据 主要用于签名* */
     public byte[] getSubRawData(int length) {
         byte[] data = getXdagBlock().getData();
-
         byte[] res = new byte[512];
         System.arraycopy(data, 0, res, 0, (length + 1) * 32);
-
         return res;
     }
 

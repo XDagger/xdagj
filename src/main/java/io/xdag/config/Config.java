@@ -33,16 +33,16 @@ import org.apache.commons.io.IOUtils;
 
 @Data
 public class Config {
-    public static boolean MainNet = false;
+    public static boolean MAINNET = false;
     /** 配置存储root */
-    public static String root = MainNet ? "./mainnet" : "./testnet";
+    public static String root = MAINNET ? "./mainnet" : "./testnet";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
     
     /** 保存得密钥文件 */
-    public static final String DNET_KEY_FILE = Config.MainNet?Config.root + "/dnet_key.dat":Config.root + "/dnet_key.dat";
+    public static final String DNET_KEY_FILE = Config.MAINNET?Config.root + "/dnet_key.dat":Config.root + "/dnet_key.dat";
     /** 钱包文件 */
-    public static final String WALLET_KEY_FILE = Config.MainNet?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
+    public static final String WALLET_KEY_FILE = Config.MAINNET?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
     
     public final int MAX_CHANNELS = 1024;
     private final int connectionTimeout = 10;
@@ -124,7 +124,7 @@ public class Config {
     }
 
     public String getWhiteListDir() {
-        if (MainNet) {
+        if (MAINNET) {
             return whiteListDir;
         } else {
             return whiteListDirTest;
@@ -156,7 +156,7 @@ public class Config {
                 Config.root = args[i];
                 break;
             case "-t":
-                Config.MainNet = false;
+                Config.MAINNET = false;
                 break;
             case "-p":
                 i++;
@@ -206,7 +206,7 @@ public class Config {
     /** 设置存储的路径 */
     public void setDir() {
         // 配置存储root
-        root = Config.MainNet ? "./mainnet" : "./testnet";
+        root = Config.MAINNET ? "./mainnet" : "./testnet";
         storeDir = root + "/rocksdb/xdagdb";
         storeBackupDir = root + "/rocksdb/xdagdb/backupdata";
         whiteListDirTest = root + "/netdb-white-testnet.txt";

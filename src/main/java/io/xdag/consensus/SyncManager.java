@@ -163,7 +163,7 @@ public class SyncManager {
                         log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
                         // 只有同步完成的时候 才能开始线程 再一次
                         if (!syncDone) {
-                            if (Config.MainNet) {
+                            if (Config.MAINNET) {
                                 kernel.getXdagState().setState(XdagState.CONN);
                             } else {
                                 kernel.getXdagState().setState(XdagState.CTST);
@@ -304,7 +304,7 @@ public class SyncManager {
         }
         syncDone = true;
 
-        if (Config.MainNet) {
+        if (Config.MAINNET) {
             kernel.getXdagState().setState(XdagState.SYNC);
         } else {
             kernel.getXdagState().setState(XdagState.STST);

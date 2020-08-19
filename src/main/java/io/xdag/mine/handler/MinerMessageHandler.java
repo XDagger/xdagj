@@ -23,7 +23,7 @@
  */
 package io.xdag.mine.handler;
 
-import static io.xdag.config.Config.MainNet;
+import static io.xdag.config.Config.MAINNET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.net.handler.XdagBlockHandler.getMsgcode;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
@@ -52,7 +52,6 @@ import lombok.extern.slf4j.Slf4j;
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     private MinerChannel channel;
-
     private MessageFactory messageFactory;
 
     /** 每一个字段的长度 */
@@ -68,21 +67,17 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, byte[] bytes, ByteBuf out) {
-
         int len = bytes.length;
         long sectorNo = channel.getOutBound().get();
-
         if (len == DATA_SIZE) {
             log.debug("发送一个字段的消息");
             BytesUtils.arrayReverse(bytes);
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 1, sectorNo));
             channel.getOutBound().add();
-
         } else if (len == 2 * DATA_SIZE) {
             log.debug("发送一个任务消息，消息内容为[{}]", Hex.encodeHexString(bytes));
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 2, sectorNo));
             channel.getOutBound().add(2);
-
         } else if (len == 16 * DATA_SIZE) {
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 16, sectorNo));
             channel.getOutBound().add(16);
@@ -94,11 +89,8 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         // 处理接收到的消息
-
         Message msg = null;
-
         long sectorNo = channel.getInBound().get();
-
         int len = in.readableBytes();
         // 接收到的是任务share
         if (len == DATA_SIZE) {
@@ -127,14 +119,11 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         } else if (len == 16 * DATA_SIZE) {
             byte[] encryptData = new byte[512];
             in.readBytes(encryptData);
-
             byte[] uncryptData = Native.dfslib_uncrypt_array(encryptData, 16, sectorNo);
             long transportHeader = BytesUtils.bytesToLong(uncryptData, 0, true);
-
             int ttl = (int) ((transportHeader >> 8) & 0xff);
             int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
             System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-
             // 验证长度和crc校验
             if (!crc32Verify(uncryptData, crc)) {
                 log.debug("receive not block");
@@ -142,7 +131,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
                 XdagBlock xdagBlock = new XdagBlock(uncryptData);
                 byte first_field_type = getMsgcode(xdagBlock, 0);
-                XdagField.FieldType netType = MainNet ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
+                XdagField.FieldType netType = MAINNET ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
                 if (netType.asByte() == first_field_type) {
                     msg = new NewBlockMessage(xdagBlock, ttl);
                 }

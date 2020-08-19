@@ -23,7 +23,7 @@
  */
 package io.xdag.net.manager;
 
-import static io.xdag.config.Config.MainNet;
+import static io.xdag.config.Config.MAINNET;
 import static io.xdag.config.Config.WHITELIST_URL;
 import static io.xdag.config.Config.WHITELIST_URL_TESTNET;
 
@@ -62,9 +62,9 @@ public class NetDBManager {
     private NetDB netDB;
 
     public NetDBManager(Config config) {
-        database = MainNet ? config.getNetDBDir() : config.getNetDBDirTest();
-        databaseWhite = MainNet ? config.getWhiteListDir() : config.getWhiteListDirTest();
-        whiteUrl = MainNet ? WHITELIST_URL : WHITELIST_URL_TESTNET;
+        database = MAINNET ? config.getNetDBDir() : config.getNetDBDirTest();
+        databaseWhite = MAINNET ? config.getWhiteListDir() : config.getWhiteListDirTest();
+        whiteUrl = MAINNET ? WHITELIST_URL : WHITELIST_URL_TESTNET;
         whiteDB = new NetDB();
         netDB = new NetDB();
     }
