@@ -23,12 +23,12 @@
  */
 package io.xdag.config;
 
-import static io.xdag.config.Config.MainNet;
+import static io.xdag.config.Config.MAINNET;
 
 public class Constants {
     public static final long XDAG_TEST_ERA = 0x16900000000L;
     public static final long XDAG_MAIN_ERA = 0x16940000000L;
-    public static final long XDAG_ERA = MainNet ? XDAG_MAIN_ERA : XDAG_TEST_ERA;
+    public static final long XDAG_ERA = MAINNET ? XDAG_MAIN_ERA : XDAG_TEST_ERA;
     public static final long XDAG_MAIN_CHAIN_PERIOD = (64 << 10);
     /** setmain设置区块为主块时标志该位 */
     public static final byte BI_MAIN = 0x01;

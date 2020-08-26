@@ -93,7 +93,6 @@ public class Miner {
         this.meanLogDiff = 0.0;
         this.registeredTime = Calendar.getInstance().getTime();
         boundedTaskCounter = 0;
-
         // 容器的初始化
         for (int i = 0; i < 16; i++) {
             maxDiffs.add(0.0);

@@ -69,7 +69,6 @@ public class XdagChannelManager {
 
     public Set<InetSocketAddress> getActiveAddresses() {
         Set<InetSocketAddress> set = new HashSet<>();
-
         for (XdagChannel c : activeChannels.values()) {
             Node p = c.getNode();
             set.add(new InetSocketAddress(p.getHost(), p.getPort()));
@@ -103,7 +102,6 @@ public class XdagChannelManager {
 
     // TODO:怎么发送 目前是发给除receive的节点
     public void sendNewBlock(BlockWrapper blockWrapper) {
-
         Node receive = null;
         // 说明是自己产生的
         if (blockWrapper.getRemoteNode() == null
@@ -136,7 +134,6 @@ public class XdagChannelManager {
     }
 
     public void onNewForeignBlock(BlockWrapper blockWrapper) {
-
         newForeignBlocks.add(blockWrapper);
     }
 
@@ -150,7 +147,6 @@ public class XdagChannelManager {
 
     public List<XdagChannel> getIdleChannels() {
         List<XdagChannel> list = new ArrayList<>();
-
         for (XdagChannel c : activeChannels.values()) {
             if (c.getMsgQueue().isIdle()) {
                 list.add(c);
@@ -173,7 +169,7 @@ public class XdagChannelManager {
     }
 
     public boolean isAcceptable(InetSocketAddress address) {
-        // todo:boolean res = netDBManager.canAccept(address);
+        //TODO res = netDBManager.canAccept(address);
         return true;
     }
 

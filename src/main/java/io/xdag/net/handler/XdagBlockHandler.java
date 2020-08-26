@@ -23,7 +23,7 @@
  */
 package io.xdag.net.handler;
 
-import static io.xdag.config.Config.MainNet;
+import static io.xdag.config.Config.MAINNET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
@@ -113,7 +113,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             byte first_field_type = getMsgcode(xdagBlock, 0);
             Message msg = null;
             // 普通区块
-            XdagField.FieldType netType = MainNet ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
+            XdagField.FieldType netType = MAINNET ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
             if (netType.asByte() == first_field_type) {
                 msg = new NewBlockMessage(xdagBlock, ttl);
             }

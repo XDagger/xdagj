@@ -90,7 +90,6 @@ public class AwardManagerImpl implements AwardManager {
         this.poolMiner = kernel.getPoolMiner();
         this.minerManager = kernel.getMinerManager();
         init();
-
         setPoolConfig();
     }
 
@@ -207,15 +206,12 @@ public class AwardManagerImpl implements AwardManager {
         log.debug("this is payMiners........");
         // 获取到的是当前任务的对应的+1的位置 以此延迟16轮
         int index = (int) (((time >> 16) + 1) & 0xf);
-
         int keyPos = -1;
-
         int minerCounts = 0;
         PayData payData = new PayData();
 
         // 每一个区块最多可以放多少交易 这个要由密钥的位置来决定
         int payminersPerBlock = 0;
-
         miners = new ArrayList<>();
         // 统计矿工的数量
         for (Miner miner : minerManager.getActivateMiners().values()) {
@@ -241,7 +237,6 @@ public class AwardManagerImpl implements AwardManager {
         // 获取到这个区块 查询时要把前面的置0
         byte[] hashlow = BytesUtils.fixBytes(hash, 8, 24);
         Block block = blockchain.getBlockByHash(hashlow, false);
-
         keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
 
         if (keyPos < 0) {
@@ -301,7 +296,6 @@ public class AwardManagerImpl implements AwardManager {
 
         // 通过precalculatePay后计算出的数据 进行计算
         doPayments(hashlow, payminersPerBlock, payData, keyPos, time);
-
         return 0;
     }
 
@@ -315,9 +309,7 @@ public class AwardManagerImpl implements AwardManager {
             if (payData.rewardMiner == null
                     && (FastByteComparisons.compareTo(nonce, 8, 24, miner.getAddressHash(), 8, 24) == 0)) {
                 payData.rewardMiner = new byte[32];
-
                 payData.rewardMiner = miner.getAddressHash();
-
                 // 有可以出块的矿工 分配矿工的奖励
                 payData.minerReward = BigDecimalUtils.mul(payData.balance, minerRewardRation);
                 payData.unusedBalance -= payData.minerReward;
@@ -329,7 +321,6 @@ public class AwardManagerImpl implements AwardManager {
             if (miner.getMaxDiffs(index) > 0) {
                 miner.setMaxDiffs(index, 0.0);
             }
-
             miner.setPrevDiffCounts(0);
             miner.setPrevDiff(0.0);
         }
@@ -339,7 +330,6 @@ public class AwardManagerImpl implements AwardManager {
             payData.minerReward = BigDecimalUtils.mul(payData.balance, directRation);
             payData.unusedBalance -= payData.directIncome;
         }
-
         return payData.prevDiffSums;
     }
 

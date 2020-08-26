@@ -120,7 +120,7 @@ public class Kernel {
         // ====================================
         System.out.println(
                 "Xdag Server system booting up: network = "
-                        + (Config.MainNet ? "MainNet" : "TestNet")
+                        + (Config.MAINNET ? "MainNet" : "TestNet")
                         + ", version "
                         + XdagVersion.V03 + "(base Xdagger V0.3.1)"
                         + ", user host = ["
@@ -232,7 +232,7 @@ public class Kernel {
         pow = new XdagPow(this);
         minerManager.setPoW(pow);
         minerManager.start();
-        if (Config.MainNet) {
+        if (Config.MAINNET) {
             xdagState.setState(XdagState.WAIT);
         } else {
             xdagState.setState(XdagState.WTST);

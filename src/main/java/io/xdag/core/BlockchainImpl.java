@@ -833,7 +833,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     private long getStartAmount(long time, long num) {
-        long forkHeight = Config.MainNet ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
+        long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
         long startAmount = 0;
         if (num >= forkHeight) {
             startAmount = MAIN_APOLLO_AMOUNT;
