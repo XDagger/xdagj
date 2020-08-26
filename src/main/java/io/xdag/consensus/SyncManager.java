@@ -236,16 +236,12 @@ public class SyncManager {
 
     public boolean validateAndAddNewBlock(BlockWrapper blockWrapper) {
         if (blockchain.hasBlock(blockWrapper.getBlock().getHashLow())) {
-            // log.debug("Block have exist");
+             log.debug("Block have exist");
             return true;
         }
-        log.debug(
-                "Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+        log.debug("Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
 
-        synchronized (this) {
-            pushBlocks(Collections.singletonList(blockWrapper));
-        }
-
+        pushBlocks(Collections.singletonList(blockWrapper));
         log.debug("Blocks waiting to be proceed:  queue.size: [{}] ", blockQueue.size());
         return true;
     }

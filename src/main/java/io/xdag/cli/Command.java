@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -246,37 +247,23 @@ public class Command {
 
     /** Current Blockchain Status */
     public String stats() {
-        String stringBuilder = "blocks(save):"
-                + kernel.getBlockchain().getBlockSize()
-                + "\n"
-                + "main blocks(save):"
-                + kernel.getBlockchain().getMainBlockSize()
-                + "\n"
-                + "blocks:"
-                + kernel.getNetStatus().getNblocks()
-                + " of "
-                + kernel.getNetStatus().getTotalnblocks()
-                + "\n"
-                + "main blocks:"
-                + kernel.getNetStatus().getNmain()
-                + " of "
-                + kernel.getNetStatus().getTotalnmain()
-                + "\n"
-                + "extra blocks:"
-                + kernel.getBlockchain().getExtraSize()
-                + "\n"
-                + "orphan blocks:"
-                + kernel.getBlockchain().getOrphanSize()
-                + "\n"
-                + "chain difficulity:"
-                + kernel.getBlockchain().getTopDiff().toString(16)
-                + " of "
-                + kernel.getNetStatus().getMaxdifficulty().toString(16)
-                + "\n"
-                + "XDAG supply:"
-                + kernel.getBlockchain().getMainBlockSize() * 1024
-                + "\n";
-        return stringBuilder;
+        return  String.format(
+                "Statistics for ours and maximum known parameters:\n" +
+                "            hosts: %d of %d\n" +
+                "           blocks: %d of %d\n" +
+                "      main blocks: %d of %d\n" +
+                "     extra blocks: %d      \n" +
+                "    orphan blocks: %d      \n" +
+                " chain difficulty: %s of %s\n" +
+                "      XDAG supply: %d of %d" ,
+                kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
+                kernel.getNetStatus().getNblocks(), kernel.getNetStatus().getTotalnblocks(),
+                kernel.getNetStatus().getNmain(), kernel.getNetStatus().getTotalnmain(),
+                kernel.getBlockchain().getExtraSize(),
+                kernel.getBlockchain().getOrphanSize(),
+                kernel.getBlockchain().getTopDiff().toString(16), kernel.getNetStatus().getMaxdifficulty().toString(16),
+                kernel.getBlockchain().getMainBlockSize() * 1024, kernel.getBlockchain().getMainBlockSize() * 1024
+        );
     }
 
     /**
@@ -327,7 +314,7 @@ public class Command {
         }
         StringBuilder ans = new StringBuilder();
         for (Block blockInfo : res) {
-            Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
+            Date date = new Date(XdagTime.xdagTimestampToMs(blockInfo.getTimestamp()));
             ans.append(Hex.toHexString(blockInfo.getHash()))
                     .append("  ")
                     .append(BasicUtils.hash2Address(blockInfo.getHash()))
@@ -355,7 +342,7 @@ public class Command {
         }
         StringBuilder ans = new StringBuilder();
         for (Block blockInfo : res) {
-            Date date = new Date(XdagTime.xdagtimestampToMs(blockInfo.getTimestamp()));
+            Date date = new Date(XdagTime.xdagTimestampToMs(blockInfo.getTimestamp()));
             ans.append(Hex.toHexString(blockInfo.getHash()))
                     .append("  ")
                     .append(FormatDateUtils.format(date))
@@ -368,11 +355,9 @@ public class Command {
 
     public String printBlockInfo(Block blockInfo) {
         blockInfo.parse();
-        long time = XdagTime.xdagtimestampToMs(blockInfo.getTimestamp());
-        Date date = new Date(time);
-
+        long time = XdagTime.xdagTimestampToMs(blockInfo.getTimestamp());
         return "time: "
-                + FormatDateUtils.format(date)
+                + FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss.SSS").format(time)
                 + "\n"
                 + "timestamp: "
                 + Long.toHexString(blockInfo.getTimestamp())
