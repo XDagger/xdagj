@@ -65,15 +65,18 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.FormatDateUtils;
 import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class Command {
+public class XdagCommands {
     
     DecimalFormat df = new DecimalFormat("######0.00");
+
+    @Getter
     private Kernel kernel;
 
-    public Command(Kernel kernel) {
+    public XdagCommands(Kernel kernel) {
         this.kernel = kernel;
     }
 
@@ -130,60 +133,21 @@ public class Command {
      *            for search balance
      * @return balance of give address
      */
-    public String balance(byte[] address) {
-        if (address != null) {
+    public String balance(String address) {
+        if(org.apache.commons.lang3.StringUtils.isEmpty(address)) {
+            return df.format(amount2xdag(kernel.getAccountStore().getGBalance())) + " XDAG";
+        } else {
+            byte[] hash = null;
+            if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
+                hash = address2Hash(address);
+            } else {
+                hash = StringUtils.getHash(address);
+            }
             byte[] key = new byte[32];
-            System.arraycopy(address, 8, key, 8, 24);
+            System.arraycopy(hash, 8, key, 8, 24);
             Block block = kernel.getBlockStore().getBlockInfoByHash(key);
             double xdag = amount2xdag(block.getAmount());
-            return df.format(xdag);
-        } else {
-            return df.format(amount2xdag(kernel.getAccountStore().getGBalance())) + "xdag";
-        }
-    }
-
-    /**
-     * Process xfer command
-     *
-     * @param command
-     *            amount + address
-     * @return Transaction hash
-     */
-    public String xfer(String command) {
-
-        String[] args = command.split("\\s+");
-        try {
-            byte[] hash;
-            double amount = StringUtils.getDouble(args[0]);
-
-            if (amount < 0) {
-                return "The transfer amount must be greater than 0";
-            }
-
-            if (args[1].length() == 32) {
-                hash = address2Hash(args[1]);
-            } else {
-                hash = StringUtils.getHash(args[1]);
-            }
-            if (hash == null) {
-                return "No param";
-            }
-            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
-                return " incorrect address";
-            }
-            // 数据检验都合法 请求用户输入密码
-            System.out.println("please input your password");
-            Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8.name());
-            String pwd = scanner.nextLine();
-            int err = Native.verify_dnet_key(pwd, kernel.getConfig().getDnetKeyBytes());
-            if (err < 0) {
-                //scanner.close();
-                return "The password is incorrect";
-            }
-            //scanner.close();
-            return xfer(amount, hash);
-        } catch (Exception e) {
-            return ("Argument is incorrect.");
+            return df.format(xdag) + " XDAG";
         }
     }
 
@@ -237,8 +201,8 @@ public class Command {
                 BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()),
                 BasicUtils.hash2Address(to));
 
-        System.out.println(
-                "Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
+//        System.out.println(
+//                "Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
 
         return "Transaction :"
                 + BasicUtils.hash2Address(block.getHashLow())
@@ -398,7 +362,7 @@ public class Command {
         return "Pending";
     }
 
-    public void start() {
+    public void run() {
         try {
             kernel.testStart();
         } catch (Exception e) {
@@ -447,21 +411,23 @@ public class Command {
         kernel.getXdagState().rollback();
     }
 
-    public void printfMiners() {
+    public String miners() {
         Miner poolMiner = kernel.getPoolMiner();
-        System.out.println("fee : " + BasicUtils.hash2Address(poolMiner.getAddressHash()));
+        StringBuilder sbd = new StringBuilder();
+        sbd.append("fee : " + BasicUtils.hash2Address(poolMiner.getAddressHash())).append("\n");
         if (kernel.getMinerManager().getActivateMiners().size() == 0) {
-            System.out.println(" without activate miners");
+            sbd.append(" without activate miners").append("\n");
         } else {
             for (Miner miner : kernel.getMinerManager().getActivateMiners().values()) {
                 if (miner.getMinerStates() == MinerStates.MINER_ACTIVE) {
-                    MinerCalculate.printfMinerStats(miner);
+                    sbd.append(MinerCalculate.minerStats(miner));
                 }
             }
         }
+        return sbd.toString();
     }
 
-    public String getState() {
+    public String state() {
         return kernel.getXdagState().toString();
     }
 
