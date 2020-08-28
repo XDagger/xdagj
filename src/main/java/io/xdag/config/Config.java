@@ -24,7 +24,6 @@
 package io.xdag.config;
 
 import cn.hutool.setting.Setting;
-import io.xdag.cli.ShellCommand;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
@@ -51,6 +50,9 @@ public class Config {
     private final int maxShareCountPerChannel = 20;
     private final int storeMaxOpenFiles = 1024;
     private final int storeMaxThreads = 1;
+    /** telnet监听地址 */
+    private String telnetIp;
+    private int telnetPort;
 
     /** 配置节点监听地址 */
     private String nodeIp;
@@ -143,10 +145,6 @@ public class Config {
                 break;
             case "-c":
                 break;
-            case "-h":
-                ShellCommand.printHelp();
-                System.exit(0);
-                break;
             case "-m":
                 i++;
                 // todo 设置挖矿的线程数
@@ -189,7 +187,6 @@ public class Config {
     public void changePoolPara(Config config, String para) {
         String[] args = para.split(":");
         if (args.length != 9) {
-            ShellCommand.printHelp();
             throw new IllegalArgumentException("Illegal instruction");
         }
         config.setPoolIp(args[0]);
@@ -219,6 +216,9 @@ public class Config {
         // 获取对应的配置文件以及默认组
         Setting setting = new Setting("conf.setting");
         setting = setting.getSetting("default");
+
+        telnetIp = setting.getStr("telnetIp");
+        telnetPort = setting.getInt("telnetPort");
 
         nodeIp = setting.getStr("nodeIp");
         nodePort = setting.getInt("nodePort");

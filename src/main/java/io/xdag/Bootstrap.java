@@ -23,13 +23,7 @@
  */
 package io.xdag;
 
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-
-import io.xdag.cli.Command;
-import io.xdag.cli.ShellCommand;
+import io.xdag.cli.XdagTelnetServer;
 import io.xdag.config.Config;
 import io.xdag.wallet.WalletImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -60,10 +54,10 @@ public class Bootstrap {
         config.setDir();
         logPoolInfo(config);
 
-        // 初始密钥
+        // init keys
         config.initKeys();
 
-        // 启动前先要判断dnet_keys.dat 与 wallet.dat是否生成
+        // if dnet_keys.dat and wallet.dat exist
         WalletImpl wallet = new WalletImpl();
         for (int i = 1; i <= 5; i++) {
             try {
@@ -79,17 +73,10 @@ public class Bootstrap {
                 System.exit(0);
             }
         }
-
-        Terminal terminal = TerminalBuilder.builder().dumb(true).system(true).build();
-        LineReader lineReader = LineReaderBuilder.builder().terminal(terminal).build();
         Kernel kernel = new Kernel(config, wallet);
-        ShellCommand shellCommand = new ShellCommand(new Command(kernel));
-        String prompt = "xdag> ";
-        while (!shellCommand.getStopFlag()) {
-            String line = lineReader.readLine(prompt);
-            shellCommand.handle(line);
 
-        }
-        System.out.println("\nBye.");
+        // start telnet server
+        XdagTelnetServer telnetServer = new XdagTelnetServer(config.getTelnetIp(), config.getTelnetPort(), kernel);
+        telnetServer.start();
     }
 }

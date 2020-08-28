@@ -307,8 +307,7 @@ public class SyncManager {
         }
 
         log.info("sync finish! tha last mainblocsk number = {}", kernel.getNetStatus().getNmain());
-        System.out.println("sync finish! tha last mainblocsk number = {" + kernel.getNetStatus().getNmain() + "}");
-        System.out.println("Start PoW");
+        log.info("Start PoW");
 
         kernel.getMinerServer().start();
         kernel.getPow().onStart();
@@ -316,7 +315,6 @@ public class SyncManager {
 
     public void stop() {
         log.debug("sync manager stop");
-        System.out.println("sync manager stop");
         // if(isRunning.compareAndSet(true,false)){
         if (exec1 != null) {
             try {

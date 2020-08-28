@@ -1,18 +1,22 @@
 [default]
-#矿池地址及端口
+# telnet server config
+telnetIp = 127.0.0.1
+telnetPort = 7001
+
+# pool config
 nodeIp = 127.0.0.1
 nodePort = 8001
 poolIp = 127.0.0.1
 poolPort = 9001
 
-#对矿工的限制
-globalMinerLimit = 8192
-globalMinerChannelLimit = 8192
-maxConnectPerIp = 256
-maxMinerPerAccount = 256
-
-#矿池奖励分配比例
+# pool reward config
 poolRation = 5
 rewardRation = 5
 fundRation = 5
 directRation = 5
+
+# miner limit
+globalMinerLimit = 8192
+globalMinerChannelLimit = 8192
+maxConnectPerIp = 256
+maxMinerPerAccount = 256
