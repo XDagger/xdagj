@@ -213,8 +213,7 @@ public class Config {
     }
 
     public void getSetting() {
-        // 获取对应的配置文件以及默认组
-        Setting setting = new Setting("conf.setting");
+        Setting setting = new Setting("xdag.config");
         setting = setting.getSetting("default");
 
         telnetIp = setting.getStr("telnetIp");
@@ -222,16 +221,15 @@ public class Config {
 
         nodeIp = setting.getStr("nodeIp");
         nodePort = setting.getInt("nodePort");
+
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
 
-        // 获取矿池奖励的分配比例
         poolRation = setting.getInt("poolRation");
         rewardRation = setting.getInt("rewardRation");
         fundRation = setting.getInt("fundRation");
         directRation = setting.getInt("directRation");
 
-        // 矿池的限制
         globalMinerLimit = setting.getInt("globalMinerLimit");
         globalMinerChannelLimit = setting.getInt("globalMinerChannelLimit");
         maxConnectPerIp = setting.getInt("maxConnectPerIp");

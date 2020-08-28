@@ -116,27 +116,6 @@ public class Kernel {
         }
 
         // ====================================
-        // print system info
-        // ====================================
-        System.out.println(
-                "Xdag Server system booting up: network = "
-                        + (Config.MAINNET ? "MainNet" : "TestNet")
-                        + ", version "
-                        + XdagVersion.V03 + "(base Xdagger V0.3.1)"
-                        + ", user host = ["
-                        + config.getNodeIp()
-                        + ":"
-                        + config.getNodePort()
-                        + "]");
-
-        // try {
-        // //初始密钥
-        // config.initKeys();
-        // } catch (Exception e) {
-        // e.printStackTrace();
-        // }
-
-        // ====================================
         // start channel manager
         // ====================================
         channelMgr = new XdagChannelManager(this);
@@ -286,8 +265,6 @@ public class Kernel {
 
     /**
      * Returns the kernel state.
-     *
-     * @return
      */
     public State state() {
         return state;
@@ -295,8 +272,6 @@ public class Kernel {
 
     /**
      * Returns the wallet.
-     *
-     * @return
      */
     public Wallet getWallet() {
         return wallet;
@@ -308,8 +283,6 @@ public class Kernel {
 
     /**
      * Returns the blockchain.
-     *
-     * @return
      */
     public Blockchain getBlockchain() {
         return chain;
@@ -321,8 +294,6 @@ public class Kernel {
 
     /**
      * Returns the client.
-     *
-     * @return
      */
     public XdagClient getClient() {
         return client;
@@ -330,8 +301,6 @@ public class Kernel {
 
     /**
      * Returns the channel manager.
-     *
-     * @return
      */
     public XdagChannelManager getChannelManager() {
         return channelMgr;
@@ -339,8 +308,6 @@ public class Kernel {
 
     /**
      * Returns the config.
-     *
-     * @return
      */
     public Config getConfig() {
         return config;
@@ -348,8 +315,6 @@ public class Kernel {
 
     /**
      * Returns the p2p server instance.
-     *
-     * @return a {@link XdagServer} instance or null
      */
     public XdagServer getP2p() {
         return p2p;
@@ -357,8 +322,6 @@ public class Kernel {
 
     /**
      * Returns the database factory.
-     *
-     * @return
      */
     public DatabaseFactory getDbFactory() {
         return dbFactory;
@@ -366,8 +329,6 @@ public class Kernel {
 
     /**
      * Returns blockStore
-     *
-     * @return
      */
     public BlockStore getBlockStore() {
         return blockStore;
@@ -379,8 +340,6 @@ public class Kernel {
 
     /**
      * Returns accountStore
-     *
-     * @return
      */
     public AccountStore getAccountStore() {
         return accountStore;
@@ -392,8 +351,6 @@ public class Kernel {
 
     /**
      * Returns OrphanPool
-     *
-     * @return
      */
     public OrphanPool getOrphanPool() {
         return orphanPool;
@@ -405,8 +362,6 @@ public class Kernel {
 
     /**
      * Returns NetStatus
-     *
-     * @return
      */
     public NetStatus getNetStatus() {
         return netStatus;
@@ -418,8 +373,6 @@ public class Kernel {
 
     /**
      * Returns SyncManager
-     *
-     * @return
      */
     public SyncManager getSyncMgr() {
         return syncMgr;
@@ -431,8 +384,6 @@ public class Kernel {
 
     /**
      * Returns NodeManager
-     *
-     * @return
      */
     public NodeManager getNodeMgr() {
         return nodeMgr;
@@ -444,8 +395,6 @@ public class Kernel {
 
     /**
      * Returns PoW
-     *
-     * @return
      */
     public XdagPow getPow() {
         return pow;
@@ -457,8 +406,6 @@ public class Kernel {
 
     /**
      * Returns NetDB
-     *
-     * @return
      */
     public NetDB getNetDB() {
         return netDB;
@@ -470,8 +417,6 @@ public class Kernel {
 
     /**
      * Returns State
-     *
-     * @return
      */
     public State getState() {
         return state;

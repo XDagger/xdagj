@@ -23,7 +23,7 @@
  */
 package io.xdag;
 
-import io.xdag.cli.XdagTelnetServer;
+import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
 import io.xdag.wallet.WalletImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +76,7 @@ public class Bootstrap {
         Kernel kernel = new Kernel(config, wallet);
 
         // start telnet server
-        XdagTelnetServer telnetServer = new XdagTelnetServer(config.getTelnetIp(), config.getTelnetPort(), kernel);
+        TelnetServer telnetServer = new TelnetServer(config.getTelnetIp(), config.getTelnetPort(), kernel);
         telnetServer.start();
     }
 }

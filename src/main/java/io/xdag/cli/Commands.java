@@ -69,14 +69,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class XdagCommands {
+public class Commands {
     
     DecimalFormat df = new DecimalFormat("######0.00");
 
     @Getter
     private Kernel kernel;
 
-    public XdagCommands(Kernel kernel) {
+    public Commands(Kernel kernel) {
         this.kernel = kernel;
     }
 
@@ -91,7 +91,6 @@ public class XdagCommands {
         List<byte[]> res = kernel.getBlockchain().getAllAccount();
         // account in memory,do not store in rocksdb
         Map<ByteArrayWrapper, Integer> memAccount = kernel.getBlockchain().getMemAccount();
-        System.out.println("Account size:" + (res.size() + memAccount.size()));
 
         StringBuilder str = new StringBuilder();
 
@@ -137,7 +136,7 @@ public class XdagCommands {
         if(org.apache.commons.lang3.StringUtils.isEmpty(address)) {
             return df.format(amount2xdag(kernel.getAccountStore().getGBalance())) + " XDAG";
         } else {
-            byte[] hash = null;
+            byte[] hash;
             if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
                 hash = address2Hash(address);
             } else {
@@ -414,7 +413,9 @@ public class XdagCommands {
     public String miners() {
         Miner poolMiner = kernel.getPoolMiner();
         StringBuilder sbd = new StringBuilder();
-        sbd.append("fee : " + BasicUtils.hash2Address(poolMiner.getAddressHash())).append("\n");
+        sbd.append("fee : ")
+                .append(BasicUtils.hash2Address(poolMiner.getAddressHash()))
+                .append("\n");
         if (kernel.getMinerManager().getActivateMiners().size() == 0) {
             sbd.append(" without activate miners").append("\n");
         } else {
