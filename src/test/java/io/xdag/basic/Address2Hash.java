@@ -26,7 +26,8 @@ package io.xdag.basic;
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
 
-import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.hash2Address;
 
 public class Address2Hash {
 

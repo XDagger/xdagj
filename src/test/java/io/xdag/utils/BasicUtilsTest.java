@@ -23,10 +23,10 @@
  */
 package io.xdag.utils;
 
-import java.math.BigDecimal;
-
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
+
+import java.math.BigDecimal;
 
 public class BasicUtilsTest {
 

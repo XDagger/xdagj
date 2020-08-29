@@ -23,26 +23,6 @@
  */
 package io.xdag.core;
 
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.xdag2amount;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
@@ -58,6 +38,25 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
+import org.junit.Before;
+import org.junit.Test;
+import org.spongycastle.util.encoders.Hex;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.xdag2amount;
 
 public class BlockchainTest {
     Config config = new Config();
@@ -68,8 +67,8 @@ public class BlockchainTest {
     //
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir("/Users/punk/testRocksdb/XdagDB");
-        config.setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
+        config.setStoreDir("./unitest/chainstate");
+        config.setStoreBackupDir("./unitest/chainstate");
 
         Native.init();
         if (Native.dnet_crypt_init() < 0) {

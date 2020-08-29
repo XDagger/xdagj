@@ -48,8 +48,8 @@ public class ErrorTest {
                 + "0000000000000000000000000000000000000000000000000000000000000000"
                 + "f52f741028c02234c4e67299a45a04f9f49633263f55b59797c47f39e0ffb5a0";
 
-        Block block1 = new Block(new XdagBlock(Hex.decode(block)));
-        System.out.println(Hex.toHexString(block1.getHash()));
+        Block b = new Block(new XdagBlock(Hex.decode(block)));
+        System.out.println(Hex.toHexString(b.getHash()));
         // 0000000cfa69cb843f542fd77321ecd411833c70cdca517c81723b2c3a4e7ee5
     }
 }

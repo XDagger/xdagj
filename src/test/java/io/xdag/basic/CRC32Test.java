@@ -23,10 +23,8 @@
  */
 package io.xdag.basic;
 
-import io.xdag.crypto.Sha256Hash;
 import io.xdag.utils.BytesUtils;
 import org.junit.Test;
-import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
 import static io.xdag.utils.BasicUtils.crc32Verify;
@@ -63,13 +61,7 @@ public class CRC32Test {
 
         byte[] uncryptData = Hex.decode(reque);
         int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-        // System.out.println(Integer.toHexString(crc));
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-        // System.out.println(Hex.toHexString(uncryptData));
-
-        // System.out.println(crc32Verify(uncryptData,crc));
         assert (crc32Verify(uncryptData, crc));
-
-        System.out.println(Hex.toHexString(Arrays.reverse(Sha256Hash.hashTwice(Hex.decode(reque)))));
     }
 }

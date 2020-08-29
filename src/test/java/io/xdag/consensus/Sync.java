@@ -23,11 +23,6 @@
  */
 package io.xdag.consensus;
 
-import java.util.Random;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.BlockchainImpl;
@@ -41,19 +36,22 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.net.message.NetStatus;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Random;
 
 public class Sync {
 
-    Config config = new Config();
-    Wallet xdagWallet;
-    Kernel kernel;
-    DatabaseFactory dbFactory;
+    private Config config = new Config();
+    private Wallet xdagWallet;
+    private Kernel kernel;
+    private DatabaseFactory dbFactory;
 
-    //
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir("/Users/punk/testRocksdb/XdagDB");
-        config.setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
+        config.setStoreDir("./unitest/chainstate");
+        config.setStoreBackupDir("./unitest/chainstate/backupdata");
 
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);

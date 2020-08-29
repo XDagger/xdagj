@@ -23,18 +23,17 @@
  */
 package io.xdag.db;
 
-import java.util.List;
-import java.util.Set;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.config.Config;
 import io.xdag.crypto.Sha256Hash;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.utils.BytesUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.spongycastle.util.encoders.Hex;
+
+import java.util.List;
+import java.util.Set;
 
 public class RocksdbTest {
     Config config = new Config();

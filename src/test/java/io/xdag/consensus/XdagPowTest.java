@@ -23,19 +23,18 @@
  */
 package io.xdag.consensus;
 
-import static io.xdag.utils.FastByteComparisons.compareTo;
-
-import java.io.IOException;
-
-import org.junit.Before;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.utils.XdagSha256Digest;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
+import org.spongycastle.util.Arrays;
+import org.spongycastle.util.encoders.Hex;
+
+import java.io.IOException;
+
+import static io.xdag.utils.FastByteComparisons.compareTo;
 
 @Slf4j
 public class XdagPowTest {

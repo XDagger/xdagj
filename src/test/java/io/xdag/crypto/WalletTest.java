@@ -23,9 +23,8 @@
  */
 package io.xdag.crypto;
 
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.crypto.jni.Native;
+import org.spongycastle.util.encoders.Hex;
 
 public class WalletTest {
     public static void main(String[] args) throws Exception {
