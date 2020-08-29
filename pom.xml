@@ -357,12 +357,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.jline</groupId>
-			<artifactId>jline-groovy</artifactId>
-			<version>3.16.0</version>
-		</dependency>
-
-		<dependency>
 			<groupId>cn.hutool</groupId>
 			<artifactId>hutool-all</artifactId>
 			<version>5.3.8</version>
