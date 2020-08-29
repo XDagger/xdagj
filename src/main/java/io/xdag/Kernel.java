@@ -26,6 +26,7 @@ package io.xdag;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.eventbus.EventBus;
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -40,9 +41,8 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.event.EventProcesser;
 import io.xdag.event.KernelBootingEvent;
-import io.xdag.event.PubSub;
-import io.xdag.event.PubSubFactory;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
@@ -53,7 +53,6 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
-import io.xdag.net.XdagVersion;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
@@ -65,7 +64,6 @@ import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
 
 public class Kernel {
-    private static final PubSub pubSub = PubSubFactory.getDefault();
     protected State state = State.STOPPED;
     protected Status status = Status.STOPPED;
     protected Config config;
@@ -108,11 +106,12 @@ public class Kernel {
 
     /** Start the kernel. */
     public synchronized void testStart() throws Exception {
+        EventProcesser.getEventBus().register(this);
         if (state != State.STOPPED) {
             return;
         } else {
             state = State.BOOTING;
-            pubSub.publish(new KernelBootingEvent());
+            EventProcesser.getEventBus().post(new KernelBootingEvent());
         }
 
         // ====================================

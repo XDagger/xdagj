@@ -30,7 +30,6 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 
-import io.xdag.event.PubSubFactory;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
