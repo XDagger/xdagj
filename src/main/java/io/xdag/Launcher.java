@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.xdag.event.EventProcesser;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 
@@ -72,9 +73,4 @@ public class Launcher {
         LogManager.shutdown();
     }
 
-    /** Set up pubsub service. */
-    protected void setupPubSub() {
-        PubSubFactory.getDefault().start();
-        registerShutdownHook("pubsub-default", () -> PubSubFactory.getDefault().stop());
-    }
 }
