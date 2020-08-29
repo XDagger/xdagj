@@ -1,6 +1,5 @@
 package io.xdag.cli;
 
-import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.crypto.jni.Native;
@@ -8,7 +7,6 @@ import io.xdag.net.XdagVersion;
 import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
@@ -17,7 +15,6 @@ import org.jline.console.CommandInput;
 import org.jline.console.CommandMethods;
 import org.jline.console.CommandRegistry;
 import org.jline.console.SystemRegistry;
-import org.jline.console.impl.Builtins;
 import org.jline.console.impl.JlineCommandRegistry;
 import org.jline.console.impl.SystemRegistryImpl;
 import org.jline.reader.LineReader;
@@ -30,7 +27,10 @@ import org.spongycastle.util.encoders.Hex;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

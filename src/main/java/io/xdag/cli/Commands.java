@@ -23,50 +23,33 @@
  */
 package io.xdag.cli;
 
-import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.BI_MAIN;
-import static io.xdag.config.Constants.BI_MAIN_CHAIN;
-import static io.xdag.config.Constants.BI_MAIN_REF;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.config.Constants.BI_REMARK;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static io.xdag.utils.BasicUtils.xdag2amount;
-
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.XdagState;
 import io.xdag.crypto.ECKey;
-import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.FormatDateUtils;
-import io.xdag.utils.StringUtils;
-import io.xdag.utils.XdagTime;
+import io.xdag.utils.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.spongycastle.util.encoders.Hex;
+
+import java.net.InetSocketAddress;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static io.xdag.config.Constants.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.utils.BasicUtils.*;
 
 @Slf4j
 public class Commands {
