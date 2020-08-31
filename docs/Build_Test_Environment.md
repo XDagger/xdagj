@@ -27,7 +27,7 @@
 
 **2、Set up test environment for Java**
 
-​	Modify the NodeIP and port attribute in the `resource/conf.setting` to the ip set in netdb-testnet.txt and netdb-white-testnet.txt.
+​	Modify the NodeIP and port attribute in the `resource/conf.setting` , make sure your ip address is included in the `netdb-testnet.txt` and `netdb-white-testnet.txt` of the C version Pool.
 
 ​	①Start  in IDEA
 
