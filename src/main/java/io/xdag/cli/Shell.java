@@ -7,6 +7,8 @@ import io.xdag.net.XdagVersion;
 import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
@@ -15,6 +17,7 @@ import org.jline.console.CommandInput;
 import org.jline.console.CommandMethods;
 import org.jline.console.CommandRegistry;
 import org.jline.console.SystemRegistry;
+import org.jline.console.impl.Builtins;
 import org.jline.console.impl.JlineCommandRegistry;
 import org.jline.console.impl.SystemRegistryImpl;
 import org.jline.reader.LineReader;
@@ -27,10 +30,13 @@ import org.spongycastle.util.encoders.Hex;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -521,15 +527,14 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
     }
 
     private boolean readPassword(Terminal terminal) {
-        terminal.writer().println("Please input your password:");
-        terminal.writer().flush();
-        Scanner scanner = new Scanner(terminal.input(), StandardCharsets.UTF_8.name());
-        String pwd = scanner.nextLine();
-        int err = Native.verify_dnet_key(pwd, kernel.getConfig().getDnetKeyBytes());
+        Character mask =(char) '*';
+        String line;
+        do {
+            line = reader.readLine("Enter password> ", mask);;
+        } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
+        int err = Native.verify_dnet_key(line, kernel.getConfig().getDnetKeyBytes());
         if (err < 0) {
-            terminal.writer().println("The password is incorrect");
-            terminal.writer().flush();
-            scanner.close();
+            println("The password is incorrect");
             return false;
         }
         return true;
@@ -537,15 +542,13 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
     @Override
     public void shell(Terminal terminal, Map<String, String> environment) {
-        if(!readPassword(terminal)) {
-            return;
-        }
         if(commands == null) {
             commands = new Commands(kernel);
         }
         Parser parser = new DefaultParser();
-        SystemRegistry systemRegistry = new SystemRegistryImpl(parser, terminal, null, null);
+        SystemRegistryImpl systemRegistry = new SystemRegistryImpl(parser, terminal, null, null);
         systemRegistry.setCommandRegistries(this);
+        systemRegistry.setGroupCommandsInHelp(false);
 
         LineReader reader = LineReaderBuilder.builder()
                 .terminal(terminal)
@@ -556,14 +559,21 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
         this.setReader(reader);
 
-        while (true) {
+        if(!readPassword(terminal)) {
+            return;
+        }
+
+        do {
             try {
                 systemRegistry.cleanUp();
                 String line = reader.readLine(prompt);
+                if(org.apache.commons.lang3.StringUtils.startsWith(line,"exit")) {
+                    break;
+                }
                 systemRegistry.execute(line);
             } catch (Exception e) {
                 systemRegistry.trace(e);
             }
-        }
+        } while (true);
     }
 }
