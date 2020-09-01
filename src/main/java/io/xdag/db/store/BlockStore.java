@@ -133,7 +133,7 @@ public class BlockStore {
     // 存储block的过程
     public synchronized void saveBlock(Block block) {
         log.debug("Save Block:" + block);
-        blockQueue.offer(block);
+        blockQueue.add(block);
         long timeIndex = block.getTimestamp();
         timeSource.put(getTimeKey(timeIndex, block.getHashLow()), block.getHashLow());
         blockSource.put(block.getHashLow(), block.getXdagBlock().getData());
