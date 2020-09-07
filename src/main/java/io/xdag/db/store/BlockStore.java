@@ -126,7 +126,7 @@ public class BlockStore {
                 simpleFileStore.saveBlockSums(block);
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 
