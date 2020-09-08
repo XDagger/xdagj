@@ -40,8 +40,14 @@ import java.util.Map;
  */
 public enum XdagMessageCodes {
     // add new block type here
-    NEW_BLOCK(-1), BLOCKS_REQUEST(0x00), BLOCKS_REPLY(0x01), SUMS_REQUEST(0x02), SUMS_REPLY(0x03), BLOCKEXT_REQUEST(
-            0x04), BLOCKEXT_REPLY(0x05), BLOCK_REQUEST(0x06),
+    NEW_BLOCK(-1),
+    BLOCKS_REQUEST(0x00),
+    BLOCKS_REPLY(0x01),
+    SUMS_REQUEST(0x02),
+    SUMS_REPLY(0x03),
+    BLOCKEXT_REQUEST(0x04),
+    BLOCKEXT_REPLY(0x05),
+    BLOCK_REQUEST(0x06),
 
     // add new block type here
     Receive_Block(0x07), TASK_SHARE(0x08), NEW_TASK(0x09), NEW_BALANCE(0x0A);

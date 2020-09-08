@@ -25,6 +25,8 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REPLY;
 
+import io.xdag.core.Block;
+import io.xdag.core.XdagBlock;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetStatus;
 import io.xdag.net.message.XdagMessageCodes;
@@ -34,6 +36,11 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class BlocksReplyMessage extends AbstractMessage {
+
+    private XdagBlock xdagBlock;
+    private Block block;
+    private int ttl;
+
     public BlocksReplyMessage(long starttime, long endtime, long random, NetStatus netStatus) {
         super(BLOCKS_REPLY, starttime, endtime, random, netStatus);
         updateCrc();

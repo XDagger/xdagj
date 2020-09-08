@@ -53,7 +53,7 @@ import static io.xdag.utils.BasicUtils.*;
 
 @Slf4j
 public class Commands {
-    
+
     DecimalFormat df = new DecimalFormat("######0.00");
 
     @Getter
@@ -66,8 +66,7 @@ public class Commands {
     /**
      * list address + balance
      *
-     * @param num
-     *            Number of prints
+     * @param num Number of prints
      * @return address + balance
      */
     public String account(int num) {
@@ -111,12 +110,11 @@ public class Commands {
     /**
      * Search Balance by Address
      *
-     * @param address
-     *            for search balance
+     * @param address for search balance
      * @return balance of give address
      */
     public String balance(String address) {
-        if(org.apache.commons.lang3.StringUtils.isEmpty(address)) {
+        if (org.apache.commons.lang3.StringUtils.isEmpty(address)) {
             return df.format(amount2xdag(kernel.getAccountStore().getGBalance())) + " XDAG";
         } else {
             byte[] hash;
@@ -136,10 +134,8 @@ public class Commands {
     /**
      * Real make a transaction for given amount and address
      *
-     * @param sendAmount
-     *            amount
-     * @param address
-     *            receiver address
+     * @param sendAmount amount
+     * @param address    receiver address
      * @return Transaction hash
      */
     public String xfer(double sendAmount, byte[] address) {
@@ -191,17 +187,19 @@ public class Commands {
                 + " it will take several minutes to complete the transaction.";
     }
 
-    /** Current Blockchain Status */
+    /**
+     * Current Blockchain Status
+     */
     public String stats() {
-        return  String.format(
+        return String.format(
                 "Statistics for ours and maximum known parameters:\n" +
-                "            hosts: %d of %d\n" +
-                "           blocks: %d of %d\n" +
-                "      main blocks: %d of %d\n" +
-                "     extra blocks: %d      \n" +
-                "    orphan blocks: %d      \n" +
-                " chain difficulty: %s of %s\n" +
-                "      XDAG supply: %d of %d" ,
+                        "            hosts: %d of %d\n" +
+                        "           blocks: %d of %d\n" +
+                        "      main blocks: %d of %d\n" +
+                        "     extra blocks: %d      \n" +
+                        "    orphan blocks: %d      \n" +
+                        " chain difficulty: %s of %s\n" +
+                        "      XDAG supply: %d of %d",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 kernel.getNetStatus().getNblocks(), kernel.getNetStatus().getTotalnblocks(),
                 kernel.getNetStatus().getNmain(), kernel.getNetStatus().getTotalnmain(),
@@ -222,8 +220,7 @@ public class Commands {
     /**
      * Query block by hash
      *
-     * @param blockhash
-     *            blockhash
+     * @param blockhash blockhash
      * @return block info
      */
     public String block(byte[] blockhash) {
@@ -249,8 +246,7 @@ public class Commands {
     /**
      * Print Main blocks by given number
      *
-     * @param n
-     *            Number of prints
+     * @param n Number of prints
      * @return Mainblock info
      */
     public String mainblocks(int n) {
@@ -277,8 +273,7 @@ public class Commands {
     /**
      * Print Mined Block by given number
      *
-     * @param n
-     *            Number of prints
+     * @param n Number of prints
      * @return minedblock info
      */
     public String minedblocks(int n) {

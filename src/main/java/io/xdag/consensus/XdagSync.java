@@ -23,6 +23,7 @@
  */
 package io.xdag.consensus;
 
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
 import java.util.List;
@@ -35,12 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
+import com.google.common.util.concurrent.*;
+import io.xdag.net.message.impl.SumRequestMessage;
 import org.spongycastle.util.encoders.Hex;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import io.xdag.Kernel;
 import io.xdag.db.SimpleFileStore;
@@ -86,22 +84,26 @@ public class XdagSync {
         requesetBlocks(0, 1L << 48);
     }
 
-    private void requesetBlocks(long start, long timeInterval) {
+    private void requesetBlocks(long t, long dt) {
         // 如果当前状态不是sync start
         if (status != Status.SYNCING) {
             return;
         }
         List<XdagChannel> any = getAnyNode();
         if (any != null && any.size() != 0) {
-            for (XdagChannel channel : any) {
-                log.debug("Send Request to channel");
-                ListenableFuture<SumReplyMessage> futureSum = channel.getXdag().sendGetsums(start,
-                        start + timeInterval);
-                if (futureSum != null) {
-                    Futures.addCallback(
-                            futureSum,
-                            new SumCallback(channel, start, start + timeInterval),
-                            MoreExecutors.directExecutor());
+            XdagChannel xc = any.get(0);
+            if (dt <= REQUEST_BLOCKS_MAX_TIME) {
+                // 发送getblock请求
+                xc.getXdag().sendGetblocks(t, dt);
+                return;
+            } else {
+                // 如果请求时间区域过大
+                xc.getXdag().sendGetsums(t, t + dt);
+                dt >>= 4;
+                byte[] lsums = simpleFileStore.loadSum(t, t + dt);
+                log.debug("lsum is " + Hex.toHexString(lsums));
+                for (int i = 0; i < 16; i++) {
+                    requesetBlocks(t + i * dt, dt);
                 }
             }
         }

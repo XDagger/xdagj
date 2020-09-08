@@ -201,6 +201,12 @@ public class Xdag03 extends XdagHandler {
     /** Reply 可以不用处理 */
     protected synchronized void processBlocksReply(BlocksReplyMessage msg) {
         log.debug("Process BlocksReply:" + msg);
+        Block block = msg.getBlock();
+        log.debug("Block data:" + Hex.toHexString(block.getXdagBlock().getData()));
+        log.debug("ttl:" + msg.getTtl());
+        if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
+            dropConnection();
+        }
         updateNetStatus(msg);
     }
 

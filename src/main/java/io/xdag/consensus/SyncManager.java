@@ -124,6 +124,7 @@ public class SyncManager {
                 long stale = !isSyncDone() && importStart > 0 && blockQueue.isEmpty() ? System.nanoTime() : 0;
 
                 blockWrapper = blockQueue.take();
+                syncPopBlock(blockWrapper);
                 blocksInMem.decrementAndGet();
                 if (stale > 0) {
                     importIdleTime.addAndGet((System.nanoTime() - stale) / 1_000_000);
@@ -150,7 +151,7 @@ public class SyncManager {
                 ts += t < 10 ? "" : " (lock: " + timeFormat.format(t / 1000d) + "s)";
 
                 if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-                    syncPopBlock(blockWrapper);
+
                     // 获取到整条链的当前难度
                     BigInteger currentDiff = blockchain.getTopDiff();
                     // 如果当前难度大于或等于其他节点发送的最大难度则视为同步完成
