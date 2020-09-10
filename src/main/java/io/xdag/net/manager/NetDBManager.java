@@ -123,10 +123,9 @@ public class NetDBManager {
     }
 
     public void updateNetDB(NetDB netDB) {
-        log.debug("Update Netdb");
         if (netDB != null) {
             this.netDB.appendNetDB(netDB);
-            log.debug("ip list:" + this.netDB.getSize());
+//            log.debug("ip list:" + this.netDB.getSize());
         }
     }
 

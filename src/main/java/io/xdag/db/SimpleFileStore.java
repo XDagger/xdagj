@@ -116,7 +116,6 @@ public class SimpleFileStore implements FileSource {
 
     @Override
     public synchronized byte[] loadSum(long starttime, long endtime) {
-
         byte[] sums = new byte[256];
         byte[] buf = new byte[4096];
         int level;

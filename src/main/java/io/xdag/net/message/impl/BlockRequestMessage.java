@@ -32,6 +32,9 @@ import io.xdag.net.message.NetStatus;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.spongycastle.util.Arrays;
@@ -114,7 +117,9 @@ public class BlockRequestMessage extends AbstractMessage {
                 BytesUtils.longToBytes(starttime, true),
                 BytesUtils.longToBytes(endtime, true));
         System.arraycopy(first, 0, encoded, 0, 32);
-        hash = Arrays.reverse(hash);
+//        hash = Arrays.reverse(hash);
+//        ByteBuffer h = ByteBuffer.allocate(32).put(hash).order(ByteOrder.LITTLE_ENDIAN);
+//        hash = h.array();
         System.arraycopy(hash, 0, encoded, 32, 32);
 
         // field2 diff and maxdiff

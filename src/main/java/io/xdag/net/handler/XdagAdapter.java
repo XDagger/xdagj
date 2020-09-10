@@ -49,9 +49,8 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public ListenableFuture<SumReplyMessage> sendGetsums(long starttime, long endtime) {
+    public void sendGetsums(long starttime, long endtime) {
         // TODO Auto-generated method stub
-        return null;
     }
 
     @Override

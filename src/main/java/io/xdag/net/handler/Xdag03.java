@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
+import io.xdag.utils.BytesUtils;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
@@ -73,15 +74,12 @@ import lombok.extern.slf4j.Slf4j;
 public class Xdag03 extends XdagHandler {
     private static final ThreadFactory factory = new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
-
         @Override
         public Thread newThread(@Nonnull Runnable r) {
             return new Thread(r, "sendThread-" + cnt.getAndIncrement());
         }
     };
-    // ExecutorService sendThreads = Executors.newSingleThreadExecutor(factory);
-    ExecutorService sendThreads = new ScheduledThreadPoolExecutor(1, factory);
-    List<ListenableFuture<Integer>> futures = new ArrayList<>();
+
     private XdagVersion version = XdagVersion.V03;
 
     public Xdag03(Kernel kernel, XdagChannel channel) {
@@ -93,7 +91,6 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-        log.debug("接收到新消息 in xdag03：" + msg.getCommand());
         msgQueue.receivedMessage(msg);
 
         switch (msg.getCommand()) {
@@ -125,20 +122,19 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        // 这里的ctx是最后一个handler的
         msgQueue.activate(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.debug("channel inactive:[{}] ", ctx.toString());
+        log.debug("channelInactive:[{}] ", ctx.toString());
         this.killTimers();
         disconnect();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.debug("Xdag handling failed");
+        log.debug("exceptionCaught:[{}]", cause.getMessage(), cause);
         ctx.close();
         killTimers();
         disconnect();
@@ -158,9 +154,8 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Processing * *********************** */
     protected synchronized void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.debug("New block received: block.index [{}]", block.toString());
-        log.debug("Block data:" + Hex.toHexString(block.getXdagBlock().getData()));
-        log.debug("ttl:" + msg.getTtl());
+        log.debug("processNewBlock:[{}]", BytesUtils.toHexString(msg.getBlock().getHash()));
+//        log.debug("ttl:" + msg.getTtl());
         if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
             dropConnection();
         }
@@ -168,45 +163,23 @@ public class Xdag03 extends XdagHandler {
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
     protected synchronized void processBlocksRequest(BlocksRequestMessage msg) {
-        log.debug("Process BlocksRequest:" + msg);
+//        log.debug("processBlocksRequest:" + msg);
         updateNetStatus(msg);
         long starttime = msg.getStarttime();
         long endtime = msg.getEndtime();
         long random = msg.getRandom();
-        ListenableFuture<Integer> future = MoreExecutors.listeningDecorator(sendThreads)
-                .submit(new SendTask(blockchain, starttime, endtime));
-        futures.add(future);
-        Futures.addCallback(
-                future,
-                new FutureCallback<Integer>() {
-                    @Override
-                    public void onSuccess(Integer integer) {
-                        if (integer == 1) {
-                            sendMessage(new BlocksReplyMessage(integer, endtime, random, kernel.getNetStatus()));
-                        } else {
-                            log.debug("出现问题");
-                        }
-                        futures.remove(future);
-                    }
 
-                    @Override
-                    public void onFailure(@Nonnull Throwable throwable) {
-                        log.debug("发送失败");
-                    }
-                },
-                MoreExecutors.directExecutor());
-        log.debug("futures size:" + futures.size());
+        List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
+        for (Block block : blocks) {
+            sendNewBlock(block, 1);
+        }
+        sendMessage(new BlocksReplyMessage(starttime, endtime, random, kernel.getNetStatus()));
     }
 
     /** Reply 可以不用处理 */
     protected synchronized void processBlocksReply(BlocksReplyMessage msg) {
-        log.debug("Process BlocksReply:" + msg);
-        Block block = msg.getBlock();
-        log.debug("Block data:" + Hex.toHexString(block.getXdagBlock().getData()));
-        log.debug("ttl:" + msg.getTtl());
-        if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
-            dropConnection();
-        }
+//        log.debug("processBlocksReply:" + msg);
+        //TODO
         updateNetStatus(msg);
     }
 
@@ -220,18 +193,15 @@ public class Xdag03 extends XdagHandler {
     }
 
     protected synchronized void processSumReply(SumReplyMessage msg) {
-        log.debug("Process SumReply " + msg);
+        log.debug("processSumReply:" + msg);
         updateNetStatus(msg);
-        SettableFuture<SumReplyMessage> future = futureSumSublist.poll();
-        future.set(msg);
-        future = null;
     }
 
     protected synchronized void processBlockExtRequest(BlockExtRequestMessage msg) {
     }
 
     protected synchronized void processBlockRequest(BlockRequestMessage msg) {
-        log.debug("Process Blockrequest:" + msg);
+        log.debug("processBlockRequest:" + msg);
         byte[] find = new byte[32];
         byte[] hash = msg.getHash();
         hash = Arrays.reverse(hash);
@@ -246,15 +216,15 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Sending * *********************** */
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
-        log.debug("Send block hash " + Hex.toHexString(newBlock.getHashLow()));
+        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
         NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
         sendMessage(msg);
     }
 
     @Override
     public void sendGetblocks(long starttime, long endtime) {
+//        log.debug("sendGetblocks:[starttime={} endtime={}]", starttime, endtime);
         BlocksRequestMessage msg = new BlocksRequestMessage(starttime, endtime, kernel.getNetStatus());
-
         sendMessage(msg);
     }
 
@@ -265,27 +235,16 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public void sendGetblock(byte[] hash) {
+        log.debug("sendGetblock:[{}]", BytesUtils.toHexString(hash));
         BlockRequestMessage blockRequestMessage = new BlockRequestMessage(hash, kernel.getNetStatus());
-
         sendMessage(blockRequestMessage);
     }
 
     @Override
-    public ListenableFuture<SumReplyMessage> sendGetsums(long starttime, long endtime) {
-        log.debug("SendGetSums starttime " + starttime + " endtime " + endtime);
-        if (endtime - starttime <= REQUEST_BLOCKS_MAX_TIME) {
-            // 发送getblock请求
-            sendGetblocks(starttime, endtime);
-            return null;
-        } else {
-            // 依旧发送sum请求
-            SumRequestMessage msg = new SumRequestMessage(starttime, endtime, kernel.getNetStatus());
-            SettableFuture<SumReplyMessage> future = SettableFuture.create();
-            futureSumSublist.offer(future);
-
-            sendMessage(msg);
-            return future;
-        }
+    public void sendGetsums(long starttime, long endtime) {
+//        log.debug("sendGetsums:starttime=[{}],endtime=[{}]", starttime, endtime);
+        SumRequestMessage msg = new SumRequestMessage(starttime, endtime, kernel.getNetStatus());
+        sendMessage(msg);
     }
 
     @Override
@@ -299,19 +258,6 @@ public class Xdag03 extends XdagHandler {
 
     protected void disconnect() {
         msgQueue.disconnect();
-        if (sendThreads != null) {
-            try {
-                if (futures.size() != 0) {
-                    for (ListenableFuture<Integer> future : futures) {
-                        future.cancel(true);
-                    }
-                }
-                sendThreads.shutdown();
-                sendThreads.awaitTermination(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override
@@ -340,49 +286,12 @@ public class Xdag03 extends XdagHandler {
 
     public void updateNetStatus(AbstractMessage message) {
         NetStatus remoteNetStatus = message.getNetStatus();
-        log.debug("Remote netstatus:" + remoteNetStatus);
         synchronized (kernel.getNetStatus()) {
             kernel.getNetStatus().updateNetStatus(remoteNetStatus);
         }
         synchronized (kernel.getNetDBMgr()) {
-            log.debug("update netdb");
             kernel.getNetDBMgr().updateNetDB(message.getNetDB());
         }
     }
 
-    public void updateNetDB(AbstractMessage message) {
-        NetDB remoteNetDB = message.getNetDB();
-        log.debug("Remote netdb:" + remoteNetDB);
-        synchronized (kernel.getNetDB()) {
-            kernel.getNetDB().updateNetDB(remoteNetDB);
-        }
-    }
-
-    class SendTask implements Callable<Integer> {
-        private Blockchain blockchain;
-        private long starttime;
-        private long endtime;
-
-        public SendTask(Blockchain blockchain, long starttime, long endtime) {
-            this.blockchain = blockchain;
-            this.starttime = starttime;
-            this.endtime = endtime;
-        }
-
-        @Override
-        public Integer call() {
-            if (blockchain == null) {
-                return 1;
-            }
-            List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
-            if (blocks == null || blocks.size() == 0) {
-                log.debug("Nothing to send");
-                return 1;
-            }
-            for (Block block : blocks) {
-                sendNewBlock(block, 1);
-            }
-            return 1;
-        }
-    }
 }

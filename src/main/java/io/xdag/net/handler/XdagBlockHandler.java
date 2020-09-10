@@ -79,7 +79,6 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out) {
-        log.debug("XdagBlockHandler readableBytes " + in.readableBytes() + " bytes");
         if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
             log.trace("Decoding packet (" + in.readableBytes() + " bytes)");
             byte[] encryptData = new byte[512];

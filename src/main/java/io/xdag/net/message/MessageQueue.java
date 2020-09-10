@@ -58,7 +58,6 @@ public class MessageQueue {
     }
 
     public void receivedMessage(Message msg) { // 负责打印记录信息 实际接收信息的业务操作在xdaghandler
-        log.debug("MessageQueue接收到新消息");
         if (requestQueue.peek() != null) {
             MessageRoundtrip messageRoundtrip = requestQueue.peek();
             Message waitingMessage = messageRoundtrip.getMsg();

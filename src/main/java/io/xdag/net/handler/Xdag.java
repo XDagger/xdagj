@@ -37,7 +37,7 @@ public interface Xdag {
 
     void sendGetblock(byte[] hash);
 
-    ListenableFuture<SumReplyMessage> sendGetsums(long starttime, long endtime);
+    void sendGetsums(long starttime, long endtime);
 
     void dropConnection();
 

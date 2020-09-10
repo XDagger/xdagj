@@ -94,54 +94,15 @@ public class XdagSync {
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 // 发送getblock请求
-                xc.getXdag().sendGetblocks(t, dt);
+                xc.getXdag().sendGetblocks(t, t + dt);
                 return;
             } else {
-                // 如果请求时间区域过大
-                xc.getXdag().sendGetsums(t, t + dt);
-                dt >>= 4;
                 byte[] lsums = simpleFileStore.loadSum(t, t + dt);
                 log.debug("lsum is " + Hex.toHexString(lsums));
+                xc.getXdag().sendGetsums(t, t + dt);
+                dt >>= 4;
                 for (int i = 0; i < 16; i++) {
                     requesetBlocks(t + i * dt, dt);
-                }
-            }
-        }
-    }
-
-    /**
-     * 处理响应 在响应的时间范围在1<<20的时候就可以发送请求区块了，其他时间慢慢缩短所需要的区块范围
-     *
-     * @param reply
-     * @param channel
-     */
-    public void processSumsReply(
-            SumReplyMessage reply, XdagChannel channel, long starttime, long endtime) {
-        log.debug("processSumsReply");
-        log.debug("响应endtime " + reply.getEndtime() + "请求endtime " + endtime);
-        if (endtime != reply.getEndtime()) {
-            log.debug("此响应与请求不匹配" + Hex.toHexString(reply.getEncoded()));
-            return;
-        }
-        long dt = endtime - starttime;
-        // 如果请求时间区域过大
-        dt >>= 4;
-        byte[] lsums = simpleFileStore.loadSum(starttime, endtime);
-        byte[] rsums = reply.getSum();
-        log.debug("lsum is " + Hex.toHexString(lsums));
-        log.debug("rsum is " + Hex.toHexString(rsums));
-        for (int i = 0; i < 16; i++) {
-            if ((compareTo(lsums, i * 16, 8, rsums, i * 16, 8) != 0)
-                    || (compareTo(lsums, i * 16 + 8, 8, rsums, i * 16 + 8, 8) != 0)) {
-                log.debug("第" + i + "次请求");
-                // 请求request
-                ListenableFuture<SumReplyMessage> future = channel.getXdag().sendGetsums(starttime + i * (dt),
-                        starttime + i * (dt) + dt);
-                if (future != null) {
-                    Futures.addCallback(
-                            future,
-                            new SumCallback(channel, starttime + i * (dt), starttime + i * (dt) + dt),
-                            MoreExecutors.directExecutor());
                 }
             }
         }
@@ -177,28 +138,5 @@ public class XdagSync {
     public enum Status {
         /** syncing */
         SYNCING, SYNCDONE
-    }
-
-    class SumCallback implements FutureCallback<SumReplyMessage> {
-        private XdagChannel channel;
-        private long starttime;
-        private long endtime;
-
-        public SumCallback(XdagChannel channel, long starttime, long endtime) {
-            this.channel = channel;
-            this.starttime = starttime;
-            this.endtime = endtime;
-        }
-
-        @Override
-        public void onSuccess(SumReplyMessage reply) {
-            processSumsReply(reply, channel, starttime, endtime);
-        }
-
-        @Override
-        public void onFailure(@Nonnull Throwable t) {
-            log.debug("{}: Error receiving Sums. Dropping the peer.", "Sync", t);
-            channel.getXdag().dropConnection();
-        }
     }
 }

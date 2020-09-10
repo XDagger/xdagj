@@ -36,11 +36,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class BlocksReplyMessage extends AbstractMessage {
-
-    private XdagBlock xdagBlock;
-    private Block block;
-    private int ttl;
-
     public BlocksReplyMessage(long starttime, long endtime, long random, NetStatus netStatus) {
         super(BLOCKS_REPLY, starttime, endtime, random, netStatus);
         updateCrc();

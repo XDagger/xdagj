@@ -207,7 +207,7 @@ public class SyncManager {
                     // TODO:向谁请求
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
-                        channel.getXdag().sendGetblock(blockWrapper.getBlock().getHash());
+                        channel.getXdag().sendGetblock(importResult.getHashLow());
                     }
                 }
                 if (importResult == EXIST) {
