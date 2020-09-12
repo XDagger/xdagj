@@ -102,7 +102,7 @@ public class SyncManager {
     private BlockingQueue<BlockWrapper> blockQueue = new LinkedBlockingQueue<>();
 
     /** Queue for the link block dosn't exist */
-    private ConcurrentHashMap<ByteArrayWrapper, List<BlockWrapper>> waitingblockQueue = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<ByteArrayWrapper, List<BlockWrapper>> refWaitingQueue = new ConcurrentHashMap<>();
 
     public void start() {
         log.debug("Download receiveBlock run...");
@@ -124,7 +124,6 @@ public class SyncManager {
                 long stale = !isSyncDone() && importStart > 0 && blockQueue.isEmpty() ? System.nanoTime() : 0;
 
                 blockWrapper = blockQueue.take();
-                syncPopBlock(blockWrapper);
                 blocksInMem.decrementAndGet();
                 if (stale > 0) {
                     importIdleTime.addAndGet((System.nanoTime() - stale) / 1_000_000);
@@ -186,6 +185,7 @@ public class SyncManager {
                                 Hex.toHexString(blockWrapper.getBlock().getHash()),
                                 ts);
                     }
+                    syncPopBlock(blockWrapper);
                 }
 
                 if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
@@ -199,11 +199,9 @@ public class SyncManager {
                 }
 
                 if (importResult == NO_PARENT) {
-                    log.debug(
-                            "No parent on the chain for block.hash: {}",
-                            Hex.toHexString(blockWrapper.getBlock().getHash()));
                     // TODO:添加进sync队列 后续请求区块
                     syncPushBlock(blockWrapper, importResult.getHashLow());
+                    log.error("req block:{}", Hex.toHexString(importResult.getHashLow()));
                     // TODO:向谁请求
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
@@ -247,11 +245,12 @@ public class SyncManager {
         return true;
     }
 
-    protected void pushBlocks(List<BlockWrapper> blockWrappers) {
+    protected void pushBlocks(List<BlockWrapper> list) {
         if (!exec1.isShutdown()) {
-            exec1.pushAll(blockWrappers);
+            //DAG must push one waiting block
+            exec1.push(list.get(0));
             log.debug("push blocks ....");
-            blocksInMem.addAndGet(blockWrappers.size());
+            blocksInMem.addAndGet(1);
         }
     }
 
@@ -264,14 +263,15 @@ public class SyncManager {
      *            缺失的parent
      */
     public void syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
-        log.debug("Add a new block without parent:" + Hex.toHexString(hashLow));
-        ByteArrayWrapper key = new ByteArrayWrapper(hashLow);
+        log.error("push block{}, no ref:{}",Hex.toHexString(blockWrapper.getBlock().getHashLow()), Hex.toHexString(hashLow));
+        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
+        ByteArrayWrapper blockKey = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
         // 获取所有缺少hashlow的区块
-        List<BlockWrapper> list = waitingblockQueue.get(key);
+        List<BlockWrapper> list = refWaitingQueue.get(refKey);
         if (list == null) {
             list = new ArrayList<>();
             list.add(blockWrapper);
-            waitingblockQueue.put(key, list);
+            refWaitingQueue.put(refKey, list);
         } else {
             for (BlockWrapper blockInList : list) {
                 if (equalBytes(blockInList.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
@@ -279,16 +279,16 @@ public class SyncManager {
                 }
             }
             list.add(blockWrapper);
-            waitingblockQueue.put(key, list);
+            refWaitingQueue.put(refKey, list);
         }
     }
 
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
-        log.debug("A block as parent connect:" + Hex.toHexString(block.getHashLow()));
-        ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
+        log.error("pop block:{}" + Hex.toHexString(block.getHashLow()));
+        ByteArrayWrapper reWaitingKey = new ByteArrayWrapper(block.getHashLow());
         // 把所有block为parent的区块重新进行添加
-        List<BlockWrapper> list = waitingblockQueue.get(key);
+        List<BlockWrapper> list = refWaitingQueue.get(reWaitingKey);
         if (list != null) {
             pushBlocks(list);
         }

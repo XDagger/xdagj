@@ -35,8 +35,10 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import io.xdag.utils.StringUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.io.HexDump;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
@@ -46,7 +48,6 @@ public class BlockRequestMessage extends AbstractMessage {
 
     public BlockRequestMessage(byte[] hash, NetStatus netStatus) {
         super(XdagMessageCodes.BLOCK_REQUEST, 0, 0, hash, netStatus);
-        updateCrc();
     }
 
     public BlockRequestMessage(byte[] hash) {
@@ -87,11 +88,6 @@ public class BlockRequestMessage extends AbstractMessage {
     }
 
     @Override
-    public byte[] getHash() {
-        return hash;
-    }
-
-    @Override
     public void encode() {
         parsed = true;
         encoded = new byte[512];
@@ -107,7 +103,8 @@ public class BlockRequestMessage extends AbstractMessage {
         long totalBlockNumber = netStatus.getTotalnblocks();
 
         // TODO：后续根据ip替换
-        String tmp = "04000000040000003ef47801000000007f000001611e7f000001b8227f000001" + "5f767f000001d49d";
+        String tmp = "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
+        // net 相关
         byte[] tmpbyte = Hex.decode(tmp);
 
         // field 0 and field1
@@ -117,9 +114,7 @@ public class BlockRequestMessage extends AbstractMessage {
                 BytesUtils.longToBytes(starttime, true),
                 BytesUtils.longToBytes(endtime, true));
         System.arraycopy(first, 0, encoded, 0, 32);
-//        hash = Arrays.reverse(hash);
-//        ByteBuffer h = ByteBuffer.allocate(32).put(hash).order(ByteOrder.LITTLE_ENDIAN);
-//        hash = h.array();
+        hash = Arrays.reverse(hash);
         System.arraycopy(hash, 0, encoded, 32, 32);
 
         // field2 diff and maxdiff
@@ -131,8 +126,8 @@ public class BlockRequestMessage extends AbstractMessage {
         System.arraycopy(BytesUtils.longToBytes(totalBlockNumber, true), 0, encoded, 104, 8);
         System.arraycopy(BytesUtils.longToBytes(nmain, true), 0, encoded, 112, 8);
         System.arraycopy(BytesUtils.longToBytes(totalMainNumber, true), 0, encoded, 120, 8);
-
         System.arraycopy(tmpbyte, 0, encoded, 128, tmpbyte.length);
+        updateCrc();
     }
 
     @Override

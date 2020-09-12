@@ -31,6 +31,8 @@ import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 import java.math.BigInteger;
 import java.util.zip.CRC32;
 
+import com.google.common.primitives.UnsignedLong;
+import org.apache.commons.codec.DecoderException;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.utils.BytesUtils;
@@ -83,7 +85,6 @@ public abstract class AbstractMessage extends Message {
         this.netStatus = netStatus;
         this.codes = type;
         encode();
-        updateCrc();
     }
 
     public AbstractMessage(byte[] data) {
@@ -149,6 +150,7 @@ public abstract class AbstractMessage extends Message {
         byte[] first = BytesUtils.merge(
                 BytesUtils.longToBytes(transportheader, true),
                 BytesUtils.longToBytes(type, true),
+//                Long.toUnsignedString(type)
                 BytesUtils.longToBytes(starttime, true),
                 BytesUtils.longToBytes(endtime, true));
         System.arraycopy(first, 0, encoded, 0, 32);
@@ -170,6 +172,7 @@ public abstract class AbstractMessage extends Message {
     public void updateCrc() {
         CRC32 crc32 = new CRC32();
         crc32.update(encoded, 0, 512);
-        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
+        System.arraycopy(BytesUtils.longToBytes(crc32.getValue(), true), 0, encoded, 4, 4);
     }
+
 }

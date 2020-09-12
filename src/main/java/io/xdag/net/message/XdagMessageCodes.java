@@ -33,14 +33,18 @@ import java.util.Map;
  * xdag block.h
  *
  * <p>
- * enum xdag_message_type { XDAG_MESSAGE_BLOCKS_REQUEST,
- * XDAG_MESSAGE_BLOCKS_REPLY, XDAG_MESSAGE_SUMS_REQUEST,
- * XDAG_MESSAGE_SUMS_REPLY, XDAG_MESSAGE_BLOCKEXT_REQUEST,
- * XDAG_MESSAGE_BLOCKEXT_REPLY, XDAG_MESSAGE_BLOCK_REQUEST, };
+ * enum xdag_message_type {
+ *  XDAG_MESSAGE_BLOCKS_REQUEST,
+ *  XDAG_MESSAGE_BLOCKS_REPLY,
+ *  XDAG_MESSAGE_SUMS_REQUEST,
+ *  XDAG_MESSAGE_SUMS_REPLY,
+ *  XDAG_MESSAGE_BLOCKEXT_REQUEST,
+ *  XDAG_MESSAGE_BLOCKEXT_REPLY,
+ *  XDAG_MESSAGE_BLOCK_REQUEST
+ * };
  */
 public enum XdagMessageCodes {
     // add new block type here
-    NEW_BLOCK(-1),
     BLOCKS_REQUEST(0x00),
     BLOCKS_REPLY(0x01),
     SUMS_REQUEST(0x02),
@@ -50,7 +54,11 @@ public enum XdagMessageCodes {
     BLOCK_REQUEST(0x06),
 
     // add new block type here
-    Receive_Block(0x07), TASK_SHARE(0x08), NEW_TASK(0x09), NEW_BALANCE(0x0A);
+    Receive_Block(0x07),
+    TASK_SHARE(0x08),
+    NEW_TASK(0x09),
+    NEW_BALANCE(0x0A),
+    NEW_BLOCK(0x0B);
 
     private static final Map<XdagVersion, Map<Integer, XdagMessageCodes>> intToTypeMap = new HashMap<>();
     private static final Map<XdagVersion, XdagMessageCodes[]> versionToValuesMap = new HashMap<>();
@@ -59,7 +67,6 @@ public enum XdagMessageCodes {
         versionToValuesMap.put(
                 V03,
                 new XdagMessageCodes[] {
-                        NEW_BLOCK,
                         BLOCKS_REQUEST,
                         BLOCKS_REPLY,
                         SUMS_REQUEST,
@@ -70,7 +77,8 @@ public enum XdagMessageCodes {
                         Receive_Block,
                         TASK_SHARE,
                         NEW_TASK,
-                        NEW_BALANCE
+                        NEW_BALANCE,
+                        NEW_BLOCK
                 });
 
         for (XdagVersion v : XdagVersion.values()) {
