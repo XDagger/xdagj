@@ -235,7 +235,7 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public void sendGetblock(byte[] hash) {
-        log.debug("sendGetblock:[{}]", BytesUtils.toHexString(hash));
+//        log.debug("sendGetblock:[{}]", BytesUtils.toHexString(hash));
         BlockRequestMessage blockRequestMessage = new BlockRequestMessage(hash, kernel.getNetStatus());
         sendMessage(blockRequestMessage);
     }

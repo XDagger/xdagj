@@ -198,15 +198,18 @@ public class Commands {
                         "      main blocks: %d of %d\n" +
                         "     extra blocks: %d      \n" +
                         "    orphan blocks: %d      \n" +
+                        " wait sync blocks: %d      \n" +
                         " chain difficulty: %s of %s\n" +
-                        "      XDAG supply: %d of %d",
+                        "      XDAG supply: %.9f of %.9f",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 kernel.getNetStatus().getNblocks(), kernel.getNetStatus().getTotalnblocks(),
                 kernel.getNetStatus().getNmain(), kernel.getNetStatus().getTotalnmain(),
                 kernel.getBlockchain().getExtraSize(),
                 kernel.getBlockchain().getOrphanSize(),
+                kernel.getNetStatus().getNwaitsync(),
                 kernel.getBlockchain().getTopDiff().toString(16), kernel.getNetStatus().getMaxdifficulty().toString(16),
-                kernel.getBlockchain().getMainBlockSize() * 1024, kernel.getBlockchain().getMainBlockSize() * 1024
+                amount2xdag(kernel.getBlockchain().getSupply(kernel.getBlockchain().getMainBlockSize())),
+                amount2xdag(kernel.getBlockchain().getSupply(kernel.getBlockchain().getMainBlockSize()))
         );
     }
 

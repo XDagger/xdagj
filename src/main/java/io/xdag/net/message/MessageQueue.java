@@ -89,10 +89,19 @@ public class MessageQueue {
 
     /** 每十毫秒执行一次 */
     private void nudgeQueue() {
-        removeAnsweredMessage(requestQueue.peek());
-        // Now send the next message
-        sendToWire(respondQueue.poll());
-        sendToWire(requestQueue.peek());
+        // 1000 / 10 * 5 * 2 = 1000 messages per second
+        int n = Math.min(5, size());
+        if (n == 0) {
+            return;
+        }
+        // write out n messages
+        for (int i = 0; i < n; i++) {
+            removeAnsweredMessage(requestQueue.peek());
+            // Now send the next message
+            sendToWire(respondQueue.poll());
+            sendToWire(requestQueue.peek());
+        }
+        ctx.flush();
     }
 
     public void sendMessage(Message msg) {
@@ -120,7 +129,7 @@ public class MessageQueue {
             // TODO: retry logic || messageRoundtrip.hasToRetry()){
             Message msg = messageRoundtrip.getMsg();
             // log.debug("Sent to Wire with the message,msg:"+msg.getCommand());
-            ctx.writeAndFlush(msg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            ctx.write(msg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 
             if (msg.getAnswerMessage() != null) {
                 messageRoundtrip.incRetryTimes();

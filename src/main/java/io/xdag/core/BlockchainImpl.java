@@ -81,9 +81,9 @@ public class BlockchainImpl implements Blockchain {
     /** 非Extra orphan存放 */
     private OrphanPool orphanPool;
 
-    private LinkedHashMap<ByteArrayWrapper, Block> MemOrphanPool = new LinkedHashMap<>();
+    private LinkedHashMap<ByteArrayWrapper, Block> memOrphanPool = new LinkedHashMap<>();
 
-    private Map<ByteArrayWrapper, Integer> MemAccount = new ConcurrentHashMap<>();
+    private Map<ByteArrayWrapper, Integer> memAccount = new ConcurrentHashMap<>();
     private BigInteger topDiff;
     /** 存放的是一个可能是最大难度的block hash */
     private byte[] top_main_chain;
@@ -162,8 +162,8 @@ public class BlockchainImpl implements Blockchain {
             }
 
             // TODO:extra 处理
-            if (MemOrphanPool.size() > MAX_ALLOWED_EXTRA) {
-                Block reuse = getHead(MemOrphanPool).getValue();
+            if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
+                Block reuse = getHead(memOrphanPool).getValue();
                 log.debug("remove when extra too big");
                 removeOrphan(reuse, OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
                 netStatus.decBlock();
@@ -232,14 +232,13 @@ public class BlockchainImpl implements Blockchain {
             log.debug("======New block waiting to link======");
             if ((block.flags & BI_EXTRA) != 0) {
                 log.debug(Hex.toHexString(block.getHashLow()) + " into extra");
-                MemOrphanPool.put(new ByteArrayWrapper(block.getHashLow()), block);
+                memOrphanPool.put(new ByteArrayWrapper(block.getHashLow()), block);
             } else {
                 log.debug(Hex.toHexString(block.getHashLow()) + " into orphan");
                 saveBlock(block);
                 orphanPool.addOrphan(block);
             }
             log.debug("Current diff:" + getTopDiff().toString(16));
-
             return result;
         } finally {
             writeLock.unlock();
@@ -609,8 +608,8 @@ public class BlockchainImpl implements Blockchain {
             return null;
         }
         ByteArrayWrapper key = new ByteArrayWrapper(hashlow);
-        if (MemOrphanPool.containsKey(key)) {
-            return MemOrphanPool.get(key);
+        if (memOrphanPool.containsKey(key)) {
+            return memOrphanPool.get(key);
         }
         return blockStore.getBlockByHash(hashlow, isRaw);
     }
@@ -652,11 +651,11 @@ public class BlockchainImpl implements Blockchain {
                 // 从MemOrphanPool中去除
                 ByteArrayWrapper key = new ByteArrayWrapper(removeBlockInfo.getHashLow());
                 // 如果不存在
-                if (!MemOrphanPool.containsKey(key)) {
+                if (!memOrphanPool.containsKey(key)) {
                     return;
                 }
-                Block removeBlockRaw = MemOrphanPool.get(key);
-                MemOrphanPool.remove(key);
+                Block removeBlockRaw = memOrphanPool.get(key);
+                memOrphanPool.remove(key);
                 if (action != OrphanRemoveActions.ORPHAN_REMOVE_REUSE) {
                     // 将区块保存
                     saveBlock(removeBlockRaw);
@@ -709,10 +708,10 @@ public class BlockchainImpl implements Blockchain {
         log.debug("save a block block hash [{}]", Hex.toHexString(block.getHashLow()));
         blockStore.saveBlock(block);
         // 如果是自己的账户
-        if (MemAccount.containsKey(new ByteArrayWrapper(block.getHash()))) {
+        if (memAccount.containsKey(new ByteArrayWrapper(block.getHash()))) {
             log.debug("new account");
-            addNewAccount(block, MemAccount.get(new ByteArrayWrapper(block.getHash())));
-            MemAccount.remove(new ByteArrayWrapper(block.getHash()));
+            addNewAccount(block, memAccount.get(new ByteArrayWrapper(block.getHash())));
+            memAccount.remove(new ByteArrayWrapper(block.getHash()));
         }
 
         if  (block.isPretopCandidate()) {
@@ -735,7 +734,7 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public long getExtraSize() {
-        return MemOrphanPool.size();
+        return memOrphanPool.size();
     }
 
     @Override
@@ -801,8 +800,8 @@ public class BlockchainImpl implements Blockchain {
 
     public void addNewAccount(Block block, int keyIndex) {
         if (!block.isSaved()) {
-            log.debug("Add into Mem,size:" + MemAccount.size());
-            MemAccount.put(new ByteArrayWrapper(block.getHash()), keyIndex);
+            log.debug("Add into Mem,size:" + memAccount.size());
+            memAccount.put(new ByteArrayWrapper(block.getHash()), keyIndex);
         } else {
             log.debug("Add into storage");
             accountStore.addNewAccount(block, keyIndex);
@@ -811,7 +810,7 @@ public class BlockchainImpl implements Blockchain {
 
     public void removeAccount(Block block) {
         if (!block.isSaved) {
-            MemAccount.remove(new ByteArrayWrapper(block.getHash()));
+            memAccount.remove(new ByteArrayWrapper(block.getHash()));
         } else {
             accountStore.removeAccount(block);
         }
@@ -832,7 +831,27 @@ public class BlockchainImpl implements Blockchain {
         return amount;
     }
 
-    private long getStartAmount(long time, long num) {
+    @Override
+    public long getSupply(long nmain)
+    {
+        long res = 0;
+        long amount = getStartAmount(0, nmain);
+        long current_nmain = nmain;
+        while ((current_nmain >> MAIN_BIG_PERIOD_LOG) > 0) {
+            res += (1l << MAIN_BIG_PERIOD_LOG) * amount;
+            current_nmain -= 1l << MAIN_BIG_PERIOD_LOG;
+            amount >>= 1;
+        }
+        res += current_nmain * amount;
+        long fork_height = Config.MAINNET?MAIN_APOLLO_TESTNET_HEIGHT:MAIN_APOLLO_HEIGHT;
+        if(nmain >= fork_height) {
+            // add before apollo amount
+            res += (fork_height - 1) * (MAIN_START_AMOUNT - MAIN_APOLLO_AMOUNT);
+        }
+        return res;
+    }
+
+    public long getStartAmount(long time, long num) {
         long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
         long startAmount = 0;
         if (num >= forkHeight) {
@@ -857,7 +876,8 @@ public class BlockchainImpl implements Blockchain {
 
     /** 判断是否已经接收过区块 * */
     public boolean isExist(byte[] hashlow) {
-        if (MemOrphanPool.containsKey(new ByteArrayWrapper(hashlow)) || blockStore.hasBlock(hashlow)) {
+        if (memOrphanPool.containsKey(new ByteArrayWrapper(hashlow)) ||
+                blockStore.hasBlock(hashlow)) {
             return true;
         }
         return false;
@@ -927,7 +947,7 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public Map<ByteArrayWrapper, Integer> getMemAccount() {
-        return MemAccount;
+        return memAccount;
     }
 
     @Override
@@ -937,7 +957,7 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public Block getExtraBlock(byte[] hashlow) {
-        return MemOrphanPool.getOrDefault(new ByteArrayWrapper(hashlow), null);
+        return memOrphanPool.getOrDefault(new ByteArrayWrapper(hashlow), null);
     }
 
     enum OrphanRemoveActions {

@@ -69,4 +69,6 @@ public interface Blockchain {
     ReentrantReadWriteLock getStateLock();
 
     Block getExtraBlock(byte[] hash);
+
+    long getSupply(long nmain);
 }

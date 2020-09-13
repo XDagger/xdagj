@@ -32,10 +32,7 @@ import static io.xdag.utils.FastByteComparisons.equalBytes;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -102,7 +100,8 @@ public class SyncManager {
     private BlockingQueue<BlockWrapper> blockQueue = new LinkedBlockingQueue<>();
 
     /** Queue for the link block dosn't exist */
-    private ConcurrentHashMap<ByteArrayWrapper, List<BlockWrapper>> refWaitingQueue = new ConcurrentHashMap<>();
+    private Map<ByteArrayWrapper, Map<ByteArrayWrapper, BlockWrapper>> syncMap = new HashMap<>();
+    private Map<ByteArrayWrapper, ByteArrayWrapper> syncReqMap = new HashMap<>();
 
     public void start() {
         log.debug("Download receiveBlock run...");
@@ -143,6 +142,12 @@ public class SyncManager {
 
                 log.debug("impore result:" + String.valueOf(importResult));
 
+                if (importResult == EXIST) {
+                    log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+//                    syncPopBlock(blockWrapper);
+                    continue;
+                }
+
                 long f = System.nanoTime();
                 long t = (f - s) / 1_000_000;
                 String ts = timeFormat.format(t / 1000d) + "s";
@@ -150,15 +155,8 @@ public class SyncManager {
                 ts += t < 10 ? "" : " (lock: " + timeFormat.format(t / 1000d) + "s)";
 
                 if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-
                     // 获取到整条链的当前难度
                     BigInteger currentDiff = blockchain.getTopDiff();
-                    // 如果当前难度大于或等于其他节点发送的最大难度则视为同步完成
-                    // if(blockchain.getMainBlockSize()>= XdagTime.getCurrentEpoch()-
-                    // XdagTime.getEpoch(XDAG_MAIN_ERA)){
-                    // makeSyncDone();
-                    // }
-
                     if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
                         log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
                         // 只有同步完成的时候 才能开始线程 再一次
@@ -172,20 +170,16 @@ public class SyncManager {
                         makeSyncDone();
                     }
 
-                    if (importResult == IMPORTED_BEST) {
-                        log.debug(
-                                "Success importing : block.hash: {},, time: {}",
-                                Hex.toHexString(blockWrapper.getBlock().getHash()),
-                                ts);
+                    if(importResult == IMPORTED_BEST) {
+                        log.debug("BEST block:{},time: {}", Hex.toHexString(blockWrapper.getBlock().getHash()), ts);
                     }
-
-                    if (importResult == IMPORTED_NOT_BEST) {
-                        log.debug(
-                                "Success importing NOT_BEST: block.hash: {}, time: {}",
-                                Hex.toHexString(blockWrapper.getBlock().getHash()),
-                                ts);
+                    if(importResult == IMPORTED_NOT_BEST) {
+                        log.debug("NOT_BEST block:{}, time:{}", Hex.toHexString(blockWrapper.getBlock().getHash()), ts);
                     }
                     syncPopBlock(blockWrapper);
+                    if(blockWrapper.isPushed()) {
+                        kernel.getNetStatus().decWaitsync();
+                    }
                 }
 
                 if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
@@ -200,18 +194,19 @@ public class SyncManager {
 
                 if (importResult == NO_PARENT) {
                     // TODO:添加进sync队列 后续请求区块
+                    blockWrapper.setPushed(true);
                     syncPushBlock(blockWrapper, importResult.getHashLow());
                     log.error("req block:{}", Hex.toHexString(importResult.getHashLow()));
-                    // TODO:向谁请求
-                    List<XdagChannel> channels = channelMgr.getActiveChannels();
-                    for (XdagChannel channel : channels) {
-                        channel.getXdag().sendGetblock(importResult.getHashLow());
+                    ByteArrayWrapper refkey = new ByteArrayWrapper(importResult.getHashLow());
+                    if(!syncReqMap.containsKey(refkey)) {
+                        // TODO:向谁请求
+                        List<XdagChannel> channels = channelMgr.getActiveChannels();
+                        for (XdagChannel channel : channels) {
+                            channel.getXdag().sendGetblock(importResult.getHashLow());
+                        }
+                        syncReqMap.putIfAbsent(refkey, refkey);
                     }
                 }
-                if (importResult == EXIST) {
-                    log.debug("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
-                }
-
             } catch (InterruptedException e) {
                 break;
             } catch (Throwable e) {
@@ -239,17 +234,14 @@ public class SyncManager {
             return true;
         }
         log.debug("Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
-
-        pushBlocks(Collections.singletonList(blockWrapper));
+        pushBlock(blockWrapper);
         log.debug("Blocks waiting to be proceed:  queue.size: [{}] ", blockQueue.size());
         return true;
     }
 
-    protected void pushBlocks(List<BlockWrapper> list) {
-        if (!exec1.isShutdown()) {
-            //DAG must push one waiting block
-            exec1.push(list.get(0));
-            log.debug("push blocks ....");
+    protected void pushBlock(BlockWrapper bw) {
+        if (!exec1.isShutdown() && bw != null) {
+            exec1.push(bw);
             blocksInMem.addAndGet(1);
         }
     }
@@ -267,20 +259,20 @@ public class SyncManager {
         ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
         ByteArrayWrapper blockKey = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
         // 获取所有缺少hashlow的区块
-        List<BlockWrapper> list = refWaitingQueue.get(refKey);
-        if (list == null) {
-            list = new ArrayList<>();
-            list.add(blockWrapper);
-            refWaitingQueue.put(refKey, list);
+        Map<ByteArrayWrapper, BlockWrapper> map = syncMap.get(refKey);
+        if (map == null) {
+            map = new HashMap<>();
+            map.put(blockKey, blockWrapper);
+            syncMap.put(refKey, map);
         } else {
-            for (BlockWrapper blockInList : list) {
-                if (equalBytes(blockInList.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
+            map.forEach((k, v)->{
+                if (equalBytes(v.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
                     return;
                 }
-            }
-            list.add(blockWrapper);
-            refWaitingQueue.put(refKey, list);
+            });
+            map.putIfAbsent(blockKey, blockWrapper);
         }
+        kernel.getNetStatus().incWaitsync();
     }
 
     public void syncPopBlock(BlockWrapper blockWrapper) {
@@ -288,9 +280,11 @@ public class SyncManager {
         log.error("pop block:{}" + Hex.toHexString(block.getHashLow()));
         ByteArrayWrapper reWaitingKey = new ByteArrayWrapper(block.getHashLow());
         // 把所有block为parent的区块重新进行添加
-        List<BlockWrapper> list = refWaitingQueue.get(reWaitingKey);
-        if (list != null) {
-            pushBlocks(list);
+        Map<ByteArrayWrapper, BlockWrapper> map = syncMap.get(reWaitingKey);
+        if (map != null) {
+            map.forEach((k, v)->{
+                pushBlock(v);
+            });
         }
     }
 
