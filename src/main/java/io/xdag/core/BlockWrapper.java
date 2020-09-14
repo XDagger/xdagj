@@ -34,8 +34,6 @@ public class BlockWrapper {
     private int ttl;
     /** 记录区块接收节点 */
     private Node remoteNode;
-    // if this block is not imported isPushed == true
-    private boolean isPushed;
 
     public BlockWrapper(Block block, int ttl, Node remoteNode) {
         this.block = block;

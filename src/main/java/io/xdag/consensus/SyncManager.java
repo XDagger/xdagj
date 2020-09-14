@@ -144,7 +144,6 @@ public class SyncManager {
 
                 if (importResult == EXIST) {
                     log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
-//                    syncPopBlock(blockWrapper);
                     continue;
                 }
 
@@ -176,10 +175,13 @@ public class SyncManager {
                     if(importResult == IMPORTED_NOT_BEST) {
                         log.debug("NOT_BEST block:{}, time:{}", Hex.toHexString(blockWrapper.getBlock().getHash()), ts);
                     }
-                    syncPopBlock(blockWrapper);
-                    if(blockWrapper.isPushed()) {
+                    ByteArrayWrapper bw = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
+                    BlockWrapper finalBlockWrapper = blockWrapper;
+                    syncReqMap.computeIfPresent(bw, (k, v) -> {
+                        syncPopBlock(finalBlockWrapper);
                         kernel.getNetStatus().decWaitsync();
-                    }
+                        return null;
+                    });
                 }
 
                 if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
@@ -194,7 +196,6 @@ public class SyncManager {
 
                 if (importResult == NO_PARENT) {
                     // TODO:添加进sync队列 后续请求区块
-                    blockWrapper.setPushed(true);
                     syncPushBlock(blockWrapper, importResult.getHashLow());
                     log.error("req block:{}", Hex.toHexString(importResult.getHashLow()));
                     ByteArrayWrapper refkey = new ByteArrayWrapper(importResult.getHashLow());
