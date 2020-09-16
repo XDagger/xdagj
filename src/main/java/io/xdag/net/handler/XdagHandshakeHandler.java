@@ -108,7 +108,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
                     log.info("connect a new pool,host[{}]", channel.getInetSocketAddress().toString());
 
                     // handshake ok
-                    kernel.getChannelManager().onChannelActive(channel, channel.getNode());
+                    kernel.getChannelMgr().onChannelActive(channel, channel.getNode());
                     ctx.pipeline().remove(this);
                     channel.activateXdag(ctx, XdagVersion.V03);
 

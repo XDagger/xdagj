@@ -85,7 +85,7 @@ public class NodeManager {
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
         this.client = kernel.getClient();
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
         this.netDB = kernel.getNetDB();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
         this.config = kernel.getConfig();

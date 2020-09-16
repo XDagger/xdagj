@@ -24,27 +24,31 @@
 package io.xdag.consensus;
 
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-import static io.xdag.utils.FastByteComparisons.compareTo;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
 import com.google.common.util.concurrent.*;
-import io.xdag.net.message.impl.SumRequestMessage;
+
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
 import io.xdag.db.SimpleFileStore;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.impl.SumReplyMessage;
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -63,11 +67,15 @@ public class XdagSync {
     private ScheduledExecutorService sendTask;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
+    @Getter
+    private ConcurrentHashMap<Long, SettableFuture<byte[]>> reqMap;
+
 
     public XdagSync(Kernel kernel) {
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
         this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
+        reqMap = new ConcurrentHashMap<>();
     }
 
     /** 不断发送send request */
@@ -90,19 +98,51 @@ public class XdagSync {
             return;
         }
         List<XdagChannel> any = getAnyNode();
+        long randomSeq = 0;
+        SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
-                // 发送getblock请求
-                xc.getXdag().sendGetblocks(t, t + dt);
+                randomSeq =  xc.getXdag().sendGetblocks(t, t + dt);
+                reqMap.put(randomSeq, sf);
+                try {
+                    sf.get(64, TimeUnit.SECONDS);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    reqMap.remove(randomSeq);
+                    log.error(e.getMessage(), e);
+                    return;
+                }
                 return;
             } else {
-                byte[] lsums = simpleFileStore.loadSum(t, t + dt);
+                byte[] lsums = new byte[256];
+                byte[] rsums = null;
+                if(simpleFileStore.loadSum(t, t + dt, lsums) <= 0) {
+                    return;
+                }
                 log.debug("lsum is " + Hex.toHexString(lsums));
-                xc.getXdag().sendGetsums(t, t + dt);
+                randomSeq = xc.getXdag().sendGetsums(t, t + dt);
+                reqMap.put(randomSeq, sf);
+                log.debug("sendGetsums seq:{}.", randomSeq);
+                try {
+                    byte[] sums = sf.get(64, TimeUnit.SECONDS);
+                    rsums = Arrays.copyOf(sums, 256);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    reqMap.remove(randomSeq);
+                    log.error(e.getMessage(), e);
+                    return;
+                }
+                reqMap.remove(randomSeq);
+                log.debug("rsum is " + Hex.toHexString(rsums));
                 dt >>= 4;
                 for (int i = 0; i < 16; i++) {
-                    requesetBlocks(t + i * dt, dt);
+                    long lsumsSum = BytesUtils.bytesToLong(lsums, i * 16, true);
+                    long lsumsSize = BytesUtils.bytesToLong(lsums, i * 16 + 8, true);
+                    long rsumsSum = BytesUtils.bytesToLong(rsums, i * 16, true);
+                    long rsumsSize = BytesUtils.bytesToLong(rsums, i * 16 + 8, true);
+
+                    if (lsumsSize != rsumsSize || lsumsSum != rsumsSum) {
+                        requesetBlocks(t + i * dt, dt);
+                    }
                 }
             }
         }

@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -127,9 +128,18 @@ public class BlockchainImpl implements Blockchain {
                 if (ref != null) {
                     if (!isExist(ref.getHashLow())) {
                         log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
-                        result = ImportResult.NO_PARENT;
-                        result.setHashLow(ref.getHashLow());
-                        return result;
+
+                        // if address block
+                        if(all.size() == 1 &&
+                                ref.getType() == XdagField.FieldType.XDAG_FIELD_OUT &&
+                                BigInteger.ZERO.equals(ref.getAmount()))
+                        {
+                           break;
+                        } else {
+                            result = ImportResult.NO_PARENT;
+                            result.setHashLow(ref.getHashLow());
+                            return result;
+                        }
                     } else {
                         if (!ref.getAmount().equals(BigInteger.ZERO)) {
                             updateBlockFlag(block, BI_EXTRA, false);
@@ -210,10 +220,16 @@ public class BlockchainImpl implements Blockchain {
             }
 
             // remove links
-            for (int i = 0; i < all.size(); i++) {
+            for (Address ref : all) {
                 log.debug("remove links");
+                if(all.size() == 1 &&
+                        ref.getType() == XdagField.FieldType.XDAG_FIELD_OUT &&
+                        BigInteger.ZERO.equals(ref.getAmount()))
+                {
+                    break;
+                }
                 removeOrphan(
-                        getBlockByHash(all.get(i).getHashLow(), false),
+                        getBlockByHash(ref.getHashLow(), false),
                         (block.flags & BI_EXTRA) != 0
                                 ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                                 : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
@@ -568,9 +584,11 @@ public class BlockchainImpl implements Blockchain {
         List<Address> links = block.getLinks();
         for (Address ref : links) {
             Block refBlock = getBlockByHash(ref.getHashLow(), false);
-
+            if(refBlock == null) {
+                break;
+            }
             // 如果引用的那个快的epoch 小于当前这个块的回合
-            if (XdagTime.getEpoch(refBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp())) {
+            if ( XdagTime.getEpoch(refBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp())) {
                 // 如果难度大于当前最大难度
                 BigInteger curDiff = refBlock.getDifficulty().add(diff0);
                 if (curDiff.compareTo(maxDiff) > 0) {
@@ -762,6 +780,9 @@ public class BlockchainImpl implements Blockchain {
             boolean canUse = false;
             // 获取签名与hash
             Block inBlock = blockStore.getBlockByHash(in.getHashLow(), true);
+            if(inBlock == null) {
+                inBlock = memOrphanPool.get(new ByteArrayWrapper(in.getHashLow()));
+            }
             byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 
             ECKey.ECDSASignature sig = inBlock.getOutsig();

@@ -82,7 +82,7 @@ public class XdagPow implements PoW {
     public XdagPow(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
         this.timer = new Timer();
         this.broadcaster = new Broadcaster();
         this.status = Status.STOPPED;

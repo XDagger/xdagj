@@ -24,6 +24,8 @@
 package io.xdag.net.handler;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
@@ -33,11 +35,11 @@ import java.math.BigInteger;
 public interface Xdag {
     void sendNewBlock(Block newBlock, int TTL);
 
-    void sendGetblocks(long starttime, long endtime);
+    long sendGetblocks(long starttime, long endtime);
 
-    void sendGetblock(byte[] hash);
+    long sendGetblock(byte[] hash);
 
-    void sendGetsums(long starttime, long endtime);
+    long sendGetsums(long starttime, long endtime);
 
     void dropConnection();
 

@@ -23,15 +23,8 @@
  */
 package io.xdag.net.handler;
 
-import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
@@ -40,22 +33,16 @@ import io.xdag.utils.BytesUtils;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.NetDB;
 import io.xdag.net.message.NetStatus;
 import io.xdag.net.message.impl.BlockExtRequestMessage;
 import io.xdag.net.message.impl.BlockRequestMessage;
@@ -107,10 +94,10 @@ public class Xdag03 extends XdagHandler {
             processBlocksReply((BlocksReplyMessage) msg);
             break;
         case SUMS_REQUEST:
-            processSumRequest((SumRequestMessage) msg);
+            processSumsRequest((SumRequestMessage) msg);
             break;
         case SUMS_REPLY:
-            processSumReply((SumReplyMessage) msg);
+            processSumsReply((SumReplyMessage) msg);
             break;
         case BLOCKEXT_REQUEST:
             processBlockExtRequest((BlockExtRequestMessage) msg);
@@ -153,12 +140,13 @@ public class Xdag03 extends XdagHandler {
 
     /** *********************** Message Processing * *********************** */
     protected synchronized void processNewBlock(NewBlockMessage msg) {
-        Block block = msg.getBlock();
         log.debug("processNewBlock:[{}]", BytesUtils.toHexString(msg.getBlock().getHash()));
+        Block block = msg.getBlock();
 //        log.debug("ttl:" + msg.getTtl());
         if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
             dropConnection();
         }
+
     }
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
@@ -176,31 +164,39 @@ public class Xdag03 extends XdagHandler {
         sendMessage(new BlocksReplyMessage(starttime, endtime, random, kernel.getNetStatus()));
     }
 
-    /** Reply 可以不用处理 */
     protected synchronized void processBlocksReply(BlocksReplyMessage msg) {
 //        log.debug("processBlocksReply:" + msg);
-        //TODO
         updateNetStatus(msg);
+        long randomSeq = msg.getRandom();
+        SettableFuture<byte[]> sf = kernel.getSync().getReqMap().get(randomSeq);
+        if(sf != null) {
+            sf.set(new byte[]{0});
+        }
     }
 
     /** 将sumrequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
-    protected synchronized void processSumRequest(SumRequestMessage msg) {
+    protected void processSumsRequest(SumRequestMessage msg) {
         updateNetStatus(msg);
-        // byte[] sum = new byte[256];
-        byte[] sum = kernel.getBlockStore().getSimpleFileStore().loadSum(msg.getStarttime(), msg.getEndtime());
-        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getNetStatus(), sum);
+        byte[] sums = new byte[256];
+        kernel.getBlockStore().getSimpleFileStore().loadSum(msg.getStarttime(), msg.getEndtime(),sums);
+        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getNetStatus(), sums);
         sendMessage(reply);
     }
 
-    protected synchronized void processSumReply(SumReplyMessage msg) {
+    protected void processSumsReply(SumReplyMessage msg) {
         log.debug("processSumReply:" + msg);
         updateNetStatus(msg);
+        long randomSeq = msg.getRandom();
+        SettableFuture<byte[]> sf = kernel.getSync().getReqMap().get(randomSeq);
+        if(sf != null) {
+            sf.set(msg.getSum());
+        }
     }
 
-    protected synchronized void processBlockExtRequest(BlockExtRequestMessage msg) {
+    protected void processBlockExtRequest(BlockExtRequestMessage msg) {
     }
 
-    protected synchronized void processBlockRequest(BlockRequestMessage msg) {
+    protected void processBlockRequest(BlockRequestMessage msg) {
         log.debug("processBlockRequest:" + msg);
         byte[] find = new byte[32];
         byte[] hash = msg.getHash();
@@ -222,10 +218,11 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public void sendGetblocks(long starttime, long endtime) {
+    public long sendGetblocks(long starttime, long endtime) {
 //        log.debug("sendGetblocks:[starttime={} endtime={}]", starttime, endtime);
         BlocksRequestMessage msg = new BlocksRequestMessage(starttime, endtime, kernel.getNetStatus());
         sendMessage(msg);
+        return msg.getRandom();
     }
 
     @Override
@@ -234,17 +231,19 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public void sendGetblock(byte[] hash) {
+    public long sendGetblock(byte[] hash) {
 //        log.debug("sendGetblock:[{}]", BytesUtils.toHexString(hash));
-        BlockRequestMessage blockRequestMessage = new BlockRequestMessage(hash, kernel.getNetStatus());
-        sendMessage(blockRequestMessage);
+        BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getNetStatus());
+        sendMessage(msg);
+        return msg.getRandom();
     }
 
     @Override
-    public void sendGetsums(long starttime, long endtime) {
+    public long sendGetsums(long starttime, long endtime) {
 //        log.debug("sendGetsums:starttime=[{}],endtime=[{}]", starttime, endtime);
         SumRequestMessage msg = new SumRequestMessage(starttime, endtime, kernel.getNetStatus());
         sendMessage(msg);
+        return msg.getRandom();
     }
 
     @Override

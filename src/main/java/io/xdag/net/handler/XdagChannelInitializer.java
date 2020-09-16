@@ -47,7 +47,7 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
         this.kernel = kernel;
         this.isServer = isServer;
         this.remoteNode = remoteNode;
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
     }
 
     @Override

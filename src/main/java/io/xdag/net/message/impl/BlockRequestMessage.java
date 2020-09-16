@@ -43,7 +43,6 @@ import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
-@Data
 public class BlockRequestMessage extends AbstractMessage {
 
     public BlockRequestMessage(byte[] hash, NetStatus netStatus) {

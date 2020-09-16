@@ -35,13 +35,18 @@ import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
+
+import com.google.common.util.concurrent.SettableFuture;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -54,9 +59,14 @@ import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.ExecutorPipeline;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
+@Setter
 public class SyncManager {
 
     private Kernel kernel;
@@ -93,14 +103,14 @@ public class SyncManager {
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
     }
 
     /** Queue with validated blocks to be added to the blockchain */
     private BlockingQueue<BlockWrapper> blockQueue = new LinkedBlockingQueue<>();
 
     /** Queue for the link block dosn't exist */
-    private Map<ByteArrayWrapper, Map<ByteArrayWrapper, BlockWrapper>> syncMap = new HashMap<>();
+    private Map<ByteArrayWrapper, List<BlockWrapper>> syncMap = new HashMap<>();
     private Map<ByteArrayWrapper, ByteArrayWrapper> syncReqMap = new HashMap<>();
 
     public void start() {
@@ -112,115 +122,88 @@ public class SyncManager {
 
     /** Processing the queue adding blocks to the chain. */
     private void produceQueue() {
-        log.debug("produceQueue");
-
         DecimalFormat timeFormat = new DecimalFormat("0.000");
         timeFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.US));
 
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             BlockWrapper blockWrapper = null;
+            long stale = !isSyncDone() && importStart > 0 && blockQueue.isEmpty() ? System.nanoTime() : 0;
+
             try {
-                long stale = !isSyncDone() && importStart > 0 && blockQueue.isEmpty() ? System.nanoTime() : 0;
-
                 blockWrapper = blockQueue.take();
-                blocksInMem.decrementAndGet();
-                if (stale > 0) {
-                    importIdleTime.addAndGet((System.nanoTime() - stale) / 1_000_000);
-                }
-                if (importStart == 0) {
-                    importStart = System.currentTimeMillis();
-                }
-
-                long s = System.nanoTime();
-                long sl;
-                ImportResult importResult;
-
-                synchronized (blockchain) {
-                    sl = System.nanoTime();
-                    importResult = blockchain.tryToConnect(blockWrapper.getBlock());
-                }
-
-                log.debug("impore result:" + String.valueOf(importResult));
-
-                if (importResult == EXIST) {
-                    log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
-                    continue;
-                }
-
-                long f = System.nanoTime();
-                long t = (f - s) / 1_000_000;
-                String ts = timeFormat.format(t / 1000d) + "s";
-                t = (sl - s) / 1_000_000;
-                ts += t < 10 ? "" : " (lock: " + timeFormat.format(t / 1000d) + "s)";
-
-                if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-                    // 获取到整条链的当前难度
-                    BigInteger currentDiff = blockchain.getTopDiff();
-                    if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
-                        log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
-                        // 只有同步完成的时候 才能开始线程 再一次
-                        if (!syncDone) {
-                            if (Config.MAINNET) {
-                                kernel.getXdagState().setState(XdagState.CONN);
-                            } else {
-                                kernel.getXdagState().setState(XdagState.CTST);
-                            }
-                        }
-                        makeSyncDone();
-                    }
-
-                    if(importResult == IMPORTED_BEST) {
-                        log.debug("BEST block:{},time: {}", Hex.toHexString(blockWrapper.getBlock().getHash()), ts);
-                    }
-                    if(importResult == IMPORTED_NOT_BEST) {
-                        log.debug("NOT_BEST block:{}, time:{}", Hex.toHexString(blockWrapper.getBlock().getHash()), ts);
-                    }
-                    ByteArrayWrapper bw = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
-                    BlockWrapper finalBlockWrapper = blockWrapper;
-                    syncReqMap.computeIfPresent(bw, (k, v) -> {
-                        syncPopBlock(finalBlockWrapper);
-                        kernel.getNetStatus().decWaitsync();
-                        return null;
-                    });
-                }
-
-                if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
-                    // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
-                    if (blockWrapper.getRemoteNode() == null
-                            || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
-                        if (blockWrapper.getTtl() > 0) {
-                            distributeBlock(blockWrapper);
-                        }
-                    }
-                }
-
-                if (importResult == NO_PARENT) {
-                    // TODO:添加进sync队列 后续请求区块
-                    syncPushBlock(blockWrapper, importResult.getHashLow());
-                    log.error("req block:{}", Hex.toHexString(importResult.getHashLow()));
-                    ByteArrayWrapper refkey = new ByteArrayWrapper(importResult.getHashLow());
-                    if(!syncReqMap.containsKey(refkey)) {
-                        // TODO:向谁请求
-                        List<XdagChannel> channels = channelMgr.getActiveChannels();
-                        for (XdagChannel channel : channels) {
-                            channel.getXdag().sendGetblock(importResult.getHashLow());
-                        }
-                        syncReqMap.putIfAbsent(refkey, refkey);
-                    }
-                }
             } catch (InterruptedException e) {
-                break;
-            } catch (Throwable e) {
-                if (blockWrapper != null) {
-                    log.error(
-                            "Error processing block {}: ",
-                            Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                            e);
-                    log.error(
-                            "Block dump1: {}", Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
-                } else {
-                    log.error("Error processing unknown block", e);
+                log.error(e.getMessage(), e);
+            }
+            blocksInMem.decrementAndGet();
+            if (stale > 0) {
+                importIdleTime.addAndGet((System.nanoTime() - stale) / 1_000_000);
+            }
+            if (importStart == 0) {
+                importStart = System.currentTimeMillis();
+            }
+
+            ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
+
+            if (importResult == EXIST) {
+                ByteArrayWrapper bw = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
+                syncReqMap.computeIfPresent(bw, (k, v) -> {
+                    kernel.getNetStatus().decWaitsync();
+                    return null;
+                });
+                log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+                continue;
+            }
+
+            if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
+                BigInteger currentDiff = blockchain.getTopDiff();
+                if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
+                    log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
+                    // 只有同步完成的时候 才能开始线程 再一次
+                    if (!syncDone) {
+                        if (Config.MAINNET) {
+                            kernel.getXdagState().setState(XdagState.CONN);
+                        } else {
+                            kernel.getXdagState().setState(XdagState.CTST);
+                        }
+                    }
+                    makeSyncDone();
                 }
+
+                ByteArrayWrapper bw = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
+                BlockWrapper finalBlockWrapper = blockWrapper;
+                syncReqMap.computeIfPresent(bw, (k, v) -> {
+                    syncPopBlock(finalBlockWrapper);
+                    kernel.getNetStatus().decWaitsync();
+                    return null;
+                });
+            }
+
+            if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
+                // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
+                if (blockWrapper.getRemoteNode() == null
+                        || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
+                    if (blockWrapper.getTtl() > 0) {
+                        distributeBlock(blockWrapper);
+                    }
+                }
+            }
+
+            if (importResult == NO_PARENT) {
+                // TODO:添加进sync队列 后续请求区块
+                byte[] hashLow = importResult.getHashLow();
+                syncPushBlock(blockWrapper, importResult.getHashLow());
+                log.error("req block:{}", Hex.toHexString(hashLow));
+                ByteArrayWrapper refkey = new ByteArrayWrapper(hashLow);
+                if(!syncReqMap.containsKey(refkey)) {
+                    kernel.getNetStatus().incWaitsync();
+                    // TODO:向谁请求
+                    List<XdagChannel> channels = channelMgr.getActiveChannels();
+                    for (XdagChannel channel : channels) {
+                        channel.getXdag().sendGetblock(hashLow);
+                    }
+                    syncReqMap.putIfAbsent(refkey, refkey);
+                }
+
             }
         }
     }
@@ -236,7 +219,6 @@ public class SyncManager {
         }
         log.debug("Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
         pushBlock(blockWrapper);
-        log.debug("Blocks waiting to be proceed:  queue.size: [{}] ", blockQueue.size());
         return true;
     }
 
@@ -260,20 +242,19 @@ public class SyncManager {
         ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
         ByteArrayWrapper blockKey = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
         // 获取所有缺少hashlow的区块
-        Map<ByteArrayWrapper, BlockWrapper> map = syncMap.get(refKey);
-        if (map == null) {
-            map = new HashMap<>();
-            map.put(blockKey, blockWrapper);
-            syncMap.put(refKey, map);
+        List<BlockWrapper> list = syncMap.get(refKey);
+        if (list == null) {
+            list = new LinkedList<>();
+            list.add(blockWrapper);
+            syncMap.put(refKey, list);
         } else {
-            map.forEach((k, v)->{
-                if (equalBytes(v.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
+            list.forEach(b->{
+                if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
                     return;
                 }
             });
-            map.putIfAbsent(blockKey, blockWrapper);
+            list.add(blockWrapper);
         }
-        kernel.getNetStatus().incWaitsync();
     }
 
     public void syncPopBlock(BlockWrapper blockWrapper) {
@@ -281,10 +262,10 @@ public class SyncManager {
         log.error("pop block:{}" + Hex.toHexString(block.getHashLow()));
         ByteArrayWrapper reWaitingKey = new ByteArrayWrapper(block.getHashLow());
         // 把所有block为parent的区块重新进行添加
-        Map<ByteArrayWrapper, BlockWrapper> map = syncMap.get(reWaitingKey);
-        if (map != null) {
-            map.forEach((k, v)->{
-                pushBlock(v);
+        List<BlockWrapper> list = syncMap.get(reWaitingKey);
+        if (list != null) {
+            list.forEach(b->{
+                pushBlock(b);
             });
         }
     }
@@ -329,4 +310,5 @@ public class SyncManager {
     public void distributeBlock(BlockWrapper blockWrapper) {
         channelMgr.onNewForeignBlock(blockWrapper);
     }
+
 }

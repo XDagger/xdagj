@@ -76,8 +76,7 @@ public abstract class AbstractMessage extends Message {
         encode();
     }
 
-    public AbstractMessage(
-            XdagMessageCodes type, long starttime, long endtime, byte[] hash, NetStatus netStatus) {
+    public AbstractMessage(XdagMessageCodes type, long starttime, long endtime, byte[] hash, NetStatus netStatus) {
         parsed = true;
         this.starttime = starttime;
         this.endtime = endtime;
@@ -150,7 +149,6 @@ public abstract class AbstractMessage extends Message {
         byte[] first = BytesUtils.merge(
                 BytesUtils.longToBytes(transportheader, true),
                 BytesUtils.longToBytes(type, true),
-//                Long.toUnsignedString(type)
                 BytesUtils.longToBytes(starttime, true),
                 BytesUtils.longToBytes(endtime, true));
         System.arraycopy(first, 0, encoded, 0, 32);
