@@ -209,7 +209,7 @@ public class BlockchainTest {
         System.out.println("Orphan size:" + blockchain.getOrphanSize()); // 5
         System.out.println("Extra size:" + blockchain.getExtraSize()); // 1
 
-        blockchain.removeOrphan(main, BlockchainImpl.OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
+        blockchain.removeOrphan(main.getHashLow(), BlockchainImpl.OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
         System.out.println("Orphan size:" + blockchain.getOrphanSize()); // 3
         System.out.println("Extra size:" + blockchain.getExtraSize()); // 3
     }
@@ -272,7 +272,7 @@ public class BlockchainTest {
         }
     }
 
-    @Test
+    //@Test
     public void Testblockload() {
         BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
         loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1649267441664L, blockchain);
@@ -315,7 +315,7 @@ public class BlockchainTest {
         System.out.println("Transaction data:" + Hex.toHexString(transaction.getXdagBlock().getData()));
     }
 
-    @Test
+    //@Test
     public void TestLoadBlocksByTime() {
         BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
         loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1627725496320L, blockchain);

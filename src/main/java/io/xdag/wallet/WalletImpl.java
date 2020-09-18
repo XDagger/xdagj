@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import io.xdag.config.Config;
@@ -50,10 +51,14 @@ public class WalletImpl implements Wallet {
     @Override
     public int init(Config config) throws Exception {
         File dnetDatFile = new File(Config.DNET_KEY_FILE);
+        System.out.println(dnetDatFile.getAbsolutePath());
+        System.out.println(dnetDatFile.exists());
+        System.out.println(dnetDatFile.length() );
         Native.dfslib_random_init();
         Native.crc_init();
         boolean fileExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
-        Pair<String, String> pair = getPassword(fileExist);
+//        Pair<String, String> pair = getPassword(fileExist);
+        Pair<String, String> pair = Pair.of("123456", "123456");
         if (pair == null) {
             System.out.println("wallet init fail");
             System.exit(1);

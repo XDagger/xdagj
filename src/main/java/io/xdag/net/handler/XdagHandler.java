@@ -62,6 +62,5 @@ public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> i
         if (XdagMessageCodes.inRange(msg.getCommand().asByte(), version)) {
             log.trace("XdagHandler invoke: [{}]", msg.getCommand());
         }
-        msgQueue.receivedMessage(msg);
     }
 }

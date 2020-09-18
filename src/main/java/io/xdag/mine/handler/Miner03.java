@@ -98,23 +98,23 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
   }
 
   /** *********************** Message Processing * *********************** */
-  protected synchronized void processNewBlock(NewBlockMessage msg) {
+  protected void processNewBlock(NewBlockMessage msg) {
     log.debug(" Receive a Tx");
     Block block = msg.getBlock();
     syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL(), null));
   }
 
-  protected synchronized void processNewBalance(NewBalanceMessage msg) {
+  protected void processNewBalance(NewBalanceMessage msg) {
     // TODO: 2020/5/9 处理矿工接受到的余额信息 矿工功能
     log.debug(" Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
   }
 
-  protected synchronized void processNewTask(NewTaskMessage msg) {
+  protected void processNewTask(NewTaskMessage msg) {
     // TODO: 2020/5/9 处理矿工收到的新任务 矿工功能
     log.debug(" Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
   }
 
-  protected synchronized void processTaskShare(TaskShareMessage msg) {
+  protected void processTaskShare(TaskShareMessage msg) {
     log.debug(" Pool Receive Share");
     if (FastByteComparisons.compareTo(
                 msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
@@ -133,7 +133,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     ctx.channel().writeAndFlush(bytes);
   }
 
-  public synchronized void dropConnection() {
+  public void dropConnection() {
     disconnect();
   }
 

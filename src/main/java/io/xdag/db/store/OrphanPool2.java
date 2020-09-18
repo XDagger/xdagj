@@ -115,7 +115,7 @@ public class OrphanPool2 {
         orphanSource.put(BytesUtils.merge(ORPHAN_PREV_PREFEX, next), prev);
     }
 
-    public synchronized void addOrphan(Block block) {
+    public void addOrphan(Block block) {
 
         if (orphanSource.get(ORPHAN_FIRST) == null || orphanSource.get(ORPHAN_LAST) == null) {
             orphanSource.put(ORPHAN_FIRST, block.getHashLow());

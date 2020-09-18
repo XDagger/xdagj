@@ -91,8 +91,10 @@ public class BlockchainImpl implements Blockchain {
     private byte[] pretop;
     private BigInteger pretopDiff;
     private NetStatus netStatus;
+    private Kernel kernel;
 
     public BlockchainImpl(Kernel kernel, DatabaseFactory dbFactory) {
+        this.kernel = kernel;
         this.wallet = kernel.getWallet();
         this.accountStore = kernel.getAccountStore();
         this.blockStore = kernel.getBlockStore();
@@ -175,7 +177,7 @@ public class BlockchainImpl implements Blockchain {
             if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
                 Block reuse = getHead(memOrphanPool).getValue();
                 log.debug("remove when extra too big");
-                removeOrphan(reuse, OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
+                removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
                 netStatus.decBlock();
                 if ((reuse.getFlags() & BI_OURS) != 0) {
                     removeAccount(reuse);
@@ -228,8 +230,7 @@ public class BlockchainImpl implements Blockchain {
                 {
                     break;
                 }
-                removeOrphan(
-                        getBlockByHash(ref.getHashLow(), false),
+                removeOrphan(ref.getHashLow(),
                         (block.flags & BI_EXTRA) != 0
                                 ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                                 : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
@@ -263,7 +264,7 @@ public class BlockchainImpl implements Blockchain {
 
     /** 检查更新主链 * */
     @Override
-    public synchronized void checkNewMain() {
+    public void checkNewMain() {
         log.debug("Check New Main...");
         Block p = null;
         int i = 0;
@@ -286,7 +287,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     /** 回退到区块block * */
-    public synchronized void unWindMain(Block block) {
+    public void unWindMain(Block block) {
         if (block == null) {
             return;
         }
@@ -410,7 +411,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     /** 设置以block为主块的主链 要么分叉 要么延长 * */
-    public synchronized void setMain(Block block) {
+    public void setMain(Block block) {
 
         blockStore.mainNumberInc();
 
@@ -438,7 +439,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     /** 取消Block主块身份 * */
-    public synchronized void unSetMain(Block block) {
+    public void unSetMain(Block block) {
         blockStore.mainNumberDec();
         netStatus.decMain();
 
@@ -535,7 +536,7 @@ public class BlockchainImpl implements Blockchain {
         return top_main_chain;
     }
 
-    public synchronized void setPretop(Block block) {
+    public void setPretop(Block block) {
         if (block == null) {
             return;
         }
@@ -626,10 +627,11 @@ public class BlockchainImpl implements Blockchain {
             return null;
         }
         ByteArrayWrapper key = new ByteArrayWrapper(hashlow);
-        if (memOrphanPool.containsKey(key)) {
-            return memOrphanPool.get(key);
+        Block b = memOrphanPool.get(key);
+        if (b == null) {
+            b = blockStore.getBlockByHash(hashlow, isRaw);
         }
-        return blockStore.getBlockByHash(hashlow, isRaw);
+        return b;
     }
 
     public Block getMaxDiffLink(Block block, boolean isRaw) {
@@ -658,52 +660,40 @@ public class BlockchainImpl implements Blockchain {
         return blockStore.hasBlock(hash);
     }
 
-    public void removeOrphan(Block removeBlockInfo, OrphanRemoveActions action) {
-        if (((removeBlockInfo.getFlags() & BI_REF) == 0)
-                && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
-                || (removeBlockInfo.getFlags() & BI_EXTRA) != 0)) {
+    public void removeOrphan(byte[] hashlow, OrphanRemoveActions action) {
+        Block b = getBlockByHash(hashlow, false);
+        if (b != null && ((b.getFlags() & BI_REF) == 0) && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA || (b.getFlags() & BI_EXTRA) != 0)) {
             // 如果removeBlock是BI_EXTRA
-            if ((removeBlockInfo.getFlags() & BI_EXTRA) != 0) {
+            if ((b.getFlags() & BI_EXTRA) != 0) {
                 log.debug("移除Extra");
                 // 那removeBlockInfo就是完整的
                 // 从MemOrphanPool中去除
-                ByteArrayWrapper key = new ByteArrayWrapper(removeBlockInfo.getHashLow());
-                // 如果不存在
-                if (!memOrphanPool.containsKey(key)) {
-                    return;
-                }
+                ByteArrayWrapper key = new ByteArrayWrapper(b.getHashLow());
                 Block removeBlockRaw = memOrphanPool.get(key);
                 memOrphanPool.remove(key);
                 if (action != OrphanRemoveActions.ORPHAN_REMOVE_REUSE) {
                     // 将区块保存
                     saveBlock(removeBlockRaw);
+                    memOrphanPool.remove(key);
                     // 移除所有EXTRA块链接的块
                     List<Address> all = removeBlockRaw.getLinks();
-                    for (int i = 0; i < all.size(); i++) {
-                        removeOrphan(
-                                getBlockByHash(all.get(i).getHashLow(), false),
-                                OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
+                    for(Address addr : all) {
+                        removeOrphan(addr.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
                     }
                 }
                 // 更新removeBlockRaw的flag
                 // nextra减1
+
                 updateBlockFlag(removeBlockRaw, BI_EXTRA, false);
             } else {
-                // 从orphanPool中移除
-                // noref减1 因为非BI_EXTRA的块已经存储了所以不用存储操作
-                log.debug("移除orphan");
-                if (!orphanPool.containsKey(removeBlockInfo.getHashLow())) {
-                    return;
-                }
-                orphanPool.deleteByHash(removeBlockInfo.getHashLow());
+                orphanPool.deleteByHash(b.getHashLow());
             }
             // 更新这个块的flag
-            updateBlockFlag(removeBlockInfo, BI_REF, true);
+            updateBlockFlag(b, BI_REF, true);
         }
     }
 
     public void updateBlockFlag(Block block, byte flag, boolean direction) {
-        // log.debug("update flag");
         if (direction) {
             block.flags |= flag;
         } else {
@@ -792,6 +782,10 @@ public class BlockchainImpl implements Blockchain {
                 if (ecKey.verify(hash, sig)) {
                     canUse = true;
                 }
+            }
+            // link block
+            if(ecKeys.isEmpty() && block.getOutsig() != null) {
+                canUse = true;
             }
             if (!canUse) {
                 return false;

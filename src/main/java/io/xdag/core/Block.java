@@ -246,7 +246,7 @@ public class Block implements Cloneable {
     }
 
     /** 解析512字节数据* */
-    public synchronized void parse() {
+    public void parse() {
         if (parsed) {
             return;
         }

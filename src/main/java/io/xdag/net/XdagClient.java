@@ -48,7 +48,7 @@ public class XdagClient {
 
         @Override
         public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "XdagJMinerWorker-" + cnt.getAndIncrement());
+            return new Thread(r, "client-" + cnt.getAndIncrement());
         }
     };
 

@@ -78,8 +78,6 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
-        msgQueue.receivedMessage(msg);
-
         switch (msg.getCommand()) {
         case NEW_BLOCK:
             processNewBlock((NewBlockMessage) msg);
@@ -128,7 +126,7 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public synchronized void dropConnection() {
+    public void dropConnection() {
         log.info("Peer {}: is a bad one, drop", channel.getNode().getAddress());
         disconnect();
     }
@@ -139,7 +137,7 @@ public class Xdag03 extends XdagHandler {
     }
 
     /** *********************** Message Processing * *********************** */
-    protected synchronized void processNewBlock(NewBlockMessage msg) {
+    protected void processNewBlock(NewBlockMessage msg) {
         log.debug("processNewBlock:[{}]", BytesUtils.toHexString(msg.getBlock().getHash()));
         Block block = msg.getBlock();
 //        log.debug("ttl:" + msg.getTtl());
@@ -150,21 +148,21 @@ public class Xdag03 extends XdagHandler {
     }
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
-    protected synchronized void processBlocksRequest(BlocksRequestMessage msg) {
-//        log.debug("processBlocksRequest:" + msg);
+    protected void processBlocksRequest(BlocksRequestMessage msg) {
+        log.debug("processBlocksRequest:" + msg);
         updateNetStatus(msg);
-        long starttime = msg.getStarttime();
-        long endtime = msg.getEndtime();
-        long random = msg.getRandom();
-
-        List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
-        for (Block block : blocks) {
-            sendNewBlock(block, 1);
-        }
-        sendMessage(new BlocksReplyMessage(starttime, endtime, random, kernel.getNetStatus()));
+//        long starttime = msg.getStarttime();
+//        long endtime = msg.getEndtime();
+//        long random = msg.getRandom();
+//
+//        List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
+//        for (Block block : blocks) {
+//            sendNewBlock(block, 1);
+//        }
+//        sendMessage(new BlocksReplyMessage(starttime, endtime, random, kernel.getNetStatus()));
     }
 
-    protected synchronized void processBlocksReply(BlocksReplyMessage msg) {
+    protected void processBlocksReply(BlocksReplyMessage msg) {
 //        log.debug("processBlocksReply:" + msg);
         updateNetStatus(msg);
         long randomSeq = msg.getRandom();
@@ -285,12 +283,8 @@ public class Xdag03 extends XdagHandler {
 
     public void updateNetStatus(AbstractMessage message) {
         NetStatus remoteNetStatus = message.getNetStatus();
-        synchronized (kernel.getNetStatus()) {
-            kernel.getNetStatus().updateNetStatus(remoteNetStatus);
-        }
-        synchronized (kernel.getNetDBMgr()) {
-            kernel.getNetDBMgr().updateNetDB(message.getNetDB());
-        }
+        kernel.getNetStatus().updateNetStatus(remoteNetStatus);
+        kernel.getNetDBMgr().updateNetDB(message.getNetDB());
     }
 
 }

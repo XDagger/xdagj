@@ -80,14 +80,14 @@ public class OrphanPool {
         }
     }
 
-    public synchronized void deleteByHash(byte[] hashlow) {
+    public void deleteByHash(byte[] hashlow) {
         log.debug("deleteByhash");
         orphanSource.delete(BytesUtils.merge(ORPHAN_PREFEX, hashlow));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
     }
 
-    public synchronized void addOrphan(Block block) {
+    public void addOrphan(Block block) {
         orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), new byte[0]);
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         log.debug("orphan current size:" + currentsize);

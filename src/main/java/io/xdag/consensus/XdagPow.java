@@ -299,9 +299,9 @@ public class XdagPow implements PoW {
         log.debug("发送区块:" + Hex.toHexString(generateBlock.toBytes()));
         log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
         log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
-        synchronized (kernel.getBlockchain()) {
+//        synchronized (kernel.getBlockchain()) {
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
-        }
+//        }
         awardManager.payAndaddNewAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
                 generateBlock.getTimestamp());
 
@@ -405,13 +405,13 @@ public class XdagPow implements PoW {
         @Override
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
-                synchronized (this) {
+//                synchronized (this) {
                     if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
                         events.add(new Event(Event.Type.TIMEOUT));
                         timeout = -1;
                         continue;
                     }
-                }
+//                }
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
@@ -441,7 +441,7 @@ public class XdagPow implements PoW {
             }
         }
 
-        public synchronized void timeout(long sendtime) {
+        public void timeout(long sendtime) {
             if (sendtime < 0) {
                 throw new IllegalArgumentException("Timeout can not be negative");
             }

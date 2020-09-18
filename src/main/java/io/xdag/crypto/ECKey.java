@@ -532,7 +532,7 @@ public class ECKey implements Serializable {
     public static boolean verify(byte[] data, ECDSASignature signature, byte[] pub) {
         if (Secp256k1Context.isEnabled()) {
             try {
-                return NativeSecp256k1.verify(data, signature.encodeToDER(), pub);
+                return NativeSecp256k1.verify(data, signature.toByteArray(), pub);
             } catch (NativeSecp256k1Util.AssertFailException e) {
                 log.error("Caught AssertFailException inside secp256k1", e);
                 return false;

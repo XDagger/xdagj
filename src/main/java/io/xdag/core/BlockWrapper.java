@@ -29,7 +29,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class BlockWrapper {
+public class BlockWrapper implements Cloneable {
     private Block block;
     private int ttl;
     /** 记录区块接收节点 */
@@ -40,4 +40,5 @@ public class BlockWrapper {
         this.ttl = ttl;
         this.remoteNode = remoteNode;
     }
+
 }

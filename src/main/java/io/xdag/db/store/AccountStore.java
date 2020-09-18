@@ -67,7 +67,7 @@ public class AccountStore {
     }
 
     /** 存放第一个地址块 */
-    public synchronized void addFirstAccount(Block block, int keyIndex) {
+    public void addFirstAccount(Block block, int keyIndex) {
         log.debug(
                 "Add new account:"
                         + Hex.toHexString(block.getHashLow())
@@ -79,7 +79,7 @@ public class AccountStore {
     }
 
     /** 账户形成链表 */
-    public synchronized void addNewAccount(Block block, int keyIndex) {
+    public void addNewAccount(Block block, int keyIndex) {
         // 第一个
         if (getAllAccount().size() == 0) {
             log.debug("Global miner");
@@ -96,7 +96,7 @@ public class AccountStore {
         blockStore.updateBlockKeyIndex(block.getHashLow(), keyIndex);
     }
 
-    public synchronized void removeAccount(Block block) {
+    public void removeAccount(Block block) {
         log.debug("Remove an account:" + Hex.toHexString(block.getHashLow()));
         byte[] value = accountSource.get(block.getHashLow());
         byte[] key = ACCOUNT_ORIGIN_KEY;

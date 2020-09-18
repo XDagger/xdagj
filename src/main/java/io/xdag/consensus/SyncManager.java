@@ -33,20 +33,17 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.spongycastle.util.encoders.Hex;
-
-import com.google.common.util.concurrent.SettableFuture;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -58,10 +55,11 @@ import io.xdag.core.XdagState;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.ExecutorPipeline;
+import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -73,32 +71,16 @@ public class SyncManager {
     private Blockchain blockchain;
     private long importStart;
     private AtomicLong importIdleTime = new AtomicLong();
-    private AtomicInteger blocksInMem = new AtomicInteger(0);
     private boolean syncDone = false;
     private XdagChannelManager channelMgr;
-    private Thread syncQueueThread;
 
-    private ExecutorPipeline<BlockWrapper, BlockWrapper> exec1 = new ExecutorPipeline<>(
-            4,
-            1000,
-            true,
-            blockWrapper -> {
-                blockWrapper.getBlock().parse();
-                return blockWrapper;
-            },
-            throwable -> log.error("Unexpected exception: ", throwable));
-
-    private ExecutorPipeline<BlockWrapper, Void> exec2 = exec1.add(
+    private static AtomicInteger cnt = new AtomicInteger(0);
+    private ScheduledFuture<?> timerTask;
+    public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
             1,
-            1,
-            new Consumer<BlockWrapper>() {
-                @Override
-                public void accept(BlockWrapper block) {
-                    log.debug("Accept a blockWrapper");
-                    blockQueue.add(block);
-                    // estimateBlockSize(blockWrapper);
-                }
-            });
+            new BasicThreadFactory.Builder()
+                    .namingPattern("SyncManageTimer-" + cnt.getAndIncrement())
+                    .build());
 
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
@@ -107,103 +89,88 @@ public class SyncManager {
     }
 
     /** Queue with validated blocks to be added to the blockchain */
-    private BlockingQueue<BlockWrapper> blockQueue = new LinkedBlockingQueue<>();
+    private Queue<BlockWrapper> blockQueue = new ConcurrentLinkedQueue<>();
 
     /** Queue for the link block dosn't exist */
-    private Map<ByteArrayWrapper, List<BlockWrapper>> syncMap = new HashMap<>();
-    private Map<ByteArrayWrapper, ByteArrayWrapper> syncReqMap = new HashMap<>();
-
+    private Map<ByteArrayWrapper, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
     public void start() {
         log.debug("Download receiveBlock run...");
+        timerTask = timer.scheduleAtFixedRate(
+                () -> {
+                    try {
+                        nudgeQueue();
+                    } catch (Throwable t) {
+                        log.error("Unhandled exception:" + t.getMessage(), t);
+                        t.printStackTrace();
+                    }
+                },
+                10,
+                10,
+                TimeUnit.MILLISECONDS);
+    }
 
-        syncQueueThread = new Thread(this::produceQueue, "SyncThread");
-        syncQueueThread.start();
+    private void nudgeQueue() {
+        // 1000 / 10 * 200 = 20000 messages per second
+        int n = Math.min(200, blockQueue.size());
+        if (n == 0) {
+            return;
+        }
+        // write out n messages
+        for (int i = 0; i < n; i++) {
+            BlockWrapper bw = blockQueue.poll();
+            if(bw!= null) {
+                produceQueue(bw);
+            }
+        }
+
     }
 
     /** Processing the queue adding blocks to the chain. */
-    private void produceQueue() {
+    private void produceQueue(BlockWrapper blockWrapper) {
+        log.debug("produceQueue:[{}]", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
+        ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
         DecimalFormat timeFormat = new DecimalFormat("0.000");
         timeFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.US));
 
-        while (true) {
-            BlockWrapper blockWrapper = null;
-            long stale = !isSyncDone() && importStart > 0 && blockQueue.isEmpty() ? System.nanoTime() : 0;
+        if (importResult == EXIST) {
+            log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+        }
 
-            try {
-                blockWrapper = blockQueue.take();
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            }
-            blocksInMem.decrementAndGet();
-            if (stale > 0) {
-                importIdleTime.addAndGet((System.nanoTime() - stale) / 1_000_000);
-            }
-            if (importStart == 0) {
-                importStart = System.currentTimeMillis();
-            }
-
-            ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
-
-            if (importResult == EXIST) {
-                ByteArrayWrapper bw = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
-                syncReqMap.computeIfPresent(bw, (k, v) -> {
-                    kernel.getNetStatus().decWaitsync();
-                    return null;
-                });
-                log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
-                continue;
-            }
-
-            if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-                BigInteger currentDiff = blockchain.getTopDiff();
-                if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
-                    log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
-                    // 只有同步完成的时候 才能开始线程 再一次
-                    if (!syncDone) {
-                        if (Config.MAINNET) {
-                            kernel.getXdagState().setState(XdagState.CONN);
-                        } else {
-                            kernel.getXdagState().setState(XdagState.CTST);
-                        }
-                    }
-                    makeSyncDone();
-                }
-
-                ByteArrayWrapper bw = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
-                BlockWrapper finalBlockWrapper = blockWrapper;
-                syncReqMap.computeIfPresent(bw, (k, v) -> {
-                    syncPopBlock(finalBlockWrapper);
-                    kernel.getNetStatus().decWaitsync();
-                    return null;
-                });
-            }
-
-            if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
-                // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
-                if (blockWrapper.getRemoteNode() == null
-                        || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
-                    if (blockWrapper.getTtl() > 0) {
-                        distributeBlock(blockWrapper);
+        if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
+            BigInteger currentDiff = blockchain.getTopDiff();
+            if (!syncDone && currentDiff.compareTo(kernel.getNetStatus().getMaxdifficulty()) >= 0) {
+                log.info("Current Maxdiff:" + kernel.getNetStatus().getMaxdifficulty().toString(16));
+                // 只有同步完成的时候 才能开始线程 再一次
+                if (!syncDone) {
+                    if (Config.MAINNET) {
+                        kernel.getXdagState().setState(XdagState.CONN);
+                    } else {
+                        kernel.getXdagState().setState(XdagState.CTST);
                     }
                 }
+                makeSyncDone();
             }
+            syncPopBlock(blockWrapper);
+        }
 
-            if (importResult == NO_PARENT) {
-                // TODO:添加进sync队列 后续请求区块
-                byte[] hashLow = importResult.getHashLow();
-                syncPushBlock(blockWrapper, importResult.getHashLow());
-                log.error("req block:{}", Hex.toHexString(hashLow));
-                ByteArrayWrapper refkey = new ByteArrayWrapper(hashLow);
-                if(!syncReqMap.containsKey(refkey)) {
-                    kernel.getNetStatus().incWaitsync();
-                    // TODO:向谁请求
-                    List<XdagChannel> channels = channelMgr.getActiveChannels();
-                    for (XdagChannel channel : channels) {
-                        channel.getXdag().sendGetblock(hashLow);
-                    }
-                    syncReqMap.putIfAbsent(refkey, refkey);
+        if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
+            // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
+            if (blockWrapper.getRemoteNode() == null
+                    || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
+                if (blockWrapper.getTtl() > 0) {
+                    distributeBlock(blockWrapper);
                 }
+            }
+        }
 
+        if (importResult == NO_PARENT) {
+            byte[] hashLow = importResult.getHashLow();
+            if(syncPushBlock(blockWrapper, hashLow)) {
+                log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), Hex.toHexString(hashLow));
+                List<XdagChannel> channels = channelMgr.getActiveChannels();
+                for (XdagChannel channel : channels) {
+                    channel.getXdag().sendGetblock(hashLow);
+                }
             }
         }
     }
@@ -214,19 +181,15 @@ public class SyncManager {
 
     public boolean validateAndAddNewBlock(BlockWrapper blockWrapper) {
         if (blockchain.hasBlock(blockWrapper.getBlock().getHashLow())) {
-             log.debug("Block have exist");
+            log.debug("Block have exist");
             return true;
         }
-        log.debug("Adding new block to sync queue:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
-        pushBlock(blockWrapper);
-        return true;
-    }
 
-    protected void pushBlock(BlockWrapper bw) {
-        if (!exec1.isShutdown() && bw != null) {
-            exec1.push(bw);
-            blocksInMem.addAndGet(1);
-        }
+        //TODO limit queue size
+        blockWrapper.getBlock().parse();
+        blockQueue.add(blockWrapper);
+
+        return true;
     }
 
     /**
@@ -237,36 +200,43 @@ public class SyncManager {
      * @param hashLow
      *            缺失的parent
      */
-    public void syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
-        log.error("push block{}, no ref:{}",Hex.toHexString(blockWrapper.getBlock().getHashLow()), Hex.toHexString(hashLow));
+    public boolean syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
         ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
-        ByteArrayWrapper blockKey = new ByteArrayWrapper(blockWrapper.getBlock().getHashLow());
         // 获取所有缺少hashlow的区块
-        List<BlockWrapper> list = syncMap.get(refKey);
-        if (list == null) {
-            list = new LinkedList<>();
-            list.add(blockWrapper);
-            syncMap.put(refKey, list);
+        Queue<BlockWrapper> queue = syncMap.get(refKey);
+        if (queue == null) {
+            queue = new LinkedList<>();
+            queue.add(blockWrapper);
+            syncMap.put(refKey, queue);
         } else {
-            list.forEach(b->{
+            for(BlockWrapper b : queue) {
                 if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
-                    return;
+                    //TODO think timeout and ttl
+                    return false;
                 }
-            });
-            list.add(blockWrapper);
+            }
+            queue.add(blockWrapper);
         }
+        kernel.getNetStatus().incWaitsync();
+        return true;
     }
 
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
-        log.error("pop block:{}" + Hex.toHexString(block.getHashLow()));
-        ByteArrayWrapper reWaitingKey = new ByteArrayWrapper(block.getHashLow());
+        ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
         // 把所有block为parent的区块重新进行添加
-        List<BlockWrapper> list = syncMap.get(reWaitingKey);
-        if (list != null) {
-            list.forEach(b->{
-                pushBlock(b);
-            });
+        Queue<BlockWrapper> queue = syncMap.get(key);
+        if (queue != null) {
+//            for(BlockWrapper bw = queue.poll(); bw !=null;  bw = queue.poll()) {
+//                kernel.getNetStatus().decWaitsync();
+//                log.error("pop block:{}", Hex.toHexString(block.getHashLow()));
+//                blockQueue.add(bw);
+//            }
+            BlockWrapper bw = queue.poll();
+            if(bw!=null) {
+                kernel.getNetStatus().decWaitsync();
+                blockQueue.add(bw);
+            }
         }
     }
 
@@ -292,19 +262,6 @@ public class SyncManager {
 
     public void stop() {
         log.debug("sync manager stop");
-        // if(isRunning.compareAndSet(true,false)){
-        if (exec1 != null) {
-            try {
-                exec1.shutdown();
-                exec1.join();
-                if (syncQueueThread != null) {
-                    syncQueueThread.interrupt();
-                    syncQueueThread.join(10 * 1000);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public void distributeBlock(BlockWrapper blockWrapper) {
