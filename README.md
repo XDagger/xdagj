@@ -57,7 +57,7 @@ Configure a new library file for it.
 
 ## Run XDAGJ
 
-In XDAGJ，`resource/conf.setting` is a global configuration file. If specified configuration parameters are not configured，the default parameters will be used.Refer [hutool](https://www.hutool.cn/docs/#/setting/%E6%A6%82%E8%BF%B0)
+In XDAGJ，`resource/xdag.config` is a global configuration file. If specified configuration parameters are not configured，the default parameters will be used.Refer [hutool](https://www.hutool.cn/docs/#/setting/%E6%A6%82%E8%BF%B0)
 
 To avoid stack overflow, increase the STACK value of the JVM to at least 4096k when loading the test network data.
 
@@ -83,7 +83,7 @@ For more commands:
 #### Build test enviroment
 Refer [How to build a test environment](./docs/Build_Test_Environment.md)
 
-#### Commands currently implemented
+#### Telnet Server and Commands currently implemented
 
 start para:
 
@@ -101,29 +101,35 @@ start para:
                   direct - reward to miners participated in earned block in percent
                   fund - community fund fee in percent
 ```
+Telnet Server:
 
-Execution parameters :
-
+IP and Port in xdag.conf
 ```yaml
-xdag> run                       [Run,start working]
-xdag> account N                 [Check your accounrs ,N is optional ]
-xdag> state                     [Check your pool state if you are connected to other pool]
-xdag> stats                     [Check network status]
-xdag> balance                   [Check you balance]
-xdag> block A                   [Check the block info use hash or address]
-xdag> mainblocks N              [Print list of N (20 by default) main blocks]
-xdag> minedblocks N             [Print list of N (20 by default) main blocks mined by current pool]
-xdag> keygen                    [Generate new private/public key pair and set it by default]
-xdag> net conn                  [List connections]
-xdag> net connect ip:port       [connect a new pool]
-xdag> miners                    [Printf list of activite miners in our pool]
-xdag> xfer N A                  [Transfer N XDAG to the address A]
-xdag> disconnect all|ip:port    [all : disconnect all miners / ip:port  disconnect the specified miner]
-xdag> exit                      [Terminate xdag process]
-xdag> terminate                 [Terminate xdag process]
+root@localhost xdagj % telnet 127.0.0.1 7001
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Enter password> ******
+xdag> help
+    account     print first [SIZE] (20 by default) our addresses with their amounts
+    balance     print balance of the address [ADDRESS] or total balance for all our addresses
+    block       print extended info for the block corresponding to the address or hash [A]
+    disconnect  disconnect all connections or specified miners
+    exit        exit from app/script
+    help        command help
+    keygen      generate new private/public key pair and set it by default
+    lastblocks  print latest [SIZE] (20 by default, max limit 100) main blocks
+    mainblocks  print latest [SIZE] (20 by default, max limit 100) main blocks
+    minedblocks print list of [SIZE] (20 by default) main blocks mined by current pool
+    miners      for pool, print list of recent connected miners
+    net         run transport layer command, try 'net --help'
+    run         run node after loading local blocks if option -r is used
+    state       print the program state
+    stats       print statistics for loaded and all known blocks
+    terminate   terminate both daemon and this program
+    ttop        display and update sorted information about threads
+    xfer        transfer [AMOUNT] XDAG to the address [ADDRESS]
 ```
-
-
 
 ## Contribute
 
