@@ -776,17 +776,14 @@ public class BlockchainImpl implements Blockchain {
             byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 
             ECKey.ECDSASignature sig = inBlock.getOutsig();
-
+            
             for (ECKey ecKey : ecKeys) {
                 byte[] hash = Sha256Hash.hashTwice(BytesUtils.merge(subdata, ecKey.getPubKeybyCompress()));
                 if (ecKey.verify(hash, sig)) {
                     canUse = true;
                 }
             }
-            // link block
-            if(ecKeys.isEmpty() && block.getOutsig() != null) {
-                canUse = true;
-            }
+
             if (!canUse) {
                 return false;
             }

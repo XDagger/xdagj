@@ -23,13 +23,10 @@
  */
 package io.xdag.crypto;
 
-import static io.xdag.crypto.ECKey.ECDSASignature;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import io.xdag.utils.BytesUtils;
+import org.apache.commons.codec.binary.StringUtils;
+import org.junit.Test;
+import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.security.KeyPairGenerator;
@@ -37,17 +34,15 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
 
-import org.apache.commons.codec.binary.StringUtils;
-import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
-
-import lombok.extern.slf4j.Slf4j;
+import static io.xdag.crypto.ECKey.ECDSASignature;
+import static org.junit.Assert.*;
 
 public class ECKeyTest {
 
     private static final SecureRandom secureRandom = new SecureRandom();
 
     private String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
+    private byte[] privKey = Hex.decode(privString);
     private BigInteger privateKey = new BigInteger(privString, 16);
 
     private String pubString = "040947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad75aa17564ae80a20bb044ee7a6d903e8e8df624b089c95d66a0570f051e5a05b";
@@ -258,5 +253,29 @@ public class ECKeyTest {
     public void testNodeId() {
         ECKey key = ECKey.fromPublicOnly(pubKey);
         assertEquals(key, ECKey.fromNodeId(key.getNodeId()));
+    }
+
+    @Test
+    public void testVerify() {
+        ECKey key = ECKey.fromPrivate(privateKey);
+        ECDSASignature sign = key.sign(Sha256Hash.hashTwice(exampleMessage.getBytes()));
+        assertTrue(ECKey.verify(Sha256Hash.hashTwice(exampleMessage.getBytes()), sign, pubKey));
+        for(int i = 0; i < 10000; i++) {
+            ECDSASignature testSign = new ECDSASignature(sign.r, sign.s);
+            assertTrue(ECKey.verify(Sha256Hash.hashTwice(exampleMessage.getBytes()), testSign, pubKey));
+        }
+    }
+
+    @Test
+    public void testVerify2() {
+        String pubkeyStr = "0468e1d91b0bfc1ded5f0887286d196ad04b46b921d7a3272d7a8f95b45cfd9c8bc5a4537b772ff4d56805c28ac9d3e5215d57490c87f007a159f99ed46239bed9";
+        String signR = "02e47aea40ac424f0672b25d395268a0a4a6e9864ff7bec255372faabe96e1fe";
+        String signS = "2ff7590b29b6d9f24735e98f1ada8047dfce7405e987c4b34ce3323996110cbe";
+        String hashStr = "c130d057ccc601c71100b61f7cece9e233f6e5df0e839d930426d316589f5c8d";
+        ECKey key = ECKey.fromPublicOnly(Hex.decode(pubkeyStr));
+        BigInteger r = BytesUtils.bytesToBigInteger(Hex.decode(signR));
+        BigInteger s = BytesUtils.bytesToBigInteger(Hex.decode(signS));
+        ECDSASignature sign = new ECDSASignature(r, s);
+        assertTrue(key.verify(Hex.decode(hashStr), sign));
     }
 }

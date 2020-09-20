@@ -532,7 +532,7 @@ public class ECKey implements Serializable {
     public static boolean verify(byte[] data, ECDSASignature signature, byte[] pub) {
         if (Secp256k1Context.isEnabled()) {
             try {
-                return NativeSecp256k1.verify(data, signature.toByteArray(), pub);
+                return NativeSecp256k1.verify(data, signature.encodeToDER(), pub);
             } catch (NativeSecp256k1Util.AssertFailException e) {
                 log.error("Caught AssertFailException inside secp256k1", e);
                 return false;
@@ -568,6 +568,14 @@ public class ECKey implements Serializable {
      * @return -
      */
     public static boolean verify(byte[] data, byte[] signature, byte[] pub) {
+        if (Secp256k1Context.isEnabled()) {
+            try {
+                return NativeSecp256k1.verify(data, signature, pub);
+            } catch (NativeSecp256k1Util.AssertFailException e) {
+                log.error("Caught AssertFailException inside secp256k1", e);
+                return false;
+            }
+        }
         return verify(data, ECDSASignature.decodeFromDER(signature), pub);
     }
 
@@ -1153,7 +1161,7 @@ public class ECKey implements Serializable {
          * Will automatically adjust the S component to be less than or equal to half
          * the curve order, if necessary. This is required because for every signature
          * (r,s) the signature (r, -s (mod N)) is a valid signature of the same message.
-         * However, we dislike the ability to modify the bits of a Ethereum transaction
+         * However, we dislike the ability to modify the bits of a xdag transaction
          * after it's been signed, as that violates various assumed invariants. Thus in
          * future only one of those forms will be considered legal and the other will be
          * banned.
