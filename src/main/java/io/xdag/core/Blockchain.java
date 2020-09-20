@@ -40,11 +40,7 @@ public interface Blockchain {
 
     BigInteger getTopDiff();
 
-    BigInteger getPretopDiff();
-
     boolean hasBlock(byte[] hash);
-
-    byte[] getTop_main_chain();
 
     long getMainBlockSize();
 
@@ -67,8 +63,6 @@ public interface Blockchain {
     Map<ByteArrayWrapper, Integer> getMemAccount();
 
     ReentrantReadWriteLock getStateLock();
-
-    Block getExtraBlock(byte[] hash);
 
     long getSupply(long nmain);
 }

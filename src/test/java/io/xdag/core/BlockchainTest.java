@@ -23,6 +23,7 @@
  */
 package io.xdag.core;
 
+import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
@@ -38,8 +39,13 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.spongycastle.util.encoders.Hex;
 
 import java.io.File;
@@ -48,27 +54,29 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.text.ParseException;
+import java.util.*;
 
-import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
+import static org.junit.Assert.assertEquals;
 
+@Slf4j
 public class BlockchainTest {
+
+    @Rule
+    public TemporaryFolder root = new TemporaryFolder();
+
     Config config = new Config();
     Wallet xdagWallet;
     Kernel kernel;
     DatabaseFactory dbFactory;
 
-    //
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir("./unitest/chainstate");
-        config.setStoreBackupDir("./unitest/chainstate");
+        config.setStoreDir(root.newFolder().getAbsolutePath());
+        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
 
         Native.init();
         if (Native.dnet_crypt_init() < 0) {
@@ -85,6 +93,7 @@ public class BlockchainTest {
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getSumsDB());
+
         blockStore.reset();
         AccountStore accountStore = new AccountStore(xdagWallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
         accountStore.reset();
@@ -99,177 +108,120 @@ public class BlockchainTest {
         kernel.setNetStatus(netStatus);
     }
 
+    public void assertXdagStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
+        assertEquals("blocks:", nblocks, bci.getNetStatus().getNblocks());
+        assertEquals("main:", nmain, bci.getNetStatus().getNmain());
+        assertEquals("nextra:", nextra, bci.getExtraSize());
+        assertEquals("orphan:", norphan, bci.getOrphanSize());
+    }
+
     @Test
-    public void blockchainTest() {
-
-        String blockRawdata = "000000000000000038324654050000004d3782fa780100000000000000000000"
-                + "c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d7980000000000000000"
-                + "afa5fec4f56f7935125806e235d5280d7092c6840f35b397000000000a000000"
-                + "a08202c3f60123df5e3a973e21a2dd0418b9926a2eb7c4fc000000000a000000"
-                + "08b65d2e2816c0dea73bf1b226c95c2ae3bc683574f559bbc5dd484864b1dbeb"
-                + "f02a041d5f7ff83a69c0e35e7eeeb64496f76f69958485787d2c50fd8d9614e6"
-                + "7c2b69c79eddeff5d05b2bfc1ee487b9c691979d315586e9928c04ab3ace15bb"
-                + "3866f1a25ed00aa18dde715d2a4fc05147d16300c31fefc0f3ebe4d77c63fcbb"
-                + "ec6ece350f6be4c84b8705d3b49866a83986578a3a20e876eefe74de0c094bac"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
-        Block first = new Block(new XdagBlock(Hex.decode(blockRawdata)));
-
-        System.out.println(
-                "=====================================first block use key1========================================");
-
-        long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()); // extra
-        List<Address> pending = new ArrayList<>();
-        pending.add(new Address(first.getHashLow()));
-        Block txfirst = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
-        ECKey ecKey1 = new ECKey();
-        txfirst.signOut(ecKey1);
-        printBlockInfo(txfirst);
-
-        System.out.println(
-                "=====================================second block use key2========================================");
-        time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()); // extra
-        pending = new ArrayList<>();
-        pending.add(new Address(first.getHashLow()));
-        Block txsecond = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
-        ECKey ecKey2 = new ECKey();
-        txsecond.signOut(ecKey2);
-        printBlockInfo(txsecond);
-
-        System.out.println(
-                "=====================================main block use key2========================================");
-        pending = new ArrayList<>();
-        pending.add(new Address(txfirst.getHashLow()));
-        pending.add(new Address(txsecond.getHashLow()));
-        Block main = new Block(time, new Address(first.getHashLow()), null, pending, true, null, -1); // extra
-        main.signOut(ecKey2);
+    public void blockchainStartFirstTest() throws ParseException {
+        // 0.3.1 pool first start xdag_create_block hex
+        String raw031Block = "00000000000000005805000000000000ADB776977D0100000000000000000000CACFC85A0A71A9126E14F0C57E1CB4E5F84F908E6333E20A9C5C47E66E1F828F45C5E51D710B772B29BFC41BEE64C4F251209A7582C9B80C02647BD9F231CC4C0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        // 0.4.0 pool first start xdag_create_block hex
+        String raw040Block = "00000000000000005805000000000000306268977D0100000000000000000000736842A30FD96D8FC6F8AA9F4DAE81DCDE5F7148A448E3F5D8D3FA87B57D5C86E37716C0F00E1C3C406174245DC8304D69E557E75F304DA8FF070B27DB66A6DE0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         byte[] minShare = new byte[32];
-        new Random().nextBytes(minShare);
-        main.setNonce(minShare);
-        printBlockInfo(main);
+        ECKey pool031Key = new ECKey();
+        ECKey pool040Key = new ECKey();
 
-        System.out.println(
-                "=====================================transaction1 block use key1========================================");
-        List<Address> links = new ArrayList<>();
-        links.add(new Address(txfirst.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, 10)); // key1
-        links.add(new Address(txsecond.getHashLow(), XDAG_FIELD_OUT, 10));
+        List<Address> pending = Lists.newArrayList();
+//        long time = 0;
+//
+//        XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp());
+        FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+        Date firstExtraBlockTIme = fastDateFormat.parse("2020-09-20 23:00:00");
+        Date date = null;
+
+        log.debug("1. create pool_0.3.1 and pool_0.4.0 address block");
+        Block pool031AddressBlock = new Block(new XdagBlock(Hex.decode(raw031Block)));
+        Address pool031Address = new Address(pool031AddressBlock.getHashLow());
+        Block pool040AddressBlock = new Block(new XdagBlock(Hex.decode(raw040Block)));
+        Address pool040Address = new Address(pool040AddressBlock.getHashLow());
+
+        log.debug("2. create pool_0.3.1 and pooL_0.4.0 first extra block");
+        date = new Date(XdagTime.getEndOfEpoch(firstExtraBlockTIme.getTime()));
+        date = DateUtils.addSeconds(date, 64);
+        pending.clear();
+        pending.add(pool040Address);
+        pending.add(pool031Address);
+        Block pool031ExtraBlock1 = new Block(date.getTime(), null, null, pending, false, null, -1);
+        pool031ExtraBlock1.signOut(pool031Key);
+        minShare = new byte[32];
+        Arrays.fill(minShare, (byte)0x0);
+        pool031ExtraBlock1.setNonce(minShare);
+
+        pending.clear();
+        pending.add(pool040Address);
+        pending.add(pool031Address);
+        Block pool040ExtraBlock1 = new Block(date.getTime(), null, null, pending, false, null, -1);
+        pool040ExtraBlock1.signOut(pool040Key);
+        minShare = new byte[32];
+        Arrays.fill(minShare, (byte)0xf);
+        pool040ExtraBlock1.setNonce(minShare);
+        Address pool040ExtraBlock1Address = new Address(pool040ExtraBlock1.getHashLow());
+
+        log.debug("3. create pool_0.4.0 second extra block");
+        date = new Date(XdagTime.getEndOfEpoch(date.getTime()));
+        date = DateUtils.addSeconds(date, 64);
+        pending.clear();
+        pending.add(pool040ExtraBlock1Address);
+        Block pool040ExtraBlock2 = new Block(date.getTime(), null, null, pending, false, null, -1);
+        pool040ExtraBlock2.signOut(pool040Key);
+        minShare = new byte[32];
+        Arrays.fill(minShare, (byte)0xf);
+        pool040ExtraBlock2.setNonce(minShare);
+
+        log.debug("4. pool_0.4.0 create transaction block (from 'pool040' to 'pool031' 10 XDAG)");
+        date = new Date(XdagTime.getEndOfEpoch(date.getTime()));
+        date = DateUtils.addSeconds(date, 64 + 32);
+        pending.clear();
+        pending.add(new Address(pool040ExtraBlock1Address.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, 10)); // key1
+        pending.add(new Address(pool031Address.getHashLow(), XDAG_FIELD_OUT, 10));
         List<ECKey> keys = new ArrayList<>();
-        keys.add(ecKey1);
-        time = XdagTime.getCurrentTimestamp();
-        Block transaction1 = new Block(time, first.getFirstOutput(), links, null, false, keys, 0); // orphan
-        // 跟输入用的同一把密钥
-        transaction1.signOut(ecKey1);
-        printBlockInfo(transaction1);
-
-        System.out.println(
-                "=====================================transaction2 block use key3========================================");
-        links = new ArrayList<>();
-        links.add(new Address(txfirst.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, 10)); // key1
-        links.add(new Address(txsecond.getHashLow(), XDAG_FIELD_OUT, 10));
-        keys = new ArrayList<>();
-        keys.add(ecKey1);
-        Block transaction2 = new Block(time, first.getFirstOutput(), links, null, false, keys, -1); // orphan
-        // 跟输入用的不是同一把密钥
-        ECKey ecKey3 = new ECKey();
-        transaction2.signIn(ecKey1);
-        transaction2.signOut(ecKey3);
-        printBlockInfo(transaction2);
-
-        System.out.println(
-                "=====================================transaction3 block use key3========================================");
-        links = new ArrayList<>();
-        links.add(new Address(txfirst.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, 10)); // key1
-        links.add(new Address(txsecond.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, 10)); // key2
-        links.add(new Address(main.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, 20));
-        keys = new ArrayList<>();
-        keys.add(ecKey1);
-        keys.add(ecKey2);
-        Block transaction3 = new Block(time, first.getFirstOutput(), links, null, false, keys, -1); // orphan
-        // 跟输入用的不是同一把密钥
-        transaction3.signIn(ecKey1);
-        transaction3.signIn(ecKey2);
-        transaction3.signOut(ecKey3);
-        printBlockInfo(transaction1);
+        keys.add(pool040Key);
+        Block txBlock1 = new Block(date.getTime(), null, pending, null, false, keys, 0); // orphan
+        txBlock1.signOut(pool040Key);
 
         BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
-        blockchain.tryToConnect(first);
-        blockchain.updateBlockFlag(first, BI_REF, true);
-        blockchain.tryToConnect(txfirst);
-        blockchain.tryToConnect(txsecond);
-        blockchain.tryToConnect(main);
-        blockchain.tryToConnect(transaction1);
-        blockchain.tryToConnect(transaction2);
-        blockchain.tryToConnect(transaction3);
+        ImportResult result = ImportResult.IMPORTED_NOT_BEST;
 
-        System.out.println("Orphan size:" + blockchain.getOrphanSize()); // 5
-        System.out.println("Extra size:" + blockchain.getExtraSize()); // 1
+        // 1. add pool031 and pool040 address block
+        result = blockchain.tryToConnect(pool031AddressBlock);
+        assertXdagStatus(1, 0, 0,1, blockchain);
+        result = blockchain.tryToConnect(pool040AddressBlock);
+        assertXdagStatus(2, 0, 0,2, blockchain);
 
-        blockchain.removeOrphan(main.getHashLow(), BlockchainImpl.OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
-        System.out.println("Orphan size:" + blockchain.getOrphanSize()); // 3
-        System.out.println("Extra size:" + blockchain.getExtraSize()); // 3
-    }
+        // 2. add pool031 and pool040 extra block1
+        result = blockchain.tryToConnect(pool031ExtraBlock1);
+        assertXdagStatus(3, 0, 0,1, blockchain);
+        result = blockchain.tryToConnect(pool040ExtraBlock1);
+        assertXdagStatus(4, 0, 0,2, blockchain);
 
-    public void printBlockInfo(Block block) {
-        System.out.println("timestamp:" + Long.toHexString(block.getTimestamp()));
-        printHash(block.getHash(), "blockhash:");
-        printHash(block.getHashLow(), "blockhashlow:");
-        System.out.println("type:" + block.getType());
-        if (block.getFirstOutput() != null)
-            printHash(block.getFirstOutput().getHashLow(), "firstoutput:");
-        System.out.println("inputs:" + block.getInputs().size());
-        printListAddress(block.getInputs());
-        System.out.println("outputs:" + block.getOutputs().size());
-        printListAddress(block.getOutputs());
-        System.out.println("keys size:");
-        System.out.println(block.getPubKeys().size());
-        System.out.println("verified keys size");
-        System.out.println(block.verifiedKeys().size());
-        System.out.println("blockdiff:" + block.getDifficulty());
-        printXdagBlock(block.getXdagBlock(), "xdagblock:");
-        printListKeys(block.getPubKeys());
-        printHash(block.getOutsig().toByteArray(), "outsig:");
-        System.out.println("outsigindex:" + block.getOutsigIndex());
-        printMapInsig(block.getInsigs());
-        if (block.getNonce() != null) {
-            System.out.println("nonce:" + Hex.toHexString(block.getNonce()));
-        }
-    }
+        // 3. add pool031 and pool040 extra block2
+        result = blockchain.tryToConnect(pool040ExtraBlock2);
+        assertXdagStatus(5, 0, 0,2, blockchain);
 
-    public void printXdagBlock(XdagBlock block, String prefix) {
-        System.out.println(prefix);
-        for (XdagField field : block.getFields()) {
-            System.out.println(Hex.toHexString(field.getData()));
-        }
-    }
+        // 4. add transactionblock
+        result = blockchain.tryToConnect(txBlock1);
+        assertXdagStatus(6, 1, 0,3, blockchain);
 
-    public void printMapInsig(Map<ECKey.ECDSASignature, Integer> input) {
-        for (ECKey.ECDSASignature sig : input.keySet()) {
-            System.out.println("inputsig:" + sig.toHex());
-            System.out.println("inputsigindex:" + input.get(sig));
-        }
+        Block store031AddressBlock = blockchain.getBlockByHash(pool031AddressBlock.getHashLow(), false);
+        Block store040AddressBlock = blockchain.getBlockByHash(pool040AddressBlock.getHashLow(), false);
+
+        Block store031ExtraBlock1 = blockchain.getBlockByHash(pool031ExtraBlock1.getHashLow(), false);
+        Block store040ExtraBlock1 = blockchain.getBlockByHash(pool040ExtraBlock1.getHashLow(), false);
+        Block store040ExtraBlock2 = blockchain.getBlockByHash(pool040ExtraBlock2.getHashLow(), false);
+        System.out.println("store031AddressBlock:" + amount2xdag(store031AddressBlock.getAmount()));
+        System.out.println("store040AddressBlock:" + amount2xdag(store040AddressBlock.getAmount()));
+        System.out.println("store031ExtraBlock1:" + amount2xdag(store031ExtraBlock1.getAmount()));
+        System.out.println("store040ExtraBlock1:" + amount2xdag(store040ExtraBlock1.getAmount()));
+        System.out.println("store040ExtraBlock2:" + amount2xdag(store040ExtraBlock2.getAmount()));
+//        assertEquals("XDAG supply:", String.valueOf(1024.0), String.valueOf(amount2xdag(store040ExtraBlock1.getAmount())));
     }
 
     public void printHash(byte[] hash, String prefix) {
         System.out.println(prefix + Hex.toHexString(hash));
-    }
-
-    public void printListAddress(List<Address> input) {
-        for (Address address : input) {
-            System.out.println("address data:" + Hex.toHexString(address.getData()));
-            System.out.println("address hashlow:" + Hex.toHexString(address.getHashLow()));
-            System.out.println("address amount:" + address.getAmount());
-        }
-    }
-
-    public void printListKeys(List<ECKey> input) {
-        for (ECKey ecKey : input) {
-            printHash(ecKey.getPubKeybyCompress(), "key:");
-        }
     }
 
     //@Test
@@ -435,7 +387,7 @@ public class BlockchainTest {
         return file;
     }
 
-    @Test
+//    @Test
     public void testXdagAmount() {
         System.out.println(xdag2amount(10.99));
         System.out.println(xdag2amount(1024));

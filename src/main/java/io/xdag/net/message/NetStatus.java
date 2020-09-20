@@ -39,13 +39,10 @@ public class NetStatus {
     protected long totalnmain;
     protected int nhosts;
     protected int totalnhosts;
-
     protected long nwaitsync;
-
     protected long maintime;
 
-    public NetStatus() {
-    }
+    public NetStatus(){}
 
     /** 用于记录remote node的 */
     public NetStatus(

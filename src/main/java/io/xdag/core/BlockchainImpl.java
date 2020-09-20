@@ -50,7 +50,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.commons.collections4.CollectionUtils;
+import lombok.Getter;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -71,7 +71,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class BlockchainImpl implements Blockchain {
-
     private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
 
     // private static long g_apollo_fork_time = 0;
@@ -90,6 +89,7 @@ public class BlockchainImpl implements Blockchain {
     private byte[] top_main_chain;
     private byte[] pretop;
     private BigInteger pretopDiff;
+    @Getter
     private NetStatus netStatus;
     private Kernel kernel;
 
@@ -101,7 +101,6 @@ public class BlockchainImpl implements Blockchain {
         this.orphanPool = kernel.getOrphanPool();
         this.pretop = this.top_main_chain = blockStore.getPretop();
         this.pretopDiff = this.topDiff = blockStore.getPretopDiff();
-        // this.blockNumber = blockStore.getBlockNumber();
         this.netStatus = kernel.getNetStatus();
         this.netStatus.init(pretopDiff, blockStore.getMainNumber(), blockStore.getBlockNumber());
     }
@@ -130,18 +129,9 @@ public class BlockchainImpl implements Blockchain {
                 if (ref != null) {
                     if (!isExist(ref.getHashLow())) {
                         log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
-
-                        // if address block
-                        if(all.size() == 1 &&
-                                ref.getType() == XdagField.FieldType.XDAG_FIELD_OUT &&
-                                BigInteger.ZERO.equals(ref.getAmount()))
-                        {
-                           break;
-                        } else {
-                            result = ImportResult.NO_PARENT;
-                            result.setHashLow(ref.getHashLow());
-                            return result;
-                        }
+                        result = ImportResult.NO_PARENT;
+                        result.setHashLow(ref.getHashLow());
+                        return result;
                     } else {
                         if (!ref.getAmount().equals(BigInteger.ZERO)) {
                             updateBlockFlag(block, BI_EXTRA, false);
@@ -213,23 +203,13 @@ public class BlockchainImpl implements Blockchain {
                 }
                 // 将主链回退到blockref
                 unWindMain(blockRef);
-
                 setTopDiff(block.getDifficulty());
-
                 setTopMainchain(block);
-
                 result = ImportResult.IMPORTED_BEST;
             }
 
             // remove links
             for (Address ref : all) {
-                log.debug("remove links");
-                if(all.size() == 1 &&
-                        ref.getType() == XdagField.FieldType.XDAG_FIELD_OUT &&
-                        BigInteger.ZERO.equals(ref.getAmount()))
-                {
-                    break;
-                }
                 removeOrphan(ref.getHashLow(),
                         (block.flags & BI_EXTRA) != 0
                                 ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
@@ -531,11 +511,6 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    @Override
-    public byte[] getTop_main_chain() {
-        return top_main_chain;
-    }
-
     public void setPretop(Block block) {
         if (block == null) {
             return;
@@ -648,11 +623,6 @@ public class BlockchainImpl implements Blockchain {
 
     public void setTopDiff(BigInteger diff) {
         topDiff = diff;
-    }
-
-    @Override
-    public BigInteger getPretopDiff() {
-        return blockStore.getPretopDiff();
     }
 
     @Override
@@ -776,7 +746,7 @@ public class BlockchainImpl implements Blockchain {
             byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 
             ECKey.ECDSASignature sig = inBlock.getOutsig();
-            
+
             for (ECKey ecKey : ecKeys) {
                 byte[] hash = Sha256Hash.hashTwice(BytesUtils.merge(subdata, ecKey.getPubKeybyCompress()));
                 if (ecKey.verify(hash, sig)) {
@@ -965,11 +935,6 @@ public class BlockchainImpl implements Blockchain {
     @Override
     public ReentrantReadWriteLock getStateLock() {
         return stateLock;
-    }
-
-    @Override
-    public Block getExtraBlock(byte[] hashlow) {
-        return memOrphanPool.getOrDefault(new ByteArrayWrapper(hashlow), null);
     }
 
     enum OrphanRemoveActions {

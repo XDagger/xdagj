@@ -42,16 +42,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.xdag.core.*;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagState;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.ByteArrayWrapper;
@@ -184,11 +180,9 @@ public class SyncManager {
             log.debug("Block have exist");
             return true;
         }
-
         //TODO limit queue size
         blockWrapper.getBlock().parse();
         blockQueue.add(blockWrapper);
-
         return true;
     }
 
@@ -227,11 +221,6 @@ public class SyncManager {
         // 把所有block为parent的区块重新进行添加
         Queue<BlockWrapper> queue = syncMap.get(key);
         if (queue != null) {
-//            for(BlockWrapper bw = queue.poll(); bw !=null;  bw = queue.poll()) {
-//                kernel.getNetStatus().decWaitsync();
-//                log.error("pop block:{}", Hex.toHexString(block.getHashLow()));
-//                blockQueue.add(bw);
-//            }
             BlockWrapper bw = queue.poll();
             if(bw!=null) {
                 kernel.getNetStatus().decWaitsync();

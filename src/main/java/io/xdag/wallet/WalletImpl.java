@@ -51,9 +51,6 @@ public class WalletImpl implements Wallet {
     @Override
     public int init(Config config) throws Exception {
         File dnetDatFile = new File(Config.DNET_KEY_FILE);
-        System.out.println(dnetDatFile.getAbsolutePath());
-        System.out.println(dnetDatFile.exists());
-        System.out.println(dnetDatFile.length() );
         Native.dfslib_random_init();
         Native.crc_init();
         boolean fileExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
