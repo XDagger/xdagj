@@ -30,7 +30,6 @@ import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.security.KeyPairGenerator;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
 
@@ -38,8 +37,6 @@ import static io.xdag.crypto.ECKey.ECDSASignature;
 import static org.junit.Assert.*;
 
 public class ECKeyTest {
-
-    private static final SecureRandom secureRandom = new SecureRandom();
 
     private String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
     private byte[] privKey = Hex.decode(privString);
@@ -49,12 +46,7 @@ public class ECKeyTest {
     private String compressedPubString = "030947751e3022ecf3016be03ec77ab0ce3c2662b4843898cb068d74f698ccc8ad";
     private byte[] pubKey = Hex.decode(pubString);
     private byte[] compressedPubKey = Hex.decode(compressedPubString);
-    private String address = "cd2a3d9f938e13cd947ec05abc7fe734df8dd826";
-
     private String exampleMessage = "This is an example of a signed message.";
-    private String sigBase64 = "HNLOSI9Nop5o8iywXKwbGbdd8XChK0rRvdRTG46RFcb7dcH+UKlejM/8u1SCoeQvu91jJBMd/nXDs7f5p8ch7Ms=";
-    private String signatureHex = "d2ce488f4da29e68f22cb05cac1b19b75df170a12b4ad1bdd4531b8e9115c6fb75c1fe50a95e8ccffcbb5482a1e42fbbdd6324131dfe75c3b3b7f9a7c721eccb01";
-
 
     @Test
     public void generKeyTest() {
@@ -67,7 +59,6 @@ public class ECKeyTest {
         assertTrue(StringUtils.equals(Hex.toHexString(ecKey.getPubKeybyCompress()), pubkeyCompress));
     }
 
-
     @Test
     public void testHashCode() {
         assertEquals(-351262686, ECKey.fromPrivate(privateKey).hashCode());
@@ -79,8 +70,6 @@ public class ECKeyTest {
         assertTrue(key.isPubKeyCanonical());
         assertNotNull(key.getPubKey());
         assertNotNull(key.getPrivKeyBytes());
-//        log.debug(Hex.toHexString(key.getPrivKeyBytes()) + " :Generated privkey");
-//        log.debug(Hex.toHexString(key.getPubKey()) + " :Generated pubkey");
     }
 
     @Test
@@ -256,18 +245,14 @@ public class ECKeyTest {
     }
 
     @Test
-    public void testVerify() {
+    public void testVerifyFromPrivate() {
         ECKey key = ECKey.fromPrivate(privateKey);
         ECDSASignature sign = key.sign(Sha256Hash.hashTwice(exampleMessage.getBytes()));
         assertTrue(ECKey.verify(Sha256Hash.hashTwice(exampleMessage.getBytes()), sign, pubKey));
-        for(int i = 0; i < 10000; i++) {
-            ECDSASignature testSign = new ECDSASignature(sign.r, sign.s);
-            assertTrue(ECKey.verify(Sha256Hash.hashTwice(exampleMessage.getBytes()), testSign, pubKey));
-        }
     }
 
     @Test
-    public void testVerify2() {
+    public void testVerifyFromPublic() {
         String pubkeyStr = "0468e1d91b0bfc1ded5f0887286d196ad04b46b921d7a3272d7a8f95b45cfd9c8bc5a4537b772ff4d56805c28ac9d3e5215d57490c87f007a159f99ed46239bed9";
         String signR = "02e47aea40ac424f0672b25d395268a0a4a6e9864ff7bec255372faabe96e1fe";
         String signS = "2ff7590b29b6d9f24735e98f1ada8047dfce7405e987c4b34ce3323996110cbe";
@@ -277,5 +262,23 @@ public class ECKeyTest {
         BigInteger s = BytesUtils.bytesToBigInteger(Hex.decode(signS));
         ECDSASignature sign = new ECDSASignature(r, s);
         assertTrue(key.verify(Hex.decode(hashStr), sign));
+    }
+
+    /**
+     * Will automatically adjust the S component to be less than or equal to half
+     * the curve order, if necessary
+     */
+    @Test
+    public void testVerifySLessHalf() {
+        String pubkeyStr = "0468e1d91b0bfc1ded5f0887286d196ad04b46b921d7a3272d7a8f95b45cfd9c8bc5a4537b772ff4d56805c28ac9d3e5215d57490c87f007a159f99ed46239bed9";
+        String signR = "533b00ce8249b2ced600ecb63afb8f74e44a8aa52ee73168316138861e03df1b";
+        String signS = "c5f6d45892d832934378c671674764fe4dd7d34c877a389b61e411ab6dacc99c";
+        String hashStr = "2f2588c2188320439cf7570c1119a4d0e2b0d706463dd5bef15afe5b3c1c1b89";
+        ECKey key = ECKey.fromPublicOnly(Hex.decode(pubkeyStr));
+        BigInteger r = BytesUtils.bytesToBigInteger(Hex.decode(signR));
+        BigInteger s = BytesUtils.bytesToBigInteger(Hex.decode(signS));
+        ECDSASignature sign = new ECDSASignature(r, s);
+        assertFalse(key.verify(Hex.decode(hashStr), sign));
+        assertTrue(key.verify(Hex.decode(hashStr), sign.toCanonicalised()));
     }
 }
