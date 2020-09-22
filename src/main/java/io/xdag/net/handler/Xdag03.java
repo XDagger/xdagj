@@ -23,13 +23,11 @@
  */
 package io.xdag.net.handler;
 
-import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
-import io.xdag.utils.BytesUtils;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
 
@@ -138,18 +136,19 @@ public class Xdag03 extends XdagHandler {
 
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
-        log.debug("processNewBlock:[{}]", BytesUtils.toHexString(msg.getBlock().getHash()));
+        //log.debug("processNewBlock:[{}]", BytesUtils.toHexString(msg.getBlock().getHash()));
         Block block = msg.getBlock();
-//        log.debug("ttl:" + msg.getTtl());
-        if (!syncMgr.validateAndAddNewBlock(new BlockWrapper(block, msg.getTtl() - 1, channel.getNode()))) {
-            dropConnection();
-        }
+        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
+        syncMgr.validateAndAddNewBlock(bw);
+//        if (!syncMgr.validateAndAddNewBlock(bw)) {
+//            dropConnection();
+//        }
 
     }
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-        log.debug("processBlocksRequest:" + msg);
+//        log.debug("processBlocksRequest:" + msg);
         updateNetStatus(msg);
 //        long starttime = msg.getStarttime();
 //        long endtime = msg.getEndtime();
@@ -166,7 +165,7 @@ public class Xdag03 extends XdagHandler {
 //        log.debug("processBlocksReply:" + msg);
         updateNetStatus(msg);
         long randomSeq = msg.getRandom();
-        SettableFuture<byte[]> sf = kernel.getSync().getReqMap().get(randomSeq);
+        SettableFuture<byte[]> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
         if(sf != null) {
             sf.set(new byte[]{0});
         }
@@ -174,18 +173,20 @@ public class Xdag03 extends XdagHandler {
 
     /** 将sumrequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
     protected void processSumsRequest(SumRequestMessage msg) {
+        log.debug("processSumsRequest:" + msg);
         updateNetStatus(msg);
         byte[] sums = new byte[256];
         kernel.getBlockStore().getSimpleFileStore().loadSum(msg.getStarttime(), msg.getEndtime(),sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getNetStatus(), sums);
         sendMessage(reply);
+        log.debug("processSumsRequest:" + reply);
     }
 
     protected void processSumsReply(SumReplyMessage msg) {
-        log.debug("processSumReply:" + msg);
+//        log.debug("processSumReply:" + msg);
         updateNetStatus(msg);
         long randomSeq = msg.getRandom();
-        SettableFuture<byte[]> sf = kernel.getSync().getReqMap().get(randomSeq);
+        SettableFuture<byte[]> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
         if(sf != null) {
             sf.set(msg.getSum());
         }
@@ -230,7 +231,6 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetblock(byte[] hash) {
-//        log.debug("sendGetblock:[{}]", BytesUtils.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getNetStatus());
         sendMessage(msg);
         return msg.getRandom();

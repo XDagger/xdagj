@@ -156,7 +156,7 @@ public class XdagChannelManager {
     }
 
     public void remove(XdagChannel ch) {
-        log.debug("Channel removed: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
+//        log.debug("Channel removed: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
         channels.remove(ch.getInetSocketAddress());
         if (ch.isActive()) {
             activeChannels.remove(ch.getNode().getHexId());

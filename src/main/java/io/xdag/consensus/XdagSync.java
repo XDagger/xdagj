@@ -68,14 +68,18 @@ public class XdagSync {
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
     @Getter
-    private ConcurrentHashMap<Long, SettableFuture<byte[]>> reqMap;
+    private ConcurrentHashMap<Long, SettableFuture<byte[]>> sumsRequestMap;
+
+    @Getter
+    private ConcurrentHashMap<Long, SettableFuture<byte[]>> blocksRequestMap;
 
 
     public XdagSync(Kernel kernel) {
         this.channelMgr = kernel.getChannelMgr();
         this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
-        reqMap = new ConcurrentHashMap<>();
+        sumsRequestMap = new ConcurrentHashMap<>();
+        blocksRequestMap = new ConcurrentHashMap<>();
     }
 
     /** 不断发送send request */
@@ -104,14 +108,15 @@ public class XdagSync {
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetblocks(t, t + dt);
-                reqMap.put(randomSeq, sf);
+                blocksRequestMap.put(randomSeq, sf);
                 try {
-                    sf.get(64, TimeUnit.SECONDS);
+                    sf.get(128, TimeUnit.SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    reqMap.remove(randomSeq);
+                    blocksRequestMap.remove(randomSeq);
                     log.error(e.getMessage(), e);
                     return;
                 }
+                blocksRequestMap.remove(randomSeq);
                 return;
             } else {
                 byte[] lsums = new byte[256];
@@ -121,17 +126,17 @@ public class XdagSync {
                 }
                 log.debug("lsum is " + Hex.toHexString(lsums));
                 randomSeq = xc.getXdag().sendGetsums(t, t + dt);
-                reqMap.put(randomSeq, sf);
+                sumsRequestMap.put(randomSeq, sf);
                 log.debug("sendGetsums seq:{}.", randomSeq);
                 try {
-                    byte[] sums = sf.get(64, TimeUnit.SECONDS);
+                    byte[] sums = sf.get(128, TimeUnit.SECONDS);
                     rsums = Arrays.copyOf(sums, 256);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    reqMap.remove(randomSeq);
+                    sumsRequestMap.remove(randomSeq);
                     log.error(e.getMessage(), e);
                     return;
                 }
-                reqMap.remove(randomSeq);
+                sumsRequestMap.remove(randomSeq);
                 log.debug("rsum is " + Hex.toHexString(rsums));
                 dt >>= 4;
                 for (int i = 0; i < 16; i++) {

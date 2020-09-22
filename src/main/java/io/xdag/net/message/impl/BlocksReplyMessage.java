@@ -34,7 +34,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
-@Data
 public class BlocksReplyMessage extends AbstractMessage {
     public BlocksReplyMessage(long starttime, long endtime, long random, NetStatus netStatus) {
         super(BLOCKS_REPLY, starttime, endtime, random, netStatus);

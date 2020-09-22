@@ -44,13 +44,17 @@ import static io.xdag.utils.MapUtils.getHead;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -122,8 +126,8 @@ public class BlockchainImpl implements Blockchain {
             if (isExtraBlock(block)) {
                 updateBlockFlag(block, BI_EXTRA, true);
             }
-
-            List<Address> all = block.getLinks();
+            //TODO make sure links uniq
+            List<Address> all = block.getLinks().stream().distinct().collect(Collectors.toList());
             // 检查区块的引用区块是否都存在,对所有input和output放入block（可能在pending或db中取出
             for (Address ref : all) {
                 if (ref != null) {
@@ -730,7 +734,7 @@ public class BlockchainImpl implements Blockchain {
         return blockStore.getBlockNumber();
     }
 
-    private boolean canUseInput(Block block) {
+    public boolean canUseInput(Block block) {
         List<ECKey> ecKeys = block.verifiedKeys();
         List<Address> input = block.getInputs();
         if (input == null || input.size() == 0) {

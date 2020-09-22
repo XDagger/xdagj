@@ -45,6 +45,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLong;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
@@ -566,11 +568,16 @@ public class Block implements Cloneable {
     public List<Address> getLinks() {
         parse();
         List<Address> links = new ArrayList<>();
-        if (getFirstOutput() != null) {
-            links.add(getFirstOutput());
-        }
         links.addAll(getInputs());
         links.addAll(getOutputs());
+        if (getFirstOutput() != null) {
+            for(Address a : links){
+                if(Arrays.areEqual(a.getHashLow(), getFirstOutput().getHashLow() )) {
+                    return links;
+                }
+            }
+            links.add(getFirstOutput());
+        }
         return links;
     }
 

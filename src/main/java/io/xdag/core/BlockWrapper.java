@@ -35,6 +35,9 @@ public class BlockWrapper implements Cloneable {
     /** 记录区块接收节点 */
     private Node remoteNode;
 
+    // NO_PARENT waiting time
+    private long time;
+
     public BlockWrapper(Block block, int ttl, Node remoteNode) {
         this.block = block;
         this.ttl = ttl;
