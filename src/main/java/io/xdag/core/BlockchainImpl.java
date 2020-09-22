@@ -735,20 +735,15 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean canUseInput(Block block) {
+        boolean canUse = false;
         List<ECKey> ecKeys = block.verifiedKeys();
-        List<Address> input = block.getInputs();
-        if (input == null || input.size() == 0) {
+        List<Address> inputs = block.getInputs();
+        if (inputs == null || inputs.size() == 0) {
             return true;
         }
-        for (Address in : input) {
-            boolean canUse = false;
-            // 获取签名与hash
-            Block inBlock = blockStore.getBlockByHash(in.getHashLow(), true);
-            if(inBlock == null) {
-                inBlock = memOrphanPool.get(new ByteArrayWrapper(in.getHashLow()));
-            }
+        for (Address in : inputs) {
+            Block inBlock = getBlockByHash(in.getHashLow(), true);
             byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
-
             ECKey.ECDSASignature sig = inBlock.getOutsig();
 
             for (ECKey ecKey : ecKeys) {
@@ -759,9 +754,18 @@ public class BlockchainImpl implements Blockchain {
             }
 
             if (!canUse) {
+                //TODO this maybe some old issue( input and output was same )
+                List<ECKey> keys = block.getPubKeys();
+                for (ECKey ecKey : keys) {
+                    byte[] hash = Sha256Hash.hashTwice(BytesUtils.merge(subdata, ecKey.getPubKeybyCompress()));
+                    if (ecKey.verify(hash, sig)) {
+                        return true;
+                    }
+                }
                 return false;
             }
         }
+
         return true;
     }
 

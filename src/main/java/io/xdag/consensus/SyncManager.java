@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,14 +66,6 @@ public class SyncManager {
     private boolean syncDone = false;
     private XdagChannelManager channelMgr;
 
-    private static AtomicInteger cnt = new AtomicInteger(0);
-//    private ScheduledFuture<?> timerTask;
-//    public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
-//            1,
-//            new BasicThreadFactory.Builder()
-//                    .namingPattern("SyncManageTimer-" + cnt.getAndIncrement())
-//                    .build());
-
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
@@ -88,35 +79,7 @@ public class SyncManager {
     private ConcurrentHashMap<ByteArrayWrapper, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
     public void start() {
         log.debug("Download receiveBlock run...");
-//        timerTask = timer.scheduleAtFixedRate(
-//                () -> {
-//                    try {
-//                        nudgeQueue();
-//                    } catch (Throwable t) {
-//                        log.error("Unhandled exception:" + t.getMessage(), t);
-//                        t.printStackTrace();
-//                    }
-//                },
-//                10,
-//                10,
-//                TimeUnit.MILLISECONDS);
     }
-
-//    private void nudgeQueue() {
-//        // 1000 / 10 * 200 = 20000 messages per second
-//        int n = Math.min(200, blockQueue.size());
-//        if (n == 0) {
-//            return;
-//        }
-//        // write out n messages
-//        for (int i = 0; i < n; i++) {
-//            BlockWrapper bw = blockQueue.poll();
-//            if(bw!= null) {
-//                produceQueue(bw);
-//            }
-//        }
-//
-//    }
 
     /** Processing the queue adding blocks to the chain. */
     public ImportResult produceQueue(BlockWrapper blockWrapper) {
@@ -163,13 +126,7 @@ public class SyncManager {
 
     public boolean validateAndAddNewBlock(BlockWrapper blockWrapper) {
         boolean r = false;
-//        if (blockchain.hasBlock(blockWrapper.getBlock().getHashLow())) {
-//            log.debug("Block have exist");
-//            return true;
-//        }
-        //TODO limit queue size
         blockWrapper.getBlock().parse();
-        //blockQueue.add(blockWrapper);
         ImportResult result = produceQueue(blockWrapper);
         switch (result) {
         case EXIST:
@@ -240,19 +197,9 @@ public class SyncManager {
         ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
         // 把所有block为parent的区块重新进行添加
         syncMap.computeIfPresent(key, (k, v)->{
-            // TODO this maybe issue
-//            v.stream().forEach(bw -> {
-//                //blockQueue.add(bw);
-//                ImportResult result = produceQueue(bw);
-//            });
-            BlockWrapper b = v.peek();
-            ImportResult r = produceQueue(b);
-            if(r == IMPORTED_BEST || r == IMPORTED_NOT_BEST || r == EXIST) {
-                v.remove(b);
-                kernel.getNetStatus().decWaitsync();
-                syncPopBlock(b);
-            }
-            result.set(r);
+            v.stream().forEach(bw -> {
+                produceQueue(bw);
+            });
             return v;
         });
         return result.get();
