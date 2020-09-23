@@ -131,7 +131,7 @@ public class BlockStore {
     }
 
     // 存储block的过程
-    public synchronized void saveBlock(Block block) {
+    public void saveBlock(Block block) {
         log.debug("Save Block:" + block);
         blockQueue.add(block);
         long timeIndex = block.getTimestamp();
@@ -265,7 +265,7 @@ public class BlockStore {
         return block;
     }
 
-    public synchronized void updateBlockInfo(byte TypePrefix, Block block) {
+    public void updateBlockInfo(byte TypePrefix, Block block) {
         byte[] hashlow = block.getHashLow();
         byte[] value;
         switch (TypePrefix) {
@@ -304,12 +304,12 @@ public class BlockStore {
         }
     }
 
-    public synchronized void updateBlockKeyIndex(byte[] hashlow, int keyindex) {
+    public void updateBlockKeyIndex(byte[] hashlow, int keyindex) {
         indexSource.put(
                 BytesUtils.merge(BLOCK_KEY_INDEX, hashlow), BytesUtils.intToBytes(keyindex, false));
     }
 
-    public synchronized void deleteBlockKeyIndex(byte[] hashlow) {
+    public void deleteBlockKeyIndex(byte[] hashlow) {
         if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) == null) {
             return;
         }
@@ -326,12 +326,12 @@ public class BlockStore {
         }
     }
 
-    public synchronized void mainNumberInc() {
+    public void mainNumberInc() {
         long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
         indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
     }
 
-    public synchronized void mainNumberDec() {
+    public void mainNumberDec() {
         long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
         indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
     }
@@ -344,7 +344,7 @@ public class BlockStore {
         return BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false);
     }
 
-    public synchronized void setOriginpretopdiff(BigInteger pretopDiff) {
+    public void setOriginpretopdiff(BigInteger pretopDiff) {
         indexSource.put(ORIGINPRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
     }
 
@@ -355,7 +355,7 @@ public class BlockStore {
         return BigInteger.ZERO;
     }
 
-    public synchronized void setPretopDiff(BigInteger pretopDiff) {
+    public void setPretopDiff(BigInteger pretopDiff) {
         indexSource.put(PRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
     }
 
@@ -363,7 +363,7 @@ public class BlockStore {
         return indexSource.get(PRETOP);
     }
 
-    public synchronized void setPretop(Block block) {
+    public void setPretop(Block block) {
         indexSource.put(PRETOP, block.getHashLow());
     }
 
@@ -378,7 +378,7 @@ public class BlockStore {
         return indexSource.get(ORIGINPRETOP);
     }
 
-    public synchronized void setOriginpretop(Block block) {
+    public void setOriginpretop(Block block) {
         indexSource.put(ORIGINPRETOP, block.getHashLow());
     }
 

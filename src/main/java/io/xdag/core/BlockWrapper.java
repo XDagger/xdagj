@@ -24,14 +24,19 @@
 package io.xdag.core;
 
 import io.xdag.net.node.Node;
+import lombok.Getter;
+import lombok.Setter;
 
-public class BlockWrapper {
-
+@Getter
+@Setter
+public class BlockWrapper implements Cloneable {
     private Block block;
     private int ttl;
     /** 记录区块接收节点 */
     private Node remoteNode;
-    // private boolean isTransaction = false;
+
+    // NO_PARENT waiting time
+    private long time;
 
     public BlockWrapper(Block block, int ttl, Node remoteNode) {
         this.block = block;
@@ -39,27 +44,4 @@ public class BlockWrapper {
         this.remoteNode = remoteNode;
     }
 
-    public Block getBlock() {
-        return block;
-    }
-
-    public void setBlock(Block block) {
-        this.block = block;
-    }
-
-    public int getTtl() {
-        return ttl;
-    }
-
-    public void setTtl(int ttl) {
-        this.ttl = ttl;
-    }
-
-    public Node getRemoteNode() {
-        return remoteNode;
-    }
-
-    public void setRemoteNode(Node remoteNode) {
-        this.remoteNode = remoteNode;
-    }
 }

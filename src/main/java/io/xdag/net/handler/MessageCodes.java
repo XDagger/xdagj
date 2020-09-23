@@ -50,7 +50,6 @@ public class MessageCodes extends MessageToMessageCodec<Message, Message> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
-        log.debug("receive msg：" + msg.getCommand());
         out.add(msg);
     }
 

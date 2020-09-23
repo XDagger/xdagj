@@ -56,15 +56,11 @@ public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> i
     protected Block bestKnownBlock;
     protected BigInteger totalDifficulty;
     protected SyncManager syncMgr;
-    protected SettableFuture<List<Block>> futureBlocks;
-    protected SettableFuture<SumReplyMessage> futureSum;
-    protected Queue<SettableFuture<SumReplyMessage>> futureSumSublist = new LinkedList<>();
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
         if (XdagMessageCodes.inRange(msg.getCommand().asByte(), version)) {
             log.trace("XdagHandler invoke: [{}]", msg.getCommand());
         }
-        msgQueue.receivedMessage(msg);
     }
 }

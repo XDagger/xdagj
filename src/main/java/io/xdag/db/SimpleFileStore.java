@@ -32,6 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.spongycastle.util.encoders.Hex;
 
@@ -115,23 +116,17 @@ public class SimpleFileStore implements FileSource {
     }
 
     @Override
-    public synchronized byte[] loadSum(long starttime, long endtime) {
-
-        byte[] sums = new byte[256];
+    public int loadSum(long starttime, long endtime, byte[] sums) {
         byte[] buf = new byte[4096];
         int level;
         long filedir;
 
         StringBuffer filename;
         endtime -= starttime;
-        // || (endtime & (endtime-1))!=0
-        if (endtime == 0) {
-            return null;
-        }
 
-        for (level = -6; endtime != 0; level++, endtime >>= 4) {
-            ;
-        }
+        if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFl) != 0) return -1;
+
+        for (level = -6; endtime != 0; level++, endtime >>= 4);
 
         if (level < 2) {
             filedir = (starttime) & 0xffffff000000L;
@@ -189,12 +184,13 @@ public class SimpleFileStore implements FileSource {
                 }
             }
         } else {
-            return sums;
+            Arrays.fill(buf, (byte)0);
         }
 
         long size = 0;
         long sum = 0;
         if ((level & 1) != 0) {
+            Arrays.fill(sums, (byte)0);
             for (int i = 0; i < 256; i++) {
                 long totalsum = BytesUtils.bytesToLong(buf, i * 16, true);
                 sum += totalsum;
@@ -212,7 +208,7 @@ public class SimpleFileStore implements FileSource {
             System.arraycopy(buf, (int) (index * 16), sums, 0, 16 * 16);
         }
 
-        return sums;
+        return 1;
     }
 
     public List<String> getFileName(long time) {

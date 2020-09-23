@@ -34,7 +34,7 @@ import org.apache.commons.io.IOUtils;
 public class Config {
     public static boolean MAINNET = false;
     /** 配置存储root */
-    public static String root = MAINNET ? "./mainnet" : "./testnet";
+    public static String root = MAINNET ? "mainnet" : "testnet";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
     

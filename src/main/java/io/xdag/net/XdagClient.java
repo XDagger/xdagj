@@ -48,7 +48,7 @@ public class XdagClient {
 
         @Override
         public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "XdagJMinerWorker-" + cnt.getAndIncrement());
+            return new Thread(r, "client-" + cnt.getAndIncrement());
         }
     };
 
@@ -78,11 +78,9 @@ public class XdagClient {
             f.sync();
         } catch (Exception e) {
             if (e instanceof IOException) {
-                log.debug(
-                        "XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-                log.debug("XdagClient.connect(" + host + ":" + port + ") exception:");
+                log.debug("XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
             } else {
-                log.error("Exception:", e);
+                log.error("message:" + e.getMessage(), e);
             }
         }
     }

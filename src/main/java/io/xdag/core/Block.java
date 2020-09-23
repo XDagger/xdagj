@@ -43,6 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedLong;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
@@ -56,6 +60,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
+@Setter
 public class Block implements Cloneable {
 
     public static final int MAX_LINKS = 15;
@@ -64,13 +70,12 @@ public class Block implements Cloneable {
     public int flags = 0;
 
     /** 区块是否存在于本地* */
-    @Getter
-    @Setter
     public boolean isSaved = false;
     /** 区块生成时间 区块手续费 区块字段类型* */
     private long timestamp;
     private long fee = 0;
     private long type;
+    private long transportHeader;
 
     /** 连接本区块的区块地址* */
     @Getter
@@ -246,58 +251,70 @@ public class Block implements Cloneable {
     }
 
     /** 解析512字节数据* */
-    public synchronized void parse() {
+    public void parse() {
         if (parsed) {
             return;
         }
         setHash(calcHash());
         byte[] header = xdagBlock.getField(0).getData();
-        this.fee = BytesUtils.bytesToLong(BytesUtils.subArray(header, 24, 8), 0, true); // 最后8个字节
-        this.timestamp = BytesUtils.bytesToLong(header, 16, true);
+        this.transportHeader = BytesUtils.bytesToLong(header, 0, true);
         this.type = BytesUtils.bytesToLong(header, 8, true);
-        BigInteger r = BigInteger.ZERO;
-        BigInteger s = BigInteger.ZERO;
+        this.timestamp = BytesUtils.bytesToLong(header, 16, true);
+        this.fee = BytesUtils.bytesToLong(BytesUtils.subArray(header, 24, 8), 0, true); // 最后8个字节
 
-        int signatureflag = 0;
-        for (int i = 1; i < xdagBlock.getFields().length; i++) {
+        for (int i = 1; i < xdagBlock.XDAG_BLOCK_FIELDS; i++) {
             XdagField field = xdagBlock.getField(i);
-            XdagField.FieldType eachType = field.getType();
-            if (eachType == XDAG_FIELD_OUT) {
-                if (i == 1) {
-                    firstOutput = new Address(field);
-                } else {
-                    outputs.add(new Address(field));
-                }
-            } else if (eachType == XDAG_FIELD_IN) {
-                inputs.add(new Address(xdagBlock.getField(i)));
-
-            } else if (eachType == XDAG_FIELD_SIGN_IN || eachType == XDAG_FIELD_SIGN_OUT) {
-                // 最后一个字段如果是signIn的类型则作为nonce
-                if (i == MAX_LINKS && eachType == XDAG_FIELD_SIGN_IN) {
-                    this.nonce = BytesUtils.bigIntegerToBytes(r, 32);
-                    continue;
-                }
-                if ((++signatureflag) % 2 == 0) {
-                    s = bytesToBigInteger(xdagBlock.getField(i).getData());
-                    ECKey.ECDSASignature tmp = new ECKey.ECDSASignature(r, s);
-                    if (eachType == XDAG_FIELD_SIGN_IN) {
-                        insigs.put(tmp, i);
+            if(field == null) {
+                throw new IllegalArgumentException("xdagBlock field:" + i + " is null");
+            }
+            switch (field.getType()) {
+                case XDAG_FIELD_IN:
+                    inputs.add(new Address(xdagBlock.getField(i)));
+                    break;
+                case XDAG_FIELD_OUT:
+                    if (i == 1) {
+                        firstOutput = new Address(field);
                     } else {
-                        outsig = tmp;
+                        outputs.add(new Address(field));
                     }
-                    r = BigInteger.ZERO;
-                    s = BigInteger.ZERO;
-                }
-                r = bytesToBigInteger(xdagBlock.getField(i).getData());
-            } else if (eachType == XDAG_FIELD_PUBLIC_KEY_0 || eachType == XDAG_FIELD_PUBLIC_KEY_1) {
-                byte[] key = xdagBlock.getField(i).getData();
-                boolean yBit = eachType == XDAG_FIELD_PUBLIC_KEY_1;
-                ECPoint point = ECKey.decompressKey(bytesToBigInteger(key), yBit);
-                pubKeys.add(ECKey.fromPublicOnly(point));
-            } else if (eachType == XDAG_FIELD_NONCE) {
-                // do nothing
-            } else {
-                log.debug("no match information");
+                    break;
+                case XDAG_FIELD_SIGN_IN:
+                case XDAG_FIELD_SIGN_OUT:
+                    BigInteger r = BigInteger.ZERO;
+                    BigInteger s = BigInteger.ZERO;
+                    int signo_r = i;
+                    int j, signo_s = -1;
+                    XdagField ixf;
+                    for(j = signo_r; j < xdagBlock.XDAG_BLOCK_FIELDS; ++j) {
+                        ixf = xdagBlock.getField(j);
+                        if(ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal() || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
+                            if(j > signo_r && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(signo_r).getType().ordinal()) {
+                                signo_s = j;
+                                r = bytesToBigInteger(xdagBlock.getField(signo_r).getData());
+                                s = bytesToBigInteger(xdagBlock.getField(signo_s).getData());
+                                ECKey.ECDSASignature tmp = new ECKey.ECDSASignature(r, s);
+                                if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
+                                    insigs.put(tmp, i);
+                                } else {
+                                    outsig = tmp;
+                                }
+                            }
+                        }
+                    }
+                    if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
+                        this.nonce = BytesUtils.bigIntegerToBytes(r, 32);
+                        continue;
+                    }
+                    break;
+                case XDAG_FIELD_PUBLIC_KEY_0:
+                case XDAG_FIELD_PUBLIC_KEY_1:
+                    byte[] key = xdagBlock.getField(i).getData();
+                    boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
+                    ECPoint point = ECKey.decompressKey(bytesToBigInteger(key), yBit);
+                    pubKeys.add(ECKey.fromPublicOnly(point));
+                    break;
+                default:
+                    log.debug("no match xdagBlock field type:" + field.getType());
             }
         }
         parsed = true;
@@ -470,7 +487,7 @@ public class Block implements Cloneable {
 
     public ECKey.ECDSASignature getOutsig() {
         parse();
-        return outsig;
+        return outsig.toCanonicalised();
     }
 
     public Map<ECKey.ECDSASignature, Integer> getInsigs() {
@@ -551,11 +568,16 @@ public class Block implements Cloneable {
     public List<Address> getLinks() {
         parse();
         List<Address> links = new ArrayList<>();
-        if (getFirstOutput() != null) {
-            links.add(getFirstOutput());
-        }
         links.addAll(getInputs());
         links.addAll(getOutputs());
+        if (getFirstOutput() != null) {
+            for(Address a : links){
+                if(Arrays.areEqual(a.getHashLow(), getFirstOutput().getHashLow() )) {
+                    return links;
+                }
+            }
+            links.add(getFirstOutput());
+        }
         return links;
     }
 

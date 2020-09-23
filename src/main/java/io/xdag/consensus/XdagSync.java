@@ -23,30 +23,32 @@
  */
 package io.xdag.consensus;
 
-import static io.xdag.utils.FastByteComparisons.compareTo;
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 
-import org.spongycastle.util.encoders.Hex;
+import com.google.common.util.concurrent.*;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
+import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
 import io.xdag.db.SimpleFileStore;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.impl.SumReplyMessage;
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -65,11 +67,19 @@ public class XdagSync {
     private ScheduledExecutorService sendTask;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
+    @Getter
+    private ConcurrentHashMap<Long, SettableFuture<byte[]>> sumsRequestMap;
+
+    @Getter
+    private ConcurrentHashMap<Long, SettableFuture<byte[]>> blocksRequestMap;
+
 
     public XdagSync(Kernel kernel) {
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
         this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
+        sumsRequestMap = new ConcurrentHashMap<>();
+        blocksRequestMap = new ConcurrentHashMap<>();
     }
 
     /** 不断发送send request */
@@ -86,60 +96,58 @@ public class XdagSync {
         requesetBlocks(0, 1L << 48);
     }
 
-    private void requesetBlocks(long start, long timeInterval) {
+    private void requesetBlocks(long t, long dt) {
         // 如果当前状态不是sync start
         if (status != Status.SYNCING) {
             return;
         }
         List<XdagChannel> any = getAnyNode();
+        long randomSeq = 0;
+        SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
-            for (XdagChannel channel : any) {
-                log.debug("Send Request to channel");
-                ListenableFuture<SumReplyMessage> futureSum = channel.getXdag().sendGetsums(start,
-                        start + timeInterval);
-                if (futureSum != null) {
-                    Futures.addCallback(
-                            futureSum,
-                            new SumCallback(channel, start, start + timeInterval),
-                            MoreExecutors.directExecutor());
+            XdagChannel xc = any.get(0);
+            if (dt <= REQUEST_BLOCKS_MAX_TIME) {
+                randomSeq =  xc.getXdag().sendGetblocks(t, t + dt);
+                blocksRequestMap.put(randomSeq, sf);
+                try {
+                    sf.get(128, TimeUnit.SECONDS);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    blocksRequestMap.remove(randomSeq);
+                    log.error(e.getMessage(), e);
+                    return;
                 }
-            }
-        }
-    }
+                blocksRequestMap.remove(randomSeq);
+                return;
+            } else {
+                byte[] lsums = new byte[256];
+                byte[] rsums = null;
+                if(simpleFileStore.loadSum(t, t + dt, lsums) <= 0) {
+                    return;
+                }
+                log.debug("lsum is " + Hex.toHexString(lsums));
+                randomSeq = xc.getXdag().sendGetsums(t, t + dt);
+                sumsRequestMap.put(randomSeq, sf);
+                log.debug("sendGetsums seq:{}.", randomSeq);
+                try {
+                    byte[] sums = sf.get(128, TimeUnit.SECONDS);
+                    rsums = Arrays.copyOf(sums, 256);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    sumsRequestMap.remove(randomSeq);
+                    log.error(e.getMessage(), e);
+                    return;
+                }
+                sumsRequestMap.remove(randomSeq);
+                log.debug("rsum is " + Hex.toHexString(rsums));
+                dt >>= 4;
+                for (int i = 0; i < 16; i++) {
+                    long lsumsSum = BytesUtils.bytesToLong(lsums, i * 16, true);
+                    long lsumsSize = BytesUtils.bytesToLong(lsums, i * 16 + 8, true);
+                    long rsumsSum = BytesUtils.bytesToLong(rsums, i * 16, true);
+                    long rsumsSize = BytesUtils.bytesToLong(rsums, i * 16 + 8, true);
 
-    /**
-     * 处理响应 在响应的时间范围在1<<20的时候就可以发送请求区块了，其他时间慢慢缩短所需要的区块范围
-     *
-     * @param reply
-     * @param channel
-     */
-    public void processSumsReply(
-            SumReplyMessage reply, XdagChannel channel, long starttime, long endtime) {
-        log.debug("processSumsReply");
-        log.debug("响应endtime " + reply.getEndtime() + "请求endtime " + endtime);
-        if (endtime != reply.getEndtime()) {
-            log.debug("此响应与请求不匹配" + Hex.toHexString(reply.getEncoded()));
-            return;
-        }
-        long dt = endtime - starttime;
-        // 如果请求时间区域过大
-        dt >>= 4;
-        byte[] lsums = simpleFileStore.loadSum(starttime, endtime);
-        byte[] rsums = reply.getSum();
-        log.debug("lsum is " + Hex.toHexString(lsums));
-        log.debug("rsum is " + Hex.toHexString(rsums));
-        for (int i = 0; i < 16; i++) {
-            if ((compareTo(lsums, i * 16, 8, rsums, i * 16, 8) != 0)
-                    || (compareTo(lsums, i * 16 + 8, 8, rsums, i * 16 + 8, 8) != 0)) {
-                log.debug("第" + i + "次请求");
-                // 请求request
-                ListenableFuture<SumReplyMessage> future = channel.getXdag().sendGetsums(starttime + i * (dt),
-                        starttime + i * (dt) + dt);
-                if (future != null) {
-                    Futures.addCallback(
-                            future,
-                            new SumCallback(channel, starttime + i * (dt), starttime + i * (dt) + dt),
-                            MoreExecutors.directExecutor());
+                    if (lsumsSize != rsumsSize || lsumsSum != rsumsSum) {
+                        requesetBlocks(t + i * dt, dt);
+                    }
                 }
             }
         }
@@ -175,28 +183,5 @@ public class XdagSync {
     public enum Status {
         /** syncing */
         SYNCING, SYNCDONE
-    }
-
-    class SumCallback implements FutureCallback<SumReplyMessage> {
-        private XdagChannel channel;
-        private long starttime;
-        private long endtime;
-
-        public SumCallback(XdagChannel channel, long starttime, long endtime) {
-            this.channel = channel;
-            this.starttime = starttime;
-            this.endtime = endtime;
-        }
-
-        @Override
-        public void onSuccess(SumReplyMessage reply) {
-            processSumsReply(reply, channel, starttime, endtime);
-        }
-
-        @Override
-        public void onFailure(@Nonnull Throwable t) {
-            log.debug("{}: Error receiving Sums. Dropping the peer.", "Sync", t);
-            channel.getXdag().dropConnection();
-        }
     }
 }

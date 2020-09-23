@@ -55,6 +55,10 @@
       <AppenderRef ref="Info"/>
     </logger>
 
+    <logger name="io.xdag.net" level="DEBUG">
+      <AppenderRef ref="Console"/>
+    </logger>
+
 
     <Root level="INFO">
     </Root>

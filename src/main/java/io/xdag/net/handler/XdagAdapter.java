@@ -38,20 +38,21 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public void sendGetblocks(long starttime, long endtime) {
+    public long sendGetblocks(long starttime, long endtime) {
         // TODO Auto-generated method stub
+        return 0;
     }
 
     @Override
-    public void sendGetblock(byte[] hash) {
+    public long sendGetblock(byte[] hash) {
         // TODO Auto-generated method stub
-
+        return 0;
     }
 
     @Override
-    public ListenableFuture<SumReplyMessage> sendGetsums(long starttime, long endtime) {
+    public long sendGetsums(long starttime, long endtime) {
         // TODO Auto-generated method stub
-        return null;
+        return 0;
     }
 
     @Override

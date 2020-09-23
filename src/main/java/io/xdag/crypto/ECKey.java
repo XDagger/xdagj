@@ -23,6 +23,7 @@
  */
 package io.xdag.crypto;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -41,8 +42,12 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
+import org.bitcoin.NativeSecp256k1;
+import org.bitcoin.NativeSecp256k1Util;
+import org.bitcoin.Secp256k1Context;
 import org.spongycastle.asn1.ASN1InputStream;
 import org.spongycastle.asn1.ASN1Integer;
+import org.spongycastle.asn1.DERSequenceGenerator;
 import org.spongycastle.asn1.DLSequence;
 import org.spongycastle.asn1.sec.SECNamedCurves;
 import org.spongycastle.asn1.x9.X9ECParameters;
@@ -525,6 +530,15 @@ public class ECKey implements Serializable {
      * @return -
      */
     public static boolean verify(byte[] data, ECDSASignature signature, byte[] pub) {
+        if (Secp256k1Context.isEnabled()) {
+            try {
+                return NativeSecp256k1.verify(data, signature.encodeToDER(), pub);
+            } catch (NativeSecp256k1Util.AssertFailException e) {
+                log.error("Caught AssertFailException inside secp256k1", e);
+                return false;
+            }
+        }
+
         ECDSASigner signer = new ECDSASigner();
         ECPublicKeyParameters params = new ECPublicKeyParameters(CURVE.getCurve().decodePoint(pub), CURVE);
         signer.init(false, params);
@@ -554,6 +568,14 @@ public class ECKey implements Serializable {
      * @return -
      */
     public static boolean verify(byte[] data, byte[] signature, byte[] pub) {
+        if (Secp256k1Context.isEnabled()) {
+            try {
+                return NativeSecp256k1.verify(data, signature, pub);
+            } catch (NativeSecp256k1Util.AssertFailException e) {
+                log.error("Caught AssertFailException inside secp256k1", e);
+                return false;
+            }
+        }
         return verify(data, ECDSASignature.decodeFromDER(signature), pub);
     }
 
@@ -1075,6 +1097,19 @@ public class ECKey implements Serializable {
             return true;
         }
 
+        /**
+         * DER is an international standard for serializing data structures which is widely used in cryptography.
+         * It's somewhat like protocol buffers but less convenient. This method returns a standard DER encoding
+         * of the signature, as recognized by OpenSSL and other libraries.
+         */
+        public byte[] encodeToDER() {
+            try {
+                return derByteStream().toByteArray();
+            } catch (IOException e) {
+                throw new RuntimeException(e);  // Cannot happen.
+            }
+        }
+
         public static ECDSASignature decodeFromDER(byte[] bytes) {
             ASN1InputStream decoder = null;
             try {
@@ -1108,6 +1143,16 @@ public class ECKey implements Serializable {
             }
         }
 
+        protected ByteArrayOutputStream derByteStream() throws IOException {
+            // Usually 70-72 bytes.
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(72);
+            DERSequenceGenerator seq = new DERSequenceGenerator(bos);
+            seq.addObject(new ASN1Integer(r));
+            seq.addObject(new ASN1Integer(s));
+            seq.close();
+            return bos;
+        }
+
         public boolean validateComponents() {
             return validateComponents(r, s, v);
         }
@@ -1116,7 +1161,7 @@ public class ECKey implements Serializable {
          * Will automatically adjust the S component to be less than or equal to half
          * the curve order, if necessary. This is required because for every signature
          * (r,s) the signature (r, -s (mod N)) is a valid signature of the same message.
-         * However, we dislike the ability to modify the bits of a Ethereum transaction
+         * However, we dislike the ability to modify the bits of a xdag transaction
          * after it's been signed, as that violates various assumed invariants. Thus in
          * future only one of those forms will be considered legal and the other will be
          * banned.

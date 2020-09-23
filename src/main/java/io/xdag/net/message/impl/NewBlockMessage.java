@@ -64,7 +64,7 @@ public class NewBlockMessage extends Message {
         return block;
     }
 
-    private synchronized void parse() {
+    private void parse() {
         if (parsed) {
             return;
         }

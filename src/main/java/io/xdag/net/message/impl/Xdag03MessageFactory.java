@@ -50,6 +50,8 @@ public class Xdag03MessageFactory implements MessageFactory {
             return new BlockExtReplyMessage(encoded);
         case BLOCK_REQUEST:
             return new BlockRequestMessage(encoded);
+        case NEW_BLOCK:
+            return new NewBlockMessage(encoded);
         default:
             throw new IllegalArgumentException("No such message code" + code);
         }

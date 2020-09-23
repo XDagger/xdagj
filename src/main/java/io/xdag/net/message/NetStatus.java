@@ -23,8 +23,13 @@
  */
 package io.xdag.net.message;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigInteger;
 
+@Getter
+@Setter
 public class NetStatus {
     protected BigInteger difficulty;
     protected BigInteger maxdifficulty;
@@ -34,11 +39,10 @@ public class NetStatus {
     protected long totalnmain;
     protected int nhosts;
     protected int totalnhosts;
-
+    protected long nwaitsync;
     protected long maintime;
 
-    public NetStatus() {
-    }
+    public NetStatus(){}
 
     /** 用于记录remote node的 */
     public NetStatus(
@@ -80,85 +84,8 @@ public class NetStatus {
         }
     }
 
-    public BigInteger getDifficulty() {
-        return difficulty;
-    }
-
-    public void setDifficulty(BigInteger difficulty) {
-        this.difficulty = difficulty;
-    }
-
     public BigInteger getMaxdifficulty() {
-        if (maxdifficulty.compareTo(difficulty) < 0) {
-            maxdifficulty = BigInteger.valueOf(difficulty.longValue());
-        }
         return maxdifficulty;
-    }
-
-    public void setMaxdifficulty(BigInteger maxdifficulty) {
-        this.maxdifficulty = maxdifficulty;
-    }
-
-    public long getNblocks() {
-        return nblocks;
-    }
-
-    public void setNblocks(long nblocks) {
-        this.nblocks = nblocks;
-    }
-
-    public long getTotalnblocks() {
-        if (totalnblocks < nblocks) {
-            totalnblocks = nblocks;
-        }
-        return totalnblocks;
-    }
-
-    public void setTotalnblocks(long totalnblocks) {
-        this.totalnblocks = totalnblocks;
-    }
-
-    public long getNmain() {
-        return nmain;
-    }
-
-    public void setNmain(long nmain) {
-        this.nmain = nmain;
-    }
-
-    public long getTotalnmain() {
-        if (totalnmain < nmain) {
-            totalnmain = nmain;
-        }
-        return totalnmain;
-    }
-
-    public void setTotalnmain(long totalnmain) {
-        this.totalnmain = totalnmain;
-    }
-
-    public int getNhosts() {
-        return nhosts;
-    }
-
-    public void setNhosts(int nhosts) {
-        this.nhosts = nhosts;
-    }
-
-    public int getTotalnhosts() {
-        return totalnhosts;
-    }
-
-    public void setTotalnhosts(int totalnhosts) {
-        this.totalnhosts = totalnhosts;
-    }
-
-    public long getMaintime() {
-        return maintime;
-    }
-
-    public void setMaintime(long maintime) {
-        this.maintime = maintime;
     }
 
     @Override
@@ -187,5 +114,13 @@ public class NetStatus {
 
     public void decBlock() {
         this.nblocks--;
+    }
+
+    public void incWaitsync() {
+        this.nwaitsync++;
+    }
+
+    public void decWaitsync() {
+        this.nwaitsync--;
     }
 }
