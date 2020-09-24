@@ -74,6 +74,7 @@ import io.xdag.wallet.KeyInternalItem;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
 public class BlockchainImpl implements Blockchain {
     private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
 
@@ -131,18 +132,30 @@ public class BlockchainImpl implements Blockchain {
             // 检查区块的引用区块是否都存在,对所有input和output放入block（可能在pending或db中取出
             for (Address ref : all) {
                 if (ref != null) {
-                    if (!isExist(ref.getHashLow())) {
+                    Block refBlock = getBlockByHash(ref.getHashLow(), false);
+                    if (refBlock == null) {
                         log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
                         result = ImportResult.NO_PARENT;
                         result.setHashLow(ref.getHashLow());
                         return result;
                     } else {
+                        // check ref time
+                        if(refBlock.getTimestamp() >= block.getTimestamp()) {
+                            result = ImportResult.INVALID_BLOCK;
+                            result.setHashLow(refBlock.getHashLow());
+                            return result;
+                        }
+
                         if (!ref.getAmount().equals(BigInteger.ZERO)) {
                             updateBlockFlag(block, BI_EXTRA, false);
                         }
                     }
+
                 }
             }
+
+            // 检查当前主链
+            checkNewMain();
 
             // 检查区块合法性 检查input是否能使用
             if (!canUseInput(block)) {
@@ -158,14 +171,9 @@ public class BlockchainImpl implements Blockchain {
             // 更新区块难度和maxdifflink
             calculateBlockDiff(block);
 
-            // 检查当前主链
-            checkNewMain();
-
             // 更新pretop
             setPretop(block);
-            if (top_main_chain != null) {
-                setPretop(getBlockByHash(top_main_chain, false));
-            }
+            setPretop(getBlockByHash(top_main_chain, false));
 
             // TODO:extra 处理
             if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
@@ -185,15 +193,15 @@ public class BlockchainImpl implements Blockchain {
                 Block blockRef = null;
                 Block blockRef0 = null;
                 // 把当前区块根据最大难度链接块递归查询到不是主链块为止 将这段的区块更新为主链块
-                for (blockRef = block; blockRef != null
-                        && ((blockRef.flags & BI_MAIN_CHAIN) == 0); blockRef = getMaxDiffLink(blockRef, false)) {
+                for (blockRef = block;
+                     blockRef != null && ((blockRef.flags & BI_MAIN_CHAIN) == 0);
+                     blockRef = getMaxDiffLink(blockRef, false)) {
                     Block tmpRef = getMaxDiffLink(blockRef, false);
-                    if (tmpRef != null) {
-                    }
-                    if ((tmpRef == null || blockRef.getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0)
-                            && (blockRef0 == null
-                            || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
-                            .getEpoch(blockRef.getTimestamp()))) {
+                    if (
+                       (tmpRef == null || blockRef.getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                       (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime.getEpoch(blockRef.getTimestamp()))
+                    ) {
+                        log.debug("update BI_MAIN_CHAIN block:{}", Hex.toHexString(blockRef.getHashLow()));
                         updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
                         blockRef0 = blockRef;
                     }
@@ -232,10 +240,10 @@ public class BlockchainImpl implements Blockchain {
 
             log.debug("======New block waiting to link======");
             if ((block.flags & BI_EXTRA) != 0) {
-                log.debug(Hex.toHexString(block.getHashLow()) + " into extra");
+                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 memOrphanPool.put(new ByteArrayWrapper(block.getHashLow()), block);
             } else {
-                log.debug(Hex.toHexString(block.getHashLow()) + " into orphan");
+                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
                 orphanPool.addOrphan(block);
             }
@@ -262,11 +270,27 @@ public class BlockchainImpl implements Blockchain {
                 }
             }
         }
+        long ct = XdagTime.getCurrentTimestamp();
         if (p != null
                 && ((p.flags & BI_REF) != 0)
                 && i > 1
-                && XdagTime.getCurrentTimestamp() >= p.getTimestamp() + 2 * 1024) {
+                && ct >= p.getTimestamp() + 2 * 1024) {
+            log.debug("setMain succ block:{}", Hex.toHexString(p.getHashLow()));
             setMain(p);
+        } else {
+            log.debug("setMain fail block:{}", p != null?Hex.toHexString(p.getHashLow()):"null");
+            if(p != null) {
+                log.debug("condition {\n"
+                         + "    1. p != null:{}, \n"
+                         + "    2. ((p.flags & BI_REF) != 0):{}\n"
+                         + "    3. i > 1:{}, i={}\n"
+                         + "    4. XdagTime.getCurrentTimestamp() >= p.getTimestamp() + 2 * 1024:{}\n"
+                         + "}\n",
+                        p != null,
+                        ((p.flags & BI_REF) != 0),
+                        i > 1, i,
+                        ct >= p.getTimestamp() + 2 * 1024);
+            }
         }
     }
 
@@ -687,11 +711,11 @@ public class BlockchainImpl implements Blockchain {
 
     public void saveBlock(Block block) {
         block.isSaved = true;
-        log.debug("save a block block hash [{}]", Hex.toHexString(block.getHashLow()));
+        log.debug("save block:{}", Hex.toHexString(block.getHashLow()));
         blockStore.saveBlock(block);
         // 如果是自己的账户
         if (memAccount.containsKey(new ByteArrayWrapper(block.getHash()))) {
-            log.debug("new account");
+            log.debug("new account:{}", Hex.toHexString(block.getHash()));
             addNewAccount(block, memAccount.get(new ByteArrayWrapper(block.getHash())));
             memAccount.remove(new ByteArrayWrapper(block.getHash()));
         }
