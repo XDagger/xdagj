@@ -76,6 +76,7 @@ public class Block implements Cloneable {
     private long fee = 0;
     private long type;
     private long transportHeader;
+    private long height;
 
     /** 连接本区块的区块地址* */
     @Getter

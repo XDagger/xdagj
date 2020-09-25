@@ -23,6 +23,7 @@
  */
 package io.xdag.cli;
 
+import com.google.common.base.Strings;
 import io.xdag.Kernel;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -37,15 +38,13 @@ import io.xdag.net.node.Node;
 import io.xdag.utils.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.spongycastle.util.encoders.Hex;
 
 import java.net.InetSocketAddress;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
@@ -230,8 +229,8 @@ public class Commands {
         try {
             byte[] hashLow = new byte[32];
             System.arraycopy(blockhash, 8, hashLow, 8, 24);
-            Block blockInfo = kernel.getBlockStore().getBlockInfoByHash(hashLow);
-            return printBlockInfo(blockInfo);
+            Block block = kernel.getBlockStore().getBlockInfoByHash(hashLow);
+            return printBlockInfo(block);
         } catch (Exception e) {
             return "Block is not found.";
         }
@@ -246,57 +245,15 @@ public class Commands {
         }
     }
 
-    /**
-     * Print Main blocks by given number
-     *
-     * @param n Number of prints
-     * @return Mainblock info
-     */
-    public String mainblocks(int n) {
-        List<Block> res = kernel.getBlockchain().listMainBlocks(n);
-        if (res == null || res.size() == 0) {
-            return "No match ans";
-        }
-        StringBuilder ans = new StringBuilder();
-        for (Block blockInfo : res) {
-            Date date = new Date(XdagTime.xdagTimestampToMs(blockInfo.getTimestamp()));
-            ans.append(Hex.toHexString(blockInfo.getHash()))
-                    .append("  ")
-                    .append(BasicUtils.hash2Address(blockInfo.getHash()))
-                    .append("     ")
-                    .append(FormatDateUtils.format(date))
-                    .append(" ")
-                    .append(getStateByFlags(blockInfo.getFlags()))
-
-                    .append("\n");
-        }
-        return ans.toString();
+    public static String printHeaderBlockList() {
+        StringBuilder header = new StringBuilder();
+        header.append("---------------------------------------------------------------------------------------------------------\n")
+               .append("height        address                            time                      state     mined by            \n")
+                .append("---------------------------------------------------------------------------------------------------------\n");
+        return header.toString();
     }
 
-    /**
-     * Print Mined Block by given number
-     *
-     * @param n Number of prints
-     * @return minedblock info
-     */
-    public String minedblocks(int n) {
-        List<Block> res = kernel.getBlockchain().listMinedBlocks(n);
-        if (res == null || res.size() == 0) {
-            return "No match ans";
-        }
-        StringBuilder ans = new StringBuilder();
-        for (Block blockInfo : res) {
-            Date date = new Date(XdagTime.xdagTimestampToMs(blockInfo.getTimestamp()));
-            ans.append(Hex.toHexString(blockInfo.getHash()))
-                    .append("  ")
-                    .append(FormatDateUtils.format(date))
-                    .append(" ")
-                    .append(getStateByFlags(blockInfo.getFlags()))
-                    .append("\n");
-        }
-        return ans.toString();
-    }
-
+    //TODO need refactor
     public String printBlockInfo(Block blockInfo) {
         blockInfo.parse();
         long time = XdagTime.xdagTimestampToMs(blockInfo.getTimestamp());
@@ -325,7 +282,63 @@ public class Commands {
                 + "\n";
     }
 
-    public String getStateByFlags(int flags) {
+    public static String printBlock(Block block, boolean print_only_addresses) {
+        StringBuilder sbd = new StringBuilder();
+        long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
+        if(print_only_addresses) {
+            sbd.append(String.format("%s   %08d\n",
+                    BasicUtils.hash2Address(block.getHash()),
+                    block.getHeight()));
+        } else {
+            sbd.append(String.format("%08d   %s   %s   %-8s  %-32s\n",
+                    block.getHeight(),
+                    BasicUtils.hash2Address(block.getHash()),
+                    FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss.SSS").format(time),
+                    getStateByFlags(block.getFlags()),
+                    ""));//TODO remark
+        }
+        return sbd.toString();
+    }
+
+    /**
+     * Print Main blocks by given number
+     *
+     * @param n Number of prints
+     * @return Mainblock info
+     */
+    public String mainblocks(int n) {
+        List<Block> blocks = kernel.getBlockchain().listMainBlocks(n);
+        if (CollectionUtils.isEmpty(blocks)) {
+            return "empty\n";
+        }
+        StringBuilder sbd = new StringBuilder();
+        sbd.append(printHeaderBlockList());
+        for (Block block : blocks) {
+            sbd.append(printBlock(block, false));
+        }
+        return sbd.toString();
+    }
+
+    /**
+     * Print Mined Block by given number
+     *
+     * @param n Number of prints
+     * @return minedblock info
+     */
+    public String minedblocks(int n) {
+        List<Block> blocks = kernel.getBlockchain().listMinedBlocks(n);
+        if (CollectionUtils.isEmpty(blocks)) {
+            return "empty\n";
+        }
+        StringBuilder sbd = new StringBuilder();
+        sbd.append(printHeaderBlockList());
+        for (Block block : blocks) {
+            sbd.append(printBlock(block, false));
+        }
+        return sbd.toString();
+    }
+
+    public static String getStateByFlags(int flags) {
         int flag = flags & ~(BI_OURS | BI_REMARK);
         // 1F
         if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED | BI_MAIN | BI_MAIN_CHAIN)) {

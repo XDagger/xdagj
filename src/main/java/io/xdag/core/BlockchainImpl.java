@@ -420,22 +420,17 @@ public class BlockchainImpl implements Blockchain {
 
     /** 设置以block为主块的主链 要么分叉 要么延长 * */
     public void setMain(Block block) {
-
-        blockStore.mainNumberInc();
-
-        netStatus.incMain();
         // 设置奖励
-        long time = block.getTimestamp();
-        long mainNumber = blockStore.getMainNumber();
-
-        long reward = getReward(time, mainNumber);
-
-        // long reward = getCurrentReward();
-
+        long mainNumber = blockStore.getMainNumber() + 1;
+        long reward = getReward(mainNumber);
+        block.setHeight(mainNumber);
+        blockStore.updateBlockInfo(BlockStore.BLOCK_HEIGHT, block);
         updateBlockFlag(block, BI_MAIN, true);
 
         // 接收奖励
         acceptAmount(block, reward);
+        blockStore.mainNumberInc();
+        netStatus.incMain();
 
         // 递归执行主块引用的区块 并获取手续费
         acceptAmount(block, applyBlock(block));
@@ -451,12 +446,11 @@ public class BlockchainImpl implements Blockchain {
         blockStore.mainNumberDec();
         netStatus.decMain();
 
-        // long amount = getCurrentReward();
-        long amount = getReward(block.getTimestamp(), blockStore.getMainNumber());
+        long amount = getReward(blockStore.getMainNumber());
         updateBlockFlag(block, BI_MAIN, false);
 
         // 去掉奖励和引用块的手续费
-        acceptAmount(block, -amount);
+        acceptAmount(block, 0L - amount);
         acceptAmount(block, unApplyBlock(block));
     }
 
@@ -839,17 +833,16 @@ public class BlockchainImpl implements Blockchain {
         return xdag2amount(1024);
     }
 
-    public long getReward(long time, long num) {
-        long start = getStartAmount(time, num);
-        long amount = start >> (num >> MAIN_BIG_PERIOD_LOG);
+    public long getReward(long nmain) {
+        long start = getStartAmount(nmain);
+        long amount = start >> (nmain >> MAIN_BIG_PERIOD_LOG);
         return amount;
     }
 
     @Override
-    public long getSupply(long nmain)
-    {
+    public long getSupply(long nmain) {
         long res = 0;
-        long amount = getStartAmount(0, nmain);
+        long amount = getStartAmount(nmain);
         long current_nmain = nmain;
         while ((current_nmain >> MAIN_BIG_PERIOD_LOG) > 0) {
             res += (1l << MAIN_BIG_PERIOD_LOG) * amount;
@@ -865,10 +858,10 @@ public class BlockchainImpl implements Blockchain {
         return res;
     }
 
-    public long getStartAmount(long time, long num) {
-        long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
+    public long getStartAmount(long nmain) {
         long startAmount = 0;
-        if (num >= forkHeight) {
+        long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
+        if (nmain >= forkHeight) {
             startAmount = MAIN_APOLLO_AMOUNT;
         } else {
             startAmount = MAIN_START_AMOUNT;

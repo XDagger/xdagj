@@ -53,6 +53,7 @@ public class BlockStore {
     public static final byte BLOCK_FEE = 0x06;
     public static final byte BLOCK_KEY_INDEX = 0x07;
     public static final byte BLOCK_HASH = 0x08;
+    public static final byte BLOCK_HEIGHT = 0x09;
 
     /** block size key */
     private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
@@ -174,6 +175,7 @@ public class BlockStore {
                 BytesUtils.merge(BLOCK_TIME, block.getHashLow()),
                 BytesUtils.longToBytes(block.getTimestamp(), false));
         indexSource.put(BytesUtils.merge(BLOCK_HASH, block.getHashLow()), block.getHash());
+        indexSource.put(BytesUtils.merge(BLOCK_HEIGHT, block.getHashLow()), BytesUtils.longToBytes(block.getHeight(), false));
     }
 
     public boolean hasBlock(byte[] hashlow) {
@@ -256,12 +258,14 @@ public class BlockStore {
                     indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)), 0, false);
         }
         long fee = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_FEE, hashlow)), 0, false);
+        long height = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_HEIGHT, hashlow)), 0, false);
         byte[] ref = indexSource.get(BytesUtils.merge(BLOCK_REF, hashlow));
         byte[] maxdiffLink = indexSource.get(BytesUtils.merge(BLOCK_MAXDIFFLINK, hashlow));
         int flags = BytesUtils.bytesToInt(indexSource.get(BytesUtils.merge(BLOCK_FLAG, hashlow)), 0, false);
         Block block = new Block(timestamp, amount, diff, fee, ref, maxdiffLink, flags);
         block.setHashLow(hashlow);
         block.setHash(indexSource.get(BytesUtils.merge(BLOCK_HASH, hashlow)));
+        block.setHeight(height);
         return block;
     }
 
@@ -293,6 +297,9 @@ public class BlockStore {
             break;
         case BLOCK_FEE:
             value = BytesUtils.longToBytes(block.getFee(), false);
+            break;
+        case BLOCK_HEIGHT:
+            value = BytesUtils.longToBytes(block.getHeight(), false);
             break;
         default:
             throw new IllegalStateException("Unexpected value: " + TypePrefix);
