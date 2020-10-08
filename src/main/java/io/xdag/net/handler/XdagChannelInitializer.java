@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
@@ -40,8 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel> {
     private final Node remoteNode;
     protected Kernel kernel;
-    private XdagChannelManager channelMgr;
-    private boolean isServer = false;
+    private final XdagChannelManager channelMgr;
+    private final boolean isServer;
 
     public XdagChannelInitializer(Kernel kernel, boolean isServer, Node remoteNode) {
         this.kernel = kernel;
@@ -65,17 +64,9 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
 
             XdagChannel channel = new XdagChannel(ch);
             channel.init(ch.pipeline(), kernel, isServer, address);
-
-//            ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(512 * 1024));
             ch.config().setOption(ChannelOption.TCP_NODELAY, true);
-//            ch.config().setOption(ChannelOption.SO_RCVBUF, 512 * 1024);
-//            ch.config().setOption(ChannelOption.SO_BACKLOG, 1024);
-
             channelMgr.add(channel);
-
-            ch.closeFuture().addListener((ChannelFutureListener) future -> {
-                channelMgr.notifyDisconnect(channel);
-            });
+            ch.closeFuture().addListener((ChannelFutureListener) future -> channelMgr.notifyDisconnect(channel));
 
         } catch (Exception e) {
             log.error("Unexpected error: [{}]", e.getMessage(), e);

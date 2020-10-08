@@ -87,18 +87,13 @@ public class XdagClient {
 
     public ChannelFuture connectAsync(
             String host, int port, XdagChannelInitializer xdagChannelInitializer) {
-        // xdagListener.trace("Connecting to: " + host + ":" + port);
         Bootstrap b = new Bootstrap();
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
-        // b.option(ChannelOption.SO_KEEPALIVE, true);
         b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
         b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectionTimeout());
         b.remoteAddress(host, port);
-
         b.handler(xdagChannelInitializer);
-
-        // Start the client.
         return b.connect();
     }
 

@@ -63,10 +63,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
-    public static final int HASH_LEN = 32;
-    public static final int PREFIX_BYTES = 8;
-    // public static final int PREFIX_BYTES = 8;
-
     static {
         RocksDB.loadLibrary();
     }
@@ -97,7 +93,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
      * concurrent execution of insert/delete/update operations however blocks them
      * on init/close/delete operations
      */
-    private ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
+    private final ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
 
     public RocksdbKVSource(String name) {
         this.name = name;
@@ -377,19 +373,8 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         try {
 
             if (log.isTraceEnabled()) {
-                log.trace(
-                        "~> RocksdbKVSource.prefixLookup(): " + name + ", key: " + Hex.encodeHexString(key));
+                log.trace("~> RocksdbKVSource.prefixLookup(): " + name + ", key: " + Hex.encodeHexString(key));
             }
-
-            // RocksDB sets initial position of iterator to the first key which is greater
-            // or equal to the
-            // seek key
-            // since keys in RocksDB are ordered in asc order iterator must be initiated
-            // with the lowest
-            // key
-            // thus bytes with indexes greater than PREFIX_BYTES must be nullified
-            // byte[] prefix = new byte[PREFIX_BYTES];
-            // arraycopy(key, 0, prefix, 0, PREFIX_BYTES);
 
             List<byte[]> retList = new ArrayList<>();
             try (RocksIterator it = db.newIterator(readOpts)) {

@@ -62,8 +62,8 @@ public class XdagPowTest {
                 byte[] hashlow = new byte[32];
                 System.arraycopy(minHash, 8, hashlow, 8, 24);
                 // generateBlock.setNonce(minShare);
-                generateBlock.setHash(minHash);
-                generateBlock.setHashLow(hashlow);
+                generateBlock.getInfo().setHash(minHash);
+                generateBlock.getInfo().setHashlow(hashlow);
                 log.debug("New MinHash :" + Hex.toHexString(minHash));
             }
         } catch (IOException e) {

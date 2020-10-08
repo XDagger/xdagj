@@ -23,16 +23,20 @@
  */
 package io.xdag.db.store;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import io.xdag.core.BlockInfo;
+import io.xdag.db.execption.DeserializationException;
+import io.xdag.db.execption.SerializationException;
+import io.xdag.core.XdagStats;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.core.Block;
@@ -44,21 +48,22 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class BlockStore {
-    public static final byte BLOCK_MAXDIFF = 0x00;
-    public static final byte BLOCK_MAXDIFFLINK = 0x01;
-    public static final byte BLOCK_AMOUNT = 0x02;
-    public static final byte BLOCK_REF = 0x03;
-    public static final byte BLOCK_FLAG = 0x04;
-    public static final byte BLOCK_TIME = 0x05;
-    public static final byte BLOCK_FEE = 0x06;
-    public static final byte BLOCK_KEY_INDEX = 0x07;
-    public static final byte BLOCK_HASH = 0x08;
-    public static final byte BLOCK_HEIGHT = 0x09;
+    public static final byte CHAIN_STATE = 0x0A;
+    public static final byte SETTING_VERSION                       =  0x10;
+    public static final byte SETTING_CREATED                       =  0x11;
+    public static final byte SETTING_STATS                         =  0x12;
+    public static final byte SETTING_EXT_STATS                     =  0x13;
+    public static final byte SETTING_PRE_TOP_MAIN                  =  0x14;
+    public static final byte SETTING_TOP_MAIN                      =  0x15;
+    public static final byte SETTING_OUR_FIRST_HASH                =  0x16;
+    public static final byte SETTING_OUR_LAST_HASH                 =  0x17;
+    public static final byte SETTING_OUR_BALANCE                   =  0x18;
+    public static final byte SETTING_CUR_TIME                      =  0x19;
+    public static final byte HASH_BLOCK_INFO                       =  0x22;
 
-    /** block size key */
-    private static final byte[] BLOCK_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
-    /** main size key */
-    private static final byte[] MAIN_SIZE = Hex.decode("EEEEEEEEEEEEEEEE");
+//    private Mapper<BlockInfo> biMapper;
+    private final Kryo kryo = new Kryo();
+
     /** pretop */
     private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD");
     /** pretop diff */
@@ -75,12 +80,6 @@ public class BlockStore {
     /** <time-hash,hash> */
     private KVSource<byte[], byte[]> timeSource;
     private SimpleFileStore simpleFileStore;
-    /** 存sums */
-    private BlockingQueue<Block> blockQueue = new LinkedBlockingQueue<>();
-
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private Future<?> sumFuture;
-    private boolean isRuning = false;
 
     public BlockStore(
             KVSource<byte[], byte[]> index,
@@ -91,91 +90,144 @@ public class BlockStore {
         this.blockSource = block;
         this.timeSource = time;
         this.simpleFileStore = simpleFileStore;
+
+        kryo.register(BlockInfo.class);
+        kryo.register(BigInteger.class);
+        kryo.register(byte[].class);
+    }
+
+    public byte[] serialize(final Object obj) throws SerializationException {
+        try {
+            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            final Output output = new Output(outputStream);
+            kryo.writeObject(output, obj);
+            output.flush();
+            output.close();
+            return outputStream.toByteArray();
+        } catch (final IllegalArgumentException | KryoException exception) {
+            throw new SerializationException(exception.getMessage(), exception);
+        }
+    }
+
+    public Object deserialize(final byte[] bytes, Class type) throws DeserializationException {
+        try {
+            final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+            final Input input = new Input(inputStream);
+            return kryo.readObject(input, type);
+        } catch (final IllegalArgumentException | KryoException exception) {
+            throw new DeserializationException(exception.getMessage(), exception);
+        }
     }
 
     public void init() {
         indexSource.init();
         blockSource.init();
         timeSource.init();
-        if (indexSource.get(BLOCK_SIZE) == null) {
-            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(0, false));
-        }
-        if (indexSource.get(MAIN_SIZE) == null) {
-            indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(0, false));
-        }
-
-        Runnable consumerTask = this::processQueue;
-        isRuning = true;
-        sumFuture = executorService.submit(consumerTask);
     }
 
     public void reset() {
         indexSource.reset();
         blockSource.reset();
         timeSource.reset();
-        indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(0, false));
-        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(0, false));
+//        indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(0, false));
+//        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(0, false));
         simpleFileStore.reset();
-        Runnable queueProducer = this::processQueue;
-        sumFuture = executorService.submit(queueProducer);
+//        Runnable queueProducer = this::processQueue;
+//        sumFuture = executorService.submit(queueProducer);
     }
 
-    public void processQueue() {
+//    public void processQueue() {
+//        try {
+//            while (isRuning) {
+//                Block block = blockQueue.take();
+//                simpleFileStore.saveBlockSums(block);
+//            }
+//        } catch (InterruptedException e) {
+//            log.error(e.getMessage(), e);
+//        }
+//    }
+
+    public void saveXdagStatus(XdagStats status) {
+        byte[] value = null;
         try {
-            while (isRuning) {
-                Block block = blockQueue.take();
-                simpleFileStore.saveBlockSums(block);
-            }
-        } catch (InterruptedException e) {
+            value = serialize(status);
+        } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
+        indexSource.put(new byte[] {SETTING_STATS}, value);
+    }
+
+    public XdagStats getXdagStatus() {
+        XdagStats status = null;
+        byte[] value = indexSource.get(new byte[] {SETTING_STATS});
+        if(value == null) {
+            return null;
+        }
+        try {
+            status = (XdagStats)deserialize(value, XdagStats.class);
+        } catch ( DeserializationException e) {
+            log.error(e.getMessage(), e);
+        }
+        return status;
     }
 
     // 存储block的过程
     public void saveBlock(Block block) {
-        log.debug("Save Block:" + block);
-        blockQueue.add(block);
+        if (block == null) {
+            return;
+        }
+//        log.debug("Save Block:" + block);
+//        blockQueue.add(block);
+
         long timeIndex = block.getTimestamp();
         timeSource.put(getTimeKey(timeIndex, block.getHashLow()), block.getHashLow());
         blockSource.put(block.getHashLow(), block.getXdagBlock().getData());
-        if (indexSource.get(BLOCK_SIZE) != null
-                && BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false) != 0) {
-            long blocksize = BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false) + 1;
-            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(blocksize, false));
-        } else {
-            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(1, false));
-            // 赋值localaddress
-            indexSource.put(GLOBAL_ADDRESS, block.getHashLow());
-        }
-        saveBlockInfo(block);
+//        if (indexSource.get(BLOCK_SIZE) != null
+//                && BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false) != 0) {
+//            long blocksize = BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false) + 1;
+//            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(blocksize, false));
+//        } else {
+//            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(1, false));
+//            // 赋值localaddress
+//            indexSource.put(GLOBAL_ADDRESS, block.getHashLow());
+//        }
+        simpleFileStore.saveBlockSums(block);
+        saveBlockInfo(block.getInfo());
     }
 
-    private void saveBlockInfo(Block block) {
-        indexSource.put(
-                BytesUtils.merge(BLOCK_MAXDIFF, block.getHashLow()),
-                BytesUtils.bigIntegerToBytes(block.getDifficulty(), 16, false));
-        if (block.getMaxDifflink() != null) {
-            indexSource.put(
-                    BytesUtils.merge(BLOCK_MAXDIFFLINK, block.getHashLow()),
-                    block.getMaxDifflink().getHashLow());
+    public void saveBlockInfo(BlockInfo blockInfo) {
+        byte[] value = null;
+        try {
+            value = serialize(blockInfo);
+        } catch (SerializationException e) {
+            log.error(e.getMessage(), e);
         }
-        if (block.getRef() != null) {
-            indexSource.put(BytesUtils.merge(BLOCK_REF, block.getHashLow()), block.getRef().getHashLow());
-        }
-        indexSource.put(
-                BytesUtils.merge(BLOCK_AMOUNT, block.getHashLow()),
-                BytesUtils.longToBytes(block.getAmount(), false));
-        indexSource.put(
-                BytesUtils.merge(BLOCK_FLAG, block.getHashLow()),
-                BytesUtils.intToBytes(block.getFlags(), false));
-        indexSource.put(
-                BytesUtils.merge(BLOCK_FEE, block.getHashLow()),
-                BytesUtils.longToBytes(block.getFee(), false));
-        indexSource.put(
-                BytesUtils.merge(BLOCK_TIME, block.getHashLow()),
-                BytesUtils.longToBytes(block.getTimestamp(), false));
-        indexSource.put(BytesUtils.merge(BLOCK_HASH, block.getHashLow()), block.getHash());
-        indexSource.put(BytesUtils.merge(BLOCK_HEIGHT, block.getHashLow()), BytesUtils.longToBytes(block.getHeight(), false));
+        indexSource.put(BytesUtils.merge(HASH_BLOCK_INFO, blockInfo.getHashlow()), value);
+//        indexSource.put(
+//                BytesUtils.merge(BLOCK_MAXDIFF, block.getHashLow()),
+//                BytesUtils.bigIntegerToBytes(block.getDifficulty(), 16, false));
+//        if (block.getMaxDifflink() != null) {
+//            indexSource.put(
+//                    BytesUtils.merge(BLOCK_MAXDIFFLINK, block.getHashLow()),
+//                    block.getMaxDifflink().getHashLow());
+//        }
+//        if (block.getRef() != null) {
+//            indexSource.put(BytesUtils.merge(BLOCK_REF, block.getHashLow()), block.getRef().getHashLow());
+//        }
+//        indexSource.put(
+//                BytesUtils.merge(BLOCK_AMOUNT, block.getHashLow()),
+//                BytesUtils.longToBytes(block.getAmount(), false));
+//        indexSource.put(
+//                BytesUtils.merge(BLOCK_FLAG, block.getHashLow()),
+//                BytesUtils.intToBytes(block.getFlags(), false));
+//        indexSource.put(
+//                BytesUtils.merge(BLOCK_FEE, block.getHashLow()),
+//                BytesUtils.longToBytes(block.getFee(), false));
+//        indexSource.put(
+//                BytesUtils.merge(BLOCK_TIME, block.getHashLow()),
+//                BytesUtils.longToBytes(block.getTimestamp(), false));
+//        indexSource.put(BytesUtils.merge(BLOCK_HASH, block.getHashLow()), block.getHash());
+//        indexSource.put(BytesUtils.merge(BLOCK_HEIGHT, block.getHashLow()), BytesUtils.longToBytes(block.getHeight(), false));
     }
 
     public boolean hasBlock(byte[] hashlow) {
@@ -248,145 +300,127 @@ public class BlockStore {
         if (!hasBlock(hashlow)) {
             return null;
         }
-        long timestamp = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_TIME, hashlow)), 0, false);
-        long amount = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_AMOUNT, hashlow)), 0, false);
-        BigInteger diff;
-        if (indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)) == null) {
-            diff = BigInteger.ZERO;
-        } else {
-            diff = BytesUtils.bytesToBigInteger(
-                    indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)), 0, false);
-        }
-        long fee = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_FEE, hashlow)), 0, false);
-        long height = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_HEIGHT, hashlow)), 0, false);
-        byte[] ref = indexSource.get(BytesUtils.merge(BLOCK_REF, hashlow));
-        byte[] maxdiffLink = indexSource.get(BytesUtils.merge(BLOCK_MAXDIFFLINK, hashlow));
-        int flags = BytesUtils.bytesToInt(indexSource.get(BytesUtils.merge(BLOCK_FLAG, hashlow)), 0, false);
-        Block block = new Block(timestamp, amount, diff, fee, ref, maxdiffLink, flags);
-        block.setHashLow(hashlow);
-        block.setHash(indexSource.get(BytesUtils.merge(BLOCK_HASH, hashlow)));
-        block.setHeight(height);
-        return block;
-    }
+//        long timestamp = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_TIME, hashlow)), 0, false);
+//        long amount = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_AMOUNT, hashlow)), 0, false);
+//        BigInteger diff;
+//        if (indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)) == null) {
+//            diff = BigInteger.ZERO;
+//        } else {
+//            diff = BytesUtils.bytesToBigInteger(
+//                    indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)), 0, false);
+//        }
+//        long fee = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_FEE, hashlow)), 0, false);
+//        long height = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_HEIGHT, hashlow)), 0, false);
+//        byte[] ref = indexSource.get(BytesUtils.merge(BLOCK_REF, hashlow));
+//        byte[] maxdiffLink = indexSource.get(BytesUtils.merge(BLOCK_MAXDIFFLINK, hashlow));
+//        int flags = BytesUtils.bytesToInt(indexSource.get(BytesUtils.merge(BLOCK_FLAG, hashlow)), 0, false);
+//        Block block = new Block(timestamp, amount, diff, fee, ref, maxdiffLink, flags);
+//        block.setHashLow(hashlow);
+//        block.setHash(indexSource.get(BytesUtils.merge(BLOCK_HASH, hashlow)));
+//        block.setHeight(height);
 
-    public void updateBlockInfo(byte TypePrefix, Block block) {
-        byte[] hashlow = block.getHashLow();
-        byte[] value;
-        switch (TypePrefix) {
-        case BLOCK_MAXDIFF:
-            value = BytesUtils.bigIntegerToBytes(block.getDifficulty(), 16, false);
-            break;
-        case BLOCK_MAXDIFFLINK:
-            value = block.getMaxDifflink().getHashLow();
-            break;
-        case BLOCK_AMOUNT:
-            value = BytesUtils.longToBytes(block.getAmount(), false);
-            break;
-        case BLOCK_REF:
-            if (block.getRef() == null) {
-                value = null;
-            } else {
-                value = block.getRef().getHashLow();
+        BlockInfo blockInfo = null;
+        byte[] value = indexSource.get(BytesUtils.merge(HASH_BLOCK_INFO, hashlow));
+        if(value == null) {
+            return null;
+        } else {
+            try {
+                blockInfo = (BlockInfo)deserialize(value, BlockInfo.class);
+            } catch (DeserializationException e) {
+                e.printStackTrace();
             }
-            break;
-        case BLOCK_FLAG:
-            value = BytesUtils.intToBytes(block.getFlags(), false);
-            break;
-        case BLOCK_TIME:
-            value = BytesUtils.longToBytes(block.getTimestamp(), false);
-            break;
-        case BLOCK_FEE:
-            value = BytesUtils.longToBytes(block.getFee(), false);
-            break;
-        case BLOCK_HEIGHT:
-            value = BytesUtils.longToBytes(block.getHeight(), false);
-            break;
-        default:
-            throw new IllegalStateException("Unexpected value: " + TypePrefix);
         }
-        if (value == null) {
-            indexSource.delete(BytesUtils.merge(TypePrefix, hashlow));
-        } else {
-            indexSource.put(BytesUtils.merge(TypePrefix, hashlow), value);
-        }
+        return new Block(blockInfo);
     }
 
-    public void updateBlockKeyIndex(byte[] hashlow, int keyindex) {
-        indexSource.put(
-                BytesUtils.merge(BLOCK_KEY_INDEX, hashlow), BytesUtils.intToBytes(keyindex, false));
-    }
+//    public void updateBlockInfo(byte TypePrefix, Block block) {
+//        byte[] hashlow = block.getHashLow();
+//        byte[] value;
+//        switch (TypePrefix) {
+//        case BLOCK_MAXDIFF:
+//            value = BytesUtils.bigIntegerToBytes(block.getDifficulty(), 16, false);
+//            break;
+//        case BLOCK_MAXDIFFLINK:
+//            value = block.getMaxDifflink().getHashLow();
+//            break;
+//        case BLOCK_AMOUNT:
+//            value = BytesUtils.longToBytes(block.getAmount(), false);
+//            break;
+//        case BLOCK_REF:
+//            if (block.getRef() == null) {
+//                value = null;
+//            } else {
+//                value = block.getRef().getHashLow();
+//            }
+//            break;
+//        case BLOCK_FLAG:
+//            value = BytesUtils.intToBytes(block.getFlags(), false);
+//            break;
+//        case BLOCK_TIME:
+//            value = BytesUtils.longToBytes(block.getTimestamp(), false);
+//            break;
+//        case BLOCK_FEE:
+//            value = BytesUtils.longToBytes(block.getFee(), false);
+//            break;
+//        case BLOCK_HEIGHT:
+//            value = BytesUtils.longToBytes(block.getHeight(), false);
+//            break;
+//        default:
+//            throw new IllegalStateException("Unexpected value: " + TypePrefix);
+//        }
+//        if (value == null) {
+//            indexSource.delete(BytesUtils.merge(TypePrefix, hashlow));
+//        } else {
+//            indexSource.put(BytesUtils.merge(TypePrefix, hashlow), value);
+//        }
+//    }
 
-    public void deleteBlockKeyIndex(byte[] hashlow) {
-        if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) == null) {
-            return;
-        }
-        indexSource.delete(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow));
-    }
+//    public void updateBlockKeyIndex(byte[] hashlow, int keyindex) {
+//        indexSource.put(
+//                BytesUtils.merge(BLOCK_KEY_INDEX, hashlow), BytesUtils.intToBytes(keyindex, false));
+//    }
+//
+//    public void deleteBlockKeyIndex(byte[] hashlow) {
+//        if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) == null) {
+//            return;
+//        }
+//        indexSource.delete(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow));
+//    }
+//
+//    public int getBlockKeyIndex(byte[] hashlow) {
+//        if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) != null) {
+//            return BytesUtils.bytesToInt(
+//                    indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)), 0, false);
+//        } else {
+//            // 不存在
+//            return -2;
+//        }
+//    }
 
-    public int getBlockKeyIndex(byte[] hashlow) {
-        if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) != null) {
-            return BytesUtils.bytesToInt(
-                    indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)), 0, false);
-        } else {
-            // 不存在
-            return -2;
-        }
-    }
+//    public void mainNumberInc() {
+//        long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
+//        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
+//    }
+//
+//    public void mainNumberDec() {
+//        long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
+//        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
+//    }
 
-    public void mainNumberInc() {
-        long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
-        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
-    }
-
-    public void mainNumberDec() {
-        long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
-        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
-    }
-
-    public long getMainNumber() {
-        return BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
-    }
-
-    public long getBlockNumber() {
-        return BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false);
-    }
+//    public long getMainNumber() {
+//        return BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
+//    }
+//
+//    public long getBlockNumber() {
+//        return BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false);
+//    }
 
     public void setOriginpretopdiff(BigInteger pretopDiff) {
         indexSource.put(ORIGINPRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
     }
 
-    public BigInteger getPretopDiff() {
-        if (indexSource.get(PRETOPDIFF) != null) {
-            return BytesUtils.bytesToBigInteger(indexSource.get(PRETOPDIFF), 0, false);
-        }
-        return BigInteger.ZERO;
-    }
-
     public void setPretopDiff(BigInteger pretopDiff) {
         indexSource.put(PRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
-    }
-
-    public byte[] getPretop() {
-        return indexSource.get(PRETOP);
-    }
-
-    public void setPretop(Block block) {
-        indexSource.put(PRETOP, block.getHashLow());
-    }
-
-    public BigInteger getOriginpretopDiff() {
-        if (indexSource.get(ORIGINPRETOPDIFF) != null) {
-            return BytesUtils.bytesToBigInteger(indexSource.get(ORIGINPRETOPDIFF), 0, false);
-        }
-        return BigInteger.ZERO;
-    }
-
-    public byte[] getOriginpretop() {
-        return indexSource.get(ORIGINPRETOP);
-    }
-
-    public void setOriginpretop(Block block) {
-        indexSource.put(ORIGINPRETOP, block.getHashLow());
     }
 
     public SimpleFileStore getSimpleFileStore() {
@@ -395,18 +429,6 @@ public class BlockStore {
 
     public void closeSum() {
         log.debug("Sums service close...");
-        isRuning = false;
-        if (executorService != null) {
-            try {
-                if (sumFuture != null) {
-                    sumFuture.cancel(true);
-                }
-                executorService.shutdown();
-                executorService.awaitTermination(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public byte[] getGlobalAddress() {

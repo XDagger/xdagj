@@ -75,7 +75,7 @@ public class AccountStore {
                         + keyIndex
                         + " key in wallet");
         accountSource.put(ACCOUNT_ORIGIN_KEY, block.getHashLow());
-        blockStore.updateBlockKeyIndex(block.getHashLow(), keyIndex);
+//        blockStore.updateBlockKeyIndex(block.getHashLow(), keyIndex);
     }
 
     /** 账户形成链表 */
@@ -93,7 +93,8 @@ public class AccountStore {
                         + " key in wallet");
         accountSource.put(block.getHashLow(), accountSource.get(ACCOUNT_ORIGIN_KEY));
         accountSource.put(ACCOUNT_ORIGIN_KEY, block.getHashLow());
-        blockStore.updateBlockKeyIndex(block.getHashLow(), keyIndex);
+        //TODO refactor
+//        blockStore.updateBlockKeyIndex(block.getHashLow(), keyIndex);
     }
 
     public void removeAccount(Block block) {
@@ -107,7 +108,7 @@ public class AccountStore {
         accountSource.delete(block.getHashLow());
 
         // TODO:block store
-        blockStore.deleteBlockKeyIndex(block.getHashLow());
+//        blockStore.deleteBlockKeyIndex(block.getHashLow());
     }
 
     /** 返回满足的地址 Address<send amount+192bit hash> */
@@ -116,12 +117,13 @@ public class AccountStore {
         byte[] first = accountSource.get(ACCOUNT_ORIGIN_KEY);
         long res = amount;
         while (res > 0 && first != null) {
-            long amountRelease = blockStore.getBlockInfoByHash(first).getAmount();
+            long amountRelease = blockStore.getBlockInfoByHash(first).getInfo().getAmount();
             if (amountRelease > 0) {
-                ECKey key = wallet.getKeyByIndex(blockStore.getBlockKeyIndex(first));
-                long sendValue = Math.min(amountRelease, res);
-                result.put(new Address(first, XdagField.FieldType.XDAG_FIELD_IN, sendValue), key);
-                res -= amountRelease;
+                //TODO
+//                ECKey key = wallet.getKeyByIndex(blockStore.getBlockKeyIndex(first));
+//                long sendValue = Math.min(amountRelease, res);
+//                result.put(new Address(first, XdagField.FieldType.XDAG_FIELD_IN, sendValue), key);
+//                res -= amountRelease;
             }
 
             first = accountSource.get(first);

@@ -23,6 +23,7 @@
  */
 package io.xdag.net.handler;
 
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,7 +42,7 @@ import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.impl.BlockExtRequestMessage;
 import io.xdag.net.message.impl.BlockRequestMessage;
 import io.xdag.net.message.impl.BlocksReplyMessage;
@@ -75,7 +76,7 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         switch (msg.getCommand()) {
         case NEW_BLOCK:
             processNewBlock((NewBlockMessage) msg);
@@ -130,40 +131,39 @@ public class Xdag03 extends XdagHandler {
     }
 
     public void killTimers() {
-        log.debug("msgqueue stop");
+        log.debug("msgQueue stop");
         msgQueue.close();
     }
 
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
-        //log.debug("processNewBlock:[{}]", BytesUtils.toHexString(msg.getBlock().getHash()));
         Block block = msg.getBlock();
+        log.info("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
 //        if (!syncMgr.validateAndAddNewBlock(bw)) {
 //            dropConnection();
 //        }
-
     }
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
 //        log.debug("processBlocksRequest:" + msg);
-        updateNetStatus(msg);
-//        long starttime = msg.getStarttime();
-//        long endtime = msg.getEndtime();
-//        long random = msg.getRandom();
-//
-//        List<Block> blocks = blockchain.getBlockByTime(starttime, endtime);
-//        for (Block block : blocks) {
-//            sendNewBlock(block, 1);
-//        }
-//        sendMessage(new BlocksReplyMessage(starttime, endtime, random, kernel.getNetStatus()));
+        updateXdagStats(msg);
+        long startTime = msg.getStarttime();
+        long endTime = msg.getEndtime();
+        long random = msg.getRandom();
+
+        List<Block> blocks = blockchain.getBlockByTime(startTime, endTime);
+        for (Block block : blocks) {
+            sendNewBlock(block, 1);
+        }
+        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
 //        log.debug("processBlocksReply:" + msg);
-        updateNetStatus(msg);
+        updateXdagStats(msg);
         long randomSeq = msg.getRandom();
         SettableFuture<byte[]> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
         if(sf != null) {
@@ -171,20 +171,20 @@ public class Xdag03 extends XdagHandler {
         }
     }
 
-    /** 将sumrequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
+    /** 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
     protected void processSumsRequest(SumRequestMessage msg) {
         log.debug("processSumsRequest:" + msg);
-        updateNetStatus(msg);
+        updateXdagStats(msg);
         byte[] sums = new byte[256];
         kernel.getBlockStore().getSimpleFileStore().loadSum(msg.getStarttime(), msg.getEndtime(),sums);
-        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getNetStatus(), sums);
+        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getBlockchain().getXdagStats(), sums);
         sendMessage(reply);
         log.debug("processSumsRequest:" + reply);
     }
 
     protected void processSumsReply(SumReplyMessage msg) {
 //        log.debug("processSumReply:" + msg);
-        updateNetStatus(msg);
+        updateXdagStats(msg);
         long randomSeq = msg.getRandom();
         SettableFuture<byte[]> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
         if(sf != null) {
@@ -217,9 +217,9 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public long sendGetblocks(long starttime, long endtime) {
-//        log.debug("sendGetblocks:[starttime={} endtime={}]", starttime, endtime);
-        BlocksRequestMessage msg = new BlocksRequestMessage(starttime, endtime, kernel.getNetStatus());
+    public long sendGetBlocks(long startTime, long endTime) {
+//        log.debug("sendGetBlocks:[startTime={} endTime={}]", startTime, endTime);
+        BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();
     }
@@ -230,16 +230,17 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public long sendGetblock(byte[] hash) {
-        BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getNetStatus());
+    public long sendGetBlock(byte[] hash) {
+        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
+        BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();
     }
 
     @Override
-    public long sendGetsums(long starttime, long endtime) {
-//        log.debug("sendGetsums:starttime=[{}],endtime=[{}]", starttime, endtime);
-        SumRequestMessage msg = new SumRequestMessage(starttime, endtime, kernel.getNetStatus());
+    public long sendGetSums(long startTime, long endTime) {
+//        log.debug("sendGetSums:startTime=[{}],endTime=[{}]", startTime, endTime);
+        SumRequestMessage msg = new SumRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();
     }
@@ -281,9 +282,9 @@ public class Xdag03 extends XdagHandler {
 
     }
 
-    public void updateNetStatus(AbstractMessage message) {
-        NetStatus remoteNetStatus = message.getNetStatus();
-        kernel.getNetStatus().updateNetStatus(remoteNetStatus);
+    public void updateXdagStats(AbstractMessage message) {
+        XdagStats remoteXdagStats = message.getXdagStats();
+        kernel.getBlockchain().getXdagStats().update(remoteXdagStats);
         kernel.getNetDBMgr().updateNetDB(message.getNetDB());
     }
 

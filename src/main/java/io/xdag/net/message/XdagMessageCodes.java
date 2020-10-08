@@ -92,7 +92,7 @@ public enum XdagMessageCodes {
 
     private final int cmd;
 
-    private XdagMessageCodes(int cmd) {
+    XdagMessageCodes(int cmd) {
         this.cmd = cmd;
     }
 

@@ -27,7 +27,7 @@ import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetDB;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
@@ -36,8 +36,8 @@ public class SumReplyMessage extends AbstractMessage {
 
     byte[] sums;
 
-    public SumReplyMessage(long endtime, long random, NetStatus netStatus, byte[] sums) {
-        super(SUMS_REPLY, 1, endtime, random, netStatus);
+    public SumReplyMessage(long endtime, long random, XdagStats xdagStats, byte[] sums) {
+        super(SUMS_REPLY, 1, endtime, random, xdagStats);
         this.sums = sums;
         System.arraycopy(BytesUtils.longToBytes(random, true), 0, encoded, 32, 8);
         System.arraycopy(sums, 0, encoded, 256, 256);
@@ -75,7 +75,7 @@ public class SumReplyMessage extends AbstractMessage {
                 + " endtime="
                 + this.endtime
                 + " netstatus="
-                + netStatus;
+                + xdagStats;
     }
 
     public byte[] getSum() {
@@ -96,7 +96,7 @@ public class SumReplyMessage extends AbstractMessage {
         long totalnmains = BytesUtils.bytesToLong(encoded, 120, true);
         int totalnhosts = BytesUtils.bytesToInt(encoded, 132, true);
         long maintime = BytesUtils.bytesToLong(encoded, 136, true);
-        netStatus = new NetStatus(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
+        xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
 
         // test netdb
         int length = 6;

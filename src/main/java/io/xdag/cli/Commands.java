@@ -23,12 +23,8 @@
  */
 package io.xdag.cli;
 
-import com.google.common.base.Strings;
 import io.xdag.Kernel;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.XdagState;
+import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
@@ -96,10 +92,10 @@ public class Commands {
             str.append(hash2Address(kernel.getBlockchain().getBlockByHash(tmp, false).getHash()))
                     .append(" ")
                     .append(
-                            df.format(amount2xdag(kernel.getBlockchain().getBlockByHash(tmp, false).getAmount())))
+                            df.format(amount2xdag(kernel.getBlockchain().getBlockByHash(tmp, false).getInfo().getAmount())))
                     .append("xdag")
                     .append(" key ")
-                    .append(kernel.getBlockStore().getBlockKeyIndex(tmp))
+//                    .append(kernel.getBlockStore().getBlockKeyIndex(tmp))
                     .append("\n");
             num--;
         }
@@ -123,9 +119,9 @@ public class Commands {
                 hash = StringUtils.getHash(address);
             }
             byte[] key = new byte[32];
-            System.arraycopy(hash, 8, key, 8, 24);
+            System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
             Block block = kernel.getBlockStore().getBlockInfoByHash(key);
-            double xdag = amount2xdag(block.getAmount());
+            double xdag = amount2xdag(block.getInfo().getAmount());
             return df.format(xdag) + " XDAG";
         }
     }
@@ -190,6 +186,7 @@ public class Commands {
      * Current Blockchain Status
      */
     public String stats() {
+        XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
         return String.format(
                 "Statistics for ours and maximum known parameters:\n" +
                         "            hosts: %d of %d\n" +
@@ -201,14 +198,15 @@ public class Commands {
                         " chain difficulty: %s of %s\n" +
                         "      XDAG supply: %.9f of %.9f",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
-                kernel.getNetStatus().getNblocks(), kernel.getNetStatus().getTotalnblocks(),
-                kernel.getNetStatus().getNmain(), kernel.getNetStatus().getTotalnmain(),
-                kernel.getBlockchain().getExtraSize(),
-                kernel.getBlockchain().getOrphanSize(),
-                kernel.getNetStatus().getNwaitsync(),
-                kernel.getBlockchain().getTopDiff().toString(16), kernel.getNetStatus().getMaxdifficulty().toString(16),
-                amount2xdag(kernel.getBlockchain().getSupply(kernel.getBlockchain().getMainBlockSize())),
-                amount2xdag(kernel.getBlockchain().getSupply(kernel.getBlockchain().getMainBlockSize()))
+                xdagStats.getNblocks(), xdagStats.getTotalnblocks(),
+                xdagStats.getNmain(), xdagStats.getTotalnmain(),
+                xdagStats.nextra,
+                xdagStats.nnoref,
+                xdagStats.nwaitsync,
+                xdagStats.getTopDiff()!=null?xdagStats.getTopDiff().toString(16):"",
+                xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty().toString(16):"",
+                amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
+                amount2xdag(kernel.getBlockchain().getSupply(xdagStats.totalnmain))
         );
     }
 
@@ -246,39 +244,37 @@ public class Commands {
     }
 
     public static String printHeaderBlockList() {
-        StringBuilder header = new StringBuilder();
-        header.append("---------------------------------------------------------------------------------------------------------\n")
-               .append("height        address                            time                      state     mined by            \n")
-                .append("---------------------------------------------------------------------------------------------------------\n");
-        return header.toString();
+        return "---------------------------------------------------------------------------------------------------------\n" +
+                "height        address                            time                      state     mined by            \n" +
+                "---------------------------------------------------------------------------------------------------------\n";
     }
 
     //TODO need refactor
-    public String printBlockInfo(Block blockInfo) {
-        blockInfo.parse();
-        long time = XdagTime.xdagTimestampToMs(blockInfo.getTimestamp());
+    public String printBlockInfo(Block block) {
+        block.parse();
+        long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
         return "time: "
                 + FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss.SSS").format(time)
                 + "\n"
                 + "timestamp: "
-                + Long.toHexString(blockInfo.getTimestamp())
+                + Long.toHexString(block.getTimestamp())
                 + "\n"
                 + "flags: "
-                + Integer.toHexString(blockInfo.getFlags())
+                + Integer.toHexString(block.getInfo().getFlags())
                 + "\n"
                 + "state: "
-                + getStateByFlags(blockInfo.getFlags())
+                + getStateByFlags(block.getInfo().getFlags())
                 + "\n"
                 + "hash: "
-                + Hex.toHexString(blockInfo.getHash())
+                + Hex.toHexString(block.getInfo().getHash())
                 + "\n"
                 + "difficulty: "
-                + blockInfo.getDifficulty().toString(16)
+                + block.getInfo().getDifficulty().toString(16)
                 + "\n"
                 + "balance: "
-                + hash2Address(blockInfo.getHash())
+                + hash2Address(block.getHash())
                 + " "
-                + df.format(amount2xdag(blockInfo.getAmount()))
+                + df.format(amount2xdag(block.getInfo().getAmount()))
                 + "\n";
     }
 
@@ -288,13 +284,13 @@ public class Commands {
         if(print_only_addresses) {
             sbd.append(String.format("%s   %08d\n",
                     BasicUtils.hash2Address(block.getHash()),
-                    block.getHeight()));
+                    block.getInfo().getHeight()));
         } else {
             sbd.append(String.format("%08d   %s   %s   %-8s  %-32s\n",
-                    block.getHeight(),
+                    block.getInfo().getHeight(),
                     BasicUtils.hash2Address(block.getHash()),
-                    FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss.SSS").format(time),
-                    getStateByFlags(block.getFlags()),
+                    FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
+                    getStateByFlags(block.getInfo().getFlags()),
                     ""));//TODO remark
         }
         return sbd.toString();

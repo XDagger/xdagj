@@ -169,7 +169,6 @@ public class BytesUtils {
         byte[] res = new byte[1 + b2.length];
         res[0] = b1;
         System.arraycopy(b2, 0, res, 1, b2.length);
-
         return res;
     }
 

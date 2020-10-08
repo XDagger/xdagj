@@ -103,9 +103,6 @@ public class OrphanPool {
     }
 
     public boolean containsKey(byte[] hashlow) {
-        if (orphanSource.get(BytesUtils.merge(ORPHAN_PREFEX, hashlow)) != null) {
-            return true;
-        }
-        return false;
+        return orphanSource.get(BytesUtils.merge(ORPHAN_PREFEX, hashlow)) != null;
     }
 }

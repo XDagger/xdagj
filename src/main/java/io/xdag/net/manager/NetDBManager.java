@@ -47,19 +47,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NetDBManager {
     @Getter
-    private String database;
+    private final String database;
 
     @Getter
-    private String databaseWhite;
+    private final String databaseWhite;
 
     @Getter
-    private String whiteUrl;
+    private final String whiteUrl;
 
     @Getter
     private NetDB whiteDB;
 
     @Getter
-    private NetDB netDB;
+    private final NetDB netDB;
 
     public NetDBManager(Config config) {
         database = MAINNET ? config.getNetDBDir() : config.getNetDBDirTest();
@@ -84,8 +84,8 @@ public class NetDBManager {
                 if (file.exists() && file.isFile()) {
                     reader = new BufferedReader(
                             new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-                    String temp = null;
-                    String ip = null;
+                    String temp;
+                    String ip;
                     int port;
                     while ((temp = reader.readLine()) != null) {
                         ip = temp.split(":")[0];
@@ -95,8 +95,8 @@ public class NetDBManager {
                 }
             } else {
                 reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-                String temp = null;
-                String ip = null;
+                String temp;
+                String ip;
                 int port;
                 while ((temp = reader.readLine()) != null) {
                     ip = temp.split(":")[0];
@@ -130,24 +130,23 @@ public class NetDBManager {
     }
 
     public boolean canAccept(InetSocketAddress address) {
-        boolean res = whiteDB.contains(address);
-        return res;
+        return whiteDB.contains(address);
     }
 
     public void refresh() {
         try {
             File file = new File(databaseWhite);
-            BufferedReader reader = null;
+            BufferedReader reader;
             // 白名单的地址 并且读取
-            URL url = null;
+            URL url;
             url = new URL(WHITELIST_URL_TESTNET);
 
             FileUtils.copyURLToFile(url, file);
             if (file.exists() && file.isFile()) {
                 reader = new BufferedReader(
                         new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-                String temp = null;
-                String ip = null;
+                String temp;
+                String ip;
                 int port;
                 while ((temp = reader.readLine()) != null) {
                     ip = temp.split(":")[0];
@@ -161,32 +160,4 @@ public class NetDBManager {
         }
     }
 
-    enum HostFlags {
-        // our host
-        HOST_OUR(0x01),
-        // host connected
-        HOST_CONNECTED(0x02),
-        // host from init command
-        HOST_SET(0x04),
-        // host in netdb.txt
-        HOST_INDB(0x08),
-        // host not added
-        HOST_NOT_ADD(0x10),
-        // host in whitelist
-        HOST_WHITE(0x20);
-
-        private int cmd;
-
-        private HostFlags(int cmd) {
-            this.setCmd(cmd);
-        }
-
-        public int getCmd() {
-            return cmd;
-        }
-
-        public void setCmd(int cmd) {
-            this.cmd = cmd;
-        }
-    }
 }

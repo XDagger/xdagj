@@ -23,34 +23,30 @@
  */
 package io.xdag.net.handler;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.SumReplyMessage;
-import java.math.BigInteger;
 
 public class XdagAdapter implements Xdag {
     @Override
-    public void sendNewBlock(Block newBlock, int TTl) {
+    public void sendNewBlock(Block newBlock, int ttl) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
-    public long sendGetblocks(long starttime, long endtime) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public long sendGetblock(byte[] hash) {
+    public long sendGetBlocks(long startTime, long endTime) {
         // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
-    public long sendGetsums(long starttime, long endtime) {
+    public long sendGetBlock(byte[] hash) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public long sendGetSums(long startTime, long endTime) {
         // TODO Auto-generated method stub
         return 0;
     }
@@ -58,7 +54,6 @@ public class XdagAdapter implements Xdag {
     @Override
     public void dropConnection() {
         // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -68,15 +63,8 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public BigInteger getTotalDifficulty() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public void activate() {
         // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -88,22 +76,20 @@ public class XdagAdapter implements Xdag {
     @Override
     public void disableBlocks() {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     public void enableBlocks() {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     public void onSyncDone(boolean done) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     public void sendMessage(Message message) {
+        // TODO Auto-generated method stub
     }
 }

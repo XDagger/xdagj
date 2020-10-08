@@ -124,7 +124,7 @@ public class SimpleFileStore implements FileSource {
         StringBuffer filename;
         endtime -= starttime;
 
-        if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFl) != 0) return -1;
+        if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFL) != 0) return -1;
 
         for (level = -6; endtime != 0; level++, endtime >>= 4);
 

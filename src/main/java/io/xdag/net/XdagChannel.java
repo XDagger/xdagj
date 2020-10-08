@@ -166,12 +166,10 @@ public class XdagChannel {
     }
 
     private MessageFactory createXdagMessageFactory(XdagVersion version) {
-        switch (version) {
-        case V03:
+        if (version == XdagVersion.V03) {
             return new Xdag03MessageFactory();
-        default:
-            throw new IllegalArgumentException("Xdag" + version + " is not supported");
         }
+        throw new IllegalArgumentException("Xdag" + version + " is not supported");
     }
 
     @Override

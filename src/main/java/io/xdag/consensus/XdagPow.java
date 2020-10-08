@@ -34,13 +34,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import io.xdag.core.*;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.MinerManager;
@@ -236,7 +233,10 @@ public class XdagPow implements PoW {
                     onNewShare(ev.getData(), ev.getChannel());
                     break;
                 case TIMEOUT:
-                    onTimeout();
+                    if(kernel.getXdagState().equals(XdagState.STST) ||
+                       kernel.getXdagState().equals(XdagState.SYNC)) {
+                        onTimeout();
+                    }
                     break;
                 case NEW_PRETOP:
                     onNewPreTop();
@@ -270,8 +270,8 @@ public class XdagPow implements PoW {
                 byte[] hashlow = new byte[32];
                 System.arraycopy(minHash, 8, hashlow, 8, 24);
                 generateBlock.setNonce(minShare);
-                generateBlock.setHash(minHash);
-                generateBlock.setHashLow(hashlow);
+                generateBlock.getInfo().setHash(minHash);
+                generateBlock.getInfo().setHashlow(hashlow);
 
                 // 把计算出来的最后的结果放到nonce里面
                 int index = (int) ((currentTask.getTaskTime() >> 16) & 0xf);

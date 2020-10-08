@@ -89,7 +89,4 @@ public class XdagServer {
         }
     }
 
-    public boolean isListening() {
-        return listening;
-    }
 }

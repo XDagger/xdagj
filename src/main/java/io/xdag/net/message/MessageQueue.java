@@ -39,7 +39,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 @Slf4j
 public class MessageQueue {
 
-    private static AtomicInteger cnt = new AtomicInteger(0);
+    private static final AtomicInteger cnt = new AtomicInteger(0);
     public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
             4,
             new BasicThreadFactory.Builder()
@@ -47,11 +47,11 @@ public class MessageQueue {
                     .daemon(true)
                     .build());
     boolean isRunning = false;
-    private Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();
-    private Queue<Message> respondQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Message> respondQueue = new ConcurrentLinkedQueue<>();
     private ChannelHandlerContext ctx = null;
     private ScheduledFuture<?> timerTask;
-    private XdagChannel channel;
+    private final XdagChannel channel;
 
     public MessageQueue(XdagChannel channel) {
         this.channel = channel;

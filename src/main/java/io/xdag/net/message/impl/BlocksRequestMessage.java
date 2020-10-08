@@ -25,15 +25,11 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REQUEST;
 
-import java.util.Random;
-
 import org.apache.commons.lang3.RandomUtils;
 
 import io.xdag.net.message.AbstractMessage;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
-import io.xdag.utils.BytesUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
@@ -43,8 +39,8 @@ public class BlocksRequestMessage extends AbstractMessage {
         super(bytes);
     }
 
-    public BlocksRequestMessage(long starttime, long endtime, NetStatus netStatus) {
-        super(BLOCKS_REQUEST, starttime, endtime, RandomUtils.nextLong(), netStatus);
+    public BlocksRequestMessage(long starttime, long endtime, XdagStats xdagStats) {
+        super(BLOCKS_REQUEST, starttime, endtime, RandomUtils.nextLong(), xdagStats);
         updateCrc();
     }
 

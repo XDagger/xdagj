@@ -25,7 +25,6 @@ package io.xdag.core;
 
 import io.xdag.crypto.ECKey;
 import io.xdag.utils.ByteArrayWrapper;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -38,17 +37,7 @@ public interface Blockchain {
 
     Block getBlockByHash(byte[] hash, boolean isRaw);
 
-    BigInteger getTopDiff();
-
     boolean hasBlock(byte[] hash);
-
-    long getMainBlockSize();
-
-    long getBlockSize();
-
-    long getOrphanSize();
-
-    long getExtraSize();
 
     List<Block> getBlockByTime(long starttime, long endtime);
 
@@ -63,6 +52,8 @@ public interface Blockchain {
     Map<ByteArrayWrapper, Integer> getMemAccount();
 
     ReentrantReadWriteLock getStateLock();
+
+    XdagStats getXdagStats();
 
     long getSupply(long nmain);
 }

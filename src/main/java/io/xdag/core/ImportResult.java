@@ -40,7 +40,4 @@ public enum ImportResult {
         this.hashLow = hashLow;
     }
 
-    public boolean isSuccessful() {
-        return equals(IMPORTED_BEST) || equals(IMPORTED_NOT_BEST);
-    }
 }

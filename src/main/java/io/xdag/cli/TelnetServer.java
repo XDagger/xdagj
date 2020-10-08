@@ -8,9 +8,9 @@ import org.jline.terminal.TerminalBuilder;
 
 @Slf4j
 public class TelnetServer {
-    private Kernel kernel;
-    private String ip;
-    private int port;
+    private final Kernel kernel;
+    private final String ip;
+    private final int port;
 
     public TelnetServer(final String ip, final int port, final Kernel kernel) {
         this.ip = ip;
@@ -21,9 +21,9 @@ public class TelnetServer {
     public void start() {
         try {
             Terminal terminal = TerminalBuilder.builder().build();
-            Shell xshell = new Shell();
-            xshell.setKernel(kernel);
-            Telnet telnetServer = new Telnet(terminal, xshell);
+            Shell xShell = new Shell();
+            xShell.setKernel(kernel);
+            Telnet telnetServer = new Telnet(terminal, xShell);
             telnetServer.telnetd(new String[]{"-i" + ip,"-p" + port, "start"});
         } catch (Exception e) {
             log.error(e.getMessage(), e);

@@ -237,7 +237,8 @@ public class AwardManagerImpl implements AwardManager {
         // 获取到这个区块 查询时要把前面的置0
         byte[] hashlow = BytesUtils.fixBytes(hash, 8, 24);
         Block block = blockchain.getBlockByHash(hashlow, false);
-        keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
+        //TODO
+//        keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
 
         if (keyPos < 0) {
             keyPos = blockchain.getMemAccount().get(new ByteArrayWrapper(hash)) != null
@@ -250,7 +251,7 @@ public class AwardManagerImpl implements AwardManager {
             return -3;
         }
 
-        payData.balance = block.getAmount();
+        payData.balance = block.getInfo().getAmount();
 
         if (payData.balance <= 0) {
             log.debug("no main block,can't pay");

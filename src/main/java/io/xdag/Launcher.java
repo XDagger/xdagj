@@ -23,15 +23,13 @@
  */
 package io.xdag;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import io.xdag.event.EventProcesser;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 public class Launcher {
@@ -51,9 +49,6 @@ public class Launcher {
     /**
      * Registers a shutdown hook which will be executed in the order of
      * registration.
-     *
-     * @param name
-     * @param runnable
      */
     public static synchronized void registerShutdownHook(String name, Runnable runnable) {
         shutdownHooks.add(Pair.of(name, runnable));

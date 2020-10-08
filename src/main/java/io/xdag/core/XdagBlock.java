@@ -56,18 +56,12 @@ public class XdagBlock {
                 fields[i] = new XdagField(fieldBytes);
             }
             for (int i = 0; i < XDAG_BLOCK_FIELDS; i++) {
-                fields[i].setType(fromByte(getMsgcode(i)));
+                fields[i].setType(fromByte(getMsgCode(i)));
             }
         }
     }
 
-    /**
-     * 获取每个字段的类型
-     *
-     * @param n
-     * @return
-     */
-    public byte getMsgcode(int n) {
+    public byte getMsgCode(int n) {
         long type = BytesUtils.bytesToLong(this.data, 8, true);
 
         return (byte) (type >> (n << 2) & 0xf);

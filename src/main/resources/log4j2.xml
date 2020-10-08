@@ -47,17 +47,14 @@
     <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
     <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
 
-    <logger name="io.xdag" level="WARN">
-      <AppenderRef ref="Error"/>
-    </logger>
 
     <logger name="io.xdag" level="INFO">
       <AppenderRef ref="Info"/>
     </logger>
 
-    <logger name="io.xdag.net" level="DEBUG">
-      <AppenderRef ref="Console"/>
-    </logger>
+<!--    <logger name="io.xdag.net" level="DEBUG">-->
+<!--      <AppenderRef ref="Console"/>-->
+<!--    </logger>-->
 
 
     <Root level="INFO">

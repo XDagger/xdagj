@@ -26,6 +26,7 @@ package io.xdag.core;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.crypto.ECKey;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -34,16 +35,14 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.net.message.NetStatus;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +56,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 
@@ -111,8 +111,6 @@ public class BlockchainTest {
         kernel.setAccountStore(accountStore);
         kernel.setOrphanPool(orphanPool);
         kernel.setWallet(xdagWallet);
-        NetStatus netStatus = new NetStatus();
-        kernel.setNetStatus(netStatus);
     }
 
     @After
@@ -120,31 +118,31 @@ public class BlockchainTest {
     }
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
-        assertEquals("blocks:", nblocks, bci.getNetStatus().getNblocks());
-        assertEquals("main:", nmain, bci.getNetStatus().getNmain());
-        assertEquals("nextra:", nextra, bci.getExtraSize());
-        assertEquals("orphan:", norphan, bci.getOrphanSize());
+        assertEquals("blocks:", nblocks, bci.getXdagStats().nblocks);
+        assertEquals("main:", nmain, bci.getXdagStats().nmain);
+        assertEquals("nextra:", nextra, bci.getXdagStats().nextra);
+        assertEquals("orphan:", norphan, bci.getXdagStats().nnoref);
     }
 
     private static Block generateAddressBlock(ECKey key, long xdagTime) {
-        Block b = new Block(xdagTime, null, null, null, false, null, -1);
+        Block b = new Block(xdagTime, null, null, false, null, -1);
         b.signOut(key);
         return b;
     }
 
     private static Block generateExtraBlock(ECKey key, long xdagTime, List<Address> pendings) {
-        Block b = new Block(xdagTime, null, null, pendings, false, null, -1);
+        Block b = new Block(xdagTime, null, pendings, false, null, -1);
         b.signOut(key);
         return b;
     }
 
     private static Block generateTransactionBlock(ECKey key, long xdagTime, Address from, Address to, long amount) {
-        List pending = Lists.newArrayList();
-        pending.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1
-        pending.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
+        List refs = Lists.newArrayList();
+        refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1
+        refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
         List<ECKey> keys = new ArrayList<>();
         keys.add(key);
-        Block b = new Block(xdagTime, null, pending, null, false, keys, 0); // orphan
+        Block b = new Block(xdagTime, refs, null, false, keys, 0); // orphan
         b.signOut(key);
         return b;
     }
@@ -152,9 +150,9 @@ public class BlockchainTest {
     @Test
     public void testAddressBlock() {
         ECKey key = new ECKey();
-        Block addressBlock = new Block(new Date().getTime(), null, null, null, false, null, -1);
+        Block addressBlock = new Block(new Date().getTime(), null, null, false, null, -1);
         addressBlock.signOut(key);
-        BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         assertTrue(result == IMPORTED_BEST);
     }
@@ -163,7 +161,7 @@ public class BlockchainTest {
     public void testExtraBlock() throws ParseException, InterruptedException {
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         ECKey key = new ECKey();
-        BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result = INVALID_BLOCK;
@@ -195,7 +193,7 @@ public class BlockchainTest {
         // skip last 2 extra block amount assert
         Lists.reverse(extraBlockList).stream().skip(2).forEach(b->{
             Block sb = blockchain.getBlockByHash(b.getHashLow(), false);
-            assertEquals("1024.0", String.valueOf(amount2xdag(sb.getAmount())));
+            assertEquals("1024.0", String.valueOf(amount2xdag(sb.getInfo().getAmount())));
         });
     }
 
@@ -204,7 +202,7 @@ public class BlockchainTest {
         ECKey key = new ECKey();
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         Block addressBlock = generateAddressBlock(key, date.getTime());
-        BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         assertTrue(result == IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
@@ -250,14 +248,14 @@ public class BlockchainTest {
         Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getHashLow());
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
         // block reword 1024 + 100 = 1124.0
-        assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getAmount())));
+        assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
         // block reword 1024 - 100 = 924.0
-        assertEquals("924.0", String.valueOf(amount2xdag(fromBlock.getAmount())));
+        assertEquals("924.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount())));
     }
 
     //@Test
     public void Testblockload() {
-        BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
         loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1649267441664L, blockchain);
         printBlockchainInfo(blockchain);
 
@@ -300,7 +298,7 @@ public class BlockchainTest {
 
     //@Test
     public void TestLoadBlocksByTime() {
-        BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
         loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1627725496320L, blockchain);
         printBlockchainInfo(blockchain);
         System.out.println(
@@ -314,21 +312,20 @@ public class BlockchainTest {
     }
 
     public void printBlockchainInfo(BlockchainImpl blockchain) {
-        System.out.println(
-                "=====================================Blockchain Info========================================");
-        System.out.println("blocks:" + blockchain.getBlockSize());
-        System.out.println("main blocks:" + blockchain.getMainBlockSize());
-        System.out.println("extra blocks:" + blockchain.getExtraSize());
-        System.out.println("orphan blocks:" + blockchain.getOrphanSize());
-        System.out.println("chain difficulty:" + blockchain.getTopDiff().toString(16));
-        System.out.println("XDAG supply:" + blockchain.getMainBlockSize() * 1024);
-        if (blockchain.getOrphanSize() > 0) {
-            for (int i = 0; i < blockchain.getOrphanSize(); i++) {
+        System.out.println("=====================================Blockchain Info========================================");
+        System.out.println("blocks:" + blockchain.getXdagStats().nblocks);
+        System.out.println("main blocks:" + blockchain.getXdagStats().nmain);
+        System.out.println("extra blocks:" + blockchain.getXdagStats().nextra);
+        System.out.println("orphan blocks:" + blockchain.getXdagStats().nnoref);
+        System.out.println("chain difficulty:" + blockchain.getXdagStats().getTopDiff().toString(16));
+        System.out.println("XDAG supply:" + blockchain.getXdagStats().nmain * 1024);
+        if (blockchain.getXdagStats().nnoref > 0) {
+            for (int i = 0; i < blockchain.getXdagStats().nnoref; i++) {
                 System.out.println(
                         "orphan block:"
                                 + Hex.toHexString(
                                         blockchain
-                                                .getBlockFromOrphanPool((int) blockchain.getOrphanSize())
+                                                .getBlockFromOrphanPool((int) blockchain.getXdagStats().nnoref)
                                                 .get(i)
                                                 .getHashLow()));
             }
@@ -462,4 +459,22 @@ public class BlockchainTest {
                                 + xdag2amount(4.4)));
         System.out.println(amount2xdag(xdag2amount(1024)));
     }
+
+    @Test
+    public void testGetStartAmount() {
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        assertEquals(String.valueOf(amount2xdag(blockchain.getStartAmount(1L))), "1024.0");
+        assertEquals(String.valueOf(amount2xdag(blockchain.getStartAmount(Constants.MAIN_APOLLO_TESTNET_HEIGHT))), "128.0");
+    }
+
+    @Test
+    public void testGetSupply() {
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        assertEquals("1024.0", String.valueOf(amount2xdag(blockchain.getSupply(1))));
+        assertEquals("2048.0", String.valueOf(amount2xdag(blockchain.getSupply(2))));
+        assertEquals("3072.0", String.valueOf(amount2xdag(blockchain.getSupply(3))));
+        long apolloSypply = blockchain.getSupply(Constants.MAIN_APOLLO_TESTNET_HEIGHT);
+        assertEquals(String.valueOf(Constants.MAIN_APOLLO_TESTNET_HEIGHT * 1024 - (1024-128)), BasicUtils.formatDouble(amount2xdag(apolloSypply)));
+    }
+
 }

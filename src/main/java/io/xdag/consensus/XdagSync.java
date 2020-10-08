@@ -92,22 +92,27 @@ public class XdagSync {
     }
 
     private void syncLoop() {
-        log.debug("Synchronization");
-        requesetBlocks(0, 1L << 48);
+        log.info("start syncLoop");
+        try {
+            requestBlocks(0, 1L << 48);
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+        }
+        log.info("end syncLoop");
     }
 
-    private void requesetBlocks(long t, long dt) {
+    private void requestBlocks(long t, long dt) {
         // 如果当前状态不是sync start
         if (status != Status.SYNCING) {
             return;
         }
         List<XdagChannel> any = getAnyNode();
-        long randomSeq = 0;
+        long randomSeq;
         SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
-            XdagChannel xc = any.get(0);
+            XdagChannel xc = any.get(1);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
-                randomSeq =  xc.getXdag().sendGetblocks(t, t + dt);
+                randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
                 blocksRequestMap.put(randomSeq, sf);
                 try {
                     sf.get(128, TimeUnit.SECONDS);
@@ -119,34 +124,34 @@ public class XdagSync {
                 blocksRequestMap.remove(randomSeq);
                 return;
             } else {
-                byte[] lsums = new byte[256];
-                byte[] rsums = null;
-                if(simpleFileStore.loadSum(t, t + dt, lsums) <= 0) {
+                byte[] lSums = new byte[256];
+                byte[] rSums;
+                if(simpleFileStore.loadSum(t, t + dt, lSums) <= 0) {
                     return;
                 }
-                log.debug("lsum is " + Hex.toHexString(lsums));
-                randomSeq = xc.getXdag().sendGetsums(t, t + dt);
+                log.debug("lSum is " + Hex.toHexString(lSums));
+                randomSeq = xc.getXdag().sendGetSums(t, t + dt);
                 sumsRequestMap.put(randomSeq, sf);
-                log.debug("sendGetsums seq:{}.", randomSeq);
+                log.debug("sendGetSums seq:{}.", randomSeq);
                 try {
                     byte[] sums = sf.get(128, TimeUnit.SECONDS);
-                    rsums = Arrays.copyOf(sums, 256);
+                    rSums = Arrays.copyOf(sums, 256);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     sumsRequestMap.remove(randomSeq);
                     log.error(e.getMessage(), e);
                     return;
                 }
                 sumsRequestMap.remove(randomSeq);
-                log.debug("rsum is " + Hex.toHexString(rsums));
+                log.debug("rSum is " + Hex.toHexString(rSums));
                 dt >>= 4;
                 for (int i = 0; i < 16; i++) {
-                    long lsumsSum = BytesUtils.bytesToLong(lsums, i * 16, true);
-                    long lsumsSize = BytesUtils.bytesToLong(lsums, i * 16 + 8, true);
-                    long rsumsSum = BytesUtils.bytesToLong(rsums, i * 16, true);
-                    long rsumsSize = BytesUtils.bytesToLong(rsums, i * 16 + 8, true);
+                    long lSumsSum = BytesUtils.bytesToLong(lSums, i * 16, true);
+                    long lSumsSize = BytesUtils.bytesToLong(lSums, i * 16 + 8, true);
+                    long rSumsSum = BytesUtils.bytesToLong(rSums, i * 16, true);
+                    long rSumsSize = BytesUtils.bytesToLong(rSums, i * 16 + 8, true);
 
-                    if (lsumsSize != rsumsSize || lsumsSum != rsumsSum) {
-                        requesetBlocks(t + i * dt, dt);
+                    if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
+                        requestBlocks(t + i * dt, dt);
                     }
                 }
             }
@@ -182,6 +187,6 @@ public class XdagSync {
 
     public enum Status {
         /** syncing */
-        SYNCING, SYNCDONE
+        SYNCING, SYNC_DONE
     }
 }

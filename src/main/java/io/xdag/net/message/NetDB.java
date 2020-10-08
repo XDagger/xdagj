@@ -23,34 +23,23 @@
  */
 package io.xdag.net.message;
 
-import static io.xdag.utils.BytesUtils.isFullZero;
+import io.xdag.net.node.Node;
+import io.xdag.utils.BytesUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-import io.xdag.config.Config;
-import io.xdag.net.node.Node;
-import io.xdag.utils.BytesUtils;
-import lombok.extern.slf4j.Slf4j;
+import static io.xdag.utils.BytesUtils.isFullZero;
 
 @Slf4j
 public class NetDB {
     /** remote */
     List<IP> ipList = new ArrayList<>();
 
-    Config config;
-
     public NetDB() {
-    }
-
-    public NetDB(Config config) {
-        this.config = config;
     }
 
     /** 从remote节点获取的iplist */
@@ -140,11 +129,6 @@ public class NetDB {
         return ipList;
     }
 
-    public void updateNetDB(NetDB netDB) {
-        // TODO:更新netdb
-
-    }
-
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
@@ -172,7 +156,7 @@ public class NetDB {
         return this.ipList.contains(ip);
     }
 
-    class IP {
+    static class IP {
         InetAddress ip;
         int port;
 

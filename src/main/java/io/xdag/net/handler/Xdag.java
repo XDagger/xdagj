@@ -23,29 +23,23 @@
  */
 package io.xdag.net.handler;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
-
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.SumReplyMessage;
-import java.math.BigInteger;
 
 public interface Xdag {
-    void sendNewBlock(Block newBlock, int TTL);
 
-    long sendGetblocks(long starttime, long endtime);
+    void sendNewBlock(Block newBlock, int ttl);
 
-    long sendGetblock(byte[] hash);
+    long sendGetBlocks(long startTime, long endTime);
 
-    long sendGetsums(long starttime, long endtime);
+    long sendGetBlock(byte[] hash);
+
+    long sendGetSums(long startTime, long endTime);
 
     void dropConnection();
 
     boolean isIdle();
-
-    BigInteger getTotalDifficulty();
 
     void activate();
 

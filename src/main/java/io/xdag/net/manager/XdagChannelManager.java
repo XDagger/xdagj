@@ -41,11 +41,11 @@ import lombok.extern.slf4j.Slf4j;
 public class XdagChannelManager {
     protected ConcurrentHashMap<InetSocketAddress, XdagChannel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, XdagChannel> activeChannels = new ConcurrentHashMap<>();
-    private Kernel kernel;
+    private final Kernel kernel;
     /** Queue with new blocks from other peers */
-    private BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
+    private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
     // 广播区块
-    private Thread blockDistributeThread;
+    private final Thread blockDistributeThread;
 
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
@@ -102,7 +102,7 @@ public class XdagChannelManager {
 
     // TODO:怎么发送 目前是发给除receive的节点
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        Node receive = null;
+        Node receive;
         // 说明是自己产生的
         if (blockWrapper.getRemoteNode() == null
                 || blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
@@ -121,12 +121,6 @@ public class XdagChannelManager {
         }
     }
 
-    /**
-     * When a channel becomes active.
-     *
-     * @param channel
-     * @param node
-     */
     public void onChannelActive(XdagChannel channel, Node node) {
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
@@ -143,16 +137,6 @@ public class XdagChannelManager {
 
     public int size() {
         return channels.size();
-    }
-
-    public List<XdagChannel> getIdleChannels() {
-        List<XdagChannel> list = new ArrayList<>();
-        for (XdagChannel c : activeChannels.values()) {
-            if (c.getMsgQueue().isIdle()) {
-                list.add(c);
-            }
-        }
-        return list;
     }
 
     public void remove(XdagChannel ch) {

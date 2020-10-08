@@ -33,7 +33,7 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
 import org.junit.Before;
@@ -77,8 +77,7 @@ public class Sync {
         xdagWallet = new WalletImpl();
         xdagWallet.init(config);
         kernel.setWallet(xdagWallet);
-        kernel.setNetStatus(new NetStatus());
-        BlockchainImpl blockchain = new BlockchainImpl(kernel, dbFactory);
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
         kernel.setBlockchain(blockchain);
     }
 

@@ -29,5 +29,5 @@ public interface FileSource {
 
     void saveBlockSums(Block block);
 
-    int loadSum(long starttime, long endtime, byte[] sums);
+    int loadSum(long startTime, long endTime, byte[] sums);
 }

@@ -23,10 +23,6 @@
  */
 package io.xdag;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import com.google.common.eventbus.EventBus;
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -57,13 +53,15 @@ import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
-import io.xdag.net.message.NetStatus;
 import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Getter
 @Setter
@@ -77,7 +75,6 @@ public class Kernel {
     protected AccountStore accountStore;
     protected OrphanPool orphanPool;
     protected Blockchain blockchain;
-    protected NetStatus netStatus;
     protected NetDB netDB;
     protected XdagClient client;
     protected XdagChannelManager channelMgr;
@@ -148,16 +145,15 @@ public class Kernel {
         // ====================================
         // netstatus netdb init
         // ====================================
-        netStatus = new NetStatus();
         netDB = new NetDB();
 
         // ====================================
         // initialize blockchain database
         // ====================================
-        blockchain = new BlockchainImpl(this, dbFactory);
+        blockchain = new BlockchainImpl(this);
         // 如果是第一次启动，则新建第一个地址块
         if (blockchain.getAllAccount().size() == 0) {
-            firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, null, false, null, -1);
+            firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null, -1);
             firstAccount.signOut(wallet.getDefKey().ecKey);
             blockchain.tryToConnect(firstAccount);
             poolMiner = new Miner(firstAccount.getHash());

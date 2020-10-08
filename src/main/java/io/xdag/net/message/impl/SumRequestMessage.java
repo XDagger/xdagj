@@ -28,16 +28,14 @@ import static io.xdag.net.message.XdagMessageCodes.SUMS_REQUEST;
 import org.apache.commons.lang3.RandomUtils;
 
 import io.xdag.net.message.AbstractMessage;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
-import io.xdag.utils.BytesUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
 public class SumRequestMessage extends AbstractMessage {
-    public SumRequestMessage(long starttime, long endtime, NetStatus netStatus) {
-        super(SUMS_REQUEST, starttime, endtime, RandomUtils.nextLong(), netStatus);
+    public SumRequestMessage(long starttime, long endtime, XdagStats xdagStats) {
+        super(SUMS_REQUEST, starttime, endtime, RandomUtils.nextLong(), xdagStats);
         updateCrc();
     }
 
@@ -72,6 +70,6 @@ public class SumRequestMessage extends AbstractMessage {
                 + " endtime="
                 + this.endtime
                 + " netstatus="
-                + netStatus;
+                + xdagStats;
     }
 }

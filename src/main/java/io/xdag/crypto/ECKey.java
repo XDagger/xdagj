@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -274,40 +275,6 @@ public class ECKey implements Serializable {
     }
 
     /**
-     * Creates an ECKey that simply trusts the caller to ensure that point is really
-     * the result of multiplying the generator point by the private key. This is
-     * used to speed things up when you know you have the right values already. The
-     * compression state of pub will be preserved.
-     *
-     * @param priv
-     *            -
-     * @param pub
-     *            -
-     * @return -
-     */
-    public static ECKey fromPrivateAndPrecalculatedPublic(BigInteger priv, ECPoint pub) {
-        return new ECKey(priv, pub);
-    }
-
-    /**
-     * Creates an ECKey that simply trusts the caller to ensure that point is really
-     * the result of multiplying the generator point by the private key. This is
-     * used to speed things up when you know you have the right values already. The
-     * compression state of the point will be preserved.
-     *
-     * @param priv
-     *            -
-     * @param pub
-     *            -
-     * @return -
-     */
-    public static ECKey fromPrivateAndPrecalculatedPublic(byte[] priv, byte[] pub) {
-        check(priv != null, "Private key must not be null");
-        check(pub != null, "Public key must not be null");
-        return new ECKey(new BigInteger(1, priv), CURVE.getCurve().decodePoint(pub));
-    }
-
-    /**
      * Creates an ECKey that cannot be used for signing, only verifying signatures,
      * from the given point. The compression state of pub will be preserved.
      *
@@ -366,21 +333,6 @@ public class ECKey implements Serializable {
      */
     public static byte[] computeAddress(ECPoint pubPoint) {
         return computeAddress(pubPoint.getEncoded(/* uncompressed */ false));
-    }
-
-    /**
-     * Compute the encoded X, Y coordinates of a public point.
-     *
-     * <p>
-     * This is the encoded public key without the leading byte.
-     *
-     * @param pubPoint
-     *            a public point
-     * @return 64-byte X,Y point pair
-     */
-    public static byte[] pubBytesWithoutFormat(ECPoint pubPoint) {
-        final byte[] pubBytes = pubPoint.getEncoded(/* uncompressed */ false);
-        return Arrays.copyOfRange(pubBytes, 1, pubBytes.length);
     }
 
     /**
@@ -453,34 +405,6 @@ public class ECKey implements Serializable {
             throw new SignatureException("Could not recover public key from signature");
         }
         return key;
-    }
-
-    /**
-     * Compute the address of the key that signed the given signature.
-     *
-     * @param messageHash
-     *            32-byte hash of message
-     * @param signatureBase64
-     *            Base-64 encoded signature
-     * @return 20-byte address
-     */
-    public static byte[] signatureToAddress(byte[] messageHash, String signatureBase64)
-            throws SignatureException {
-        return computeAddress(signatureToKeyBytes(messageHash, signatureBase64));
-    }
-
-    /**
-     * Compute the address of the key that signed the given signature.
-     *
-     * @param messageHash
-     *            32-byte hash of message
-     * @param sig
-     *            -
-     * @return 20-byte address
-     */
-    public static byte[] signatureToAddress(byte[] messageHash, ECDSASignature sig)
-            throws SignatureException {
-        return computeAddress(signatureToKeyBytes(messageHash, sig));
     }
 
     /**
@@ -707,43 +631,6 @@ public class ECKey implements Serializable {
     }
 
     /**
-     * @param recId
-     *            Which possible key to recover.
-     * @param sig
-     *            the R and S components of the signature, wrapped.
-     * @param messageHash
-     *            Hash of the data that was signed.
-     * @return 20-byte address
-     */
-    public static byte[] recoverAddressFromSignature(
-            int recId, ECDSASignature sig, byte[] messageHash) {
-        final byte[] pubBytes = recoverPubBytesFromSignature(recId, sig, messageHash);
-        if (pubBytes == null) {
-            return null;
-        } else {
-            return computeAddress(pubBytes);
-        }
-    }
-
-    /**
-     * @param recId
-     *            Which possible key to recover.
-     * @param sig
-     *            the R and S components of the signature, wrapped.
-     * @param messageHash
-     *            Hash of the data that was signed.
-     * @return ECKey
-     */
-    public static ECKey recoverFromSignature(int recId, ECDSASignature sig, byte[] messageHash) {
-        final byte[] pubBytes = recoverPubBytesFromSignature(recId, sig, messageHash);
-        if (pubBytes == null) {
-            return null;
-        } else {
-            return ECKey.fromPublicOnly(pubBytes);
-        }
-    }
-
-    /**
      * Decompress a compressed public key (x co-ord and low-bit of y-coord).
      *
      * @param xBN
@@ -842,9 +729,7 @@ public class ECKey implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder b = new StringBuilder();
-        b.append("pub:").append(BytesUtils.toHexString(pub.getEncoded(false)));
-        return b.toString();
+        return "pub:" + BytesUtils.toHexString(pub.getEncoded(false));
     }
 
     /**
@@ -1048,26 +933,10 @@ public class ECKey implements Serializable {
             this.s = s;
         }
 
-        /**
-         * t
-         *
-         * @param r
-         * @param s
-         * @return -
-         */
         private static ECDSASignature fromComponents(byte[] r, byte[] s) {
             return new ECDSASignature(new BigInteger(1, r), new BigInteger(1, s));
         }
 
-        /**
-         * @param r
-         *            -
-         * @param s
-         *            -
-         * @param v
-         *            -
-         * @return -
-         */
         public static ECDSASignature fromComponents(byte[] r, byte[] s, byte v) {
             ECDSASignature signature = fromComponents(r, s);
             signature.v = v;
@@ -1191,7 +1060,7 @@ public class ECKey implements Serializable {
             sigData[0] = v;
             System.arraycopy(BytesUtils.bigIntegerToBytes(this.r, 32), 0, sigData, 1, 32);
             System.arraycopy(BytesUtils.bigIntegerToBytes(this.s, 32), 0, sigData, 33, 32);
-            return new String(Base64.encode(sigData), Charset.forName("UTF-8"));
+            return new String(Base64.encode(sigData), StandardCharsets.UTF_8);
         }
 
         public byte[] toByteArray() {
@@ -1201,10 +1070,6 @@ public class ECKey implements Serializable {
                     BytesUtils.bigIntegerToBytes(this.r, 32),
                     BytesUtils.bigIntegerToBytes(this.s, 32),
                     new byte[] { fixedV });
-        }
-
-        public String toHex() {
-            return Hex.toHexString(toByteArray());
         }
 
         @Override

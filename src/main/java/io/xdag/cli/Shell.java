@@ -8,7 +8,6 @@ import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
@@ -16,8 +15,6 @@ import org.jline.builtins.telnet.Telnet;
 import org.jline.console.CommandInput;
 import org.jline.console.CommandMethods;
 import org.jline.console.CommandRegistry;
-import org.jline.console.SystemRegistry;
-import org.jline.console.impl.Builtins;
 import org.jline.console.impl.JlineCommandRegistry;
 import org.jline.console.impl.SystemRegistryImpl;
 import org.jline.reader.LineReader;
@@ -27,16 +24,11 @@ import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
 import org.spongycastle.util.encoders.Hex;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -88,7 +80,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
     }
 
     private boolean checkState() {
-
         if(commands.getKernelState() == Kernel.State.RUNNING) {
             return true;
         }
@@ -344,7 +335,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             // xfer must check password
-            if(!readPassword(input.terminal())) {
+            if(!readPassword()) {
                 return;
             }
             println(commands.xfer(amount, hash));
@@ -526,11 +517,11 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private boolean readPassword(Terminal terminal) {
-        Character mask =(char) '*';
+    private boolean readPassword() {
+        Character mask = '*';
         String line;
         do {
-            line = reader.readLine("Enter password> ", mask);;
+            line = reader.readLine("Enter password> ", mask);
         } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
         int err = Native.verify_dnet_key(line, kernel.getConfig().getDnetKeyBytes());
         if (err < 0) {
@@ -559,7 +550,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
         this.setReader(reader);
 
-        if(!readPassword(terminal)) {
+        if(!readPassword()) {
             return;
         }
 

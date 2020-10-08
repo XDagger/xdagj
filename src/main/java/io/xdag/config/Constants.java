@@ -23,6 +23,8 @@
  */
 package io.xdag.config;
 
+import com.google.common.primitives.UnsignedLong;
+
 import static io.xdag.config.Config.MAINNET;
 
 public class Constants {
@@ -48,7 +50,7 @@ public class Constants {
     public static final Long SEND_PERIOD = 10L;
     public static final int DNET_PKT_XDAG = 0x8B;
     public static final int BLOCK_HEAD_WORD = 0x3fca9e2b;
-    public static final long REQUEST_BLOCKS_MAX_TIME = 1L << 20;
+    public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
     public static final long REQUEST_WAIT = 64;
     public static final long MAX_ALLOWED_EXTRA = 65536;
     public static final String FUND_ADDRESS = "FQglVQtb60vQv2DOWEUL7yh3smtj7g1s";
@@ -58,6 +60,6 @@ public class Constants {
     public static final int MAIN_BIG_PERIOD_LOG = 21;
     public static final long MAIN_APOLLO_HEIGHT = 1017323;
     public static final long MAIN_APOLLO_TESTNET_HEIGHT = 196250;
-    public static final long MAIN_START_AMOUNT = 1L << 42;
-    public static final long MAIN_APOLLO_AMOUNT = 1L << 39;
+    public static final long MAIN_START_AMOUNT = UnsignedLong.fromLongBits(1L << 42).longValue();
+    public static final long MAIN_APOLLO_AMOUNT = UnsignedLong.fromLongBits(1L << 39).longValue();
 }

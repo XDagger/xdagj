@@ -25,18 +25,15 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REPLY;
 
-import io.xdag.core.Block;
-import io.xdag.core.XdagBlock;
 import io.xdag.net.message.AbstractMessage;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlocksReplyMessage extends AbstractMessage {
-    public BlocksReplyMessage(long starttime, long endtime, long random, NetStatus netStatus) {
-        super(BLOCKS_REPLY, starttime, endtime, random, netStatus);
+    public BlocksReplyMessage(long starttime, long endtime, long random, XdagStats xdagStats) {
+        super(BLOCKS_REPLY, starttime, endtime, random, xdagStats);
         updateCrc();
     }
 
@@ -71,6 +68,6 @@ public class BlocksReplyMessage extends AbstractMessage {
                 + " endtime="
                 + getEndtime()
                 + " netstatus"
-                + getNetStatus();
+                + getXdagStats();
     }
 }

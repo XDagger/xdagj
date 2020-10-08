@@ -59,10 +59,8 @@ public class XdagField {
             for (int i = 0; i < 4; i++) {
                 sum += BytesUtils.bytesToLong(getData(), i * 8, true);
             }
-            return sum;
-        } else {
-            return sum;
         }
+        return sum;
     }
 
     public enum FieldType {
@@ -99,7 +97,7 @@ public class XdagField {
 
         private final int cmd;
 
-        private FieldType(int cmd) {
+        FieldType(int cmd) {
             this.cmd = cmd;
         }
 
