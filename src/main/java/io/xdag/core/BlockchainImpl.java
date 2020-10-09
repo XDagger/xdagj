@@ -75,19 +75,14 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 public class BlockchainImpl implements Blockchain {
     private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
-
-    // private static long g_apollo_fork_time = 0;
     private Wallet wallet;
-
     private BlockStore blockStore;
     private AccountStore accountStore;
     /** 非Extra orphan存放 */
     private OrphanPool orphanPool;
 
     private LinkedHashMap<ByteArrayWrapper, Block> memOrphanPool = new LinkedHashMap<>();
-
     private Map<ByteArrayWrapper, Integer> memAccount = new ConcurrentHashMap<>();
-
     private XdagStats xdagStats;
     private Kernel kernel;
 
@@ -112,9 +107,7 @@ public class BlockchainImpl implements Blockchain {
         ReentrantReadWriteLock.WriteLock writeLock = this.stateLock.writeLock();
         writeLock.lock();
         try {
-
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
-            // 如果区块已经存在不处理
             if (isExist(block.getHashLow())) {
                 return ImportResult.EXIST;
             }
@@ -143,7 +136,6 @@ public class BlockchainImpl implements Blockchain {
 
                         if (!ref.getAmount().equals(BigInteger.ZERO)) {
                             updateBlockFlag(block, BI_EXTRA, false);
-//                            blockStore.saveBlock(block);
                         }
                     }
 
@@ -256,7 +248,6 @@ public class BlockchainImpl implements Blockchain {
     /** 检查更新主链 * */
     @Override
     public void checkNewMain() {
-        log.debug("Check New Main...");
         Block p = null;
         int i = 0;
         if (xdagStats.getTopMainChain() != null) {
@@ -335,7 +326,6 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-//            blockStore.saveBlock(ref);
             if (amount2xdag(block.getInfo().getAmount() + link.getAmount().longValue()) >= amount2xdag(
                     block.getInfo().getAmount())) {
                 acceptAmount(block, link.getAmount().longValue());
@@ -481,8 +471,7 @@ public class BlockchainImpl implements Blockchain {
         List<Address> refs = Lists.newArrayList();
         refs.add(preTop);
         refs.addAll(getBlockFromOrphanPool(16 - res));
-//        return new Block(sendTime, preTop, all, refs, mining, keys, defKeyIndex);
-        return new Block(sendTime, all, refs, mining, keys, defKeyIndex);
+        return new Block(sendTime, all, refs, mining, keys, null, defKeyIndex);
     }
 
     public Block createMainBlock() {
@@ -496,7 +485,7 @@ public class BlockchainImpl implements Blockchain {
         List<Address> refs = Lists.newArrayList();
         refs.add(preTop);
         refs.addAll(getBlockFromOrphanPool(16 - res));
-        return new Block(sendTime, null, refs, true, null, -1);
+        return new Block(sendTime, null, refs, true, null, kernel.getConfig().getPoolTag(), -1);
     }
 
     /*
@@ -541,16 +530,12 @@ public class BlockchainImpl implements Blockchain {
         if (xdagStats.getPreTop() == null) {
             xdagStats.setPreTop(block.getHashLow().clone());
             xdagStats.setPreTopDiff(blockDiff);
-            block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(xdagStats.getPreTopDiff());
             return;
         }
 
         if (blockDiff.compareTo(xdagStats.getPreTopDiff()) > 0) {
             xdagStats.setPreTop(block.getHashLow().clone());
             xdagStats.setPreTopDiff(blockDiff);
-            block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(xdagStats.getPreTopDiff());
         }
     }
 

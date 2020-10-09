@@ -153,7 +153,7 @@ public class Kernel {
         blockchain = new BlockchainImpl(this);
         // 如果是第一次启动，则新建第一个地址块
         if (blockchain.getAllAccount().size() == 0) {
-            firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null, -1);
+            firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
             firstAccount.signOut(wallet.getDefKey().ecKey);
             blockchain.tryToConnect(firstAccount);
             poolMiner = new Miner(firstAccount.getHash());

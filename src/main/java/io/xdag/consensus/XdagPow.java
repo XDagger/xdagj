@@ -286,7 +286,7 @@ public class XdagPow implements PoW {
                 log.debug("对应的区块【{}】", Hex.toHexString(generateBlock.toBytes()));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 

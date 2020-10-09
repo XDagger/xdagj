@@ -125,13 +125,13 @@ public class BlockchainTest {
     }
 
     private static Block generateAddressBlock(ECKey key, long xdagTime) {
-        Block b = new Block(xdagTime, null, null, false, null, -1);
+        Block b = new Block(xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
         return b;
     }
 
     private static Block generateExtraBlock(ECKey key, long xdagTime, List<Address> pendings) {
-        Block b = new Block(xdagTime, null, pendings, false, null, -1);
+        Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
         b.signOut(key);
         return b;
     }
@@ -142,7 +142,7 @@ public class BlockchainTest {
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
         List<ECKey> keys = new ArrayList<>();
         keys.add(key);
-        Block b = new Block(xdagTime, refs, null, false, keys, 0); // orphan
+        Block b = new Block(xdagTime, refs, null, false, keys, null, 0); // orphan
         b.signOut(key);
         return b;
     }
@@ -150,7 +150,7 @@ public class BlockchainTest {
     @Test
     public void testAddressBlock() {
         ECKey key = new ECKey();
-        Block addressBlock = new Block(new Date().getTime(), null, null, false, null, -1);
+        Block addressBlock = new Block(new Date().getTime(), null, null, false, null, null, -1);
         addressBlock.signOut(key);
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);

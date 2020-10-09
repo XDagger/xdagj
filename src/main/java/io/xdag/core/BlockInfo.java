@@ -20,4 +20,5 @@ public class BlockInfo {
     public int flags;
     private long fee;
     private long timestamp;
+    private byte[] remark;
 }

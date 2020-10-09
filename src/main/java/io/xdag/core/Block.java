@@ -31,6 +31,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
 import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
@@ -41,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.Arrays;
 import org.spongycastle.util.encoders.Hex;
@@ -74,10 +77,6 @@ public class Block implements Cloneable {
     private Map<ECKey.ECDSASignature, Integer> insigs = new LinkedHashMap<>();
     private ECKey.ECDSASignature outsig;
 
-    private boolean pretopCandidate;
-    private BigInteger pretopCandidateDiff;
-
-
     /** 主块的nonce记录矿工地址跟nonce* */
     private byte[] nonce;
 
@@ -95,26 +94,21 @@ public class Block implements Cloneable {
 
     public Block(
             long timestamp,
-//            Address pretop,
             List<Address> links,
             List<Address> pendings,
             boolean mining,
             List<ECKey> keys,
+            String remark,
             int defKeyIndex) {
         parsed = true;
         info = new BlockInfo();
         this.info.setTimestamp(timestamp);
         this.info.setFee(0);
-//        this.firstOutput = pretop;
         int lenghth = 0;
 
         setType(MAINNET ? XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST, lenghth++);
 
-//        if (pretop != null) {
-//            setType(XDAG_FIELD_OUT, lenghth++);
-//        }
-
-        if (links != null && links.size() != 0) {
+        if (CollectionUtils.isNotEmpty(links)) {
             for (Address link : links) {
                 XdagField.FieldType type = link.getType();
                 setType(type, lenghth++);
@@ -131,6 +125,15 @@ public class Block implements Cloneable {
                 setType(XDAG_FIELD_OUT, lenghth++);
                 outputs.add(pending);
             }
+        }
+
+        if(StringUtils.isAsciiPrintable(remark)) {
+            setType(XDAG_FIELD_REMARK, lenghth++);
+            byte[] safeRemark = remark.getBytes();
+            if(safeRemark.length > 32) {
+                safeRemark = BytesUtils.subArray(safeRemark, 0, 32);
+            }
+            this.info.setRemark(safeRemark);
         }
 
         if (keys != null && keys.size() != 0) {
@@ -167,7 +170,7 @@ public class Block implements Cloneable {
                  List<Address> pendings,
                  boolean mining)
     {
-        this(timestamp, null, pendings, mining, null, -1);
+        this(timestamp, null, pendings, mining, null, null, -1);
     }
 
     /** 从512字节读取* */
@@ -179,35 +182,6 @@ public class Block implements Cloneable {
     public Block(BlockInfo blockInfo) {
         this.info = blockInfo;
         this.isSaved = true;
-    }
-
-    /** 从rocksdb读取* */
-    public Block(
-            long timestamp,
-            long amount,
-            BigInteger diff,
-            long fee,
-            byte[] ref,
-            byte[] maxdiffLink,
-            int flags) {
-        parsed = true;
-        this.info = new BlockInfo();
-        this.info.setTimestamp(timestamp);
-        this.info.setAmount(amount);
-        this.info.setDifficulty(diff);
-        this.info.setFee(fee);
-        if (ref != null) {
-//            this.ref = new Address(ref, XDAG_FIELD_OUT);
-            this.info.setRef(ref);
-        }
-        if (maxdiffLink != null) {
-//            this.maxDifflink = new Address(maxdiffLink, XDAG_FIELD_OUT);
-            this.info.setMaxDiffLink(maxdiffLink);
-        }
-        if (flags != 0) {
-            this.info.setFlags(flags);
-        }
-        isSaved = true;
     }
 
     /** 计算区块hash* */
@@ -242,11 +216,10 @@ public class Block implements Cloneable {
                     inputs.add(new Address(xdagBlock.getField(i)));
                     break;
                 case XDAG_FIELD_OUT:
-//                    if (i == 1) {
-//                        firstOutput = new Address(field);
-//                    } else {
-                        outputs.add(new Address(field));
-//                    }
+                    outputs.add(new Address(field));
+                    break;
+                case XDAG_FIELD_REMARK:
+                    this.info.setRemark(field.getData());
                     break;
                 case XDAG_FIELD_SIGN_IN:
                 case XDAG_FIELD_SIGN_OUT:
@@ -319,19 +292,16 @@ public class Block implements Cloneable {
 
     /** without signature */
     private byte[] getEncodedBody() {
-//        if (encoded != null) {
-//            return encoded;
-//        }
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.writeField(getEncodedHeader());
-//        if (firstOutput != null) {
-//            encoder.writeField(Arrays.reverse(firstOutput.getHashLow()));
-//        }
         List<Address> all = new ArrayList<>();
         all.addAll(inputs);
         all.addAll(outputs);
         for (Address link : all) {
             encoder.writeField(Arrays.reverse(link.getData()));
+        }
+        if(info.getRemark() != null) {
+            encoder.write(info.getRemark());
         }
         for (ECKey ecKey : pubKeys) {
             byte[] key = BytesUtils.subArray(ecKey.getPubKeybyCompress(), 1, 32);
@@ -412,7 +382,6 @@ public class Block implements Cloneable {
 
     /** 取输出签名在字段的索引 */
     public int getOutsigIndex() {
-//        parse();
         int i = 1;
         long temp = this.info.type;
         while ((temp & 0xf) != 5) {
@@ -439,32 +408,26 @@ public class Block implements Cloneable {
     }
 
     public List<Address> getOutputs() {
-//        parse();
         return outputs;
     }
 
     public List<Address> getInputs() {
-//        parse();
         return inputs;
     }
 
     public List<ECKey> getPubKeys() {
-//        parse();
         return pubKeys;
     }
 
     public byte[] getNonce() {
-//        parse();
         return nonce;
     }
 
     public ECKey.ECDSASignature getOutsig() {
-//        parse();
         return outsig.toCanonicalised();
     }
 
     public Map<ECKey.ECDSASignature, Integer> getInsigs() {
-//        parse();
         return insigs;
     }
 
@@ -506,22 +469,14 @@ public class Block implements Cloneable {
     }
 
     public long getTimestamp() {
-//        parse();
         return this.info.getTimestamp();
     }
 
-//    public Address getFirstOutput() {
-////        parse();
-//        return firstOutput;
-//    }
-
     public long getType() {
-//        parse();
         return this.info.type;
     }
 
     public long getFee() {
-//        parse();
         return this.info.getFee();
     }
 
@@ -535,23 +490,13 @@ public class Block implements Cloneable {
 
     private void setType(XdagField.FieldType type, int n) {
         long typeByte = type.asByte();
-//        this.type |= typeByte << (n << 2);
         this.info.type |= typeByte << (n << 2);
     }
 
     public List<Address> getLinks() {
-//        parse();
         List<Address> links = new ArrayList<>();
         links.addAll(getInputs());
         links.addAll(getOutputs());
-//        if (getFirstOutput() != null) {
-//            for(Address a : links){
-//                if(Arrays.areEqual(a.getHashLow(), getFirstOutput().getHashLow() )) {
-//                    return links;
-//                }
-//            }
-//            links.add(getFirstOutput());
-//        }
         return links;
     }
 

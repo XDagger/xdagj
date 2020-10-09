@@ -39,6 +39,7 @@ import org.apache.commons.lang3.time.FastDateFormat;
 import org.spongycastle.util.encoders.Hex;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -254,7 +255,7 @@ public class Commands {
         block.parse();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
         return "time: "
-                + FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss.SSS").format(time)
+                + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time)
                 + "\n"
                 + "timestamp: "
                 + Long.toHexString(block.getTimestamp())
@@ -286,12 +287,13 @@ public class Commands {
                     BasicUtils.hash2Address(block.getHash()),
                     block.getInfo().getHeight()));
         } else {
+            byte[] remark = block.getInfo().getRemark();
             sbd.append(String.format("%08d   %s   %s   %-8s  %-32s\n",
                     block.getInfo().getHeight(),
                     BasicUtils.hash2Address(block.getHash()),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                     getStateByFlags(block.getInfo().getFlags()),
-                    ""));//TODO remark
+                    new String(remark==null?"".getBytes():remark), StandardCharsets.UTF_8));
         }
         return sbd.toString();
     }

@@ -29,6 +29,7 @@ import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
 import lombok.Data;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 public class Config {
@@ -61,6 +62,8 @@ public class Config {
     private String poolIp;
     /** 矿池的端口 */
     private int poolPort;
+    /** Pool Tag */
+    private String poolTag;
     /** 一个矿池最多允许接入的矿工数量 */
     private int globalMinerLimit;
     /** 允许最大的接入连接 g_max_connections_count */
@@ -171,6 +174,9 @@ public class Config {
                 i++;
                 // todo bind the host for us
                 break;
+            case "-tag":
+                config.poolTag = StringUtils.substring(args[i+1], 0, 31);
+                break;
             default:
                 System.out.println("Illegal instruction");
             }
@@ -224,6 +230,8 @@ public class Config {
 
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
+
+        poolTag = setting.getOrDefault("poolTag", "XdagJ");
 
         poolRation = setting.getInt("poolRation");
         rewardRation = setting.getInt("rewardRation");
