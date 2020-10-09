@@ -61,31 +61,20 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Setter
+@Getter
 public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
     static {
         RocksDB.loadLibrary();
     }
 
-    @Setter
-    @Getter
     private Config config;
-
-    @Setter
-    @Getter
     private String name;
-
-    @Setter
-    @Getter
     private RocksDB db;
-
-    @Setter
-    @Getter
     private ReadOptions readOpts;
-
-    @Setter
-    @Getter
     private boolean alive;
+    private int prefixSeekLength;
 
     /**
      * The native RocksDB insert/update/delete are normally thread-safe However
@@ -97,6 +86,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
     public RocksdbKVSource(String name) {
         this.name = name;
+        log.debug("New RocksdbKVSource: " + name);
+    }
+
+    public RocksdbKVSource(String name, int prefixSeekLength) {
+        this.name = name;
+        this.prefixSeekLength = prefixSeekLength;
         log.debug("New RocksdbKVSource: " + name);
     }
 
@@ -132,7 +127,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 options.setIncreaseParallelism(config.getStoreMaxThreads());
 
                 // key prefix for state node lookups
-                options.useFixedLengthPrefixExtractor(16);
+                options.useFixedLengthPrefixExtractor(prefixSeekLength);
 
                 // table options
                 final BlockBasedTableConfig tableCfg;
@@ -364,11 +359,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     }
 
     @Override
-    public List<byte[]> prefixValueLookup(byte[] key, int prefixBytes) {
-        // if (prefixBytes != PREFIX_BYTES)
-        // throw new RuntimeException("RocksdbKVSource.prefixLookup() supports only " +
-        // prefixBytes + "-bytes prefix");
-
+    public List<byte[]> prefixValueLookup(byte[] key) {
         resetDbLock.readLock().lock();
         try {
 
@@ -409,7 +400,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     }
 
     @Override
-    public List<byte[]> prefixKeyLookup(byte[] key, int prefixBytes) {
+    public List<byte[]> prefixKeyLookup(byte[] key) {
         resetDbLock.readLock().lock();
         try {
 

@@ -23,13 +23,20 @@
  */
 package io.xdag.db;
 
+import io.xdag.db.store.BlockStore;
 import io.xdag.utils.BytesUtils;
+
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
 
 import java.io.*;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
 
-public class SumTest {
+public class SimpleFileStoreTest {
     @Test
     public void sumsTest() {
         // String filename = "/Users/punk/Downloads/storage-testnet/01/6f/sums.dat";
@@ -97,5 +104,19 @@ public class SumTest {
         }
 
         return sums;
+    }
+
+    @Test
+    public void testGetFileName() throws ParseException {
+        FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+        Date date = fastDateFormat.parse("2020-01-01 00:00:00");
+
+
+        for(int i = 0; i < 1000; i++) {
+            date = DateUtils.addSeconds(date, 64);
+            List<String> fileNames = BlockStore.getFileName(date.getTime());
+            fileNames.stream().forEach(System.out::println);
+        }
+
     }
 }

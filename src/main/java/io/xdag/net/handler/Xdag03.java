@@ -150,15 +150,15 @@ public class Xdag03 extends XdagHandler {
     protected void processBlocksRequest(BlocksRequestMessage msg) {
 //        log.debug("processBlocksRequest:" + msg);
         updateXdagStats(msg);
-        long startTime = msg.getStarttime();
-        long endTime = msg.getEndtime();
-        long random = msg.getRandom();
-
-        List<Block> blocks = blockchain.getBlockByTime(startTime, endTime);
-        for (Block block : blocks) {
-            sendNewBlock(block, 1);
-        }
-        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+//        long startTime = msg.getStarttime();
+//        long endTime = msg.getEndtime();
+//        long random = msg.getRandom();
+//
+//        List<Block> blocks = blockchain.getBlockByTime(startTime, endTime);
+//        for (Block block : blocks) {
+//            sendNewBlock(block, 1);
+//        }
+//        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
@@ -176,7 +176,7 @@ public class Xdag03 extends XdagHandler {
         log.debug("processSumsRequest:" + msg);
         updateXdagStats(msg);
         byte[] sums = new byte[256];
-        kernel.getBlockStore().getSimpleFileStore().loadSum(msg.getStarttime(), msg.getEndtime(),sums);
+        kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getBlockchain().getXdagStats(), sums);
         sendMessage(reply);
         log.debug("processSumsRequest:" + reply);

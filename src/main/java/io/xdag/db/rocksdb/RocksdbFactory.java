@@ -27,8 +27,9 @@ import io.xdag.config.Config;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
-import io.xdag.db.SimpleFileStore;
+
 import java.util.EnumMap;
+import org.apache.commons.lang3.StringUtils;
 
 public class RocksdbFactory implements DatabaseFactory {
 
@@ -43,9 +44,14 @@ public class RocksdbFactory implements DatabaseFactory {
     @Override
     public KVSource<byte[], byte[]> getDB(DatabaseName name) {
         return databases.computeIfAbsent(
-                name,
-                k -> {
-                    RocksdbKVSource dataSource = new RocksdbKVSource(name.toString());
+                name, k -> {
+                    RocksdbKVSource dataSource;
+                    // time data source must set fixed prefix length
+                    if(StringUtils.equals(DatabaseName.TIME.toString(), name.toString())) {
+                        dataSource = new RocksdbKVSource(name.toString(), 9);
+                    } else {
+                        dataSource = new RocksdbKVSource(name.toString());
+                    }
                     dataSource.setConfig(config);
                     return dataSource;
                 });
@@ -59,8 +65,8 @@ public class RocksdbFactory implements DatabaseFactory {
         databases.clear();
     }
 
-    @Override
-    public SimpleFileStore getSumsDB() {
-        return new SimpleFileStore(config.getStoreDir());
-    }
+//    @Override
+//    public SimpleFileStore getSumsDB() {
+//        return new SimpleFileStore(config.getStoreDir());
+//    }
 }

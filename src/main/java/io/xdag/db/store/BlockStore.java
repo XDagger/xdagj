@@ -27,73 +27,69 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.UnsignedLong;
+
+import io.xdag.config.Config;
 import io.xdag.core.BlockInfo;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.core.XdagStats;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.db.KVSource;
-import io.xdag.db.SimpleFileStore;
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class BlockStore {
-    public static final byte CHAIN_STATE = 0x0A;
-    public static final byte SETTING_VERSION                       =  0x10;
-    public static final byte SETTING_CREATED                       =  0x11;
-    public static final byte SETTING_STATS                         =  0x12;
-    public static final byte SETTING_EXT_STATS                     =  0x13;
-    public static final byte SETTING_PRE_TOP_MAIN                  =  0x14;
-    public static final byte SETTING_TOP_MAIN                      =  0x15;
-    public static final byte SETTING_OUR_FIRST_HASH                =  0x16;
-    public static final byte SETTING_OUR_LAST_HASH                 =  0x17;
-    public static final byte SETTING_OUR_BALANCE                   =  0x18;
-    public static final byte SETTING_CUR_TIME                      =  0x19;
-    public static final byte HASH_BLOCK_INFO                       =  0x22;
+    public static final byte SETTING_STATS                         =  0x10;
+    public static final byte TIME_HASH_INFO                        =  0x20;
+    public static final byte HASH_BLOCK_INFO                       =  0x30;
 
-//    private Mapper<BlockInfo> biMapper;
+    private String basicPrefix;
+    private static final ConcurrentHashMap<String, byte[]> sumsMap = new ConcurrentHashMap();
+
     private final Kryo kryo = new Kryo();
 
-    /** pretop */
-    private static final byte[] PRETOP = Hex.decode("DDDDDDDDDDDDDDDD");
-    /** pretop diff */
-    private static final byte[] PRETOPDIFF = Hex.decode("CCCCCCCCCCCCCCCC");
-    /** origin pretop diff */
-    private static final byte[] ORIGINPRETOP = Hex.decode("FFFFFFFFFFFFFFFE");
-    /** origin pretop diff */
-    private static final byte[] ORIGINPRETOPDIFF = Hex.decode("FFFFFFFFFFFFFFEF");
     private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
-    /** <prefix-hash,value> eg:<diff-hash,blockdiff> */
+    /** <prefix-hash,value> eg:<diff-hash,blockDiff> */
     private KVSource<byte[], byte[]> indexSource;
-    /** <hash,rawdata> */
-    private KVSource<byte[], byte[]> blockSource;
-    /** <time-hash,hash> */
+    /** <prefix-time-hash,hash> */
     private KVSource<byte[], byte[]> timeSource;
-    private SimpleFileStore simpleFileStore;
+    /** <hash,rawData> */
+    private KVSource<byte[], byte[]> blockSource;
 
     public BlockStore(
+            Config config,
             KVSource<byte[], byte[]> index,
-            KVSource<byte[], byte[]> block,
             KVSource<byte[], byte[]> time,
-            SimpleFileStore simpleFileStore) {
+            KVSource<byte[], byte[]> block) {
         this.indexSource = index;
-        this.blockSource = block;
         this.timeSource = time;
-        this.simpleFileStore = simpleFileStore;
+        this.blockSource = block;
+        this.basicPrefix = config.getStoreDir() + "/sums/";
+        kryoRegister();
+    }
 
-        kryo.register(BlockInfo.class);
+    private void kryoRegister() {
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
+        kryo.register(BlockInfo.class);
+        kryo.register(XdagStats.class);
     }
 
     public byte[] serialize(final Object obj) throws SerializationException {
@@ -121,31 +117,15 @@ public class BlockStore {
 
     public void init() {
         indexSource.init();
-        blockSource.init();
         timeSource.init();
+        blockSource.init();
     }
 
     public void reset() {
         indexSource.reset();
-        blockSource.reset();
         timeSource.reset();
-//        indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(0, false));
-//        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(0, false));
-        simpleFileStore.reset();
-//        Runnable queueProducer = this::processQueue;
-//        sumFuture = executorService.submit(queueProducer);
+        blockSource.reset();
     }
-
-//    public void processQueue() {
-//        try {
-//            while (isRuning) {
-//                Block block = blockQueue.take();
-//                simpleFileStore.saveBlockSums(block);
-//            }
-//        } catch (InterruptedException e) {
-//            log.error(e.getMessage(), e);
-//        }
-//    }
 
     public void saveXdagStatus(XdagStats status) {
         byte[] value = null;
@@ -173,26 +153,143 @@ public class BlockStore {
 
     // 存储block的过程
     public void saveBlock(Block block) {
-        if (block == null) {
-            return;
-        }
-//        log.debug("Save Block:" + block);
-//        blockQueue.add(block);
-
-        long timeIndex = block.getTimestamp();
-        timeSource.put(getTimeKey(timeIndex, block.getHashLow()), block.getHashLow());
+        long time = block.getTimestamp();
+        timeSource.put(getTimeKey(time, block.getHashLow()), block.getHashLow());
         blockSource.put(block.getHashLow(), block.getXdagBlock().getData());
-//        if (indexSource.get(BLOCK_SIZE) != null
-//                && BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false) != 0) {
-//            long blocksize = BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false) + 1;
-//            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(blocksize, false));
-//        } else {
-//            indexSource.put(BLOCK_SIZE, BytesUtils.longToBytes(1, false));
-//            // 赋值localaddress
-//            indexSource.put(GLOBAL_ADDRESS, block.getHashLow());
-//        }
-        simpleFileStore.saveBlockSums(block);
+        saveBlockSums(block);
         saveBlockInfo(block.getInfo());
+    }
+
+    public static List<String> getFileName(long time) {
+        List<String> file = new ArrayList<>();
+        file.add("");
+        StringBuffer stringBuffer = new StringBuffer(
+                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
+        stringBuffer.append("/");
+        file.add(String.valueOf(stringBuffer));
+        stringBuffer.append(
+                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
+        stringBuffer.append("/");
+        file.add(String.valueOf(stringBuffer));
+        stringBuffer.append(
+                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
+        stringBuffer.append("/");
+        file.add(String.valueOf(stringBuffer));
+        return file;
+    }
+
+    public void saveBlockSums(Block block) {
+        long size = 512;
+        long sum = block.getSum();
+        long time = block.getTimestamp();
+        List<String> filename = getFileName(time);
+        for (int i = 0; i < filename.size(); i++) {
+            updateSum(filename.get(i), size, sum, (time >> (40 - 8 * i)) & 0xff);
+        }
+    }
+
+    public void updateSum(String filename, long size, long sum, long index) {
+        StringBuffer filepath = new StringBuffer(basicPrefix);
+        if (!"".equals(filename)) {
+            filepath.append(filename);
+        }
+
+        filepath.append("sums.dat");
+        byte[] sums =  sumsMap.get(filepath.toString());
+        if (sums == null) {
+            sums = new byte[4096];
+            System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, (int) (16 * index), 8);
+            System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, (int) (index * 16 + 8), 8);
+            sumsMap.put(filepath.toString(), sums);
+            return;
+        } else {
+            // size + sum
+            byte[] data = ArrayUtils.subarray(sums, 16 * (int)index, 16 * (int)index + 16);
+            sum += BytesUtils.bytesToLong(data, 0, true);
+            size += BytesUtils.bytesToLong(data, 8, true);
+            System.arraycopy(BytesUtils.longToBytes(sum, true), 0, data, 0, 8);
+            System.arraycopy(BytesUtils.longToBytes(size, true), 0, data, 8, 8);
+            System.arraycopy(data, 0, sums, 16 * (int)index, 16);
+        }
+
+    }
+
+    public int loadSum(long starttime, long endtime, byte[] sums) {
+        int level;
+        long filedir;
+
+        StringBuffer filename;
+        endtime -= starttime;
+
+        if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFL) != 0) return -1;
+
+        for (level = -6; endtime != 0; level++, endtime >>= 4);
+
+        if (level < 2) {
+            filedir = (starttime) & 0xffffff000000L;
+            long dir1 = (filedir >> 40) & 0xff;
+            long dir2 = (filedir >> 32) & 0xff;
+            long dir3 = (filedir >> 24) & 0xff;
+            filename = new StringBuffer(basicPrefix)
+                    .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
+                    .append("/")
+                    .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)))
+                    .append("/")
+                    .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir3, true)))
+                    .append("/")
+                    .append("sums.dat");
+
+        } else if (level < 4) {
+            filedir = (starttime) & 0xffff00000000L;
+            long dir1 = (filedir >> 40) & 0xff;
+            long dir2 = (filedir >> 32) & 0xff;
+            filename = new StringBuffer(basicPrefix)
+                    .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
+                    .append("/")
+                    .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)))
+                    .append("/")
+                    .append("sums.dat");
+
+        } else if (level < 6) {
+            filedir = (starttime) & 0xff0000000000L;
+            long dir1 = (filedir >> 40) & 0xff;
+            filename = new StringBuffer(basicPrefix)
+                    .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
+                    .append("/")
+                    .append("sums.dat");
+        } else {
+            filename = new StringBuffer(basicPrefix).append("sums.dat");
+        }
+
+        byte[] buf =  sumsMap.get(filename.toString());
+        if(buf == null) {
+            buf = new byte[4096];
+            Arrays.fill(buf, (byte)0);
+            sumsMap.put(filename.toString(), buf);
+        }
+
+        long size = 0;
+        long sum = 0;
+        if ((level & 1) != 0) {
+            Arrays.fill(sums, (byte)0);
+            for (int i = 0; i < 256; i++) {
+                long totalsum = BytesUtils.bytesToLong(buf, i * 16, true);
+                sum += totalsum;
+                long totalsize = BytesUtils.bytesToLong(buf, i * 16 + 8, true);
+                size += totalsize;
+                if (i % 16 == 0 && i != 0) {
+                    System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, i - 16, 8);
+                    System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, i - 8, 8);
+                    sum = 0;
+                    size = 0;
+                }
+            }
+        } else {
+            long index = (starttime >> (level + 4) * 4) & 0xf0;
+            System.arraycopy(buf, (int) (index * 16), sums, 0, 16 * 16);
+        }
+
+        return 1;
     }
 
     public void saveBlockInfo(BlockInfo blockInfo) {
@@ -203,59 +300,28 @@ public class BlockStore {
             log.error(e.getMessage(), e);
         }
         indexSource.put(BytesUtils.merge(HASH_BLOCK_INFO, blockInfo.getHashlow()), value);
-//        indexSource.put(
-//                BytesUtils.merge(BLOCK_MAXDIFF, block.getHashLow()),
-//                BytesUtils.bigIntegerToBytes(block.getDifficulty(), 16, false));
-//        if (block.getMaxDifflink() != null) {
-//            indexSource.put(
-//                    BytesUtils.merge(BLOCK_MAXDIFFLINK, block.getHashLow()),
-//                    block.getMaxDifflink().getHashLow());
-//        }
-//        if (block.getRef() != null) {
-//            indexSource.put(BytesUtils.merge(BLOCK_REF, block.getHashLow()), block.getRef().getHashLow());
-//        }
-//        indexSource.put(
-//                BytesUtils.merge(BLOCK_AMOUNT, block.getHashLow()),
-//                BytesUtils.longToBytes(block.getAmount(), false));
-//        indexSource.put(
-//                BytesUtils.merge(BLOCK_FLAG, block.getHashLow()),
-//                BytesUtils.intToBytes(block.getFlags(), false));
-//        indexSource.put(
-//                BytesUtils.merge(BLOCK_FEE, block.getHashLow()),
-//                BytesUtils.longToBytes(block.getFee(), false));
-//        indexSource.put(
-//                BytesUtils.merge(BLOCK_TIME, block.getHashLow()),
-//                BytesUtils.longToBytes(block.getTimestamp(), false));
-//        indexSource.put(BytesUtils.merge(BLOCK_HASH, block.getHashLow()), block.getHash());
-//        indexSource.put(BytesUtils.merge(BLOCK_HEIGHT, block.getHashLow()), BytesUtils.longToBytes(block.getHeight(), false));
     }
 
     public boolean hasBlock(byte[] hashlow) {
         return blockSource.get(hashlow) != null;
     }
 
-    /*
-     * @Author punk
-     * 
-     * @Description 获取时间索引键
-     * 
-     * @Date 2020/4/22
-     * 
-     * @Param [timestamp]
-     * 
-     * @return byte[]
-     **/
-    private byte[] getTimeKey(long timestamp, byte[] hashlow) {
-        long time1Prefix = timestamp >> 16;
-        return BytesUtils.merge(BytesUtils.longToBytes(time1Prefix, false), hashlow);
+    public static byte[] getTimeKey(long timestamp, byte[] hashlow) {
+        long t = UnsignedLong.fromLongBits(timestamp >> 16).longValue();
+        byte[] key = BytesUtils.merge(TIME_HASH_INFO, BytesUtils.longToBytes(t, false));
+        if(hashlow == null) {
+            return key;
+        }
+        return BytesUtils.merge(key, hashlow);
     }
 
-    public List<Block> getBlocksUsedTime(long starttime, long endtime) {
-        List<Block> res = new ArrayList<>();
-        while (starttime < endtime) {
-            List<Block> blocks = getBlocksByTime(starttime);
-            starttime += 0x10000;
-            if (blocks == null || blocks.size() == 0) {
+    public List<Block> getBlocksUsedTime(long startTime, long endTime) {
+        List<Block> res = Lists.newArrayList();
+        long time = startTime;
+        while (time < endTime) {
+            List<Block> blocks = getBlocksByTime(time);
+            time += 0x10000;
+            if (CollectionUtils.isEmpty(blocks)) {
                 continue;
             }
             res.addAll(blocks);
@@ -263,11 +329,11 @@ public class BlockStore {
         return res;
     }
 
-    public List<Block> getBlocksByTime(long starttime) {
-        List<Block> blocks = new ArrayList<>();
-        long key = starttime >> 16;
-        byte[] keyPrefix = BytesUtils.longToBytes(key, false);
-        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix, keyPrefix.length);
+    public List<Block> getBlocksByTime(long startTime) {
+        List<Block> blocks = Lists.newArrayList();
+        long key = UnsignedLong.fromLongBits(startTime >> 16).longValue();
+        byte[] keyPrefix = getTimeKey(key, null);
+        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
         for (byte[] bytes : keys) {
             Block block = getBlockByHash(bytes, true);
             if (block != null) {
@@ -296,29 +362,9 @@ public class BlockStore {
     }
 
     public Block getBlockInfoByHash(byte[] hashlow) {
-
         if (!hasBlock(hashlow)) {
             return null;
         }
-//        long timestamp = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_TIME, hashlow)), 0, false);
-//        long amount = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_AMOUNT, hashlow)), 0, false);
-//        BigInteger diff;
-//        if (indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)) == null) {
-//            diff = BigInteger.ZERO;
-//        } else {
-//            diff = BytesUtils.bytesToBigInteger(
-//                    indexSource.get(BytesUtils.merge(BLOCK_MAXDIFF, hashlow)), 0, false);
-//        }
-//        long fee = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_FEE, hashlow)), 0, false);
-//        long height = BytesUtils.bytesToLong(indexSource.get(BytesUtils.merge(BLOCK_HEIGHT, hashlow)), 0, false);
-//        byte[] ref = indexSource.get(BytesUtils.merge(BLOCK_REF, hashlow));
-//        byte[] maxdiffLink = indexSource.get(BytesUtils.merge(BLOCK_MAXDIFFLINK, hashlow));
-//        int flags = BytesUtils.bytesToInt(indexSource.get(BytesUtils.merge(BLOCK_FLAG, hashlow)), 0, false);
-//        Block block = new Block(timestamp, amount, diff, fee, ref, maxdiffLink, flags);
-//        block.setHashLow(hashlow);
-//        block.setHash(indexSource.get(BytesUtils.merge(BLOCK_HASH, hashlow)));
-//        block.setHeight(height);
-
         BlockInfo blockInfo = null;
         byte[] value = indexSource.get(BytesUtils.merge(HASH_BLOCK_INFO, hashlow));
         if(value == null) {
@@ -327,57 +373,15 @@ public class BlockStore {
             try {
                 blockInfo = (BlockInfo)deserialize(value, BlockInfo.class);
             } catch (DeserializationException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }
         return new Block(blockInfo);
     }
 
-//    public void updateBlockInfo(byte TypePrefix, Block block) {
-//        byte[] hashlow = block.getHashLow();
-//        byte[] value;
-//        switch (TypePrefix) {
-//        case BLOCK_MAXDIFF:
-//            value = BytesUtils.bigIntegerToBytes(block.getDifficulty(), 16, false);
-//            break;
-//        case BLOCK_MAXDIFFLINK:
-//            value = block.getMaxDifflink().getHashLow();
-//            break;
-//        case BLOCK_AMOUNT:
-//            value = BytesUtils.longToBytes(block.getAmount(), false);
-//            break;
-//        case BLOCK_REF:
-//            if (block.getRef() == null) {
-//                value = null;
-//            } else {
-//                value = block.getRef().getHashLow();
-//            }
-//            break;
-//        case BLOCK_FLAG:
-//            value = BytesUtils.intToBytes(block.getFlags(), false);
-//            break;
-//        case BLOCK_TIME:
-//            value = BytesUtils.longToBytes(block.getTimestamp(), false);
-//            break;
-//        case BLOCK_FEE:
-//            value = BytesUtils.longToBytes(block.getFee(), false);
-//            break;
-//        case BLOCK_HEIGHT:
-//            value = BytesUtils.longToBytes(block.getHeight(), false);
-//            break;
-//        default:
-//            throw new IllegalStateException("Unexpected value: " + TypePrefix);
-//        }
-//        if (value == null) {
-//            indexSource.delete(BytesUtils.merge(TypePrefix, hashlow));
-//        } else {
-//            indexSource.put(BytesUtils.merge(TypePrefix, hashlow), value);
-//        }
-//    }
-
-//    public void updateBlockKeyIndex(byte[] hashlow, int keyindex) {
+//    public void updateBlockKeyIndex(byte[] hashlow, int keyIndex) {
 //        indexSource.put(
-//                BytesUtils.merge(BLOCK_KEY_INDEX, hashlow), BytesUtils.intToBytes(keyindex, false));
+//                BytesUtils.merge(BLOCK_KEY_INDEX, hashlow), BytesUtils.intToBytes(keyIndex, false));
 //    }
 //
 //    public void deleteBlockKeyIndex(byte[] hashlow) {
@@ -396,40 +400,6 @@ public class BlockStore {
 //            return -2;
 //        }
 //    }
-
-//    public void mainNumberInc() {
-//        long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
-//        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
-//    }
-//
-//    public void mainNumberDec() {
-//        long currentsize = BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
-//        indexSource.put(MAIN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
-//    }
-
-//    public long getMainNumber() {
-//        return BytesUtils.bytesToLong(indexSource.get(MAIN_SIZE), 0, false);
-//    }
-//
-//    public long getBlockNumber() {
-//        return BytesUtils.bytesToLong(indexSource.get(BLOCK_SIZE), 0, false);
-//    }
-
-    public void setOriginpretopdiff(BigInteger pretopDiff) {
-        indexSource.put(ORIGINPRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
-    }
-
-    public void setPretopDiff(BigInteger pretopDiff) {
-        indexSource.put(PRETOPDIFF, BytesUtils.bigIntegerToBytes(pretopDiff, 16, false));
-    }
-
-    public SimpleFileStore getSimpleFileStore() {
-        return simpleFileStore;
-    }
-
-    public void closeSum() {
-        log.debug("Sums service close...");
-    }
 
     public byte[] getGlobalAddress() {
         if (indexSource.get(GLOBAL_ADDRESS) != null) {

@@ -96,10 +96,10 @@ public class BlockchainTest {
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStore(
+                config,
                 dbFactory.getDB(DatabaseName.INDEX),
-                dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getSumsDB());
+                dbFactory.getDB(DatabaseName.BLOCK));
 
         blockStore.reset();
         AccountStore accountStore = new AccountStore(xdagWallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));

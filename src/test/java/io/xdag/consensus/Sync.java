@@ -57,10 +57,10 @@ public class Sync {
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStore(
+                config,
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TIME),
-                null);
+                dbFactory.getDB(DatabaseName.TIME));
         blockStore.reset();
         AccountStore accountStore = new AccountStore(xdagWallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
         accountStore.reset();

@@ -132,10 +132,10 @@ public class Kernel {
 
         dbFactory = new RocksdbFactory(config);
         blockStore = new BlockStore(
+                config,
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getSumsDB());
+                dbFactory.getDB(DatabaseName.TIME));
         blockStore.init();
         accountStore = new AccountStore(wallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
         accountStore.init();
@@ -251,8 +251,6 @@ public class Kernel {
             for (DatabaseName name : DatabaseName.values()) {
                 dbFactory.getDB(name).close();
             }
-            // close save sums
-            blockStore.closeSum();
         } finally {
             lock.unlock();
         }

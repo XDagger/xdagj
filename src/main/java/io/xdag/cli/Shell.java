@@ -36,6 +36,7 @@ import static io.xdag.utils.BasicUtils.address2Hash;
 
 @Slf4j
 public class Shell extends JlineCommandRegistry implements CommandRegistry, Telnet.ShellProvider {
+    public static final int DEFAULT_LIST_NUM = 20;
     public static final String prompt = "xdag> ";
 
     @Setter
@@ -102,14 +103,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-            int num = 20;
-            if (argv.size() > 1) {
-                if (NumberUtils.isDigits(argv.get(0))) {
-                    int testnum = NumberUtils.toInt(argv.get(0));
-                    if(testnum <= 10000) {
-                        num = testnum;
-                    }
-                }
+            int num = DEFAULT_LIST_NUM;
+            if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
+                num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.account(num));
         } catch (Exception e) {
@@ -211,14 +207,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-            int num = 20;
-            if (argv.size() > 1) {
-                if (NumberUtils.isDigits(argv.get(0))) {
-                    int testnum = NumberUtils.toInt(argv.get(0));
-                    if(testnum <= 100) {
-                        num = testnum;
-                    }
-                }
+            int num = DEFAULT_LIST_NUM;
+            if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
+                num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.mainblocks(num));
         } catch (Exception e) {
@@ -241,14 +232,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-            int num = 20;
-            if (argv.size() > 1) {
-                if (NumberUtils.isDigits(argv.get(0))) {
-                    int testnum = NumberUtils.toInt(argv.get(0));
-                    if(testnum <= 100) {
-                        num = testnum;
-                    }
-                }
+            int num = DEFAULT_LIST_NUM;
+            if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
+                num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.minedblocks(num));
         } catch (Exception e) {

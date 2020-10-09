@@ -51,9 +51,9 @@ public interface KVSource<K, V> {
 
     Set<byte[]> keys() throws RuntimeException;
 
-    List<K> prefixKeyLookup(byte[] key, int prefixBytes);
+    List<K> prefixKeyLookup(byte[] key);
 
-    List<V> prefixValueLookup(byte[] key, int prefixBytes);
+    List<V> prefixValueLookup(byte[] key);
 
     void updateBatch(Map<K, V> rows);
 }

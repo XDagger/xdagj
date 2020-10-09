@@ -67,7 +67,7 @@ public class OrphanPool {
             long orphanSize = getOrphanSize();
             long addNum = Math.min(orphanSize, num);
             byte[] key = BytesUtils.of(ORPHAN_PREFEX);
-            List<byte[]> ans = orphanSource.prefixKeyLookup(key, key.length);
+            List<byte[]> ans = orphanSource.prefixKeyLookup(key);
             for (byte[] an : ans) {
                 if (addNum == 0) {
                     break;

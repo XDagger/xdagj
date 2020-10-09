@@ -44,7 +44,7 @@ import com.google.common.util.concurrent.*;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
-import io.xdag.db.SimpleFileStore;
+import io.xdag.db.store.BlockStore;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.BytesUtils;
@@ -62,7 +62,7 @@ public class XdagSync {
         }
     };
     private XdagChannelManager channelMgr;
-    private SimpleFileStore simpleFileStore;
+    private BlockStore blockStore;
     private Status status;
     private ScheduledExecutorService sendTask;
     private ScheduledFuture<?> sendFuture;
@@ -76,7 +76,7 @@ public class XdagSync {
 
     public XdagSync(Kernel kernel) {
         this.channelMgr = kernel.getChannelMgr();
-        this.simpleFileStore = kernel.getBlockStore().getSimpleFileStore();
+        this.blockStore = kernel.getBlockStore();
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
         sumsRequestMap = new ConcurrentHashMap<>();
         blocksRequestMap = new ConcurrentHashMap<>();
@@ -110,7 +110,7 @@ public class XdagSync {
         long randomSeq;
         SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
-            XdagChannel xc = any.get(1);
+            XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
                 blocksRequestMap.put(randomSeq, sf);
@@ -126,7 +126,7 @@ public class XdagSync {
             } else {
                 byte[] lSums = new byte[256];
                 byte[] rSums;
-                if(simpleFileStore.loadSum(t, t + dt, lSums) <= 0) {
+                if(blockStore.loadSum(t, t + dt, lSums) <= 0) {
                     return;
                 }
                 log.debug("lSum is " + Hex.toHexString(lSums));
