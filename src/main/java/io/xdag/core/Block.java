@@ -120,7 +120,7 @@ public class Block implements Cloneable {
             }
         }
 
-        if (pendings != null && pendings.size() != 0) {
+        if (CollectionUtils.isNotEmpty(pendings)) {
             for (Address pending : pendings) {
                 setType(XDAG_FIELD_OUT, lenghth++);
                 outputs.add(pending);
@@ -129,14 +129,14 @@ public class Block implements Cloneable {
 
         if(StringUtils.isAsciiPrintable(remark)) {
             setType(XDAG_FIELD_REMARK, lenghth++);
-            byte[] safeRemark = remark.getBytes();
-            if(safeRemark.length > 32) {
-                safeRemark = BytesUtils.subArray(safeRemark, 0, 32);
-            }
+            byte[] data = remark.getBytes();
+            byte[] safeRemark = new byte[32];
+            Arrays.fill(safeRemark, (byte)0);
+            System.arraycopy(data, 0, safeRemark, 0, data.length>=32?32:data.length);
             this.info.setRemark(safeRemark);
         }
 
-        if (keys != null && keys.size() != 0) {
+        if (CollectionUtils.isNotEmpty(keys)) {
             for (ECKey key : keys) {
                 byte[] keydata = key.getPubKeybyCompress();
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
