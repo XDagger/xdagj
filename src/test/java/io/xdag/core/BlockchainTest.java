@@ -96,7 +96,6 @@ public class BlockchainTest {
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStore(
-                config,
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK));

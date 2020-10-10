@@ -132,7 +132,6 @@ public class Kernel {
 
         dbFactory = new RocksdbFactory(config);
         blockStore = new BlockStore(
-                config,
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));

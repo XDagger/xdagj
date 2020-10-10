@@ -59,9 +59,7 @@ public class BlockStore {
     public static final byte SETTING_STATS                         =  0x10;
     public static final byte TIME_HASH_INFO                        =  0x20;
     public static final byte HASH_BLOCK_INFO                       =  0x30;
-
-    private String basicPrefix;
-    private static final ConcurrentHashMap<String, byte[]> sumsMap = new ConcurrentHashMap();
+    public static final byte SUMS_BLOCK_INFO                       =  0x40;
 
     private final Kryo kryo = new Kryo();
 
@@ -74,14 +72,12 @@ public class BlockStore {
     private KVSource<byte[], byte[]> blockSource;
 
     public BlockStore(
-            Config config,
             KVSource<byte[], byte[]> index,
             KVSource<byte[], byte[]> time,
             KVSource<byte[], byte[]> block) {
         this.indexSource = index;
         this.timeSource = time;
         this.blockSource = block;
-        this.basicPrefix = config.getStoreDir() + "/sums/";
         kryoRegister();
     }
 
@@ -188,19 +184,38 @@ public class BlockStore {
         }
     }
 
-    public void updateSum(String filename, long size, long sum, long index) {
-        StringBuffer filepath = new StringBuffer(basicPrefix);
-        if (!"".equals(filename)) {
-            filepath.append(filename);
+    public byte[] getSums(String key) {
+        byte[] value = indexSource.get(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes()));
+        if(value == null) {
+            return null;
+        } else {
+            byte[] sums = null;
+            try {
+                sums = (byte[])deserialize(value, byte[].class);
+            } catch (DeserializationException e) {
+                log.error(e.getMessage(), e);
+            }
+            return sums;
         }
+    }
 
-        filepath.append("sums.dat");
-        byte[] sums =  sumsMap.get(filepath.toString());
+    public void putSums(String key, byte[] sums) {
+        byte[] value = null;
+        try {
+            value = serialize(sums);
+        } catch (SerializationException e) {
+            log.error(e.getMessage(), e);
+        }
+        indexSource.put(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes()), value);
+    }
+
+    public void updateSum(String key, long size, long sum, long index) {
+        key += "sums.dat";
+        byte[] sums = getSums(key);
         if (sums == null) {
             sums = new byte[4096];
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, (int) (16 * index), 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, (int) (index * 16 + 8), 8);
-            sumsMap.put(filepath.toString(), sums);
             return;
         } else {
             // size + sum
@@ -210,15 +225,16 @@ public class BlockStore {
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, data, 0, 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, data, 8, 8);
             System.arraycopy(data, 0, sums, 16 * (int)index, 16);
-        }
 
+        }
+        putSums(key, sums);
     }
 
     public int loadSum(long starttime, long endtime, byte[] sums) {
         int level;
         long filedir;
 
-        StringBuffer filename;
+        StringBuffer key;
         endtime -= starttime;
 
         if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFL) != 0) return -1;
@@ -230,7 +246,7 @@ public class BlockStore {
             long dir1 = (filedir >> 40) & 0xff;
             long dir2 = (filedir >> 32) & 0xff;
             long dir3 = (filedir >> 24) & 0xff;
-            filename = new StringBuffer(basicPrefix)
+            key = new StringBuffer()
                     .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
                     .append("/")
                     .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)))
@@ -243,7 +259,7 @@ public class BlockStore {
             filedir = (starttime) & 0xffff00000000L;
             long dir1 = (filedir >> 40) & 0xff;
             long dir2 = (filedir >> 32) & 0xff;
-            filename = new StringBuffer(basicPrefix)
+            key = new StringBuffer()
                     .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
                     .append("/")
                     .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir2, true)))
@@ -253,19 +269,19 @@ public class BlockStore {
         } else if (level < 6) {
             filedir = (starttime) & 0xff0000000000L;
             long dir1 = (filedir >> 40) & 0xff;
-            filename = new StringBuffer(basicPrefix)
+            key = new StringBuffer()
                     .append(Hex.toHexString(BytesUtils.byteToBytes((byte) dir1, true)))
                     .append("/")
                     .append("sums.dat");
         } else {
-            filename = new StringBuffer(basicPrefix).append("sums.dat");
+            key = new StringBuffer().append("sums.dat");
         }
 
-        byte[] buf =  sumsMap.get(filename.toString());
+        byte[] buf = getSums(key.toString());
         if(buf == null) {
             buf = new byte[4096];
             Arrays.fill(buf, (byte)0);
-            sumsMap.put(filename.toString(), buf);
+            putSums(key.toString(), buf);
         }
 
         long size = 0;
@@ -288,7 +304,6 @@ public class BlockStore {
             long index = (starttime >> (level + 4) * 4) & 0xf0;
             System.arraycopy(buf, (int) (index * 16), sums, 0, 16 * 16);
         }
-
         return 1;
     }
 

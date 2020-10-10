@@ -57,7 +57,7 @@ public class Sync {
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStore(
-                config,
+//                config,
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));
