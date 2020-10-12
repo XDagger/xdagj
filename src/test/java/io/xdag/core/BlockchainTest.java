@@ -56,10 +56,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 
+import static io.xdag.BlockGenerater.*;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.amount2xdag;
@@ -123,34 +123,10 @@ public class BlockchainTest {
         assertEquals("orphan:", norphan, bci.getXdagStats().nnoref);
     }
 
-    private static Block generateAddressBlock(ECKey key, long xdagTime) {
-        Block b = new Block(xdagTime, null, null, false, null, null, -1);
-        b.signOut(key);
-        return b;
-    }
-
-    private static Block generateExtraBlock(ECKey key, long xdagTime, List<Address> pendings) {
-        Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
-        b.signOut(key);
-        return b;
-    }
-
-    private static Block generateTransactionBlock(ECKey key, long xdagTime, Address from, Address to, long amount) {
-        List refs = Lists.newArrayList();
-        refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1
-        refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
-        List<ECKey> keys = new ArrayList<>();
-        keys.add(key);
-        Block b = new Block(xdagTime, refs, null, false, keys, null, 0); // orphan
-        b.signOut(key);
-        return b;
-    }
-
     @Test
     public void testAddressBlock() {
         ECKey key = new ECKey();
-        Block addressBlock = new Block(new Date().getTime(), null, null, false, null, null, -1);
-        addressBlock.signOut(key);
+        Block addressBlock = generateAddressBlock(key, new Date().getTime());
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         assertTrue(result == IMPORTED_BEST);

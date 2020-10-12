@@ -23,36 +23,31 @@
  */
 package io.xdag.db.store;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
-
-import io.xdag.config.Config;
+import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
+import io.xdag.core.XdagBlock;
+import io.xdag.core.XdagStats;
+import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.core.XdagStats;
-
+import io.xdag.utils.BytesUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.spongycastle.util.encoders.Hex;
 
-import io.xdag.core.Block;
-import io.xdag.core.XdagBlock;
-import io.xdag.db.KVSource;
-import io.xdag.utils.BytesUtils;
-import lombok.extern.slf4j.Slf4j;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 public class BlockStore {
@@ -65,11 +60,11 @@ public class BlockStore {
 
     private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
     /** <prefix-hash,value> eg:<diff-hash,blockDiff> */
-    private KVSource<byte[], byte[]> indexSource;
+    private final KVSource<byte[], byte[]> indexSource;
     /** <prefix-time-hash,hash> */
-    private KVSource<byte[], byte[]> timeSource;
+    private final KVSource<byte[], byte[]> timeSource;
     /** <hash,rawData> */
-    private KVSource<byte[], byte[]> blockSource;
+    private final KVSource<byte[], byte[]> blockSource;
 
     public BlockStore(
             KVSource<byte[], byte[]> index,
@@ -88,7 +83,7 @@ public class BlockStore {
         kryo.register(XdagStats.class);
     }
 
-    public byte[] serialize(final Object obj) throws SerializationException {
+    private byte[] serialize(final Object obj) throws SerializationException {
         try {
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             final Output output = new Output(outputStream);
@@ -101,7 +96,7 @@ public class BlockStore {
         }
     }
 
-    public Object deserialize(final byte[] bytes, Class type) throws DeserializationException {
+    private Object deserialize(final byte[] bytes, Class type) throws DeserializationException {
         try {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final Input input = new Input(inputStream);
