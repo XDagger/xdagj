@@ -23,6 +23,7 @@
  */
 package io.xdag.cli;
 
+import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
@@ -35,13 +36,14 @@ import io.xdag.utils.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.spongycastle.util.encoders.Hex;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
@@ -49,8 +51,6 @@ import static io.xdag.utils.BasicUtils.*;
 
 @Slf4j
 public class Commands {
-
-    DecimalFormat df = new DecimalFormat("######0.00");
 
     @Getter
     private Kernel kernel;
@@ -92,8 +92,7 @@ public class Commands {
             }
             str.append(hash2Address(kernel.getBlockchain().getBlockByHash(tmp, false).getHash()))
                     .append(" ")
-                    .append(
-                            df.format(amount2xdag(kernel.getBlockchain().getBlockByHash(tmp, false).getInfo().getAmount())))
+                    .append(String.format("%.9f", amount2xdag(kernel.getBlockchain().getBlockByHash(tmp, false).getInfo().getAmount())))
                     .append("xdag")
                     .append(" key ")
 //                    .append(kernel.getBlockStore().getBlockKeyIndex(tmp))
@@ -111,7 +110,7 @@ public class Commands {
      */
     public String balance(String address) {
         if (org.apache.commons.lang3.StringUtils.isEmpty(address)) {
-            return df.format(amount2xdag(kernel.getAccountStore().getGBalance())) + " XDAG";
+            return String.format("%.9f", amount2xdag(kernel.getAccountStore().getGBalance())) + " XDAG";
         } else {
             byte[] hash;
             if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
@@ -122,8 +121,7 @@ public class Commands {
             byte[] key = new byte[32];
             System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
             Block block = kernel.getBlockStore().getBlockInfoByHash(key);
-            double xdag = amount2xdag(block.getInfo().getAmount());
-            return df.format(xdag) + " XDAG";
+            return String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
         }
     }
 
@@ -139,11 +137,9 @@ public class Commands {
         byte[] to = new byte[32];
         System.arraycopy(address, 8, to, 8, 24);
 
-        List<Address> tos = new ArrayList<>();
-        tos.add(new Address(to, XDAG_FIELD_OUT, amount));
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
         Map<Address, ECKey> ans = kernel.getAccountStore().getAccountListByAmount(amount);
-
-        if (ans == null || ans.size() == 0) {
+        if (MapUtils.isEmpty(ans)) {
             return "Balance not enough";
         }
         Block block = kernel.getBlockchain().createNewBlock(ans, tos, false);
@@ -231,7 +227,8 @@ public class Commands {
             Block block = kernel.getBlockStore().getBlockInfoByHash(hashLow);
             return printBlockInfo(block);
         } catch (Exception e) {
-            return "Block is not found.";
+            log.error(e.getMessage(), e);
+            return e.getMessage();
         }
     }
 
@@ -250,45 +247,48 @@ public class Commands {
                 "---------------------------------------------------------------------------------------------------------\n";
     }
 
-    //TODO need refactor
+
     public String printBlockInfo(Block block) {
         block.parse();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
-        return "time: "
-                + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time)
-                + "\n"
-                + "timestamp: "
-                + Long.toHexString(block.getTimestamp())
-                + "\n"
-                + "flags: "
-                + Integer.toHexString(block.getInfo().getFlags())
-                + "\n"
-                + "state: "
-                + getStateByFlags(block.getInfo().getFlags())
-                + "\n"
-                + "hash: "
-                + Hex.toHexString(block.getInfo().getHash())
-                + "\n"
-                + "difficulty: "
-                + block.getInfo().getDifficulty().toString(16)
-                + "\n"
-                + "balance: "
-                + hash2Address(block.getHash())
-                + " "
-                + df.format(amount2xdag(block.getInfo().getAmount()))
-                + "\n";
+        String format = (block.getInfo().getFlags() & BI_MAIN) == 0?
+                "":"    height: %08d\n" +
+                "      time: %s\n" +
+                " timestamp: %s\n" +
+                "     flags: %s\n" +
+                "     state: %s\n" +
+                "      hash: %s\n" +
+                "    remark: %s\n" +
+                "difficulty: %s\n" +
+                "   balance: %s  %.9f";
+        //TODO need add block as transaction
+        return String.format(format,
+                block.getInfo().getHeight(),
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
+                Long.toHexString(block.getTimestamp()),
+                Integer.toHexString(block.getInfo().getFlags()),
+                getStateByFlags(block.getInfo().getFlags()),
+                Hex.toHexString(block.getInfo().getHash()),
+                new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
+                block.getInfo().getDifficulty().toString(16),
+                hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()));
     }
+
+    public static String printBlock(Block block) {
+        return printBlock(block, false);
+    }
+
 
     public static String printBlock(Block block, boolean print_only_addresses) {
         StringBuilder sbd = new StringBuilder();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
         if(print_only_addresses) {
-            sbd.append(String.format("%s   %08d\n",
+            sbd.append(String.format("%s   %08d",
                     BasicUtils.hash2Address(block.getHash()),
                     block.getInfo().getHeight()));
         } else {
             byte[] remark = block.getInfo().getRemark();
-            sbd.append(String.format("%08d   %s   %s   %-8s  %-32s\n",
+            sbd.append(String.format("%08d   %s   %s   %-8s  %-32s",
                     block.getInfo().getHeight(),
                     BasicUtils.hash2Address(block.getHash()),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
@@ -311,9 +311,7 @@ public class Commands {
         }
         StringBuilder sbd = new StringBuilder();
         sbd.append(printHeaderBlockList());
-        for (Block block : blocks) {
-            sbd.append(printBlock(block, false));
-        }
+        sbd.append(blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n")));
         return sbd.toString();
     }
 
@@ -330,9 +328,7 @@ public class Commands {
         }
         StringBuilder sbd = new StringBuilder();
         sbd.append(printHeaderBlockList());
-        for (Block block : blocks) {
-            sbd.append(printBlock(block, false));
-        }
+        sbd.append(blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n")));
         return sbd.toString();
     }
 

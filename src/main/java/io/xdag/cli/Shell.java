@@ -163,7 +163,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                     println("No param");
                     return;
                 }
-                println("Print block info:" + Hex.toHexString(hash));
                 println(commands.block(hash));
             } catch (Exception e) {
                 println("Argument is incorrect.");
