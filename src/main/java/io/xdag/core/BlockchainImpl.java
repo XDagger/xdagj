@@ -55,6 +55,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
 import lombok.Getter;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -483,8 +484,13 @@ public class BlockchainImpl implements Blockchain {
             res++;
         }
         List<Address> refs = Lists.newArrayList();
-        refs.add(preTop);
-        refs.addAll(getBlockFromOrphanPool(16 - res));
+        if(preTop != null) {
+            refs.add(preTop);
+        }
+        List<Address> orphans = getBlockFromOrphanPool(16 - res);
+        if(CollectionUtils.isNotEmpty(orphans)) {
+            refs.addAll(getBlockFromOrphanPool(16 - res));
+        }
         return new Block(sendTime, null, refs, true, null, kernel.getConfig().getPoolTag(), -1);
     }
 

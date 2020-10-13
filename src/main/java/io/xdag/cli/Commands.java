@@ -81,8 +81,7 @@ public class Commands {
                     .append("0.00 xdag")
                     .append(" ")
                     .append("key ")
-                    .append(memAccount.get(key))
-                    .append("\n");
+                    .append(memAccount.get(key));
             num--;
         }
 
@@ -94,9 +93,8 @@ public class Commands {
                     .append(" ")
                     .append(String.format("%.9f", amount2xdag(kernel.getBlockchain().getBlockByHash(tmp, false).getInfo().getAmount())))
                     .append("xdag")
-                    .append(" key ")
-//                    .append(kernel.getBlockStore().getBlockKeyIndex(tmp))
-                    .append("\n");
+                    .append(" key ");
+//                    .append(kernel.getBlockStore().getBlockKeyIndex(tmp));
             num--;
         }
         return str.toString();
@@ -307,7 +305,7 @@ public class Commands {
     public String mainblocks(int n) {
         List<Block> blocks = kernel.getBlockchain().listMainBlocks(n);
         if (CollectionUtils.isEmpty(blocks)) {
-            return "empty\n";
+            return "empty";
         }
         StringBuilder sbd = new StringBuilder();
         sbd.append(printHeaderBlockList());
@@ -324,7 +322,7 @@ public class Commands {
     public String minedblocks(int n) {
         List<Block> blocks = kernel.getBlockchain().listMinedBlocks(n);
         if (CollectionUtils.isEmpty(blocks)) {
-            return "empty\n";
+            return "empty";
         }
         StringBuilder sbd = new StringBuilder();
         sbd.append(printHeaderBlockList());
@@ -373,8 +371,7 @@ public class Commands {
                     .append(node.getStat().Inbound.get())
                     .append(" in/")
                     .append(node.getStat().Outbound.get())
-                    .append(" out")
-                    .append("\n");
+                    .append(" out");
         }
         return stringBuilder.toString();
     }
@@ -401,11 +398,9 @@ public class Commands {
     public String miners() {
         Miner poolMiner = kernel.getPoolMiner();
         StringBuilder sbd = new StringBuilder();
-        sbd.append("fee : ")
-                .append(BasicUtils.hash2Address(poolMiner.getAddressHash()))
-                .append("\n");
+        sbd.append("fee:").append(BasicUtils.hash2Address(poolMiner.getAddressHash())).append("\n");
         if (kernel.getMinerManager().getActivateMiners().size() == 0) {
-            sbd.append(" without activate miners").append("\n");
+            sbd.append(" without activate miners");
         } else {
             for (Miner miner : kernel.getMinerManager().getActivateMiners().values()) {
                 if (miner.getMinerStates() == MinerStates.MINER_ACTIVE) {

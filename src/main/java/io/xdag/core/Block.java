@@ -177,6 +177,7 @@ public class Block implements Cloneable {
     public Block(XdagBlock xdagBlock) {
         this.xdagBlock = xdagBlock;
         this.info = new BlockInfo();
+        parse();
     }
 
     public Block(BlockInfo blockInfo) {
@@ -384,7 +385,7 @@ public class Block implements Cloneable {
     public int getOutsigIndex() {
         int i = 1;
         long temp = this.info.type;
-        while ((temp & 0xf) != 5) {
+        while (i < XdagBlock.XDAG_BLOCK_FIELDS && (temp & 0xf) != 5) {
             temp = temp >> 4;
             i++;
         }
@@ -433,11 +434,7 @@ public class Block implements Cloneable {
 
     @Override
     public String toString() {
-        return "Block info:[Hash:"
-                + Hex.toHexString(getHashLow())
-                + "][Time:"
-                + Long.toHexString(getTimestamp())
-                + "]";
+        return String.format("Block info:[Hash:{}][Time:{}]", Hex.toHexString(getHashLow()), Long.toHexString(getTimestamp()));
     }
 
     /** 获取区块sums* */

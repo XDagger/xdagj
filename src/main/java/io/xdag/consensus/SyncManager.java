@@ -249,7 +249,7 @@ public class SyncManager {
         log.info("Start PoW");
 
         kernel.getMinerServer().start();
-        kernel.getPow().onStart();
+        kernel.getPow().start();
     }
 
     public void stop() {
