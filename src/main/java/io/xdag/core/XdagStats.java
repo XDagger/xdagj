@@ -43,11 +43,14 @@ public class XdagStats {
     public long nnoref;
     public long nextra;
     public long maintime;
+    public long balance;
 
     private BigInteger topDiff;
     private byte[] topMainChain;
     private byte[] preTop;
     private BigInteger preTopDiff;
+    private byte[] globalMiner;
+    private byte[] ourLastBlockHash;
 
     public XdagStats(){
         difficulty = BigInteger.ZERO;

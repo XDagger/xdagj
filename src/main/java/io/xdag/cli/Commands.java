@@ -23,7 +23,9 @@
  */
 package io.xdag.cli;
 
+import cn.hutool.core.lang.Pair;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
@@ -36,13 +38,17 @@ import io.xdag.utils.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.spongycastle.util.encoders.Hex;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
@@ -53,7 +59,7 @@ import static io.xdag.utils.BasicUtils.*;
 public class Commands {
 
     @Getter
-    private Kernel kernel;
+    private final Kernel kernel;
 
     public Commands(Kernel kernel) {
         this.kernel = kernel;
@@ -66,37 +72,27 @@ public class Commands {
      * @return address + balance
      */
     public String account(int num) {
-        List<byte[]> res = kernel.getBlockchain().getAllAccount();
         // account in memory,do not store in rocksdb
-        Map<ByteArrayWrapper, Integer> memAccount = kernel.getBlockchain().getMemAccount();
-
+        Map<ByteArrayWrapper, Integer> memOurBlocks = kernel.getBlockchain().getMemOurBlocks();
         StringBuilder str = new StringBuilder();
+        memOurBlocks.keySet().stream().limit(num).forEach(key-> str.append(hash2Address(key.getData()))
+                .append(" ")
+                .append("0.00")
+                .append(" XDAG")
+                .append(" key ")
+                .append(memOurBlocks.get(key)));
 
-        for (ByteArrayWrapper key : memAccount.keySet()) {
-            if (num == 0) {
-                break;
-            }
-            str.append(hash2Address(key.getData()))
+        kernel.getBlockStore().fetchOurBlocks(pair -> {
+            Integer index = pair.getKey();
+            Block block = pair.getValue();
+            str.append(hash2Address(block.getHash()))
                     .append(" ")
-                    .append("0.00 xdag")
-                    .append(" ")
-                    .append("key ")
-                    .append(memAccount.get(key));
-            num--;
-        }
-
-        for (byte[] tmp : res) {
-            if (num == 0) {
-                break;
-            }
-            str.append(hash2Address(kernel.getBlockchain().getBlockByHash(tmp, false).getHash()))
-                    .append(" ")
-                    .append(String.format("%.9f", amount2xdag(kernel.getBlockchain().getBlockByHash(tmp, false).getInfo().getAmount())))
-                    .append("xdag")
-                    .append(" key ");
-//                    .append(kernel.getBlockStore().getBlockKeyIndex(tmp));
-            num--;
-        }
+                    .append(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
+                    .append(" XDAG")
+                    .append(" key ")
+                    .append(index);
+            return false;
+        });
         return str.toString();
     }
 
@@ -108,7 +104,7 @@ public class Commands {
      */
     public String balance(String address) {
         if (org.apache.commons.lang3.StringUtils.isEmpty(address)) {
-            return String.format("%.9f", amount2xdag(kernel.getAccountStore().getGBalance())) + " XDAG";
+            return String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance())) + " XDAG";
         } else {
             byte[] hash;
             if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
@@ -134,18 +130,33 @@ public class Commands {
         long amount = xdag2amount(sendAmount);
         byte[] to = new byte[32];
         System.arraycopy(address, 8, to, 8, 24);
-
+//
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
-        Map<Address, ECKey> ans = kernel.getAccountStore().getAccountListByAmount(amount);
-        if (MapUtils.isEmpty(ans)) {
-            return "Balance not enough";
-        }
-        Block block = kernel.getBlockchain().createNewBlock(ans, tos, false);
+
+        AtomicLong remain = new AtomicLong(amount);
+        Map<Address, ECKey> ourBlocks = Maps.newHashMap();
+        //out block select
+        kernel.getBlockStore().fetchOurBlocks(new Function<Pair<Integer, Block>, Boolean>() {
+            @Override
+            public Boolean apply(Pair<Integer, Block> pair) {
+                int index = pair.getKey().intValue();
+                Block block = pair.getValue();
+                if(remain.get() <= block.getInfo().getAmount()) {
+                    ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
+                    return true;
+                } else {
+                    remain.set(remain.get() - block.getInfo().getAmount());
+                    ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
+                    return false;
+                }
+            }
+        });
+
+        Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
         ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
         boolean isdefaultKey = false;
         // 签名
-        for (ECKey ecKey : ans.values()) {
-
+        for (ECKey ecKey : ourBlocks.values()) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
                 block.signOut(ecKey);
@@ -163,15 +174,12 @@ public class Commands {
         // blockWrapper.setTransaction(true);
         kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
 
-        log.info(
-                "Transfer [{}]Xdag from [{}] to [{}]",
+        log.info("Transfer [{}]Xdag from [{}] to [{}]",
                 sendAmount,
-                BasicUtils.hash2Address(ans.keySet().iterator().next().getHashLow()),
+                BasicUtils.hash2Address(ourBlocks.keySet().iterator().next().getHashLow()),
                 BasicUtils.hash2Address(to));
 
-//        System.out.println(
-//                "Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
-
+        System.out.println("Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
         return "Transaction :"
                 + BasicUtils.hash2Address(block.getHashLow())
                 + " it will take several minutes to complete the transaction.";
@@ -182,16 +190,16 @@ public class Commands {
      */
     public String stats() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
-        return String.format(
-                "Statistics for ours and maximum known parameters:\n" +
-                        "            hosts: %d of %d\n" +
-                        "           blocks: %d of %d\n" +
-                        "      main blocks: %d of %d\n" +
-                        "     extra blocks: %d      \n" +
-                        "    orphan blocks: %d      \n" +
-                        " wait sync blocks: %d      \n" +
-                        " chain difficulty: %s of %s\n" +
-                        "      XDAG supply: %.9f of %.9f",
+        return String.format("""
+                        Statistics for ours and maximum known parameters:
+                                    hosts: %d of %d
+                                   blocks: %d of %d
+                              main blocks: %d of %d
+                             extra blocks: %d
+                            orphan blocks: %d
+                         wait sync blocks: %d
+                         chain difficulty: %s of %s
+                              XDAG supply: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), xdagStats.getTotalnblocks(),
                 xdagStats.getNmain(), xdagStats.getTotalnmain(),
@@ -240,28 +248,29 @@ public class Commands {
     }
 
     public static String printHeaderBlockList() {
-        return "---------------------------------------------------------------------------------------------------------\n" +
-                "height        address                            time                      state     mined by            \n" +
-                "---------------------------------------------------------------------------------------------------------\n";
+        return """
+                ---------------------------------------------------------------------------------------------------------
+                height        address                            time                      state     mined by           \s
+                ---------------------------------------------------------------------------------------------------------
+                """;
     }
 
 
     public String printBlockInfo(Block block) {
         block.parse();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
-        String format = (block.getInfo().getFlags() & BI_MAIN) == 0?
-                "":"    height: %08d\n" +
-                "      time: %s\n" +
-                " timestamp: %s\n" +
-                "     flags: %s\n" +
-                "     state: %s\n" +
-                "      hash: %s\n" +
-                "    remark: %s\n" +
-                "difficulty: %s\n" +
-                "   balance: %s  %.9f";
+        String heightFormat = ((block.getInfo().getFlags() & BI_MAIN) == 0? "":"    height: %08d\n");
+        String otherFormat = """
+                         time: %s
+                    timestamp: %s
+                        flags: %s
+                        state: %s
+                         hash: %s
+                       remark: %s
+                   difficulty: %s
+                      balance: %s  %.9f""";
         //TODO need add block as transaction
-        return String.format(format,
-                block.getInfo().getHeight(),
+        return String.format(heightFormat, block.getInfo().getHeight()) + String.format(otherFormat,
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                 Long.toHexString(block.getTimestamp()),
                 Integer.toHexString(block.getInfo().getFlags()),
@@ -291,7 +300,7 @@ public class Commands {
                     BasicUtils.hash2Address(block.getHash()),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                     getStateByFlags(block.getInfo().getFlags()),
-                    new String(remark==null?"".getBytes():remark), StandardCharsets.UTF_8));
+                    new String(remark==null?"".getBytes():remark, StandardCharsets.UTF_8)));
         }
         return sbd.toString();
     }
@@ -307,10 +316,8 @@ public class Commands {
         if (CollectionUtils.isEmpty(blocks)) {
             return "empty";
         }
-        StringBuilder sbd = new StringBuilder();
-        sbd.append(printHeaderBlockList());
-        sbd.append(blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n")));
-        return sbd.toString();
+        return printHeaderBlockList() +
+                blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n"));
     }
 
     /**
@@ -324,10 +331,8 @@ public class Commands {
         if (CollectionUtils.isEmpty(blocks)) {
             return "empty";
         }
-        StringBuilder sbd = new StringBuilder();
-        sbd.append(printHeaderBlockList());
-        sbd.append(blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n")));
-        return sbd.toString();
+        return printHeaderBlockList() +
+                blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n"));
     }
 
     public static String getStateByFlags(int flags) {
@@ -351,7 +356,7 @@ public class Commands {
         try {
             kernel.testStart();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -376,23 +381,12 @@ public class Commands {
         return stringBuilder.toString();
     }
 
-    public Kernel.State getKernelState() {
-        return kernel.getState();
-    }
-
     public String keygen() {
         kernel.getXdagState().tempSet(XdagState.KEYS);
         kernel.getWallet().createNewKey();
         int size = kernel.getWallet().getKey_internal().size();
         kernel.getXdagState().rollback();
         return "Key " + (size - 1) + " generated and set as default,now key size is:" + size;
-    }
-
-    public void resetStore() {
-        // TODO 在这里更改是不是可以的 会不会存在线程问题
-        kernel.getXdagState().tempSet(XdagState.REST);
-        kernel.resetStore();
-        kernel.getXdagState().rollback();
     }
 
     public String miners() {

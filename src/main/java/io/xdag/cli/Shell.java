@@ -7,7 +7,6 @@ import io.xdag.net.XdagVersion;
 import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
@@ -22,10 +21,7 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
-import org.spongycastle.util.encoders.Hex;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,10 +41,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
     private LineReader reader;
 
     public Map<String, CommandMethods> commandExecute = new HashMap<>();
-
-    private static Path workDir() {
-        return Paths.get(System.getProperty("user.dir"));
-    }
 
     public Shell() {
         super();
@@ -80,14 +72,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         reader.getTerminal().writer().flush();
     }
 
-    private boolean checkState() {
-        if(commands.getKernelState() == Kernel.State.RUNNING) {
-            return true;
-        }
-        println("Node is not running, please use 'run' command to run the xdag node");
-        return false;
-    }
-
     private void processAccount(CommandInput input) {
         final String[] usage = {
                 "account -  print first [SIZE] (20 by default) our addresses with their amounts",
@@ -97,9 +81,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         try {
             Options opt = parseOptions(usage, input.args());
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
@@ -125,9 +106,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             println(commands.balance(argv.size()>0?argv.get(0):null));
         } catch (Exception e) {
             saveException(e);
@@ -143,9 +121,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         try {
             Options opt = parseOptions(usage, input.args());
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
@@ -180,9 +155,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         };
         try {
             Options opt = parseOptions(usage, input.args());
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
@@ -200,9 +172,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         try {
             Options opt = parseOptions(usage, input.args());
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
@@ -225,9 +194,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         try {
             Options opt = parseOptions(usage, input.args());
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
@@ -267,10 +233,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         };
         try {
             Options opt = parseOptions(usage, input.args());
-            if(!checkState()) {
-                return;
-            }
-
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
@@ -292,11 +254,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-
-            if(!checkState()) {
-                return;
-            }
-
             byte[] hash;
             double amount = StringUtils.getDouble(argv.get(0));
 
@@ -314,7 +271,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 println("No param");
                 return;
             }
-            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
+
+            if (kernel.getBlockchain().getBlockByHash(hash, false) == null) {
+//            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("incorrect address");
                 return;
             }
@@ -340,9 +299,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             Options opt = parseOptions(usage, input.args());
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
-            }
-            if(!checkState()) {
-                return;
             }
             println(commands.miners());
         } catch (Exception e) {
@@ -405,20 +361,13 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         };
         try {
             Options opt = parseOptions(usage, input.args());
-
-            if(!checkState()) {
-                return;
-            }
-
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-
             if(opt.isSet("list")) {
                 println(commands.listConnect());
                 return;
             }
-
             if(opt.isSet("connect")) {
                 println("connect to :" + opt.get("connect"));
                 Matcher m = p.matcher(opt.get("connect"));
@@ -447,23 +396,17 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         try {
             Options opt = parseOptions(usage, input.args());
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-
             if(opt.isSet("all")) {
                 println(commands.disConnectMinerChannel("all"));
                 return;
             }
-
             if(opt.isSet("address")) {
                 println(commands.disConnectMinerChannel(opt.get("address")));
                 return;
             }
-
             if(opt.isSet("ip")) {
                 println(commands.disConnectMinerChannel(opt.get("ip")));
             }
@@ -489,9 +432,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         try {
             Options opt = parseOptions(usage, input.args());
             List<String> argv = opt.args();
-            if(!checkState()) {
-                return;
-            }
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }

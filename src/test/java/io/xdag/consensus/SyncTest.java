@@ -31,7 +31,6 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.mine.manager.AwardManager;
@@ -77,13 +76,10 @@ public class SyncTest {
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));
         blockStore.reset();
-        AccountStore accountStore = new AccountStore(xdagWallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
-        accountStore.reset();
         OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanPool.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setAccountStore(accountStore);
         kernel.setOrphanPool(orphanPool);
         Native.init();
         if (Native.dnet_crypt_init() < 0) {

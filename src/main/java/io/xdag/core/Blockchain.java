@@ -37,19 +37,13 @@ public interface Blockchain {
 
     Block getBlockByHash(byte[] hash, boolean isRaw);
 
-    boolean hasBlock(byte[] hash);
-
-    List<Block> getBlockByTime(long starttime, long endtime);
-
     void checkNewMain();
 
     List<Block> listMainBlocks(int count);
 
     List<Block> listMinedBlocks(int count);
 
-    List<byte[]> getAllAccount();
-
-    Map<ByteArrayWrapper, Integer> getMemAccount();
+    Map<ByteArrayWrapper, Integer> getMemOurBlocks();
 
     ReentrantReadWriteLock getStateLock();
 

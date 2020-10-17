@@ -23,32 +23,6 @@
  */
 package io.xdag.core;
 
-import io.xdag.config.Config;
-import io.xdag.crypto.ECKey;
-import io.xdag.crypto.Sha256Hash;
-import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.KVSource;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.AccountStore;
-import io.xdag.db.store.BlockStore;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagSha256Digest;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import io.xdag.wallet.WalletImpl;
-import org.junit.Before;
-import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 //import static io.xdag.db.store.BlockStore.BLOCK_AMOUNT;
 
 public class BlockTest {

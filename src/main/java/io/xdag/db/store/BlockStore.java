@@ -23,6 +23,8 @@
  */
 package io.xdag.db.store;
 
+import cn.hutool.core.lang.Pair;
+import cn.hutool.core.lang.func.Func;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -37,6 +39,7 @@ import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -48,6 +51,9 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class BlockStore {
@@ -55,10 +61,10 @@ public class BlockStore {
     public static final byte TIME_HASH_INFO                        =  0x20;
     public static final byte HASH_BLOCK_INFO                       =  0x30;
     public static final byte SUMS_BLOCK_INFO                       =  0x40;
+    public static final byte OURS_BLOCK_INFO                       =  0x50;
 
-    private final Kryo kryo = new Kryo();
+    private final Kryo kryo;
 
-    private static final byte[] GLOBAL_ADDRESS = Hex.decode("FFFFFFFFFFFFFEFF");
     /** <prefix-hash,value> eg:<diff-hash,blockDiff> */
     private final KVSource<byte[], byte[]> indexSource;
     /** <prefix-time-hash,hash> */
@@ -73,6 +79,7 @@ public class BlockStore {
         this.indexSource = index;
         this.timeSource = time;
         this.blockSource = block;
+        this.kryo = new Kryo();
         kryoRegister();
     }
 
@@ -96,7 +103,7 @@ public class BlockStore {
         }
     }
 
-    private Object deserialize(final byte[] bytes, Class type) throws DeserializationException {
+    private Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         try {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final Input input = new Input(inputStream);
@@ -149,6 +156,28 @@ public class BlockStore {
         blockSource.put(block.getHashLow(), block.getXdagBlock().getData());
         saveBlockSums(block);
         saveBlockInfo(block.getInfo());
+    }
+
+    public void saveOurBlock(int index, byte[] hashlow) {
+        indexSource.put(getOurKey(index), hashlow);
+    }
+
+    public void removeOurBlock(byte[] hashlow) {
+        List<byte[]> ourBlocks = indexSource.prefixKeyLookup(new byte[] {OURS_BLOCK_INFO});
+        if(CollectionUtils.isNotEmpty(ourBlocks)) {
+            ourBlocks.removeIf( hl -> FastByteComparisons.equalBytes(hl, hashlow));
+        }
+    }
+
+    public void fetchOurBlocks(Function<Pair<Integer, Block>, Boolean> function) {
+        indexSource.fetchPrefix(new byte[]{OURS_BLOCK_INFO}, pair -> {
+            int index = getOurIndex(pair.getKey());
+            Block ourblock = getBlockInfoByHash(pair.getValue());
+            if(function.apply(Pair.of(index, ourblock))) {
+                return true;
+            }
+            return false;
+        });
     }
 
     public static List<String> getFileName(long time) {
@@ -325,6 +354,14 @@ public class BlockStore {
         return BytesUtils.merge(key, hashlow);
     }
 
+    public static byte[] getOurKey(int index) {
+        return BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
+    }
+
+    public static int getOurIndex(byte[] key) {
+        return BytesUtils.bytesToInt(key, 1, false);
+    }
+
     public List<Block> getBlocksUsedTime(long startTime, long endTime) {
         List<Block> res = Lists.newArrayList();
         long time = startTime;
@@ -410,12 +447,4 @@ public class BlockStore {
 //            return -2;
 //        }
 //    }
-
-    public byte[] getGlobalAddress() {
-        if (indexSource.get(GLOBAL_ADDRESS) != null) {
-            return indexSource.get(GLOBAL_ADDRESS);
-        } else {
-            return null;
-        }
-    }
 }

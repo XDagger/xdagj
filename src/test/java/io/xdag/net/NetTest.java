@@ -25,11 +25,14 @@ package io.xdag.net;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.crypto.jni.Native;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.message.impl.SumRequestMessage;
 import io.xdag.utils.BytesUtils;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.spongycastle.util.encoders.Hex;
 
 import java.net.InetAddress;
@@ -39,18 +42,6 @@ import java.util.Objects;
 import static io.xdag.utils.BytesUtils.isFullZero;
 
 public class NetTest {
-
-    Config config;
-    Kernel kernel;
-
-    @Before
-    public void setUp() throws Exception {
-        config = new Config();
-        // config.initKeys();
-        kernel = new Kernel(config);
-        kernel.testStart();
-    }
-
     @Test
     public void testNetDB() {
         NetDB netDB = new NetDB();

@@ -31,9 +31,6 @@ public enum DatabaseName {
     /** Block raw data. */
     BLOCK,
 
-    /** Account related data. */
-    ACCOUNT,
-
     /** Time related block. */
     TIME,
 

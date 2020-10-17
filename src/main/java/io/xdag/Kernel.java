@@ -27,18 +27,13 @@ import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.BlockchainImpl;
-import io.xdag.core.XdagState;
+import io.xdag.core.*;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.event.EventProcesser;
-import io.xdag.event.KernelBootingEvent;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
@@ -66,13 +61,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Getter
 @Setter
 public class Kernel {
-    protected State state = State.STOPPED;
     protected Status status = Status.STOPPED;
     protected Config config;
     protected Wallet wallet;
     protected DatabaseFactory dbFactory;
     protected BlockStore blockStore;
-    protected AccountStore accountStore;
     protected OrphanPool orphanPool;
     protected Blockchain blockchain;
     protected NetDB netDB;
@@ -108,12 +101,6 @@ public class Kernel {
     /** Start the kernel. */
     public synchronized void testStart() throws Exception {
         EventProcesser.getEventBus().register(this);
-        if (state != State.STOPPED) {
-            return;
-        } else {
-            state = State.BOOTING;
-            EventProcesser.getEventBus().post(new KernelBootingEvent());
-        }
 
         // ====================================
         // start channel manager
@@ -136,8 +123,6 @@ public class Kernel {
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));
         blockStore.init();
-        accountStore = new AccountStore(wallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
-        accountStore.init();
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanPool.init();
 
@@ -150,14 +135,15 @@ public class Kernel {
         // initialize blockchain database
         // ====================================
         blockchain = new BlockchainImpl(this);
+        XdagStats xdagStats = blockStore.getXdagStatus();
         // 如果是第一次启动，则新建第一个地址块
-        if (blockchain.getAllAccount().size() == 0) {
+        if (xdagStats == null || xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
             firstAccount.signOut(wallet.getDefKey().ecKey);
             blockchain.tryToConnect(firstAccount);
             poolMiner = new Miner(firstAccount.getHash());
         } else {
-            poolMiner = new Miner(accountStore.getGlobalMiner());
+            poolMiner = new Miner(xdagStats.getGlobalMiner());
         }
 
         // log.debug("Net Status:"+netStatus);
@@ -215,18 +201,11 @@ public class Kernel {
             xdagState.setState(XdagState.WTST);
         }
         Launcher.registerShutdownHook("kernel", this::testStop);
-        state = State.RUNNING;
+//        state = State.RUNNING;
     }
 
     /** Stops the kernel. */
     public synchronized void testStop() {
-        if (state != State.RUNNING) {
-            return;
-        } else {
-            state = State.STOPPING;
-            System.out.println("try to shut down the program");
-        }
-
         // stop consensus
         sync.stop();
         syncMgr.stop();
@@ -256,7 +235,6 @@ public class Kernel {
 
         minerServer.close();
         minerManager.close();
-        state = State.STOPPED;
     }
 
 
@@ -264,16 +242,7 @@ public class Kernel {
         status = Status.SYNCDONE;
     }
 
-    public void onPow() {
-        status = Status.BLOCK_PRODUCTION_ON;
-    }
-
     public void resetStore() {
-    }
-
-
-    public enum State {
-        STOPPED, BOOTING, RUNNING, STOPPING
     }
 
     public enum Status {

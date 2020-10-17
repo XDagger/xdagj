@@ -214,9 +214,11 @@ public class AwardManagerImpl implements AwardManager {
         int payminersPerBlock = 0;
         miners = new ArrayList<>();
         // 统计矿工的数量
-        for (Miner miner : minerManager.getActivateMiners().values()) {
-            miners.add(miner);
-            minerCounts++;
+        if(minerManager != null) {
+            for (Miner miner : minerManager.getActivateMiners().values()) {
+                miners.add(miner);
+                minerCounts++;
+            }
         }
 
         // 没有矿工挖矿，直接全部收入交由地址块
@@ -241,8 +243,8 @@ public class AwardManagerImpl implements AwardManager {
 //        keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
 
         if (keyPos < 0) {
-            keyPos = blockchain.getMemAccount().get(new ByteArrayWrapper(hash)) != null
-                    ? blockchain.getMemAccount().get(new ByteArrayWrapper(hash))
+            keyPos = blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash)) != null
+                    ? blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash))
                     : -2;
         }
 

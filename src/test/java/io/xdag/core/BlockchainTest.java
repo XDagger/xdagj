@@ -32,7 +32,6 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.AccountStore;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.BasicUtils;
@@ -101,13 +100,10 @@ public class BlockchainTest {
                 dbFactory.getDB(DatabaseName.BLOCK));
 
         blockStore.reset();
-        AccountStore accountStore = new AccountStore(xdagWallet, blockStore, dbFactory.getDB(DatabaseName.ACCOUNT));
-        accountStore.reset();
         OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanPool.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setAccountStore(accountStore);
         kernel.setOrphanPool(orphanPool);
         kernel.setWallet(xdagWallet);
     }
@@ -234,7 +230,7 @@ public class BlockchainTest {
         loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1649267441664L, blockchain);
         printBlockchainInfo(blockchain);
 
-        System.out.println("Balance:" + amount2xdag(kernel.getAccountStore().getGBalance()));
+        System.out.println("Balance:" + amount2xdag(kernel.getBlockStore().getXdagStatus().getBalance()));
 
         System.out.println("========Minedblocks========");
         List<Block> blocks = blockchain.listMinedBlocks(20);
@@ -247,28 +243,28 @@ public class BlockchainTest {
 
         System.out.println("========Xfer========");
 
-        Map<Address, ECKey> pairs = kernel.getAccountStore().getAccountListByAmount(xdag2amount(100));
-
-        for (Address input : pairs.keySet()) {
-            System.out.println("Input:" + input.getType());
-            System.out.println("Input:" + input.getAmount());
-            System.out.println("Input:" + Hex.toHexString(input.getHashLow()));
-            System.out.println("Input data:" + Hex.toHexString(input.getData()));
-        }
-
-        byte[] to = Hex.decode("0000000000000000a968f33f0396f13cfd95171dd83866a321aa466e5f2042bc");
-        List<Address> tos = new ArrayList<>();
-        tos.add(new Address(to, XDAG_FIELD_OUT, 100));
-        Block transaction = blockchain.createNewBlock(pairs, tos, false);
-        for (ECKey ecKey : pairs.values()) {
-            if (ecKey.equals(kernel.getWallet().getDefKey().ecKey)) {
-                transaction.signOut(ecKey);
-            } else {
-                transaction.signIn(ecKey);
-            }
-        }
-        System.out.println("Transaction hash:" + Hex.toHexString(transaction.getHashLow()));
-        System.out.println("Transaction data:" + Hex.toHexString(transaction.getXdagBlock().getData()));
+//        Map<Address, ECKey> pairs = kernel.getAccountStore().getAccountListByAmount(xdag2amount(100));
+//
+//        for (Address input : pairs.keySet()) {
+//            System.out.println("Input:" + input.getType());
+//            System.out.println("Input:" + input.getAmount());
+//            System.out.println("Input:" + Hex.toHexString(input.getHashLow()));
+//            System.out.println("Input data:" + Hex.toHexString(input.getData()));
+//        }
+//
+//        byte[] to = Hex.decode("0000000000000000a968f33f0396f13cfd95171dd83866a321aa466e5f2042bc");
+//        List<Address> tos = new ArrayList<>();
+//        tos.add(new Address(to, XDAG_FIELD_OUT, 100));
+//        Block transaction = blockchain.createNewBlock(pairs, tos, false);
+//        for (ECKey ecKey : pairs.values()) {
+//            if (ecKey.equals(kernel.getWallet().getDefKey().ecKey)) {
+//                transaction.signOut(ecKey);
+//            } else {
+//                transaction.signIn(ecKey);
+//            }
+//        }
+//        System.out.println("Transaction hash:" + Hex.toHexString(transaction.getHashLow()));
+//        System.out.println("Transaction data:" + Hex.toHexString(transaction.getXdagBlock().getData()));
     }
 
     //@Test
