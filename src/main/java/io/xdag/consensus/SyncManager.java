@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import io.xdag.core.*;
 
+import org.apache.commons.collections4.QueueUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import com.google.common.collect.Queues;
@@ -84,8 +85,6 @@ public class SyncManager {
     public ImportResult ImportBlock(BlockWrapper blockWrapper) {
         log.debug("ImportBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
         ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
-        DecimalFormat timeFormat = new DecimalFormat("0.000");
-        timeFormat.setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.US));
 
         if (importResult == EXIST) {
             log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
@@ -227,6 +226,10 @@ public class SyncManager {
                         break;
                 }
             });
+            if(v.size() == 0) {
+                syncMap.remove(k);
+                return null;
+            }
             return v;
         });
         return result.get();
