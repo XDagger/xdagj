@@ -61,9 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 public class Block implements Cloneable {
     public static final int MAX_LINKS = 15;
-
     private BlockInfo info;
-
     private long transportHeader;
 
     /** 区块的links 列表 输入输出* */
@@ -79,14 +77,10 @@ public class Block implements Cloneable {
 
     /** 主块的nonce记录矿工地址跟nonce* */
     private byte[] nonce;
-
     private XdagBlock xdagBlock;
-
     private boolean parsed;
-    private long sum;
-
+    private boolean isOurs;
     private byte[] encoded;
-
     private int tempLength;
 
     /** 区块是否存在于本地* */
@@ -435,20 +429,6 @@ public class Block implements Cloneable {
     @Override
     public String toString() {
         return String.format("Block info:[Hash:{}][Time:{}]", Hex.toHexString(getHashLow()), Long.toHexString(getTimestamp()));
-    }
-
-    /** 获取区块sums* */
-    public long getSum() {
-        if (sum != 0) {
-            return sum;
-        }
-        if (xdagBlock == null) {
-            xdagBlock = getXdagBlock();
-        }
-        for (int i = 0; i < 16; i++) {
-            sum += xdagBlock.getField(i).getSum();
-        }
-        return sum;
     }
 
     @Override
