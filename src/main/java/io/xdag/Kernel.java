@@ -135,7 +135,7 @@ public class Kernel {
         // initialize blockchain database
         // ====================================
         blockchain = new BlockchainImpl(this);
-        XdagStats xdagStats = blockStore.getXdagStatus();
+        XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats == null || xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
