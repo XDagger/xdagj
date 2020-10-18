@@ -1,6 +1,8 @@
 package io.xdag.db.store;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.google.common.primitives.UnsignedLong;
+import com.google.common.primitives.UnsignedLongs;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagStats;
@@ -16,6 +18,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
+import java.util.List;
 
 import static io.xdag.BlockGenerater.*;
 import static org.junit.Assert.*;
@@ -84,5 +91,42 @@ public class BlockStoreTest {
         bs.saveBlock(block);
         Block storedBlock = bs.getBlockByHash(block.getHashLow(), true);
         assertArrayEquals(block.toBytes(), storedBlock.toBytes());
+    }
+
+    @Test
+    public void testSaveOurBlock() {
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        bs.init();
+        long time = System.currentTimeMillis();
+        ECKey key = new ECKey();
+        Block block = generateAddressBlock(key, time);
+        bs.saveOurBlock(1, block.getHashLow());
+        assertArrayEquals(block.getHashLow(), bs.getOurBlock(1));
+    }
+
+    @Test
+    public void testRemoveOurBlock() {
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        bs.init();
+        long time = System.currentTimeMillis();
+        ECKey key = new ECKey();
+        Block block = generateAddressBlock(key, time);
+        bs.saveBlock(block);
+        bs.saveOurBlock(1, block.getHashLow());
+        assertFalse(bs.getOurBlock(1) == null);
+        bs.removeOurBlock(block.getHashLow());
+        assertTrue(bs.getOurBlock(1) == null);
+    }
+
+    @Test
+    public void testSaveBlockSums() {
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        bs.init();
+        long time = 1602951025307L;
+        ECKey key = new ECKey();
+        Block block = generateAddressBlock(key, time);
+        bs.saveBlock(block);
+        byte[] sums = new byte[256];
+        bs.loadSum(time, time + 64 * 1024, sums);
     }
 }
