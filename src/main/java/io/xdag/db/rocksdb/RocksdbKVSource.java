@@ -210,7 +210,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             }
             if (val != null) {
                 if (db == null) {
-                    System.out.println("db is null");
+                    log.error("db is null");
                 } else {
                     db.put(key, val);
                 }

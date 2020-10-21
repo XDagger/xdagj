@@ -56,7 +56,6 @@ import static io.xdag.utils.MapUtils.getHead;
 @Slf4j
 @Getter
 public class BlockchainImpl implements Blockchain {
-    private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
     private Wallet wallet;
     private BlockStore blockStore;
     /** 非Extra orphan存放 */
@@ -72,15 +71,18 @@ public class BlockchainImpl implements Blockchain {
         this.wallet = kernel.getWallet();
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
-        XdagStats storedXdagStats = blockStore.getXdagStatus();
-        this.xdagStats = Objects.requireNonNullElseGet(storedXdagStats, XdagStats::new);
+        XdagStats storedStats = blockStore.getXdagStatus();
+        if(storedStats != null) {
+            storedStats.setNwaitsync(0);
+            this.xdagStats = storedStats;
+        } else {
+            this.xdagStats = new XdagStats();
+        }
     }
 
     /** 尝试去连接这个块 */
     @Override
-    public ImportResult tryToConnect(Block block) {
-        ReentrantReadWriteLock.WriteLock writeLock = this.stateLock.writeLock();
-        writeLock.lock();
+    public synchronized ImportResult tryToConnect(Block block) {
         try {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
             if (isExist(block.getHashLow())) {
@@ -109,12 +111,24 @@ public class BlockchainImpl implements Blockchain {
                             return result;
                         }
 
-                        if (!ref.getAmount().equals(BigInteger.ZERO)) {
-                            updateBlockFlag(block, BI_EXTRA, false);
-                        }
+//                        if (!ref.getAmount().equals(BigInteger.ZERO)) {
+//                            updateBlockFlag(block, BI_EXTRA, false);
+//                        }
                     }
 
                 }
+            }
+
+            // remove links
+            for (Address ref : all) {
+                removeOrphan(ref.getHashLow(),
+                        (block.getInfo().flags & BI_EXTRA) != 0
+                                ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
+                                : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
+                // TODO:add backref
+                // if(!all.get(i).getAmount().equals(BigInteger.ZERO)){
+                // Block blockRef = getBlockByHash(all.get(i).getHashLow(),false);
+                // }
             }
 
             // 检查当前主链
@@ -136,7 +150,7 @@ public class BlockchainImpl implements Blockchain {
 
             // 更新preTop
             setPreTop(block);
-            setPreTop(getBlockByHash(xdagStats.getTopMainChain(), false));
+            setPreTop(getBlockByHash(xdagStats.getTop(), false));
 
             // TODO:extra 处理
             if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
@@ -179,20 +193,8 @@ public class BlockchainImpl implements Blockchain {
                 // 将主链回退到blockRef
                 unWindMain(blockRef);
                 xdagStats.setTopDiff(block.getInfo().getDifficulty());
-                xdagStats.setTopMainChain(block.getHashLow());
+                xdagStats.setTop(block.getHashLow());
                 result = ImportResult.IMPORTED_BEST;
-            }
-
-            // remove links
-            for (Address ref : all) {
-                removeOrphan(ref.getHashLow(),
-                        (block.getInfo().flags & BI_EXTRA) != 0
-                                ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
-                                : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
-                // TODO:add backref
-                // if(!all.get(i).getAmount().equals(BigInteger.ZERO)){
-                // Block blockRef = getBlockByHash(all.get(i).getHashLow(),false);
-                // }
             }
 
             // 新增区块
@@ -215,8 +217,9 @@ public class BlockchainImpl implements Blockchain {
             log.debug("Current diff:" + xdagStats.getTopDiff().toString(16));
             blockStore.saveXdagStatus(xdagStats);
             return result;
-        } finally {
-            writeLock.unlock();
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+            return ImportResult.ERROR;
         }
     }
 
@@ -225,8 +228,8 @@ public class BlockchainImpl implements Blockchain {
     public void checkNewMain() {
         Block p = null;
         int i = 0;
-        if (xdagStats.getTopMainChain() != null) {
-            for (Block block = getBlockByHash(xdagStats.getTopMainChain(), true); block != null
+        if (xdagStats.getTop() != null) {
+            for (Block block = getBlockByHash(xdagStats.getTop(), true); block != null
                     && ((block.getInfo().flags & BI_MAIN) == 0); block = getMaxDiffLink(block, true)) {
 
                 if ((block.getInfo().flags & BI_MAIN_CHAIN) != 0) {
@@ -266,8 +269,8 @@ public class BlockchainImpl implements Blockchain {
         if (block == null) {
             return;
         }
-        if (xdagStats.getTopMainChain() != null) {
-            for (Block tmp = getBlockByHash(xdagStats.getTopMainChain(), true); tmp != null
+        if (xdagStats.getTop() != null) {
+            for (Block tmp = getBlockByHash(xdagStats.getTop(), true); tmp != null
                     && !tmp.equals(block); tmp = getMaxDiffLink(tmp, true)) {
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
                 // 更新对应的flag信息
@@ -488,16 +491,18 @@ public class BlockchainImpl implements Blockchain {
     public byte[] getPreTopMainBlockForLink(long sendTime) {
         long mainTime = XdagTime.getEpoch(sendTime);
         Block topInfo;
-        if (xdagStats.getTopMainChain() == null) {
+        if (xdagStats.getTop() == null) {
             return null;
         }
 
-        topInfo = getBlockByHash(xdagStats.getTopMainChain(), false);
+        topInfo = getBlockByHash(xdagStats.getTop(), false);
+        if(topInfo == null) {
+            return null;
+        }
         if (XdagTime.getEpoch(topInfo.getTimestamp()) == mainTime) {
             return xdagStats.getPreTop();
         } else {
-
-            return xdagStats.getTopMainChain();
+            return xdagStats.getTop();
         }
     }
 
@@ -828,7 +833,10 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public List<Block> listMainBlocks(int count) {
-        Block temp = getBlockByHash(xdagStats.getTopMainChain(), false);
+        Block temp = getBlockByHash(xdagStats.getTop(), false);
+        if(temp == null) {
+            temp = getBlockByHash(xdagStats.getPreTop(), false);
+        }
         List<Block> res = new ArrayList<>();
         while (count > 0) {
             if (temp == null) {
@@ -848,7 +856,7 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public List<Block> listMinedBlocks(int count) {
-        Block temp = getBlockByHash(xdagStats.getTopMainChain(), false);
+        Block temp = getBlockByHash(xdagStats.getTop(), false);
         List<Block> res = new ArrayList<>();
         while (count > 0) {
             if (temp == null) {
@@ -868,11 +876,6 @@ public class BlockchainImpl implements Blockchain {
 
     public Map<ByteArrayWrapper, Integer> getMemOurBlocks() {
         return memOurBlocks;
-    }
-
-    @Override
-    public ReentrantReadWriteLock getStateLock() {
-        return stateLock;
     }
 
     enum OrphanRemoveActions {

@@ -1,8 +1,5 @@
 package io.xdag.db.store;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.google.common.primitives.UnsignedLong;
-import com.google.common.primitives.UnsignedLongs;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagStats;
@@ -18,13 +15,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
-import java.util.List;
 
-import static io.xdag.BlockGenerater.*;
+import static io.xdag.BlockBuilder.*;
 import static org.junit.Assert.*;
 
 public class BlockStoreTest {
@@ -71,12 +63,12 @@ public class BlockStoreTest {
         bs.init();
         XdagStats stats = new XdagStats();
         byte[] hashlow = Sha256Hash.hashTwice("".getBytes());
-        stats.setTopMainChain(hashlow);
+        stats.setTop(hashlow);
         stats.setTopDiff(BigInteger.ONE);
         stats.setNmain(1);
         bs.saveXdagStatus(stats);
         XdagStats storedStats = bs.getXdagStatus();
-        assertArrayEquals(stats.getTopMainChain(), storedStats.getTopMainChain());
+        assertArrayEquals(stats.getTop(), storedStats.getTop());
         assertEquals(stats.getTopDiff(), storedStats.getTopDiff());
         assertEquals(stats.getNmain(), storedStats.getNmain());
     }

@@ -36,6 +36,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import io.xdag.core.*;
+
+import org.apache.commons.lang3.RandomUtils;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -124,9 +126,7 @@ public class XdagPow implements PoW, Runnable {
         Block block = blockchain.createNewBlock(null, null, true);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
 
-        minShare = new byte[32];
-        // 初始minshare 初始minhash
-        new Random().nextBytes(minShare);
+        minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);
         minHash = block.calcHash();
         // 发送给矿工

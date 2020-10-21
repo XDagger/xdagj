@@ -45,8 +45,6 @@ public interface Blockchain {
 
     Map<ByteArrayWrapper, Integer> getMemOurBlocks();
 
-    ReentrantReadWriteLock getStateLock();
-
     XdagStats getXdagStats();
 
     long getSupply(long nmain);

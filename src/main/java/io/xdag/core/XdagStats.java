@@ -45,8 +45,8 @@ public class XdagStats {
     public long maintime;
     public long balance;
 
+    private byte[] top;
     private BigInteger topDiff;
-    private byte[] topMainChain;
     private byte[] preTop;
     private BigInteger preTopDiff;
     private byte[] globalMiner;

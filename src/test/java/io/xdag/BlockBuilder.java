@@ -8,10 +8,13 @@ import io.xdag.crypto.ECKey;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 
-public class BlockGenerater {
+import org.apache.commons.lang3.RandomUtils;
+
+public class BlockBuilder {
 
     public static Block generateAddressBlock(ECKey key, long xdagTime) {
         Block b = new Block(xdagTime, null, null, false, null, null, -1);
@@ -21,6 +24,7 @@ public class BlockGenerater {
 
     public static Block generateExtraBlock(ECKey key, long xdagTime, List<Address> pendings) {
         Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
+        b.setNonce(RandomUtils.nextBytes(32));
         b.signOut(key);
         return b;
     }

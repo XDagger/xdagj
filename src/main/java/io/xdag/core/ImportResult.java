@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 public enum ImportResult {
+    ERROR,
     EXIST,
     NO_PARENT,
     INVALID_BLOCK,

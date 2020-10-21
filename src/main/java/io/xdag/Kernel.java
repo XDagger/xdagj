@@ -137,11 +137,15 @@ public class Kernel {
         blockchain = new BlockchainImpl(this);
         XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建第一个地址块
-        if (xdagStats == null || xdagStats.getOurLastBlockHash() == null) {
+        if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
             firstAccount.signOut(wallet.getDefKey().ecKey);
-            blockchain.tryToConnect(firstAccount);
             poolMiner = new Miner(firstAccount.getHash());
+            xdagStats.setOurLastBlockHash(firstAccount.getHashLow());
+            if(xdagStats.getGlobalMiner() == null) {
+                xdagStats.setGlobalMiner(firstAccount.getHash());
+            }
+            blockchain.tryToConnect(firstAccount);
         } else {
             poolMiner = new Miner(xdagStats.getGlobalMiner());
         }
@@ -223,14 +227,8 @@ public class Kernel {
         // close client
         client.close();
 
-        ReentrantReadWriteLock.WriteLock lock = blockchain.getStateLock().writeLock();
-        lock.lock();
-        try {
-            for (DatabaseName name : DatabaseName.values()) {
-                dbFactory.getDB(name).close();
-            }
-        } finally {
-            lock.unlock();
+        for (DatabaseName name : DatabaseName.values()) {
+            dbFactory.getDB(name).close();
         }
 
         minerServer.close();
