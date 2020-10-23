@@ -24,8 +24,8 @@ public class BlockBuilder {
 
     public static Block generateExtraBlock(ECKey key, long xdagTime, List<Address> pendings) {
         Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
-        b.setNonce(RandomUtils.nextBytes(32));
         b.signOut(key);
+        b.setNonce(RandomUtils.nextBytes(32));
         return b;
     }
 
