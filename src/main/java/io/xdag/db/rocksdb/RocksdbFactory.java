@@ -64,9 +64,4 @@ public class RocksdbFactory implements DatabaseFactory {
         }
         databases.clear();
     }
-
-//    @Override
-//    public SimpleFileStore getSumsDB() {
-//        return new SimpleFileStore(config.getStoreDir());
-//    }
 }
