@@ -23,26 +23,17 @@
  */
 package io.xdag.crypto;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
-
+import io.xdag.crypto.jce.ECKeyFactory;
+import io.xdag.crypto.jce.ECKeyPairGenerator;
+import io.xdag.crypto.jce.ECSignatureFactory;
+import io.xdag.crypto.jce.XdagProvider;
+import io.xdag.utils.BIUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.HashUtils;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
 import org.bitcoin.NativeSecp256k1;
 import org.bitcoin.NativeSecp256k1Util;
 import org.bitcoin.Secp256k1Context;
@@ -53,8 +44,10 @@ import org.spongycastle.asn1.DLSequence;
 import org.spongycastle.asn1.sec.SECNamedCurves;
 import org.spongycastle.asn1.x9.X9ECParameters;
 import org.spongycastle.asn1.x9.X9IntegerConverter;
+import org.spongycastle.crypto.KeyGenerationParameters;
 import org.spongycastle.crypto.digests.SHA256Digest;
 import org.spongycastle.crypto.params.ECDomainParameters;
+import org.spongycastle.crypto.params.ECKeyGenerationParameters;
 import org.spongycastle.crypto.params.ECPrivateKeyParameters;
 import org.spongycastle.crypto.params.ECPublicKeyParameters;
 import org.spongycastle.crypto.signers.ECDSASigner;
@@ -66,24 +59,29 @@ import org.spongycastle.jce.spec.ECPrivateKeySpec;
 import org.spongycastle.math.ec.ECAlgorithms;
 import org.spongycastle.math.ec.ECCurve;
 import org.spongycastle.math.ec.ECPoint;
+import org.spongycastle.math.ec.FixedPointCombMultiplier;
 import org.spongycastle.util.encoders.Base64;
-import org.spongycastle.util.encoders.Hex;
 
-import io.xdag.crypto.jce.ECKeyFactory;
-import io.xdag.crypto.jce.ECKeyPairGenerator;
-import io.xdag.crypto.jce.ECSignatureFactory;
-import io.xdag.crypto.jce.XdagProvider;
-import io.xdag.utils.BIUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.HashUtils;
-import lombok.extern.slf4j.Slf4j;
+import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
+
+import static com.google.common.base.Preconditions.*;
 
 @Slf4j
 public class ECKey implements Serializable {
 
     /** The parameters of the secp256k1 curve that Ethereum uses. */
-    static final ECDomainParameters CURVE;
-    static final ECParameterSpec CURVE_SPEC;
+    public static final ECDomainParameters CURVE;
+    public static final ECParameterSpec CURVE_SPEC;
     /**
      * Equal to CURVE.getN().shiftRight(1), used for canonicalising the S value of a
      * signature. ECDSA signatures are mutable in the sense that for a given (R, S)
@@ -111,17 +109,28 @@ public class ECKey implements Serializable {
         DUMMY = fromPrivate(BigInteger.ONE);
     }
 
-    protected final ECPoint pub;
+    protected ECPoint pub;
+
+    protected LazyECPoint pubLazy;
+
+    @Nullable
+    protected BigInteger privBi;
+
     // The two parts of the key. If "priv" is set, "pub" can always be calculated.
     // If "pub" is set but
     // not "priv", we
     // can only verify signatures not make them.
-    private final PrivateKey privKey;
+    private PrivateKey privKey;
     // the Java Cryptographic Architecture provider to use for Signature
     // this is set along with the PrivateKey privKey and must be compatible
     // this provider will be used when selecting a Signature instance
     // https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html
-    private final Provider provider;
+    private Provider provider;
+
+    // Creation time of the key in seconds since the epoch, or zero if the key was deserialized from a version that did
+    // not have this field.
+    @Getter
+    protected long creationTimeSeconds;
 
     // Transient because it's calculated on demand.
     private transient byte[] pubKeyHash;
@@ -146,14 +155,28 @@ public class ECKey implements Serializable {
      */
     public ECKey(Provider provider, SecureRandom secureRandom) {
         this.provider = provider;
-        final KeyPairGenerator keyPairGen = ECKeyPairGenerator.getInstance(provider, secureRandom);
-        final KeyPair keyPair = keyPairGen.generateKeyPair();
+        final KeyPairGenerator generator = ECKeyPairGenerator.getInstance(provider, secureRandom);
+        final KeyGenerationParameters keygenParams = new ECKeyGenerationParameters(CURVE, secureRandom);
+        final KeyPair keyPair = generator.generateKeyPair();
         this.privKey = keyPair.getPrivate();
+        if (this.privKey instanceof BCECPrivateKey) {
+            this.privBi = ((BCECPrivateKey) this.privKey).getS();
+        } else if (this.privKey instanceof ECPrivateKey) {
+            this.privBi = ((ECPrivateKey) this.privKey).getS();
+        } else {
+            throw new AssertionError(
+                    "Expected Provider "
+                            + provider.getName()
+                            + " to produce a subtype of ECPrivateKey, found "
+                            + this.privKey.getClass());
+        }
         final PublicKey pubKey = keyPair.getPublic();
         if (pubKey instanceof BCECPublicKey) {
             pub = ((BCECPublicKey) pubKey).getQ();
+            pubLazy = getPointWithCompression(((BCECPublicKey) pubKey).getQ(), true);
         } else if (pubKey instanceof ECPublicKey) {
             pub = extractPublicKey((ECPublicKey) pubKey);
+            pubLazy = getPointWithCompression(extractPublicKey((ECPublicKey) pubKey), true);
         } else {
             throw new AssertionError(
                     "Expected Provider "
@@ -161,6 +184,8 @@ public class ECKey implements Serializable {
                             + " to produce a subtype of ECPublicKey, found "
                             + pubKey.getClass());
         }
+
+        creationTimeSeconds = FormatDateUtils.currentTimeSeconds();
     }
 
     /**
@@ -215,6 +240,23 @@ public class ECKey implements Serializable {
      */
     public ECKey(BigInteger priv, ECPoint pub) {
         this(XdagProvider.getInstance(), privateKeyFromBigInteger(priv), pub);
+    }
+
+    protected ECKey(@Nullable BigInteger priv, ECPoint pub, boolean compressed) {
+        this(priv, getPointWithCompression(checkNotNull(pub), compressed));
+    }
+
+    protected ECKey(@Nullable BigInteger priv, LazyECPoint pub) {
+        if (priv != null) {
+            checkArgument(priv.bitLength() <= 32 * 8, "private key exceeds 32 bytes: %s bits", priv.bitLength());
+            // Try and catch buggy callers or bad key imports, etc. Zero and one are special because these are often
+            // used as sentinel values and because scripting languages have a habit of auto-casting true and false to
+            // 1 and 0 or vice-versa. Type confusion bugs could therefore result in private keys with these values.
+            checkArgument(!priv.equals(BigInteger.ZERO));
+            checkArgument(!priv.equals(BigInteger.ONE));
+        }
+        this.privBi = priv;
+        this.pubLazy = checkNotNull(pub);
     }
 
     /*
@@ -1099,6 +1141,64 @@ public class ECKey implements Serializable {
             result = 31 * result + s.hashCode();
             return result;
         }
+    }
+
+    /**
+     * Returns true if the given pubkey is in its compressed form.
+     */
+    public static boolean isPubKeyCompressed(byte[] encoded) {
+        if (encoded.length == 33 && (encoded[0] == 0x02 || encoded[0] == 0x03))
+            return true;
+        else if (encoded.length == 65 && encoded[0] == 0x04)
+            return false;
+        else
+            throw new IllegalArgumentException(Hex.encodeHexString(encoded));
+    }
+
+    /**
+     * Sets the creation time of this key. Zero is a convention to mean "unavailable". This method can be useful when
+     * you have a raw key you are importing from somewhere else.
+     */
+    public void setCreationTimeSeconds(long newCreationTimeSeconds) {
+        if (newCreationTimeSeconds < 0)
+            throw new IllegalArgumentException("Cannot set creation time to negative value: " + newCreationTimeSeconds);
+        creationTimeSeconds = newCreationTimeSeconds;
+    }
+
+    /**
+     * Creates an ECKey given the private key only. The public key is calculated from it (this is slow).
+     * @param compressed Determines whether the resulting ECKey will use a compressed encoding for the public key.
+     */
+    public static ECKey fromPrivate(BigInteger privKey, boolean compressed) {
+        ECPoint point = publicPointFromPrivate(privKey);
+        return new ECKey(privKey, getPointWithCompression(point, compressed));
+    }
+
+    private static LazyECPoint getPointWithCompression(ECPoint point, boolean compressed) {
+        return new LazyECPoint(point, compressed);
+    }
+
+    /**
+     * Returns public key point from the given private key. To convert a byte array into a BigInteger,
+     * use {@code new BigInteger(1, bytes);}
+     */
+    public static ECPoint publicPointFromPrivate(BigInteger privKey) {
+        /*
+         * TODO: FixedPointCombMultiplier currently doesn't support scalars longer than the group order,
+         * but that could change in future versions.
+         */
+        if (privKey.bitLength() > CURVE.getN().bitLength()) {
+            privKey = privKey.mod(CURVE.getN());
+        }
+        return new FixedPointCombMultiplier().multiply(CURVE.getG(), privKey);
+    }
+
+    /**
+     * Utility for compressing an elliptic curve point. Returns the same point if it's already compressed.
+     * See the ECKey class docs for a discussion of point compression.
+     */
+    public static LazyECPoint compressPoint(LazyECPoint point) {
+        return point.isCompressed() ? point : getPointWithCompression(point.get(), true);
     }
 
     @SuppressWarnings("serial")

@@ -26,6 +26,7 @@ package io.xdag.crypto;
 import io.xdag.utils.BytesUtils;
 import org.apache.commons.codec.binary.StringUtils;
 import org.junit.Test;
+import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
@@ -82,7 +83,7 @@ public class ECKeyTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testPrivatePublicKeyBytesNoArg() {
-        new ECKey((BigInteger) null, null);
+        new ECKey((BigInteger) null, (ECPoint) null);
         fail("Expecting an IllegalArgumentException for using only null-parameters");
     }
 
