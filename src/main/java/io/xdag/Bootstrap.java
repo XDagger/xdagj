@@ -75,7 +75,7 @@ public class Bootstrap {
         }
         Kernel kernel = new Kernel(config, wallet);
         // default start kernel
-        kernel.testStart();
+//        kernel.testStart();
 
         // start telnet server
         TelnetServer telnetServer = new TelnetServer(config.getTelnetIp(), config.getTelnetPort(), kernel);

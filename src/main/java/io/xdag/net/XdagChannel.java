@@ -90,7 +90,7 @@ public class XdagChannel {
         handshakeHandler.setServer(isServer);
         pipeline.addLast("handshakeHandler", handshakeHandler);
         this.msgQueue = new MessageQueue(this);
-        this.messageCodec = new MessageCodes(this);
+        this.messageCodec = new MessageCodes();
         this.blockHandler = new XdagBlockHandler(this);
         this.xdagHandlerFactory = new XdagHandlerFactoryImpl(kernel, this);
     }
@@ -185,7 +185,7 @@ public class XdagChannel {
         return xdag;
     }
 
-    public void dropConnection() {
+    public void dropConnection() throws InterruptedException {
         xdag.dropConnection();
     }
 }

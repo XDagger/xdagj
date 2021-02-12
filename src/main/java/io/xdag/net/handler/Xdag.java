@@ -37,7 +37,7 @@ public interface Xdag {
 
     long sendGetSums(long startTime, long endTime);
 
-    void dropConnection();
+    void dropConnection() throws InterruptedException;
 
     boolean isIdle();
 

@@ -34,6 +34,7 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.event.EventProcesser;
+import io.xdag.libp2p.manager.Libp2pChannelManager;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
@@ -85,6 +86,12 @@ public class Kernel {
     protected MinerManager minerManager;
     protected MinerServer minerServer;
     protected XdagState xdagState;
+
+    public Libp2pChannelManager getLibp2pChannelManager() {
+        return libp2pChannelManager;
+    }
+
+    protected Libp2pChannelManager libp2pChannelManager;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
     public Kernel(Config config, Wallet wallet) {
@@ -197,6 +204,7 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
+        pow.start();
         minerManager.setPoW(pow);
         minerManager.start();
         if (Config.MAINNET) {

@@ -23,36 +23,26 @@
  */
 package io.xdag.net.handler;
 
-import java.util.List;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nonnull;
-
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
-
 import com.google.common.util.concurrent.SettableFuture;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
+import io.xdag.core.XdagStats;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.core.XdagStats;
-import io.xdag.net.message.impl.BlockExtRequestMessage;
-import io.xdag.net.message.impl.BlockRequestMessage;
-import io.xdag.net.message.impl.BlocksReplyMessage;
-import io.xdag.net.message.impl.BlocksRequestMessage;
-import io.xdag.net.message.impl.NewBlockMessage;
-import io.xdag.net.message.impl.SumReplyMessage;
-import io.xdag.net.message.impl.SumRequestMessage;
+import io.xdag.net.message.impl.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.spongycastle.util.Arrays;
+import org.spongycastle.util.encoders.Hex;
+
+import javax.annotation.Nonnull;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

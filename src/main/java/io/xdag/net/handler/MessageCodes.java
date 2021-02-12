@@ -38,10 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MessageCodes extends MessageToMessageCodec<Message, Message> {
 
-    private XdagChannel channel;
 
-    public MessageCodes(XdagChannel channel) {
-        this.channel = channel;
+    public MessageCodes() {
     }
 
     public static XdagBlock convertMessage(Message message) {

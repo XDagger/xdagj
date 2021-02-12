@@ -345,7 +345,7 @@ public class BlockchainTest {
         FileChannel channel = null;
         starttime |= 0x00000;
         endtime |= 0xffff;
-        File fileImpl = null;
+        File fileImpl;
         long res = 0;
 
         while (starttime < endtime) {

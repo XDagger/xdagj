@@ -123,7 +123,7 @@ xdag> help
     minedblocks print list of [SIZE] (20 by default) main blocks mined by current pool
     miners      for pool, print list of recent connected miners
     net         run transport layer command, try 'net --help'
-    run         run node after loading local blocks if option -r is used
+    run         run libp2pNode after loading local blocks if option -r is used
     state       print the program state
     stats       print statistics for loaded and all known blocks
     terminate   terminate both daemon and this program
