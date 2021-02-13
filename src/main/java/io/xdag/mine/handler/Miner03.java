@@ -101,7 +101,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
   protected void processNewBlock(NewBlockMessage msg) {
     log.debug(" Receive a Tx");
     Block block = msg.getBlock();
-    syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL(), null));
+    syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL()));
   }
 
   protected void processNewBalance(NewBalanceMessage msg) {

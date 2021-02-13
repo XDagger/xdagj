@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 public class Libp2pNode {
     private PeerInfo peerInfo;
     private PeerId peerId;
-    private CompletableFuture completableFuture = new CompletableFuture();
+    private final CompletableFuture completableFuture = new CompletableFuture();
 
 
     @Getter

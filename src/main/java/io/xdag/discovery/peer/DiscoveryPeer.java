@@ -28,20 +28,24 @@ public class DiscoveryPeer extends DefaultPeer {
     private long firstDiscovered = 0;
     private long lastContacted = 0;
     private long lastSeen = 0;
+    String host;
+    int tcpPort;
 
     public DiscoveryPeer(
             final BytesValue id, final String host, final int udpPort, final int tcpPort) {
         super(id, host, udpPort, tcpPort);
     }
 
-    public DiscoveryPeer(
-            final BytesValue id, final String host, final int udpPort, final OptionalInt tcpPort) {
-        super(id, host, udpPort, tcpPort);
-    }
+//    public DiscoveryPeer(
+//            final BytesValue id, final String host, final int udpPort, final int tcpPort) {
+//        super(id, host, udpPort, tcpPort);
+//        this.host = host;
+//        this.tcpPort =tcpPort;
+//    }
 
-    public DiscoveryPeer(final BytesValue id, final String host, final int udpPort) {
-        super(id, host, udpPort);
-    }
+//    public DiscoveryPeer(final BytesValue id, final String host, final int udpPort) {
+//        super(id, host, udpPort);
+//    }
 
     public DiscoveryPeer(final BytesValue id, final Endpoint endpoint) {
         super(id, endpoint);
@@ -82,6 +86,14 @@ public class DiscoveryPeer extends DefaultPeer {
 
     public void setLastSeen(final long lastSeen) {
         this.lastSeen = lastSeen;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public int getTcpPort() {
+        return tcpPort;
     }
 
     @Override

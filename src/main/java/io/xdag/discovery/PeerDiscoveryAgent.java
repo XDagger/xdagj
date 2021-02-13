@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 
 @Slf4j
 public class PeerDiscoveryAgent {
+    public DiscoveryController discoveryController;
 
     public PeerDiscoveryAgent() {
 
@@ -18,7 +19,10 @@ public class PeerDiscoveryAgent {
         }else {
             log.info("启动非种子节点的发现功能");
         }
-        DiscoveryController discoveryController = new DiscoveryController();
+        discoveryController = new DiscoveryController();
         discoveryController.start(isbootnodes);
+    }
+    public DiscoveryController getDiscoveryController(){
+        return discoveryController;
     }
 }

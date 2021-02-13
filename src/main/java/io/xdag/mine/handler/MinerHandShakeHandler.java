@@ -88,7 +88,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             Block addressBlock = new Block(new XdagBlock(uncryptData));
             // Todo:加入block_queue
             syncManager.validateAndAddNewBlock(
-                    new BlockWrapper(addressBlock, kernel.getConfig().getTTL(), null));
+                    new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
 
             if (!channel.initMiner(addressBlock.getHash())) {
                 log.debug("too many connect for a miner");

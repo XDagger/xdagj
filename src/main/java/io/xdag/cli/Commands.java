@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
+import io.xdag.libp2p.Libp2pNode;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -169,7 +170,7 @@ public class Commands {
             block.signOut(kernel.getWallet().getDefKey().ecKey);
         }
 
-        BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL(), null);
+        BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
 
         // blockWrapper.setTransaction(true);
         kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
@@ -366,6 +367,7 @@ public class Commands {
 
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
+        Map<Libp2pNode,Long> map0 = kernel.getNodeMgr().getActiveNode0();
         StringBuilder stringBuilder = new StringBuilder();
         for (Node node : map.keySet()) {
             stringBuilder
@@ -376,6 +378,17 @@ public class Commands {
                     .append(node.getStat().Inbound.get())
                     .append(" in/")
                     .append(node.getStat().Outbound.get())
+                    .append(" out");
+        }
+        for (Libp2pNode node0 : map0.keySet()) {
+            stringBuilder
+                    .append(node0.getPeerInfo().getAddresses())
+                    .append(" ")
+                    .append(map0.get(node0) == null ? null : FormatDateUtils.format(new Date(map0.get(node0))))
+                    .append(" ")
+                    .append(node0.getStat().Inbound.get())
+                    .append(" in/")
+                    .append(node0.getStat().Outbound.get())
                     .append(" out");
         }
         return stringBuilder.toString();

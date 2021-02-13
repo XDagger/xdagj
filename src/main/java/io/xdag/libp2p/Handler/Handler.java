@@ -93,10 +93,8 @@ public class Handler implements ProtocolBinding<Handler.Xdag05> {
              }
          };
          protected final CompletableFuture<Xdag05> activeFuture = new CompletableFuture<>();
-         private Libp2pChannel libp2pChannel;
 
          public Xdag05(Libp2pChannel libp2pChannel) {
-             this.libp2pChannel = libp2pChannel;
 
              this.blockchain = kernel.getBlockchain();
             this.syncMgr = kernel.getSyncMgr();

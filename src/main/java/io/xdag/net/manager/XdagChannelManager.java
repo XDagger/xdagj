@@ -157,7 +157,7 @@ public class XdagChannelManager {
         return true;
     }
 
-    public void stop() throws InterruptedException {
+    public void stop() {
         log.debug("Channel Manager stop...");
         if (blockDistributeThread != null) {
             // 中断

@@ -33,7 +33,10 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.discovery.PeerDiscoveryAgent;
+import io.xdag.discovery.peer.PeerTable;
 import io.xdag.event.EventProcesser;
+import io.xdag.libp2p.jvmLibp2pNetwork;
 import io.xdag.libp2p.manager.Libp2pChannelManager;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
@@ -76,6 +79,9 @@ public class Kernel {
     protected NetDBManager netDBMgr;
     protected XdagServer p2p;
     protected XdagSync sync;
+    protected jvmLibp2pNetwork jvmLibp2pNetwork;
+    protected PeerDiscoveryAgent peerDiscoveryAgent;
+    protected Libp2pChannelManager libp2pChannelManager;
     protected XdagPow pow;
     protected SyncManager syncMgr;
     /** 初始化一个后续都可以用的handler */
@@ -91,7 +97,6 @@ public class Kernel {
         return libp2pChannelManager;
     }
 
-    protected Libp2pChannelManager libp2pChannelManager;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
     public Kernel(Config config, Wallet wallet) {
@@ -183,7 +188,10 @@ public class Kernel {
         // ====================================
         syncMgr = new SyncManager(this);
         syncMgr.start();
-
+        jvmLibp2pNetwork = new jvmLibp2pNetwork(this);
+        jvmLibp2pNetwork.start();
+        peerDiscoveryAgent = new PeerDiscoveryAgent();
+        peerDiscoveryAgent.start(true);
         // ====================================
         // set up pool miner
         // ====================================

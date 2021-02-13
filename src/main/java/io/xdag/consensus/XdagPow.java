@@ -222,7 +222,7 @@ public class XdagPow implements PoW, Runnable {
         kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
         awardManager.payAndaddNewAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
                 generateBlock.getTimestamp());
-        BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL(), null);
+        BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL());
         broadcaster.broadcast(bw);
         newBlock();
     }

@@ -44,6 +44,12 @@ public class BlockWrapper implements Cloneable {
         this.ttl = ttl;
         this.remoteNode = remoteNode;
     }
+
+    public BlockWrapper(Block block, int ttl) {
+        this.block = block;
+        this.ttl = ttl;
+    }
+
     public BlockWrapper(Block block, int ttl, Libp2pNode libp2pNode) {
         this.block = block;
         this.ttl = ttl;

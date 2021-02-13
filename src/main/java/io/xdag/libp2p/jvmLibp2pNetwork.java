@@ -7,7 +7,6 @@ import io.libp2p.core.dsl.HostBuilder;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.discovery.MDnsDiscovery;
 import io.xdag.Kernel;
-import io.xdag.discovery.PeerDiscoveryAgent;
 import io.xdag.libp2p.Handler.Handler;
 import io.xdag.libp2p.Utils.IpUtil;
 import io.xdag.libp2p.manager.Libp2pPeerManager;
@@ -31,10 +30,10 @@ public class jvmLibp2pNetwork {
     Handler handler;
     //todo:随机数端口改成kernel定义
     Random random=new Random();
-    int port=random.nextInt(55536)+10000;
+    int port ;
 
     public jvmLibp2pNetwork(Kernel kernel) {
-
+        port = kernel.getConfig().getLibp2pport();
         InetAddress privateAddress = IpUtil.getLocalAddress();
         scheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setDaemon(true).setNameFormat("libp2p-%d").build());

@@ -17,21 +17,16 @@ import static io.xdag.discovery.Utils.Preconditions.checkGuard;
 public class Endpoint {
     private final String host;
     private final int udpPort;
-    private final OptionalInt tcpPort;
+    private final int tcpPort;
 
-    public Endpoint(final String host, final int udpPort, final OptionalInt tcpPort) {
+    public Endpoint(final String host, final int udpPort, final int tcpPort) {
+        this.host = host;
+        this.udpPort = udpPort;
+        this.tcpPort = tcpPort;
         checkArgument(
                 host != null && InetAddresses.isInetAddress(host), "host requires a valid IP address");
         checkArgument(
                 NetworkUtility.isValidPort(udpPort), "UDP port requires a value between 1 and 65535");
-        tcpPort.ifPresent(
-                p ->
-                        checkArgument(
-                                NetworkUtility.isValidPort(p), "TCP port requires a value between 1 and 65535"));
-
-        this.host = host;
-        this.udpPort = udpPort;
-        this.tcpPort = tcpPort;
     }
 
     public String getHost() {
@@ -42,7 +37,7 @@ public class Endpoint {
         return udpPort;
     }
 
-    public OptionalInt getTcpPort() {
+    public int getTcpPort() {
         return tcpPort;
     }
 
@@ -60,7 +55,7 @@ public class Endpoint {
         final Endpoint other = (Endpoint) obj;
         return host.equals(other.host)
                 && this.udpPort == other.udpPort
-                && (this.tcpPort.equals(other.tcpPort));
+                && (this.tcpPort==(other.tcpPort));
     }
 
     @Override
@@ -73,7 +68,6 @@ public class Endpoint {
         final StringBuilder sb = new StringBuilder("Endpoint{");
         sb.append("host='").append(host).append('\'');
         sb.append(", udpPort=").append(udpPort);
-        tcpPort.ifPresent(p -> sb.append(", getTcpPort=").append(p));
         sb.append('}');
         return sb.toString();
     }
@@ -98,11 +92,8 @@ public class Endpoint {
     public void encodeInline(final RLPOutput out) {
         out.writeInetAddress(InetAddresses.forString(host));
         out.writeUnsignedShort(udpPort);
-        if (tcpPort.isPresent()) {
-            out.writeUnsignedShort(tcpPort.getAsInt());
-        } else {
-            out.writeNull();
-        }
+        out.writeUnsignedShort(tcpPort);
+
     }
 
     /**
@@ -125,12 +116,12 @@ public class Endpoint {
 
         // Some mainnet packets have been shown to either not have the TCP port field at all,
         // or to have an RLP NULL value for it.
-        OptionalInt tcpPort = OptionalInt.empty();
+        int tcpPort = 0;
         if (fieldCount == 3) {
             if (in.nextIsNull()) {
                 in.skipNext();
             } else {
-                tcpPort = OptionalInt.of(in.readUnsignedShort());
+                tcpPort = in.readUnsignedShort();
             }
         }
         return new Endpoint(addr.getHostAddress(), udpPort, tcpPort);

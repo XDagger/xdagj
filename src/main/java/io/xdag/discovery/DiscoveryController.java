@@ -1,7 +1,6 @@
 package io.xdag.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.libp2p.discovery.mdns.impl.DNSRecord;
 import io.vertx.core.Vertx;
 import io.vertx.core.datagram.DatagramPacket;
 import io.vertx.core.datagram.DatagramSocket;
@@ -19,7 +18,6 @@ import io.xdag.discovery.peer.Peer;
 import io.xdag.discovery.peer.PeerTable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
-import org.bouncycastle.util.IPAddress;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -71,7 +69,7 @@ public class DiscoveryController {
             mynode = myself.getEndpoint();
         }else {
             port = 10004;
-            OptionalInt tcp = OptionalInt.of(10005);
+            int tcp = 1005;
             keyPair= SECP256K1.KeyPair.generate();
             myid = keyPair.getPublicKey().getEncodedBytes();
             mynode = new Endpoint(host, port, tcp);
@@ -230,10 +228,10 @@ public class DiscoveryController {
             // We allow exceptions to bubble up, as they'll be picked up by the exception handler.
             final Packet packet = Packet.decode(datagram.data());
 
-            OptionalInt fromPort = OptionalInt.empty();
+            int fromPort = 0;
             if (packet.getPacketData(PingPacketData.class).isPresent()) {
                 final PingPacketData ping = packet.getPacketData(PingPacketData.class).orElseGet(null);
-                if (ping != null && ping.getFrom() != null && ping.getFrom().getTcpPort().isPresent()) {
+                if (ping != null && ping.getFrom() != null ) {
                     fromPort = ping.getFrom().getTcpPort();
                 }
             }
@@ -477,6 +475,9 @@ public class DiscoveryController {
         interaction.cancelTimers();
         inflightInteractions.remove(packet.getNodeId());
         return Optional.of(interaction);
+    }
+    public PeerTable getPeerTable(){
+        return peerTable;
     }
 }
 

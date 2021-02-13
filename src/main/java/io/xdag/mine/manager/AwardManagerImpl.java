@@ -449,7 +449,7 @@ public class AwardManagerImpl implements AwardManager {
         }
         log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
         // todo 需要验证还是直接connect
-        kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5, null));
+        kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
         // kernel.getBlockchain().tryToConnect(block);
     }
 

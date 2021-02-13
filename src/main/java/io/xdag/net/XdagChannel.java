@@ -185,7 +185,7 @@ public class XdagChannel {
         return xdag;
     }
 
-    public void dropConnection() throws InterruptedException {
+    public void dropConnection() {
         xdag.dropConnection();
     }
 }

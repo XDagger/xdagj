@@ -9,7 +9,6 @@ import io.xdag.discovery.Utils.bytes.BytesValue;
 import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,12 +18,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DefaultPeer extends DefaultPeerId implements Peer {
 
     public static final int PEER_ID_SIZE = 64;
-
-    public static final int DEFAULT_PORT = 30303;
+    //todo:修改
+    public static final int DEFAULT_PORT = 14444;
     private static final Pattern DISCPORT_QUERY_STRING_REGEX =
             Pattern.compile("discport=([0-9]{1,5})");
 
-    private final Endpoint endpoint;
+    Endpoint endpoint = null ;
+    BytesValue id;
+    String host;
+    int udpPort;
+    int tcpPort;
 
     /**
      * Creates a {@link DefaultPeer} instance from a String representation of an enode URL.
@@ -71,7 +74,7 @@ public class DefaultPeer extends DefaultPeerId implements Peer {
             udpPort = extractUdpPortFromQuery(uri.getQuery()).orElse(tcpPort);
         }
 
-        final Endpoint endpoint = new Endpoint(host, udpPort, OptionalInt.of(tcpPort));
+        final Endpoint endpoint = new Endpoint(host, udpPort, tcpPort);
         return new DefaultPeer(id, endpoint);
     }
 
@@ -84,7 +87,11 @@ public class DefaultPeer extends DefaultPeerId implements Peer {
      * @param tcpPort The TCP port.
      */
     public DefaultPeer(final BytesValue id, final String host, final int udpPort, final int tcpPort) {
-        this(id, host, udpPort, OptionalInt.of(tcpPort));
+        super(id);
+        this.id = id;
+        this.host = host;
+        this.udpPort = udpPort;
+        this.tcpPort = tcpPort;
     }
 
     /**
@@ -95,7 +102,7 @@ public class DefaultPeer extends DefaultPeerId implements Peer {
      * @param udpPort UDP port.
      */
     public DefaultPeer(final BytesValue id, final String host, final int udpPort) {
-        this(id, host, udpPort, OptionalInt.empty());
+        this(id, host, udpPort, DEFAULT_PORT);
     }
 
     /**
@@ -106,10 +113,10 @@ public class DefaultPeer extends DefaultPeerId implements Peer {
      * @param udpPort the port number on which to communicate UDP traffic with the peer.
      * @param tcpPort the port number on which to communicate TCP traffic with the peer.
      */
-    public DefaultPeer(
-            final BytesValue id, final String host, final int udpPort, final OptionalInt tcpPort) {
-        this(id, new Endpoint(host, udpPort,tcpPort));
-    }
+//    public DefaultPeer(
+//            final BytesValue id, final String host, final int udpPort, final int tcpPort) {
+//        this(id, new Endpoint(host, udpPort,tcpPort));
+//    }
 
     /**
      * Creates a {@link DefaultPeer} instance from its ID and its {@link Endpoint}.
@@ -182,7 +189,6 @@ public class DefaultPeer extends DefaultPeerId implements Peer {
     public String toString() {
         final StringBuilder sb = new StringBuilder("DefaultPeer{");
         sb.append("id=").append(id);
-        sb.append(", endpoint=").append(endpoint);
         sb.append('}');
         return sb.toString();
     }
