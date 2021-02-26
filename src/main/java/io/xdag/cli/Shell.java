@@ -358,6 +358,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 "  -? --help                        Show help",
                 "  -l --list                 list connections",
                 "  -c --connect=IP:PORT     connect to this host",
+                "  -p --plibp2p=IP:PORT      connect to this host by libp2p",
         };
         try {
             Options opt = parseOptions(usage, input.args());
@@ -371,6 +372,17 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if(opt.isSet("connect")) {
                 println("connect to :" + opt.get("connect"));
                 Matcher m = p.matcher(opt.get("connect"));
+                if (m.matches()) {
+                    String host = m.group(1);
+                    int port = Integer.parseInt(m.group(2));
+                    commands.connect(host, port);
+                } else {
+                    println("Node ip:port Error");
+                }
+            }
+            if(opt.isSet("plibp2p")){
+                println("connect to :" + opt.get("plibp2p"));
+                Matcher m = p.matcher(opt.get("plibp2p"));
                 if (m.matches()) {
                     String host = m.group(1);
                     int port = Integer.parseInt(m.group(2));

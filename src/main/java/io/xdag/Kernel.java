@@ -34,10 +34,7 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.discovery.PeerDiscoveryAgent;
-import io.xdag.discovery.peer.PeerTable;
 import io.xdag.event.EventProcesser;
-import io.xdag.libp2p.jvmLibp2pNetwork;
-import io.xdag.libp2p.manager.Libp2pChannelManager;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
@@ -53,6 +50,8 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
+import io.xdag.new_libp2p.Libp2pNetwork;
+import io.xdag.new_libp2p.Manager.ChannelManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
@@ -60,7 +59,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 
 @Getter
 @Setter
@@ -79,9 +78,9 @@ public class Kernel {
     protected NetDBManager netDBMgr;
     protected XdagServer p2p;
     protected XdagSync sync;
-    protected jvmLibp2pNetwork jvmLibp2pNetwork;
+    protected Libp2pNetwork libp2pNetwork;
     protected PeerDiscoveryAgent peerDiscoveryAgent;
-    protected Libp2pChannelManager libp2pChannelManager;
+    protected ChannelManager channelManager;
     protected XdagPow pow;
     protected SyncManager syncMgr;
     /** 初始化一个后续都可以用的handler */
@@ -93,8 +92,8 @@ public class Kernel {
     protected MinerServer minerServer;
     protected XdagState xdagState;
 
-    public Libp2pChannelManager getLibp2pChannelManager() {
-        return libp2pChannelManager;
+    public ChannelManager getLibp2pChannelManager() {
+        return channelManager;
     }
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
@@ -167,6 +166,9 @@ public class Kernel {
         // ====================================
         // set up client
         // ====================================
+        libp2pNetwork = new Libp2pNetwork(this);
+        libp2pNetwork.start();
+        libp2pNetwork.connect1("/ip4/127.0.0.1/tcp/11111/ipfs/16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj");
         p2p = new XdagServer(this);
         p2p.start();
         client = new XdagClient(config);
@@ -188,9 +190,8 @@ public class Kernel {
         // ====================================
         syncMgr = new SyncManager(this);
         syncMgr.start();
-        jvmLibp2pNetwork = new jvmLibp2pNetwork(this);
-        jvmLibp2pNetwork.start();
-        peerDiscoveryAgent = new PeerDiscoveryAgent();
+
+        peerDiscoveryAgent = new PeerDiscoveryAgent(true);
         peerDiscoveryAgent.start(true);
         // ====================================
         // set up pool miner

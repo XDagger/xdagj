@@ -256,11 +256,13 @@
 			<artifactId>vertx-core</artifactId>
 			<version>4.0.0</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.hedera.hashgraph/ethereumj-core -->
 		<dependency>
-			<groupId>org.ethereum</groupId>
+			<groupId>com.hedera.hashgraph</groupId>
 			<artifactId>ethereumj-core</artifactId>
-			<version>1.7.2-RELEASE</version>
+			<version>1.12.0-v0.5.0</version>
 		</dependency>
+
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk15on</artifactId>
@@ -275,14 +277,14 @@
 		<dependency>
 			<groupId>io.libp2p</groupId>
 			<artifactId>jvm-libp2p-minimal</artifactId>
-			<version>0.5.0-RELEASE</version>
+			<version>0.7.0-RELEASE</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib</artifactId>
-			<version>1.3.61</version>
+			<version>1.4.0</version>
 		</dependency>
-		<!-- Logging framework -->
+
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
@@ -365,10 +367,15 @@
 			<version>4.1.53.Final</version>
 		</dependency>
 
+<!--		<dependency>-->
+<!--			<groupId>org.rocksdb</groupId>-->
+<!--			<artifactId>rocksdbjni</artifactId>-->
+<!--			<version>6.15.2</version>-->
+<!--		</dependency>-->
 		<dependency>
-			<groupId>org.rocksdb</groupId>
-			<artifactId>rocksdbjni</artifactId>
-			<version>6.15.2</version>
+			<groupId>com.data-artisans</groupId>
+			<artifactId>frocksdbjni</artifactId>
+			<version>5.17.2-artisans-2.0</version>
 		</dependency>
 
 		<dependency>
@@ -388,7 +395,11 @@
 			<artifactId>hutool-all</artifactId>
 			<version>5.4.4</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.apache.tuweni</groupId>
+			<artifactId>tuweni-bytes</artifactId>
+			<version>1.1.0</version>
+		</dependency>
 	</dependencies>
 
 	<profiles>

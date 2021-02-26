@@ -45,8 +45,8 @@ public class Config {
     public static final String WALLET_KEY_FILE = Config.MAINNET?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
     
     public final int MAX_CHANNELS = 1024;
-    private final int connectionTimeout = 10;
-    private final int channelReadTimeout = 10;
+    private final int connectionTimeout = 10000;
+    private final int channelReadTimeout = 10000;
     /** 同一个channel 某一个任务种最多允许发share的次数 */
     private final int maxShareCountPerChannel = 20;
     private final int storeMaxOpenFiles = 1024;
@@ -231,7 +231,7 @@ public class Config {
 
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
-        libp2pport = setting.getInt("libp2pport");
+//        libp2pport = setting.getInt("libp2pport");
         poolTag = setting.getOrDefault("poolTag", "XdagJ");
 
         poolRation = setting.getInt("poolRation");

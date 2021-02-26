@@ -23,7 +23,7 @@
  */
 package io.xdag.core;
 
-import io.xdag.libp2p.Libp2pNode;
+import io.xdag.new_libp2p.peer.Libp2pNode;
 import io.xdag.net.node.Node;
 import lombok.Getter;
 import lombok.Setter;

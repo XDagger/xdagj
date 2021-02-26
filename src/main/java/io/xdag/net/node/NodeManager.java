@@ -24,13 +24,7 @@
 package io.xdag.net.node;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,20 +32,22 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 import javax.annotation.Nonnull;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import io.libp2p.core.multiformats.Multiaddr;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.discovery.PeerDiscoveryAgent;
 import io.xdag.discovery.peer.DiscoveryPeer;
-import io.xdag.libp2p.Libp2pChannel;
-import io.xdag.libp2p.Libp2pNode;
-import io.xdag.libp2p.manager.Libp2pChannelManager;
+import io.xdag.new_libp2p.Libp2pChannel;
+import io.xdag.new_libp2p.Libp2pNetwork;
+import io.xdag.new_libp2p.Manager.ChannelManager;
+import io.xdag.new_libp2p.peer.Libp2pNode;
+
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagClient;
 import io.xdag.net.handler.XdagChannelInitializer;
@@ -74,7 +70,6 @@ public class NodeManager {
     private static final int LRU_CACHE_SIZE = 1024;
     private static final long RECONNECT_WAIT = 60L * 1000L;
     private final Deque<Node> deque = new ConcurrentLinkedDeque<>();
-    private final Deque<Libp2pNode> deque0 = new ConcurrentLinkedDeque<>();
     /** 记录对应节点节点最后一次连接的时间 */
     private final Cache<Node, Long> lastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
     /** 定时处理 */
@@ -88,8 +83,10 @@ public class NodeManager {
     private volatile boolean isRunning;
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
-    private final Libp2pChannelManager libp2pChannelManager;
+    private io.xdag.new_libp2p.Manager.ChannelManager channelManager;
     private PeerDiscoveryAgent peerDiscoveryAgent;
+    Libp2pNetwork libp2pNetwork;
+    private final Set<Node> peers = new HashSet<>();
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
         this.client = kernel.getClient();
@@ -99,7 +96,8 @@ public class NodeManager {
         this.config = kernel.getConfig();
         this.netDBManager = kernel.getNetDBMgr();
         this.peerDiscoveryAgent = kernel.getPeerDiscoveryAgent();
-        this.libp2pChannelManager = kernel.getLibp2pChannelManager();
+        this.channelManager = kernel.getLibp2pChannelManager();
+        libp2pNetwork = kernel.getLibp2pNetwork();
     }
 
     /** start the node manager */
@@ -152,12 +150,7 @@ public class NodeManager {
         }
     }
 
-    public void addLibp2pNode(Libp2pNode libp2pNode){
-        if (deque0.contains(libp2pNode)) {
-            return;
-        }
-        deque0.addFirst(libp2pNode);
-    }
+
 
     /** from net update seed nodes */
     protected void doFetch() {
@@ -170,7 +163,7 @@ public class NodeManager {
         // 从netdb获取新节点
         addNodes(getSeedNodes(netDBManager.getNetDB()));
         Collection<DiscoveryPeer> discoveryPeers = peerDiscoveryAgent.getDiscoveryController().getPeerTable().getAllPeers();
-//        List<Node> libp2pNodes = discoveryPeers.stream().map(a-> new Node(a.getHost(),a.getTcpPort()));
+        discoveryPeers.stream().map(a-> new Node(a.getHost(),30000)).forEach(this::addNode);
 
         log.debug("node size:" + deque.size());
     }
@@ -182,7 +175,7 @@ public class NodeManager {
             return null;
         }
     }
-
+    //todo:明天测试 逻辑思路
     public void doConnect() {
 
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
@@ -190,18 +183,25 @@ public class NodeManager {
         while ((node = deque.pollFirst()) != null && channelMgr.size() < config.getMAX_CHANNELS()) {
             Long lastCon = lastConnect.getIfPresent(node);
             long now = System.currentTimeMillis();
+//            if(!peers.contains(node)){
+//                Multiaddr address = Multiaddr.fromString(node.getHost()+node.getPort());
+//                libp2pNetwork.connect1(address);
+//                peers.add(node);
+//            }
+
 
             if (!client.getNode().equals(node)
                     && !(Objects.equals(node.getHost(), client.getNode().getHost())
                             && node.getPort() == client.getNode().getPort())
                     && !activeAddress.contains(node.getAddress())
-                    && (lastCon == null || lastCon + RECONNECT_WAIT < now)) {
+                    && (lastCon == null || lastCon + RECONNECT_WAIT < now )) {
                 XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, node);
                 client.connect(node.getHost(), node.getPort(), initializer);
                 lastConnect.put(node, now);
                 break;
             }
         }
+
     }
 
     public void doConnect(String ip, int port) {
@@ -228,7 +228,7 @@ public class NodeManager {
     }
     public Map<Libp2pNode, Long> getActiveNode0() {
         Map<Libp2pNode, Long> nodes = new HashMap<>();
-        List<Libp2pChannel> activeAddress = libp2pChannelManager.getactiveChannel();
+        List<Libp2pChannel> activeAddress = channelManager.getactiveChannel();
         for (Libp2pChannel address : activeAddress) {
             Libp2pNode node = address.getNode();
             Long time = lastConnect.getIfPresent(node);

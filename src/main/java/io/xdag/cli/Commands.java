@@ -29,7 +29,7 @@ import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
-import io.xdag.libp2p.Libp2pNode;
+import io.xdag.new_libp2p.peer.Libp2pNode;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -220,6 +220,11 @@ public class Commands {
     public void connect(String server, int port) {
         kernel.getNodeMgr().doConnect(server, port);
     }
+
+    public void connectbylibp2p(String server,int port){
+
+    }
+
 
     /**
      * Query block by hash
@@ -446,4 +451,5 @@ public class Commands {
             }
         }
     }
+
 }
