@@ -42,6 +42,7 @@ public class BlockHandler extends ByteToMessageCodec<XdagBlock> {
         return (byte) (type >> (n << 2) & 0xf);
     }
     /** T 加解密的过程outbound应该先用上一次结束后的值 发完才加 */
+    /**出去的最后一道*/
     @Override
     protected void encode(
             ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
@@ -52,10 +53,10 @@ public class BlockHandler extends ByteToMessageCodec<XdagBlock> {
         out.writeBytes(encryptData);
         libp2pChannel.getNode().getStat().Outbound.add();
     }
-
+    /**进来的第一道*/
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf in, List<Object> out) throws Exception {
-        log.debug("XdagBlockHandler readableBytes " + in.readableBytes() + " bytes");
+        log.debug("DragBlockHandler readableBytes " + in.readableBytes() + " bytes");
         if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
             log.trace("Decoding packet (" + in.readableBytes() + " bytes)");
             byte[] encryptData = new byte[512];

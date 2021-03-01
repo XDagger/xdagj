@@ -49,9 +49,11 @@ public class Bootstrap {
     }
     
     public static void main(String[] args) throws Exception {
+        log.debug("Start main");
+        System.out.println(args.length);
         Config config = new Config();
         config.changePara(config, args);
-        config.setDir();
+        config.setDir(args[0]);
         logPoolInfo(config);
 
         // init keys
@@ -73,12 +75,13 @@ public class Bootstrap {
                 System.exit(0);
             }
         }
-        Kernel kernel = new Kernel(config, wallet);
+        Kernel kernel = new Kernel(config, wallet, args[1]);
         // default start kernel
 //        kernel.testStart();
 
         // start telnet server
-        TelnetServer telnetServer = new TelnetServer(config.getTelnetIp(), config.getTelnetPort(), kernel);
+//        TelnetServer telnetServer = new TelnetServer(config.getTelnetIp(), config.getTelnetPort(), kernel);
+        TelnetServer telnetServer = new TelnetServer(config.getTelnetIp(), Integer.parseInt(args[2]), kernel);
         telnetServer.start();
     }
 }

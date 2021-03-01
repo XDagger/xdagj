@@ -1,64 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="warn" shutdownHook="disable">
 
-  <properties>
-    <property name="Logs_Dir">./logs</property>
-    <property name="Info_File_Name">xdag_info</property>
-    <property name="Error_File_Name">xdag_error</property>
-  </properties>
+    <properties>
+        <property name="Logs_Dir">./logs</property>
+        <property name="Info_File_Name">xdag_info</property>
+        <property name="Error_File_Name">xdag_error</property>
+    </properties>
 
-  <Appenders>
-
-
-    <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-    </Console>
-
-    <File fileName="${Logs_Dir}/${Error_File_Name}.log" name="Error">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-    </File>
+    <Appenders>
 
 
-    <RollingRandomAccessFile name="Info"
-      fileName="${Logs_Dir}/${Info_File_Name}.log"
-      filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">
-      <PatternLayout
-        pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-      <Policies>
-        <TimeBasedTriggeringPolicy interval="1"/>
-      </Policies>
-      <DefaultRolloverStrategy max="20"/>
-    </RollingRandomAccessFile>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <File fileName="${Logs_Dir}/${Error_File_Name}.log" name="Error">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>
 
 
-  </Appenders>
+        <RollingRandomAccessFile name="Info"
+                                 fileName="${Logs_Dir}/${Info_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingRandomAccessFile>
 
 
-  <Loggers>
-    <!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
-    <!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
-    <!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
-    <!--    <logger name="io.xdag.consensus.SyncManager" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.net.handler" level="INFO"/>-->
-    <!--        <logger name="io.xdag.core.Block" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
+    </Appenders>
 
 
-    <logger name="io.xdag" level="INFO">
-      <AppenderRef ref="Info"/>
-    </logger>
+    <Loggers>
+        <!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
+        <!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
+        <!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
+        <!--    <logger name="io.xdag.consensus.SyncManager" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.net.handler" level="INFO"/>-->
+        <!--        <logger name="io.xdag.core.Block" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
 
-<!--    <logger name="io.xdag.net" level="DEBUG">-->
-<!--      <AppenderRef ref="Console"/>-->
-<!--    </logger>-->
+        <logger name="io.xdag" level="WARN">
+            <AppenderRef ref="Error"/>
+        </logger>
+
+        <logger name="io.xdag" level="INFO">
+            <AppenderRef ref="Info"/>
+        </logger>
 
 
-    <Root level="INFO">
-    </Root>
+        <Root level="INFO">
+        </Root>
 
-  </Loggers>
+    </Loggers>
 </Configuration>

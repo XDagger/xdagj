@@ -351,14 +351,14 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
     }
 
     private void processNet(CommandInput input) {
-        Pattern p = Pattern.compile("^\\s*(.*?):(\\d+)\\s*$");
+        Pattern p = Pattern.compile("^\\s*(.*?):(\\d+)\\s*(.*?)$");
         final String[] usage = {
                 "net - run transport layer command, try 'net --help'",
                 "Usage: net [OPTIONS]",
                 "  -? --help                        Show help",
                 "  -l --list                 list connections",
                 "  -c --connect=IP:PORT     connect to this host",
-                "  -p --plibp2p=IP:PORT      connect to this host by libp2p",
+                "  -p --plibp2p=IP:PORT:ID      connect to this host by libp2p",
         };
         try {
             Options opt = parseOptions(usage, input.args());
@@ -386,7 +386,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 if (m.matches()) {
                     String host = m.group(1);
                     int port = Integer.parseInt(m.group(2));
-                    commands.connect(host, port);
+                    String ip = m.group(3);
+                    commands.connectbylibp2p(host, port,ip);
                 } else {
                     println("Node ip:port Error");
                 }

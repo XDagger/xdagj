@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class MessageCodes extends MessageToMessageCodec<Message, Message> {
-
+//修改这部分
 
     public MessageCodes() {
     }
@@ -46,14 +46,18 @@ public class MessageCodes extends MessageToMessageCodec<Message, Message> {
         return new XdagBlock(message.getEncoded());
     }
 
-    @Override
-    protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
-        out.add(msg);
-    }
-
+    /**出去的第二道*/
     @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         XdagBlock xdagblock = convertMessage(msg);
         out.add(xdagblock);
     }
+    /**进来的第二道*/
+    @Override
+    protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
+        log.info("decode");
+        out.add(msg);
+    }
+
+
 }

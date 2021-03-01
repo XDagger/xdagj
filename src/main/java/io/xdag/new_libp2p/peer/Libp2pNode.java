@@ -17,10 +17,8 @@ public class Libp2pNode {
     @Getter
     private NodeStat stat = new NodeStat();
 
-    public Libp2pNode(){
 
-    }
-
+    //复制输出控制台用的。。。
     public Libp2pNode(PeerId peerId) {
         this.peerId = peerId;
     }

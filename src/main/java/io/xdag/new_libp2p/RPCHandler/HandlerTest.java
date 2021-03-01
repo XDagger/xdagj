@@ -1,6 +1,8 @@
 package io.xdag.new_libp2p.RPCHandler;
 
+import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
+import io.libp2p.core.Stream;
 import io.libp2p.core.multistream.ProtocolBinding;
 import io.libp2p.core.multistream.ProtocolDescriptor;
 import io.netty.buffer.ByteBuf;
@@ -9,6 +11,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import io.xdag.new_libp2p.peer.LibP2PNodeId;
 import io.xdag.new_libp2p.peer.NodeId;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -40,6 +43,12 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
         System.out.println("initChannel212121");
+        final Connection connection = ((Stream) p2PChannel).getConnection();
+        final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
+        if(!p2PChannel.isInitiator()){
+            log.info("p2PChannel.isInitiator() is not ready");
+        }
+        Controller controller = new Controller(nodeId, p2PChannel);
         p2PChannel.pushHandler(controller);
         return controller.activeFuture;
     }
@@ -61,6 +70,7 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
+            System.out.println("channelActive");
             String msg = "A message";
             byte[] bytes = msg.getBytes(CharsetUtil.UTF_8);
             ByteBuf buf = Unpooled.wrappedBuffer(bytes);

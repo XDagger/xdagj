@@ -226,11 +226,11 @@ public class NodeManager {
         }
         return nodes;
     }
-    public Map<Libp2pNode, Long> getActiveNode0() {
-        Map<Libp2pNode, Long> nodes = new HashMap<>();
+    public Map<Node, Long> getActiveNode0() {
+        Map<Node, Long> nodes = new HashMap<>();
         List<Libp2pChannel> activeAddress = channelManager.getactiveChannel();
         for (Libp2pChannel address : activeAddress) {
-            Libp2pNode node = address.getNode();
+            Node node = address.getNode();
             Long time = lastConnect.getIfPresent(node);
             nodes.put(node, time);
         }

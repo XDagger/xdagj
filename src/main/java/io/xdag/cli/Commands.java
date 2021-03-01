@@ -218,11 +218,16 @@ public class Commands {
      * Connect to Node
      */
     public void connect(String server, int port) {
+        System.out.println("cxcxcx");
         kernel.getNodeMgr().doConnect(server, port);
     }
 
-    public void connectbylibp2p(String server,int port){
-
+    public void connectbylibp2p(String server,int port,String ip){
+        StringBuilder stringBuilder = new StringBuilder();
+//        network.connect1("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
+        stringBuilder.append("/ip4/").append(server).append("/tcp/").append(port).append("/ipfs/").append(ip.replaceAll(":",""));
+        System.out.println("ip = "+ stringBuilder.toString());
+        kernel.getLibp2pNetwork().dail(stringBuilder.toString());
     }
 
 
@@ -372,7 +377,7 @@ public class Commands {
 
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
-        Map<Libp2pNode,Long> map0 = kernel.getNodeMgr().getActiveNode0();
+        Map<Node,Long> map0 = kernel.getNodeMgr().getActiveNode0();
         StringBuilder stringBuilder = new StringBuilder();
         for (Node node : map.keySet()) {
             stringBuilder
@@ -385,9 +390,11 @@ public class Commands {
                     .append(node.getStat().Outbound.get())
                     .append(" out");
         }
-        for (Libp2pNode node0 : map0.keySet()) {
+        for (Node node0 : map0.keySet()) {
             stringBuilder
-                    .append(node0.getPeerInfo().getAddresses())
+                    .append(node0.getAddress())
+                    .append(" ")
+                    .append("libp2p")
                     .append(" ")
                     .append(map0.get(node0) == null ? null : FormatDateUtils.format(new Date(map0.get(node0))))
                     .append(" ")

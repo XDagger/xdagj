@@ -208,9 +208,9 @@ public class Config {
     }
 
     /** 设置存储的路径 */
-    public void setDir() {
+    public void setDir(String arg) {
         // 配置存储root
-        root = Config.MAINNET ? "./mainnet" : "./testnet";
+        root = Config.MAINNET ? "./mainnet" : "./testnet"+arg;
         storeDir = root + "/rocksdb/xdagdb";
         storeBackupDir = root + "/rocksdb/xdagdb/backupdata";
         whiteListDirTest = root + "/netdb-white-testnet.txt";

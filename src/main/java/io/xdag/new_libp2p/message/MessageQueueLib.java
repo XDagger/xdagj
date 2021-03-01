@@ -31,6 +31,7 @@ public class MessageQueueLib {
         this.channel = channel;
     }
     public void activate(ChannelHandlerContext ctx) {
+        /**处理发送的区块*/
         this.ctx = ctx;
         isRunning = true;
         timerTask = timer.scheduleAtFixedRate(
@@ -46,6 +47,7 @@ public class MessageQueueLib {
                 // 10毫秒执行一次
                 TimeUnit.MILLISECONDS);
     }
+    /**发送区块*/
     private void nudgeQueue() {
         // 1000 / 10 * 5 * 2 = 1000 messages per second
         int n = Math.min(5, size());

@@ -78,6 +78,7 @@ public class Kernel {
     protected NetDBManager netDBMgr;
     protected XdagServer p2p;
     protected XdagSync sync;
+    protected int libp2pNetworkPort;
     protected Libp2pNetwork libp2pNetwork;
     protected PeerDiscoveryAgent peerDiscoveryAgent;
     protected ChannelManager channelManager;
@@ -92,17 +93,15 @@ public class Kernel {
     protected MinerServer minerServer;
     protected XdagState xdagState;
 
-    public ChannelManager getLibp2pChannelManager() {
-        return channelManager;
-    }
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
-    public Kernel(Config config, Wallet wallet) {
+    public Kernel(Config config, Wallet wallet,String arg) {
         this.config = config;
         this.wallet = wallet;
         // 启动的时候就是在初始化
         this.xdagState = XdagState.INIT;
+        this.libp2pNetworkPort = Integer.parseInt(arg);
     }
 
     public Kernel(Config config) {
@@ -166,9 +165,10 @@ public class Kernel {
         // ====================================
         // set up client
         // ====================================
-        libp2pNetwork = new Libp2pNetwork(this);
+        channelManager = new ChannelManager();
+        libp2pNetwork = new Libp2pNetwork(this,libp2pNetworkPort);
         libp2pNetwork.start();
-        libp2pNetwork.connect1("/ip4/127.0.0.1/tcp/11111/ipfs/16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj");
+//        libp2pNetwork.connect1("/ip4/127.0.0.1/tcp/11111/ipfs/16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj");
         p2p = new XdagServer(this);
         p2p.start();
         client = new XdagClient(config);
@@ -191,8 +191,8 @@ public class Kernel {
         syncMgr = new SyncManager(this);
         syncMgr.start();
 
-        peerDiscoveryAgent = new PeerDiscoveryAgent(true);
-        peerDiscoveryAgent.start(true);
+//        peerDiscoveryAgent = new PeerDiscoveryAgent(true);
+//        peerDiscoveryAgent.start(true);
         // ====================================
         // set up pool miner
         // ====================================
@@ -262,5 +262,9 @@ public class Kernel {
 
     public enum Status {
         STOPPED, SYNCING, BLOCK_PRODUCTION_ON, SYNCDONE
+    }
+
+    public ChannelManager getLibp2pChannelManager() {
+        return channelManager;
     }
 }

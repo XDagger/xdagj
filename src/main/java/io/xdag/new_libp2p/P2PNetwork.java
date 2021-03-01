@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 
 public interface P2PNetwork<P> {
 
-    void connect1(String peer);
+    void dail(String peer);
 
     enum State {
         IDLE,

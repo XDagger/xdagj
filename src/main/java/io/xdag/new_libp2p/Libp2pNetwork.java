@@ -15,6 +15,7 @@ import io.netty.handler.logging.LogLevel;
 import io.xdag.Kernel;
 import io.xdag.new_libp2p.Manager.PeerManager;
 import io.xdag.new_libp2p.RPCHandler.Firewall;
+import io.xdag.new_libp2p.RPCHandler.HandlerTest;
 import io.xdag.new_libp2p.RPCHandler.RPCHandler;
 import io.xdag.new_libp2p.peer.LibP2PNodeId;
 import io.xdag.new_libp2p.peer.NodeId;
@@ -47,7 +48,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class Libp2pNetwork implements P2PNetwork<Peer> {
     private RPCHandler rpcHandler;
-    private int listenPort = 11112;
+    private int port;
     private final Host host;
     private final PrivKey privKeyBytes;
     private final NodeId nodeId;
@@ -55,22 +56,24 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
     private PeerManager peerManager;
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
-    public Libp2pNetwork(Kernel kernel){
+    public Libp2pNetwork(Kernel kernel,int port){
+        this.port = port;
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setDaemon(true).setNameFormat("libp2p-%d").build());
         peerManager = new PeerManager(scheduler);
-
-//        String prikey = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b894b5";
-        String prikey = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
-        Bytes pub = Bytes.fromHexString(prikey);
+        HandlerTest handlerTest = new HandlerTest();
+        String prikey0 = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b894b5";
+        String prikey1 = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
+        Bytes pub = Bytes.fromHexString(port == 10000 ? prikey0 : prikey1);
         this.privKeyBytes = KeyKt.unmarshalPrivateKey(pub.toArrayUnsafe());
         this.nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKeyBytes.publicKey()));
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
-                        new InetSocketAddress("127.0.0.1", listenPort),nodeId);
+                        new InetSocketAddress("127.0.0.1", port),nodeId);
         System.out.println("nodeid = "+nodeId);
+//        host = new HostBuilder().protocol(rpcHandler).listen("/ip4/" + privateAddress.getHostAddress() + "/tcp/" + listenPort).build();
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b->{
                     b.getIdentity().setFactory(()-> privKeyBytes);
@@ -80,15 +83,13 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
                     b.getNetwork().listen(advertisedAddr.toString());
                     b.getProtocols().add(rpcHandler);
                     b.getDebug().getBeforeSecureHandler().addLogger(LogLevel.DEBUG, "wire.ciphered");
-                    Firewall firewall = new Firewall(Duration.ofSeconds(30));
+                    Firewall firewall = new Firewall(Duration.ofSeconds(100));
                     b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
                     b.getDebug().getMuxFramesHandler().addLogger(LogLevel.DEBUG, "wire.mux");
-
                     b.getConnectionHandlers().add(peerManager);
                 });
         System.out.println(advertisedAddr.toString());
         System.out.println("host = "+host.getPeerId().toString());
-        System.out.println("nodeid 长度"+nodeId.toString().length());
     }
     @Override
     public SafeFuture<?> start() {
@@ -106,27 +107,15 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
 
 
     @Override
-    public void connect1(String peer) {
+    public void dail(String peer) {
         Multiaddr address = Multiaddr.fromString(peer);
         rpcHandler.dial(host,address);
     }
 
-
-
-
-    /**
-     * Parses a peer address in any of this network's supported formats.
-     *
-     * @param peerAddress the address to parse
-     * @return a {@link PeerAddress} which is supported by {@link #connect(PeerAddress)} for
-     * initiating connections
-     */
     @Override
     public PeerAddress createPeerAddress(final String peerAddress) {
         return MultiaddrPeerAddress.fromAddress(peerAddress);
     }
-
-
 
     @Override
     public boolean isConnected(final PeerAddress peerAddress) {
@@ -181,6 +170,6 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
 
     public String getAddress(){
         return "/ip4/"+privateAddress.getHostAddress()+
-                "/tcp/"+listenPort;
+                "/tcp/"+port;
     }
 }

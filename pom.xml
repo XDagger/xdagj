@@ -75,6 +75,7 @@
 						<index>true</index>
 						<manifestEntries>
 							<Main-Class>io.xdag.Bootstrap</Main-Class>
+							<!--suppress UnresolvedMavenProperty -->
 							<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
 							<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
 							<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
@@ -162,6 +163,7 @@
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
 										<Main-Class>io.xdag.Bootstrap</Main-Class>
+										<!--suppress UnresolvedMavenProperty -->
 										<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
 		                                <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
 		                                <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
@@ -309,7 +311,11 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.11</version>
 		</dependency>
-		
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j-impl</artifactId>
+			<version>2.13.3</version>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
@@ -366,12 +372,6 @@
 			<artifactId>netty-all</artifactId>
 			<version>4.1.53.Final</version>
 		</dependency>
-
-<!--		<dependency>-->
-<!--			<groupId>org.rocksdb</groupId>-->
-<!--			<artifactId>rocksdbjni</artifactId>-->
-<!--			<version>6.15.2</version>-->
-<!--		</dependency>-->
 		<dependency>
 			<groupId>com.data-artisans</groupId>
 			<artifactId>frocksdbjni</artifactId>
@@ -389,6 +389,17 @@
 			<artifactId>jline</artifactId>
 			<version>3.16.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.2</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.2.3</version>
+		</dependency>
 
 		<dependency>
 			<groupId>cn.hutool</groupId>
@@ -399,6 +410,11 @@
 			<groupId>org.apache.tuweni</groupId>
 			<artifactId>tuweni-bytes</artifactId>
 			<version>1.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
 		</dependency>
 	</dependencies>
 

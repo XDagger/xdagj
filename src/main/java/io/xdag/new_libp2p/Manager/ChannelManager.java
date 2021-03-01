@@ -2,10 +2,13 @@ package io.xdag.new_libp2p.Manager;
 
 import io.libp2p.core.PeerId;
 import io.xdag.core.BlockWrapper;
+import io.xdag.net.node.Node;
+import io.xdag.new_libp2p.peer.LibP2PNodeId;
 import io.xdag.new_libp2p.peer.Libp2pNode;
 import io.xdag.new_libp2p.Libp2pChannel;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -14,7 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 public class ChannelManager {
-    protected ConcurrentHashMap<PeerId, Libp2pChannel> channels = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<InetSocketAddress, Libp2pChannel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, Libp2pChannel> activeChannels = new ConcurrentHashMap<>();
     /** Queue with new blocks from other peers */
     private BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
@@ -47,7 +50,7 @@ public class ChannelManager {
 
     public void sendNewBlock(BlockWrapper blockWrapper) {
 
-        Libp2pNode receive = null;
+        Node receive = null;
 
         // 说明是自己产生的
         if (blockWrapper.getRemoteNode() != null) {
@@ -64,10 +67,14 @@ public class ChannelManager {
             channel.sendNewBlock(blockWrapper);
         }
     }
-
+    public void onChannelActive(Libp2pChannel channel, Node node){
+        channel.setActive(true);
+        activeChannels.put(node.getHexId(), channel);
+        System.out.println("activeChannel size:"+ activeChannels.size());
+    }
     public void add(Libp2pChannel ch){
-        log.info("xdag libp2pchannel manager->Channel added: remoteAddress = {}:{}", ch.getNode().getPeerId());
-        channels.put(ch.getNode().getPeerId(), ch);
+        log.info("xdag libp2pchannel manager->Channel added: remoteAddress = {}:{}", ch.getNode().getAddress());
+        channels.put(ch.getNode().getAddress(), ch);
     }
     public void remove(Libp2pChannel ch) {
         log.debug("Channel removed: remoteAddress = {}", ch.getIp());
