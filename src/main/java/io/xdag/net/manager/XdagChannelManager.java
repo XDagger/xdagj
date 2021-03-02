@@ -49,7 +49,6 @@ public class XdagChannelManager {
 
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
-
         // Resending new blocks to network in loop
         this.blockDistributeThread = new Thread(this::newBlocksDistributeLoop, "NewSyncThreadBlocks");
         blockDistributeThread.start();

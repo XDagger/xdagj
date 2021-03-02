@@ -29,7 +29,6 @@ import static org.spongycastle.util.Arrays.reverse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -37,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.xdag.core.*;
 
+import io.xdag.libp2p.Manager.ChannelManager;
 import org.apache.commons.lang3.RandomUtils;
 import org.spongycastle.util.encoders.Hex;
 
@@ -45,14 +45,10 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -78,6 +74,7 @@ public class XdagPow implements PoW, Runnable {
     protected long taskIndex = 0;
     private Kernel kernel;
     private boolean isRunning = false;
+    private ChannelManager channelManager;
 
     public XdagPow(Kernel kernel) {
         this.kernel = kernel;
@@ -87,6 +84,8 @@ public class XdagPow implements PoW, Runnable {
         this.broadcaster = new Broadcaster();
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
+        this.channelManager = kernel.getChannelManager();
+        System.out.println("channelManager = "+channelManager.toString());
     }
 
     @Override
@@ -122,6 +121,7 @@ public class XdagPow implements PoW, Runnable {
     }
 
     public Block generateBlock() {
+
         // 固定sendtime
         Block block = blockchain.createNewBlock(null, null, true);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
@@ -211,6 +211,7 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onTimeout() {
+        System.out.println("onTimeout");
         log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                 Hex.toHexString(generateBlock.getHash()));
         // 发送区块 如果有的话 然后开始生成新区块
@@ -382,7 +383,10 @@ public class XdagPow implements PoW, Runnable {
                 if(bw != null) {
                     log.debug("queue take hash[{}]", Hex.toHexString(bw.getBlock().getHash()));
                     log.debug("queue take block date [{}]", Hex.toHexString(bw.getBlock().getHash()));
+                    System.out.println("sendNewBlock true");
                     channelMgr.sendNewBlock(bw);
+                    channelManager.sendNewBlock(bw);
+
                 }
             }
         }

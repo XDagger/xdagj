@@ -50,8 +50,8 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
-import io.xdag.new_libp2p.Libp2pNetwork;
-import io.xdag.new_libp2p.Manager.ChannelManager;
+import io.xdag.libp2p.Libp2pNetwork;
+import io.xdag.libp2p.Manager.ChannelManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
@@ -101,7 +101,6 @@ public class Kernel {
         this.wallet = wallet;
         // 启动的时候就是在初始化
         this.xdagState = XdagState.INIT;
-        this.libp2pNetworkPort = Integer.parseInt(arg);
     }
 
     public Kernel(Config config) {
@@ -166,9 +165,9 @@ public class Kernel {
         // set up client
         // ====================================
         channelManager = new ChannelManager();
-        libp2pNetwork = new Libp2pNetwork(this,libp2pNetworkPort);
+        libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
-//        libp2pNetwork.connect1("/ip4/127.0.0.1/tcp/11111/ipfs/16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj");
+
         p2p = new XdagServer(this);
         p2p.start();
         client = new XdagClient(config);

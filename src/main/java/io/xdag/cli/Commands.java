@@ -29,7 +29,6 @@ import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
-import io.xdag.new_libp2p.peer.Libp2pNode;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;

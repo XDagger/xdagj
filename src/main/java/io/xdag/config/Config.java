@@ -62,7 +62,7 @@ public class Config {
     private String poolIp;
     /** 矿池的端口 */
     private int poolPort;
-    private int libp2pport;
+    private int libp2pPort;
     /** Pool Tag */
     private String poolTag;
     /** 一个矿池最多允许接入的矿工数量 */
@@ -231,7 +231,8 @@ public class Config {
 
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
-//        libp2pport = setting.getInt("libp2pport");
+
+        libp2pPort = setting.getInt("libp2pPort");
         poolTag = setting.getOrDefault("poolTag", "XdagJ");
 
         poolRation = setting.getInt("poolRation");

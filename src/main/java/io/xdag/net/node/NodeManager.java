@@ -38,15 +38,12 @@ import javax.annotation.Nonnull;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import io.libp2p.core.multiformats.Multiaddr;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.discovery.PeerDiscoveryAgent;
 import io.xdag.discovery.peer.DiscoveryPeer;
-import io.xdag.new_libp2p.Libp2pChannel;
-import io.xdag.new_libp2p.Libp2pNetwork;
-import io.xdag.new_libp2p.Manager.ChannelManager;
-import io.xdag.new_libp2p.peer.Libp2pNode;
+import io.xdag.libp2p.Libp2pChannel;
+import io.xdag.libp2p.Libp2pNetwork;
 
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagClient;
@@ -83,7 +80,7 @@ public class NodeManager {
     private volatile boolean isRunning;
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
-    private io.xdag.new_libp2p.Manager.ChannelManager channelManager;
+    private io.xdag.libp2p.Manager.ChannelManager channelManager;
     private PeerDiscoveryAgent peerDiscoveryAgent;
     Libp2pNetwork libp2pNetwork;
     private final Set<Node> peers = new HashSet<>();

@@ -29,8 +29,6 @@ import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigInteger;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,7 +37,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import io.xdag.core.*;
 
-import org.apache.commons.collections4.QueueUtils;
+import io.xdag.libp2p.Libp2pChannel;
+import io.xdag.libp2p.Manager.ChannelManager;
 import org.spongycastle.util.encoders.Hex;
 
 import com.google.common.collect.Queues;
@@ -65,11 +64,13 @@ public class SyncManager {
     private AtomicLong importIdleTime = new AtomicLong();
     private boolean syncDone = false;
     private XdagChannelManager channelMgr;
+    private ChannelManager channelManager;
 
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
+        this.channelManager = kernel.getChannelManager();
     }
 
     /** Queue with validated blocks to be added to the blockchain */
@@ -139,6 +140,12 @@ public class SyncManager {
                     for (XdagChannel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
                             channel.getXdag().sendGetBlock(result.getHashLow());
+
+                        }
+                    }
+                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
+                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
+                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
                         }
                     }
                 }
@@ -261,6 +268,7 @@ public class SyncManager {
 
     public void distributeBlock(BlockWrapper blockWrapper) {
         channelMgr.onNewForeignBlock(blockWrapper);
+        channelManager.onNewForeignBlock(blockWrapper);
     }
 
 }
