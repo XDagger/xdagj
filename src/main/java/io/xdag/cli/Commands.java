@@ -217,15 +217,16 @@ public class Commands {
      * Connect to Node
      */
     public void connect(String server, int port) {
-        System.out.println("cxcxcx");
+        System.out.println("connect by netty ");
+        System.out.println("ip port = "+server +" "+ port);
         kernel.getNodeMgr().doConnect(server, port);
     }
 
     public void connectbylibp2p(String server,int port,String ip){
         StringBuilder stringBuilder = new StringBuilder();
-//        network.connect1("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
+//       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
         stringBuilder.append("/ip4/").append(server).append("/tcp/").append(port).append("/ipfs/").append(ip.replaceAll(":",""));
-        System.out.println("ip = "+ stringBuilder.toString());
+        System.out.println("connect to the ip = "+ stringBuilder.toString());
         kernel.getLibp2pNetwork().dail(stringBuilder.toString());
     }
 

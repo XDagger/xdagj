@@ -30,8 +30,8 @@ public class ChannelManager {
         while (!Thread.currentThread().isInterrupted()) {
             BlockWrapper wrapper = null;
             try {
-                System.out.println("newBlocksDistributeLoop");
-                System.out.println("no problem..");
+//                System.out.println("newBlocksDistributeLoop");
+//                System.out.println("no problem..");
                 wrapper = newForeignBlocks.take();
                 System.out.println("wrapper = "+wrapper.getBlock().getHash().toString());
                 sendNewBlock(wrapper);

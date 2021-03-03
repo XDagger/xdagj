@@ -1,9 +1,8 @@
 package io.xdag.libp2p.Manager;
 
-import io.libp2p.core.Connection;
-import io.libp2p.core.ConnectionHandler;
-import io.libp2p.core.Network;
-import io.libp2p.core.PeerId;
+import io.libp2p.core.*;
+import io.libp2p.core.multiformats.Multiaddr;
+import io.xdag.libp2p.RPCHandler.RPCHandler;
 import io.xdag.libp2p.peer.LibP2PNodeId;
 import io.xdag.libp2p.peer.NodeId;
 import io.xdag.libp2p.peer.Peer;
@@ -11,6 +10,7 @@ import io.xdag.libp2p.utils.MultiaddrPeerAddress;
 import io.xdag.libp2p.utils.SafeFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,11 +24,17 @@ public class PeerManager implements ConnectionHandler {
     private final ConcurrentHashMap<NodeId, Peer> connectedPeerMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<NodeId, SafeFuture<Peer>> pendingConnections =
             new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler;
-
-    public PeerManager(ScheduledExecutorService scheduler) {
-        this.scheduler = scheduler;
+    RPCHandler rpcHandler;
+    Host host;
+    public PeerManager(RPCHandler rpcHandler, Host host) {
+        this.rpcHandler = rpcHandler;
+        this.host = host;
     }
+
+    public PeerManager() {
+
+    }
+
     @Override
     public void handleConnection(@NotNull final Connection connection) {
         final PeerId remoteId = connection.secureSession().getRemoteId();
@@ -43,7 +49,7 @@ public class PeerManager implements ConnectionHandler {
     private SafeFuture<Peer> doConnect(final MultiaddrPeerAddress peer, final Network network) {
         log.debug("Connecting to {}", peer);
         log.info("network = "+network.toString());
-
+        System.out.println("MultiaddrPeerAddress = "+ peer.toString());
         return SafeFuture.of(() -> network.connect(peer.getMultiaddr()))
                 .thenApply(
                         connection -> {
@@ -64,6 +70,12 @@ public class PeerManager implements ConnectionHandler {
                             return connectedPeer;
                         })
                 .whenComplete((result, error) -> pendingConnections.remove(peer.getId()));
+    }
+    public void connect(String peer) {
+        log.debug("Connecting to {}", peer);
+        System.out.println("dial peer = "+ peer);
+        Multiaddr address = Multiaddr.fromString(peer);
+        rpcHandler.dial(host,address);
     }
     public Optional<Peer> getPeer(NodeId id) {
         return Optional.ofNullable(connectedPeerMap.get(id));

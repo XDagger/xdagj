@@ -201,6 +201,7 @@ public class BlockStore {
     }
 
     public void saveBlockSums(Block block) {
+        System.out.println("saveBlockSums");
         long size = 512;
         long sum = block.getXdagBlock().getSum();
         long time = block.getTimestamp();

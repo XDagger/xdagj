@@ -39,6 +39,8 @@ public interface Blockchain {
 
     void checkNewMain();
 
+    long loadBlockchain(String srcFilePath);
+
     List<Block> listMainBlocks(int count);
 
     List<Block> listMinedBlocks(int count);

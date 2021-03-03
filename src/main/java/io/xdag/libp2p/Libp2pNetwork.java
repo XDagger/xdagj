@@ -31,8 +31,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -52,9 +50,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         this.port = kernel.getConfig().getLibp2pPort();
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("libp2p-%d").build());
-        peerManager = new PeerManager(scheduler);
+        peerManager = new PeerManager();
         String prikey0 = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b894b5";
         String prikey1 = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
         Bytes pub = Bytes.fromHexString(port == 10000 ? prikey0 : prikey1);
@@ -63,8 +59,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
                         new InetSocketAddress("127.0.0.1", port),nodeId);
-        System.out.println("nodeid = "+nodeId);
-//        host = new HostBuilder().protocol(rpcHandler).listen("/ip4/" + privateAddress.getHostAddress() + "/tcp/" + listenPort).build();
+
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b->{
                     b.getIdentity().setFactory(()-> privKeyBytes);
@@ -102,6 +97,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         Multiaddr address = Multiaddr.fromString(peer);
         rpcHandler.dial(host,address);
     }
+
 
     @Override
     public PeerAddress createPeerAddress(final String peerAddress) {

@@ -41,6 +41,8 @@ import javax.annotation.Nonnull;
 
 import com.google.common.util.concurrent.*;
 
+import io.xdag.libp2p.Libp2pChannel;
+import io.xdag.libp2p.Manager.ChannelManager;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -62,11 +64,13 @@ public class XdagSync {
         }
     };
     private XdagChannelManager channelMgr;
+    private ChannelManager channelManager;
     private BlockStore blockStore;
     private Status status;
     private ScheduledExecutorService sendTask;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
+
     @Getter
     private ConcurrentHashMap<Long, SettableFuture<byte[]>> sumsRequestMap;
 
@@ -76,6 +80,7 @@ public class XdagSync {
 
     public XdagSync(Kernel kernel) {
         this.channelMgr = kernel.getChannelMgr();
+        this.channelManager = kernel.getChannelManager();
         this.blockStore = kernel.getBlockStore();
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
         sumsRequestMap = new ConcurrentHashMap<>();
@@ -102,6 +107,7 @@ public class XdagSync {
     }
 
     private void requestBlocks(long t, long dt) {
+        System.out.println("requestBlocks");
         // 如果当前状态不是sync start
         if (status != Status.SYNCING) {
             return;
@@ -110,6 +116,7 @@ public class XdagSync {
         long randomSeq;
         SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
+            System.out.println("requestBlocks 111");
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
@@ -156,12 +163,62 @@ public class XdagSync {
                 }
             }
         }
+        List<Libp2pChannel> any0 = getLibp2pAnyNode();
+        SettableFuture<byte[]> sf0 = SettableFuture.create();
+        long randomSeq0;
+        if (any0 != null && any0.size() != 0) {
+            Libp2pChannel channel = any0.get(0);
+            if (dt <= REQUEST_BLOCKS_MAX_TIME) {
+                randomSeq0 = channel.getHandler().getController().sendGetBlocks(t, t + dt);
+                blocksRequestMap.put(randomSeq0, sf0);
+                try {
+                    sf0.get(128, TimeUnit.SECONDS);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    blocksRequestMap.remove(randomSeq0);
+                    log.error(e.getMessage(), e);
+                    return;
+                }
+                blocksRequestMap.remove(randomSeq0);
+                return;
+            } else {
+                byte[] lSums0 = new byte[256];
+                byte[] rSums0;
+                if (blockStore.loadSum(t, t + dt, lSums0) <= 0) {
+                    return;
+                }
+                randomSeq0 = channel.getHandler().getController().sendGetSums(t , t + dt );
+                sumsRequestMap.put(randomSeq0 , sf0);
+                try{
+                    byte[] sums0 = sf0.get(128, TimeUnit.SECONDS);
+                    rSums0 = Arrays.copyOf(sums0, 256);
+                }catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    sumsRequestMap.remove(randomSeq0);
+                    log.error(e.getMessage(), e);
+                    return;
+                }
+                sumsRequestMap.remove(randomSeq0);
+                dt >>= 4;
+                for (int i = 0; i < 16; i++) {
+                    long lSumsSum = BytesUtils.bytesToLong(lSums0, i * 16, true);
+                    long lSumsSize = BytesUtils.bytesToLong(lSums0, i * 16 + 8, true);
+                    long rSumsSum = BytesUtils.bytesToLong(rSums0, i * 16, true);
+                    long rSumsSize = BytesUtils.bytesToLong(rSums0, i * 16 + 8, true);
+
+                    if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
+                        requestBlocks(t + i * dt, dt);
+                    }
+                }
+            }
+        }
     }
 
     public List<XdagChannel> getAnyNode() {
         return channelMgr.getActiveChannels();
     }
 
+    public List<Libp2pChannel> getLibp2pAnyNode(){
+        return channelManager.getactiveChannel();
+    }
     public void stop() {
         log.debug("stop sync");
         if (isRunning) {

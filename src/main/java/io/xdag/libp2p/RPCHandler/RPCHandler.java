@@ -216,6 +216,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
          * 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送
          */
         protected void processSumsRequest(SumRequestMessage msg) {
+            System.out.println("processSumsRequest");
             log.debug("processSumsRequest:" + msg);
             updateXdagStats(msg);
             byte[] sums = new byte[256];

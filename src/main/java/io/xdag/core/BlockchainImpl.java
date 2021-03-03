@@ -41,7 +41,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -78,6 +84,87 @@ public class BlockchainImpl implements Blockchain {
         } else {
             this.xdagStats = new XdagStats();
         }
+    }
+    //读取C版本区块
+    public long loadBlockchain(
+            String srcFilePath) {
+        //todo：文件夹的时间
+        long starttime = 1583368095744L;
+        long endtime = 1583389441664L;
+        ByteBuffer buffer = ByteBuffer.allocate(512);
+        StringBuffer file = new StringBuffer(srcFilePath);
+        FileInputStream inputStream = null;
+        FileChannel channel = null;
+        starttime |= 0x00000;
+        endtime |= 0xffff;
+        File fileImpl;
+        long res = 0;
+        System.out.println("开始读取区块");
+        while (starttime < endtime) {
+            List<String> filename = getFileName(starttime);
+            String blockfile = Hex.toHexString(BytesUtils.byteToBytes((byte) ((starttime >> 16) & 0xff), true));
+            file.append(filename.get(filename.size() - 1)).append(blockfile).append(".dat");
+            fileImpl = new File(file.toString());
+            if (!fileImpl.exists()) {
+                starttime += 0x10000;
+                file = new StringBuffer(srcFilePath);
+                continue;
+            }
+            System.out.println("Block from:" + file.toString());
+            try {
+
+                inputStream = new FileInputStream(fileImpl);
+                channel = inputStream.getChannel();
+                while (true) {
+                    int eof = channel.read(buffer);
+                    if (eof == -1) {
+                        break;
+                    }
+                    buffer.flip();
+                    res++;
+                    Block block = new Block(new XdagBlock(buffer.array().clone()));
+                    this.tryToConnect(block);
+                    buffer.clear();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (channel != null) {
+                        channel.close();
+                    }
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            starttime += 0x10000;
+            file = new StringBuffer(srcFilePath);
+        }
+        System.out.println("读取结束");
+        return res;
+    }
+
+    public List<String> getFileName(long time) {
+        List<String> file = new ArrayList<>();
+        file.add("");
+        StringBuffer stringBuffer = new StringBuffer(
+                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
+        stringBuffer.append("/");
+        file.add(String.valueOf(stringBuffer));
+        stringBuffer.append(
+                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
+        stringBuffer.append("/");
+        file.add(String.valueOf(stringBuffer));
+        stringBuffer.append(
+                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
+        stringBuffer.append("/");
+        file.add(String.valueOf(stringBuffer));
+        return file;
     }
 
     /** 尝试去连接这个块 */

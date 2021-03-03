@@ -257,10 +257,12 @@ public class BlockchainTest {
         assertTrue(blockchain.canUseInput(txBlock));
     }
 
-    //@Test
+    @Test
     public void Testblockload() {
+        //todo:
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
-        loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1649267441664L, blockchain);
+        loadBlockchain(config.getOriginStoreDir(), 1583368095744L, 1583389441664L, blockchain);
+
         printBlockchainInfo(blockchain);
 
         System.out.println("Balance:" + amount2xdag(kernel.getBlockStore().getXdagStatus().getBalance()));
@@ -352,13 +354,14 @@ public class BlockchainTest {
             List<String> filename = getFileName(starttime);
             String blockfile = Hex.toHexString(BytesUtils.byteToBytes((byte) ((starttime >> 16) & 0xff), true));
             file.append(filename.get(filename.size() - 1)).append(blockfile).append(".dat");
+//            System.out.println("file.toString()"+file.toString());
             fileImpl = new File(file.toString());
             if (!fileImpl.exists()) {
                 starttime += 0x10000;
                 file = new StringBuffer(srcFilePath);
                 continue;
             }
-            System.out.println("Block from:" + file.toString());
+//            System.out.println("Block from:" + file.toString());
             try {
 
                 inputStream = new FileInputStream(fileImpl);

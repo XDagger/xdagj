@@ -18,7 +18,6 @@ public interface P2PNetwork<P> {
         STOPPED
     }
 
-//    void connect1(String peer);
 
 
     PeerAddress createPeerAddress(String peerAddress);

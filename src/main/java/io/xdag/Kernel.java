@@ -67,6 +67,7 @@ public class Kernel {
     protected Status status = Status.STOPPED;
     protected Config config;
     protected Wallet wallet;
+    private String arg;
     protected DatabaseFactory dbFactory;
     protected BlockStore blockStore;
     protected OrphanPool orphanPool;
@@ -96,7 +97,7 @@ public class Kernel {
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
-    public Kernel(Config config, Wallet wallet,String arg) {
+    public Kernel(Config config, Wallet wallet) {
         this.config = config;
         this.wallet = wallet;
         // 启动的时候就是在初始化
@@ -144,6 +145,8 @@ public class Kernel {
         // initialize blockchain database
         // ====================================
         blockchain = new BlockchainImpl(this);
+        //
+//        blockchain.loadBlockchain(config.getOriginStoreDir());
         XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {

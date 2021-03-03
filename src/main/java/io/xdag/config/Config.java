@@ -96,7 +96,7 @@ public class Config {
     /** 存储相关 */
     private boolean storeFromBackup = false;
     /** 用于测试加载已有区块数据 从C版本生成的数据 请将所需要的数据放在该目录下 */
-    private String originStoreDir = "./testdate";
+    private String originStoreDir = "/Users/wawa/Desktop/xdagj/testdata/";
     private int TTL = 5;
     private byte[] dnetKeyBytes = new byte[2048];
     private DnetKeys xKeys;
