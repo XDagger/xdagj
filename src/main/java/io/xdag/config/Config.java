@@ -27,12 +27,14 @@ import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
+import java.io.Serializable;
+
 import lombok.Data;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-public class Config {
+public class Config implements Serializable {
     public static boolean MAINNET = false;
     /** 配置存储root */
     public static String root = MAINNET ? "mainnet" : "testnet";
@@ -99,6 +101,14 @@ public class Config {
     private int TTL = 5;
     private byte[] dnetKeyBytes = new byte[2048];
     private DnetKeys xKeys;
+
+    // BIP32
+    public static final int BIP32_HEADER_P2PKH_PUB= 0x0488b21e; // The 4 byte header that serializes in base58 to "xpub".
+    public static final int BIP32_HEADER_P2PKH_PRIV = 0x0488ade4; // The 4 byte header that serializes in base58 to "xprv"
+
+    public int dumpedPrivateKeyHeader = 128;
+    public int addressHeader = 0;
+
 
     public Config() {
         getSetting();

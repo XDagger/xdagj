@@ -29,6 +29,8 @@ import java.util.List;
 
 public interface Wallet {
 
+    static final int BIP44_COIN_TYPE = 586;
+
     /** init wallet */
     int init(Config config) throws Exception;
 

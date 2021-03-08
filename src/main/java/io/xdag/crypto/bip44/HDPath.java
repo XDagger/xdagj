@@ -1,4 +1,4 @@
-package io.xdag.crypto.bip32;
+package io.xdag.crypto.bip44;
 
 import com.google.common.base.Splitter;
 

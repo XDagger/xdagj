@@ -1,7 +1,8 @@
-package io.xdag.crypto.bip32;
+package io.xdag.crypto.bip44;
 
 import io.xdag.crypto.ECKey;
 import io.xdag.crypto.LazyECPoint;
+import io.xdag.crypto.bip32.DeterministicKey;
 import io.xdag.utils.FormatDateUtils;
 import org.spongycastle.math.ec.ECPoint;
 
@@ -41,7 +42,7 @@ public class HDKeyDerivation {
     public static DeterministicKey createMasterPrivateKey(byte[] seed) throws HDDerivationException {
         checkArgument(seed.length > 8, "Seed is too short and could be brute forced");
         // Calculate I = HMAC-SHA512(key="Bitcoin seed", msg=S)
-        byte[] i = HDUtils.hmacSha512(HDUtils.createHmacSha512Digest("Bitcoin seed".getBytes()), seed);
+        byte[] i = HDUtils.hmacSha512(HDUtils.createHmacSha512Digest("Xdag seed".getBytes()), seed);
         // Split I into two 32-byte sequences, Il and Ir.
         // Use Il as master secret key, and Ir as master chain code.
         checkState(i.length == 64, i.length);

@@ -31,6 +31,7 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Random;
 
+import io.xdag.crypto.Sha256Hash;
 import org.spongycastle.crypto.Digest;
 import org.spongycastle.crypto.digests.RIPEMD160Digest;
 import org.spongycastle.util.encoders.Hex;
@@ -144,6 +145,18 @@ public class HashUtils {
     public static byte[] sha3omit12(byte[] input) {
         byte[] hash = sha3(input);
         return copyOfRange(hash, 12, hash.length);
+    }
+
+    /**
+     * Calculates RIPEMD160(SHA256(input)). This is used in Address calculations.
+     */
+    public static byte[] sha256hash160(byte[] input) {
+        byte[] sha256 = Sha256Hash.hash(input);
+        RIPEMD160Digest digest = new RIPEMD160Digest();
+        digest.update(sha256, 0, sha256.length);
+        byte[] out = new byte[20];
+        digest.doFinal(out, 0);
+        return out;
     }
 
     /**
