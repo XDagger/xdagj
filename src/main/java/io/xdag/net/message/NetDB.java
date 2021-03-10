@@ -120,7 +120,7 @@ public class NetDB {
         }
         return res;
     }
-
+    //todo
     public int getSize() {
         return ipList.size();
     }

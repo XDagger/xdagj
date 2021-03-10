@@ -52,7 +52,7 @@ public class Bootstrap {
         log.debug("Start main");
         Config config = new Config();
         config.changePara(config, args);
-        config.setDir(args[0]);
+        config.setDir();
         logPoolInfo(config);
 
         // init keys

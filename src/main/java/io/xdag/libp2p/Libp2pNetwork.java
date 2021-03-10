@@ -26,6 +26,7 @@ import io.xdag.libp2p.utils.MultiaddrUtil;
 import io.xdag.libp2p.utils.SafeFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -51,11 +52,14 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
         peerManager = new PeerManager();
-        String prikey0 = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b894b5";
-        String prikey1 = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b89411";
-        Bytes pub = Bytes.fromHexString(port == 10000 ? prikey0 : prikey1);
-        this.privKeyBytes = KeyKt.unmarshalPrivateKey(pub.toArrayUnsafe());
-        this.nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKeyBytes.publicKey()));
+        port = kernel.getConfig().getLibp2pPort();
+        //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
+        //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
+        String Privkey = kernel.getConfig().getPrivkey();
+        Bytes privkeybytes = Bytes.fromHexString(Privkey);
+        this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
+        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
+        this.nodeId = new LibP2PNodeId(peerId);
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
                         new InetSocketAddress("127.0.0.1", port),nodeId);
@@ -77,6 +81,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         System.out.println(advertisedAddr.toString());
         System.out.println("host = "+host.getPeerId().toString());
     }
+
     @Override
     public SafeFuture<?> start() {
         if (!state.compareAndSet(State.IDLE, State.RUNNING)) {
@@ -97,7 +102,6 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         Multiaddr address = Multiaddr.fromString(peer);
         rpcHandler.dial(host,address);
     }
-
 
     @Override
     public PeerAddress createPeerAddress(final String peerAddress) {

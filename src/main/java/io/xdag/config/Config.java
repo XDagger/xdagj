@@ -35,7 +35,8 @@ import org.apache.commons.lang3.StringUtils;
 public class Config {
     public static boolean MAINNET = false;
     /** 配置存储root */
-    public static String root = MAINNET ? "mainnet" : "testnet";
+    // todo
+    public static String root = MAINNET ? "mainnet" : "testnet1";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
     
@@ -63,6 +64,7 @@ public class Config {
     /** 矿池的端口 */
     private int poolPort;
     private int libp2pPort;
+    private String Privkey;
     /** Pool Tag */
     private String poolTag;
     /** 一个矿池最多允许接入的矿工数量 */
@@ -208,9 +210,10 @@ public class Config {
     }
 
     /** 设置存储的路径 */
-    public void setDir(String arg) {
+    // todo
+    public void setDir() {
         // 配置存储root
-        root = Config.MAINNET ? "./mainnet" : "./testnet"+arg;
+        root = Config.MAINNET ? "./mainnet" : "./testnet1";
         storeDir = root + "/rocksdb/xdagdb";
         storeBackupDir = root + "/rocksdb/xdagdb/backupdata";
         whiteListDirTest = root + "/netdb-white-testnet.txt";
@@ -226,6 +229,7 @@ public class Config {
         telnetIp = setting.getStr("telnetIp");
         telnetPort = setting.getInt("telnetPort");
 
+
         nodeIp = setting.getStr("nodeIp");
         nodePort = setting.getInt("nodePort");
 
@@ -233,6 +237,7 @@ public class Config {
         poolPort = setting.getInt("poolPort");
 
         libp2pPort = setting.getInt("libp2pPort");
+        Privkey = setting.getStr("libp2pPrivkey");
         poolTag = setting.getOrDefault("poolTag", "XdagJ");
 
         poolRation = setting.getInt("poolRation");

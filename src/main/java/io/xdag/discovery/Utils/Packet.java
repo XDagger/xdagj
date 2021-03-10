@@ -140,7 +140,7 @@ public class Packet {
         }
         return Optional.of((T) data);
     }
-
+    //NodeId = publicKey.getEncodedBytes()
     public BytesValue getNodeId() {
         return publicKey.getEncodedBytes();
     }

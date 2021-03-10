@@ -544,10 +544,7 @@ public class SECP256K1 {
       return new KeyPair(PrivateKey.create(privateKeyValue), PublicKey.create(publicKeyValue));
     }
 
-    public static KeyPair load(final File file)
-        throws IOException, InvalidSEC256K1PrivateKeyStoreException {
-      return create(PrivateKey.load(file));
-    }
+
 
     @Override
     public int hashCode() {

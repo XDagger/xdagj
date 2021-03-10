@@ -26,7 +26,6 @@ public class PeerTable {
     private final int maxEntriesCnt;
     private int tempsize;
     private final Map<BytesValue, Integer> distanceCache;
-    private BloomFilter<BytesValue> idBloom;
     private int evictionCnt = 0;
 
     /**
@@ -151,7 +150,6 @@ public class PeerTable {
                 BloomFilter.create((id, val) -> val.putBytes(id.extractArray()), maxEntriesCnt, 0.001);
         getAllPeers().stream().map(Peer::getId).forEach(bf::put);
         this.evictionCnt = 0;
-        this.idBloom = bf;
     }
 
     /**

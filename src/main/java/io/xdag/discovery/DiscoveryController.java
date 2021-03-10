@@ -18,6 +18,7 @@ import io.xdag.discovery.peer.Peer;
 import io.xdag.discovery.peer.PeerTable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -55,14 +56,18 @@ public class DiscoveryController {
         final String host = "127.0.0.1";
         final int port ;
         final BytesValue myid ;
+        // 这里要咋修改？
         if(isbootnode){
             final SECP256K1.PrivateKey privateKey =
                     SECP256K1.PrivateKey.create(
                             new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16));
             keyPair = SECP256K1.KeyPair.create(privateKey);
+
             myself = DiscoveryConfiguration.getBootnode().get(0);
             myid = myself.getId();
             mynode = myself.getEndpoint();
+            System.out.println(bytesToHex(myid.extractArray()));
+            System.out.println(myid.size());
         }else {
             port = 10004;
             OptionalInt tcp = OptionalInt.of(30000);
@@ -73,16 +78,13 @@ public class DiscoveryController {
 
         }
         peerTable = new PeerTable(myid, 10);
-
         bootnodes = DiscoveryConfiguration.getBootnode();
-
         this.vertx = Vertx.vertx();
         vertx.createDatagramSocket().listen(mynode.getUdpPort(),mynode.getHost(), ar -> {
             if (!ar.succeeded()) {
                 log.debug("初始化失败");
             }
             else log.debug("初始化成功");
-
             socket = ar.result();
             socket.exceptionHandler(this::handleException);
             socket.handler(this::handlePacket);
@@ -97,10 +99,7 @@ public class DiscoveryController {
             log.info("非种子节点");
             bootnodes.stream().filter(node -> peerTable.tryAdd(node).getOutcome() == PeerTable.AddResult.Outcome.ADDED).
                     forEach(node -> bond(node, true));
-
         }
-
-
     }
 
     @VisibleForTesting
@@ -317,11 +316,6 @@ public class DiscoveryController {
                 break;
 
             case FIND_NEIGHBORS:
-                //这里是fasle
-//                log.info("peerKnown {}",peerKnown);
-//                if (!peerKnown) {
-//                    break;
-//                }
                 final FindNeighborsPacketData fn =
                         packet.getPacketData(FindNeighborsPacketData.class).get();
                 respondToFindNeighbors(fn, peer);
@@ -482,5 +476,17 @@ public class DiscoveryController {
         inflightInteractions.remove(packet.getNodeId());
         return Optional.of(interaction);
     }
+    public static String bytesToHex(byte[] bytes) {
+        StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < bytes.length; i++) {
+            String hex = Integer.toHexString(bytes[i] & 0xFF);
+            if(hex.length() < 2){
+                sb.append(0);
+            }
+            sb.append(hex);
+        }
+        return sb.toString();
+    }
+
 }
 
