@@ -2,9 +2,9 @@ package io.xdag.libp2p;
 
 import io.libp2p.core.Connection;
 import io.xdag.core.BlockWrapper;
-import io.xdag.net.node.Node;
 import io.xdag.libp2p.RPCHandler.RPCHandler;
 import io.xdag.libp2p.message.MessageQueueLib;
+import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 import org.spongycastle.util.encoders.Hex;
 

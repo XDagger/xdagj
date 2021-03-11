@@ -1,7 +1,7 @@
 package io.xdag.discovery;
 
 import com.google.common.base.MoreObjects;
-import io.xdag.discovery.peer.DiscoveryPeer;
+import io.xdag.discovery.peers.DiscoveryPeer;
 
 public abstract class PeerDiscoveryEvent {
     private final DiscoveryPeer peer;
@@ -28,27 +28,11 @@ public abstract class PeerDiscoveryEvent {
                 .toString();
     }
 
-    /**
-     * An event that is dispatched whenever we bond with a new peer. See Javadoc on <code>
-     * PeerDiscoveryController</code> to understand when this happens.
-     *
-     * <p>{@link tech.pegasys.pantheon.ethereum.p2p.discovery.internal.PeerDiscoveryController}
-     */
+
     public static class PeerBondedEvent extends PeerDiscoveryEvent {
         public PeerBondedEvent(final DiscoveryPeer peer, final long timestamp) {
             super(peer, timestamp);
         }
     }
 
-    /**
-     * An event that is dispatched whenever we drop a peer from the peer table. See Javadoc on <code>
-     * PeerDiscoveryController</code> to understand when this happens.
-     *
-     * <p>{@link tech.pegasys.pantheon.ethereum.p2p.discovery.internal.PeerDiscoveryController}
-     */
-    public static class PeerDroppedEvent extends PeerDiscoveryEvent {
-        public PeerDroppedEvent(final DiscoveryPeer peer, final long timestamp) {
-            super(peer, timestamp);
-        }
-    }
 }

@@ -9,16 +9,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
-import io.xdag.core.*;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.Blockchain;
+import io.xdag.core.XdagStats;
+import io.xdag.libp2p.Libp2pChannel;
+import io.xdag.libp2p.manager.ChannelManager;
+import io.xdag.libp2p.message.MessageQueueLib;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.handler.MessageCodes;
 import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.*;
-import io.xdag.libp2p.Libp2pChannel;
-import io.xdag.libp2p.Manager.ChannelManager;
-import io.xdag.libp2p.message.MessageQueueLib;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
@@ -81,7 +84,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     }
 
     public static class Controller extends SimpleChannelInboundHandler<Message> implements Xdag{
-        protected final CompletableFuture<RPCHandler.Controller> activeFuture = new CompletableFuture<>();
+        protected final CompletableFuture<Controller> activeFuture = new CompletableFuture<>();
         protected Blockchain blockchain;
         protected SyncManager syncMgr;
         protected Kernel kernel;

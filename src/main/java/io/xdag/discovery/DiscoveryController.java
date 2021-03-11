@@ -1,41 +1,50 @@
 package io.xdag.discovery;
 
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.discovery.data.Packet;
+import io.xdag.discovery.data.PacketData;
+import io.xdag.discovery.data.PacketType;
+import io.xdag.utils.discoveryutils.*;
+import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import com.google.common.annotations.VisibleForTesting;
+import io.libp2p.core.crypto.KEY_TYPE;
+import io.libp2p.core.crypto.KeyKt;
+import io.libp2p.core.crypto.PrivKey;
 import io.vertx.core.Vertx;
 import io.vertx.core.datagram.DatagramPacket;
 import io.vertx.core.datagram.DatagramSocket;
-import io.xdag.config.DiscoveryConfiguration;
-import io.xdag.discovery.Utils.*;
-import io.xdag.discovery.Utils.bytes.BytesValue;
-import io.xdag.discovery.cryto.SECP256K1;
-import io.xdag.discovery.newMessage.FindNeighborsPacketData;
-import io.xdag.discovery.newMessage.NeighborsPacketData;
-import io.xdag.discovery.newMessage.PingPacketData;
-import io.xdag.discovery.newMessage.PongPacketData;
-import io.xdag.discovery.peer.DiscoveryPeer;
-import io.xdag.discovery.peer.Endpoint;
-import io.xdag.discovery.peer.Peer;
-import io.xdag.discovery.peer.PeerTable;
 import lombok.extern.slf4j.Slf4j;
+import io.xdag.discovery.message.FindNeighborsPacketData;
+import io.xdag.discovery.message.NeighborsPacketData;
+import io.xdag.discovery.message.PingPacketData;
+import io.xdag.discovery.message.PongPacketData;
 import org.apache.commons.codec.DecoderException;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
+import io.xdag.discovery.peers.DiscoveryPeer;
+import io.xdag.discovery.peers.Endpoint;
+import io.xdag.discovery.peers.Peer;
+import io.xdag.discovery.peers.PeerTable;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static io.xdag.discovery.Utils.Preconditions.checkGuard;
-import static io.xdag.discovery.Utils.bytes.MutableBytesValue.wrapBuffer;
+
+import static io.xdag.utils.discoveryutils.Preconditions.checkGuard;
+import static io.xdag.utils.discoveryutils.bytes.MutableBytesValue.wrapBuffer;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class DiscoveryController {
+    boolean isbootnode;
+    int discoveryPort;
     private static final int MAX_PACKET_SIZE_BYTES = 1600;
     PeerTable peerTable;
     DatagramSocket socket;
@@ -44,7 +53,7 @@ public class DiscoveryController {
     private Vertx vertx;
     Endpoint mynode;
     List<DiscoveryPeer> bootnodes;
-    private static SECP256K1.KeyPair keyPair ;
+    PrivKey privKey;
     private static final long REFRESH_CHECK_INTERVAL_MILLIS = MILLISECONDS.convert(30, SECONDS);
     private final long tableRefreshIntervalMs = MILLISECONDS.convert(30, TimeUnit.MINUTES);
     private final RetryDelayFunction retryDelayFunction = RetryDelayFunction.linear(1.5, 2000, 60000);
@@ -52,33 +61,29 @@ public class DiscoveryController {
             new ConcurrentHashMap<>();
     private final Subscribers<Consumer<PeerDiscoveryEvent.PeerBondedEvent>> peerBondedObservers = new Subscribers<>();
 
-    public void start(boolean isbootnode) throws DecoderException {
-        final String host = "127.0.0.1";
-        final int port ;
+
+    public void start(Kernel kernel) throws DecoderException {
+        this.isbootnode = kernel.getConfig().isbootnode;
+        this.discoveryPort = kernel.getConfig().discoveryPort;
         final BytesValue myid ;
-        // 这里要咋修改？
         if(isbootnode){
-            final SECP256K1.PrivateKey privateKey =
-                    SECP256K1.PrivateKey.create(
-                            new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16));
-            keyPair = SECP256K1.KeyPair.create(privateKey);
-
-            myself = DiscoveryConfiguration.getBootnode().get(0);
-            myid = myself.getId();
-            mynode = myself.getEndpoint();
-            System.out.println(bytesToHex(myid.extractArray()));
-            System.out.println(myid.size());
+            System.out.println("种子节点启动");
+            String prikey = kernel.getConfig().getPrivkey();
+            // id = 08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2
+            this.privKey = KeyKt.unmarshalPrivateKey(Bytes.fromHexString(prikey).toArrayUnsafe());
+            myid = BytesValue.wrap(privKey.publicKey().bytes());
         }else {
-            port = 10004;
-            OptionalInt tcp = OptionalInt.of(30000);
-            keyPair= SECP256K1.KeyPair.generate();
-            myid = keyPair.getPublicKey().getEncodedBytes();
-            mynode = new Endpoint(host, port, tcp);
-            myself = new DiscoveryPeer(myid, mynode);
-
+            //随机生成字节点的id
+            this.privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).getFirst();
+            myid = BytesValue.wrap(privKey.publicKey().bytes());
         }
-        peerTable = new PeerTable(myid, 10);
-        bootnodes = DiscoveryConfiguration.getBootnode();
+        mynode = new Endpoint(kernel.getConfig().getNodeIp(),
+                kernel.getConfig().discoveryPort,OptionalInt.of(kernel.getConfig().getLibp2pPort()));
+        myself = new DiscoveryPeer(myid,mynode);
+        System.out.println();
+        System.out.println("myself.getId().extractArray() = "+ Hex.toHexString(myself.getId().extractArray()));
+        peerTable = new PeerTable(myid, 16);
+        bootnodes = kernel.getConfig().getBootnode();
         this.vertx = Vertx.vertx();
         vertx.createDatagramSocket().listen(mynode.getUdpPort(),mynode.getHost(), ar -> {
             if (!ar.succeeded()) {
@@ -89,14 +94,13 @@ public class DiscoveryController {
             socket.exceptionHandler(this::handleException);
             socket.handler(this::handlePacket);
         });
-        //todo:写在配置文件里 或者创建密码的时候生成
 
         // 定时执行的线程
         timeRefreshTable();
 
-        //todo:测试
         if(!isbootnode){
-            log.info("非种子节点");
+            System.out.println("非种子节点");
+            //先把种子节点加入peerTable里面,所以没有下面的添加成功 ADDED表示添加成功
             bootnodes.stream().filter(node -> peerTable.tryAdd(node).getOutcome() == PeerTable.AddResult.Outcome.ADDED).
                     forEach(node -> bond(node, true));
         }
@@ -112,7 +116,6 @@ public class DiscoveryController {
                     final PingPacketData data =
                             PingPacketData.create(myself.getEndpoint(), peer.getEndpoint());
                     final Packet sentPacket = sendPacket(peer, PacketType.PING, data);
-
                     final BytesValue pingHash = sentPacket.getHash();
                     // Update the matching filter to only accept the PONG if it echoes the hash of our PING.
                     final Predicate<Packet> newFilter =
@@ -131,16 +134,9 @@ public class DiscoveryController {
     }
 
     public Packet sendPacket(final DiscoveryPeer peer, final PacketType type, final PacketData data) {
-        final Packet packet = Packet.create(type, data, keyPair);
-//        log.info("Packet = {}",packet.toString());
-//        log.info(
-//                ">>> Sending {} discovery packet to {} ({}): {}",
-//                type,
-//                peer.getEndpoint(),
-//                peer.getId().slice(0, 16),
-//                packet);
 
-        // Update the lastContacted timestamp on the peer if the dispatch succeeds.
+
+        final Packet packet = Packet.create(type , data, privKey);
         socket.send(
                 packet.encode(),
                 peer.getEndpoint().getUdpPort(),
@@ -156,7 +152,6 @@ public class DiscoveryController {
                     }
                     if (ar.succeeded()) {
                         peer.setLastContacted(System.currentTimeMillis());
-                        log.info("Packet发送成功");
                     }
                 });
 
@@ -178,7 +173,7 @@ public class DiscoveryController {
             log.error("Packet handler exception", exception);
         }
     }
-
+    // 30s询问一次时间是否够半小时 半小时刷新一次refreshTable
     public void timeRefreshTable() {
         log.info("start RefreshTable");
         vertx.setPeriodic(
@@ -195,15 +190,17 @@ public class DiscoveryController {
     }
 
     private void refreshTable() {
+        System.out.println("refreshTable");
         final BytesValue target = Peer.randomId();
         peerTable.nearestPeers(Peer.randomId(), 16).forEach((peer) -> findNodes(peer, target));
         lastRefreshTime = System.currentTimeMillis();
+        System.out.println("peerTable size = "+peerTable.getAllPeers().size());
     }
     private void findNodes(final DiscoveryPeer peer, final BytesValue target) {
         final Consumer<PeerInteractionState> action =
                 (interaction) -> {
                     final FindNeighborsPacketData data = FindNeighborsPacketData.create(target);
-                    log.info("findNodes");
+                    System.out.println("findNodes");
                     sendPacket(peer, PacketType.FIND_NEIGHBORS, data);
                 };
         final PeerInteractionState interaction =
@@ -221,6 +218,7 @@ public class DiscoveryController {
                     length);
 
             // We allow exceptions to bubble up, as they'll be picked up by the exception handler.
+//            System.out.println("privKey.publicKey().bytes() = " + Hex.toHexString(privKey.publicKey().bytes()));
             final Packet packet = Packet.decode(datagram.data());
 
             OptionalInt fromPort = OptionalInt.empty();
@@ -237,6 +235,7 @@ public class DiscoveryController {
 
             // Notify the peer controller.
             final DiscoveryPeer peer = new DiscoveryPeer(packet.getNodeId(), addr, port, fromPort);
+//            System.out.println("packet.getNodeId() = "+ packet.getNodeId());
             onMessage(packet, peer);
         } catch (final PeerDiscoveryPacketDecodingException e) {
             log.debug("Discarding invalid peer discovery packet", e);
@@ -246,19 +245,12 @@ public class DiscoveryController {
     }
 
     public void onMessage(final Packet packet, final DiscoveryPeer sender) {
-//        log.info(
-//                "<<< Received {} discovery packet from {} ({}): {}",
-//                packet.getType(),
-//                sender.getEndpoint(),
-//                sender.getId().slice(0, 16),
-//                packet);
         log.info("Received Packet Type {}",packet.getType());
         // Message from self. This should not happen.
         if (sender.getId().equals(myself.getId())) {
+           log.info("发送人是自己");
             return;
         }
-
-
 
         // Load the peer from the table, or use the instance that comes in.
         final Optional<DiscoveryPeer> maybeKnownPeer = peerTable.get(sender);
@@ -305,11 +297,13 @@ public class DiscoveryController {
                                                     .orElse(emptyList());
                                     //向peerTable没有的peer发送ping消息
                                     for (final DiscoveryPeer neighbor : neighbors) {
-                                        if (peerTable.get(neighbor).isPresent()) {
-                                            log.info("peerTable had this peer");
+                                        System.out.println("neighbors.size() = " + neighbors.size());
+                                        if (peerTable.get(neighbor).isPresent() || myself.getId().equals(neighbor.getId())) {
+                                            log.info("peerTable had this peer or not ping myself");
                                             continue;
                                         }
-                                        log.info("bond new peer");
+                                        //todo
+                                        log.info("bond new peer and neighbor.getId() ="+ neighbor.getId());
                                         bond(neighbor, false);
                                     }
                                 });
@@ -372,11 +366,13 @@ public class DiscoveryController {
         final PeerDiscoveryEvent.PeerBondedEvent event = new PeerDiscoveryEvent.PeerBondedEvent(peer, now);
         dispatchEvent(peerBondedObservers, event);
     }
-
-    public PeerTable getPeerTable() {
-        return peerTable;
+    public Endpoint getMynode(){
+        return mynode;
     }
 
+    public PeerTable getPeerTable(){
+        return peerTable;
+    }
     private class PeerInteractionState implements Predicate<Packet> {
         /**
          * The action that led to the peer being in this state (e.g. sending a PING or NEIGHBORS
@@ -445,9 +441,7 @@ public class DiscoveryController {
             }
         }
 
-        /**
-         * Cancels any timers associated with this entry.
-         */
+
         void cancelTimers() {
             timerId.ifPresent(vertx::cancelTimer);
         }
@@ -471,22 +465,10 @@ public class DiscoveryController {
             log.info("return Optional.empty()");
             return Optional.empty();
         }
-
+        System.out.println("互动匹配");
         interaction.cancelTimers();
         inflightInteractions.remove(packet.getNodeId());
         return Optional.of(interaction);
     }
-    public static String bytesToHex(byte[] bytes) {
-        StringBuffer sb = new StringBuffer();
-        for(int i = 0; i < bytes.length; i++) {
-            String hex = Integer.toHexString(bytes[i] & 0xFF);
-            if(hex.length() < 2){
-                sb.append(0);
-            }
-            sb.append(hex);
-        }
-        return sb.toString();
-    }
-
 }
 

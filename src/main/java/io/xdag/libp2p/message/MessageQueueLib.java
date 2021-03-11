@@ -2,8 +2,8 @@ package io.xdag.libp2p.message;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.xdag.net.message.Message;
 import io.xdag.libp2p.Libp2pChannel;
+import io.xdag.net.message.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 

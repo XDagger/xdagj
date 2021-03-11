@@ -1,6 +1,5 @@
 package io.xdag.libp2p;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.KeyKt;
@@ -13,7 +12,7 @@ import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import io.netty.handler.logging.LogLevel;
 import io.xdag.Kernel;
-import io.xdag.libp2p.Manager.PeerManager;
+import io.xdag.libp2p.manager.PeerManager;
 import io.xdag.libp2p.RPCHandler.Firewall;
 import io.xdag.libp2p.RPCHandler.RPCHandler;
 import io.xdag.libp2p.peer.LibP2PNodeId;

@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import io.xdag.core.*;
 
 import io.xdag.libp2p.Libp2pChannel;
-import io.xdag.libp2p.Manager.ChannelManager;
+import io.xdag.libp2p.manager.ChannelManager;
 import org.spongycastle.util.encoders.Hex;
 
 import com.google.common.collect.Queues;

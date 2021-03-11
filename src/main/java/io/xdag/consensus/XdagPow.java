@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.xdag.core.*;
 
-import io.xdag.libp2p.Manager.ChannelManager;
+import io.xdag.libp2p.manager.ChannelManager;
 import org.apache.commons.lang3.RandomUtils;
 import org.spongycastle.util.encoders.Hex;
 

@@ -27,7 +27,16 @@ import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.OptionalInt;
+
+import io.xdag.discovery.peers.DiscoveryPeer;
+import io.xdag.discovery.peers.Endpoint;
+import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Data;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -36,10 +45,10 @@ public class Config {
     public static boolean MAINNET = false;
     /** 配置存储root */
     // todo
-    public static String root = MAINNET ? "mainnet" : "testnet1";
+    public static String root = MAINNET ? "mainnet" : "testnet0";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
-    
+
     /** 保存得密钥文件 */
     public static final String DNET_KEY_FILE = Config.MAINNET?Config.root + "/dnet_key.dat":Config.root + "/dnet_key.dat";
     /** 钱包文件 */
@@ -55,7 +64,11 @@ public class Config {
     /** telnet监听地址 */
     private String telnetIp;
     private int telnetPort;
-
+    /**配置发现种子节点*/
+    public static List<DiscoveryPeer> bootnode = new ArrayList<>();
+    /**配置发现是否是种子节点*/
+    public boolean isbootnode ;
+    public int discoveryPort;
     /** 配置节点监听地址 */
     private String nodeIp;
     private int nodePort;
@@ -185,7 +198,19 @@ public class Config {
             }
         }
     }
-
+    public List<DiscoveryPeer> getBootnode() throws DecoderException {
+        //逻辑是先连接config里面节点再进行发现
+        String id  = "08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2";
+        byte [] peerid= Hex.decodeHex(id);
+        //与配置文件的种子节点的tcpport 和udpport要对应
+        OptionalInt tcpport = OptionalInt.of(10001);
+        Endpoint endpoint = new Endpoint("127.0.0.1",20001,tcpport);
+        BytesValue bytesValue= BytesValue.wrap(peerid);
+        DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
+        System.out.println("bootnode = "+ peer.toString());
+        bootnode.add(peer);
+        return bootnode;
+    }
     public void changeNode(Config config, String host) {
         String[] args = host.split(":");
         config.nodeIp = args[0];
@@ -213,7 +238,7 @@ public class Config {
     // todo
     public void setDir() {
         // 配置存储root
-        root = Config.MAINNET ? "./mainnet" : "./testnet1";
+        root = Config.MAINNET ? "./mainnet" : "./testnet0";
         storeDir = root + "/rocksdb/xdagdb";
         storeBackupDir = root + "/rocksdb/xdagdb/backupdata";
         whiteListDirTest = root + "/netdb-white-testnet.txt";
@@ -237,6 +262,10 @@ public class Config {
         poolPort = setting.getInt("poolPort");
 
         libp2pPort = setting.getInt("libp2pPort");
+        isbootnode = setting.getBool("isbootnode");
+
+        discoveryPort = setting.getInt("discoveryPort");
+
         Privkey = setting.getStr("libp2pPrivkey");
         poolTag = setting.getOrDefault("poolTag", "XdagJ");
 

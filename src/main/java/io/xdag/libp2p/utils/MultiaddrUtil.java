@@ -14,7 +14,6 @@ package io.xdag.libp2p.utils;/*
 import io.libp2p.core.multiformats.Multiaddr;
 import io.xdag.libp2p.peer.NodeId;
 
-
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

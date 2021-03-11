@@ -33,7 +33,7 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.discovery.PeerDiscoveryAgent;
+import io.xdag.discovery.DiscoveryController;
 import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
@@ -51,7 +51,7 @@ import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.libp2p.Libp2pNetwork;
-import io.xdag.libp2p.Manager.ChannelManager;
+import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
@@ -79,9 +79,8 @@ public class Kernel {
     protected NetDBManager netDBMgr;
     protected XdagServer p2p;
     protected XdagSync sync;
-    protected int libp2pNetworkPort;
     protected Libp2pNetwork libp2pNetwork;
-    protected PeerDiscoveryAgent peerDiscoveryAgent;
+    protected DiscoveryController discoveryController;
     protected ChannelManager channelManager;
     protected XdagPow pow;
     protected SyncManager syncMgr;
@@ -170,7 +169,8 @@ public class Kernel {
         channelManager = new ChannelManager();
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
-
+        discoveryController = new DiscoveryController();
+        discoveryController.start(this);
         p2p = new XdagServer(this);
         p2p.start();
         client = new XdagClient(config);
