@@ -23,6 +23,9 @@
  */
 package io.xdag;
 
+import io.libp2p.core.crypto.KEY_TYPE;
+import io.libp2p.core.crypto.KeyKt;
+import io.libp2p.core.crypto.PrivKey;
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -92,7 +95,7 @@ public class Kernel {
     protected MinerManager minerManager;
     protected MinerServer minerServer;
     protected XdagState xdagState;
-
+    protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 

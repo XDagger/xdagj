@@ -25,6 +25,7 @@ public class Libp2pChannel {
     //存放连接的节点地址
     public void init(){
         System.out.println("connection.remoteAddress().toString()"+connection.remoteAddress().toString());
+        System.out.println("connection.secureSession().getRemoteId().toString() = "+connection.secureSession().getRemoteId().toString());
         String[] ipcompont= connection.remoteAddress().toString().split("/");
         node = new Node(ipcompont[2],Integer.parseInt(ipcompont[4]));
 //        this.messageQueue = new MessageQueueLib(this);

@@ -85,7 +85,6 @@ public class XdagPow implements PoW, Runnable {
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
         this.channelManager = kernel.getChannelManager();
-        System.out.println("channelManager = "+channelManager.toString());
     }
 
     @Override

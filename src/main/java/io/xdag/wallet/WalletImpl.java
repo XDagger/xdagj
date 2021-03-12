@@ -54,8 +54,8 @@ public class WalletImpl implements Wallet {
         Native.dfslib_random_init();
         Native.crc_init();
         boolean fileExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
-        Pair<String, String> pair = getPassword(fileExist);
-//        Pair<String, String> pair = Pair.of("123456", "123456");
+//        Pair<String, String> pair = getPassword(fileExist);
+        Pair<String, String> pair = Pair.of("123456", "123456");
         if (pair == null) {
             System.out.println("wallet init fail");
             System.exit(1);

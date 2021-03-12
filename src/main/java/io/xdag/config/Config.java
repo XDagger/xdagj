@@ -45,7 +45,7 @@ public class Config {
     public static boolean MAINNET = false;
     /** 配置存储root */
     // todo
-    public static String root = MAINNET ? "mainnet" : "testnet0";
+    public static String root = MAINNET ? "mainnet" : "testnet";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
@@ -238,7 +238,7 @@ public class Config {
     // todo
     public void setDir() {
         // 配置存储root
-        root = Config.MAINNET ? "./mainnet" : "./testnet0";
+        root = Config.MAINNET ? "./mainnet" : "./testnet";
         storeDir = root + "/rocksdb/xdagdb";
         storeBackupDir = root + "/rocksdb/xdagdb/backupdata";
         whiteListDirTest = root + "/netdb-white-testnet.txt";

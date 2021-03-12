@@ -2,6 +2,7 @@ package io.xdag.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
+import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.Builder;
@@ -54,10 +55,16 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         port = kernel.getConfig().getLibp2pPort();
         //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
         //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
-        String Privkey = kernel.getConfig().getPrivkey();
-        Bytes privkeybytes = Bytes.fromHexString(Privkey);
-        this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
-        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
+
+        if(kernel.getConfig().isbootnode){
+            String Privkey = kernel.getConfig().getPrivkey();
+            Bytes privkeybytes = Bytes.fromHexString(Privkey);
+            this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
+        }else{
+            this.privKeyBytes = kernel.getPrivKey();
+        }
+//        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
+        PeerId peerId =PeerId.fromPubKey(privKeyBytes.publicKey());
         this.nodeId = new LibP2PNodeId(peerId);
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
