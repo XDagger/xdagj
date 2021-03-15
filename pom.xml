@@ -337,12 +337,13 @@
 			<artifactId>netty-all</artifactId>
 			<version>4.1.50.Final</version>
 		</dependency>
-
+		
 		<dependency>
-			<groupId>com.data-artisans</groupId>
-			<artifactId>frocksdbjni</artifactId>
-			<version>5.17.2-artisans-2.0</version>
+			<groupId>org.rocksdb</groupId>
+			<artifactId>rocksdbjni</artifactId>
+			<version>5.17.2</version>
 		</dependency>
+
 
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
