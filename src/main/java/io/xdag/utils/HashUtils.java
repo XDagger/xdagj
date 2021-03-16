@@ -42,7 +42,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HashUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-    public static final byte[] ZERO_BYTE_ARRAY = new byte[] { 0 };
     public static final byte[] EMPTY_DATA_HASH;
     private static final Provider CRYPTO_PROVIDER;
 
@@ -73,15 +72,7 @@ public class HashUtils {
     }
 
     public static byte[] sha3(byte[] input) {
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance(HASH_256_ALGORITHM_NAME, CRYPTO_PROVIDER);
-            digest.update(input);
-            return digest.digest();
-        } catch (NoSuchAlgorithmException e) {
-            log.error("Can't find such algorithm", e);
-            throw new RuntimeException(e);
-        }
+        return sha3(input, 0, input.length);
     }
 
     /**

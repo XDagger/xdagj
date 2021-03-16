@@ -7,9 +7,6 @@ import io.xdag.crypto.Sha256Hash;
 import io.xdag.crypto.bip32.DeterministicKey;
 import io.xdag.crypto.bip38.KeyCrypter;
 import io.xdag.crypto.bip38.KeyCrypterScrypt;
-import io.xdag.crypto.bip44.ChildNumber;
-import io.xdag.crypto.bip44.HDKeyDerivation;
-import io.xdag.crypto.bip44.HDUtils;
 import org.junit.Test;
 import org.spongycastle.crypto.params.KeyParameter;
 

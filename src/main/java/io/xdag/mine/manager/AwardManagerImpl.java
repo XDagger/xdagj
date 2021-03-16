@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.xdag.wallet.OldWallet;
 import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
@@ -49,7 +50,6 @@ import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
-import io.xdag.wallet.Wallet;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -80,7 +80,7 @@ public class AwardManagerImpl implements AwardManager {
     private MinerManager minerManager;
     private Kernel kernel;
     private Blockchain blockchain;
-    private Wallet xdagWallet;
+    private OldWallet xdagWallet;
 
     public AwardManagerImpl(Kernel kernel) {
         this.kernel = kernel;

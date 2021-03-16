@@ -25,7 +25,7 @@ package io.xdag;
 
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
-import io.xdag.wallet.WalletImpl;
+import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -58,7 +58,7 @@ public class Bootstrap {
         config.initKeys();
 
         // if dnet_keys.dat and wallet.dat exist
-        WalletImpl wallet = new WalletImpl();
+        OldWallet wallet = new OldWallet();
         for (int i = 1; i <= 5; i++) {
             try {
                 int err = wallet.init(config);

@@ -15,7 +15,7 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
     public static final int LENGTH = 20;
 
     /** True if P2SH, false if P2PKH. */
-    public final boolean p2sh;
+//    public final boolean p2sh;
 
     /**
      * Private constructor. Use {@link #fromBase58(Config, String)},
@@ -24,17 +24,14 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
      *
      * @param config
      *            network this address is valid for
-     * @param p2sh
-     *            true if hash160 is hash of a script, false if it is hash of a pubkey
      * @param hash160
      *            20-byte hash of pubkey or script
      */
-    private LegacyAddress(Config config, boolean p2sh, byte[] hash160) throws AddressFormatException {
+    private LegacyAddress(Config config, byte[] hash160) throws AddressFormatException {
         super(config, hash160);
         if (hash160.length != 20)
             throw new AddressFormatException.InvalidDataLength(
                     "Legacy addresses are 20 byte (160 bit) hashes, but got: " + hash160.length);
-        this.p2sh = p2sh;
     }
 
     /**
@@ -48,7 +45,7 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
      * @return constructed address
      */
     public static LegacyAddress fromPubKeyHash(Config config, byte[] hash160) throws AddressFormatException {
-        return new LegacyAddress(config, false, hash160);
+        return new LegacyAddress(config, hash160);
     }
 
     /**
@@ -75,7 +72,7 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
      * @return constructed address
      */
     public static LegacyAddress fromScriptHash(Config config, byte[] hash160) throws AddressFormatException {
-        return new LegacyAddress(config, true, hash160);
+        return new LegacyAddress(config, hash160);
     }
 
     /**
@@ -99,7 +96,7 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
         if (config == null) {
             throw new AddressFormatException.InvalidPrefix("No network found for " + base58);
         } else {
-            return new LegacyAddress(config, false, bytes);
+            return new LegacyAddress(config, bytes);
         }
     }
 
@@ -114,7 +111,7 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
         if (o == null || getClass() != o.getClass())
             return false;
         LegacyAddress other = (LegacyAddress) o;
-        return super.equals(other) && this.p2sh == other.p2sh;
+        return super.equals(other);
     }
 
     /**
@@ -128,7 +125,7 @@ public class LegacyAddress extends PrefixedChecksummedBytes {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), p2sh);
+        return Objects.hash(super.hashCode());
     }
 
     @Override

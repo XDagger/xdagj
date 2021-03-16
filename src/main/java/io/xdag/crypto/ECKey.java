@@ -80,6 +80,7 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
 
 import static com.google.common.base.Preconditions.*;
@@ -92,6 +93,19 @@ public class ECKey implements EncryptableItem,Serializable {
     /** The parameters of the secp256k1 curve that Ethereum uses. */
     public static final ECDomainParameters CURVE;
     public static final ECParameterSpec CURVE_SPEC;
+
+    /** Sorts oldest keys first, newest last. */
+    public static final Comparator<ECKey> AGE_COMPARATOR = new Comparator<ECKey>() {
+
+        @Override
+        public int compare(ECKey k1, ECKey k2) {
+            if (k1.creationTimeSeconds == k2.creationTimeSeconds)
+                return 0;
+            else
+                return k1.creationTimeSeconds > k2.creationTimeSeconds ? 1 : -1;
+        }
+    };
+
     /**
      * Equal to CURVE.getN().shiftRight(1), used for canonicalising the S value of a
      * signature. ECDSA signatures are mutable in the sense that for a given (R, S)
@@ -1295,6 +1309,11 @@ public class ECKey implements EncryptableItem,Serializable {
 
     public String getPublicKeyAsHex() {
         return HEX.encode(pubLazy.getEncoded());
+    }
+
+    /** Returns true if this key is watch only, meaning it has a public key but no private key. */
+    public boolean isWatching() {
+        return isPubKeyOnly() && !isEncrypted();
     }
 
 //    /**

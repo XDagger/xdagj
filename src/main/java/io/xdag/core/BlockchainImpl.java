@@ -35,7 +35,7 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.KeyInternalItem;
-import io.xdag.wallet.Wallet;
+import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -55,7 +55,7 @@ import static io.xdag.utils.MapUtils.getHead;
 @Slf4j
 @Getter
 public class BlockchainImpl implements Blockchain {
-    private Wallet wallet;
+    private OldWallet wallet;
     private BlockStore blockStore;
     /** 非Extra orphan存放 */
     private OrphanPool orphanPool;

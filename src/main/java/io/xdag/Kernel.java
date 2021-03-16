@@ -50,20 +50,18 @@ import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import io.xdag.wallet.WalletImpl;
+import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Getter
 @Setter
 public class Kernel {
     protected Status status = Status.STOPPED;
     protected Config config;
-    protected Wallet wallet;
+    protected OldWallet wallet;
     protected DatabaseFactory dbFactory;
     protected BlockStore blockStore;
     protected OrphanPool orphanPool;
@@ -87,7 +85,7 @@ public class Kernel {
     protected XdagState xdagState;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
-    public Kernel(Config config, Wallet wallet) {
+    public Kernel(Config config, OldWallet wallet) {
         this.config = config;
         this.wallet = wallet;
         // 启动的时候就是在初始化
@@ -113,7 +111,7 @@ public class Kernel {
         // wallet init
         // ====================================
         if (wallet == null) {
-            wallet = new WalletImpl();
+            wallet = new OldWallet();
             wallet.init(config);
         }
 

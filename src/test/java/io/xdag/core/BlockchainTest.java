@@ -37,8 +37,7 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import io.xdag.wallet.WalletImpl;
+import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -74,7 +73,7 @@ public class BlockchainTest {
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
     Config config = new Config();
-    Wallet xdagWallet;
+    OldWallet xdagWallet;
     Kernel kernel;
     DatabaseFactory dbFactory;
 
@@ -87,7 +86,7 @@ public class BlockchainTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        xdagWallet = new WalletImpl();
+        xdagWallet = new OldWallet();
         xdagWallet.init(config);
 
         kernel = new Kernel(config);

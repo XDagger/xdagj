@@ -10,13 +10,11 @@ import org.apache.commons.codec.binary.Hex;
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 public class DeterministicSeed {
     // It would take more than 10^12 years to brute-force a 128 bit seed using $1B worth of computing equipment.

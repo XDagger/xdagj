@@ -39,8 +39,7 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.manager.MinerManagerImpl;
 import io.xdag.mine.miner.Miner;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import io.xdag.wallet.WalletImpl;
+import io.xdag.wallet.OldWallet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,7 +52,7 @@ public class SyncTest {
     public TemporaryFolder root = new TemporaryFolder();
 
     private Config config = new Config();
-    private Wallet xdagWallet;
+    private OldWallet xdagWallet;
     private Kernel kernel;
     private DatabaseFactory dbFactory;
     private MinerManager minerManager;
@@ -85,7 +84,7 @@ public class SyncTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        xdagWallet = new WalletImpl();
+        xdagWallet = new OldWallet();
         xdagWallet.init(config);
         Block firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
         firstAccount.signOut(xdagWallet.getDefKey().ecKey);
