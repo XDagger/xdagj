@@ -31,14 +31,11 @@ import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
-
     Controller controller;
     Kernel kernel;
     Libp2pChannel libp2pChannel;
     BlockHandler blockHandler;
     ChannelManager channelManager;
-
-
     public RPCHandler(Kernel kernel) {
         this.kernel = kernel;
         channelManager = kernel.getLibp2pChannelManager();
@@ -53,15 +50,6 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-//        final Connection connection = ((Stream) p2PChannel).getConnection();
-//        final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
-//        if(!p2PChannel.isInitiator()){
-//            log.info("p2PChannel.isInitiator() is not ready");
-//        }
-//        Controller controller = new Controller(nodeId, p2PChannel);
-//        Controller controller = new Controller();
-//        p2PChannel.pushHandler(controller);
-//        return controller.activeFuture;
         System.out.println("initChannel");
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
         libp2pChannel = new Libp2pChannel(connection,this);
@@ -101,34 +89,11 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         @Override
         public void channelActive(ChannelHandlerContext ctx){
             System.out.println("channelActive");
-//            activeFuture.complete(this);
-//            String blockRawdata = "000000000000000038324654050000004d3782fa780100000000000000000000"
-//                    + "c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d7980000000000000000"
-//                    + "afa5fec4f56f7935125806e235d5280d7092c6840f35b397000000000a000000"
-//                    + "a08202c3f60123df5e3a973e21a2dd0418b9926a2eb7c4fc000000000a000000"
-//                    + "08b65d2e2816c0dea73bf1b226c95c2ae3bc683574f559bbc5dd484864b1dbeb"
-//                    + "f02a041d5f7ff83a69c0e35e7eeeb64496f76f69958485787d2c50fd8d9614e6"
-//                    + "7c2b69c79eddeff5d05b2bfc1ee487b9c691979d315586e9928c04ab3ace15bb"
-//                    + "3866f1a25ed00aa18dde715d2a4fc05147d16300c31fefc0f3ebe4d77c63fcbb"
-//                    + "ec6ece350f6be4c84b8705d3b49866a83986578a3a20e876eefe74de0c094bac"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000"
-//                    + "0000000000000000000000000000000000000000000000000000000000000000";
-//            Block first = new Block(new XdagBlock(Hex.decode(blockRawdata)));
-//            NewBlockMessage msg = new NewBlockMessage(first, 2);
-//            ctx.writeAndFlush(msg);
         }
         /**进来的最后一道，而且发送不在这处理*/
 
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
-            System.out.println("channelRead0");
-            System.out.println("Message = "+msg.toString());
-            System.out.println("Message type = "+msg.getCommand());
             switch (msg.getCommand()) {
                 case NEW_BLOCK:
                     processNewBlock((NewBlockMessage) msg);
@@ -259,7 +224,6 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
          */
         @Override
         public void sendNewBlock(Block newBlock, int TTL) {
-            System.out.println("sendNewBlock 444");
             log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
             NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
             sendMessage(msg);

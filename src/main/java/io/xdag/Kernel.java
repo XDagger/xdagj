@@ -46,6 +46,10 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.manager.MinerManagerImpl;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
+import io.xdag.nat.NatConfiguration;
+import io.xdag.nat.NatManager;
+import io.xdag.nat.NatMethod;
+import io.xdag.nat.NatService;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
 import io.xdag.net.manager.NetDBManager;
@@ -61,6 +65,7 @@ import io.xdag.wallet.WalletImpl;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -96,6 +101,8 @@ public class Kernel {
     protected MinerServer minerServer;
     protected XdagState xdagState;
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
+    protected NatService natService;
+    protected NatConfiguration natConfiguration;
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
@@ -170,12 +177,23 @@ public class Kernel {
         // set up client
         // ====================================
         channelManager = new ChannelManager();
+
+        //set up libp2pNetwork
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
+
         discoveryController = new DiscoveryController();
         discoveryController.start(this);
+
         p2p = new XdagServer(this);
         p2p.start();
+
+        // start natService
+        natConfiguration = NatConfiguration.builder().natMethod(NatMethod.UPNP).build();
+        natService = new NatService(natConfiguration,config.getLibp2pPort(), true);
+        natService.start();
+
+
         client = new XdagClient(config);
 
         // ====================================
@@ -218,7 +236,7 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
-        pow.start();
+//        pow.start();
         minerManager.setPoW(pow);
         minerManager.start();
         if (Config.MAINNET) {

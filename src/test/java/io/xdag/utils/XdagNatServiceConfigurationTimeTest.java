@@ -8,7 +8,7 @@ import java.text.ParseException;
 import java.util.Date;
 import static org.junit.Assert.*;
 
-public class XdagTimeTest {
+public class XdagNatServiceConfigurationTimeTest {
 
     @Test
     public void testGetEndOfEpoch() throws ParseException {

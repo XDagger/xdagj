@@ -228,7 +228,7 @@ public class BlockchainImpl implements Blockchain {
 
             // 如果是自己的区块
             if (checkMineAndAdd(block)) {
-                log.debug("A block hash:" + Hex.toHexString(block.getHashLow()) + " become mine");
+                log.info("A block hash:" + Hex.toHexString(block.getHashLow()) + " become mine");
                 updateBlockFlag(block, BI_OURS, true);
             }
 
@@ -289,7 +289,7 @@ public class BlockchainImpl implements Blockchain {
             if (xdagStats.getTotalnblocks() < xdagStats.getNblocks()) {
                 xdagStats.setTotalnblocks(xdagStats.getNblocks());
             }
-
+            //orphan (hash , block)
             log.debug("======New block waiting to link======");
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
                 log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
@@ -301,7 +301,7 @@ public class BlockchainImpl implements Blockchain {
                 orphanPool.addOrphan(block);
                 xdagStats.nnoref++;
             }
-            log.debug("Current diff:" + xdagStats.getTopDiff().toString(16));
+            log.info("Current diff:" + xdagStats.getTopDiff().toString(16));
             blockStore.saveXdagStatus(xdagStats);
             return result;
         } catch (Throwable e) {
@@ -330,7 +330,7 @@ public class BlockchainImpl implements Blockchain {
                 && ((p.getInfo().flags & BI_REF) != 0)
                 && i > 1
                 && ct >= p.getTimestamp() + 2 * 1024) {
-            log.debug("setMain success block:{}", Hex.toHexString(p.getHashLow()));
+            log.info("setMain success block:{}", Hex.toHexString(p.getHashLow()));
             setMain(p);
         } else {
             log.debug("setMain fail block:{}", p != null?Hex.toHexString(p.getHashLow()):"null");
@@ -476,6 +476,7 @@ public class BlockchainImpl implements Blockchain {
     public void setMain(Block block) {
         // 设置奖励
         long mainNumber = xdagStats.nmain + 1;
+        log.info("mainNumber = {},hash = {}",mainNumber,Hex.toHexString(block.getInfo().getHash()));
         long reward = getReward(mainNumber);
         block.getInfo().setHeight(mainNumber);
         updateBlockFlag(block, BI_MAIN, true);
@@ -769,13 +770,13 @@ public class BlockchainImpl implements Blockchain {
             return;
         }
         block.isSaved = true;
-        log.debug("save block:{}", Hex.toHexString(block.getHashLow()));
+        log.info("save block:{}", Hex.toHexString(block.getHashLow()));
         blockStore.saveBlock(block);
         // 如果是自己的账户
         if (memOurBlocks.containsKey(new ByteArrayWrapper(block.getHash()))) {
-            log.debug("new account:{}", Hex.toHexString(block.getHash()));
+            log.info("new account:{}", Hex.toHexString(block.getHash()));
             if (xdagStats.getOurLastBlockHash() == null) {
-                log.debug("Global miner");
+                log.info("Global miner");
                 xdagStats.setGlobalMiner(block.getHash());
                 blockStore.saveXdagStatus(xdagStats);
             }
@@ -843,7 +844,7 @@ public class BlockchainImpl implements Blockchain {
                     block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKeybyCompress());
             byte[] hash = Sha256Hash.hashTwice(digest);
             if (ecKey.verify(hash, signature)) {
-                log.debug("Validate Success");
+                log.info("Validate Success");
                 addOurBlock(i, block);
                 return true;
             }
@@ -943,6 +944,7 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public List<Block> listMinedBlocks(int count) {
+        System.out.println("xdagStats.getTop() ="+ Hex.toHexString(xdagStats.getTop()));
         Block temp = getBlockByHash(xdagStats.getTop(), false);
         List<Block> res = new ArrayList<>();
         while (count > 0) {

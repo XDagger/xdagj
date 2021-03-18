@@ -131,7 +131,7 @@ public class BlockStore {
         }
         indexSource.put(new byte[] {SETTING_STATS}, value);
     }
-
+    //状态也是存在区块里面的
     public XdagStats getXdagStatus() {
         XdagStats status = null;
         byte[] value = indexSource.get(new byte[] {SETTING_STATS});
@@ -201,7 +201,6 @@ public class BlockStore {
     }
 
     public void saveBlockSums(Block block) {
-        System.out.println("saveBlockSums");
         long size = 512;
         long sum = block.getXdagBlock().getSum();
         long time = block.getTimestamp();

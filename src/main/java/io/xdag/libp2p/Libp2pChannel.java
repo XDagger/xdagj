@@ -24,14 +24,12 @@ public class Libp2pChannel {
 
     //存放连接的节点地址
     public void init(){
-        System.out.println("connection.remoteAddress().toString()"+connection.remoteAddress().toString());
-        System.out.println("connection.secureSession().getRemoteId().toString() = "+connection.secureSession().getRemoteId().toString());
+        log.info( "init libp2pChannel");
         String[] ipcompont= connection.remoteAddress().toString().split("/");
         node = new Node(ipcompont[2],Integer.parseInt(ipcompont[4]));
 //        this.messageQueue = new MessageQueueLib(this);
     }
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        System.out.println("sendNewBlock 333");
         log.debug("send a block hash is:+" + Hex.toHexString(blockWrapper.getBlock().getHashLow()));
         log.debug("ttl:" + blockWrapper.getTtl());
         handler.getController().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());

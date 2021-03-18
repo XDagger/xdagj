@@ -1,4 +1,4 @@
-package io.xdag.libp2p.utils;
+package io.xdag.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -83,7 +83,6 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
         //ByteBuf 是接受的对象
         @Override
         protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) throws Exception {
-            System.out.println("channelRead0");
             String s = buf.toString(CharsetUtil.UTF_8);
             System.out.println(s);
         }

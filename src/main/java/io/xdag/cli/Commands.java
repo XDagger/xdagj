@@ -139,7 +139,7 @@ public class Commands {
         kernel.getBlockStore().fetchOurBlocks(new Function<Pair<Integer, Block>, Boolean>() {
             @Override
             public Boolean apply(Pair<Integer, Block> pair) {
-                int index = pair.getKey().intValue();
+                int index = pair.getKey();
                 Block block = pair.getValue();
                 if(remain.get() <= block.getInfo().getAmount()) {
                     ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
@@ -287,7 +287,9 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
+                //todo:remark 不输出
+                block.getInfo().getRemark() == null?
+                        "null":new String(block.getInfo().getRemark()),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()));
     }
@@ -388,7 +390,7 @@ public class Commands {
                     .append(node.getStat().Inbound.get())
                     .append(" in/")
                     .append(node.getStat().Outbound.get())
-                    .append(" out");
+                    .append(" out").append(System.getProperty("line.separator"));
         }
         for (Node node0 : map0.keySet()) {
             stringBuilder
@@ -401,7 +403,7 @@ public class Commands {
                     .append(node0.getStat().Inbound.get())
                     .append(" in/")
                     .append(node0.getStat().Outbound.get())
-                    .append(" out");
+                    .append(" out").append(System.getProperty("line.separator"));
         }
         return stringBuilder.toString();
     }

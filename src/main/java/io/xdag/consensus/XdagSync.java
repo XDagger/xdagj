@@ -107,7 +107,6 @@ public class XdagSync {
     }
 
     private void requestBlocks(long t, long dt) {
-        System.out.println("requestBlocks");
         // 如果当前状态不是sync start
         if (status != Status.SYNCING) {
             return;
@@ -116,7 +115,6 @@ public class XdagSync {
         long randomSeq;
         SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
-            System.out.println("requestBlocks 111");
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);

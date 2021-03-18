@@ -74,7 +74,7 @@ public class DiscoveryController {
             myid = BytesValue.wrap(privKey.publicKey().bytes());
         }else {
             //随机生成字节点的id
-            this.privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).getFirst();
+            this.privKey = kernel.getPrivKey();
             myid = BytesValue.wrap(privKey.publicKey().bytes());
         }
         mynode = new Endpoint(kernel.getConfig().getNodeIp(),

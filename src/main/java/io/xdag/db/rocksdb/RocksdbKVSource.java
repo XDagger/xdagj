@@ -119,15 +119,16 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 tableCfg.setBlockCache(new LRUCache(32 * 1024 * 1024));
                 tableCfg.setCacheIndexAndFilterBlocks(true);
                 tableCfg.setPinL0FilterAndIndexBlocksInCache(true);
+                tableCfg.setFilter(new BloomFilter(10, false));
 //                tableCfg.(new BloomFilter(10, false));
-//                tableCfg.setVerifyCompression(true);
 
                 // read options
                 readOpts = new ReadOptions();
                 readOpts = readOpts.setPrefixSameAsStart(true).setVerifyChecksums(false);
 
                 try {
-                    log.debug("Opening database");
+                    System.out.println("Opening database");
+                    log.info("Opening database");
                     final Path dbPath = getPath();
                     if (!Files.isSymbolicLink(dbPath.getParent())) {
                         Files.createDirectories(dbPath.getParent());
@@ -148,12 +149,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                             log.error("Failed to restore database '{}' from backup", name, e);
                         }
                     }
-
                     log.debug("Initializing new or existing database: '{}'", name);
                     try {
                         db = RocksDB.open(options, dbPath.toString());
                     } catch (RocksDBException e) {
                         log.error(e.getMessage(), e);
+                        System.out.println("Failed to initialize database");
                         throw new RuntimeException("Failed to initialize database", e);
                     }
 
@@ -161,10 +162,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
                 } catch (IOException ioe) {
                     log.error(ioe.getMessage(), ioe);
+                    System.out.println("Failed to initialize database");
                     throw new RuntimeException("Failed to initialize database", ioe);
                 }
 
                 log.debug("<~ RocksdbKVSource.init(): " + name);
+                System.out.println("RocksdbKVSource.init() succeed");
             }
         } finally {
             resetDbLock.writeLock().unlock();
@@ -212,6 +215,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 if (db == null) {
                     log.error("db is null");
                 } else {
+                    log.info("put block key ={} ,val = {}",Hex.encodeHexString(key),Hex.encodeHexString(val));
                     db.put(key, val);
                 }
             } else {
@@ -227,6 +231,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                                 + (val == null ? "null" : val.length));
             }
         } catch (RocksDBException e) {
+            System.out.println("Failed to put into db");
             log.error("Failed to put into db '{}'", name, e);
             hintOnTooManyOpenFiles(e);
             throw new RuntimeException(e);
@@ -234,7 +239,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             resetDbLock.readLock().unlock();
         }
     }
-
+    //get 不到
     @Override
     public byte[] get(byte[] key) {
         resetDbLock.readLock().lock();

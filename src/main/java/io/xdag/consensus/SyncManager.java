@@ -30,15 +30,19 @@ import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.libp2p.core.PeerId;
 import io.xdag.core.*;
 
+import io.xdag.discovery.peers.DiscoveryPeer;
+import io.xdag.discovery.peers.PeerTable;
 import io.xdag.libp2p.Libp2pChannel;
 import io.xdag.libp2p.manager.ChannelManager;
+import io.xdag.libp2p.peer.LibP2PNodeId;
 import org.spongycastle.util.encoders.Hex;
 
 import com.google.common.collect.Queues;
@@ -53,10 +57,21 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nonnull;
+
 @Slf4j
 @Getter
 @Setter
 public class SyncManager {
+
+    private static final ThreadFactory factory = new ThreadFactory() {
+        private final AtomicInteger cnt = new AtomicInteger(0);
+
+        @Override
+        public Thread newThread(@Nonnull Runnable r) {
+            return new Thread(r, "node-" + cnt.getAndIncrement());
+        }
+    };
 
     private Kernel kernel;
     private Blockchain blockchain;
@@ -65,12 +80,17 @@ public class SyncManager {
     private boolean syncDone = false;
     private XdagChannelManager channelMgr;
     private ChannelManager channelManager;
+    private final ScheduledExecutorService exec;
+    private ScheduledFuture<?> connectlibp2pFuture;
+    private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
 
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
         this.channelManager = kernel.getChannelManager();
+        this.exec = new ScheduledThreadPoolExecutor(1, factory);
+
     }
 
     /** Queue with validated blocks to be added to the blockchain */
@@ -83,6 +103,7 @@ public class SyncManager {
     }
 
     /** Processing the queue adding blocks to the chain. */
+    //todo:修改共识
     public ImportResult ImportBlock(BlockWrapper blockWrapper) {
         log.debug("ImportBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
         ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
@@ -256,12 +277,36 @@ public class SyncManager {
         }
 
         log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
-        log.info("Start PoW");
+        System.out.println("Start PoW");
 
         kernel.getMinerServer().start();
-//        kernel.getPow().start();
-    }
+        kernel.getPow().start();
+        kernel.getLibp2pNetwork().start();
+        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,1,5, TimeUnit.SECONDS);
 
+    }
+    public void doConnectlibp2p(){
+        List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
+        PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
+        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
+        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
+        discoveryPeers1.size();
+        for(int i = 0;i<discoveryPeers1.size();i++){
+            //不添加自己
+            DiscoveryPeer d = discoveryPeers1.get(i);
+            if(d.getEndpoint().equals(kernel.getDiscoveryController().getMynode()) || hadConnectnode.contains(d))  {
+                continue;
+            }
+            StringBuilder stringBuilder = new StringBuilder();
+//       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
+            String id = new LibP2PNodeId(PeerId.fromHex(org.bouncycastle.util.encoders.Hex.toHexString(d.getId().extractArray()))).toString();
+            stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
+                    append("/ipfs/").append(id);
+            System.out.println("connect to the ip = "+ stringBuilder.toString());
+            kernel.getLibp2pNetwork().dail(stringBuilder.toString());
+            hadConnectnode.add(d);
+        }
+    }
     public void stop() {
         log.debug("sync manager stop");
     }

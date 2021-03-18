@@ -23,10 +23,14 @@
  */
 package io.xdag.net.node;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
@@ -35,8 +39,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import io.libp2p.core.PeerId;
-import io.libp2p.core.crypto.KeyKt;
-import io.libp2p.core.crypto.PubKey;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.discovery.DiscoveryController;
@@ -59,6 +61,7 @@ import org.bouncycastle.util.encoders.Hex;
 public class NodeManager {
     private static final ThreadFactory factory = new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
+
         @Override
         public Thread newThread(@Nonnull Runnable r) {
             return new Thread(r, "node-" + cnt.getAndIncrement());
@@ -82,10 +85,10 @@ public class NodeManager {
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
     private ScheduledFuture<?> connectlibp2pFuture;
+    private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
     private io.xdag.libp2p.manager.ChannelManager channelManager;
     private DiscoveryController discoveryController;
-    private Set<String> hadConnected = new HashSet<>();
-    private Libp2pNetwork libp2pNetwork;
+    Libp2pNetwork libp2pNetwork;
 
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
@@ -111,7 +114,7 @@ public class NodeManager {
             // every 100 seconds, delayed by 5 seconds (public IP lookup)
             fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
-            connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,5,10,TimeUnit.SECONDS);
+            connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,1,5,TimeUnit.SECONDS);
             isRunning = true;
             log.debug("Node manager started");
         }
@@ -204,30 +207,26 @@ public class NodeManager {
             client.connect(ip, port, initializer);
         }
     }
-
+    //todo :加一个不能重复连接的逻辑
     public void doConnectlibp2p(){
-        ConcurrentHashMap channel = kernel.getChannelManager().getChannel();
         PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
-        List<DiscoveryPeer> discoveryPeers = new ArrayList<>(peerTable.getAllPeers());
-        for(int i = 0;i<discoveryPeers.size();i++){
+        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
+        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
+        discoveryPeers1.size();
+        for( int i = 0;i<discoveryPeers1.size();i++){
             //不添加自己
-            DiscoveryPeer d = discoveryPeers.get(i);
-            if(d.getEndpoint().equals(kernel.getDiscoveryController().getMynode()) ||
-                    channel.containsKey(new InetSocketAddress(d.getEndpoint().getHost(),d.getEndpoint().getTcpPort().getAsInt()))
-            || hadConnected.contains(d.getId().toString()))  {
-                System.out.println("已经连接过了");
+            DiscoveryPeer d = discoveryPeers1.get(i);
+            if(d.getEndpoint().equals(kernel.getDiscoveryController().getMynode()) || hadConnectnode.contains(d))  {
                 continue;
             }
             StringBuilder stringBuilder = new StringBuilder();
 //       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-            PubKey pubKey = KeyKt.unmarshalPublicKey(d.getId().extractArray());
-            String id = new LibP2PNodeId(PeerId.fromPubKey(pubKey)).toString();
-//            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
+            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
             stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
                     append("/ipfs/").append(id);
             System.out.println("connect to the ip = "+ stringBuilder.toString());
             kernel.getLibp2pNetwork().dail(stringBuilder.toString());
-            hadConnected.add(d.getId().toString());
+            hadConnectnode.add(d);
         }
     }
 

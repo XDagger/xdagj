@@ -6,8 +6,8 @@ import io.xdag.libp2p.RPCHandler.RPCHandler;
 import io.xdag.libp2p.peer.LibP2PNodeId;
 import io.xdag.libp2p.peer.NodeId;
 import io.xdag.libp2p.peer.Peer;
-import io.xdag.libp2p.utils.MultiaddrPeerAddress;
-import io.xdag.libp2p.utils.SafeFuture;
+import io.xdag.utils.MultiaddrPeerAddress;
+import io.xdag.utils.SafeFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 

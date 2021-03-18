@@ -1,4 +1,4 @@
-package io.xdag.libp2p.utils;
+package io.xdag.utils;
 
 import java.util.concurrent.CompletionStage;
 

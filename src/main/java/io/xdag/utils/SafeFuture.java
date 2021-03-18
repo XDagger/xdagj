@@ -1,4 +1,4 @@
-package io.xdag.libp2p.utils;
+package io.xdag.utils;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -47,7 +47,14 @@ public class SafeFuture<T> extends CompletableFuture<T> {
         propagateResult(stage, safeFuture);
         return safeFuture;
     }
-
+    public static SafeFuture<Void> fromRunnable(final ExceptionThrowingRunnable action) {
+        try {
+            action.run();
+            return SafeFuture.COMPLETE;
+        } catch (Throwable t) {
+            return SafeFuture.failedFuture(t);
+        }
+    }
     public static <U> SafeFuture<U> of(final ExceptionThrowingFutureSupplier<U> futureSupplier) {
         try {
             return SafeFuture.of(futureSupplier.get());

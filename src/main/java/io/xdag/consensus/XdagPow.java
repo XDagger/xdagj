@@ -274,6 +274,7 @@ public class XdagPow implements PoW, Runnable {
                         onTimeout();
 //                    }
                     break;
+                    //这是干嘛的？
                 case NEW_PRETOP:
                     onNewPreTop();
                     break;

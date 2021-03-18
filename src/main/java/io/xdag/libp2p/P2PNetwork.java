@@ -2,7 +2,7 @@ package io.xdag.libp2p;
 
 import io.xdag.libp2p.peer.NodeId;
 import io.xdag.libp2p.peer.PeerAddress;
-import io.xdag.libp2p.utils.SafeFuture;
+import io.xdag.utils.SafeFuture;
 import org.apache.tuweni.bytes.Bytes;
 
 import java.util.Optional;

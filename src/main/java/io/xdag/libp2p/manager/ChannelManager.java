@@ -71,7 +71,6 @@ public class ChannelManager {
         activeChannels.put(node.getHexId(), channel);
         System.out.println("activeChannel size:"+ activeChannels.size());
     }
-
     public void add(Libp2pChannel ch){
         log.info("xdag libp2pchannel manager->Channel added: remoteAddress = {}:{}", ch.getNode().getAddress());
         channels.put(ch.getNode().getAddress(), ch);
@@ -90,11 +89,6 @@ public class ChannelManager {
     }
     public List<Libp2pChannel> getactiveChannel(){
         return new ArrayList<>(activeChannels.values());
-    }
-
-    public ConcurrentHashMap getChannel(){
-        System.out.println("channels = "+channels.size());
-        return channels;
     }
     public void stop() {
         log.debug("Channel Manager stop...");

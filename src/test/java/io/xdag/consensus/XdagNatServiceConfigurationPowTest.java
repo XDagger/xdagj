@@ -38,7 +38,7 @@ import java.io.IOException;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
 @Slf4j
-public class XdagPowTest {
+public class XdagNatServiceConfigurationPowTest {
     XdagSha256Digest currentTaskDigest;
 
     @Before

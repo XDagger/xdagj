@@ -2,7 +2,6 @@ package io.xdag.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
-import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.Builder;
@@ -20,13 +19,12 @@ import io.xdag.libp2p.peer.LibP2PNodeId;
 import io.xdag.libp2p.peer.NodeId;
 import io.xdag.libp2p.peer.Peer;
 import io.xdag.libp2p.peer.PeerAddress;
-import io.xdag.libp2p.utils.IpUtil;
-import io.xdag.libp2p.utils.MultiaddrPeerAddress;
-import io.xdag.libp2p.utils.MultiaddrUtil;
-import io.xdag.libp2p.utils.SafeFuture;
+import io.xdag.utils.IpUtil;
+import io.xdag.utils.MultiaddrPeerAddress;
+import io.xdag.utils.MultiaddrUtil;
+import io.xdag.utils.SafeFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

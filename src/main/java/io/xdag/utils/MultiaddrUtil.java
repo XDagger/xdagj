@@ -1,4 +1,4 @@
-package io.xdag.libp2p.utils;/*
+package io.xdag.utils;/*
  * Copyright 2020 ConsenSys AG.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
