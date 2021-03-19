@@ -217,8 +217,6 @@ public class Commands {
      * Connect to Node
      */
     public void connect(String server, int port) {
-        System.out.println("connect by netty ");
-        System.out.println("ip port = "+server +" "+ port);
         kernel.getNodeMgr().doConnect(server, port);
     }
 
@@ -226,7 +224,6 @@ public class Commands {
         StringBuilder stringBuilder = new StringBuilder();
 //       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
         stringBuilder.append("/ip4/").append(server).append("/tcp/").append(port).append("/ipfs/").append(ip.replaceAll(":",""));
-        System.out.println("connect to the ip = "+ stringBuilder.toString());
         kernel.getLibp2pNetwork().dail(stringBuilder.toString());
     }
 

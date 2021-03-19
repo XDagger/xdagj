@@ -82,8 +82,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
                     b.getDebug().getMuxFramesHandler().addLogger(LogLevel.DEBUG, "wire.mux");
                     b.getConnectionHandlers().add(peerManager);
                 });
-        System.out.println(advertisedAddr.toString());
-        System.out.println("host = "+host.getPeerId().toString());
+
     }
 
     @Override

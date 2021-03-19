@@ -85,33 +85,33 @@
 			</plugin>
 
 			<!-- license header check -->
-			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>4.0.rc1</version>
-				<configuration>
-					<licenseSets>
-						<licenseSet>
-							<header>LICENSE</header>
-							<includes>
-								<include>src/main/**/*.java</include>
-								<include>src/test/**/*.java</include>
-							</includes>
-						</licenseSet>
-					</licenseSets>
-					<properties>
-						<owner>Mycila</owner>
-						<email>mathieu.carbou@gmail.com</email>
-					</properties>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>com.mycila</groupId>-->
+<!--				<artifactId>license-maven-plugin</artifactId>-->
+<!--				<version>4.0.rc1</version>-->
+<!--				<configuration>-->
+<!--					<licenseSets>-->
+<!--						<licenseSet>-->
+<!--							<header>LICENSE</header>-->
+<!--							<includes>-->
+<!--								<include>src/main/**/*.java</include>-->
+<!--								<include>src/test/**/*.java</include>-->
+<!--							</includes>-->
+<!--						</licenseSet>-->
+<!--					</licenseSets>-->
+<!--					<properties>-->
+<!--						<owner>Mycila</owner>-->
+<!--						<email>mathieu.carbou@gmail.com</email>-->
+<!--					</properties>-->
+<!--				</configuration>-->
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<goals>-->
+<!--							<goal>check</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
+<!--				</executions>-->
+<!--			</plugin>-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
@@ -258,12 +258,8 @@
 			<artifactId>vertx-core</artifactId>
 			<version>4.0.0</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.hedera.hashgraph/ethereumj-core -->
-		<dependency>
-			<groupId>com.hedera.hashgraph</groupId>
-			<artifactId>ethereumj-core</artifactId>
-			<version>1.12.0-v0.5.0</version>
-		</dependency>
+
+
 
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
@@ -419,17 +415,6 @@
 			<artifactId>jline</artifactId>
 			<version>3.16.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>1.18.2</version>
-			<scope>provided</scope>
-		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>ch.qos.logback</groupId>-->
-<!--			<artifactId>logback-classic</artifactId>-->
-<!--			<version>1.2.3</version>-->
-<!--		</dependency>-->
 
 		<dependency>
 			<groupId>cn.hutool</groupId>

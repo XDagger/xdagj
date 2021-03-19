@@ -39,7 +39,7 @@ public class NeighborsPacketData implements PacketData {
         in.enterList();
         final List<DiscoveryPeer> peers =
                 in.readList(rlp -> new DiscoveryPeer(DefaultPeer.readFrom(rlp)));
-        System.out.println("peers nums = "+peers.size());
+        log.info("peers nums = "+peers.size());
         final long expiration = in.readLongScalar();
         in.leaveList();
         return new NeighborsPacketData(peers, expiration);

@@ -50,7 +50,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-        System.out.println("initChannel");
+        log.info("libp2p initChannel");
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
         libp2pChannel = new Libp2pChannel(connection,this);
         libp2pChannel.init();
@@ -88,7 +88,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx){
-            System.out.println("channelActive");
+            log.info("channelActive");
         }
         /**进来的最后一道，而且发送不在这处理*/
 
@@ -123,7 +123,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
 
         @Override
         public void handlerAdded(ChannelHandlerContext ctx) {
-            System.out.println("handlerAdded ");
+            log.info("handlerAdded ");
             msgQueue.activate(ctx);
         }
 
@@ -184,7 +184,6 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
          * 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送
          */
         protected void processSumsRequest(SumRequestMessage msg) {
-            System.out.println("processSumsRequest");
             log.debug("processSumsRequest:" + msg);
             updateXdagStats(msg);
             byte[] sums = new byte[256];

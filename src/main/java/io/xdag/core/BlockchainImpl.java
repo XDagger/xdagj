@@ -944,7 +944,6 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public List<Block> listMinedBlocks(int count) {
-        System.out.println("xdagStats.getTop() ="+ Hex.toHexString(xdagStats.getTop()));
         Block temp = getBlockByHash(xdagStats.getTop(), false);
         List<Block> res = new ArrayList<>();
         while (count > 0) {

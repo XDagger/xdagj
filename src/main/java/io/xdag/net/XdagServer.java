@@ -63,7 +63,6 @@ public class XdagServer {
                     ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getConnectionTimeout());
             b.childHandler(new XdagChannelInitializer(kernel, true, null));
             log.debug("Listening for incoming connections, address: {}:{} ", ip, port);
-            System.out.println("Listening for incoming connections, address " + ip + " "+port);
             channelFuture = b.bind(ip, port).sync();
             listening = true;
             log.debug("Connection listen true");

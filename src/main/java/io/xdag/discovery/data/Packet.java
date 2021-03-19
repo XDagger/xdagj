@@ -10,6 +10,7 @@ import io.xdag.utils.discoveryutils.bytes.BytesValueRLPOutput;
 import io.xdag.utils.discoveryutils.bytes.MutableBytesValue;
 import io.xdag.utils.discoveryutils.bytes.RLP;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -35,7 +36,7 @@ public class Packet {
     private BytesValue signature;
     private BytesValue publicKey;
 
-    private Packet(final PacketType type, final PacketData data ,PrivKey pri) {
+    private Packet(final PacketType type, final PacketData data ,PrivKey pri) throws IOException {
 
         this.type = type;
         this.data = data;
@@ -49,7 +50,7 @@ public class Packet {
     }
 
     private Packet(
-            final PacketType packetType, final PacketData packetData, final BytesValue message) {
+            final PacketType packetType, final PacketData packetData, final BytesValue message) throws IOException {
         this.type = packetType;
         this.data = packetData;
         this.hash  = message.slice(0, 32);
@@ -65,11 +66,11 @@ public class Packet {
 
 
     public static Packet create(
-            final PacketType packetType, final PacketData packetData ,PrivKey privKey) {
+            final PacketType packetType, final PacketData packetData ,PrivKey privKey) throws IOException {
         return new Packet(packetType, packetData, privKey);
     }
 
-    public static Packet decode(final Buffer message) {
+    public static Packet decode(final Buffer message) throws IOException {
         final byte type = message.getByte(TYPE_INDEX);
         Signature_Len = message.getByte(LENGTH_INDEX);
         final PacketType packetType =

@@ -4,6 +4,7 @@ import io.xdag.utils.discoveryutils.cryto.Hash;
 import io.xdag.utils.discoveryutils.bytes.Bytes32;
 import io.xdag.utils.discoveryutils.bytes.BytesValue;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class DefaultPeerId implements PeerId {
@@ -20,7 +21,7 @@ public class DefaultPeerId implements PeerId {
     }
 
     @Override
-    public Bytes32 keccak256() {
+    public Bytes32 keccak256() throws IOException {
         if (keccak256 == null) {
             keccak256 = Hash.keccak256(getId());
         }

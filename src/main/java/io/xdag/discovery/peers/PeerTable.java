@@ -6,6 +6,7 @@ import com.google.common.hash.BloomFilter;
 import io.xdag.utils.discoveryutils.cryto.Hash;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
@@ -34,7 +35,7 @@ public class PeerTable {
      * @param nodeId The ID of the node where this peer table is stored.
      * @param bucketSize The maximum length of each k-bucket.
      */
-    public PeerTable(final BytesValue nodeId, final int bucketSize) {
+    public PeerTable(final BytesValue nodeId, final int bucketSize) throws IOException {
         this.keccak256 = Hash.keccak256(nodeId);
         this.table =
                 Stream.generate(() -> new Bucket(DEFAULT_BUCKET_SIZE))
@@ -48,7 +49,7 @@ public class PeerTable {
         //buildBloomFilter();
     }
 
-    public PeerTable(final BytesValue nodeId) {
+    public PeerTable(final BytesValue nodeId) throws IOException {
         this(nodeId, DEFAULT_BUCKET_SIZE);
     }
 
@@ -58,7 +59,7 @@ public class PeerTable {
      * @param peer The peer to query.
      * @return The stored representation.
      */
-    public Optional<DiscoveryPeer> get(final PeerId peer) {
+    public Optional<DiscoveryPeer> get(final PeerId peer) throws IOException {
         final int distance = distanceFrom(peer);
         return table[distance].getAndTouch(peer.getId());
     }
@@ -80,14 +81,13 @@ public class PeerTable {
      * @param peer The peer to add.
      * @return An object indicating the outcome of the operation.
      */
-    public AddResult tryAdd(final DiscoveryPeer peer) {
+    public AddResult tryAdd(final DiscoveryPeer peer) throws IOException {
 
         final BytesValue id = peer.getId();
         final int distance = distanceFrom(peer);
 
         // Safeguard against adding ourselves to the peer table.
         if (distance == 0) {
-            System.out.println("不能添加自己");
             return AddResult.self();
         }
 
@@ -120,7 +120,7 @@ public class PeerTable {
      *
      * @param peer The peer to evict.
      */
-    public void evict(final PeerId peer) {
+    public void evict(final PeerId peer) throws IOException {
         final BytesValue id = peer.getId();
         final int distance = distanceFrom(peer);
         distanceCache.remove(id);
@@ -150,19 +150,25 @@ public class PeerTable {
      * @param limit The amount of results to return.
      * @return The <code>limit</code> closest peers, at most.
      */
-    public List<DiscoveryPeer> nearestPeers(final BytesValue target, final int limit) {
+    public List<DiscoveryPeer> nearestPeers(final BytesValue target, final int limit) throws IOException {
         final BytesValue keccak256 = Hash.keccak256(target);
         return getAllPeers()
                 .stream()
                 .filter(p -> p.getStatus() == PeerDiscoveryStatus.BONDED)
-                .sorted(comparingInt((peer) -> distance(peer.keccak256(), keccak256)))
+                .sorted(comparingInt((peer) -> {
+                    try {
+                        return distance(peer.keccak256(), keccak256);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    return 0;
+                }))
                 .limit(limit)
                 .collect(toList());
     }
 
     public Collection<DiscoveryPeer> getAllPeers() {
-        return unmodifiableList(
-                Arrays.stream(table).flatMap(e -> e.peers().stream()).collect(toList()));
+        return Arrays.stream(table).flatMap(e -> e.peers().stream()).collect(java.util.stream.Collectors.toUnmodifiableList());
     }
 
     /**
@@ -172,7 +178,7 @@ public class PeerTable {
      * @param peer The target peer.
      * @return The distance.
      */
-    private int distanceFrom(final PeerId peer) {
+    private int distanceFrom(final PeerId peer) throws IOException {
         final Integer distance = distanceCache.get(peer.getId());
         return distance == null ? distance(keccak256, peer.keccak256()) : distance;
     }

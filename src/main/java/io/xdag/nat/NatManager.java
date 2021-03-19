@@ -93,7 +93,7 @@ public class NatManager extends Service {
                 .thenCompose(
                         natPortMapping -> {
                             forwardedPorts.add(natPortMapping);
-                            System.out.println("upnp success");
+                            log.info("upnp success");
                             return SafeFuture.COMPLETE;
                         })
                 .finish(error -> log.debug("Failed to forward port ", error));

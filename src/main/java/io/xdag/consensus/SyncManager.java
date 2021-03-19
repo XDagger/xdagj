@@ -34,6 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import io.libp2p.core.PeerId;
 import io.xdag.core.*;
@@ -43,6 +44,7 @@ import io.xdag.discovery.peers.PeerTable;
 import io.xdag.libp2p.Libp2pChannel;
 import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.libp2p.peer.LibP2PNodeId;
+import io.xdag.net.node.Node;
 import org.spongycastle.util.encoders.Hex;
 
 import com.google.common.collect.Queues;
@@ -287,6 +289,7 @@ public class SyncManager {
     }
     public void doConnectlibp2p(){
         List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
+        Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
         PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
         Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
         List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
@@ -294,7 +297,8 @@ public class SyncManager {
         for(int i = 0;i<discoveryPeers1.size();i++){
             //不添加自己
             DiscoveryPeer d = discoveryPeers1.get(i);
-            if(d.getEndpoint().equals(kernel.getDiscoveryController().getMynode()) || hadConnectnode.contains(d))  {
+            if(d.getEndpoint().equals(kernel.getDiscoveryController().getMynode()) || hadConnectnode.contains(d)||
+            nodes.anyMatch(a->a.equals(new Node(d.getEndpoint().getHost(),d.getEndpoint().getTcpPort().getAsInt()))))  {
                 continue;
             }
             StringBuilder stringBuilder = new StringBuilder();
@@ -302,7 +306,6 @@ public class SyncManager {
             String id = new LibP2PNodeId(PeerId.fromHex(org.bouncycastle.util.encoders.Hex.toHexString(d.getId().extractArray()))).toString();
             stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
                     append("/ipfs/").append(id);
-            System.out.println("connect to the ip = "+ stringBuilder.toString());
             kernel.getLibp2pNetwork().dail(stringBuilder.toString());
             hadConnectnode.add(d);
         }

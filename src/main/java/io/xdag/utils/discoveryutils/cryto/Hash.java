@@ -1,11 +1,12 @@
 package io.xdag.utils.discoveryutils.cryto;
 
+import io.xdag.utils.XdagSha256Digest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.ethereum.crypto.cryptohash.Keccak256;
 import io.xdag.utils.discoveryutils.BouncyCastleMessageDigestFactory;
 import io.xdag.utils.discoveryutils.bytes.Bytes32;
 import io.xdag.utils.discoveryutils.bytes.BytesValue;
 
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
@@ -32,13 +33,9 @@ public abstract class Hash {
     }
 
 
-    public static Bytes32 keccak256(final BytesValue input) {
+    public static Bytes32 keccak256(final BytesValue input) throws IOException {
         byte[] tmp = input.extractArray();
-        Keccak256 digest =  new Keccak256();
-        digest.update(tmp);
-        return Bytes32.wrap(digestUsingAlgorithm(input, KECCAK256_ALG));
-
+        XdagSha256Digest xdagSha256Digest = new XdagSha256Digest();
+        return Bytes32.wrap(xdagSha256Digest.sha256Final(tmp));
     }
-
-
 }

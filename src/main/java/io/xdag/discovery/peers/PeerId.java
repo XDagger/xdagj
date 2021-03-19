@@ -3,6 +3,8 @@ package io.xdag.discovery.peers;
 import io.xdag.utils.discoveryutils.bytes.Bytes32;
 import io.xdag.utils.discoveryutils.bytes.BytesValue;
 
+import java.io.IOException;
+
 public interface PeerId {
     BytesValue getId();
 
@@ -12,5 +14,5 @@ public interface PeerId {
      *
      * @return The Keccak-256 hash of the peer's ID.
      */
-    Bytes32 keccak256();
+    Bytes32 keccak256() throws IOException;
 }

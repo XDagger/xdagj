@@ -127,7 +127,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 readOpts = readOpts.setPrefixSameAsStart(true).setVerifyChecksums(false);
 
                 try {
-                    System.out.println("Opening database");
                     log.info("Opening database");
                     final Path dbPath = getPath();
                     if (!Files.isSymbolicLink(dbPath.getParent())) {
@@ -154,7 +153,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                         db = RocksDB.open(options, dbPath.toString());
                     } catch (RocksDBException e) {
                         log.error(e.getMessage(), e);
-                        System.out.println("Failed to initialize database");
                         throw new RuntimeException("Failed to initialize database", e);
                     }
 
@@ -162,12 +160,10 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
                 } catch (IOException ioe) {
                     log.error(ioe.getMessage(), ioe);
-                    System.out.println("Failed to initialize database");
                     throw new RuntimeException("Failed to initialize database", ioe);
                 }
 
                 log.debug("<~ RocksdbKVSource.init(): " + name);
-                System.out.println("RocksdbKVSource.init() succeed");
             }
         } finally {
             resetDbLock.writeLock().unlock();

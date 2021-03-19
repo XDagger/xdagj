@@ -69,10 +69,9 @@ public class ChannelManager {
     public void onChannelActive(Libp2pChannel channel, Node node){
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
-        System.out.println("activeChannel size:"+ activeChannels.size());
+        log.info("activeChannel size:"+ activeChannels.size());
     }
     public void add(Libp2pChannel ch){
-        log.info("xdag libp2pchannel manager->Channel added: remoteAddress = {}:{}", ch.getNode().getAddress());
         channels.put(ch.getNode().getAddress(), ch);
     }
     public void remove(Libp2pChannel ch) {

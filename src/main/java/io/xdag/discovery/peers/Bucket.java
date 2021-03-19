@@ -42,7 +42,6 @@ public class Bucket {
         // Avoid duplicating the peer if it already exists in the bucket.
         for (int i = 0; i <= tailIndex; i++) {
             if (peer.equals(kBucket[i])) {
-                System.out.println("重复添加");
                 throw new IllegalArgumentException(
                         String.format("Tried to add duplicate peer to k-bucket: %s", peer.getId()));
             }
