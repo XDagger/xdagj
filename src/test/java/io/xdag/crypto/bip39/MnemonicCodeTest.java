@@ -1,7 +1,5 @@
 package io.xdag.crypto.bip39;
 
-import io.xdag.crypto.bip39.MnemonicCode;
-import io.xdag.crypto.bip39.MnemonicException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Before;
 import org.junit.Test;

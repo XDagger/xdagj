@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xmlns="http://maven.apache.org/POM/4.0.0"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xmlns="http://maven.apache.org/POM/4.0.0"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.xdag</groupId>
@@ -30,20 +30,16 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+
 	<repositories>
-				<repository>
-					<id>bintray</id>
-					<url>https://jcenter.bintray.com</url>
-				</repository>
-				<repository>
-					<id>jitpack.io</id>
-					<url>https://jitpack.io</url>
-				</repository>
-<!--		<repository>-->
-<!--			<id>alimaven</id>-->
-<!--			<name>aliyun maven</name>-->
-<!--			<url>http://maven.aliyun.com/nexus/content/groups/public/</url>-->
-<!--		</repository>-->
+		<repository>
+			<id>bintray</id>
+			<url>https://jcenter.bintray.com</url>
+		</repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
 	</repositories>
 
 	<pluginRepositories>
@@ -61,11 +57,11 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<source>15</source>
-					<target>15</target>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
 					<skip>true</skip>
-					<compilerArgs>--enable-preview</compilerArgs>
-					<!--					<compilerArgs>&#45;&#45;enable-preview</compilerArgs>-->
+                    <compilerArgs>--enable-preview</compilerArgs>
+                    <!--					<compilerArgs>&#45;&#45;enable-preview</compilerArgs>-->
 				</configuration>
 			</plugin>
 
@@ -79,7 +75,6 @@
 						<index>true</index>
 						<manifestEntries>
 							<Main-Class>io.xdag.Bootstrap</Main-Class>
-							<!--suppress UnresolvedMavenProperty -->
 							<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
 							<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
 							<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
@@ -88,34 +83,34 @@
 				</configuration>
 			</plugin>
 
-<!--			 license header check-->
-						<plugin>
-							<groupId>com.mycila</groupId>
-							<artifactId>license-maven-plugin</artifactId>
-							<version>4.0.rc1</version>
-							<configuration>
-								<licenseSets>
-									<licenseSet>
-										<header>LICENSE</header>
-										<includes>
-											<include>src/main/**/*.java</include>
-											<include>src/test/**/*.java</include>
-										</includes>
-									</licenseSet>
-								</licenseSets>
-								<properties>
-									<owner>Mycila</owner>
-									<email>mathieu.carbou@gmail.com</email>
-								</properties>
-							</configuration>
-							<executions>
-								<execution>
-									<goals>
-										<goal>check</goal>
-									</goals>
-								</execution>
-							</executions>
-						</plugin>
+			<!-- license header check -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>4.0.rc1</version>
+				<configuration>
+					<licenseSets>
+						<licenseSet>
+							<header>LICENSE</header>
+							<includes>
+								<include>src/main/**/*.java</include>
+								<include>src/test/**/*.java</include>
+							</includes>
+						</licenseSet>
+					</licenseSets>
+					<properties>
+						<owner>Mycila</owner>
+						<email>mathieu.carbou@gmail.com</email>
+					</properties>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
@@ -151,27 +146,26 @@
 								</filter>
 							</filters>
 							<shadedArtifactAttached>true</shadedArtifactAttached>
-							<shadedClassifierName>shaded</shadedClassifierName>
+                    		<shadedClassifierName>shaded</shadedClassifierName>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
-									<resource>.SF</resource>
-									<resource>NOTICE</resource>
-									<resource>AL2.0</resource>
-									<resource>LGPL2.1</resource>
-									<resource>LICENSE.txt</resource>
-									<resource>NOTICE.txt</resource>
-								</transformer>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-									<resource>LICENSE</resource>
-								</transformer>
+		                            <resource>.SF</resource>
+		                            <resource>NOTICE</resource>
+		                            <resource>AL2.0</resource>
+		                            <resource>LGPL2.1</resource>
+		                            <resource>LICENSE.txt</resource>
+		                            <resource>NOTICE.txt</resource>
+		                        </transformer>
+		                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+		                            <resource>LICENSE</resource>
+		                        </transformer>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
 										<Main-Class>io.xdag.Bootstrap</Main-Class>
-										<!--suppress UnresolvedMavenProperty -->
 										<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
-										<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
-										<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
-										<Multi-Release>true</Multi-Release>
+		                                <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+		                                <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+		                                <Multi-Release>true</Multi-Release>
 									</manifestEntries>
 								</transformer>
 							</transformers>
@@ -179,50 +173,50 @@
 					</execution>
 				</executions>
 			</plugin>
-
+			
 			<plugin>
-				<groupId>pl.project13.maven</groupId>
-				<artifactId>git-commit-id-plugin</artifactId>
-				<version>4.0.0</version>
-				<executions>
-					<execution>
-						<id>get-the-git-infos</id>
-						<goals>
-							<goal>revision</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>validate-the-git-infos</id>
-						<goals>
-							<goal>validateRevision</goal>
-						</goals>
-						<phase>package</phase>
-					</execution>
-				</executions>
-				<configuration>
-					<abbrevLength>40</abbrevLength>
-					<dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
-					<verbose>false</verbose>
-					<dateFormat>yyyy-MM-dd HH:mm:ss</dateFormat>
-					<prefix>git</prefix>
-					<generateGitPropertiesFile>true</generateGitPropertiesFile>
-					<generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-				</configuration>
-			</plugin>
-
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>4.0.0</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>validate-the-git-infos</id>
+                        <goals>
+                            <goal>validateRevision</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <abbrevLength>40</abbrevLength>
+                    <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+                    <verbose>false</verbose>
+                    <dateFormat>yyyy-MM-dd HH:mm:ss</dateFormat>
+                    <prefix>git</prefix>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                </configuration>
+            </plugin>
+			
 			<!-- clean -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-clean-plugin</artifactId>
-				<version>3.1.0</version>
-				<configuration>
-					<filesets>
-						<fileset>
-							<directory>${dist.base}</directory>
-						</fileset>
-					</filesets>
-				</configuration>
-			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${dist.base}</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
 		</plugins>
 	</build>
 
@@ -257,36 +251,14 @@
 			<artifactId>BIP44</artifactId>
 			<version>2019.01.27</version>
 		</dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-core</artifactId>
-			<version>4.0.0</version>
-		</dependency>
-
-
-
-		<dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.68</version>
-		</dependency>
 
 		<dependency>
 			<groupId>fr.acinq.bitcoin</groupId>
 			<artifactId>secp256k1-jni</artifactId>
 			<version>1.3</version>
 		</dependency>
-		<dependency>
-			<groupId>io.libp2p</groupId>
-			<artifactId>jvm-libp2p-minimal</artifactId>
-			<version>0.7.0-RELEASE</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jetbrains.kotlin</groupId>
-			<artifactId>kotlin-stdlib</artifactId>
-			<version>1.4.0</version>
-		</dependency>
 
+		<!-- Logging framework -->
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
@@ -311,11 +283,7 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.11</version>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>org.apache.logging.log4j</groupId>-->
-<!--			<artifactId>log4j-slf4j-impl</artifactId>-->
-<!--			<version>2.13.3</version>-->
-<!--		</dependency>-->
+		
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
@@ -360,47 +328,23 @@
 			<version>5.0.0-RC9</version>
 		</dependency>
 
-
 		<dependency>
-			<groupId>org.jupnp</groupId>
-			<artifactId>org.jupnp.support</artifactId>
-			<version>2.5.2</version>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.16</version>
+			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.jupnp</groupId>
-			<artifactId>org.jupnp</artifactId>
-			<version>2.5.2</version>
-		</dependency>
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-			<version>4.8.1</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-core</artifactId>
-			<version>3.3.3</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.assertj/assertj-core -->
-		<dependency>
-			<groupId>org.assertj</groupId>
-			<artifactId>assertj-core</artifactId>
-			<version>3.19.0</version>
-			<scope>test</scope>
-		</dependency>
-
 
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
 			<version>4.1.53.Final</version>
 		</dependency>
+
 		<dependency>
-			<groupId>com.data-artisans</groupId>
-			<artifactId>frocksdbjni</artifactId>
-			<version>5.17.2-artisans-2.0</version>
+			<groupId>org.rocksdb</groupId>
+			<artifactId>rocksdbjni</artifactId>
+			<version>6.13.3</version>
 		</dependency>
 
 		<dependency>
@@ -420,32 +364,6 @@
 			<artifactId>hutool-all</artifactId>
 			<version>5.4.4</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.tuweni</groupId>
-			<artifactId>tuweni-bytes</artifactId>
-			<version>1.1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>1.18.18</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<version>5.8.0-M1</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.spockframework/spock-core -->
-		<dependency>
-			<groupId>org.spockframework</groupId>
-			<artifactId>spock-core</artifactId>
-			<version>2.0-M4-groovy-3.0</version>
-			<scope>test</scope>
-		</dependency>
-
-
 
 	</dependencies>
 

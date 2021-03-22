@@ -42,13 +42,13 @@ import io.xdag.crypto.ECKey;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.FileUtils;
 
-public class WalletImpl implements Wallet {
+public class OldWallet {
     
     private List<KeyInternalItem> keyLists = new ArrayList<>();
     private KeyInternalItem defKey;
     private int keysNum = 0;
 
-    @Override
+//    @Override
     public int init(Config config) throws Exception {
         File dnetDatFile = new File(Config.DNET_KEY_FILE);
         Native.dfslib_random_init();
@@ -81,22 +81,22 @@ public class WalletImpl implements Wallet {
         return 0;
     }
 
-    @Override
+//    @Override
     public KeyInternalItem getDefKey() {
         return defKey;
     }
 
-    @Override
+//    @Override
     public void createNewKey() {
         addKey(null);
     }
 
-    @Override
+//    @Override
     public ECKey getKeyByIndex(int index) {
         return keyLists.get(index).ecKey;
     }
 
-    @Override
+//    @Override
     public List<KeyInternalItem> getKey_internal() {
         return keyLists;
     }

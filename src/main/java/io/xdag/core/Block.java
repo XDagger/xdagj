@@ -132,7 +132,7 @@ public class Block implements Cloneable {
 
         if (CollectionUtils.isNotEmpty(keys)) {
             for (ECKey key : keys) {
-                byte[] keydata = key.getPubKeybyCompress();
+                byte[] keydata = key.getPubKey(true);
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
@@ -299,7 +299,7 @@ public class Block implements Cloneable {
             encoder.write(info.getRemark());
         }
         for (ECKey ecKey : pubKeys) {
-            byte[] key = BytesUtils.subArray(ecKey.getPubKeybyCompress(), 1, 32);
+            byte[] key = BytesUtils.subArray(ecKey.getPubKey(true), 1, 32);
             encoder.writeField(key);
         }
         encoded = encoder.toBytes();
@@ -333,7 +333,7 @@ public class Block implements Cloneable {
     private void sign(ECKey ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
         log.debug("sign encoded:{}", Hex.toHexString(encoded));
-        byte[] digest = BytesUtils.merge(encoded, ecKey.getPubKeybyCompress());
+        byte[] digest = BytesUtils.merge(encoded, ecKey.getPubKey(true));
         log.debug("sign digest:{}", Hex.toHexString(digest));
         byte[] hash = Sha256Hash.hashTwice(digest);
         log.debug("sign hash:{}", Hex.toHexString(hash));
@@ -354,7 +354,7 @@ public class Block implements Cloneable {
         for (ECKey.ECDSASignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 2);
             for (ECKey ecKey : keys) {
-                hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKeybyCompress()));
+                hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKey(true)));
                 if (ecKey.verify(hash, sig)) {
                     res.add(ecKey);
                 }
@@ -362,7 +362,7 @@ public class Block implements Cloneable {
         }
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKey ecKey : keys) {
-            hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKeybyCompress()));
+            hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKey(true)));
             log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
             log.debug(Hex.toHexString(hash) + ":hash");
             log.debug(outsig + ":outsig");

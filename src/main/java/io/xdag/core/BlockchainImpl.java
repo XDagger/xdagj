@@ -35,7 +35,7 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.KeyInternalItem;
-import io.xdag.wallet.Wallet;
+import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -50,7 +50,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
@@ -62,7 +61,7 @@ import static io.xdag.utils.MapUtils.getHead;
 @Slf4j
 @Getter
 public class BlockchainImpl implements Blockchain {
-    private Wallet wallet;
+    private OldWallet wallet;
     private BlockStore blockStore;
     /** 非Extra orphan存放 */
     private OrphanPool orphanPool;
@@ -808,7 +807,7 @@ public class BlockchainImpl implements Blockchain {
             ECKey.ECDSASignature sig = inBlock.getOutsig();
 
             for (ECKey ecKey : ecKeys) {
-                byte[] digest = BytesUtils.merge(subdata, ecKey.getPubKeybyCompress());
+                byte[] digest = BytesUtils.merge(subdata, ecKey.getPubKey(true));
                 log.debug("verify encoded:{}", Hex.toHexString(digest));
                 byte[] hash = Sha256Hash.hashTwice(digest);
                 log.debug("verify hash:{}", Hex.toHexString(hash));
@@ -821,7 +820,7 @@ public class BlockchainImpl implements Blockchain {
                 //TODO this maybe some old issue( input and output was same )
                 List<ECKey> keys = block.getPubKeys();
                 for (ECKey ecKey : keys) {
-                    byte[] hash = Sha256Hash.hashTwice(BytesUtils.merge(subdata, ecKey.getPubKeybyCompress()));
+                    byte[] hash = Sha256Hash.hashTwice(BytesUtils.merge(subdata, ecKey.getPubKey(true)));
                     if (ecKey.verify(hash, sig)) {
                         return true;
                     }
@@ -841,7 +840,7 @@ public class BlockchainImpl implements Blockchain {
         for (int i = 0; i < ourkeys.size(); i++) {
             ECKey ecKey = ourkeys.get(i).ecKey;
             byte[] digest = BytesUtils.merge(
-                    block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKeybyCompress());
+                    block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKey(true));
             byte[] hash = Sha256Hash.hashTwice(digest);
             if (ecKey.verify(hash, signature)) {
                 log.info("Validate Success");

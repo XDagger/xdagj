@@ -1,4 +1,6 @@
-package io.xdag.crypto.bip32;
+package io.xdag.crypto.bip44;
+
+import io.xdag.crypto.bip32.DeterministicHierarchy;
 
 import java.util.List;
 import java.util.Locale;

@@ -23,9 +23,6 @@
  */
 package io.xdag;
 
-import io.libp2p.core.crypto.KEY_TYPE;
-import io.libp2p.core.crypto.KeyKt;
-import io.libp2p.core.crypto.PrivKey;
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -36,7 +33,6 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.discovery.DiscoveryController;
 import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
@@ -46,10 +42,6 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.manager.MinerManagerImpl;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
-import io.xdag.nat.NatConfiguration;
-import io.xdag.nat.NatManager;
-import io.xdag.nat.NatMethod;
-import io.xdag.nat.NatService;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
 import io.xdag.net.manager.NetDBManager;
@@ -57,17 +49,14 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
-import io.xdag.libp2p.Libp2pNetwork;
-import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import io.xdag.wallet.WalletImpl;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Getter
 @Setter
@@ -75,7 +64,6 @@ public class Kernel {
     protected Status status = Status.STOPPED;
     protected Config config;
     protected Wallet wallet;
-    private String arg;
     protected DatabaseFactory dbFactory;
     protected BlockStore blockStore;
     protected OrphanPool orphanPool;
@@ -87,9 +75,6 @@ public class Kernel {
     protected NetDBManager netDBMgr;
     protected XdagServer p2p;
     protected XdagSync sync;
-    protected Libp2pNetwork libp2pNetwork;
-    protected DiscoveryController discoveryController;
-    protected ChannelManager channelManager;
     protected XdagPow pow;
     protected SyncManager syncMgr;
     /** 初始化一个后续都可以用的handler */
@@ -100,10 +85,6 @@ public class Kernel {
     protected MinerManager minerManager;
     protected MinerServer minerServer;
     protected XdagState xdagState;
-    protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
-    protected NatService natService;
-    protected NatConfiguration natConfiguration;
-
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
     public Kernel(Config config, Wallet wallet) {
@@ -154,8 +135,6 @@ public class Kernel {
         // initialize blockchain database
         // ====================================
         blockchain = new BlockchainImpl(this);
-        //
-//        blockchain.loadBlockchain(config.getOriginStoreDir());
         XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {
@@ -176,24 +155,8 @@ public class Kernel {
         // ====================================
         // set up client
         // ====================================
-        channelManager = new ChannelManager();
-
-        //set up libp2pNetwork
-        libp2pNetwork = new Libp2pNetwork(this);
-        libp2pNetwork.start();
-
-        discoveryController = new DiscoveryController();
-        discoveryController.start(this);
-
         p2p = new XdagServer(this);
         p2p.start();
-
-        // start natService
-        natConfiguration = NatConfiguration.builder().natMethod(NatMethod.UPNP).build();
-        natService = new NatService(natConfiguration,config.getLibp2pPort(), true);
-        natService.start();
-
-
         client = new XdagClient(config);
 
         // ====================================
@@ -214,8 +177,6 @@ public class Kernel {
         syncMgr = new SyncManager(this);
         syncMgr.start();
 
-//        peerDiscoveryAgent = new PeerDiscoveryAgent(true);
-//        peerDiscoveryAgent.start(true);
         // ====================================
         // set up pool miner
         // ====================================
@@ -236,7 +197,6 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
-//        pow.start();
         minerManager.setPoW(pow);
         minerManager.start();
         if (Config.MAINNET) {
@@ -285,9 +245,5 @@ public class Kernel {
 
     public enum Status {
         STOPPED, SYNCING, BLOCK_PRODUCTION_ON, SYNCDONE
-    }
-
-    public ChannelManager getLibp2pChannelManager() {
-        return channelManager;
     }
 }

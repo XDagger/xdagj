@@ -27,16 +27,7 @@ import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.OptionalInt;
-
-import io.xdag.discovery.peers.DiscoveryPeer;
-import io.xdag.discovery.peers.Endpoint;
-import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Data;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -44,19 +35,18 @@ import org.apache.commons.lang3.StringUtils;
 public class Config {
     public static boolean MAINNET = false;
     /** 配置存储root */
-    // todo
     public static String root = MAINNET ? "mainnet" : "testnet";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
-
+    
     /** 保存得密钥文件 */
     public static final String DNET_KEY_FILE = Config.MAINNET?Config.root + "/dnet_key.dat":Config.root + "/dnet_key.dat";
     /** 钱包文件 */
     public static final String WALLET_KEY_FILE = Config.MAINNET?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
     
     public final int MAX_CHANNELS = 1024;
-    private final int connectionTimeout = 10000;
-    private final int channelReadTimeout = 10000;
+    private final int connectionTimeout = 10;
+    private final int channelReadTimeout = 10;
     /** 同一个channel 某一个任务种最多允许发share的次数 */
     private final int maxShareCountPerChannel = 20;
     private final int storeMaxOpenFiles = 1024;
@@ -64,11 +54,7 @@ public class Config {
     /** telnet监听地址 */
     private String telnetIp;
     private int telnetPort;
-    /**配置发现种子节点*/
-    public static List<DiscoveryPeer> bootnode = new ArrayList<>();
-    /**配置发现是否是种子节点*/
-    public boolean isbootnode ;
-    public int discoveryPort;
+
     /** 配置节点监听地址 */
     private String nodeIp;
     private int nodePort;
@@ -76,8 +62,6 @@ public class Config {
     private String poolIp;
     /** 矿池的端口 */
     private int poolPort;
-    private int libp2pPort;
-    private String Privkey;
     /** Pool Tag */
     private String poolTag;
     /** 一个矿池最多允许接入的矿工数量 */
@@ -111,7 +95,7 @@ public class Config {
     /** 存储相关 */
     private boolean storeFromBackup = false;
     /** 用于测试加载已有区块数据 从C版本生成的数据 请将所需要的数据放在该目录下 */
-    private String originStoreDir = "/Users/wawa/Desktop/xdagj/testdata/";
+    private String originStoreDir = "./testdate";
     private int TTL = 5;
     private byte[] dnetKeyBytes = new byte[2048];
     private DnetKeys xKeys;
@@ -198,18 +182,7 @@ public class Config {
             }
         }
     }
-    public List<DiscoveryPeer> getBootnode() throws DecoderException {
-        //逻辑是先连接config里面节点再进行发现
-        String id  = "08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2";
-        byte [] peerid= Hex.decodeHex(id);
-        //与配置文件的种子节点的tcpport 和udpport要对应
-        OptionalInt tcpport = OptionalInt.of(10001);
-        Endpoint endpoint = new Endpoint("127.0.0.1",20001,tcpport);
-        BytesValue bytesValue= BytesValue.wrap(peerid);
-        DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
-        bootnode.add(peer);
-        return bootnode;
-    }
+
     public void changeNode(Config config, String host) {
         String[] args = host.split(":");
         config.nodeIp = args[0];
@@ -234,7 +207,6 @@ public class Config {
     }
 
     /** 设置存储的路径 */
-    // todo
     public void setDir() {
         // 配置存储root
         root = Config.MAINNET ? "./mainnet" : "./testnet";
@@ -253,19 +225,12 @@ public class Config {
         telnetIp = setting.getStr("telnetIp");
         telnetPort = setting.getInt("telnetPort");
 
-
         nodeIp = setting.getStr("nodeIp");
         nodePort = setting.getInt("nodePort");
 
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
 
-        libp2pPort = setting.getInt("libp2pPort");
-        isbootnode = setting.getBool("isbootnode");
-
-        discoveryPort = setting.getInt("discoveryPort");
-
-        Privkey = setting.getStr("libp2pPrivkey");
         poolTag = setting.getOrDefault("poolTag", "XdagJ");
 
         poolRation = setting.getInt("poolRation");
@@ -278,5 +243,4 @@ public class Config {
         maxConnectPerIp = setting.getInt("maxConnectPerIp");
         maxMinerPerAccount = setting.getInt("maxMinerPerAccount");
     }
-
 }

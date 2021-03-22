@@ -24,33 +24,23 @@
 package io.xdag.net;
 
 import io.xdag.config.Config;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.XdagBlock;
-import io.xdag.crypto.ECKey;
 import io.xdag.crypto.jni.Native;
 import io.xdag.net.message.AbstractMessage;
-import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.net.message.impl.*;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import io.xdag.wallet.WalletImpl;
+import io.xdag.wallet.OldWallet;
 import org.junit.Before;
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class MessageTest {
 
     Config config = new Config();
-    Wallet xdagWallet;
+    OldWallet xdagWallet;
 
     //
     @Before
@@ -62,7 +52,7 @@ public class MessageTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        xdagWallet = new WalletImpl();
+        xdagWallet = new OldWallet();
         xdagWallet.init(new Config());
     }
     // blocksrequest

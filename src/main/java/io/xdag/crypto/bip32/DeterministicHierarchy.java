@@ -1,5 +1,10 @@
 package io.xdag.crypto.bip32;
 
+import io.xdag.crypto.bip44.ChildNumber;
+import io.xdag.crypto.bip44.HDDerivationException;
+import io.xdag.crypto.bip44.HDKeyDerivation;
+import io.xdag.crypto.bip44.HDPath;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;

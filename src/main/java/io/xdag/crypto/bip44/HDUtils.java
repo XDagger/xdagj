@@ -1,4 +1,4 @@
-package io.xdag.crypto.bip32;
+package io.xdag.crypto.bip44;
 
 import io.xdag.crypto.ECKey;
 import org.spongycastle.crypto.digests.SHA512Digest;
