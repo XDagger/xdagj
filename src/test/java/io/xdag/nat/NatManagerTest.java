@@ -5,26 +5,9 @@ import junit.framework.TestCase;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.jupnp.UpnpService;
-import org.jupnp.model.meta.DeviceDetails;
-import org.jupnp.model.meta.RemoteDevice;
-import org.jupnp.model.meta.RemoteDeviceIdentity;
 import org.jupnp.model.meta.RemoteService;
-import org.jupnp.model.types.UDADeviceType;
-import org.jupnp.model.types.UDAServiceId;
-import org.jupnp.model.types.UDAServiceType;
-import org.jupnp.model.types.UDN;
-import org.jupnp.registry.Registry;
-import org.jupnp.registry.RegistryListener;
-import org.mockito.ArgumentCaptor;
-
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URL;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class NatManagerTest extends TestCase {

@@ -71,7 +71,6 @@ public class PeerManager implements ConnectionHandler {
     }
     public void connect(String peer) {
         log.debug("Connecting to {}", peer);
-        System.out.println("dial peer = "+ peer);
         Multiaddr address = Multiaddr.fromString(peer);
         rpcHandler.dial(host,address);
     }

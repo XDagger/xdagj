@@ -1,4 +1,4 @@
-package io.xdag.libp2p.RPCHandler;
+package io.xdag.libp2p;
 
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
@@ -38,11 +38,9 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
     public ProtocolDescriptor getProtocolDescriptor() {
         return  new ProtocolDescriptor("xdagj");
     }
-    //teku
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-        System.out.println("initChannel212121");
         final Connection connection = ((Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         if(!p2PChannel.isInitiator()){

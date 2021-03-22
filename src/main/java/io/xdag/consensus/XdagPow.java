@@ -210,7 +210,6 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onTimeout() {
-        System.out.println("onTimeout");
         log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                 Hex.toHexString(generateBlock.getHash()));
         // 发送区块 如果有的话 然后开始生成新区块
@@ -384,7 +383,6 @@ public class XdagPow implements PoW, Runnable {
                 if(bw != null) {
                     log.debug("queue take hash[{}]", Hex.toHexString(bw.getBlock().getHash()));
                     log.debug("queue take block date [{}]", Hex.toHexString(bw.getBlock().getHash()));
-                    System.out.println("sendNewBlock true");
                     channelMgr.sendNewBlock(bw);
                     channelManager.sendNewBlock(bw);
 

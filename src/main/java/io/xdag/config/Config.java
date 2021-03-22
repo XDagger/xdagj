@@ -207,7 +207,6 @@ public class Config {
         Endpoint endpoint = new Endpoint("127.0.0.1",20001,tcpport);
         BytesValue bytesValue= BytesValue.wrap(peerid);
         DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
-        System.out.println("bootnode = "+ peer.toString());
         bootnode.add(peer);
         return bootnode;
     }
