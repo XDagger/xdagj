@@ -25,6 +25,7 @@ import io.xdag.utils.MultiaddrUtil;
 import io.xdag.utils.SafeFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -38,6 +39,7 @@ import java.util.stream.Stream;
 public class Libp2pNetwork implements P2PNetwork<Peer> {
     private RPCHandler rpcHandler;
     private int port;
+    String hostip;
     private final Host host;
     private final PrivKey privKeyBytes;
     private final NodeId nodeId;
@@ -50,23 +52,18 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
         peerManager = new PeerManager();
+        hostip = kernel.getConfig().getPoolIp();
         port = kernel.getConfig().getLibp2pPort();
         //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
         //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
-
-        if(kernel.getConfig().isbootnode){
-            String Privkey = kernel.getConfig().getPrivkey();
-            Bytes privkeybytes = Bytes.fromHexString(Privkey);
-            this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
-        }else{
-            this.privKeyBytes = kernel.getPrivKey();
-        }
-//        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
-        PeerId peerId =PeerId.fromPubKey(privKeyBytes.publicKey());
+        String Privkey = kernel.getConfig().getPrivkey();
+        Bytes privkeybytes = Bytes.fromHexString(Privkey);
+        this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
+        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
         this.nodeId = new LibP2PNodeId(peerId);
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
-                        new InetSocketAddress("127.0.0.1", port),nodeId);
+                        new InetSocketAddress(hostip, port),nodeId);
 
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b->{
@@ -82,7 +79,6 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
                     b.getDebug().getMuxFramesHandler().addLogger(LogLevel.DEBUG, "wire.mux");
                     b.getConnectionHandlers().add(peerManager);
                 });
-
     }
 
     @Override
@@ -91,6 +87,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
             return SafeFuture.failedFuture(new IllegalStateException("Network already started"));
         }
         log.info("Starting libp2p network...");
+        System.out.println(" enter connect "+ hostip+":"+port+":"+nodeId.toString());
         return SafeFuture.of(host.start())
                 .thenApply(
                         i -> {

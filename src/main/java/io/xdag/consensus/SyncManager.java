@@ -284,7 +284,7 @@ public class SyncManager {
         kernel.getMinerServer().start();
         kernel.getPow().start();
         kernel.getLibp2pNetwork().start();
-        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,1,5, TimeUnit.SECONDS);
+        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }
     public void doConnectlibp2p(){
