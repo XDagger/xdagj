@@ -27,7 +27,16 @@ import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.OptionalInt;
+
+import io.xdag.discovery.peers.DiscoveryPeer;
+import io.xdag.discovery.peers.Endpoint;
+import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Data;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -72,6 +81,11 @@ public class Config {
     private int maxConnectPerIp;
     /** 拥有相同地址块的矿工最多允许同时在线的数量 g_connections_per_miner_limit */
     private int maxMinerPerAccount;
+    public boolean isbootnode ;
+    public int discoveryPort;
+    private int libp2pPort;
+    private String Privkey;
+    public static List<DiscoveryPeer> bootnode = new ArrayList<>();
     private boolean nodeDiscoveryEnabled = true;
     private boolean nodeSyncEnabled = true;
     private int nodeMaxActive = 100;
@@ -99,6 +113,14 @@ public class Config {
     private int TTL = 5;
     private byte[] dnetKeyBytes = new byte[2048];
     private DnetKeys xKeys;
+
+
+    // BIP32
+    public static final int BIP32_HEADER_P2PKH_PUB= 0x0488b21e; // The 4 byte header that serializes in base58 to "xpub".
+    public static final int BIP32_HEADER_P2PKH_PRIV = 0x0488ade4; // The 4 byte header that serializes in base58 to "xprv"
+
+    public int dumpedPrivateKeyHeader = 128;
+    public int addressHeader = 0;
 
     public Config() {
         getSetting();
@@ -206,6 +228,20 @@ public class Config {
         config.fundRation = Double.parseDouble(args[8]);
     }
 
+    public List<DiscoveryPeer> getBootnode() throws DecoderException {
+        //逻辑是先连接config里面节点再进行发现
+        String id  = "08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2";
+        byte [] peerid= Hex.decodeHex(id);
+        //与配置文件的种子节点的tcpport 和udpport要对应
+        OptionalInt tcpport = OptionalInt.of(10001);
+        Endpoint endpoint = new Endpoint("127.0.0.1",20001,tcpport);
+        BytesValue bytesValue= BytesValue.wrap(peerid);
+        DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
+        System.out.println("bootnode = "+ peer.toString());
+        bootnode.add(peer);
+        return bootnode;
+    }
+
     /** 设置存储的路径 */
     public void setDir() {
         // 配置存储root
@@ -231,6 +267,12 @@ public class Config {
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
 
+        libp2pPort = setting.getInt("libp2pPort");
+        isbootnode = setting.getBool("isbootnode");
+
+        discoveryPort = setting.getInt("discoveryPort");
+
+        Privkey = setting.getStr("libp2pPrivkey");
         poolTag = setting.getOrDefault("poolTag", "XdagJ");
 
         poolRation = setting.getInt("poolRation");

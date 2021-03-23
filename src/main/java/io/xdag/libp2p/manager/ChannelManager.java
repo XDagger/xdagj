@@ -67,6 +67,7 @@ public class ChannelManager {
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
         log.info("activeChannel size:"+ activeChannels.size());
+        System.out.println("activeChannel size:"+ activeChannels.size());
     }
     public void add(Libp2pChannel ch){
         channels.put(ch.getNode().getAddress(), ch);
@@ -83,7 +84,9 @@ public class ChannelManager {
     public void onNewForeignBlock(BlockWrapper blockWrapper) {
         newForeignBlocks.add(blockWrapper);
     }
+
     public List<Libp2pChannel> getactiveChannel(){
+        System.out.println("activeChannels.values() = "+ activeChannels.values().size());
         return new ArrayList<>(activeChannels.values());
     }
     public void stop() {

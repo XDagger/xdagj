@@ -2,12 +2,14 @@ package io.xdag.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
+import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.Builder;
 import io.libp2p.core.dsl.BuilderJKt;
 import io.libp2p.core.multiformats.Multiaddr;
-import io.libp2p.core.mux.StreamMuxerProtocol;
+//import io.libp2p.core.mux.StreamMuxerProtocol;
+import io.libp2p.mux.mplex.MplexStreamMuxer;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import io.netty.handler.logging.LogLevel;
@@ -25,7 +27,6 @@ import io.xdag.utils.MultiaddrUtil;
 import io.xdag.utils.SafeFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -39,7 +40,6 @@ import java.util.stream.Stream;
 public class Libp2pNetwork implements P2PNetwork<Peer> {
     private RPCHandler rpcHandler;
     private int port;
-    String hostip;
     private final Host host;
     private final PrivKey privKeyBytes;
     private final NodeId nodeId;
@@ -52,33 +52,39 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
         peerManager = new PeerManager();
-        hostip = kernel.getConfig().getPoolIp();
         port = kernel.getConfig().getLibp2pPort();
         //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
         //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
-        String Privkey = kernel.getConfig().getPrivkey();
-        Bytes privkeybytes = Bytes.fromHexString(Privkey);
-        this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
-        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
+        if(kernel.getConfig().isbootnode){
+            String Privkey = kernel.getConfig().getPrivkey();
+            Bytes privkeybytes = Bytes.fromHexString(Privkey);
+            this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
+        }else{
+            this.privKeyBytes = kernel.getPrivKey();
+        }
+//        PeerId peerId = PeerId.fromHex(Hex.toHexString(privKeyBytes.publicKey().bytes()));
+        PeerId peerId = PeerId.fromPubKey(privKeyBytes.publicKey());
         this.nodeId = new LibP2PNodeId(peerId);
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
-                        new InetSocketAddress(hostip, port),nodeId);
+                        new InetSocketAddress("127.0.0.1", port),nodeId);
 
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b->{
                     b.getIdentity().setFactory(()-> privKeyBytes);
                     b.getTransports().add(TcpTransport::new);
                     b.getSecureChannels().add(NoiseXXSecureChannel::new);
-                    b.getMuxers().add(StreamMuxerProtocol.getMplex());
+//                    b.getMuxers().add(StreamMuxerProtocol.getMplex());
+                    b.getMuxers().add(MplexStreamMuxer::new);
                     b.getNetwork().listen(advertisedAddr.toString());
                     b.getProtocols().add(rpcHandler);
-                    b.getDebug().getBeforeSecureHandler().addLogger(LogLevel.DEBUG, "wire.ciphered");
+                    b.getDebug().getBeforeSecureHandler().setLogger(LogLevel.DEBUG, "wire.ciphered");
                     Firewall firewall = new Firewall(Duration.ofSeconds(100));
-                    b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
-                    b.getDebug().getMuxFramesHandler().addLogger(LogLevel.DEBUG, "wire.mux");
+                    b.getDebug().getBeforeSecureHandler().setHandler(firewall);
+                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
                     b.getConnectionHandlers().add(peerManager);
                 });
+
     }
 
     @Override
@@ -87,7 +93,6 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
             return SafeFuture.failedFuture(new IllegalStateException("Network already started"));
         }
         log.info("Starting libp2p network...");
-        System.out.println(" enter connect "+ hostip+":"+port+":"+nodeId.toString());
         return SafeFuture.of(host.start())
                 .thenApply(
                         i -> {

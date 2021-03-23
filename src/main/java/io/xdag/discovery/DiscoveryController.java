@@ -29,6 +29,7 @@ import io.xdag.discovery.peers.PeerTable;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -55,7 +56,7 @@ public class DiscoveryController {
     List<DiscoveryPeer> bootnodes;
     PrivKey privKey;
     private static final long REFRESH_CHECK_INTERVAL_MILLIS = MILLISECONDS.convert(30, SECONDS);
-    private final long tableRefreshIntervalMs = MILLISECONDS.convert(30, TimeUnit.MINUTES);
+    private final long tableRefreshIntervalMs = MILLISECONDS.convert(30, SECONDS);
     private final RetryDelayFunction retryDelayFunction = RetryDelayFunction.linear(1.5, 2000, 60000);
     private final Map<BytesValue, PeerInteractionState> inflightInteractions =
             new ConcurrentHashMap<>();
@@ -67,14 +68,16 @@ public class DiscoveryController {
         this.discoveryPort = kernel.getConfig().discoveryPort;
         final BytesValue myid ;
         if(isbootnode){
+            System.out.println("种子节点启动");
             String prikey = kernel.getConfig().getPrivkey();
             // id = 08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2
             this.privKey = KeyKt.unmarshalPrivateKey(Bytes.fromHexString(prikey).toArrayUnsafe());
+            myid = BytesValue.wrap(privKey.publicKey().bytes());
         }else {
             //随机生成字节点的id
-            this.privKey = kernel.getPrivKey();
+            this.privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).getFirst();
+            myid = BytesValue.wrap(privKey.publicKey().bytes());
         }
-        myid = BytesValue.wrap(privKey.publicKey().bytes());
         mynode = new Endpoint(kernel.getConfig().getNodeIp(),
                 kernel.getConfig().discoveryPort,OptionalInt.of(kernel.getConfig().getLibp2pPort()));
         myself = new DiscoveryPeer(myid,mynode);
@@ -206,6 +209,7 @@ public class DiscoveryController {
         final BytesValue target = Peer.randomId();
         peerTable.nearestPeers(Peer.randomId(), 16).forEach((peer) -> findNodes(peer, target));
         lastRefreshTime = System.currentTimeMillis();
+        System.out.println("peerTable size = "+peerTable.getAllPeers().size());
     }
     private void findNodes(final DiscoveryPeer peer, final BytesValue target) {
         final Consumer<PeerInteractionState> action =
@@ -262,7 +266,7 @@ public class DiscoveryController {
         log.info("Received Packet Type {}",packet.getType());
         // Message from self. This should not happen.
         if (sender.getId().equals(myself.getId())) {
-           log.info("发送人是自己");
+            log.info("发送人是自己");
             return;
         }
 
@@ -395,6 +399,27 @@ public class DiscoveryController {
     public PeerTable getPeerTable(){
         return peerTable;
     }
+
+    public CompletableFuture<?> stop() {
+        if (socket == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        final CompletableFuture<?> completion = new CompletableFuture<>();
+        socket.close(
+                ar -> {
+                    if (ar.succeeded()) {
+                        inflightInteractions.values().forEach(PeerInteractionState::cancelTimers);
+                        inflightInteractions.clear();
+                        socket = null;
+                        completion.complete(null);
+                    } else {
+                        completion.completeExceptionally(ar.cause());
+                    }
+                });
+        return completion;
+    }
+
     private class PeerInteractionState implements Predicate<Packet> {
         /**
          * The action that led to the peer being in this state (e.g. sending a PING or NEIGHBORS
@@ -487,6 +512,7 @@ public class DiscoveryController {
             log.info("return Optional.empty()");
             return Optional.empty();
         }
+        System.out.println("互动匹配");
         interaction.cancelTimers();
         inflightInteractions.remove(packet.getNodeId());
         return Optional.of(interaction);

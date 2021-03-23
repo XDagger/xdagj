@@ -38,8 +38,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     ChannelManager channelManager;
     public RPCHandler(Kernel kernel) {
         this.kernel = kernel;
-        channelManager = kernel.getLibp2pChannelManager();
-
+        this.channelManager = kernel.getLibp2pChannelManager();
     }
     @NotNull
     @Override

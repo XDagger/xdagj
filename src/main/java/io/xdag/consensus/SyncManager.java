@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import io.libp2p.core.PeerId;
+
 import io.xdag.core.*;
 
 import io.xdag.discovery.peers.DiscoveryPeer;
@@ -284,9 +285,10 @@ public class SyncManager {
         kernel.getMinerServer().start();
         kernel.getPow().start();
         kernel.getLibp2pNetwork().start();
-        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
+//        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }
+
     public void doConnectlibp2p(){
         List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
         Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
@@ -294,16 +296,16 @@ public class SyncManager {
         Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
         List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
         discoveryPeers1.size();
-        for(int i = 0;i<discoveryPeers1.size();i++){
-            //不添加自己
-            DiscoveryPeer d = discoveryPeers1.get(i);
-            if(d.getEndpoint().equals(kernel.getDiscoveryController().getMynode()) || hadConnectnode.contains(d)||
-            nodes.anyMatch(a->a.equals(new Node(d.getEndpoint().getHost(),d.getEndpoint().getTcpPort().getAsInt()))))  {
+        for (DiscoveryPeer d : discoveryPeers1) {
+            if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
+                    (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))
+                    || hadConnectnode.contains(d) ||
+                    nodes.anyMatch(a -> a.equals(new Node(d.getEndpoint().getHost(), d.getEndpoint().getTcpPort().getAsInt())))) {
                 continue;
             }
             StringBuilder stringBuilder = new StringBuilder();
 //       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-            String id = new LibP2PNodeId(PeerId.fromHex(org.bouncycastle.util.encoders.Hex.toHexString(d.getId().extractArray()))).toString();
+            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
             stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
                     append("/ipfs/").append(id);
             kernel.getLibp2pNetwork().dail(stringBuilder.toString());

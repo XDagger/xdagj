@@ -1,4 +1,4 @@
-# Welcome to XDAGJ
+********# Welcome to XDAGJ
 
 ## About
 
@@ -38,8 +38,9 @@ Configure a new library file for it.
 
 ```shell
 > cd src/c
-> make_so.bat  ## for Windows
-> ### or for Mac OS or Linux
+## for Windows
+> make_so.bat  
+## for Mac OS or Linux
 > make_so.sh
 ```
 
@@ -130,6 +131,10 @@ xdag> help
     ttop        display and update sorted information about threads
     xfer        transfer [AMOUNT] XDAG to the address [ADDRESS]
 ```
+
+#### Libp2p and Discovery
+
+The discovery module is currently enabled by default, and the seed node will be automatically connected.If you need to modify the seed node, you can modify the xdag.config and 
 
 ## Contribute
 
