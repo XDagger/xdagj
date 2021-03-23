@@ -27,6 +27,7 @@ import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
@@ -41,7 +42,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-public class Config {
+public class Config implements Serializable {
     public static boolean MAINNET = false;
     /** 配置存储root */
     public static String root = MAINNET ? "mainnet" : "testnet";
