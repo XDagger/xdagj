@@ -24,9 +24,6 @@
 package io.xdag.libp2p.peer;
 
 
-
-import java.util.Objects;
-
 public interface Peer {
     default NodeId getId() {
         return getAddress().getId();
@@ -36,13 +33,4 @@ public interface Peer {
 
     boolean isConnected();
 
-
-
-    boolean connectionInitiatedLocally();
-
-    boolean connectionInitiatedRemotely();
-
-    default boolean idMatches(final Peer other) {
-        return other != null && Objects.equals(getId(), other.getId());
-    }
 }

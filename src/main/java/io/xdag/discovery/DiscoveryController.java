@@ -99,12 +99,11 @@ public class DiscoveryController {
             String prikey = this.kernel.getConfig().getPrivkey();
             // id = 08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2
             this.privKey = KeyKt.unmarshalPrivateKey(Bytes.fromHexString(prikey).toArrayUnsafe());
-            myid = BytesValue.wrap(privKey.publicKey().bytes());
         }else {
             //gen random nodeid
             this.privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).getFirst();
-            myid = BytesValue.wrap(privKey.publicKey().bytes());
         }
+        myid = BytesValue.wrap(privKey.publicKey().bytes());
         mynode = new Endpoint(this.kernel.getConfig().getNodeIp(),
                 this.kernel.getConfig().discoveryPort,OptionalInt.of(this.kernel.getConfig().getLibp2pPort()));
         myself = new DiscoveryPeer(myid,mynode);
@@ -211,7 +210,7 @@ public class DiscoveryController {
             log.error("Packet handler exception", exception);
         }
     }
-    // 30s询问一次时间是否够半小时 半小时刷新一次refreshTable
+
     public void timeRefreshTable() {
         log.info("start RefreshTable");
         vertx.setPeriodic(
@@ -237,7 +236,7 @@ public class DiscoveryController {
         final BytesValue target = Peer.randomId();
         peerTable.nearestPeers(Peer.randomId(), 16).forEach((peer) -> findNodes(peer, target));
         lastRefreshTime = System.currentTimeMillis();
-        System.out.println("peerTable size = "+peerTable.getAllPeers().size());
+
     }
     private void findNodes(final DiscoveryPeer peer, final BytesValue target) {
         final Consumer<PeerInteractionState> action =
@@ -540,7 +539,6 @@ public class DiscoveryController {
             log.info("return Optional.empty()");
             return Optional.empty();
         }
-        System.out.println("互动匹配");
         interaction.cancelTimers();
         inflightInteractions.remove(packet.getNodeId());
         return Optional.of(interaction);

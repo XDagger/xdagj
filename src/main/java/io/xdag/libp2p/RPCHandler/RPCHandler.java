@@ -77,7 +77,6 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         libp2pChannel = new Libp2pChannel(connection,this);
         libp2pChannel.init();
         channelManager.add(libp2pChannel);
-//        LibP2PNodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         blockHandler = new BlockHandler(libp2pChannel);
         blockHandler.setMessageFactory(new Xdag03MessageFactory());
         channelManager.onChannelActive(libp2pChannel,libp2pChannel.getNode());
