@@ -2,21 +2,19 @@ package io.xdag.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
-import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.Builder;
 import io.libp2p.core.dsl.BuilderJKt;
 import io.libp2p.core.multiformats.Multiaddr;
-//import io.libp2p.core.mux.StreamMuxerProtocol;
 import io.libp2p.mux.mplex.MplexStreamMuxer;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import io.netty.handler.logging.LogLevel;
 import io.xdag.Kernel;
-import io.xdag.libp2p.manager.PeerManager;
 import io.xdag.libp2p.RPCHandler.Firewall;
 import io.xdag.libp2p.RPCHandler.RPCHandler;
+import io.xdag.libp2p.manager.PeerManager;
 import io.xdag.libp2p.peer.LibP2PNodeId;
 import io.xdag.libp2p.peer.NodeId;
 import io.xdag.libp2p.peer.Peer;
@@ -35,24 +33,25 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+//import io.libp2p.core.mux.StreamMuxerProtocol;
+
 
 @Slf4j
 public class Libp2pNetwork implements P2PNetwork<Peer> {
-    private RPCHandler rpcHandler;
-    private int port;
+    private final RPCHandler rpcHandler;
+    private final int port;
     private final Host host;
     private final PrivKey privKeyBytes;
     private final NodeId nodeId;
     private final InetAddress privateAddress;
-    private PeerManager peerManager;
+    private final PeerManager peerManager;
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
     public Libp2pNetwork(Kernel kernel){
-        this.port = kernel.getConfig().getLibp2pPort();
+        port = kernel.getConfig().getLibp2pPort();
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
         peerManager = new PeerManager();
-        port = kernel.getConfig().getLibp2pPort();
         //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
         //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
         if(kernel.getConfig().isbootnode){
