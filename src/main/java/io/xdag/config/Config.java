@@ -230,14 +230,13 @@ public class Config implements Serializable {
         config.directRation = Double.parseDouble(args[7]);
         config.fundRation = Double.parseDouble(args[8]);
     }
-
+    //todo:修改成一个配置文件读取种子节点
     public List<DiscoveryPeer> getBootnode() throws DecoderException {
         //逻辑是先连接config里面节点再进行发现
         String id  = "08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2";
         byte [] peerid= Hex.decodeHex(id);
-        //与配置文件的种子节点的tcpport 和udpport要对应
-        OptionalInt tcpport = OptionalInt.of(10001);
-        Endpoint endpoint = new Endpoint("127.0.0.1",20001,tcpport);
+        OptionalInt tcpport = OptionalInt.of(getDiscoveryPort());
+        Endpoint endpoint = new Endpoint(getPoolIp(),getLibp2pPort(),tcpport);
         BytesValue bytesValue= BytesValue.wrap(peerid);
         DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
         bootnode.add(peer);

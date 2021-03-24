@@ -132,9 +132,11 @@ xdag> help
     xfer        transfer [AMOUNT] XDAG to the address [ADDRESS]
 ```
 
-#### Libp2p and Discovery
+### Libp2p and Discovery
 
-The discovery module is currently enabled by default, and the seed node will be automatically connected.If you need to modify the seed node, you can modify the xdag.config and 
+---
+
+The discovery module is currently enabled by default, Non-seed nodes will automatically connect to running seed nodes.If you need to modify the seed node, you can modify the xdag.config and 
 
 ## Contribute
 
