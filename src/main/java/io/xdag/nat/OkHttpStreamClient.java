@@ -28,6 +28,7 @@ import org.jupnp.model.message.*;
 import org.jupnp.transport.impl.jetty.StreamClientConfigurationImpl;
 import org.jupnp.transport.spi.AbstractStreamClient;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 public class OkHttpStreamClient extends AbstractStreamClient<StreamClientConfigurationImpl, Call> {
@@ -77,7 +78,7 @@ public class OkHttpStreamClient extends AbstractStreamClient<StreamClientConfigu
           new UpnpResponse(httpResponse.code(), httpResponse.message());
       final StreamResponseMessage streamResponseMessage = new StreamResponseMessage(upnpResponse);
       streamResponseMessage.setHeaders(new UpnpHeaders(httpResponse.headers().toMultimap()));
-      streamResponseMessage.setBodyCharacters(httpResponse.body().bytes());
+      streamResponseMessage.setBodyCharacters(Objects.requireNonNull(httpResponse.body()).bytes());
       return streamResponseMessage;
     };
   }
