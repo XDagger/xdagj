@@ -283,8 +283,7 @@ public class SyncManager {
         System.out.println("Start PoW");
 
         kernel.getMinerServer().start();
-        kernel.getPow().start();
-        kernel.getLibp2pNetwork().start();
+//        kernel.getPow().start();
 //        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }

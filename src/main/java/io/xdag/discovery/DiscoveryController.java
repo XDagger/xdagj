@@ -409,6 +409,7 @@ public class DiscoveryController {
         socket.close(
                 ar -> {
                     if (ar.succeeded()) {
+                        vertx.close();
                         inflightInteractions.values().forEach(PeerInteractionState::cancelTimers);
                         inflightInteractions.clear();
                         socket = null;
