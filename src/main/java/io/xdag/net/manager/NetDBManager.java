@@ -106,18 +106,16 @@ public class NetDBManager {
                 log.debug("File have exist..");
             }
         } catch (MalformedURLException e) {
-            e.printStackTrace();
-            System.out.println(false);
+            log.error(e.getMessage(), e);
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println(true);
+            log.error(e.getMessage(), e);
         } finally {
             try {
                 if (reader != null) {
                     reader.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }
     }
@@ -125,7 +123,6 @@ public class NetDBManager {
     public void updateNetDB(NetDB netDB) {
         if (netDB != null) {
             this.netDB.appendNetDB(netDB);
-//            log.debug("ip list:" + this.netDB.getSize());
         }
     }
 
@@ -156,7 +153,7 @@ public class NetDBManager {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 

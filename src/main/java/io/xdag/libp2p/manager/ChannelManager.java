@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,7 +87,8 @@ public class ChannelManager {
     }
 
     public List<Libp2pChannel> getactiveChannel(){
-        System.out.println("activeChannels.values() = "+ activeChannels.values().size());
+        Collection<Libp2pChannel> channels =activeChannels.values();
+        log.debug("Active Channels {}", channels.size());
         return new ArrayList<>(activeChannels.values());
     }
     public void stop() {
