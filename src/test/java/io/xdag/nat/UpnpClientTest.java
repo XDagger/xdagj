@@ -1,9 +1,8 @@
 package io.xdag.nat;
 
 import io.xdag.utils.SafeFuture;
-import junit.framework.TestCase;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.jupnp.UpnpService;
 import org.jupnp.model.meta.DeviceDetails;
 import org.jupnp.model.meta.RemoteDevice;
@@ -21,18 +20,17 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-class UpnpClientTest extends TestCase {
+public class UpnpClientTest {
     private UpnpService natService = mock(UpnpService.class);
     private Registry registry = mock(Registry.class);
     private UpnpClient upnpClient;
 
-    @BeforeEach
-    void setup() {
+    @Before
+    public void setup() {
         when(natService.getRegistry()).thenReturn(registry);
         this.upnpClient = new UpnpClient(natService);
     }

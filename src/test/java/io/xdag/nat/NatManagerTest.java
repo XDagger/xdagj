@@ -1,20 +1,19 @@
 package io.xdag.nat;
 
 import io.xdag.utils.SafeFuture;
-import junit.framework.TestCase;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.jupnp.model.meta.RemoteService;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-class NatManagerTest extends TestCase {
+public class NatManagerTest {
     private UpnpClient upnpClient;
     private NatManager natManager;
 
-    @BeforeEach
+    @Before
     public void setup() {
         upnpClient = mock(UpnpClient.class);
         natManager = new NatManager(upnpClient);
