@@ -26,6 +26,7 @@ package io.xdag;
 import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
+import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
@@ -97,11 +98,14 @@ public class Kernel {
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
+    protected TelnetServer telnetServer;
+
     public Kernel(Config config, OldWallet wallet) {
         this.config = config;
         this.wallet = wallet;
         // 启动的时候就是在初始化
         this.xdagState = XdagState.INIT;
+        this.telnetServer = new TelnetServer(config.getTelnetIp(), config.getTelnetPort(),this);
     }
 
     public Kernel(Config config) {
@@ -116,7 +120,7 @@ public class Kernel {
         // start channel manager
         // ====================================
         channelMgr = new XdagChannelManager(this);
-        netDBMgr = new NetDBManager(config);
+        netDBMgr = new NetDBManager(this.config);
         netDBMgr.init();
 
         // ====================================
@@ -124,10 +128,10 @@ public class Kernel {
         // ====================================
         if (wallet == null) {
             wallet = new OldWallet();
-            wallet.init(config);
+            wallet.init(this.config);
         }
 
-        dbFactory = new RocksdbFactory(config);
+        dbFactory = new RocksdbFactory(this.config);
         blockStore = new BlockStore(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
@@ -170,13 +174,13 @@ public class Kernel {
 
         p2p = new XdagServer(this);
         p2p.start();
-        client = new XdagClient(config);
+        client = new XdagClient(this.config);
 
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
 
-        discoveryController = new DiscoveryController();
-        discoveryController.start(this);
+        discoveryController = new DiscoveryController(this);
+        discoveryController.start();
 
         // ====================================
         // start node manager
@@ -209,7 +213,7 @@ public class Kernel {
         // ====================================
         // poolnode open
         // ====================================
-        connectionLimitHandler = new ConnectionLimitHandler(config.getMaxConnectPerIp());
+        connectionLimitHandler = new ConnectionLimitHandler(this.config.getMaxConnectPerIp());
         minerServer = new MinerServer(this);
 
         // ====================================
@@ -223,8 +227,13 @@ public class Kernel {
         } else {
             xdagState.setState(XdagState.WTST);
         }
+
+        // ====================================
+        // telnet server
+        // ====================================
+        telnetServer.start();
+
         Launcher.registerShutdownHook("kernel", this::testStop);
-//        state = State.RUNNING;
     }
 
     /** Stops the kernel. */
