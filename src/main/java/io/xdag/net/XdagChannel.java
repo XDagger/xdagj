@@ -45,7 +45,7 @@ import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.spongycastle.util.encoders.Hex;
+import org.bouncycastle.util.encoders.Hex;
 
 @Data
 @Slf4j
@@ -145,7 +145,7 @@ public class XdagChannel {
     }
 
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        log.debug("send a block hash is:+" + Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+        log.debug("send a block hash is {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
         log.debug("ttl:" + blockWrapper.getTtl());
         xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }

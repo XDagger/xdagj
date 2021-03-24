@@ -1,6 +1,6 @@
 package io.xdag.crypto.bip38;
 
-import org.spongycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 public interface KeyCrypter {
     /**

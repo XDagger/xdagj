@@ -37,8 +37,8 @@ import io.xdag.net.message.impl.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
 import java.util.concurrent.ThreadFactory;

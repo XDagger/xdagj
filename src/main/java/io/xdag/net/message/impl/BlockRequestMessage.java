@@ -34,8 +34,8 @@ import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 
 import lombok.EqualsAndHashCode;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlockRequestMessage extends AbstractMessage {

@@ -29,11 +29,11 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.store.BlockStore;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.spongycastle.util.encoders.Hex;
 
 import java.util.List;
 import static org.junit.Assert.*;

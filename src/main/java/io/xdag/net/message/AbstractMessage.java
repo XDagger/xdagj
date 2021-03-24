@@ -32,12 +32,12 @@ import java.math.BigInteger;
 import java.util.zip.CRC32;
 
 import io.xdag.core.XdagStats;
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.utils.BytesUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractMessage extends Message {

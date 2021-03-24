@@ -44,9 +44,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.spongycastle.math.ec.ECPoint;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.crypto.ECKey;
 import io.xdag.crypto.Sha256Hash;
@@ -55,6 +52,9 @@ import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 @Getter

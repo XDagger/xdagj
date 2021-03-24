@@ -6,7 +6,7 @@ import io.xdag.libp2p.RPCHandler.RPCHandler;
 import io.xdag.libp2p.message.MessageQueueLib;
 import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
-import org.spongycastle.util.encoders.Hex;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class Libp2pChannel {
@@ -15,7 +15,7 @@ public class Libp2pChannel {
     private boolean isDisconnected = false;
     private Node node;
     private MessageQueueLib messageQueue;
-    RPCHandler handler;
+    private final RPCHandler handler;
 
     public Libp2pChannel(Connection connection, RPCHandler handler) {
         this.connection = connection;
@@ -30,7 +30,7 @@ public class Libp2pChannel {
 //        this.messageQueue = new MessageQueueLib(this);
     }
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        log.debug("send a block hash is:+" + Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+        log.debug("send a block hash is {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
         log.debug("ttl:" + blockWrapper.getTtl());
         handler.getController().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }
@@ -62,7 +62,7 @@ public class Libp2pChannel {
     public boolean isActive() {
         return isActive;
     }
-    public void dropConnection() {
 
+    public void dropConnection() {
     }
 }

@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import io.xdag.wallet.OldWallet;
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -52,6 +51,7 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class AwardManagerImpl implements AwardManager {

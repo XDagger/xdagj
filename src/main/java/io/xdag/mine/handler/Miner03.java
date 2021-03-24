@@ -25,8 +25,6 @@ package io.xdag.mine.handler;
 
 import java.io.IOException;
 
-import org.spongycastle.util.encoders.Hex;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -42,6 +40,7 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {

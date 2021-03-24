@@ -7,8 +7,8 @@ import io.xdag.crypto.Sha256Hash;
 import io.xdag.crypto.bip32.DeterministicKey;
 import io.xdag.crypto.bip38.KeyCrypter;
 import io.xdag.crypto.bip38.KeyCrypterScrypt;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.junit.Test;
-import org.spongycastle.crypto.params.KeyParameter;
 
 import static org.junit.Assert.*;
 

@@ -32,12 +32,12 @@ import java.security.Security;
 import java.util.Random;
 
 import io.xdag.crypto.Sha256Hash;
-import org.spongycastle.crypto.Digest;
-import org.spongycastle.crypto.digests.RIPEMD160Digest;
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.crypto.jce.XdagProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.digests.RIPEMD160Digest;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class HashUtils {

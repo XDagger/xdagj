@@ -4,7 +4,7 @@ import com.google.common.primitives.Bytes;
 import io.xdag.config.Config;
 import io.xdag.crypto.LegacyAddress;
 import io.xdag.crypto.*;
-import org.spongycastle.crypto.generators.SCrypt;
+import org.bouncycastle.crypto.generators.SCrypt;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;

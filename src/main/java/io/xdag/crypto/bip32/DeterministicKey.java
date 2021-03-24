@@ -13,9 +13,9 @@ import io.xdag.crypto.bip44.ChildNumber;
 import io.xdag.crypto.bip44.HDKeyDerivation;
 import io.xdag.crypto.bip44.HDPath;
 import io.xdag.utils.HashUtils;
-import org.spongycastle.crypto.params.KeyParameter;
-import org.spongycastle.math.ec.ECPoint;
-import org.spongycastle.util.encoders.Hex;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nullable;
 import java.math.BigInteger;

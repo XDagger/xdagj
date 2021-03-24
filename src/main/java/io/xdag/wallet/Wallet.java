@@ -29,10 +29,10 @@ import io.xdag.config.Config;
 import io.xdag.crypto.ECKey;
 import io.xdag.crypto.LegacyAddress;
 import io.xdag.utils.HashUtils;
-import org.spongycastle.crypto.digests.SHA256Digest;
-import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.spongycastle.crypto.generators.SCrypt;
-import org.spongycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
+import org.bouncycastle.crypto.generators.SCrypt;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

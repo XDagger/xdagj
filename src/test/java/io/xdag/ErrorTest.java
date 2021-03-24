@@ -25,8 +25,8 @@ package io.xdag;
 
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
 
 public class ErrorTest {
     @Test

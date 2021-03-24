@@ -23,8 +23,9 @@
  */
 package io.xdag.utils;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import java.math.BigDecimal;
-import org.spongycastle.util.encoders.Hex;
 
 public class StringUtils {
 

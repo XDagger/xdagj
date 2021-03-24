@@ -41,12 +41,12 @@ import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.spongycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -254,153 +254,6 @@ public class BlockchainTest {
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(date.getTime()));
         Block txBlock = generateTransactionBlock(fromKey, xdagTime - 1, from, to, xdag2amount(100.00));
         assertTrue(blockchain.canUseInput(txBlock));
-    }
-
-    @Test
-    public void Testblockload() {
-        //todo:
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
-        loadBlockchain(config.getOriginStoreDir(), 1583368095744L, 1583389441664L, blockchain);
-
-        printBlockchainInfo(blockchain);
-
-        System.out.println("Balance:" + amount2xdag(kernel.getBlockStore().getXdagStatus().getBalance()));
-
-        System.out.println("========Minedblocks========");
-        List<Block> blocks = blockchain.listMinedBlocks(20);
-        // List<Block> mainblocks = blockchain.listMainBlocks(20);
-        System.out.println(blocks.size());
-
-        for (int i = 0; i < blocks.size(); i++) {
-            System.out.println(Hex.toHexString(blocks.get(i).getHashLow()));
-        }
-
-        System.out.println("========Xfer========");
-
-//        Map<Address, ECKey> pairs = kernel.getAccountStore().getAccountListByAmount(xdag2amount(100));
-//
-//        for (Address input : pairs.keySet()) {
-//            System.out.println("Input:" + input.getType());
-//            System.out.println("Input:" + input.getAmount());
-//            System.out.println("Input:" + Hex.toHexString(input.getHashLow()));
-//            System.out.println("Input data:" + Hex.toHexString(input.getData()));
-//        }
-//
-//        byte[] to = Hex.decode("0000000000000000a968f33f0396f13cfd95171dd83866a321aa466e5f2042bc");
-//        List<Address> tos = new ArrayList<>();
-//        tos.add(new Address(to, XDAG_FIELD_OUT, 100));
-//        Block transaction = blockchain.createNewBlock(pairs, tos, false);
-//        for (ECKey ecKey : pairs.values()) {
-//            if (ecKey.equals(kernel.getWallet().getDefKey().ecKey)) {
-//                transaction.signOut(ecKey);
-//            } else {
-//                transaction.signIn(ecKey);
-//            }
-//        }
-//        System.out.println("Transaction hash:" + Hex.toHexString(transaction.getHashLow()));
-//        System.out.println("Transaction data:" + Hex.toHexString(transaction.getXdagBlock().getData()));
-    }
-
-    //@Test
-    public void TestLoadBlocksByTime() {
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
-        loadBlockchain(config.getOriginStoreDir(), 1563368095744L, 1627725496320L, blockchain);
-        printBlockchainInfo(blockchain);
-        System.out.println(
-                "=====================================Load Blocks from blockchain========================================");
-
-        // List<Block> blocks =
-        // blockchain.getBlockByTime(1614907703296L,1627792605183L);
-        // System.out.println("=====================================Block
-        // size:"+blocks.size()+"========================================");
-
-    }
-
-    public void printBlockchainInfo(BlockchainImpl blockchain) {
-        System.out.println("=====================================Blockchain Info========================================");
-        System.out.println("blocks:" + blockchain.getXdagStats().nblocks);
-        System.out.println("main blocks:" + blockchain.getXdagStats().nmain);
-        System.out.println("extra blocks:" + blockchain.getXdagStats().nextra);
-        System.out.println("orphan blocks:" + blockchain.getXdagStats().nnoref);
-        System.out.println("chain difficulty:" + blockchain.getXdagStats().getTopDiff().toString(16));
-        System.out.println("XDAG supply:" + blockchain.getXdagStats().nmain * 1024);
-        if (blockchain.getXdagStats().nnoref > 0) {
-            for (int i = 0; i < blockchain.getXdagStats().nnoref; i++) {
-                System.out.println(
-                        "orphan block:"
-                                + Hex.toHexString(
-                                        blockchain
-                                                .getBlockFromOrphanPool((int) blockchain.getXdagStats().nnoref)
-                                                .get(i)
-                                                .getHashLow()));
-            }
-        }
-    }
-
-    // 01780000 0179ffff
-    public long loadBlockchain(
-            String srcFilePath, long starttime, long endtime, BlockchainImpl blockchain) {
-        ByteBuffer buffer = ByteBuffer.allocate(512);
-        StringBuffer file = new StringBuffer(srcFilePath);
-        FileInputStream inputStream = null;
-        FileChannel channel = null;
-        starttime |= 0x00000;
-        endtime |= 0xffff;
-        File fileImpl;
-        long res = 0;
-
-        while (starttime < endtime) {
-            List<String> filename = getFileName(starttime);
-            String blockfile = Hex.toHexString(BytesUtils.byteToBytes((byte) ((starttime >> 16) & 0xff), true));
-            file.append(filename.get(filename.size() - 1)).append(blockfile).append(".dat");
-//            System.out.println("file.toString()"+file.toString());
-            fileImpl = new File(file.toString());
-            if (!fileImpl.exists()) {
-                starttime += 0x10000;
-                file = new StringBuffer(srcFilePath);
-                continue;
-            }
-//            System.out.println("Block from:" + file.toString());
-            try {
-
-                inputStream = new FileInputStream(fileImpl);
-                channel = inputStream.getChannel();
-                while (true) {
-                    int eof = channel.read(buffer);
-                    if (eof == -1) {
-                        break;
-                    }
-                    buffer.flip();
-                    res++;
-                    if (blockchain != null) {
-                        Block block = new Block(new XdagBlock(buffer.array().clone()));
-                        blockchain.tryToConnect(block);
-                    }
-                    buffer.clear();
-                }
-
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (channel != null) {
-                        channel.close();
-                    }
-                    if (inputStream != null) {
-                        inputStream.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            starttime += 0x10000;
-            file = new StringBuffer(srcFilePath);
-        }
-
-        return res;
     }
 
     public List<String> getFileName(long time) {

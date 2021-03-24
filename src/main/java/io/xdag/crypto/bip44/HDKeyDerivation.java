@@ -4,7 +4,7 @@ import io.xdag.crypto.ECKey;
 import io.xdag.crypto.LazyECPoint;
 import io.xdag.crypto.bip32.DeterministicKey;
 import io.xdag.utils.FormatDateUtils;
-import org.spongycastle.math.ec.ECPoint;
+import org.bouncycastle.math.ec.ECPoint;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;

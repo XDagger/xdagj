@@ -24,11 +24,12 @@
 package io.xdag.utils;
 
 import io.xdag.crypto.jni.Native;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 public class BytesUtils {
 
@@ -313,7 +314,7 @@ public class BytesUtils {
         byte[] data = new byte[8];
         System.arraycopy(input, offset, data, 0, 8);
         if (littleEndian) {
-            data = org.spongycastle.util.Arrays.reverse(data);
+            data = Arrays.reverse(data);
         }
         return BytesUtils.bytesToBigInteger(data).doubleValue();
     }

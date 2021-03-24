@@ -24,7 +24,6 @@
 package io.xdag.consensus;
 
 import static io.xdag.utils.FastByteComparisons.compareTo;
-import static org.spongycastle.util.Arrays.reverse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,8 +37,6 @@ import io.xdag.core.*;
 
 import io.xdag.libp2p.manager.ChannelManager;
 import org.apache.commons.lang3.RandomUtils;
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.Kernel;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
@@ -50,6 +47,8 @@ import io.xdag.net.message.Message;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class XdagPow implements PoW, Runnable {
@@ -178,14 +177,14 @@ public class XdagPow implements PoW, Runnable {
         XdagField share = shareInfo;
         try {
             XdagSha256Digest digest = new XdagSha256Digest(currentTaskDigest);
-            byte[] hash = digest.sha256Final(reverse(share.getData()));
+            byte[] hash = digest.sha256Final(Arrays.reverse(share.getData()));
 
             MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
             MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
-                minShare = reverse(share.getData());
+                minShare = Arrays.reverse(share.getData());
                 byte[] hashlow = new byte[32];
                 System.arraycopy(minHash, 8, hashlow, 8, 24);
                 generateBlock.setNonce(minShare);

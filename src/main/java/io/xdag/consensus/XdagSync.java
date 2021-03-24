@@ -43,7 +43,6 @@ import com.google.common.util.concurrent.*;
 
 import io.xdag.libp2p.Libp2pChannel;
 import io.xdag.libp2p.manager.ChannelManager;
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.Kernel;
 import io.xdag.db.store.BlockStore;
@@ -52,6 +51,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class XdagSync {

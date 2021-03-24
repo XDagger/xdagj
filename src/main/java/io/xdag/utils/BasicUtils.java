@@ -23,14 +23,15 @@
  */
 package io.xdag.utils;
 
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.NumberFormat;
 import java.util.zip.CRC32;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 public class BasicUtils {
     // 过去4小时产出的块的数量

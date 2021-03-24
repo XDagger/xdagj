@@ -23,13 +23,13 @@
  */
 package io.xdag.mine.message;
 
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class MinerMessageFactory implements MessageFactory {
