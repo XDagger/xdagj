@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.discovery;
 
 import io.xdag.Kernel;
@@ -44,17 +67,18 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class DiscoveryController {
-    boolean isbootnode;
-    int discoveryPort;
+    private boolean isbootnode;
+    private int discoveryPort;
     private static final int MAX_PACKET_SIZE_BYTES = 1600;
-    PeerTable peerTable;
-    DatagramSocket socket;
+    private PeerTable peerTable;
+    private DatagramSocket socket;
     private long lastRefreshTime = -1;
-    DiscoveryPeer myself;
+    private DiscoveryPeer myself;
     private Vertx vertx;
-    Endpoint mynode;
-    List<DiscoveryPeer> bootnodes;
-    PrivKey privKey;
+    private Endpoint mynode;
+    private List<DiscoveryPeer> bootnodes;
+    private PrivKey privKey;
+    private Kernel kernel;
     private static final long REFRESH_CHECK_INTERVAL_MILLIS = MILLISECONDS.convert(30, SECONDS);
     private final long tableRefreshIntervalMs = MILLISECONDS.convert(30, SECONDS);
     private final RetryDelayFunction retryDelayFunction = RetryDelayFunction.linear(1.5, 2000, 60000);
@@ -62,33 +86,38 @@ public class DiscoveryController {
             new ConcurrentHashMap<>();
     private final Subscribers<Consumer<PeerDiscoveryEvent.PeerBondedEvent>> peerBondedObservers = new Subscribers<>();
 
+    public DiscoveryController(Kernel kernel) {
+        this.kernel = kernel;
+    }
 
-    public void start(Kernel kernel) throws DecoderException, IOException {
+    public void start() throws DecoderException, IOException {
         this.isbootnode = kernel.getConfig().isbootnode;
-        this.discoveryPort = kernel.getConfig().discoveryPort;
+        this.discoveryPort = this.kernel.getConfig().discoveryPort;
         final BytesValue myid ;
         if(isbootnode){
-            System.out.println("种子节点启动");
-            String prikey = kernel.getConfig().getPrivkey();
+            log.debug("seed node start");
+            String prikey = this.kernel.getConfig().getPrivkey();
             // id = 08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2
             this.privKey = KeyKt.unmarshalPrivateKey(Bytes.fromHexString(prikey).toArrayUnsafe());
             myid = BytesValue.wrap(privKey.publicKey().bytes());
         }else {
-            //随机生成字节点的id
+            //gen random nodeid
             this.privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).getFirst();
             myid = BytesValue.wrap(privKey.publicKey().bytes());
         }
-        mynode = new Endpoint(kernel.getConfig().getNodeIp(),
-                kernel.getConfig().discoveryPort,OptionalInt.of(kernel.getConfig().getLibp2pPort()));
+        mynode = new Endpoint(this.kernel.getConfig().getNodeIp(),
+                this.kernel.getConfig().discoveryPort,OptionalInt.of(this.kernel.getConfig().getLibp2pPort()));
         myself = new DiscoveryPeer(myid,mynode);
         peerTable = new PeerTable(myid, 16);
-        bootnodes = kernel.getConfig().getBootnode();
+        bootnodes = this.kernel.getConfig().getBootnode();
+        log.debug("bootnodes {}", bootnodes.toString());
         this.vertx = Vertx.vertx();
         vertx.createDatagramSocket().listen(mynode.getUdpPort(),mynode.getHost(), ar -> {
             if (!ar.succeeded()) {
-                log.debug("初始化失败");
+                log.debug("seed node init fail");
+            } else {
+                log.debug("seed node init success");
             }
-            else log.debug("初始化成功");
             socket = ar.result();
             socket.exceptionHandler(this::handleException);
             socket.handler(this::handlePacket);
@@ -103,11 +132,10 @@ public class DiscoveryController {
                 try {
                     return peerTable.tryAdd(node).getOutcome() == PeerTable.AddResult.Outcome.ADDED;
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error(e.getMessage(), e);
                 }
                 return false;
-            }).
-                    forEach(node -> bond(node, true));
+            }).forEach(node -> bond(node, true));
         }
     }
 

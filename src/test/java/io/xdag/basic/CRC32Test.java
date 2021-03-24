@@ -24,8 +24,8 @@
 package io.xdag.basic;
 
 import io.xdag.utils.BytesUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
 
 import static io.xdag.utils.BasicUtils.crc32Verify;
 import static org.junit.Assert.*;

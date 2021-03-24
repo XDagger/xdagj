@@ -30,9 +30,9 @@ import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.net.message.impl.*;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.OldWallet;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

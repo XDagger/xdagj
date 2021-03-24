@@ -28,10 +28,10 @@ import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.utils.XdagSha256Digest;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 import java.io.IOException;
 

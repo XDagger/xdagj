@@ -46,7 +46,6 @@ import io.xdag.libp2p.Libp2pChannel;
 import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.node.Node;
-import org.spongycastle.util.encoders.Hex;
 
 import com.google.common.collect.Queues;
 
@@ -59,6 +58,7 @@ import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
 
@@ -107,8 +107,8 @@ public class SyncManager {
 
     /** Processing the queue adding blocks to the chain. */
     //todo:修改共识
-    public ImportResult ImportBlock(BlockWrapper blockWrapper) {
-        log.debug("ImportBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
+    public ImportResult importBlock(BlockWrapper blockWrapper) {
+        log.debug("importBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
         ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
 
         if (importResult == EXIST) {
@@ -149,7 +149,7 @@ public class SyncManager {
 
     public synchronized void validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
-        ImportResult result = ImportBlock(blockWrapper);
+        ImportResult result = importBlock(blockWrapper);
         log.info("validateAndAddNewBlock:{}, {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
         switch (result) {
             case IMPORTED_BEST:
@@ -232,7 +232,7 @@ public class SyncManager {
             result.set(true);
             blockchain.getXdagStats().nwaitsync--;
             v.forEach(bw -> {
-                ImportResult importResult = ImportBlock(bw);
+                ImportResult importResult = importBlock(bw);
                 switch (importResult) {
                     case EXIST:
                     case IMPORTED_BEST:
@@ -294,7 +294,6 @@ public class SyncManager {
         PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
         Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
         List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
-        discoveryPeers1.size();
         for (DiscoveryPeer d : discoveryPeers1) {
             if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
                     (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))

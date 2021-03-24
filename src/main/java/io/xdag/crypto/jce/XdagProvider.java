@@ -23,9 +23,10 @@
  */
 package io.xdag.crypto.jce;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.security.Provider;
 import java.security.Security;
-import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 public final class XdagProvider {
 

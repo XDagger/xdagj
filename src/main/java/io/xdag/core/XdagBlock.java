@@ -25,9 +25,8 @@ package io.xdag.core;
 
 import static io.xdag.core.XdagField.FieldType.fromByte;
 
-import org.spongycastle.util.Arrays;
-
 import io.xdag.utils.BytesUtils;
+import org.bouncycastle.util.Arrays;
 
 public class XdagBlock {
     public static final int XDAG_BLOCK_FIELDS = 16;

@@ -27,6 +27,7 @@ import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
@@ -35,13 +36,15 @@ import io.xdag.discovery.peers.DiscoveryPeer;
 import io.xdag.discovery.peers.Endpoint;
 import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+@Slf4j
 @Data
-public class Config {
+public class Config implements Serializable {
     public static boolean MAINNET = false;
     /** 配置存储root */
     public static String root = MAINNET ? "mainnet" : "testnet";
@@ -237,7 +240,6 @@ public class Config {
         Endpoint endpoint = new Endpoint("127.0.0.1",20001,tcpport);
         BytesValue bytesValue= BytesValue.wrap(peerid);
         DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
-        System.out.println("bootnode = "+ peer.toString());
         bootnode.add(peer);
         return bootnode;
     }

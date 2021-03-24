@@ -28,10 +28,10 @@ import io.xdag.crypto.bip38.KeyCrypter;
 import io.xdag.crypto.bip38.KeyCrypterScrypt;
 import io.xdag.utils.BytesUtils;
 import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
-import org.spongycastle.math.ec.ECPoint;
-import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.security.KeyPairGenerator;

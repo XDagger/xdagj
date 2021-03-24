@@ -23,8 +23,8 @@
  */
 package io.xdag.utils;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigDecimal;
 
@@ -70,6 +70,7 @@ public class BasicUtilsTest {
                         Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8")));
 
         System.out.println(res);
+
     }
 
     @Test
