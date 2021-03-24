@@ -26,7 +26,6 @@ package io.xdag.core;
 import io.xdag.crypto.ECKey;
 import io.xdag.utils.XdagTime;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
 
 import java.util.ArrayList;
 import java.util.List;

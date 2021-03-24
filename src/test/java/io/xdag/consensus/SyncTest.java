@@ -48,79 +48,79 @@ import org.junit.rules.TemporaryFolder;
 import java.util.Random;
 
 public class SyncTest {
-    @Rule
-    public TemporaryFolder root = new TemporaryFolder();
-
-    private Config config = new Config();
-    private OldWallet xdagWallet;
-    private Kernel kernel;
-    private DatabaseFactory dbFactory;
-    private MinerManager minerManager;
-    private AwardManager awardManager;
-    private Miner poolMiner;
-
-    @Before
-    public void setUp() throws Exception {
-        config.setStoreDir(root.newFolder().getAbsolutePath());
-        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
-
-        kernel = new Kernel(config);
-        dbFactory = new RocksdbFactory(config);
-        minerManager = new MinerManagerImpl(kernel);
-        awardManager = new AwardManagerImpl(kernel);
-
-
-        BlockStore blockStore = new BlockStore(
-                dbFactory.getDB(DatabaseName.INDEX),
-                dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TIME));
-        blockStore.reset();
-        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
-
-        kernel.setBlockStore(blockStore);
-        kernel.setOrphanPool(orphanPool);
-        Native.init();
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
-        xdagWallet = new OldWallet();
-        xdagWallet.init(config);
-        Block firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
-        firstAccount.signOut(xdagWallet.getDefKey().ecKey);
-        poolMiner = new Miner(firstAccount.getHash());
-        kernel.setWallet(xdagWallet);
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
-        kernel.setBlockchain(blockchain);
-        kernel.setMinerManager(minerManager);
-        kernel.setAwardManager(awardManager);
-        awardManager.setPoolMiner(firstAccount.getHash());
-        kernel.setPoolMiner(poolMiner);
-
-    }
-
-    // Xdag PoW可以看作状态机 1.开始出块 2.接收到share更新块 3.接收到新pretop 回到1 4.timeout发送区块 回到1
-    @Test
-    public void TestPoW() throws InterruptedException {
-        XdagPow pow = new XdagPow(kernel);
-        pow.start();
-
-        byte[] minShare = new byte[32];
-        new Random().nextBytes(minShare);
-
-        Thread sendPretop = new Thread(
-        () -> {
-            try {
-                for (int i = 0; i < 2; i++) {
-                    Thread.sleep(6000);
-                    pow.receiveNewPretop(minShare);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
-        sendPretop.start();
-        sendPretop.join();
-        pow.stop();
-    }
+//    @Rule
+//    public TemporaryFolder root = new TemporaryFolder();
+//
+//    private Config config = new Config();
+//    private OldWallet xdagWallet;
+//    private Kernel kernel;
+//    private DatabaseFactory dbFactory;
+//    private MinerManager minerManager;
+//    private AwardManager awardManager;
+//    private Miner poolMiner;
+//
+//    @Before
+//    public void setUp() throws Exception {
+//        config.setStoreDir(root.newFolder().getAbsolutePath());
+//        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
+//
+//        kernel = new Kernel(config);
+//        dbFactory = new RocksdbFactory(config);
+//        minerManager = new MinerManagerImpl(kernel);
+//        awardManager = new AwardManagerImpl(kernel);
+//
+//
+//        BlockStore blockStore = new BlockStore(
+//                dbFactory.getDB(DatabaseName.INDEX),
+//                dbFactory.getDB(DatabaseName.BLOCK),
+//                dbFactory.getDB(DatabaseName.TIME));
+//        blockStore.reset();
+//        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
+//        orphanPool.reset();
+//
+//        kernel.setBlockStore(blockStore);
+//        kernel.setOrphanPool(orphanPool);
+//        Native.init();
+//        if (Native.dnet_crypt_init() < 0) {
+//            throw new Exception("dnet crypt init failed");
+//        }
+//        xdagWallet = new OldWallet();
+//        xdagWallet.init(config);
+//        Block firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
+//        firstAccount.signOut(xdagWallet.getDefKey().ecKey);
+//        poolMiner = new Miner(firstAccount.getHash());
+//        kernel.setWallet(xdagWallet);
+//        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+//        kernel.setBlockchain(blockchain);
+//        kernel.setMinerManager(minerManager);
+//        kernel.setAwardManager(awardManager);
+//        awardManager.setPoolMiner(firstAccount.getHash());
+//        kernel.setPoolMiner(poolMiner);
+//
+//    }
+//
+//    // Xdag PoW可以看作状态机 1.开始出块 2.接收到share更新块 3.接收到新pretop 回到1 4.timeout发送区块 回到1
+//    @Test
+//    public void TestPoW() throws InterruptedException {
+//        XdagPow pow = new XdagPow(kernel);
+//        pow.start();
+//
+//        byte[] minShare = new byte[32];
+//        new Random().nextBytes(minShare);
+//
+//        Thread sendPretop = new Thread(
+//        () -> {
+//            try {
+//                for (int i = 0; i < 2; i++) {
+//                    Thread.sleep(6000);
+//                    pow.receiveNewPretop(minShare);
+//                }
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//        sendPretop.start();
+//        sendPretop.join();
+//        pow.stop();
+//    }
 }
