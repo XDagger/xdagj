@@ -116,7 +116,7 @@ public class SyncManager {
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-            BigInteger currentDiff = blockchain.getXdagStats().getTopDiff();
+            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
             if (!syncDone && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0) {
                 log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
                 // 只有同步完成的时候 才能开始线程 再一次
@@ -159,7 +159,7 @@ public class SyncManager {
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashLow())) {
                     log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                        Hex.toHexString(result.getHashLow()));
+                            Hex.toHexString(result.getHashLow()));
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
@@ -211,7 +211,7 @@ public class SyncManager {
 //                                r.set(true);
 //                            } else {
                             //TODO should be consider timeout not received request block
-                                r.set(false);
+                            r.set(false);
 //                            }
                             return oldQ;
                         }
@@ -223,6 +223,12 @@ public class SyncManager {
         return r.get();
     }
 
+    /**
+     *
+     *
+     * @param blockWrapper
+     * @return
+     */
     public boolean syncPopBlock(BlockWrapper blockWrapper) {
         AtomicBoolean result = new AtomicBoolean(false);
         Block block = blockWrapper.getBlock();
@@ -283,34 +289,34 @@ public class SyncManager {
         System.out.println("Start PoW");
 
         kernel.getMinerServer().start();
-//        kernel.getPow().start();
+        kernel.getPow().start();
 //        kernel.getLibp2pNetwork().start();
 //        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }
 
-//    public void doConnectlibp2p(){
-//        List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
-//        Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
-//        PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
-//        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
-//        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
-//        for (DiscoveryPeer d : discoveryPeers1) {
-//            if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
-//                    (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))
-//                    || hadConnectnode.contains(d) ||
-//                    nodes.anyMatch(a -> a.equals(new Node(d.getEndpoint().getHost(), d.getEndpoint().getTcpPort().getAsInt())))) {
-//                continue;
-//            }
-//            StringBuilder stringBuilder = new StringBuilder();
-////       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-//            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
-//            stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
-//                    append("/ipfs/").append(id);
-//            kernel.getLibp2pNetwork().dail(stringBuilder.toString());
-//            hadConnectnode.add(d);
-//        }
-//    }
+    public void doConnectlibp2p(){
+        List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
+        Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
+        PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
+        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
+        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
+        for (DiscoveryPeer d : discoveryPeers1) {
+            if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
+                    (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))
+                    || hadConnectnode.contains(d) ||
+                    nodes.anyMatch(a -> a.equals(new Node(d.getEndpoint().getHost(), d.getEndpoint().getTcpPort().getAsInt())))) {
+                continue;
+            }
+            StringBuilder stringBuilder = new StringBuilder();
+//       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
+            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
+            stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
+                    append("/ipfs/").append(id);
+            kernel.getLibp2pNetwork().dail(stringBuilder.toString());
+            hadConnectnode.add(d);
+        }
+    }
     public void stop() {
         log.debug("sync manager stop");
     }

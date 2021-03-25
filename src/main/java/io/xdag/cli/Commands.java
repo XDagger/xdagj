@@ -190,6 +190,7 @@ public class Commands {
      */
     public String stats() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
+        XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
         return String.format("""
                         Statistics for ours and maximum known parameters:
                                     hosts: %d of %d
@@ -206,7 +207,7 @@ public class Commands {
                 xdagStats.nextra,
                 xdagStats.nnoref,
                 xdagStats.nwaitsync,
-                xdagStats.getTopDiff()!=null?xdagStats.getTopDiff().toString(16):"",
+                xdagTopStatus.getTopDiff()!=null?xdagTopStatus.getTopDiff().toString(16):"",
                 xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty().toString(16):"",
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.totalnmain))

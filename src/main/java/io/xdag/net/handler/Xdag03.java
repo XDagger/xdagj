@@ -41,6 +41,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,29 +69,29 @@ public class Xdag03 extends XdagHandler {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         switch (msg.getCommand()) {
-        case NEW_BLOCK:
-            processNewBlock((NewBlockMessage) msg);
-            break;
-        case BLOCK_REQUEST:
-            processBlockRequest((BlockRequestMessage) msg);
-            break;
-        case BLOCKS_REQUEST:
-            processBlocksRequest((BlocksRequestMessage) msg);
-            break;
-        case BLOCKS_REPLY:
-            processBlocksReply((BlocksReplyMessage) msg);
-            break;
-        case SUMS_REQUEST:
-            processSumsRequest((SumRequestMessage) msg);
-            break;
-        case SUMS_REPLY:
-            processSumsReply((SumReplyMessage) msg);
-            break;
-        case BLOCKEXT_REQUEST:
-            processBlockExtRequest((BlockExtRequestMessage) msg);
-            break;
-        default:
-            break;
+            case NEW_BLOCK:
+                processNewBlock((NewBlockMessage) msg);
+                break;
+            case BLOCK_REQUEST:
+                processBlockRequest((BlockRequestMessage) msg);
+                break;
+            case BLOCKS_REQUEST:
+                processBlocksRequest((BlocksRequestMessage) msg);
+                break;
+            case BLOCKS_REPLY:
+                processBlocksReply((BlocksReplyMessage) msg);
+                break;
+            case SUMS_REQUEST:
+                processSumsRequest((SumRequestMessage) msg);
+                break;
+            case SUMS_REPLY:
+                processSumsReply((SumReplyMessage) msg);
+                break;
+            case BLOCKEXT_REQUEST:
+                processBlockExtRequest((BlockExtRequestMessage) msg);
+                break;
+            default:
+                break;
         }
     }
 
@@ -138,17 +139,17 @@ public class Xdag03 extends XdagHandler {
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-//        log.debug("processBlocksRequest:" + msg);
+        log.debug("processBlocksRequest:" + msg);
         updateXdagStats(msg);
-//        long startTime = msg.getStarttime();
-//        long endTime = msg.getEndtime();
-//        long random = msg.getRandom();
-//
-//        List<Block> blocks = blockchain.getBlockByTime(startTime, endTime);
-//        for (Block block : blocks) {
-//            sendNewBlock(block, 1);
-//        }
-//        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+        long startTime = msg.getStarttime();
+        long endTime = msg.getEndtime();
+        long random = msg.getRandom();
+
+        List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
+        for (Block block : blocks) {
+            sendNewBlock(block, 1);
+        }
+        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {

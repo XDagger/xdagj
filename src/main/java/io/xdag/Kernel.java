@@ -220,7 +220,6 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
-        pow.start();
         minerManager.setPoW(pow);
         minerManager.start();
         if (Config.MAINNET) {
