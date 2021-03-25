@@ -1,5 +1,6 @@
 # Welcome to XDAGJ
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_shield)
+![](https://github.com/XDagger/xdagj/actions/workflows/maven.yml/badge.svg)
 
 
 ## About
