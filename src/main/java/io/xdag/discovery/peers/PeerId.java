@@ -32,10 +32,10 @@ public interface PeerId {
     BytesValue getId();
 
     /**
-     * The Keccak-256 hash value of the peer's ID. The value may be memoized to avoid recomputation
+     * The sha256-256 hash value of the peer's ID. The value may be memoized to avoid recomputation
      * overhead.
      *
-     * @return The Keccak-256 hash of the peer's ID.
+     * @return The sha-256 hash of the peer's ID.
      */
-    Bytes32 keccak256() throws IOException;
+    Bytes32 sha256() throws IOException;
 }

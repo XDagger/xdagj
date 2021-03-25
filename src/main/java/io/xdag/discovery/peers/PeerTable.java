@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.toList;
 import static io.xdag.discovery.peers.PeerDistanceCalculator.distance;
@@ -47,7 +46,7 @@ public class PeerTable {
     private static final int BLOOM_FILTER_REGENERATION_THRESHOLD = 50; // evictions
 
     private final Bucket[] table;
-    private final BytesValue keccak256;
+    private final BytesValue sha256;
     private final int maxEntriesCnt;
     private final Map<BytesValue, Integer> distanceCache;
     private int evictionCnt = 0;
@@ -59,7 +58,7 @@ public class PeerTable {
      * @param bucketSize The maximum length of each k-bucket.
      */
     public PeerTable(final BytesValue nodeId, final int bucketSize) throws IOException {
-        this.keccak256 = Hash.keccak256(nodeId);
+        this.sha256 = Hash.sha256(nodeId);
         this.table =
                 Stream.generate(() -> new Bucket(DEFAULT_BUCKET_SIZE))
                         .limit(N_BUCKETS + 1)
@@ -167,20 +166,20 @@ public class PeerTable {
 
     /**
      * Returns the <code>limit</code> peers (at most) closest to the provided target, based on the XOR
-     * distance between the keccak-256 hash of the ID and the keccak-256 hash of the target.
+     * distance between the sha-256 hash of the ID and the sha-256 hash of the target.
      *
      * @param target The target node ID.
      * @param limit The amount of results to return.
      * @return The <code>limit</code> closest peers, at most.
      */
     public List<DiscoveryPeer> nearestPeers(final BytesValue target, final int limit) throws IOException {
-        final BytesValue keccak256 = Hash.keccak256(target);
+        final BytesValue sha256 = Hash.sha256(target);
         return getAllPeers()
                 .stream()
                 .filter(p -> p.getStatus() == PeerDiscoveryStatus.BONDED)
                 .sorted(comparingInt((peer) -> {
                     try {
-                        return distance(peer.keccak256(), keccak256);
+                        return distance(peer.sha256(), sha256);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -195,7 +194,7 @@ public class PeerTable {
     }
 
     /**
-     * Calculates the XOR distance between the keccak-256 hashes of our node ID and the provided
+     * Calculates the XOR distance between the sha-256 hashes of our node ID and the provided
      * {@link DiscoveryPeer}.
      *
      * @param peer The target peer.
@@ -203,7 +202,7 @@ public class PeerTable {
      */
     private int distanceFrom(final PeerId peer) throws IOException {
         final Integer distance = distanceCache.get(peer.getId());
-        return distance == null ? distance(keccak256, peer.keccak256()) : distance;
+        return distance == null ? distance(sha256, peer.sha256()) : distance;
     }
 
     /** A class that encapsulates the result of a peer addition to the table. */

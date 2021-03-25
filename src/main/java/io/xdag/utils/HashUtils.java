@@ -84,7 +84,7 @@ public class HashUtils {
      *            - start of hashing chunk
      * @param length
      *            - length of hashing chunk
-     * @return - keccak hash of the chunk
+     * @return - sha-256 hash of the chunk
      */
     public static byte[] sha3(byte[] input, int start, int length) {
         MessageDigest digest;
@@ -131,7 +131,7 @@ public class HashUtils {
      *
      * @param input
      *            - data
-     * @return - 20 right bytes of the hash keccak of the data
+     * @return - 20 right bytes of the hash sha3 of the data
      */
     public static byte[] sha3omit12(byte[] input) {
         byte[] hash = sha3(input);

@@ -41,9 +41,6 @@ public abstract class Hash {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public static final String KECCAK256_ALG = "KECCAK-256";
-
-
     private static byte[] digestUsingAlgorithm(final BytesValue input, final String alg) {
         final MessageDigest digest;
         try {
@@ -55,8 +52,7 @@ public abstract class Hash {
         }
     }
 
-
-    public static Bytes32 keccak256(final BytesValue input) throws IOException {
+    public static Bytes32 sha256(final BytesValue input) throws IOException {
         byte[] tmp = input.extractArray();
         XdagSha256Digest xdagSha256Digest = new XdagSha256Digest();
         return Bytes32.wrap(xdagSha256Digest.sha256Final(tmp));

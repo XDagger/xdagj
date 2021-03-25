@@ -931,7 +931,7 @@ public class ECKey implements EncryptableItem,Serializable {
     }
 
     /**
-     * Takes the keccak hash (32 bytes) of data and returns the ECDSA signature
+     * Takes the sha256 hash (32 bytes) of data and returns the ECDSA signature
      *
      * @param messageHash
      *            -

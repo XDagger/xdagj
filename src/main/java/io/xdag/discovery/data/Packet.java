@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static io.xdag.utils.discoveryutils.cryto.Hash.keccak256;
+import static io.xdag.utils.discoveryutils.cryto.Hash.sha256;
 
 @Slf4j
 public class Packet {
@@ -56,11 +56,10 @@ public class Packet {
     private final PacketType type;
     private final PacketData data;
     private final BytesValue hash;
-    private BytesValue signature;
-    private BytesValue publicKey;
+    private final BytesValue signature;
+    private final BytesValue publicKey;
 
     private Packet(final PacketType type, final PacketData data ,PrivKey pri) throws IOException {
-
         this.type = type;
         this.data = data;
         final BytesValue typeBytes = BytesValue.of(this.type.getValue());
@@ -68,7 +67,7 @@ public class Packet {
         this.signature = BytesValue.wrap(pri.sign(BytesValue.wrap(typeBytes, dataBytes).extractArray()));
         Signature_Len = (byte) (signature.size());
         this.publicKey = BytesValue.wrap(pri.publicKey().bytes());
-        this.hash = keccak256(BytesValue.wrap(BytesValue.wrap(BytesValue.wrap(
+        this.hash = sha256(BytesValue.wrap(BytesValue.wrap(BytesValue.wrap(
                 BytesValue.wrap(BytesValue.of(Signature_Len),typeBytes),publicKey),signature),dataBytes));
     }
 
@@ -81,7 +80,7 @@ public class Packet {
         this.publicKey = message.slice(TYPE_INDEX + 1, 37);
         this.signature= message.slice(PUBKEY_INDEX , Signature_Len);
         final BytesValue rest = message.slice(LENGTH_INDEX, message.size() - LENGTH_INDEX);
-        if (!Arrays.equals(keccak256(rest).extractArray(), hash.extractArray())) {
+        if (!Arrays.equals(sha256(rest).extractArray(), hash.extractArray())) {
             throw new PeerDiscoveryPacketDecodingException(
                     "Integrity check failed: non-matching hashes.");
         }

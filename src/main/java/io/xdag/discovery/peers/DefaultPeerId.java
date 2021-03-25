@@ -32,7 +32,7 @@ import java.util.Objects;
 
 public class DefaultPeerId implements PeerId {
     protected final BytesValue id;
-    private Bytes32 keccak256;
+    private Bytes32 sha256;
 
     public DefaultPeerId(final BytesValue id) {
         this.id = id;
@@ -44,11 +44,11 @@ public class DefaultPeerId implements PeerId {
     }
 
     @Override
-    public Bytes32 keccak256() throws IOException {
-        if (keccak256 == null) {
-            keccak256 = Hash.keccak256(getId());
+    public Bytes32 sha256() throws IOException {
+        if (sha256 == null) {
+            sha256 = Hash.sha256(getId());
         }
-        return keccak256;
+        return sha256;
     }
 
     @Override
