@@ -288,28 +288,28 @@ public class SyncManager {
 
     }
 
-    public void doConnectlibp2p(){
-        List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
-        Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
-        PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
-        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
-        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
-        for (DiscoveryPeer d : discoveryPeers1) {
-            if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
-                    (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))
-                    || hadConnectnode.contains(d) ||
-                    nodes.anyMatch(a -> a.equals(new Node(d.getEndpoint().getHost(), d.getEndpoint().getTcpPort().getAsInt())))) {
-                continue;
-            }
-            StringBuilder stringBuilder = new StringBuilder();
-//       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
-            stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
-                    append("/ipfs/").append(id);
-            kernel.getLibp2pNetwork().dail(stringBuilder.toString());
-            hadConnectnode.add(d);
-        }
-    }
+//    public void doConnectlibp2p(){
+//        List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
+//        Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
+//        PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
+//        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
+//        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
+//        for (DiscoveryPeer d : discoveryPeers1) {
+//            if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
+//                    (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))
+//                    || hadConnectnode.contains(d) ||
+//                    nodes.anyMatch(a -> a.equals(new Node(d.getEndpoint().getHost(), d.getEndpoint().getTcpPort().getAsInt())))) {
+//                continue;
+//            }
+//            StringBuilder stringBuilder = new StringBuilder();
+////       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
+//            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
+//            stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
+//                    append("/ipfs/").append(id);
+//            kernel.getLibp2pNetwork().dail(stringBuilder.toString());
+//            hadConnectnode.add(d);
+//        }
+//    }
     public void stop() {
         log.debug("sync manager stop");
     }

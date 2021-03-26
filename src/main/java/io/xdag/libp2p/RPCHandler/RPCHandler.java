@@ -73,7 +73,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
         log.info("libp2p initChannel");
-        final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
+        final Connection connection = ((io.libp2p.core.Connection) p2PChannel);
         libp2pChannel = new Libp2pChannel(connection,this);
         libp2pChannel.init();
         channelManager.add(libp2pChannel);

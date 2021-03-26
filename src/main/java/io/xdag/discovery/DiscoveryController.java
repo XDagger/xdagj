@@ -541,7 +541,6 @@ public class DiscoveryController {
             log.info("return Optional.empty()");
             return Optional.empty();
         }
-        System.out.println("互动匹配");
         interaction.cancelTimers();
         inflightInteractions.remove(packet.getNodeId());
         return Optional.of(interaction);

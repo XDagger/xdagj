@@ -114,6 +114,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         if (!state.compareAndSet(State.IDLE, State.RUNNING)) {
             return SafeFuture.failedFuture(new IllegalStateException("Network already started"));
         }
+        System.out.println("host id = "+ host.getPeerId().toString());
         log.info("Starting libp2p network...");
         return SafeFuture.of(host.start())
                 .thenApply(
