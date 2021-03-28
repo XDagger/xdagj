@@ -121,7 +121,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 tableCfg.setPinL0FilterAndIndexBlocksInCache(true);
                 tableCfg.setFilter(new BloomFilter(10, false));
 
-
                 // read options
                 readOpts = new ReadOptions();
                 readOpts = readOpts.setPrefixSameAsStart(true).setVerifyChecksums(false);

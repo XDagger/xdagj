@@ -116,7 +116,7 @@ public class NodeManager {
             // every 100 seconds, delayed by 5 seconds (public IP lookup)
             fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
-            connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,1,5,TimeUnit.SECONDS);
+//            connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,1,5,TimeUnit.SECONDS);
             isRunning = true;
             log.debug("Node manager started");
         }
@@ -179,7 +179,7 @@ public class NodeManager {
             return null;
         }
     }
-    //todo:明天测试 逻辑思路
+
     public void doConnect() {
 
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();

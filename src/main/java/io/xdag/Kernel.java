@@ -220,8 +220,9 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
+
         //todo:直接启动出块
-        pow.start();
+
         minerManager.setPoW(pow);
         minerManager.start();
         if (Config.MAINNET) {

@@ -251,7 +251,7 @@ public class Block implements Cloneable {
                     pubKeys.add(ECKey.fromPublicOnly(point));
                     break;
                 default:
-                    log.debug("no match xdagBlock field type:" + field.getType());
+//                    log.debug("no match xdagBlock field type:" + field.getType());
             }
         }
         this.parsed = true;

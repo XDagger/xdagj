@@ -206,13 +206,13 @@ public class SyncManager {
                     for(BlockWrapper b : oldQ) {
                         if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
                             // after 64 sec must resend block request
-//                            if(now - b.getTime() > 64 * 1000) {
-//                                b.setTime(now);
-//                                r.set(true);
-//                            } else {
+                            if(now - b.getTime() > 64 * 1000) {
+                                b.setTime(now);
+                                r.set(true);
+                            } else {
                             //TODO should be consider timeout not received request block
                                 r.set(false);
-//                            }
+                            }
                             return oldQ;
                         }
                     }
@@ -283,7 +283,8 @@ public class SyncManager {
         System.out.println("Start PoW");
 
         kernel.getMinerServer().start();
-//        kernel.getPow().start();
+        kernel.getPow().start();
+
 //        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }
