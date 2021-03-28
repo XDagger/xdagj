@@ -50,6 +50,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -188,7 +189,17 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
          * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
          */
         protected void processBlocksRequest(BlocksRequestMessage msg) {
+            log.debug("processBlocksRequest:" + msg);
             updateXdagStats(msg);
+            long startTime = msg.getStarttime();
+            long endTime = msg.getEndtime();
+            long random = msg.getRandom();
+
+            List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
+            for (Block block : blocks) {
+                sendNewBlock(block, 1);
+            }
+            sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
         }
 
         protected void processBlocksReply(BlocksReplyMessage msg) {

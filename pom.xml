@@ -16,6 +16,8 @@
 		<maven.compiler.target>15</maven.compiler.target>
 		<dist.phase>package</dist.phase>
 		<dist.base>${project.basedir}/dist</dist.base>
+		<!-- netty -->
+		<netty.version>4.1.60.Final</netty.version>
 	</properties>
 
 	<organization>
@@ -59,7 +61,7 @@
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
-					<skip>false</skip>
+					<skip>true</skip>
                     <compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
@@ -230,7 +232,6 @@
 	</build>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>fr.acinq.bitcoin</groupId>
 			<artifactId>secp256k1-jni</artifactId>
@@ -317,7 +318,7 @@
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
-			<version>4.1.49.Final</version>
+			<version>${netty.version}</version>
 		</dependency>
 
 		<dependency>
@@ -330,6 +331,16 @@
 			<groupId>io.libp2p</groupId>
 			<artifactId>jvm-libp2p-minimal</artifactId>
 			<version>0.5.1-RELEASE</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-all</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.bouncycastle</groupId>
+					<artifactId>bcpkix-jdk15on</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -402,9 +413,69 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk15on</artifactId>
+			<version>1.68</version>
+		</dependency>
+
+		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-core</artifactId>
 			<version>4.0.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-common</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-buffer</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-transport</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-handler</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-handler-proxy</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec-http</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec-http2</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-resolver</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-resolver-dns</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec-haproxy</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec-haproxy</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-transport-native-epoll</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-transport-native-kqueue</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

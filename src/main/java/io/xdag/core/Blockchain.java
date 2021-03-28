@@ -48,6 +48,9 @@ public interface Blockchain {
     Map<ByteArrayWrapper, Integer> getMemOurBlocks();
 
     XdagStats getXdagStats();
+    XdagTopStatus getXdagTopStatus();
 
     long getSupply(long nmain);
+
+    List<Block> getBlocksByTime(long starttime, long endtime);
 }
