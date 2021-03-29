@@ -100,17 +100,20 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         protected Kernel kernel;
         protected Libp2pChannel channel;
         protected MessageQueueLib msgQueue;
+        protected ChannelManager channelManager;
         public Controller(Kernel kernel,Libp2pChannel channel,BlockHandler blockHandler) {
             this.kernel = kernel;
             this.channel = channel;
             this.blockchain = kernel.getBlockchain();
             this.msgQueue = blockHandler.msgQueue;
             this.syncMgr = kernel.getSyncMgr();
+            this.channelManager = kernel.getChannelManager();
         }
 
         @Override
         public void channelActive(ChannelHandlerContext ctx){
-            log.info("channelActive");
+            log.info("channelActive and remove channel");
+            ctx.close().addListener(future -> channelManager.remove(channel));
         }
         /**进来的最后一道，而且发送不在这处理*/
 

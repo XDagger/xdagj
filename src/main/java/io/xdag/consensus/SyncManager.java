@@ -206,13 +206,13 @@ public class SyncManager {
                     for(BlockWrapper b : oldQ) {
                         if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
                             // after 64 sec must resend block request
-//                            if(now - b.getTime() > 64 * 1000) {
-//                                b.setTime(now);
-//                                r.set(true);
-//                            } else {
+                            if(now - b.getTime() > 64 * 1000) {
+                                b.setTime(now);
+                                r.set(true);
+                            } else {
                             //TODO should be consider timeout not received request block
                             r.set(false);
-//                            }
+                            }
                             return oldQ;
                         }
                     }

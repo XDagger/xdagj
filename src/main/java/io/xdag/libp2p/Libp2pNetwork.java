@@ -89,7 +89,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         this.nodeId = new LibP2PNodeId(peerId);
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
-                        new InetSocketAddress(kernel.getConfig().getPoolIp(), port),nodeId);
+                        new InetSocketAddress(kernel.getConfig().getNodeIp(), port),nodeId);
 
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b->{
@@ -114,7 +114,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         if (!state.compareAndSet(State.IDLE, State.RUNNING)) {
             return SafeFuture.failedFuture(new IllegalStateException("Network already started"));
         }
-        log.info("id ={}",host.getPeerId().toString());
+        log.info("id ={}",host.getPeerId().toString());//16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj
         log.info("Starting libp2p network...");
         return SafeFuture.of(host.start())
                 .thenApply(
