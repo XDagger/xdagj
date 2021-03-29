@@ -266,7 +266,6 @@ public class BlockStore {
             sums = new byte[4096];
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, (int) (16 * index), 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, (int) (index * 16 + 8), 8);
-            putSums(key, sums);
         } else {
             // size + sum
             byte[] data = ArrayUtils.subarray(sums, 16 * (int)index, 16 * (int)index + 16);
@@ -275,8 +274,8 @@ public class BlockStore {
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, data, 0, 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, data, 8, 8);
             System.arraycopy(data, 0, sums, 16 * (int)index, 16);
-            putSums(key, sums);
         }
+        putSums(key, sums);
     }
 
     public int loadSum(long starttime, long endtime, byte[] sums) {

@@ -94,6 +94,7 @@ public class ChannelManager {
     public void add(Libp2pChannel ch){
         channels.put(ch.getNode().getAddress(), ch);
     }
+
     public void remove(Libp2pChannel ch) {
         log.debug("Channel removed: remoteAddress = {}", ch.getIp());
         channels.remove(ch.getIp());
