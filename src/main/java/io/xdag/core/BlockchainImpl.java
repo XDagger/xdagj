@@ -550,7 +550,11 @@ public class BlockchainImpl implements Blockchain {
         }
         List<Address> refs = Lists.newArrayList();
         refs.add(preTop);
-        refs.addAll(getBlockFromOrphanPool(16 - res));
+        List<Address> orphan = getBlockFromOrphanPool(16 - res);
+        if(orphan!=null && orphan.size() != 0) {
+            refs.addAll(orphan);
+        }
+
         return new Block(sendTime, all, refs, mining, keys, null, defKeyIndex);
     }
 

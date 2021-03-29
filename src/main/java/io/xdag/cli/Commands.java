@@ -53,6 +53,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.*;
 
@@ -143,11 +144,11 @@ public class Commands {
                 int index = pair.getKey();
                 Block block = pair.getValue();
                 if(remain.get() <= block.getInfo().getAmount()) {
-                    ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
                     return true;
                 } else {
                     remain.set(remain.get() - block.getInfo().getAmount());
-                    ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
                     return false;
                 }
             }
