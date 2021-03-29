@@ -5,6 +5,11 @@
 XDAGJ is a Java implementation of XDAG. It is rebuilt on the basis of C Version XDAG. For more information, please check [XDagger](https://github.com/XDagger/xdag) .
 
 Alpha version is being improved.
+
+## Donation
+
+XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
+
 ## Development environment
 
 ```yaml
