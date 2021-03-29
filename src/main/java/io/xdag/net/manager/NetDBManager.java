@@ -79,8 +79,8 @@ public class NetDBManager {
                     log.debug("Create File failed");
                 }
                 // 白名单的地址 并且读取
-                URL url = new URL(WHITELIST_URL_TESTNET);
-                FileUtils.copyURLToFile(url, file);
+//                URL url = new URL(WHITELIST_URL_TESTNET);
+//                FileUtils.copyURLToFile(url, file);
                 if (file.exists() && file.isFile()) {
                     reader = new BufferedReader(
                             new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));

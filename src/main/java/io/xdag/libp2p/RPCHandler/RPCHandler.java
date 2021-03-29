@@ -50,6 +50,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -77,7 +78,6 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         libp2pChannel = new Libp2pChannel(connection,this);
         libp2pChannel.init();
         channelManager.add(libp2pChannel);
-//        LibP2PNodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         blockHandler = new BlockHandler(libp2pChannel);
         blockHandler.setMessageFactory(new Xdag03MessageFactory());
         channelManager.onChannelActive(libp2pChannel,libp2pChannel.getNode());
@@ -100,17 +100,20 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         protected Kernel kernel;
         protected Libp2pChannel channel;
         protected MessageQueueLib msgQueue;
+        protected ChannelManager channelManager;
         public Controller(Kernel kernel,Libp2pChannel channel,BlockHandler blockHandler) {
             this.kernel = kernel;
             this.channel = channel;
             this.blockchain = kernel.getBlockchain();
             this.msgQueue = blockHandler.msgQueue;
             this.syncMgr = kernel.getSyncMgr();
+            this.channelManager = kernel.getChannelManager();
         }
 
         @Override
         public void channelActive(ChannelHandlerContext ctx){
-            log.info("channelActive");
+            log.info("channelActive and remove channel");
+            ctx.close().addListener(future -> channelManager.remove(channel));
         }
         /**进来的最后一道，而且发送不在这处理*/
 
@@ -189,7 +192,17 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
          * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
          */
         protected void processBlocksRequest(BlocksRequestMessage msg) {
+            log.debug("processBlocksRequest:" + msg);
             updateXdagStats(msg);
+            long startTime = msg.getStarttime();
+            long endTime = msg.getEndtime();
+            long random = msg.getRandom();
+
+            List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
+            for (Block block : blocks) {
+                sendNewBlock(block, 1);
+            }
+            sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
         }
 
         protected void processBlocksReply(BlocksReplyMessage msg) {

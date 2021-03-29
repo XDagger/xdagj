@@ -237,7 +237,7 @@ public class DiscoveryController {
         final BytesValue target = Peer.randomId();
         peerTable.nearestPeers(Peer.randomId(), 16).forEach((peer) -> findNodes(peer, target));
         lastRefreshTime = System.currentTimeMillis();
-        log.debug("peerTable size {}", peerTable.getAllPeers().size());
+        System.out.println("peerTable size = "+peerTable.getAllPeers().size());
     }
     private void findNodes(final DiscoveryPeer peer, final BytesValue target) {
         final Consumer<PeerInteractionState> action =
@@ -246,7 +246,7 @@ public class DiscoveryController {
                     try {
                         sendPacket(peer, PacketType.FIND_NEIGHBORS, data);
                     } catch (IOException e) {
-                        log.error(e.getMessage(), e);
+                        e.printStackTrace();
                     }
                 };
         final PeerInteractionState interaction =

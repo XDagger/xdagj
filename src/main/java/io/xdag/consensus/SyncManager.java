@@ -116,7 +116,7 @@ public class SyncManager {
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-            BigInteger currentDiff = blockchain.getXdagStats().getTopDiff();
+            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
             if (!syncDone && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0) {
                 log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
                 // 只有同步完成的时候 才能开始线程 再一次
@@ -159,7 +159,7 @@ public class SyncManager {
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashLow())) {
                     log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                        Hex.toHexString(result.getHashLow()));
+                            Hex.toHexString(result.getHashLow()));
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
@@ -206,13 +206,13 @@ public class SyncManager {
                     for(BlockWrapper b : oldQ) {
                         if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
                             // after 64 sec must resend block request
-//                            if(now - b.getTime() > 64 * 1000) {
-//                                b.setTime(now);
-//                                r.set(true);
-//                            } else {
+                            if(now - b.getTime() > 64 * 1000) {
+                                b.setTime(now);
+                                r.set(true);
+                            } else {
                             //TODO should be consider timeout not received request block
-                                r.set(false);
-//                            }
+                            r.set(false);
+                            }
                             return oldQ;
                         }
                     }
@@ -223,6 +223,12 @@ public class SyncManager {
         return r.get();
     }
 
+    /**
+     *
+     *
+     * @param blockWrapper
+     * @return
+     */
     public boolean syncPopBlock(BlockWrapper blockWrapper) {
         AtomicBoolean result = new AtomicBoolean(false);
         Block block = blockWrapper.getBlock();
@@ -284,7 +290,7 @@ public class SyncManager {
 
         kernel.getMinerServer().start();
         kernel.getPow().start();
-        kernel.getLibp2pNetwork().start();
+//        kernel.getLibp2pNetwork().start();
 //        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }

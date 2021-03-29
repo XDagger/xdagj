@@ -45,18 +45,18 @@ public class XdagStats {
     public long maintime;
     public long balance;
 
-    private byte[] top;
-    private BigInteger topDiff;
-    private byte[] preTop;
-    private BigInteger preTopDiff;
+    //    private byte[] top;
+//    private BigInteger topDiff;
+//    private byte[] preTop;
+//    private BigInteger preTopDiff;
     private byte[] globalMiner;
     private byte[] ourLastBlockHash;
 
     public XdagStats(){
         difficulty = BigInteger.ZERO;
         maxdifficulty = BigInteger.ZERO;
-        topDiff = BigInteger.ZERO;
-        preTopDiff = BigInteger.ZERO;
+//        topDiff = BigInteger.ZERO;
+//        preTopDiff = BigInteger.ZERO;
     }
 
     /** 用于记录remote node的 */

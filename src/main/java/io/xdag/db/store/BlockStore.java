@@ -30,16 +30,14 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagStats;
+import io.xdag.core.*;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -57,6 +55,7 @@ public class BlockStore {
     public static final byte HASH_BLOCK_INFO                       =  0x30;
     public static final byte SUMS_BLOCK_INFO                       =  0x40;
     public static final byte OURS_BLOCK_INFO                       =  0x50;
+    public static final byte SETTING_TOP_STATUS                    =  0x60;
 
     public static final String SUM_FILE_NAME = "sums.dat";
 
@@ -85,6 +84,7 @@ public class BlockStore {
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
         kryo.register(XdagStats.class);
+        kryo.register(XdagTopStatus.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -140,6 +140,31 @@ public class BlockStore {
         }
         try {
             status = (XdagStats)deserialize(value, XdagStats.class);
+        } catch ( DeserializationException e) {
+            log.error(e.getMessage(), e);
+        }
+        return status;
+    }
+
+    public void saveXdagTopStatus(XdagTopStatus status) {
+        byte[] value = null;
+        try {
+            value = serialize(status);
+        } catch (SerializationException e) {
+            log.error(e.getMessage(), e);
+        }
+        indexSource.put(new byte[] {SETTING_TOP_STATUS}, value);
+    }
+
+    // pretop状态
+    public XdagTopStatus getXdagTopStatus() {
+        XdagTopStatus status= null;
+        byte[] value = indexSource.get(new byte[] {SETTING_TOP_STATUS});
+        if(value == null) {
+            return null;
+        }
+        try {
+            status = (XdagTopStatus)deserialize(value, XdagTopStatus.class);
         } catch ( DeserializationException e) {
             log.error(e.getMessage(), e);
         }
@@ -241,7 +266,6 @@ public class BlockStore {
             sums = new byte[4096];
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, (int) (16 * index), 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, (int) (index * 16 + 8), 8);
-            putSums(key, sums);
         } else {
             // size + sum
             byte[] data = ArrayUtils.subarray(sums, 16 * (int)index, 16 * (int)index + 16);
@@ -250,8 +274,8 @@ public class BlockStore {
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, data, 0, 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, data, 8, 8);
             System.arraycopy(data, 0, sums, 16 * (int)index, 16);
-            putSums(key, sums);
         }
+        putSums(key, sums);
     }
 
     public int loadSum(long starttime, long endtime, byte[] sums) {
@@ -309,6 +333,7 @@ public class BlockStore {
         byte[] value = null;
         try {
             value = serialize(blockInfo);
+
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
@@ -322,10 +347,11 @@ public class BlockStore {
     public static byte[] getTimeKey(long timestamp, byte[] hashlow) {
         long t = UnsignedLong.fromLongBits(timestamp >> 16).longValue();
         byte[] key = BytesUtils.merge(TIME_HASH_INFO, BytesUtils.longToBytes(t, false));
-        if(hashlow == null) {
-            return key;
-        }
-        return BytesUtils.merge(key, hashlow);
+//        if(hashlow == null) {
+//            return key;
+//        }
+//        return BytesUtils.merge(key, hashlow);
+        return key;
     }
 
     public static byte[] getOurKey(int index) {
@@ -336,33 +362,33 @@ public class BlockStore {
         return BytesUtils.bytesToInt(key, 1, false);
     }
 
-//    public List<Block> getBlocksUsedTime(long startTime, long endTime) {
-//        List<Block> res = Lists.newArrayList();
-//        long time = startTime;
-//        while (time < endTime) {
-//            List<Block> blocks = getBlocksByTime(time);
-//            time += 0x10000;
-//            if (CollectionUtils.isEmpty(blocks)) {
-//                continue;
-//            }
-//            res.addAll(blocks);
-//        }
-//        return res;
-//    }
+    public List<Block> getBlocksUsedTime(long startTime, long endTime) {
+        List<Block> res = Lists.newArrayList();
+        long time = startTime;
+        while (time < endTime) {
+            List<Block> blocks = getBlocksByTime(time);
+            time += 0x10000;
+            if (CollectionUtils.isEmpty(blocks)) {
+                continue;
+            }
+            res.addAll(blocks);
+        }
+        return res;
+    }
 
-//    public List<Block> getBlocksByTime(long startTime) {
-//        List<Block> blocks = Lists.newArrayList();
+    public List<Block> getBlocksByTime(long startTime) {
+        List<Block> blocks = Lists.newArrayList();
 //        long key = UnsignedLong.fromLongBits(startTime >> 16).longValue();
-//        byte[] keyPrefix = getTimeKey(key, null);
-//        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
-//        for (byte[] bytes : keys) {
-//            Block block = getBlockByHash(bytes, true);
-//            if (block != null) {
-//                blocks.add(block);
-//            }
-//        }
-//        return blocks;
-//    }
+        byte[] keyPrefix = getTimeKey(startTime, null);
+        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
+        for (byte[] bytes : keys) {
+            Block block = getBlockByHash(bytes, true);
+            if (block != null) {
+                blocks.add(block);
+            }
+        }
+        return blocks;
+    }
 
     public Block getBlockByHash(byte[] hashlow, boolean isRaw) {
         if (isRaw) {
@@ -397,7 +423,8 @@ public class BlockStore {
                 log.error(e.getMessage(), e);
             }
         }
-        return new Block(blockInfo);
+        Block block = new Block(blockInfo);
+        return block;
     }
 
 //    public void updateBlockKeyIndex(byte[] hashlow, int keyIndex) {

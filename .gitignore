@@ -7,6 +7,7 @@
 
 #for idea
 xdagj.iml
+testnet
 .idea
 logs
 
@@ -14,5 +15,5 @@ logs
 #for project
 xdagj.jar
 testnet
-testnet1
+target
 logs

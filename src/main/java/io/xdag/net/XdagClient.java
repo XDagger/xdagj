@@ -67,10 +67,6 @@ public class XdagClient {
         log.debug("XdagClient nodeId {}", getNode().getHexId());
     }
 
-    // public Node getNode(){
-    // return new Node(ip,port);
-    // }
-
     /** Connects to the node and returns only upon connection close */
     public void connect(String host, int port, XdagChannelInitializer xdagChannelInitializer) {
         try {

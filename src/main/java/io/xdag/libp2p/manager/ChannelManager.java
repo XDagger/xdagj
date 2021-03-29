@@ -71,7 +71,6 @@ public class ChannelManager {
     public void sendNewBlock(BlockWrapper blockWrapper) {
 
         Node receive = null;
-        System.out.println("sendNewBlock");
         // 说明是自己产生的
         if (blockWrapper.getRemoteNode() != null) {
             Libp2pChannel receiveChannel = activeChannels.get(blockWrapper.getRemoteNode().getHexId());
@@ -91,11 +90,11 @@ public class ChannelManager {
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
         log.info("activeChannel size:"+ activeChannels.size());
-        System.out.println("activeChannel size:"+ activeChannels.size());
     }
     public void add(Libp2pChannel ch){
         channels.put(ch.getNode().getAddress(), ch);
     }
+
     public void remove(Libp2pChannel ch) {
         log.debug("Channel removed: remoteAddress = {}", ch.getIp());
         channels.remove(ch.getIp());

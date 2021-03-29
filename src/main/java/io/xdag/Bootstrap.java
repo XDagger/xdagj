@@ -23,7 +23,6 @@
  */
 package io.xdag;
 
-import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
 import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;

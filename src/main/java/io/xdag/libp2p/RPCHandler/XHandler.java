@@ -63,7 +63,6 @@ public abstract class XHandler  extends SimpleChannelInboundHandler<Message> imp
     protected Queue<SettableFuture<SumReplyMessage>> futureSumSublist = new LinkedList<>();
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
-        System.out.println("sscc");
         if (XdagMessageCodes.inRange(msg.getCommand().asByte(), version)) {
             log.trace("XdagHandler invoke: [{}]", msg.getCommand());
         }
