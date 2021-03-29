@@ -1,4 +1,7 @@
 # Welcome to XDAGJ
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_shield)
+![](https://github.com/XDagger/xdagj/actions/workflows/maven.yml/badge.svg)
+
 
 ## About
 
@@ -23,7 +26,9 @@ Make sure the above environment is installed before you build this project.
 
 ## Documentation
 
-[XDAGJ_Documentation.md](./XDAGJ_Documentation.md)
+[XDAGJ_Documentation.md](./docs/XDAGJ_Documentation.md)
+
+[XDAGJ_Roadmap](./docs/XDAGJ_Roadmap.md)
 
 ### for project
 The generated files are stored in MainNet/TestNet during runtime. It depends on whether you access main network or the test network.
@@ -191,3 +196,7 @@ We value the quality and accuracy of the code. Therefor, we will review all the 
 We use `Thank you for your efforts.` in comments on the code review to indicate acceptance. A change **requires** `Thank you for your efforts.` from the maintainers of each component affected. If you know whom it may be, ping them.
 
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_large)
