@@ -171,6 +171,10 @@ public class Commands {
             }
         });
 
+        if (remain.get() > 0 ){
+            return "Balance not enough.";
+        }
+
         Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
 
         if (block == null) {
