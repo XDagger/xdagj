@@ -976,7 +976,7 @@ public class BlockchainImpl implements Blockchain {
     private void acceptAmount(Block block, long amount) {
         block.getInfo().setAmount(block.getInfo().getAmount() + amount);
         if ((block.getInfo().flags & BI_OURS) != 0) {
-            xdagStats.setBalance(amount);
+            xdagStats.setBalance(xdagStats.getBalance()+amount);
         }
     }
 

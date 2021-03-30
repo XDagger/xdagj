@@ -178,7 +178,6 @@ public class Commands {
         }
 
         BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
-        System.out.println("Xdag data:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
 
         // blockWrapper.setTransaction(true);
         kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
