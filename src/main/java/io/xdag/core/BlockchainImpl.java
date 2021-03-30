@@ -531,7 +531,7 @@ public class BlockchainImpl implements Blockchain {
         int defKeyIndex = -1;
         // 遍历所有key 判断是否有defKey
         assert pairs != null;
-        List<ECKey> keys = new ArrayList<>(pairs.values());
+        List<ECKey> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey().ecKey)) {
                 defKeyIndex = i;
@@ -543,6 +543,9 @@ public class BlockchainImpl implements Blockchain {
         all.addAll(to);
 
         // TODO: 判断pair是否有重复
+        System.out.println("pairs size:"+pairs.size());
+        System.out.println("to size:"+to.size());
+        System.out.println("keys size:"+keys.size());
         int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
 
         // TODO : 如果区块字段不足
