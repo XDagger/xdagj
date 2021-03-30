@@ -541,7 +541,9 @@ public class BlockchainImpl implements Blockchain {
         List<Address> all = Lists.newArrayList();
         all.addAll(pairs.keySet());
         all.addAll(to);
-        int res = 1 + pairs.size() + to.size() + 3 * pairs.size() + (defKeyIndex == -1 ? 2 : 0);
+
+        // TODO: 判断pair是否有重复
+        int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
 
         // TODO : 如果区块字段不足
         if (res > 16) {

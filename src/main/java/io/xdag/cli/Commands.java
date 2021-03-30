@@ -164,7 +164,7 @@ public class Commands {
         ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
         boolean isdefaultKey = false;
         // 签名
-        for (ECKey ecKey : ourBlocks.values()) {
+        for (ECKey ecKey : Set.copyOf(ourBlocks.values())) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
                 block.signOut(ecKey);
