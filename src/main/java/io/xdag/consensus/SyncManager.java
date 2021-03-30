@@ -101,6 +101,7 @@ public class SyncManager {
 
     /** Queue for the link block don't exist */
     private ConcurrentHashMap<ByteArrayWrapper, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
+
     public void start() {
         log.debug("Download receiveBlock run...");
     }
@@ -116,7 +117,7 @@ public class SyncManager {
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-            BigInteger currentDiff = blockchain.getXdagStats().getTopDiff();
+            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
             if (!syncDone && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0) {
                 log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
                 // 只有同步完成的时候 才能开始线程 再一次
@@ -167,11 +168,11 @@ public class SyncManager {
 
                         }
                     }
-                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
-                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
-                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
-                        }
-                    }
+//                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
+//                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
+//                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
+//                        }
+//                    }
                 }
                 break;
             }
@@ -206,13 +207,13 @@ public class SyncManager {
                     for(BlockWrapper b : oldQ) {
                         if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
                             // after 64 sec must resend block request
-//                            if(now - b.getTime() > 64 * 1000) {
-//                                b.setTime(now);
-//                                r.set(true);
-//                            } else {
+                            if(now - b.getTime() > 64 * 1000) {
+                                b.setTime(now);
+                                r.set(true);
+                            } else {
                             //TODO should be consider timeout not received request block
                                 r.set(false);
-//                            }
+                            }
                             return oldQ;
                         }
                     }
@@ -223,6 +224,12 @@ public class SyncManager {
         return r.get();
     }
 
+    /**
+     *
+     *
+     * @param blockWrapper
+     * @return
+     */
     public boolean syncPopBlock(BlockWrapper blockWrapper) {
         AtomicBoolean result = new AtomicBoolean(false);
         Block block = blockWrapper.getBlock();

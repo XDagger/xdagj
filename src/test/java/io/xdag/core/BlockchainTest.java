@@ -125,9 +125,10 @@ public class BlockchainTest {
         ImportResult result = blockchain.tryToConnect(addressBlock);
         assertTrue(result == IMPORTED_BEST);
         XdagStats stats = blockchain.getXdagStats();
+        XdagTopStatus xdagTopStatus = blockchain.getXdagTopStatus();
         assertNotNull(stats);
-        assertArrayEquals(addressBlock.getHashLow(), stats.getTop());
-        Block storedBlock = blockchain.getBlockByHash(stats.getTop(), false);
+        assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
+        Block storedBlock = blockchain.getBlockByHash(xdagTopStatus.getTop(), false);
         assertNotNull(storedBlock);
         assertArrayEquals(addressBlock.getHashLow(), storedBlock.getHashLow());
     }
@@ -138,6 +139,7 @@ public class BlockchainTest {
         ECKey key = new ECKey();
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
         XdagStats stats = blockchain.getXdagStats();
+        XdagTopStatus xdagTopStatus = blockchain.getXdagTopStatus();
         assertNotNull(stats);
         List<Address> pending = Lists.newArrayList();
 
@@ -149,7 +151,7 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(addressBlock);
         assertChainStatus(1, 0, 0,1, blockchain);
         assertTrue(result == IMPORTED_BEST);
-        assertArrayEquals(addressBlock.getHashLow(), stats.getTop());
+        assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
         for(int i = 1; i <= 100; i++) {
@@ -163,8 +165,8 @@ public class BlockchainTest {
             result = blockchain.tryToConnect(extraBlock);
             assertTrue(result == IMPORTED_BEST);
             assertChainStatus(i+1, i>1?i-1:0, 1, i<2?1:0, blockchain);
-            assertArrayEquals(extraBlock.getHashLow(), stats.getTop());
-            Block storedExtraBlock = blockchain.getBlockByHash(stats.getTop(), false);
+            assertArrayEquals(extraBlock.getHashLow(), xdagTopStatus.getTop());
+            Block storedExtraBlock = blockchain.getBlockByHash(xdagTopStatus.getTop(), false);
             assertArrayEquals(extraBlock.getHashLow(), storedExtraBlock.getHashLow());
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);

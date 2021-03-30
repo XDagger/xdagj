@@ -71,7 +71,6 @@ public class ChannelManager {
     public void sendNewBlock(BlockWrapper blockWrapper) {
 
         Node receive = null;
-        System.out.println("sendNewBlock");
         // 说明是自己产生的
         if (blockWrapper.getRemoteNode() != null) {
             Libp2pChannel receiveChannel = activeChannels.get(blockWrapper.getRemoteNode().getHexId());

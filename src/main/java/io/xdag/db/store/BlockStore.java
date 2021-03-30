@@ -30,16 +30,14 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagStats;
+import io.xdag.core.*;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -57,6 +55,9 @@ public class BlockStore {
     public static final byte HASH_BLOCK_INFO                       =  0x30;
     public static final byte SUMS_BLOCK_INFO                       =  0x40;
     public static final byte OURS_BLOCK_INFO                       =  0x50;
+
+
+    public static final byte SETTING_TOP_STATUS                       =  0x60;
 
     public static final String SUM_FILE_NAME = "sums.dat";
 
@@ -85,6 +86,7 @@ public class BlockStore {
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
         kryo.register(XdagStats.class);
+        kryo.register(XdagTopStatus.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -146,6 +148,31 @@ public class BlockStore {
         return status;
     }
 
+    public void saveXdagTopStatus(XdagTopStatus status) {
+        byte[] value = null;
+        try {
+            value = serialize(status);
+        } catch (SerializationException e) {
+            log.error(e.getMessage(), e);
+        }
+        indexSource.put(new byte[] {SETTING_TOP_STATUS}, value);
+    }
+
+    // pretop状态
+    public XdagTopStatus getXdagTopStatus() {
+        XdagTopStatus status= null;
+        byte[] value = indexSource.get(new byte[] {SETTING_TOP_STATUS});
+        if(value == null) {
+            return null;
+        }
+        try {
+            status = (XdagTopStatus)deserialize(value, XdagTopStatus.class);
+        } catch ( DeserializationException e) {
+            log.error(e.getMessage(), e);
+        }
+        return status;
+    }
+
     // 存储block的过程
     public void saveBlock(Block block) {
         long time = block.getTimestamp();
@@ -156,11 +183,11 @@ public class BlockStore {
     }
 
     public void saveOurBlock(int index, byte[] hashlow) {
-        indexSource.put(getOurKey(index), hashlow);
+        indexSource.put(getOurKey(index,hashlow), hashlow);
     }
 
     public byte[] getOurBlock(int index) {
-        return indexSource.get(getOurKey(index));
+        return indexSource.get(getOurKey(index,null));
     }
 
     public void removeOurBlock(byte[] hashlow) {
@@ -168,7 +195,7 @@ public class BlockStore {
             Block block = pair.getValue();
             if(FastByteComparisons.equalBytes(hashlow, block.getHashLow())) {
                 int index = pair.getKey();
-                indexSource.delete(getOurKey(index));
+                indexSource.delete(getOurKey(index,hashlow));
                 return Boolean.TRUE;
             }
             return Boolean.FALSE;
@@ -328,41 +355,48 @@ public class BlockStore {
         return BytesUtils.merge(key, hashlow);
     }
 
-    public static byte[] getOurKey(int index) {
-        return BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
+    public static byte[] getOurKey(int index, byte[] hashlow) {
+        byte[] key = BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
+        key = BytesUtils.merge(key,hashlow);
+        return key;
     }
 
     public static int getOurIndex(byte[] key) {
-        return BytesUtils.bytesToInt(key, 1, false);
+        try {
+            byte[] index = BytesUtils.subArray(key,1,4);
+            return BytesUtils.bytesToInt(index,0,false);
+        }catch (Exception e) {
+            return 0;
+        }
+//        return BytesUtils.bytesToInt(key, 1, false);
+    }
+    public List<Block> getBlocksUsedTime(long startTime, long endTime) {
+        List<Block> res = Lists.newArrayList();
+        long time = startTime;
+        while (time < endTime) {
+            List<Block> blocks = getBlocksByTime(time);
+            time += 0x10000;
+            if (CollectionUtils.isEmpty(blocks)) {
+                continue;
+            }
+            res.addAll(blocks);
+        }
+        return res;
     }
 
-//    public List<Block> getBlocksUsedTime(long startTime, long endTime) {
-//        List<Block> res = Lists.newArrayList();
-//        long time = startTime;
-//        while (time < endTime) {
-//            List<Block> blocks = getBlocksByTime(time);
-//            time += 0x10000;
-//            if (CollectionUtils.isEmpty(blocks)) {
-//                continue;
-//            }
-//            res.addAll(blocks);
-//        }
-//        return res;
-//    }
-
-//    public List<Block> getBlocksByTime(long startTime) {
-//        List<Block> blocks = Lists.newArrayList();
+    public List<Block> getBlocksByTime(long startTime) {
+        List<Block> blocks = Lists.newArrayList();
 //        long key = UnsignedLong.fromLongBits(startTime >> 16).longValue();
-//        byte[] keyPrefix = getTimeKey(key, null);
-//        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
-//        for (byte[] bytes : keys) {
-//            Block block = getBlockByHash(bytes, true);
-//            if (block != null) {
-//                blocks.add(block);
-//            }
-//        }
-//        return blocks;
-//    }
+        byte[] keyPrefix = getTimeKey(startTime, null);
+        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
+        for (byte[] bytes : keys) {
+            Block block = getBlockByHash(bytes, true);
+            if (block != null) {
+                blocks.add(block);
+            }
+        }
+        return blocks;
+    }
 
     public Block getBlockByHash(byte[] hashlow, boolean isRaw) {
         if (isRaw) {
@@ -376,6 +410,7 @@ public class BlockStore {
         if (block == null) {
             return null;
         }
+        log.debug("data:{}",Hex.toHexString(blockSource.get(hashlow)));
         block.setXdagBlock(new XdagBlock(blockSource.get(hashlow)));
         block.setParsed(false);
         block.parse();
@@ -397,7 +432,8 @@ public class BlockStore {
                 log.error(e.getMessage(), e);
             }
         }
-        return new Block(blockInfo);
+        Block block = new Block(blockInfo);
+        return block;
     }
 
 //    public void updateBlockKeyIndex(byte[] hashlow, int keyIndex) {
@@ -422,3 +458,9 @@ public class BlockStore {
 //        }
 //    }
 }
+
+//00000000000000003859050000000040ffffa6878101000000000000000000005c6dc2b49e6f0d34ed258cfcc3ea5242128e1a9479977d700000000000000000586461674a0000000000000000000000000000000000000000000000000000006b0dc6bd42597c7e851e50765c54ff7806c101541ff93aeed069055754ef848a126db6d67118bd87b0285892e1cfb5732b64e143faa684de59d819f876cd1e8e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000026fa07df9cf004af7f26a7bbdfb3a005cbee0a917bdd119208fa1643422ff157
+//00000000000000007f777777777777776ea8a887810100000000000000000000e6817a0a1f25b3aabc642d11f483834544181d13b203c82d0000000064000000566ea89f0a19c54b680fa2ccfb72e7fec43e6f45af6bfdf20000000064000000b2c4be0a4ab43a573e2ed5c74e29698f64223197431365dd0000000064000000874577499b94e92411da6a6f3aa232c48da77137cbebc6e40000000064000000f74b0c413847f1692e6a2bf4b514d99f60a1389edf2251580000000000000000058fc0f060c2fbb44c429c66d1614a0d1aba25899225428000000000640000008544b0443cc6b23133053a1a4935f9d491a0112eb5c398c10000000064000000deec92447a11abbc7bd2fc465602a853ad635fa167590ad20000000064000000e8c6620c6aa5644d63752280b98b9917ec5429bfb7c85076000000006400000007ea1dc8f6846d46d0abeb86c52326e4cc3d75ee2718463b00000000640000005c6dc2b49e6f0d34ed258cfcc3ea5242128e1a9479977d7000000000640000000563b2fac3351c62130ec087b4df4beb3052e37e2acf193400000000640000007c1b40afbf18dcc4eea74a72db47b9b2c549f9e723b4e0fa0000000064000000e508e9014d983e9aeee779af084f02f91553dc93aeb3bdff00000000000000001c7879f01e006b94f2aa6050e0721d87ba8b4563947f74650000000064000000
+//82cddef261c33bea24b476d480b17a941c8e198f8ed547870000000064000000cd608db1387ea5573679bba7e8036630c79337d742908cd9000000006400000047a1ac2f42cc5a0158e1a078c60838a1f7a093067115e2db00000000640000006351f40eead568fefe14321280ae8b2f5d38fa9779ad84df000000006400000007b8caf403eeb788292a7ea87baf727754d6608ad082b55a00000000000000002e25416f10ee057a88f4de67f5711d4588ae2436726328b50000000064000000d377a8e0754e8739488bc36f62f626d9114ec80bf9cb00be00000000640000006351f40eead568fefe14321280ae8b2f5d38fa9779ad84df000000006400000007ea1dc8f6846d46d0abeb86c52326e4cc3d75ee2718463b000000000000000061ca4abdf7129b5625213b84def58b258b460a79ba9584780000000000000000 525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3
+//525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3 525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3525c7e8ea2a4e0b94b24486b7484e7109685b0adb582ec08059601491effb2a3
+//d1f8dfcc55975e3afac9ca26edfa9fc9ddffe60e76537ebd78073947b41a85836deecb9d634fa0e35c966f0b30a068e6c47b25fc2aa73fabbbe4e2124ddc0a1d0000000000000000000000000000000000000000000000000000000000000000

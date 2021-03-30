@@ -26,6 +26,7 @@ package io.xdag.cli;
 import cn.hutool.core.lang.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AtomicDouble;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
@@ -41,17 +42,16 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.*;
 
@@ -80,7 +80,7 @@ public class Commands {
                 .append("0.00")
                 .append(" XDAG")
                 .append(" key ")
-                .append(memOurBlocks.get(key)));
+                .append(memOurBlocks.get(key)).append("\n"));
 
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             Integer index = pair.getKey();
@@ -90,7 +90,7 @@ public class Commands {
                     .append(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
                     .append(" XDAG")
                     .append(" key ")
-                    .append(index);
+                    .append(index).append("\n");
             return false;
         });
         return str.toString();
@@ -141,18 +141,26 @@ public class Commands {
             public Boolean apply(Pair<Integer, Block> pair) {
                 int index = pair.getKey();
                 Block block = pair.getValue();
-                if(remain.get() <= block.getInfo().getAmount()) {
-                    ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
+                if (remain.get() <= block.getInfo().getAmount()) {
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
                     return true;
                 } else {
-                    remain.set(remain.get() - block.getInfo().getAmount());
-                    ourBlocks.put(new Address(block), kernel.getWallet().getKeyByIndex(index));
+                    if (block.getInfo().getAmount() > 0) {
+                        remain.set(remain.get() - block.getInfo().getAmount());
+                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
+                        return false;
+                    }
                     return false;
                 }
             }
         });
 
         Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
+
+        if (block == null) {
+            return "Transfer Failed.";
+        }
+
         ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
         boolean isdefaultKey = false;
         // 签名
@@ -170,9 +178,11 @@ public class Commands {
         }
 
         BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
+        System.out.println("Xdag data:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
 
         // blockWrapper.setTransaction(true);
         kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
+        kernel.getChannelMgr().sendNewBlock(blockWrapper);
 
         log.info("Transfer [{}]Xdag from [{}] to [{}]",
                 sendAmount,
@@ -190,6 +200,13 @@ public class Commands {
      */
     public String stats() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
+        XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
+
+        //diff
+        BigInteger currentDiff = xdagTopStatus.getTopDiff()!=null?xdagTopStatus.getTopDiff():BigInteger.ZERO;
+        BigInteger netDiff = xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty():BigInteger.ZERO;
+        BigInteger maxDiff = netDiff.max(currentDiff);
+
         return String.format("""
                         Statistics for ours and maximum known parameters:
                                     hosts: %d of %d
@@ -201,15 +218,17 @@ public class Commands {
                          chain difficulty: %s of %s
                               XDAG supply: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
-                xdagStats.getNblocks(), xdagStats.getTotalnblocks(),
-                xdagStats.getNmain(), xdagStats.getTotalnmain(),
+                xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(),xdagStats.getNblocks()),
+                xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(),xdagStats.getNmain()),
                 xdagStats.nextra,
                 xdagStats.nnoref,
                 xdagStats.nwaitsync,
-                xdagStats.getTopDiff()!=null?xdagStats.getTopDiff().toString(16):"",
-                xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty().toString(16):"",
+//                xdagTopStatus.getTopDiff()!=null?xdagTopStatus.getTopDiff().toString(16):"",
+//                xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty().toString(16):"",
+                currentDiff.toString(16),
+                maxDiff.toString(16),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
-                amount2xdag(kernel.getBlockchain().getSupply(xdagStats.totalnmain))
+                amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain,xdagStats.totalnmain)))
         );
     }
 

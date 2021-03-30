@@ -86,6 +86,13 @@ public class Block implements Cloneable {
     /** 区块是否存在于本地* */
     public boolean isSaved;
 
+    @Getter
+    @Setter
+    private boolean pretopCandidate;
+    @Getter
+    @Setter
+    private BigInteger pretopCandidateDiff;
+
     public Block(
             long timestamp,
             List<Address> links,
@@ -177,6 +184,8 @@ public class Block implements Cloneable {
     public Block(BlockInfo blockInfo) {
         this.info = blockInfo;
         this.isSaved = true;
+        this.parsed = true;
+
     }
 
     /** 计算区块hash* */
@@ -251,7 +260,7 @@ public class Block implements Cloneable {
                     pubKeys.add(ECKey.fromPublicOnly(point));
                     break;
                 default:
-                    log.debug("no match xdagBlock field type:" + field.getType());
+//                    log.debug("no match xdagBlock field type:" + field.getType());
             }
         }
         this.parsed = true;

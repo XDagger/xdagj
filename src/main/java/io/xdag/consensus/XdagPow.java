@@ -52,17 +52,22 @@ import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class XdagPow implements PoW, Runnable {
+
     protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
     protected Timer timer;
     protected Broadcaster broadcaster;
+
     protected Block generateBlock;
+
     protected byte[] minShare;
     protected byte[] minHash;
     protected Task currentTask;
     protected XdagSha256Digest currentTaskDigest;
+
     protected long sendTime;
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
+
     /** 存放的是过去十六个区块的hash */
     protected List<byte[]> blockHashs = new CopyOnWriteArrayList<byte[]>();
     /** 存放的是最小的hash */
@@ -70,9 +75,13 @@ public class XdagPow implements PoW, Runnable {
     /** 引入矿工与奖励 */
     protected AwardManager awardManager;
     protected MinerManager minerManager;
+
     protected long taskIndex = 0;
+
     private Kernel kernel;
+
     private boolean isRunning = false;
+
     private ChannelManager channelManager;
 
     public XdagPow(Kernel kernel) {
@@ -268,11 +277,11 @@ public class XdagPow implements PoW, Runnable {
                     onNewShare(ev.getData(), ev.getChannel());
                     break;
                 case TIMEOUT:
+                    // TODO : 判断当前是否可以进行产块
 //                    if(kernel.getXdagState().equals(XdagState.STST) || kernel.getXdagState().equals(XdagState.SYNC)) {
                         onTimeout();
 //                    }
                     break;
-                    //这是干嘛的？
                 case NEW_PRETOP:
                     onNewPreTop();
                     break;

@@ -31,6 +31,7 @@ import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;

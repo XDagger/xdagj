@@ -55,6 +55,7 @@ import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class XdagSync {
+
     private static final ThreadFactory factory = new ThreadFactory() {
         private final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -63,6 +64,7 @@ public class XdagSync {
             return new Thread(r, "sync(request)-" + cnt.getAndIncrement());
         }
     };
+
     private XdagChannelManager channelMgr;
     private ChannelManager channelManager;
     private BlockStore blockStore;
@@ -161,53 +163,53 @@ public class XdagSync {
                 }
             }
         }
-        List<Libp2pChannel> any0 = getLibp2pAnyNode();
-        SettableFuture<byte[]> sf0 = SettableFuture.create();
-        long randomSeq0;
-        if (any0 != null && any0.size() != 0) {
-            Libp2pChannel channel = any0.get(0);
-            if (dt <= REQUEST_BLOCKS_MAX_TIME) {
-                randomSeq0 = channel.getHandler().getController().sendGetBlocks(t, t + dt);
-                blocksRequestMap.put(randomSeq0, sf0);
-                try {
-                    sf0.get(128, TimeUnit.SECONDS);
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    blocksRequestMap.remove(randomSeq0);
-                    log.error(e.getMessage(), e);
-                    return;
-                }
-                blocksRequestMap.remove(randomSeq0);
-                return;
-            } else {
-                byte[] lSums0 = new byte[256];
-                byte[] rSums0;
-                if (blockStore.loadSum(t, t + dt, lSums0) <= 0) {
-                    return;
-                }
-                randomSeq0 = channel.getHandler().getController().sendGetSums(t , t + dt );
-                sumsRequestMap.put(randomSeq0 , sf0);
-                try{
-                    byte[] sums0 = sf0.get(128, TimeUnit.SECONDS);
-                    rSums0 = Arrays.copyOf(sums0, 256);
-                }catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    sumsRequestMap.remove(randomSeq0);
-                    log.error(e.getMessage(), e);
-                    return;
-                }
-                sumsRequestMap.remove(randomSeq0);
-                dt >>= 4;
-                for (int i = 0; i < 16; i++) {
-                    long lSumsSum = BytesUtils.bytesToLong(lSums0, i * 16, true);
-                    long lSumsSize = BytesUtils.bytesToLong(lSums0, i * 16 + 8, true);
-                    long rSumsSum = BytesUtils.bytesToLong(rSums0, i * 16, true);
-                    long rSumsSize = BytesUtils.bytesToLong(rSums0, i * 16 + 8, true);
-
-                    if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
-                        requestBlocks(t + i * dt, dt);
-                    }
-                }
-            }
-        }
+//        List<Libp2pChannel> any0 = getLibp2pAnyNode();
+//        SettableFuture<byte[]> sf0 = SettableFuture.create();
+//        long randomSeq0;
+//        if (any0 != null && any0.size() != 0) {
+//            Libp2pChannel channel = any0.get(0);
+//            if (dt <= REQUEST_BLOCKS_MAX_TIME) {
+//                randomSeq0 = channel.getHandler().getController().sendGetBlocks(t, t + dt);
+//                blocksRequestMap.put(randomSeq0, sf0);
+//                try {
+//                    sf0.get(128, TimeUnit.SECONDS);
+//                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+//                    blocksRequestMap.remove(randomSeq0);
+//                    log.error(e.getMessage(), e);
+//                    return;
+//                }
+//                blocksRequestMap.remove(randomSeq0);
+//                return;
+//            } else {
+//                byte[] lSums0 = new byte[256];
+//                byte[] rSums0;
+//                if (blockStore.loadSum(t, t + dt, lSums0) <= 0) {
+//                    return;
+//                }
+//                randomSeq0 = channel.getHandler().getController().sendGetSums(t , t + dt );
+//                sumsRequestMap.put(randomSeq0 , sf0);
+//                try{
+//                    byte[] sums0 = sf0.get(128, TimeUnit.SECONDS);
+//                    rSums0 = Arrays.copyOf(sums0, 256);
+//                }catch (InterruptedException | ExecutionException | TimeoutException e) {
+//                    sumsRequestMap.remove(randomSeq0);
+//                    log.error(e.getMessage(), e);
+//                    return;
+//                }
+//                sumsRequestMap.remove(randomSeq0);
+//                dt >>= 4;
+//                for (int i = 0; i < 16; i++) {
+//                    long lSumsSum = BytesUtils.bytesToLong(lSums0, i * 16, true);
+//                    long lSumsSize = BytesUtils.bytesToLong(lSums0, i * 16 + 8, true);
+//                    long rSumsSum = BytesUtils.bytesToLong(rSums0, i * 16, true);
+//                    long rSumsSize = BytesUtils.bytesToLong(rSums0, i * 16 + 8, true);
+//
+//                    if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
+//                        requestBlocks(t + i * dt, dt);
+//                    }
+//                }
+//            }
+//        }
     }
 
     public List<XdagChannel> getAnyNode() {
@@ -217,6 +219,8 @@ public class XdagSync {
     public List<Libp2pChannel> getLibp2pAnyNode(){
         return channelManager.getactiveChannel();
     }
+
+
     public void stop() {
         log.debug("stop sync");
         if (isRunning) {
