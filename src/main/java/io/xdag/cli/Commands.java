@@ -75,24 +75,40 @@ public class Commands {
         // account in memory,do not store in rocksdb
         Map<ByteArrayWrapper, Integer> memOurBlocks = kernel.getBlockchain().getMemOurBlocks();
         StringBuilder str = new StringBuilder();
-        memOurBlocks.keySet().stream().limit(num).forEach(key-> str.append(hash2Address(key.getData()))
-                .append(" ")
-                .append("0.00")
-                .append(" XDAG")
-                .append(" key ")
-                .append(memOurBlocks.get(key)).append("\n"));
+//        memOurBlocks.keySet().stream().limit(num).forEach(key-> str.append(hash2Address(key.getData()))
+//                .append(" ")
+//                .append("0.00")
+//                .append(" XDAG")
+//                .append(" key ")
+//                .append(memOurBlocks.get(key)).append("\n"));
 
+        Map<Block,Integer> ours = new HashMap<>();
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             Integer index = pair.getKey();
             Block block = pair.getValue();
-            str.append(hash2Address(block.getHash()))
-                    .append(" ")
-                    .append(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
-                    .append(" XDAG")
-                    .append(" key ")
-                    .append(index).append("\n");
+            ours.putIfAbsent(block,index);
             return false;
         });
+
+        List<Map.Entry<Block,Integer>> list = new ArrayList<Map.Entry<Block,Integer>>(ours.entrySet());
+        Collections.sort(list,new Comparator<Map.Entry<Block,Integer>>() {
+            //升序排序
+            public int compare(Map.Entry<Block, Integer> o1,
+                               Map.Entry<Block, Integer> o2) {
+                return Long.compare(o2.getKey().getInfo().getAmount(),o1.getKey().getInfo().getAmount());
+            }
+
+        });
+
+        for(Map.Entry<Block,Integer> mapping:list){
+            str.append(hash2Address(mapping.getKey().getHash()))
+                    .append(" ")
+                    .append(String.format("%.9f", amount2xdag(mapping.getKey().getInfo().getAmount())))
+                    .append(" XDAG")
+                    .append(" key ")
+                    .append(mapping.getValue()).append("\n");
+        }
+
         return str.toString();
     }
 
