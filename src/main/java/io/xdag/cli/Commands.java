@@ -159,6 +159,7 @@ public class Commands {
                 Block block = pair.getValue();
                 if (remain.get() <= block.getInfo().getAmount()) {
                     ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
+                    remain.set(remain.get() - block.getInfo().getAmount());
                     return true;
                 } else {
                     if (block.getInfo().getAmount() > 0) {

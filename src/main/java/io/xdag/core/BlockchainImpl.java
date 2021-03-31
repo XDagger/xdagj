@@ -183,6 +183,11 @@ public class BlockchainImpl implements Blockchain {
     public synchronized ImportResult tryToConnect(Block block) {
         try {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
+
+            if (block.getTimestamp() > (XdagTime.getCurrentTimestamp()+ (64<<10)/4)) {
+                return ImportResult.INVALID_BLOCK;
+            }
+
             if (isExist(block.getHashLow())) {
                 return ImportResult.EXIST;
             }
@@ -543,9 +548,6 @@ public class BlockchainImpl implements Blockchain {
         all.addAll(to);
 
         // TODO: 判断pair是否有重复
-        System.out.println("pairs size:"+pairs.size());
-        System.out.println("to size:"+to.size());
-        System.out.println("keys size:"+keys.size());
         int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
 
         // TODO : 如果区块字段不足
@@ -559,15 +561,22 @@ public class BlockchainImpl implements Blockchain {
             res += 1;
             sendTime = XdagTime.getMainTime();
         }
+        List<Address> refs = Lists.newArrayList();
 
         Address preTop = null;
-        if (getPreTopMainBlockForLink(sendTime) != null) {
-
-            preTop = new Address(getPreTopMainBlockForLink(sendTime), XdagField.FieldType.XDAG_FIELD_OUT);
-            res++;
+        byte[] pretopHash = getPreTopMainBlockForLink(sendTime);
+        if (pretopHash != null) {
+            if (getBlockByHash(pretopHash,false).getTimestamp() < sendTime ) {
+                preTop = new Address(getPreTopMainBlockForLink(sendTime), XdagField.FieldType.XDAG_FIELD_OUT);
+                res++;
+            }
         }
-        List<Address> refs = Lists.newArrayList();
-        refs.add(preTop);
+
+        if (preTop!=null) {
+            refs.add(preTop);
+        }
+
+
         List<Address> orphan = getBlockFromOrphanPool(16 - res);
         if(orphan!=null && orphan.size() != 0) {
             refs.addAll(orphan);
