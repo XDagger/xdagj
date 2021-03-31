@@ -577,7 +577,7 @@ public class BlockchainImpl implements Blockchain {
         }
 
 
-        List<Address> orphan = getBlockFromOrphanPool(16 - res);
+        List<Address> orphan = getBlockFromOrphanPool(16 - res, sendTime);
         if(orphan!=null && orphan.size() != 0) {
             refs.addAll(orphan);
         }
@@ -596,9 +596,9 @@ public class BlockchainImpl implements Blockchain {
         if(preTop != null) {
             refs.add(preTop);
         }
-        List<Address> orphans = getBlockFromOrphanPool(16 - res);
+        List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
         if(CollectionUtils.isNotEmpty(orphans)) {
-            refs.addAll(getBlockFromOrphanPool(16 - res));
+            refs.addAll(orphans);
         }
         return new Block(sendTime, null, refs, true, null, kernel.getConfig().getPoolTag(), -1);
     }
@@ -614,8 +614,8 @@ public class BlockchainImpl implements Blockchain {
      *
      * @return java.util.List<io.xdag.core.Address>
      **/
-    public List<Address> getBlockFromOrphanPool(int num) {
-        return orphanPool.getOrphan(num);
+    public List<Address> getBlockFromOrphanPool(int num , long sendtime) {
+        return orphanPool.getOrphan(num, sendtime);
     }
 
     public byte[] getPreTopMainBlockForLink(long sendTime) {
