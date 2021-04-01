@@ -289,6 +289,8 @@ public class SyncManager {
         log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
         System.out.println("Start PoW");
 
+        // 检查主块链
+        kernel.getBlockchain().startCheckMain();
         kernel.getMinerServer().start();
         kernel.getPow().start();
         kernel.getLibp2pNetwork().start();

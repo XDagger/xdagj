@@ -44,19 +44,19 @@ public abstract class AbstractMessage extends Message {
     @Getter
     @Setter
     protected long starttime;
-    
+
     @Getter
     @Setter
     protected long endtime;
-    
+
     @Getter
     @Setter
     protected long random;
-    
+
     @Getter
     @Setter
     protected byte[] hash;
-    
+
     /** 获取对方节点的netstatus */
     @Setter
     protected XdagStats xdagStats;
@@ -132,7 +132,7 @@ public abstract class AbstractMessage extends Message {
         BigInteger diff = xdagStats.difficulty;
         BigInteger maxDiff = xdagStats.maxdifficulty;
         long nmain = xdagStats.nmain;
-        long totalMainNumber = xdagStats.totalnmain;
+        long totalMainNumber = Math.max(xdagStats.totalnmain,nmain);
         long nblocks = xdagStats.nblocks;
         long totalBlockNumber = xdagStats.totalnblocks;
 

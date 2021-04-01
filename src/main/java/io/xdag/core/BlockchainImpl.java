@@ -41,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bouncycastle.util.encoders.Hex;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -49,7 +50,8 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
@@ -62,6 +64,15 @@ import static io.xdag.utils.MapUtils.getHead;
 @Slf4j
 @Getter
 public class BlockchainImpl implements Blockchain {
+    private static final ThreadFactory factory = new ThreadFactory() {
+        private final AtomicInteger cnt = new AtomicInteger(0);
+
+        @Override
+        public Thread newThread(@Nonnull Runnable r) {
+            return new Thread(r, "check main-" + cnt.getAndIncrement());
+        }
+    };
+
     private OldWallet wallet;
     private BlockStore blockStore;
     /** 非Extra orphan存放 */
@@ -74,6 +85,9 @@ public class BlockchainImpl implements Blockchain {
 
 
     private XdagTopStatus xdagTopStatus;
+
+    private ScheduledExecutorService checkLoop;
+    private ScheduledFuture<?> checkLoopFuture;
 
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
@@ -94,7 +108,7 @@ public class BlockchainImpl implements Blockchain {
         } else {
             this.xdagTopStatus = new XdagTopStatus();
         }
-
+        checkLoop = new ScheduledThreadPoolExecutor(1, factory);
     }
     //读取C版本区块
     public long loadBlockchain(
@@ -333,7 +347,7 @@ public class BlockchainImpl implements Blockchain {
 
     /** 检查更新主链 * */
     @Override
-    public void checkNewMain() {
+    public synchronized void checkNewMain() {
         Block p = null;
         int i = 0;
         if (xdagTopStatus.getTop() != null) {
@@ -374,6 +388,7 @@ public class BlockchainImpl implements Blockchain {
 
     /** 回退到区块block * */
     public void unWindMain(Block block) {
+        log.debug("Unwind main");
         if (block == null) {
             return;
         }
@@ -384,7 +399,8 @@ public class BlockchainImpl implements Blockchain {
                 // 更新对应的flag信息
                 if ((tmp.getInfo().flags & BI_MAIN) != 0) {
                     unSetMain(tmp);
-                    blockStore.saveBlockInfo(tmp.getInfo());
+                    // TODO: 稳定分支：这里为应该可以不需要重新存储区块info
+//                    blockStore.saveBlockInfo(tmp.getInfo());
                 }
             }
         }
@@ -505,7 +521,7 @@ public class BlockchainImpl implements Blockchain {
         // 接收奖励
         acceptAmount(block, reward);
         xdagStats.nmain++;
-        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
+//        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
 
         // 递归执行主块引用的区块 并获取手续费
         acceptAmount(block, applyBlock(block));
@@ -515,11 +531,16 @@ public class BlockchainImpl implements Blockchain {
 
     /** 取消Block主块身份 * */
     public void unSetMain(Block block) {
-        xdagStats.nmain--;
-        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
 
+        log.debug("mainnumber = {}",xdagStats.nmain);
+
+        // 非主块不需要高度
+        block.getInfo().setHeight(0);
+//        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
         long amount = getReward(xdagStats.nmain);
         updateBlockFlag(block, BI_MAIN, false);
+
+        xdagStats.nmain--;
 
         // 去掉奖励和引用块的手续费
         acceptAmount(block, -amount);
@@ -970,6 +991,31 @@ public class BlockchainImpl implements Blockchain {
     @Override
     public List<Block> getBlocksByTime(long starttime, long endtime) {
         return blockStore.getBlocksUsedTime(starttime, endtime);
+    }
+
+    @Override
+    public void startCheckMain() {
+        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 60, TimeUnit.MILLISECONDS);
+    }
+
+    public void checkMain() {
+        checkNewMain();
+        blockStore.saveXdagStatus(xdagStats);
+    }
+
+    @Override
+    public void stopCheckMain() {
+        try {
+
+            if (checkLoopFuture != null) {
+                checkLoopFuture.cancel(true);
+            }
+            // 关闭线程池
+            checkLoop.shutdownNow();
+            checkLoop.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public long getStartAmount(long nmain) {
