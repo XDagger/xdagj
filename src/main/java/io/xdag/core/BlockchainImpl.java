@@ -109,6 +109,8 @@ public class BlockchainImpl implements Blockchain {
             this.xdagTopStatus = new XdagTopStatus();
         }
         checkLoop = new ScheduledThreadPoolExecutor(1, factory);
+        // 检查主块链
+        this.startCheckMain();
     }
     //读取C版本区块
     public long loadBlockchain(

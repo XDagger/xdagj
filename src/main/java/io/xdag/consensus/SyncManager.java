@@ -290,7 +290,7 @@ public class SyncManager {
         System.out.println("Start PoW");
 
         // 检查主块链
-        kernel.getBlockchain().startCheckMain();
+//        kernel.getBlockchain().startCheckMain();
         kernel.getMinerServer().start();
         kernel.getPow().start();
         kernel.getLibp2pNetwork().start();
