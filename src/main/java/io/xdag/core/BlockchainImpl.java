@@ -430,9 +430,9 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (amount2xdag(block.getInfo().getAmount() + link.getAmount().longValue()) >= amount2xdag(
+            if (amount2xdag(block.getInfo().getAmount() + ret) >= amount2xdag(
                     block.getInfo().getAmount())) {
-                acceptAmount(block, link.getAmount().longValue());
+                acceptAmount(block, ret);
             }
         }
 

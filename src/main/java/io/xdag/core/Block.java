@@ -133,7 +133,7 @@ public class Block implements Cloneable {
             byte[] data = remark.getBytes();
             byte[] safeRemark = new byte[32];
             Arrays.fill(safeRemark, (byte)0);
-            System.arraycopy(data, 0, safeRemark, 0, data.length>=32?32:data.length);
+            System.arraycopy(data, 0, safeRemark, 0, Math.min(data.length, 32));
             this.info.setRemark(safeRemark);
         }
 
