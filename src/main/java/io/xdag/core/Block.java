@@ -341,11 +341,11 @@ public class Block implements Cloneable {
 
     private void sign(ECKey ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
-        log.debug("sign encoded:{}", Hex.toHexString(encoded));
+//        log.debug("sign encoded:{}", Hex.toHexString(encoded));
         byte[] digest = BytesUtils.merge(encoded, ecKey.getPubKey(true));
-        log.debug("sign digest:{}", Hex.toHexString(digest));
+//        log.debug("sign digest:{}", Hex.toHexString(digest));
         byte[] hash = Sha256Hash.hashTwice(digest);
-        log.debug("sign hash:{}", Hex.toHexString(hash));
+//        log.debug("sign hash:{}", Hex.toHexString(hash));
         ECKey.ECDSASignature signature = ecKey.sign(hash);
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
@@ -372,10 +372,10 @@ public class Block implements Cloneable {
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKey ecKey : keys) {
             hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKey(true)));
-            log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
-            log.debug(Hex.toHexString(hash) + ":hash");
-            log.debug(outsig + ":outsig");
-            log.debug(ecKey + ":eckey");
+//            log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
+//            log.debug(Hex.toHexString(hash) + ":hash");
+//            log.debug(outsig + ":outsig");
+//            log.debug(ecKey + ":eckey");
 
             if (ecKey.verify(hash, this.getOutsig())) {
                 res.add(ecKey);

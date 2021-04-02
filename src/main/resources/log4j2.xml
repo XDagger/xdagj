@@ -67,7 +67,11 @@
             <AppenderRef ref="Info"/>
         </logger>
 
-        <logger name="io.xdag" level="DEBUG">
+        <logger name="io.xdag.cli" level="DEBUG">
+            <AppenderRef ref="Debug"/>
+        </logger>
+
+        <logger name="io.xdag.core" level="DEBUG">
             <AppenderRef ref="Debug"/>
         </logger>
 

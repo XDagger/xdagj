@@ -191,7 +191,7 @@ public class SyncManager {
      * @param blockWrapper
      *            新区块
      * @param hashLow
-     *            缺失的parent
+     *            缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
         AtomicBoolean r = new AtomicBoolean(true);
@@ -206,8 +206,8 @@ public class SyncManager {
                     blockchain.getXdagStats().nwaitsync--;
                     for(BlockWrapper b : oldQ) {
                         if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
-                            // after 64 sec must resend block request
-                            if(now - b.getTime() > 64 * 1000) {
+                            // after 10 sec must resend block request
+                            if(now - b.getTime() > 10 * 1000) {
                                 b.setTime(now);
                                 r.set(true);
                             } else {
@@ -225,9 +225,9 @@ public class SyncManager {
     }
 
     /**
+     *  根据接收到的区块，将子区块释放
      *
-     *
-     * @param blockWrapper
+     * @param blockWrapper 接收到的区块
      * @return
      */
     public boolean syncPopBlock(BlockWrapper blockWrapper) {
@@ -244,9 +244,11 @@ public class SyncManager {
                     case EXIST:
                     case IMPORTED_BEST:
                     case IMPORTED_NOT_BEST:
-                        if(syncPopBlock(bw)) {
-                            v.remove(bw);
-                        }
+//                        if(syncPopBlock(bw)) {
+//                            v.remove(bw);
+//                        }
+                        v.remove(bw);
+                        syncPopBlock(bw);
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashLow())) {
