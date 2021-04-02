@@ -1045,7 +1045,7 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public void startCheckMain() {
-        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 60, TimeUnit.MILLISECONDS);
+        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 2, TimeUnit.MILLISECONDS);
     }
 
     public void checkMain() {

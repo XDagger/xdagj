@@ -120,9 +120,10 @@ public class XdagSync {
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
+                log.debug("sendGetBlocks seq:{}",randomSeq);
                 blocksRequestMap.put(randomSeq, sf);
                 try {
-                    sf.get(128, TimeUnit.SECONDS);
+                    sf.get(64, TimeUnit.SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     blocksRequestMap.remove(randomSeq);
                     log.error(e.getMessage(), e);
@@ -141,7 +142,7 @@ public class XdagSync {
                 sumsRequestMap.put(randomSeq, sf);
                 log.debug("sendGetSums seq:{}.", randomSeq);
                 try {
-                    byte[] sums = sf.get(128, TimeUnit.SECONDS);
+                    byte[] sums = sf.get(64, TimeUnit.SECONDS);
                     rSums = Arrays.copyOf(sums, 256);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     sumsRequestMap.remove(randomSeq);

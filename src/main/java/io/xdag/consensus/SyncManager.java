@@ -29,6 +29,7 @@ import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -186,16 +187,6 @@ public class SyncManager {
     }
 
     /**
-     * 定时请求SyncMap中的区块数据
-     *
-     *
-     */
-    public void requestWaitSyncBlock() {
-        syncMap.values();
-    }
-
-
-    /**
      * 同步缺失区块
      *
      * @param blockWrapper
@@ -216,13 +207,13 @@ public class SyncManager {
                     blockchain.getXdagStats().nwaitsync--;
                     for(BlockWrapper b : oldQ) {
                         if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
-                            // after 10 sec must resend block request
-                            if(now - b.getTime() > 10 * 1000) {
+                            // after 64 sec must resend block request
+                            if(now - b.getTime() > 64 * 1000) {
                                 b.setTime(now);
                                 r.set(true);
                             } else {
                             //TODO should be consider timeout not received request block
-                                r.set(true);
+                                r.set(false);
                             }
                             return oldQ;
                         }
@@ -254,11 +245,12 @@ public class SyncManager {
                     case EXIST:
                     case IMPORTED_BEST:
                     case IMPORTED_NOT_BEST:
+                        // TODO import成功后都需要移除
 //                        if(syncPopBlock(bw)) {
 //                            v.remove(bw);
 //                        }
-                        v.remove(bw);
                         syncPopBlock(bw);
+                        v.remove(bw);
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashLow())) {
@@ -299,7 +291,10 @@ public class SyncManager {
         }
 
         log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
-        System.out.println("Start PoW");
+
+        SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        Date date = new Date(System.currentTimeMillis());
+        System.out.println("Start PoW at:"+formatter.format(date));
 
         // 检查主块链
 //        kernel.getBlockchain().startCheckMain();
