@@ -186,6 +186,16 @@ public class SyncManager {
     }
 
     /**
+     * 定时请求SyncMap中的区块数据
+     *
+     *
+     */
+    public void requestWaitSyncBlock() {
+        syncMap.values();
+    }
+
+
+    /**
      * 同步缺失区块
      *
      * @param blockWrapper
@@ -212,7 +222,7 @@ public class SyncManager {
                                 r.set(true);
                             } else {
                             //TODO should be consider timeout not received request block
-                                r.set(false);
+                                r.set(true);
                             }
                             return oldQ;
                         }
@@ -230,13 +240,13 @@ public class SyncManager {
      * @param blockWrapper 接收到的区块
      * @return
      */
-    public boolean syncPopBlock(BlockWrapper blockWrapper) {
-        AtomicBoolean result = new AtomicBoolean(false);
+    public void syncPopBlock(BlockWrapper blockWrapper) {
+//        AtomicBoolean result = new AtomicBoolean(false);
         Block block = blockWrapper.getBlock();
         ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
         // re import all for waiting this block
         syncMap.computeIfPresent(key, (k, v)->{
-            result.set(true);
+//            result.set(true);
             blockchain.getXdagStats().nwaitsync--;
             v.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
@@ -272,7 +282,7 @@ public class SyncManager {
             }
             return v;
         });
-        return result.get();
+//        return result.get();
     }
 
     public void makeSyncDone() {
