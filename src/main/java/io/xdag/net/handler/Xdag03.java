@@ -129,7 +129,7 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.info("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
+//        log.info("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
 //        if (!syncMgr.validateAndAddNewBlock(bw)) {
@@ -164,13 +164,13 @@ public class Xdag03 extends XdagHandler {
 
     /** 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
     protected void processSumsRequest(SumRequestMessage msg) {
-        log.debug("processSumsRequest:" + msg);
+//        log.debug("processSumsRequest:" + msg);
         updateXdagStats(msg);
         byte[] sums = new byte[256];
         kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getBlockchain().getXdagStats(), sums);
         sendMessage(reply);
-        log.debug("processSumsRequest:" + reply);
+//        log.debug("processSumsRequest:" + reply);
     }
 
     protected void processSumsReply(SumReplyMessage msg) {
@@ -202,7 +202,7 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Sending * *********************** */
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
-        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
+//        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
         NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
         sendMessage(msg);
     }
@@ -222,7 +222,7 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetBlock(byte[] hash) {
-        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
+//        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();

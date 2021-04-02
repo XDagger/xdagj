@@ -107,7 +107,8 @@ public class BlockStore {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
             final Input input = new Input(inputStream);
             return kryo.readObject(input, type);
-        } catch (final IllegalArgumentException | KryoException exception) {
+        } catch (final IllegalArgumentException | KryoException | NullPointerException exception ) {
+            log.debug("Deserialize data:{}", Hex.toHexString(bytes));
             throw new DeserializationException(exception.getMessage(), exception);
         }
     }

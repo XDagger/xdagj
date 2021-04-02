@@ -120,7 +120,7 @@ public class SyncManager {
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
             BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
             if (!syncDone && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0) {
-                log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
+//                log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
                 // 只有同步完成的时候 才能开始线程 再一次
                 if (!syncDone) {
                     if (Config.MAINNET) {
@@ -178,7 +178,7 @@ public class SyncManager {
                 break;
             }
             case INVALID_BLOCK: {
-                log.error("invalid block:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+//                log.error("invalid block:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
                 break;
             }
             default:
@@ -278,7 +278,7 @@ public class SyncManager {
     }
 
     public void makeSyncDone() {
-        log.debug("Sync Done");
+//        log.debug("Sync Done");
         if (syncDone) {
             return;
         }
@@ -290,7 +290,7 @@ public class SyncManager {
             kernel.getXdagState().setState(XdagState.STST);
         }
 
-        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
+//        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
 
         SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         Date date = new Date(System.currentTimeMillis());

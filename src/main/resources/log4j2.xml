@@ -6,6 +6,8 @@
         <property name="Info_File_Name">xdag_info</property>
         <property name="Error_File_Name">xdag_error</property>
         <property name="Debug_File_Name">xdag_debug</property>
+        <property name="Sync_Debug_File_Name">xdag_sync_debug</property>
+        <property name="SyncMgr_Debug_File_Name">xdag_sync_mgr_debug</property>
 
     </properties>
 
@@ -34,7 +36,29 @@
 
         <RollingRandomAccessFile name="Debug"
                                  fileName="${Logs_Dir}/${Debug_File_Name}.log"
-                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="Sync_Debug"
+                                 fileName="${Logs_Dir}/${Sync_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Sync_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="SyncMgr_Debug"
+                                 fileName="${Logs_Dir}/${SyncMgr_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${SyncMgr_Debug_File_Name}-%d{yyyy-MM-dd}.log">
             <PatternLayout
                     pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
             <Policies>
@@ -63,18 +87,21 @@
             <AppenderRef ref="Error"/>
         </logger>
 
-        <logger name="io.xdag" level="INFO">
-            <AppenderRef ref="Info"/>
-        </logger>
+<!--        <logger name="io.xdag" level="INFO">-->
+<!--            <AppenderRef ref="Info"/>-->
+<!--        </logger>-->
 
 <!--        <logger name="io.xdag.cli" level="DEBUG">-->
 <!--            <AppenderRef ref="Debug"/>-->
 <!--        </logger>-->
 
-<!--        <logger name="io.xdag.core" level="DEBUG">-->
-<!--            <AppenderRef ref="Debug"/>-->
-<!--        </logger>-->
         <logger name="io.xdag.consensus.XdagSync" level="DEBUG">
+            <AppenderRef ref="Sync_Debug"/>
+        </logger>
+        <logger name="io.xdag.consensus.SyncManager" level="DEBUG">
+            <AppenderRef ref="SyncMgr_Debug"/>
+        </logger>
+        <logger name="io.xdag.net.handler.Xdag03" level="DEBUG">
             <AppenderRef ref="Debug"/>
         </logger>
 

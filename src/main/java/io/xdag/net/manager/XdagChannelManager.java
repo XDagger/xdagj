@@ -153,6 +153,9 @@ public class XdagChannelManager {
 
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
+        if (address.getAddress().isLoopbackAddress()) {
+            return false;
+        }
         return true;
     }
 

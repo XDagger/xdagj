@@ -120,7 +120,7 @@ public class XdagSync {
             XdagChannel xc = any.get(0);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
-                log.debug("sendGetBlocks seq:{}",randomSeq);
+//                log.debug("sendGetBlocks seq:{}",randomSeq);
                 blocksRequestMap.put(randomSeq, sf);
                 try {
                     sf.get(64, TimeUnit.SECONDS);
