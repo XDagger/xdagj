@@ -90,26 +90,30 @@ public class BlockStore {
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
-        try {
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final Output output = new Output(outputStream);
-            kryo.writeObject(output, obj);
-            output.flush();
-            output.close();
-            return outputStream.toByteArray();
-        } catch (final IllegalArgumentException | KryoException exception) {
-            throw new SerializationException(exception.getMessage(), exception);
+        synchronized (kryo) {
+            try {
+                final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                final Output output = new Output(outputStream);
+                kryo.writeObject(output, obj);
+                output.flush();
+                output.close();
+                return outputStream.toByteArray();
+            } catch (final IllegalArgumentException | KryoException exception) {
+                throw new SerializationException(exception.getMessage(), exception);
+            }
         }
     }
 
     private Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
-        try {
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-            final Input input = new Input(inputStream);
-            return kryo.readObject(input, type);
-        } catch (final IllegalArgumentException | KryoException | NullPointerException exception ) {
-            log.debug("Deserialize data:{}", Hex.toHexString(bytes));
-            throw new DeserializationException(exception.getMessage(), exception);
+        synchronized (kryo) {
+            try {
+                final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                final Input input = new Input(inputStream);
+                return kryo.readObject(input, type);
+            } catch (final IllegalArgumentException | KryoException | NullPointerException exception) {
+                log.debug("Deserialize data:{}", Hex.toHexString(bytes));
+                throw new DeserializationException(exception.getMessage(), exception);
+            }
         }
     }
 

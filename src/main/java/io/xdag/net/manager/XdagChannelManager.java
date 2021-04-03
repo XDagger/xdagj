@@ -153,10 +153,10 @@ public class XdagChannelManager {
 
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
-        if (address.getAddress().isLoopbackAddress()) {
-            // 测试期间 只保留一个
-            return false;
-        }
+//        if (address.getAddress().isLoopbackAddress()) {
+//            // 测试期间 只保留一个
+//            return false;
+//        }
         if (isSelfAddress(address)) {
             // 不连接自己
             return false;
@@ -169,7 +169,7 @@ public class XdagChannelManager {
     private boolean isSelfAddress(InetSocketAddress address) {
         String inIP = address.getAddress().toString();
         inIP = inIP.substring(inIP.lastIndexOf("/")+1);
-        if (inIP.equals(kernel.getConfig().getNodeIp())) {
+        if (inIP.equals(kernel.getConfig().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodePort())) {
             return true;
         }
         return false;

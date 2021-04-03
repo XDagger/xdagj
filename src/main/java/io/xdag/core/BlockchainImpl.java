@@ -1121,6 +1121,7 @@ public class BlockchainImpl implements Blockchain {
         return res;
     }
 
+    // TODO: 列出本矿池生成的主块，如果本矿池只在前期产块或者从未产块，会导致需要遍历所有的区块数据，这部分应该需要优化
     @Override
     public List<Block> listMinedBlocks(int count) {
         Block temp = getBlockByHash(xdagTopStatus.getTop(), false);
