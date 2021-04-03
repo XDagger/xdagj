@@ -430,6 +430,7 @@ public class BlockStore {
             try {
                 blockInfo = (BlockInfo)deserialize(value, BlockInfo.class);
             } catch (DeserializationException e) {
+                log.error("hash low:"+Hex.toHexString(hashlow));
                 log.error("can't deserialize data:{}",Hex.toHexString(value));
                 log.error(e.getMessage(), e);
             }

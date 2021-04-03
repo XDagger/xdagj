@@ -1050,6 +1050,7 @@ public class BlockchainImpl implements Blockchain {
 
     public void checkMain() {
         checkNewMain();
+        // checkNewMain后xdagStats状态会发生改变
         blockStore.saveXdagStatus(xdagStats);
     }
 
