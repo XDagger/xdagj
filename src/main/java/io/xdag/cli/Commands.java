@@ -101,12 +101,16 @@ public class Commands {
         });
 
         for(Map.Entry<Block,Integer> mapping:list){
+            if (num == 0 ){
+                break;
+            }
             str.append(hash2Address(mapping.getKey().getHash()))
                     .append(" ")
                     .append(String.format("%.9f", amount2xdag(mapping.getKey().getInfo().getAmount())))
                     .append(" XDAG")
                     .append(" key ")
                     .append(mapping.getValue()).append("\n");
+            num --;
         }
 
         return str.toString();
@@ -176,6 +180,11 @@ public class Commands {
             return "Balance not enough.";
         }
 
+
+        //
+        createTransactionBlockandSend(ourBlocks, tos);
+
+
         Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
 
         if (block == null) {
@@ -213,6 +222,12 @@ public class Commands {
         return "Transaction :"
                 + BasicUtils.hash2Address(block.getHashLow())
                 + " it will take several minutes to complete the transaction.";
+    }
+
+
+
+    private void createTransactionBlockandSend(Map<Address, ECKey> ourKeys, List<Address> tos) {
+        //
     }
 
     /**
