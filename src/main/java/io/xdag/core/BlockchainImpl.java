@@ -1049,9 +1049,13 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void checkMain() {
-        checkNewMain();
-        // checkNewMain后xdagStats状态会发生改变
-        blockStore.saveXdagStatus(xdagStats);
+        try {
+            checkNewMain();
+            // checkNewMain后xdagStats状态会发生改变
+            blockStore.saveXdagStatus(xdagStats);
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     @Override

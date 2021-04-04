@@ -145,6 +145,7 @@ public class Xdag03 extends XdagHandler {
         long endTime = msg.getEndtime();
         long random = msg.getRandom();
 
+        // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
         List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
             sendNewBlock(block, 1);
