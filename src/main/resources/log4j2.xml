@@ -8,6 +8,9 @@
         <property name="Debug_File_Name">xdag_debug</property>
         <property name="Sync_Debug_File_Name">xdag_sync_debug</property>
         <property name="SyncMgr_Debug_File_Name">xdag_sync_mgr_debug</property>
+        <property name="Chain_Debug_File_Name">xdag_chain_debug</property>
+        <property name="XdagChannel_Debug_File_Name">xdag_channel_debug</property>
+        <property name="XdagChannelMgr_Debug_File_Name">xdag_channel_mgr_debug</property>
 
     </properties>
 
@@ -37,6 +40,39 @@
         <RollingRandomAccessFile name="Debug"
                                  fileName="${Logs_Dir}/${Debug_File_Name}.log"
                                  filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="XdagChannelMgr_Debug"
+                                 fileName="${Logs_Dir}/${XdagChannelMgr_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagChannelMgr_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="XdagChannel_Debug"
+                                 fileName="${Logs_Dir}/${XdagChannel_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagChannel_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="Chain_Debug"
+                                 fileName="${Logs_Dir}/${Chain_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Chain_Debug_File_Name}-%d{yyyy-MM-dd}.log">
             <PatternLayout
                     pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
             <Policies>
@@ -103,6 +139,18 @@
         </logger>
         <logger name="io.xdag.net.handler.Xdag03" level="DEBUG">
             <AppenderRef ref="Debug"/>
+        </logger>
+
+        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG">
+            <AppenderRef ref="Chain_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.net.XdagChannel" level="DEBUG">
+            <AppenderRef ref="XdagChannel_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.net.manager.XdagChannelManager" level="DEBUG">
+            <AppenderRef ref="XdagChannelMgr_Debug"/>
         </logger>
 
         <Root level="INFO">

@@ -91,11 +91,14 @@ public class Commands {
         });
 
         List<Map.Entry<Block,Integer>> list = new ArrayList<Map.Entry<Block,Integer>>(ours.entrySet());
-        Collections.sort(list,new Comparator<Map.Entry<Block,Integer>>() {
-            //升序排序
-            public int compare(Map.Entry<Block, Integer> o1,
-                               Map.Entry<Block, Integer> o2) {
-                return Long.compare(o2.getKey().getInfo().getAmount(),o1.getKey().getInfo().getAmount());
+        //升序排序
+        Collections.sort(list, (o1, o2) -> {
+            if (o2.getKey().getInfo().getAmount() > o1.getKey().getInfo().getAmount()){
+                return 1;
+            } else if (o2.getKey().getInfo().getAmount() == o1.getKey().getInfo().getAmount()){
+                return o1.getValue().compareTo(o2.getValue());
+            } else {
+                return -1;
             }
 
         });
@@ -147,6 +150,11 @@ public class Commands {
      * @return Transaction hash
      */
     public String xfer(double sendAmount, byte[] address) {
+
+        StringBuilder str = new StringBuilder();
+        str.append("Transaction :").append("\n");
+
+
         long amount = xdag2amount(sendAmount);
         byte[] to = new byte[32];
         System.arraycopy(address, 8, to, 8, 24);
@@ -180,54 +188,160 @@ public class Commands {
             return "Balance not enough.";
         }
 
-
         //
-        createTransactionBlockandSend(ourBlocks, tos);
-
-
-        Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
-
-        if (block == null) {
-            return "Transfer Failed.";
+        List<BlockWrapper> txs = createTransactionBlockandSend(ourBlocks, to);
+        for(BlockWrapper blockWrapper : txs) {
+            // blockWrapper.setTransaction(true);
+            System.out.println("tx:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
+            kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
+            kernel.getChannelMgr().sendNewBlock(blockWrapper);
+            str.append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow())).append("\n");
         }
 
-        ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
-        boolean isdefaultKey = false;
-        // 签名
-        for (ECKey ecKey : Set.copyOf(ourBlocks.values())) {
-            if (ecKey.equals(defaultKey)) {
-                isdefaultKey = true;
-                block.signOut(ecKey);
-            } else {
-                block.signIn(ecKey);
-            }
-        }
-        // 如果默认密钥被更改，需要重新对输出签名签属
-        if (!isdefaultKey) {
-            block.signOut(kernel.getWallet().getDefKey().ecKey);
-        }
+        return str.append("it will take several minutes to complete the transaction.").toString();
 
-        BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
 
-        // blockWrapper.setTransaction(true);
-        kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
-        kernel.getChannelMgr().sendNewBlock(blockWrapper);
-
-        log.info("Transfer [{}]Xdag from [{}] to [{}]",
-                sendAmount,
-                BasicUtils.hash2Address(ourBlocks.keySet().iterator().next().getHashLow()),
-                BasicUtils.hash2Address(to));
-
-        System.out.println("Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
-        return "Transaction :"
-                + BasicUtils.hash2Address(block.getHashLow())
-                + " it will take several minutes to complete the transaction.";
+//        Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
+//
+//        if (block == null) {
+//            return "Transfer Failed.";
+//        }
+//
+//        ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
+//        boolean isdefaultKey = false;
+//        // 签名
+//        for (ECKey ecKey : Set.copyOf(ourBlocks.values())) {
+//            if (ecKey.equals(defaultKey)) {
+//                isdefaultKey = true;
+//                block.signOut(ecKey);
+//            } else {
+//                block.signIn(ecKey);
+//            }
+//        }
+//        // 如果默认密钥被更改，需要重新对输出签名签属
+//        if (!isdefaultKey) {
+//            block.signOut(kernel.getWallet().getDefKey().ecKey);
+//        }
+//
+//        BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
+//
+//        // blockWrapper.setTransaction(true);
+//        kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
+//        kernel.getChannelMgr().sendNewBlock(blockWrapper);
+//
+//        log.info("Transfer [{}]Xdag from [{}] to [{}]",
+//                sendAmount,
+//                BasicUtils.hash2Address(ourBlocks.keySet().iterator().next().getHashLow()),
+//                BasicUtils.hash2Address(to));
+//
+//        System.out.println("Transfer " + sendAmount + "XDAG to Address [" + BasicUtils.hash2Address(to) + "]");
+//        return "Transaction :"
+//                + BasicUtils.hash2Address(block.getHashLow())
+//                + " it will take several minutes to complete the transaction.";
     }
 
 
 
-    private void createTransactionBlockandSend(Map<Address, ECKey> ourKeys, List<Address> tos) {
-        //
+    private List<BlockWrapper> createTransactionBlockandSend(Map<Address, ECKey> ourKeys, byte[] to) {
+        List<BlockWrapper> res = new ArrayList<>();
+        // 遍历ourKeys 计算每个区块最多能放多少个
+        // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
+        LinkedList<Map.Entry<Address, ECKey>> stack = new LinkedList<>(ourKeys.entrySet());
+
+
+        // 保证key的唯一性
+        Set<ECKey> keysPerBlock = new HashSet<>();
+        // 放入defkey
+        keysPerBlock.add(kernel.getWallet().getDefKey().ecKey);
+
+        // base count a block <header + send address + defKey signature + remark>
+        int base = 1 + 1 + 2 ;
+        // 每次创建区块用到的keys
+        Map<Address, ECKey> keys = new HashMap<>();
+
+        long amount = 0;
+
+
+        while (stack.size() > 0){
+            Map.Entry<Address,ECKey> key = stack.peek();
+            base += 1;
+            int originSize = keysPerBlock.size();
+            keysPerBlock.add(key.getValue());
+            // 说明新增加的key没有重复
+            if (keysPerBlock.size() > originSize) {
+                // 一个字段公钥加两个字段签名
+                base += 3;
+            }
+            // 可以将该输入 放进一个区块
+            if (base < 16 ) {
+                amount += key.getKey().getAmount().longValue();
+                keys.put(key.getKey(),key.getValue());
+                stack.poll();
+            } else {
+                // 使用现在的keys构建区块
+                System.out.println("this block send amount:"+amount);
+                List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
+                Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false);
+
+                if (block == null) {
+                    return null;
+                }
+
+                ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
+                boolean isdefaultKey = false;
+                // 签名
+                for (ECKey ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+                    if (ecKey.equals(defaultKey)) {
+                        isdefaultKey = true;
+                        block.signOut(ecKey);
+                    } else {
+                        block.signIn(ecKey);
+                    }
+                }
+                // 如果默认密钥被更改，需要重新对输出签名签属
+                if (!isdefaultKey) {
+                    block.signOut(kernel.getWallet().getDefKey().ecKey);
+                }
+
+                BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
+                res.add(blockWrapper);
+
+                // 清空keys，准备下一个
+                keys = new HashMap<>();
+                keysPerBlock = new HashSet<>();
+                keysPerBlock.add(kernel.getWallet().getDefKey().ecKey);
+                base = 1 + 1 + 2 ;
+                amount = 0;
+            }
+        }
+        if (keys.size() != 0) {
+            List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
+            Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false);
+            if (block == null) {
+                return null;
+            }
+
+            ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
+            boolean isdefaultKey = false;
+            // 签名
+            for (ECKey ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+                if (ecKey.equals(defaultKey)) {
+                    isdefaultKey = true;
+                    block.signOut(ecKey);
+                } else {
+                    block.signIn(ecKey);
+                }
+            }
+            // 如果默认密钥被更改，需要重新对输出签名签属
+            if (!isdefaultKey) {
+                block.signOut(kernel.getWallet().getDefKey().ecKey);
+            }
+
+            BlockWrapper blockWrapper = new BlockWrapper(block, kernel.getConfig().getTTL());
+            res.add(blockWrapper);
+        }
+
+        return res;
     }
 
     /**

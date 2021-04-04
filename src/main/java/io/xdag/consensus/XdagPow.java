@@ -106,6 +106,7 @@ public class XdagPow implements PoW, Runnable {
                 this.minShares.add(null);
             }
 
+            // PoW换成Schedule任务
             new Thread(this.timer, "xdag-pow-timer").start();
             new Thread(this.broadcaster, "xdag-pow-broadcaster").start();
             new Thread(this, "xdag-pow-main").start();
@@ -218,6 +219,7 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onTimeout() {
+        System.out.println("New Block:"+Hex.toHexString(generateBlock.getHash()));
         log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                 Hex.toHexString(generateBlock.getHash()));
         // 发送区块 如果有的话 然后开始生成新区块
