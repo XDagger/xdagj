@@ -30,6 +30,8 @@ Make sure the above environment is installed before you build this project.
 
 [XDAGJ_Roadmap](./docs/XDAGJ_Roadmap.md)
 
+[XDAGJ_Networking_Specification](./docs/XDAGJ_Networking_Specification.md)
+
 ### for project
 The generated files are stored in MainNet/TestNet during runtime. It depends on whether you access main network or the test network.
 ```yaml
