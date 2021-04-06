@@ -253,7 +253,7 @@ public class AwardManagerImpl implements AwardManager {
             return -3;
         }
 
-        payData.balance = block.getInfo().getAmount();
+        payData.balance = block.getInfo().getAmount().longValue();
 
         if (payData.balance <= 0) {
             log.debug("no main block,can't pay");

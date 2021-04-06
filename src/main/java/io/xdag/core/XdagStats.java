@@ -23,6 +23,7 @@
  */
 package io.xdag.core;
 
+import com.google.common.primitives.UnsignedLong;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -43,7 +44,7 @@ public class XdagStats {
     public long nnoref;
     public long nextra;
     public long maintime;
-    public long balance;
+    public UnsignedLong balance;
 
 //    private byte[] top;
 //    private BigInteger topDiff;

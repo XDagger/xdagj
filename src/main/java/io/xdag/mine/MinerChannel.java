@@ -293,7 +293,7 @@ public class MinerChannel {
         if (block == null) {
             return;
         }
-        long amount = block.getInfo().getAmount();
+        long amount = block.getInfo().getAmount().longValue();
         byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false),
                 BytesUtils.subArray(accountAddressHashLow, 8, 24));
         log.debug("update miner balance {}", Hex.encodeHexString(data));

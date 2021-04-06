@@ -175,8 +175,8 @@ public class BlockchainTest {
         // skip first 2 extra block amount assert
         Lists.reverse(extraBlockList).stream().skip(2).forEach(b->{
             Block sb = blockchain.getBlockByHash(b.getHashLow(), false);
-            System.out.println(Hex.toHexString(sb.getHashLow()) + ": " + String.valueOf(amount2xdag(sb.getInfo().getAmount())));
-            assertEquals("1024.0", String.valueOf(amount2xdag(sb.getInfo().getAmount())));
+            System.out.println(Hex.toHexString(sb.getHashLow()) + ": " + String.valueOf(amount2xdag(sb.getInfo().getAmount().longValue())));
+            assertEquals("1024.0", String.valueOf(amount2xdag(sb.getInfo().getAmount().longValue())));
         });
     }
 
@@ -233,9 +233,9 @@ public class BlockchainTest {
         Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getHashLow());
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
         // block reword 1024 + 100 = 1124.0
-        assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
+        assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount().longValue())));
         // block reword 1024 - 100 = 924.0
-        assertEquals("924.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount())));
+        assertEquals("924.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount().longValue())));
     }
 
     @Test
