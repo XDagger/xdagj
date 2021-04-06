@@ -131,7 +131,7 @@ public class XdagPow implements PoW, Runnable {
     public Block generateBlock() {
 
         // 固定sendtime
-        Block block = blockchain.createNewBlock(null, null, true);
+        Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
 
         minShare = RandomUtils.nextBytes(32);
@@ -184,17 +184,16 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
-        XdagField share = shareInfo;
         try {
             XdagSha256Digest digest = new XdagSha256Digest(currentTaskDigest);
-            byte[] hash = digest.sha256Final(Arrays.reverse(share.getData()));
+            byte[] hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
 
             MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
             MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
-                minShare = Arrays.reverse(share.getData());
+                minShare = Arrays.reverse(shareInfo.getData());
                 byte[] hashlow = new byte[32];
                 System.arraycopy(minHash, 8, hashlow, 8, 24);
                 generateBlock.setNonce(minShare);
@@ -219,7 +218,6 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onTimeout() {
-        System.out.println("New Block:"+Hex.toHexString(generateBlock.getHash()));
         log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                 Hex.toHexString(generateBlock.getHash()));
         // 发送区块 如果有的话 然后开始生成新区块
@@ -347,6 +345,7 @@ public class XdagPow implements PoW, Runnable {
         }
     }
 
+    // TODO: change to scheduleAtFixRate
     public class Timer implements Runnable {
         private long timeout;
         private boolean isRunning = false;

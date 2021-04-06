@@ -440,7 +440,7 @@ public class AwardManagerImpl implements AwardManager {
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
         ECKey inputKey = xdagWallet.getKeyByIndex(keypos);
         inputMap.put(input, inputKey);
-        Block block = blockchain.createNewBlock(inputMap, receipt, false);
+        Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
         if (inputKey.equals(xdagWallet.getDefKey().ecKey)) {
             block.signOut(inputKey);
         } else {

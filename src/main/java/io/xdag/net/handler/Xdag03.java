@@ -103,7 +103,7 @@ public class Xdag03 extends XdagHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         log.debug("channelInactive:[{}] ", ctx.toString());
-        this.killTimers();
+        killTimers();
         disconnect();
     }
 
@@ -129,17 +129,15 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-//        log.info("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
+        log.info("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
-//        if (!syncMgr.validateAndAddNewBlock(bw)) {
-//            dropConnection();
-//        }
     }
 
     /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-        log.debug("processBlocksRequest:" + msg);
+//        log.debug("processBlocksRequest:" + msg);
+        // 更新全网状态
         updateXdagStats(msg);
         long startTime = msg.getStarttime();
         long endTime = msg.getEndtime();
@@ -150,11 +148,11 @@ public class Xdag03 extends XdagHandler {
         for (Block block : blocks) {
             sendNewBlock(block, 1);
         }
+        log.debug("Have Send {} block",blocks.size());
         sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
-//        log.debug("processBlocksReply:" + msg);
         updateXdagStats(msg);
         long randomSeq = msg.getRandom();
         SettableFuture<byte[]> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
@@ -165,17 +163,14 @@ public class Xdag03 extends XdagHandler {
 
     /** 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
     protected void processSumsRequest(SumRequestMessage msg) {
-//        log.debug("processSumsRequest:" + msg);
         updateXdagStats(msg);
         byte[] sums = new byte[256];
         kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getBlockchain().getXdagStats(), sums);
         sendMessage(reply);
-//        log.debug("processSumsRequest:" + reply);
     }
 
     protected void processSumsReply(SumReplyMessage msg) {
-//        log.debug("processSumReply:" + msg);
         updateXdagStats(msg);
         long randomSeq = msg.getRandom();
         SettableFuture<byte[]> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
@@ -188,13 +183,14 @@ public class Xdag03 extends XdagHandler {
     }
 
     protected void processBlockRequest(BlockRequestMessage msg) {
-        log.debug("processBlockRequest:" + msg);
+        log.debug("processBlockRequest: hash:{}" + Hex.toHexString(msg.getHash()));
         byte[] find = new byte[32];
         byte[] hash = msg.getHash();
         hash = Arrays.reverse(hash);
         System.arraycopy(hash, 8, find, 8, 24);
         Block block = blockchain.getBlockByHash(find, true);
         if (block != null) {
+            log.debug("processBlockRequest: findBlock" + Hex.toHexString(block.getHashLow()));
             NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getTTL());
             sendMessage(message);
         }
@@ -203,14 +199,13 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Sending * *********************** */
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
-//        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
+        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
         NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
         sendMessage(msg);
     }
 
     @Override
     public long sendGetBlocks(long startTime, long endTime) {
-//        log.debug("sendGetBlocks:[startTime={} endTime={}]", startTime, endTime);
         BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();
@@ -223,7 +218,7 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetBlock(byte[] hash) {
-//        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
+        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();
@@ -231,7 +226,6 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetSums(long startTime, long endTime) {
-//        log.debug("sendGetSums:startTime=[{}],endTime=[{}]", startTime, endTime);
         SumRequestMessage msg = new SumRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();

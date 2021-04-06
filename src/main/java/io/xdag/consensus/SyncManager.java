@@ -149,7 +149,7 @@ public class SyncManager {
         return syncDone;
     }
 
-    public synchronized void validateAndAddNewBlock(BlockWrapper blockWrapper) {
+    public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
         log.info("validateAndAddNewBlock:{}, {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
@@ -184,6 +184,7 @@ public class SyncManager {
             default:
                 break;
         }
+        return result;
     }
 
     /**

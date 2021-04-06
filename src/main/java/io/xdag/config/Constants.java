@@ -28,6 +28,7 @@ import com.google.common.primitives.UnsignedLong;
 import static io.xdag.config.Config.MAINNET;
 
 public class Constants {
+    public static final long MAIN_CHAIN_PERIOD = 64<<10;
     public static final long XDAG_TEST_ERA = 0x16900000000L;
     public static final long XDAG_MAIN_ERA = 0x16940000000L;
     public static final long XDAG_ERA = MAINNET ? XDAG_MAIN_ERA : XDAG_TEST_ERA;

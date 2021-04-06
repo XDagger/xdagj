@@ -71,8 +71,10 @@ public class OrphanPool {
                 if (addNum == 0) {
                     break;
                 }
-                // TODO:判断时间
-                System.out.println("an:"+Hex.toHexString(an));
+                // TODO:判断时间，这里出现过orphanSource获取key时为空的情况
+                if (orphanSource.get(an)==null){
+                    continue;
+                }
                 long time = BytesUtils.bytesToLong(orphanSource.get(an),0,true);
                 if (time <= sendtime) {
                     addNum--;
