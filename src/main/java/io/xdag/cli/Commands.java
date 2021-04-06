@@ -26,6 +26,7 @@ package io.xdag.cli;
 import cn.hutool.core.lang.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.UnsignedLong;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.xdag.Kernel;
 import io.xdag.core.*;
@@ -95,9 +96,9 @@ public class Commands {
         // 按balance降序排序，按key index升序排序
         Collections.sort(list, (o1, o2) -> {
             // TODO
-            if (o2.getKey().getInfo().getAmount().compareTo(o1.getKey().getInfo().getAmount())>0){
+            if (o2.getKey().getInfo().getAmount()>o1.getKey().getInfo().getAmount()){
                 return 1;
-            } else if (o2.getKey().getInfo().getAmount().compareTo(o1.getKey().getInfo().getAmount())==0){
+            } else if (o2.getKey().getInfo().getAmount()==o1.getKey().getInfo().getAmount()){
                 return o1.getValue().compareTo(o2.getValue());
             } else {
                 return -1;
@@ -111,7 +112,7 @@ public class Commands {
             }
             str.append(hash2Address(mapping.getKey().getHash()))
                     .append(" ")
-                    .append(String.format("%.9f", amount2xdag(mapping.getKey().getInfo().getAmount().longValue())))
+                    .append(String.format("%.9f", amount2xdag(mapping.getKey().getInfo().getAmount())))
                     .append(" XDAG")
                     .append(" key ")
                     .append(mapping.getValue()).append("\n");
@@ -129,7 +130,7 @@ public class Commands {
      */
     public String balance(String address) {
         if (org.apache.commons.lang3.StringUtils.isEmpty(address)) {
-            return "Balance:"+String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance().longValue())) + " XDAG";
+            return "Balance:"+String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance())) + " XDAG";
         } else {
             byte[] hash;
             if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
@@ -140,7 +141,7 @@ public class Commands {
             byte[] key = new byte[32];
             System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
             Block block = kernel.getBlockStore().getBlockInfoByHash(key);
-            return "Balance:"+String.format("%.9f", amount2xdag(block.getInfo().getAmount().longValue())) + " XDAG";
+            return "Balance:"+String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
         }
     }
 
@@ -172,14 +173,14 @@ public class Commands {
             public Boolean apply(Pair<Integer, Block> pair) {
                 int index = pair.getKey();
                 Block block = pair.getValue();
-                if (remain.get() <= block.getInfo().getAmount().longValue()) {
+                if (remain.get() <= block.getInfo().getAmount()) {
                     ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
                     remain.set(0);
                     return true;
                 } else {
-                    if (block.getInfo().getAmount().longValue() > 0) {
-                        remain.set(remain.get() - block.getInfo().getAmount().longValue());
-                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount().longValue()), kernel.getWallet().getKeyByIndex(index));
+                    if (block.getInfo().getAmount() > 0) {
+                        remain.set(remain.get() - block.getInfo().getAmount());
+                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
                         return false;
                     }
                     return false;
@@ -406,7 +407,7 @@ public class Commands {
                 block.getInfo().getRemark() == null?
                         "null":new String(block.getInfo().getRemark()),
                 block.getInfo().getDifficulty().toString(16),
-                hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount().longValue()));
+                hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()));
     }
 
     public static String printBlock(Block block) {

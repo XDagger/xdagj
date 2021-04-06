@@ -44,7 +44,7 @@ public class XdagStats {
     public long nnoref;
     public long nextra;
     public long maintime;
-    public UnsignedLong balance;
+    public long balance;
 
 //    private byte[] top;
 //    private BigInteger topDiff;

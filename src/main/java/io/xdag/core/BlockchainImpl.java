@@ -444,8 +444,8 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (amount2xdag(block.getInfo().getAmount().plus(ret).longValue()) >= amount2xdag(
-                    block.getInfo().getAmount().longValue())) {
+            if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue()) >= amount2xdag(
+                    block.getInfo().getAmount())) {
                 acceptAmount(block, ret);
             }
         }
@@ -454,7 +454,7 @@ public class BlockchainImpl implements Blockchain {
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
-                if (amount2xdag(ref.getInfo().getAmount().longValue()) < amount2xdag(link.getAmount().longValue())) {
+                if (amount2xdag(ref.getInfo().getAmount()) < amount2xdag(link.getAmount().longValue())) {
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",Hex.toHexString(ref.getInfo().getHashlow()),ref.getInfo().getAmount(),
                             link.getAmount().longValue());
                     return UnsignedLong.ZERO;
@@ -473,8 +473,8 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        if (amount2xdag(block.getInfo().getAmount().plus(sumIn).longValue()) < amount2xdag(sumOut.longValue())
-                || amount2xdag(block.getInfo().getAmount().plus(sumIn).longValue()) < amount2xdag(sumIn.longValue())) {
+        if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumOut.longValue())
+                || amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumIn.longValue())) {
             log.debug("exec fail!");
             return UnsignedLong.ZERO;
         }
@@ -1120,13 +1120,13 @@ public class BlockchainImpl implements Blockchain {
 
     /** 为区块block添加amount金额 * */
     private void acceptAmount(Block block, UnsignedLong amount) {
-        block.getInfo().setAmount(block.getInfo().getAmount().plus(amount));
+        block.getInfo().setAmount(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(amount).longValue());
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
         if ((block.getInfo().flags & BI_OURS) != 0) {
 //            System.out.println("Before Balance:"+amount2xdag(xdagStats.getBalance()));
-            xdagStats.setBalance(xdagStats.getBalance().plus(amount));
+            xdagStats.setBalance(amount.plus(UnsignedLong.valueOf(xdagStats.getBalance())).longValue());
 //            System.out.println("After Balance:"+amount2xdag(xdagStats.getBalance()));
         }
     }

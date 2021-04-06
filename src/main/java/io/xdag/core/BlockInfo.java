@@ -35,7 +35,7 @@ public class BlockInfo {
     private long height;
     private byte[] hash;
     private byte[] hashlow;
-    private UnsignedLong amount;
+    private long amount;
     public long type;
     private BigInteger difficulty;
     private byte[] ref;

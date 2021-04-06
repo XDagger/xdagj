@@ -3,6 +3,7 @@ package io.xdag.db;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
+import com.google.common.primitives.UnsignedLong;
 import io.xdag.core.BlockInfo;
 import io.xdag.db.execption.DeserializationException;
 import org.bouncycastle.util.encoders.Hex;
