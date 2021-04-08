@@ -28,6 +28,7 @@ import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 import java.math.BigInteger;
 
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.Numeric;
 import lombok.Getter;
 import lombok.Setter;
 import org.bouncycastle.util.Arrays;
@@ -101,7 +102,7 @@ public class Address {
             System.arraycopy(data, 8, hashLow, 8, 24);
             byte[] amountbyte = new byte[8];
             System.arraycopy(data, 0, amountbyte, 0, 8);
-            amount = bytesToBigInteger(amountbyte);
+            amount = Numeric.toBigInt(amountbyte);
             parsed = true;
         }
     }

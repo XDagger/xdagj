@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.xdag.crypto.ECKeyPair;
 import io.xdag.wallet.OldWallet;
 
 import io.xdag.Kernel;
@@ -42,7 +43,6 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
-import io.xdag.crypto.ECKey;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
@@ -372,9 +372,9 @@ public class AwardManagerImpl implements AwardManager {
     public void doPayments(
             byte[] hash, int paymentsPerBlock, PayData payData, int keyPos, long time) {
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-        Map<Address, ECKey> inputMap = new HashMap<>();
+        Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
-        ECKey inputKey = xdagWallet.getKeyByIndex(keyPos);
+        ECKeyPair inputKey = xdagWallet.getKeyByIndex(keyPos);
         inputMap.put(input, inputKey);
         long payAmount = 0L;
         /**
@@ -436,9 +436,9 @@ public class AwardManagerImpl implements AwardManager {
         for (Address address : receipt) {
             log.debug("pay data: {}", Hex.toHexString(address.getData()));
         }
-        Map<Address, ECKey> inputMap = new HashMap<>();
+        Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
-        ECKey inputKey = xdagWallet.getKeyByIndex(keypos);
+        ECKeyPair inputKey = xdagWallet.getKeyByIndex(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false);
         if (inputKey.equals(xdagWallet.getDefKey().ecKey)) {

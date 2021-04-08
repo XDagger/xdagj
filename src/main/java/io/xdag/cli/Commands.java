@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.*;
-import io.xdag.crypto.ECKey;
+import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -136,7 +136,7 @@ public class Commands {
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
 
         AtomicLong remain = new AtomicLong(amount);
-        Map<Address, ECKey> ourBlocks = Maps.newHashMap();
+        Map<Address, ECKeyPair> ourBlocks = Maps.newHashMap();
         //out block select
         kernel.getBlockStore().fetchOurBlocks(new Function<Pair<Integer, Block>, Boolean>() {
             @Override
@@ -155,10 +155,10 @@ public class Commands {
         });
 
         Block block = kernel.getBlockchain().createNewBlock(ourBlocks, tos, false);
-        ECKey defaultKey = kernel.getWallet().getDefKey().ecKey;
+        ECKeyPair defaultKey = kernel.getWallet().getDefKey().ecKey;
         boolean isdefaultKey = false;
         // 签名
-        for (ECKey ecKey : ourBlocks.values()) {
+        for (ECKeyPair ecKey : ourBlocks.values()) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
                 block.signOut(ecKey);

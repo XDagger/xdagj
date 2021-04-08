@@ -23,17 +23,16 @@
  */
 package io.xdag.core;
 
-import io.xdag.crypto.ECKey;
+import io.xdag.crypto.ECKeyPair;
 import io.xdag.utils.ByteArrayWrapper;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, ECKey> pairs, List<Address> to, boolean mining);
+    Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining);
 
     Block getBlockByHash(byte[] hash, boolean isRaw);
 

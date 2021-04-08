@@ -23,15 +23,6 @@
  */
 package io.xdag.core;
 
-import io.xdag.crypto.ECKey;
-import io.xdag.utils.XdagTime;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 public class PoWTest {
 /**
     @Test

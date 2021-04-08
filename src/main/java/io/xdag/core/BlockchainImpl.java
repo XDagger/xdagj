@@ -27,8 +27,10 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
-import io.xdag.crypto.ECKey;
-import io.xdag.crypto.Sha256Hash;
+import io.xdag.crypto.ECDSASignature;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.ByteArrayWrapper;
@@ -43,7 +45,6 @@ import org.bouncycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -516,7 +517,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block createNewBlock(Map<Address, ECKey> pairs, List<Address> to, boolean mining) {
+    public Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining) {
         if (pairs == null && to == null) {
             if (mining) {
                 return createMainBlock();
@@ -525,7 +526,7 @@ public class BlockchainImpl implements Blockchain {
         int defKeyIndex = -1;
         // 遍历所有key 判断是否有defKey
         assert pairs != null;
-        List<ECKey> keys = new ArrayList<>(pairs.values());
+        List<ECKeyPair> keys = new ArrayList<>(pairs.values());
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey().ecKey)) {
                 defKeyIndex = i;
@@ -844,7 +845,7 @@ public class BlockchainImpl implements Blockchain {
 
     public boolean canUseInput(Block block) {
         boolean canUse = false;
-        List<ECKey> ecKeys = block.verifiedKeys();
+        List<ECKeyPair> ecKeys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
         if (inputs == null || inputs.size() == 0) {
             return true;
@@ -853,12 +854,13 @@ public class BlockchainImpl implements Blockchain {
             Block inBlock = getBlockByHash(in.getHashLow(), true);
             byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
             log.debug("verify encoded:{}", Hex.toHexString(subdata));
-            ECKey.ECDSASignature sig = inBlock.getOutsig();
+            ECDSASignature sig = inBlock.getOutsig();
 
-            for (ECKey ecKey : ecKeys) {
-                byte[] digest = BytesUtils.merge(subdata, ecKey.getPubKey(true));
+            for (ECKeyPair ecKey : ecKeys) {
+                byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPublicKey(), true);
+                byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
                 log.debug("verify encoded:{}", Hex.toHexString(digest));
-                byte[] hash = Sha256Hash.hashTwice(digest);
+                byte[] hash = Hash.hashTwice(digest);
                 log.debug("verify hash:{}", Hex.toHexString(hash));
                 if (ecKey.verify(hash, sig)) {
                     canUse = true;
@@ -867,9 +869,10 @@ public class BlockchainImpl implements Blockchain {
 
             if (!canUse) {
                 //TODO this maybe some old issue( input and output was same )
-                List<ECKey> keys = block.getPubKeys();
-                for (ECKey ecKey : keys) {
-                    byte[] hash = Sha256Hash.hashTwice(BytesUtils.merge(subdata, ecKey.getPubKey(true)));
+                List<ECKeyPair> keys = block.getPubKeys();
+                for (ECKeyPair ecKey : keys) {
+                    byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
+                    byte[] hash = Hash.hashTwice(BytesUtils.merge(subdata, publicKeyBytes));
                     if (ecKey.verify(hash, sig)) {
                         return true;
                     }
@@ -884,13 +887,14 @@ public class BlockchainImpl implements Blockchain {
     public boolean checkMineAndAdd(Block block) {
         List<KeyInternalItem> ourkeys = wallet.getKey_internal();
         // 输出签名只有一个
-        ECKey.ECDSASignature signature = block.getOutsig();
+        ECDSASignature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            ECKey ecKey = ourkeys.get(i).ecKey;
+            ECKeyPair ecKey = ourkeys.get(i).ecKey;
+            byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
             byte[] digest = BytesUtils.merge(
-                    block.getSubRawData(block.getOutsigIndex() - 2), ecKey.getPubKey(true));
-            byte[] hash = Sha256Hash.hashTwice(digest);
+                    block.getSubRawData(block.getOutsigIndex() - 2), publicKeyBytes);
+            byte[] hash = Hash.hashTwice(digest);
             if (ecKey.verify(hash, signature)) {
                 log.info("Validate Success");
                 addOurBlock(i, block);

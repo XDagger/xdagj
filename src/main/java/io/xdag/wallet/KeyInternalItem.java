@@ -23,10 +23,10 @@
  */
 package io.xdag.wallet;
 
-import io.xdag.crypto.ECKey;
+import io.xdag.crypto.ECKeyPair;
 
 public class KeyInternalItem {
-    public ECKey ecKey;
+    public ECKeyPair ecKey;
     /** 0:even 1:odd */
     public boolean pubKeyParity;
 }

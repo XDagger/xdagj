@@ -32,7 +32,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
-import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigInteger;
@@ -42,11 +41,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.xdag.crypto.ECDSASignature;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.Numeric;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import io.xdag.crypto.ECKey;
-import io.xdag.crypto.Sha256Hash;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
@@ -71,9 +73,9 @@ public class Block implements Cloneable {
     private List<Address> outputs = new CopyOnWriteArrayList<>();
 
     /** 记录公钥 前缀+压缩公钥* */
-    private List<ECKey> pubKeys = new CopyOnWriteArrayList<>();
-    private Map<ECKey.ECDSASignature, Integer> insigs = new LinkedHashMap<>();
-    private ECKey.ECDSASignature outsig;
+    private List<ECKeyPair> pubKeys = new CopyOnWriteArrayList<>();
+    private Map<ECDSASignature, Integer> insigs = new LinkedHashMap<>();
+    private ECDSASignature outsig;
 
     /** 主块的nonce记录矿工地址跟nonce* */
     private byte[] nonce;
@@ -98,7 +100,7 @@ public class Block implements Cloneable {
             List<Address> links,
             List<Address> pendings,
             boolean mining,
-            List<ECKey> keys,
+            List<ECKeyPair> keys,
             String remark,
             int defKeyIndex) {
         parsed = true;
@@ -138,8 +140,8 @@ public class Block implements Cloneable {
         }
 
         if (CollectionUtils.isNotEmpty(keys)) {
-            for (ECKey key : keys) {
-                byte[] keydata = key.getPubKey(true);
+            for (ECKeyPair key : keys) {
+                byte[] keydata = Sign.publicPointFromPrivate(key.getPrivateKey()).getEncoded(true);
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
@@ -193,7 +195,7 @@ public class Block implements Cloneable {
         if (xdagBlock == null) {
             xdagBlock = getXdagBlock();
         }
-        return Arrays.reverse(Sha256Hash.hashTwice(xdagBlock.getData()));
+        return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
     }
 
     /** 解析512字节数据* */
@@ -236,9 +238,9 @@ public class Block implements Cloneable {
                         if(ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal() || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
                             if(j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType().ordinal()) {
                                 signo_s = j;
-                                r = bytesToBigInteger(xdagBlock.getField(i).getData());
-                                s = bytesToBigInteger(xdagBlock.getField(signo_s).getData());
-                                ECKey.ECDSASignature tmp = new ECKey.ECDSASignature(r, s);
+                                r = Numeric.toBigInt(xdagBlock.getField(i).getData());
+                                s = Numeric.toBigInt(xdagBlock.getField(signo_s).getData());
+                                ECDSASignature tmp = new ECDSASignature(r, s);
                                 if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
                                     insigs.put(tmp, i);
                                 } else {
@@ -248,7 +250,7 @@ public class Block implements Cloneable {
                         }
                     }
                     if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                        this.nonce = BytesUtils.bigIntegerToBytes(r, 32);
+                        this.nonce = Numeric.toBytesPadded(r, 32);
                         continue;
                     }
                     break;
@@ -256,8 +258,9 @@ public class Block implements Cloneable {
                 case XDAG_FIELD_PUBLIC_KEY_1:
                     byte[] key = xdagBlock.getField(i).getData();
                     boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
-                    ECPoint point = ECKey.decompressKey(bytesToBigInteger(key), yBit);
-                    pubKeys.add(ECKey.fromPublicOnly(point));
+                    //ECPoint point = Sign.decompressKey(bytesToBigInteger(key), yBit);
+                    ECPoint point = Sign.decompressKey(Numeric.toBigInt(key), yBit);
+                    pubKeys.add(new ECKeyPair(null, Numeric.toBigInt(point.getEncoded(false))));
                     break;
                 default:
 //                    log.debug("no match xdagBlock field type:" + field.getType());
@@ -270,7 +273,7 @@ public class Block implements Cloneable {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.write(getEncodedBody());
 
-        for (ECKey.ECDSASignature sig : insigs.keySet()) {
+        for (ECDSASignature sig : insigs.keySet()) {
             encoder.writeSignature(BytesUtils.subArray(sig.toByteArray(), 0, 64));
         }
         if (outsig != null) {
@@ -307,8 +310,9 @@ public class Block implements Cloneable {
         if(info.getRemark() != null) {
             encoder.write(info.getRemark());
         }
-        for (ECKey ecKey : pubKeys) {
-            byte[] key = BytesUtils.subArray(ecKey.getPubKey(true), 1, 32);
+        for (ECKeyPair eckey : pubKeys) {
+            byte[] pubkeyBytes = Sign.publicPointFromPrivate(eckey.getPrivateKey()).getEncoded(true);
+            byte[] key = BytesUtils.subArray(pubkeyBytes, 1, 32);
             encoder.writeField(key);
         }
         encoded = encoder.toBytes();
@@ -331,22 +335,23 @@ public class Block implements Cloneable {
         return xdagBlock;
     }
 
-    public void signIn(ECKey ecKey) {
+    public void signIn(ECKeyPair ecKey) {
         sign(ecKey, XDAG_FIELD_SIGN_IN);
     }
 
-    public void signOut(ECKey ecKey) {
+    public void signOut(ECKeyPair ecKey) {
         sign(ecKey, XDAG_FIELD_SIGN_OUT);
     }
 
-    private void sign(ECKey ecKey, XdagField.FieldType type) {
+    private void sign(ECKeyPair ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
         log.debug("sign encoded:{}", Hex.toHexString(encoded));
-        byte[] digest = BytesUtils.merge(encoded, ecKey.getPubKey(true));
+        byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
+        byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
         log.debug("sign digest:{}", Hex.toHexString(digest));
-        byte[] hash = Sha256Hash.hashTwice(digest);
+        byte[] hash = Hash.hashTwice(digest);
         log.debug("sign hash:{}", Hex.toHexString(hash));
-        ECKey.ECDSASignature signature = ecKey.sign(hash);
+        ECDSASignature signature = ecKey.sign(hash);
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
         } else {
@@ -355,23 +360,25 @@ public class Block implements Cloneable {
     }
 
     /** 只匹配输入签名 并返回有用的key */
-    public List<ECKey> verifiedKeys() {
-        List<ECKey> keys = getPubKeys();
-        List<ECKey> res = new ArrayList<>();
+    public List<ECKeyPair> verifiedKeys() {
+        List<ECKeyPair> keys = getPubKeys();
+        List<ECKeyPair> res = new ArrayList<>();
         byte[] digest;
         byte[] hash;
-        for (ECKey.ECDSASignature sig : this.getInsigs().keySet()) {
+        for (ECDSASignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 2);
-            for (ECKey ecKey : keys) {
-                hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKey(true)));
+            for (ECKeyPair ecKey : keys) {
+                byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
+                hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
                 if (ecKey.verify(hash, sig)) {
                     res.add(ecKey);
                 }
             }
         }
         digest = getSubRawData(getOutsigIndex() - 2);
-        for (ECKey ecKey : keys) {
-            hash = Sha256Hash.hashTwice(BytesUtils.merge(digest, ecKey.getPubKey(true)));
+        for (ECKeyPair ecKey : keys) {
+            byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
+            hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
             log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
             log.debug(Hex.toHexString(hash) + ":hash");
             log.debug(outsig + ":outsig");
@@ -419,7 +426,7 @@ public class Block implements Cloneable {
         return inputs;
     }
 
-    public List<ECKey> getPubKeys() {
+    public List<ECKeyPair> getPubKeys() {
         return pubKeys;
     }
 
@@ -427,11 +434,11 @@ public class Block implements Cloneable {
         return nonce;
     }
 
-    public ECKey.ECDSASignature getOutsig() {
+    public ECDSASignature getOutsig() {
         return outsig.toCanonicalised();
     }
 
-    public Map<ECKey.ECDSASignature, Integer> getInsigs() {
+    public Map<ECDSASignature, Integer> getInsigs() {
         return insigs;
     }
 

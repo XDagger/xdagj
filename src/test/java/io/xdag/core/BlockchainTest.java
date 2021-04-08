@@ -27,7 +27,8 @@ import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
-import io.xdag.crypto.ECKey;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -113,7 +114,7 @@ public class BlockchainTest {
 
     @Test
     public void testAddressBlock() {
-        ECKey key = new ECKey();
+        ECKeyPair key = Keys.createEcKeyPair();
         Block addressBlock = generateAddressBlock(key, new Date().getTime());
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
@@ -129,7 +130,7 @@ public class BlockchainTest {
     @Test
     public void testExtraBlock() throws ParseException {
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
-        ECKey key = new ECKey();
+        ECKeyPair key = Keys.createEcKeyPair();
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -175,8 +176,8 @@ public class BlockchainTest {
 
     @Test
     public void testTransactionBlock() throws ParseException {
-        ECKey addrKey = new ECKey();
-        ECKey poolKey = new ECKey();
+        ECKeyPair addrKey = Keys.createEcKeyPair();
+        ECKeyPair poolKey = Keys.createEcKeyPair();
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         // 1. add one address block
         Block addressBlock = generateAddressBlock(addrKey, date.getTime());
@@ -241,8 +242,8 @@ public class BlockchainTest {
     @Test
     public void testCanUseInput() throws ParseException {
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
-        ECKey fromKey = new ECKey();
-        ECKey toKey = new ECKey();
+        ECKeyPair fromKey = Keys.createEcKeyPair();
+        ECKeyPair toKey = Keys.createEcKeyPair();
         Block fromAddrBlock = generateAddressBlock(fromKey, date.getTime());
         Block toAddrBlock = generateAddressBlock(toKey, date.getTime());
 

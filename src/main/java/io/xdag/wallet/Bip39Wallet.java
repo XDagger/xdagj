@@ -46,7 +46,7 @@ public class Bip39Wallet {
 
     @Override
     public String toString() {
-        return "Bip39Wallet{"
+        return "XdagBip39Wallet{"
                 + "filename='"
                 + filename
                 + '\''
