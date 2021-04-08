@@ -50,6 +50,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
@@ -93,13 +94,13 @@ public class Commands {
 
         List<Map.Entry<Block,Integer>> list = new ArrayList<Map.Entry<Block,Integer>>(ours.entrySet());
 
-        // 按balance降序排序，按key index升序排序
+        // 按balance降序排序，按key index降序排序
         Collections.sort(list, (o1, o2) -> {
             // TODO
             if (o2.getKey().getInfo().getAmount()>o1.getKey().getInfo().getAmount()){
                 return 1;
             } else if (o2.getKey().getInfo().getAmount()==o1.getKey().getInfo().getAmount()){
-                return o1.getValue().compareTo(o2.getValue());
+                return o2.getValue().compareTo(o1.getValue());
             } else {
                 return -1;
             }
@@ -357,7 +358,7 @@ public class Commands {
         try {
             byte[] hashLow = new byte[32];
             System.arraycopy(blockhash, 8, hashLow, 8, 24);
-            Block block = kernel.getBlockStore().getBlockInfoByHash(hashLow);
+            Block block = kernel.getBlockStore().getRawBlockByHash(hashLow);
             return printBlockInfo(block);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -395,7 +396,29 @@ public class Commands {
                          hash: %s
                        remark: %s
                    difficulty: %s
-                      balance: %s  %.9f""";
+                      balance: %s  %.9f
+                   -----------------------------------------------------------------------------------------------------------------------------
+                                                  block as transaction: details
+                    direction  address                                    amount
+                          fee: %s           %.9f""";
+        StringBuilder inputs = null;
+        if (block.getInputs().size()!=0) {
+            inputs = new StringBuilder();
+            for (int i = 0; i < block.getInputs().size(); i++) {
+                inputs.append(String.format("     input: %s           %.9f\n",
+                        hash2Address(kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false).getInfo().getHash()), amount2xdag(block.getInputs().get(i).getAmount().longValue())
+                ));
+            }
+        }
+        StringBuilder outputs = null;
+        if (block.getOutputs().size()!=0) {
+            outputs = new StringBuilder();
+            for (int i = 0; i < block.getOutputs().size(); i++) {
+                outputs.append(String.format("    output: %s           %.9f\n",
+                        hash2Address(kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false).getInfo().getHash()), amount2xdag(block.getOutputs().get(i).getAmount().longValue())
+                ));
+            }
+        }
         //TODO need add block as transaction
         return String.format(heightFormat, block.getInfo().getHeight()) + String.format(otherFormat,
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
@@ -403,11 +426,16 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                //todo:remark 不输出
                 block.getInfo().getRemark() == null?
-                        "null":new String(block.getInfo().getRemark()),
+                        "":new String(block.getInfo().getRemark()),
                 block.getInfo().getDifficulty().toString(16),
-                hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()));
+                hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
+                //fee目前为0
+                block.getInfo().getRef()==null?"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":hash2Address(block.getInfo().getRef()),0.0
+                )
+                +"\n"
+                +(inputs==null?"":inputs.toString())+(outputs==null?"":outputs.toString())
+                ;
     }
 
     public static String printBlock(Block block) {

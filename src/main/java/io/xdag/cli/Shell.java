@@ -488,7 +488,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             commands.stop();
-            println("stop");
+            println("Stop.");
         } catch (Exception e) {
             saveException(e);
         }

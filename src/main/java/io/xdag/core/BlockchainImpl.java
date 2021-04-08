@@ -594,6 +594,7 @@ public class BlockchainImpl implements Blockchain {
         // 递归执行主块引用的区块 并获取手续费
         acceptAmount(block, applyBlock(block));
         // 主块REF指向自身
+        // TODO:补充手续费
         updateBlockRef(block, new Address(block));
     }
 
