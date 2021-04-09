@@ -17,3 +17,6 @@ xdagj.jar
 testnet
 target
 logs
+
+#for macos
+.DS_Store
