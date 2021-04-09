@@ -52,7 +52,7 @@ public class Bip44WalletUtilsTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         for (File file : tempDir.listFiles()) {
             file.delete();
         }
@@ -77,18 +77,15 @@ public class Bip44WalletUtilsTest {
         Bip32ECKeyPair bip44Keypair = Bip44WalletUtils.generateBip44KeyPair(masterKeypair);
 
         assertEquals(
-                "xprvA3p5nTrBJcdEvUQAK64rZ4oJTwsTiMg7JQrqNh6JNWe3VUW2tcLb7GW1wj1fNDAoymUTSFERZ2LxPxJNmqoMZPs9y3TMNMuBN8MS9eigoWq",
+                "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
                 Base58.encode(addChecksum(serializePrivate(bip44Keypair))));
         assertEquals(
-                "xpub6GoSByP58zBY8xUdR7brvCk31yhx7pPxfdnSB5VuvrB2NGqBS9eqf4pVo1xev4GEmip5Wuky9KUtJVxq4fvYfFchS6SA6C4cCRyQkLqNNjq",
+                "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
                 Base58.encode(addChecksum(serializePublic(bip44Keypair))));
 
-        Credentials credentials =
-                Bip44WalletUtils.loadBip44Credentials(
-                        "", mnemonic); // Verify address according to https://iancoleman.io/bip39/
-        assertEquals(
-                "0xf463a40e33ad932fad65fb3b86e1a42b40981486",
-                credentials.getAddress().toLowerCase());
+        // Verify address according to https://iancoleman.io/bip39/
+        Credentials credentials = Bip44WalletUtils.loadBip44Credentials("", mnemonic);
+        assertEquals("0xddc049a60750affe6f53b1d77208e4108f14d742", credentials.getAddress().toLowerCase());
     }
 
     @Test
@@ -106,13 +103,13 @@ public class Bip44WalletUtilsTest {
                 "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
                 Base58.encode(addChecksum(serializePrivate(masterKeypair))));
 
-        Bip32ECKeyPair bip44Keypair = Bip44WalletUtils.generateBip44KeyPair(masterKeypair, true);
+        Bip32ECKeyPair bip44Keypair = Bip44WalletUtils.generateBip44KeyPair(masterKeypair);
 
         assertEquals(
-                "xprv9zhLxq63By3SX5hAMKnxjGy7L18bnn7GzDQv53eYYqeRX9M82riC1dqovamttwFpk2ZkDQxgcikBQzs1DTu2KShJJqnqgx83EftUB3k39uc",
+                "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
                 Base58.encode(addChecksum(serializePrivate(bip44Keypair))));
         assertEquals(
-                "xpub6DghNLcw2LbjjZmdTMKy6Quqt2y6CEq8MSLWsS4A7BBQPwgGaQ2SZSAHmsrqBVxLegjW2mBfcvDBhpeEqCmucTTPJiNLHQkiDuKwHs9gEtk",
+                "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
                 Base58.encode(addChecksum(serializePublic(bip44Keypair))));
     }
 
