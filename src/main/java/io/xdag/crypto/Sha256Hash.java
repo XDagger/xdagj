@@ -155,4 +155,11 @@ public class Sha256Hash {
     public byte[] getBytes() {
         return bytes;
     }
+
+
+    public static byte[] randomXpreHash(byte[] input, int offset, int length) {
+        MessageDigest digest = newDigest();
+        digest.update(input, offset, length);
+        return digest.digest();
+    }
 }

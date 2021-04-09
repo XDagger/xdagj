@@ -55,17 +55,6 @@ public class Native {
      * @param name
      * @return
      */
-    protected static boolean loadLibrary1(String name) {
-        try {
-            String absolutePath = Native.class.getClassLoader().getResource(name).getPath();
-            System.load(absolutePath);
-            return true;
-        } catch (Exception | UnsatisfiedLinkError e) {
-            log.warn("Failed to load native library: {}", name, e);
-            return false;
-        }
-    }
-
     protected static boolean loadLibrary(String copyName, String name) {
         try {
 
