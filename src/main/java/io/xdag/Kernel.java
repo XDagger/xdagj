@@ -60,10 +60,12 @@ import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+@Slf4j
 @Getter
 @Setter
 public class Kernel {
@@ -114,6 +116,9 @@ public class Kernel {
 
     /** Start the kernel. */
     public synchronized void testStart() throws Exception {
+
+        log.debug("Kernel start...");
+
         EventProcesser.getEventBus().register(this);
 
         // ====================================
@@ -121,6 +126,7 @@ public class Kernel {
         // ====================================
         channelMgr = new XdagChannelManager(this);
         netDBMgr = new NetDBManager(this.config);
+        log.debug("NetDB Manager init.");
         netDBMgr.init();
 
         // ====================================
@@ -128,6 +134,7 @@ public class Kernel {
         // ====================================
         if (wallet == null) {
             wallet = new OldWallet();
+            log.debug("Wallet init.");
             wallet.init(this.config);
         }
 
@@ -136,8 +143,11 @@ public class Kernel {
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));
+        log.debug("Block Store init.");
         blockStore.init();
+
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
+        log.debug("Orphan Pool init.");
         orphanPool.init();
 
         // ====================================
@@ -257,6 +267,9 @@ public class Kernel {
         p2p.close();
         // close client
         client.close();
+
+        // TODO 关闭checkmain线程
+        blockchain.stopCheckMain();
 
         for (DatabaseName name : DatabaseName.values()) {
             dbFactory.getDB(name).close();

@@ -55,7 +55,9 @@ public class BlockStore {
     public static final byte HASH_BLOCK_INFO                       =  0x30;
     public static final byte SUMS_BLOCK_INFO                       =  0x40;
     public static final byte OURS_BLOCK_INFO                       =  0x50;
-    public static final byte SETTING_TOP_STATUS                    =  0x60;
+
+
+    public static final byte SETTING_TOP_STATUS                       =  0x60;
 
     public static final String SUM_FILE_NAME = "sums.dat";
 
@@ -88,25 +90,30 @@ public class BlockStore {
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
-        try {
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final Output output = new Output(outputStream);
-            kryo.writeObject(output, obj);
-            output.flush();
-            output.close();
-            return outputStream.toByteArray();
-        } catch (final IllegalArgumentException | KryoException exception) {
-            throw new SerializationException(exception.getMessage(), exception);
+        synchronized (kryo) {
+            try {
+                final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                final Output output = new Output(outputStream);
+                kryo.writeObject(output, obj);
+                output.flush();
+                output.close();
+                return outputStream.toByteArray();
+            } catch (final IllegalArgumentException | KryoException exception) {
+                throw new SerializationException(exception.getMessage(), exception);
+            }
         }
     }
 
     private Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
-        try {
-            final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-            final Input input = new Input(inputStream);
-            return kryo.readObject(input, type);
-        } catch (final IllegalArgumentException | KryoException exception) {
-            throw new DeserializationException(exception.getMessage(), exception);
+        synchronized (kryo) {
+            try {
+                final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                final Input input = new Input(inputStream);
+                return kryo.readObject(input, type);
+            } catch (final IllegalArgumentException | KryoException | NullPointerException exception) {
+                log.debug("Deserialize data:{}", Hex.toHexString(bytes));
+                throw new DeserializationException(exception.getMessage(), exception);
+            }
         }
     }
 
@@ -181,11 +188,11 @@ public class BlockStore {
     }
 
     public void saveOurBlock(int index, byte[] hashlow) {
-        indexSource.put(getOurKey(index), hashlow);
+        indexSource.put(getOurKey(index,hashlow), hashlow);
     }
 
     public byte[] getOurBlock(int index) {
-        return indexSource.get(getOurKey(index));
+        return indexSource.get(getOurKey(index,null));
     }
 
     public void removeOurBlock(byte[] hashlow) {
@@ -193,7 +200,7 @@ public class BlockStore {
             Block block = pair.getValue();
             if(FastByteComparisons.equalBytes(hashlow, block.getHashLow())) {
                 int index = pair.getKey();
-                indexSource.delete(getOurKey(index));
+                indexSource.delete(getOurKey(index,hashlow));
                 return Boolean.TRUE;
             }
             return Boolean.FALSE;
@@ -266,6 +273,7 @@ public class BlockStore {
             sums = new byte[4096];
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, (int) (16 * index), 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, (int) (index * 16 + 8), 8);
+            putSums(key, sums);
         } else {
             // size + sum
             byte[] data = ArrayUtils.subarray(sums, 16 * (int)index, 16 * (int)index + 16);
@@ -274,8 +282,8 @@ public class BlockStore {
             System.arraycopy(BytesUtils.longToBytes(sum, true), 0, data, 0, 8);
             System.arraycopy(BytesUtils.longToBytes(size, true), 0, data, 8, 8);
             System.arraycopy(data, 0, sums, 16 * (int)index, 16);
+            putSums(key, sums);
         }
-        putSums(key, sums);
     }
 
     public int loadSum(long starttime, long endtime, byte[] sums) {
@@ -333,7 +341,6 @@ public class BlockStore {
         byte[] value = null;
         try {
             value = serialize(blockInfo);
-
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
@@ -347,21 +354,27 @@ public class BlockStore {
     public static byte[] getTimeKey(long timestamp, byte[] hashlow) {
         long t = UnsignedLong.fromLongBits(timestamp >> 16).longValue();
         byte[] key = BytesUtils.merge(TIME_HASH_INFO, BytesUtils.longToBytes(t, false));
-//        if(hashlow == null) {
-//            return key;
-//        }
-//        return BytesUtils.merge(key, hashlow);
+        if(hashlow == null) {
+            return key;
+        }
+        return BytesUtils.merge(key, hashlow);
+    }
+
+    public static byte[] getOurKey(int index, byte[] hashlow) {
+        byte[] key = BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
+        key = BytesUtils.merge(key,hashlow);
         return key;
     }
 
-    public static byte[] getOurKey(int index) {
-        return BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
-    }
-
     public static int getOurIndex(byte[] key) {
-        return BytesUtils.bytesToInt(key, 1, false);
+        try {
+            byte[] index = BytesUtils.subArray(key,1,4);
+            return BytesUtils.bytesToInt(index,0,false);
+        }catch (Exception e) {
+            return 0;
+        }
+//        return BytesUtils.bytesToInt(key, 1, false);
     }
-
     public List<Block> getBlocksUsedTime(long startTime, long endTime) {
         List<Block> res = Lists.newArrayList();
         long time = startTime;
@@ -402,6 +415,7 @@ public class BlockStore {
         if (block == null) {
             return null;
         }
+        log.debug("data:{}",Hex.toHexString(blockSource.get(hashlow)));
         block.setXdagBlock(new XdagBlock(blockSource.get(hashlow)));
         block.setParsed(false);
         block.parse();
@@ -420,6 +434,8 @@ public class BlockStore {
             try {
                 blockInfo = (BlockInfo)deserialize(value, BlockInfo.class);
             } catch (DeserializationException e) {
+                log.error("hash low:"+Hex.toHexString(hashlow));
+                log.error("can't deserialize data:{}",Hex.toHexString(value));
                 log.error(e.getMessage(), e);
             }
         }
@@ -449,3 +465,4 @@ public class BlockStore {
 //        }
 //    }
 }
+

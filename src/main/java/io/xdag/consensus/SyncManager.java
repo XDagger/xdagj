@@ -29,6 +29,7 @@ import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -101,6 +102,7 @@ public class SyncManager {
 
     /** Queue for the link block don't exist */
     private ConcurrentHashMap<ByteArrayWrapper, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
+
     public void start() {
         log.debug("Download receiveBlock run...");
     }
@@ -118,7 +120,7 @@ public class SyncManager {
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
             BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
             if (!syncDone && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0) {
-                log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
+//                log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
                 // 只有同步完成的时候 才能开始线程 再一次
                 if (!syncDone) {
                     if (Config.MAINNET) {
@@ -147,7 +149,7 @@ public class SyncManager {
         return syncDone;
     }
 
-    public synchronized void validateAndAddNewBlock(BlockWrapper blockWrapper) {
+    public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
         log.info("validateAndAddNewBlock:{}, {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
@@ -159,7 +161,7 @@ public class SyncManager {
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashLow())) {
                     log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                            Hex.toHexString(result.getHashLow()));
+                        Hex.toHexString(result.getHashLow()));
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
@@ -167,21 +169,22 @@ public class SyncManager {
 
                         }
                     }
-                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
-                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
-                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
-                        }
-                    }
+//                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
+//                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
+//                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
+//                        }
+//                    }
                 }
                 break;
             }
             case INVALID_BLOCK: {
-                log.error("invalid block:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+//                log.error("invalid block:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
                 break;
             }
             default:
                 break;
         }
+        return result;
     }
 
     /**
@@ -190,7 +193,7 @@ public class SyncManager {
      * @param blockWrapper
      *            新区块
      * @param hashLow
-     *            缺失的parent
+     *            缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
         AtomicBoolean r = new AtomicBoolean(true);
@@ -211,7 +214,7 @@ public class SyncManager {
                                 r.set(true);
                             } else {
                             //TODO should be consider timeout not received request block
-                            r.set(false);
+                                r.set(false);
                             }
                             return oldQ;
                         }
@@ -224,18 +227,18 @@ public class SyncManager {
     }
 
     /**
+     *  根据接收到的区块，将子区块释放
      *
-     *
-     * @param blockWrapper
+     * @param blockWrapper 接收到的区块
      * @return
      */
-    public boolean syncPopBlock(BlockWrapper blockWrapper) {
-        AtomicBoolean result = new AtomicBoolean(false);
+    public void syncPopBlock(BlockWrapper blockWrapper) {
+//        AtomicBoolean result = new AtomicBoolean(false);
         Block block = blockWrapper.getBlock();
         ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
         // re import all for waiting this block
         syncMap.computeIfPresent(key, (k, v)->{
-            result.set(true);
+//            result.set(true);
             blockchain.getXdagStats().nwaitsync--;
             v.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
@@ -243,9 +246,12 @@ public class SyncManager {
                     case EXIST:
                     case IMPORTED_BEST:
                     case IMPORTED_NOT_BEST:
-                        if(syncPopBlock(bw)) {
-                            v.remove(bw);
-                        }
+                        // TODO import成功后都需要移除
+//                        if(syncPopBlock(bw)) {
+//                            v.remove(bw);
+//                        }
+                        syncPopBlock(bw);
+                        v.remove(bw);
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashLow())) {
@@ -269,11 +275,11 @@ public class SyncManager {
             }
             return v;
         });
-        return result.get();
+//        return result.get();
     }
 
     public void makeSyncDone() {
-        log.debug("Sync Done");
+//        log.debug("Sync Done");
         if (syncDone) {
             return;
         }
@@ -285,12 +291,17 @@ public class SyncManager {
             kernel.getXdagState().setState(XdagState.STST);
         }
 
-        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
-        System.out.println("Start PoW");
+//        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
 
+        SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        Date date = new Date(System.currentTimeMillis());
+        System.out.println("Start PoW at:"+formatter.format(date));
+
+        // 检查主块链
+//        kernel.getBlockchain().startCheckMain();
         kernel.getMinerServer().start();
         kernel.getPow().start();
-//        kernel.getLibp2pNetwork().start();
+        kernel.getLibp2pNetwork().start();
 //        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 
     }

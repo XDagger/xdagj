@@ -100,10 +100,11 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             // 清除transportheader
             System.arraycopy(BytesUtils.longToBytes(0, true), 0, unCryptData, 4, 4);
 
-            // 验证长度和crc校验
+            // 验证长度和crc校验 如果多次失败考虑断开
             if (dataLength != 512 || !crc32Verify(unCryptData, crc)) {
                 log.debug(dataLength + " length");
                 log.debug("receive not block verify error!");
+                return;
             }
 
             System.arraycopy(BytesUtils.longToBytes(0, true), 0, unCryptData, 0, 8);

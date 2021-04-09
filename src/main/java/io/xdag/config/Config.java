@@ -50,12 +50,12 @@ public class Config implements Serializable {
     public static String root = MAINNET ? "mainnet" : "testnet";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
-    
+
     /** 保存得密钥文件 */
     public static final String DNET_KEY_FILE = Config.MAINNET?Config.root + "/dnet_key.dat":Config.root + "/dnet_key.dat";
     /** 钱包文件 */
     public static final String WALLET_KEY_FILE = Config.MAINNET?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
-    
+
     public final int MAX_CHANNELS = 1024;
     private final int connectionTimeout = 10000;
     private final int channelReadTimeout = 10000;

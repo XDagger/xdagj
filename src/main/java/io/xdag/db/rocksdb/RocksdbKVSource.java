@@ -361,7 +361,9 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         try (RocksIterator it = db.newIterator(readOpts)) {
             for (it.seek(key); it.isValid(); it.next()) {
                 if (BytesUtils.keyStartsWith(it.key(), key)) {
-                    func.apply(Pair.of(it.key(), it.value()));
+                    if (func.apply(Pair.of(it.key(), it.value()))){
+                        return;
+                    }
                 } else {
                     return;
                 }

@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class MessageCodes extends MessageToMessageCodec<Message, Message> {
-//修改这部分
 
     public MessageCodes() {
     }

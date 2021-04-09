@@ -29,6 +29,7 @@ import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;
@@ -145,6 +146,12 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
+
+            if (argv.size() == 0) {
+                println("Need hash or address");
+                return;
+            }
+
             String address = argv.get(0);
             try {
                 byte[] hash;
@@ -275,8 +282,17 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
+
+            if (argv.size() < 2) {
+                println("Lost some param");
+                return;
+            }
+
             byte[] hash;
             double amount = StringUtils.getDouble(argv.get(0));
+
+            String remark = argv.size()==3 ? argv.get(2):null;
+            System.out.println("remark:"+remark);
 
             if (amount < 0) {
                 println("The transfer amount must be greater than 0");
@@ -289,21 +305,21 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 hash = StringUtils.getHash(argv.get(1));
             }
             if (hash == null) {
-                println("No param");
+                println("No Address");
                 return;
             }
 
             if (kernel.getBlockchain().getBlockByHash(hash, false) == null) {
 //            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
-                println("incorrect address");
+                println("Incorrect address");
                 return;
             }
 
-            // xfer must check password
+            // xfer must check passwor
             if(!readPassword()) {
                 return;
             }
-            println(commands.xfer(amount, hash));
+            println(commands.xfer(amount, hash, remark));
 
         } catch (Exception e) {
             saveException(e);
@@ -468,7 +484,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             commands.stop();
-            println("stop");
+            println("Stop.");
         } catch (Exception e) {
             saveException(e);
         }

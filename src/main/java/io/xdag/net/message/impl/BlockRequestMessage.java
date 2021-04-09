@@ -92,7 +92,7 @@ public class BlockRequestMessage extends AbstractMessage {
         BigInteger diff = xdagStats.getDifficulty();
         BigInteger maxDiff = xdagStats.getMaxdifficulty();
         long nmain = xdagStats.getNmain();
-        long totalMainNumber = xdagStats.getTotalnmain();
+        long totalMainNumber = Math.max(xdagStats.getTotalnmain(),nmain);
         long nblocks = xdagStats.getNblocks();
         long totalBlockNumber = xdagStats.getTotalnblocks();
 

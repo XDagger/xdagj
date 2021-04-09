@@ -52,17 +52,22 @@ import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class XdagPow implements PoW, Runnable {
+
     protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
     protected Timer timer;
     protected Broadcaster broadcaster;
+
     protected Block generateBlock;
+
     protected byte[] minShare;
     protected byte[] minHash;
     protected Task currentTask;
     protected XdagSha256Digest currentTaskDigest;
+
     protected long sendTime;
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
+
     /** 存放的是过去十六个区块的hash */
     protected List<byte[]> blockHashs = new CopyOnWriteArrayList<byte[]>();
     /** 存放的是最小的hash */
@@ -70,9 +75,13 @@ public class XdagPow implements PoW, Runnable {
     /** 引入矿工与奖励 */
     protected AwardManager awardManager;
     protected MinerManager minerManager;
+
     protected long taskIndex = 0;
+
     private Kernel kernel;
+
     private boolean isRunning = false;
+
     private ChannelManager channelManager;
 
     public XdagPow(Kernel kernel) {
@@ -97,6 +106,7 @@ public class XdagPow implements PoW, Runnable {
                 this.minShares.add(null);
             }
 
+            // PoW换成Schedule任务
             new Thread(this.timer, "xdag-pow-timer").start();
             new Thread(this.broadcaster, "xdag-pow-broadcaster").start();
             new Thread(this, "xdag-pow-main").start();
@@ -121,7 +131,7 @@ public class XdagPow implements PoW, Runnable {
     public Block generateBlock() {
 
         // 固定sendtime
-        Block block = blockchain.createNewBlock(null, null, true);
+        Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
 
         minShare = RandomUtils.nextBytes(32);
@@ -174,17 +184,16 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
-        XdagField share = shareInfo;
         try {
             XdagSha256Digest digest = new XdagSha256Digest(currentTaskDigest);
-            byte[] hash = digest.sha256Final(Arrays.reverse(share.getData()));
+            byte[] hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
 
             MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
             MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
-                minShare = Arrays.reverse(share.getData());
+                minShare = Arrays.reverse(shareInfo.getData());
                 byte[] hashlow = new byte[32];
                 System.arraycopy(minHash, 8, hashlow, 8, 24);
                 generateBlock.setNonce(minShare);
@@ -268,11 +277,11 @@ public class XdagPow implements PoW, Runnable {
                     onNewShare(ev.getData(), ev.getChannel());
                     break;
                 case TIMEOUT:
+                    // TODO : 判断当前是否可以进行产块
 //                    if(kernel.getXdagState().equals(XdagState.STST) || kernel.getXdagState().equals(XdagState.SYNC)) {
                         onTimeout();
 //                    }
                     break;
-                    //这是干嘛的？
                 case NEW_PRETOP:
                     onNewPreTop();
                     break;
@@ -336,6 +345,7 @@ public class XdagPow implements PoW, Runnable {
         }
     }
 
+    // TODO: change to scheduleAtFixRate
     public class Timer implements Runnable {
         private long timeout;
         private boolean isRunning = false;

@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bouncycastle.util.encoders.Hex;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,18 +51,29 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.FastByteComparisons.compareTo;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 import static io.xdag.utils.MapUtils.getHead;
 
 @Slf4j
 @Getter
 public class BlockchainImpl implements Blockchain {
+    private static final ThreadFactory factory = new ThreadFactory() {
+        private final AtomicInteger cnt = new AtomicInteger(0);
+
+        @Override
+        public Thread newThread(@Nonnull Runnable r) {
+            return new Thread(r, "check main-" + cnt.getAndIncrement());
+        }
+    };
+
     private OldWallet wallet;
     private BlockStore blockStore;
     /** 非Extra orphan存放 */
@@ -75,6 +87,9 @@ public class BlockchainImpl implements Blockchain {
 
     private XdagTopStatus xdagTopStatus;
 
+    private ScheduledExecutorService checkLoop;
+    private ScheduledFuture<?> checkLoopFuture;
+
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
@@ -84,6 +99,7 @@ public class BlockchainImpl implements Blockchain {
         if(storedStats != null) {
             storedStats.setNwaitsync(0);
             this.xdagStats = storedStats;
+            this.xdagStats.nextra = 0;
         } else {
             this.xdagStats = new XdagStats();
         }
@@ -94,7 +110,9 @@ public class BlockchainImpl implements Blockchain {
         } else {
             this.xdagTopStatus = new XdagTopStatus();
         }
-
+        checkLoop = new ScheduledThreadPoolExecutor(1, factory);
+        // 检查主块链
+        this.startCheckMain();
     }
     //读取C版本区块
     public long loadBlockchain(
@@ -183,6 +201,16 @@ public class BlockchainImpl implements Blockchain {
     public synchronized ImportResult tryToConnect(Block block) {
         try {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
+
+            if (block.getTimestamp() > (XdagTime.getCurrentTimestamp()+ MAIN_CHAIN_PERIOD/4)
+                    || block.getTimestamp() < XDAG_ERA
+//                    || (limit && timestamp - tmpNodeBlock.time > limit)
+            ){
+                result = ImportResult.INVALID_BLOCK;
+                result.setError("Block's time is illegal");
+                return result;
+            }
+
             if (isExist(block.getHashLow())) {
                 return ImportResult.EXIST;
             }
@@ -197,16 +225,17 @@ public class BlockchainImpl implements Blockchain {
                 if (ref != null) {
                     Block refBlock = getBlockByHash(ref.getHashLow(), false);
                     if (refBlock == null) {
-//                        System.out.println("No Parent = "+Hex.toHexString(ref.getHashLow()));
                         log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
                         result = ImportResult.NO_PARENT;
                         result.setHashLow(ref.getHashLow());
+                        result.setError("Block have no parent for "+Hex.toHexString(result.getHashLow()));
                         return result;
                     } else {
-                        // check ref time
+                        // 链接块的时间需要小于该块时间，否则为不合法区块
                         if(refBlock.getTimestamp() >= block.getTimestamp()) {
                             result = ImportResult.INVALID_BLOCK;
                             result.setHashLow(refBlock.getHashLow());
+                            result.setError("Ref block's time >= block's time");
                             return result;
                         }
 
@@ -235,6 +264,9 @@ public class BlockchainImpl implements Blockchain {
 
             // 检查区块合法性 检查input是否能使用
             if (!canUseInput(block)) {
+                result = ImportResult.INVALID_BLOCK;
+                result.setHashLow(block.getHashLow());
+                result.setError("Block's input can't be used");
                 return ImportResult.INVALID_BLOCK;
             }
 
@@ -249,7 +281,6 @@ public class BlockchainImpl implements Blockchain {
 
             // 更新preTop
             setPreTop(block);
-
             setPreTop(getBlockByHash(xdagTopStatus.getTop(), false));
 
             // TODO:extra 处理
@@ -258,6 +289,8 @@ public class BlockchainImpl implements Blockchain {
                 log.debug("remove when extra too big");
                 removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
                 xdagStats.nblocks--;
+                xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
+
                 if ((reuse.getInfo().flags & BI_OURS) != 0) {
                     removeOurBlock(reuse);
                 }
@@ -299,22 +332,23 @@ public class BlockchainImpl implements Blockchain {
 
             // 新增区块
             xdagStats.nblocks++;
+            xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
             if (xdagStats.getTotalnblocks() < xdagStats.getNblocks()) {
                 xdagStats.setTotalnblocks(xdagStats.getNblocks());
             }
+
             //orphan (hash , block)
-            log.debug("======New block waiting to link======");
+            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
-                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
+//                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 memOrphanPool.put(new ByteArrayWrapper(block.getHashLow()), block);
                 xdagStats.nextra++;
             } else {
-                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
+//                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
                 orphanPool.addOrphan(block);
                 xdagStats.nnoref++;
             }
-//            log.info("Current diff:" + xdagStats.getTopDiff().toString(16));
             blockStore.saveXdagStatus(xdagStats);
             return result;
         } catch (Throwable e) {
@@ -325,7 +359,7 @@ public class BlockchainImpl implements Blockchain {
 
     /** 检查更新主链 * */
     @Override
-    public void checkNewMain() {
+    public synchronized void checkNewMain() {
         Block p = null;
         int i = 0;
         if (xdagTopStatus.getTop() != null) {
@@ -343,7 +377,7 @@ public class BlockchainImpl implements Blockchain {
                 && ((p.getInfo().flags & BI_REF) != 0)
                 && i > 1
                 && ct >= p.getTimestamp() + 2 * 1024) {
-            log.info("setMain success block:{}", Hex.toHexString(p.getHashLow()));
+//            log.info("setMain success block:{}", Hex.toHexString(p.getHashLow()));
             setMain(p);
         } else {
             log.debug("setMain fail block:{}", p != null?Hex.toHexString(p.getHashLow()):"null");
@@ -369,6 +403,8 @@ public class BlockchainImpl implements Blockchain {
         if (block == null) {
             return;
         }
+        log.debug("Unwind main to block,{}",Hex.toHexString(block.getHashLow()));
+//        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
         if (xdagTopStatus.getTop() != null) {
             for (Block tmp = getBlockByHash(xdagTopStatus.getTop(), true); tmp != null
                     && !tmp.equals(block); tmp = getMaxDiffLink(tmp, true)) {
@@ -376,19 +412,21 @@ public class BlockchainImpl implements Blockchain {
                 // 更新对应的flag信息
                 if ((tmp.getInfo().flags & BI_MAIN) != 0) {
                     unSetMain(tmp);
-                    blockStore.saveBlockInfo(tmp.getInfo());
+                    // TODO: 稳定分支：这里为应该可以不需要重新存储区块info
+//                    blockStore.saveBlockInfo(tmp.getInfo());
                 }
             }
         }
     }
 
     /** 执行区块并返回手续费 * */
-    private long applyBlock(Block block) {
-        long sumIn = 0;
-        long sumOut = 0; // sumOut是用来支付其他区块link自己的手续费 现在先用0
+    private UnsignedLong applyBlock(Block block) {
+        UnsignedLong sumIn = UnsignedLong.ZERO;
+        UnsignedLong sumOut = UnsignedLong.ZERO; // sumOut是用来支付其他区块link自己的手续费 现在先用0
+
         // 处理过
         if ((block.getInfo().flags & BI_MAIN_REF) != 0) {
-            return -1;
+            return UnsignedLong.ZERO.minus(UnsignedLong.ONE);
         }
         // 设置为已处理
         updateBlockFlag(block, BI_MAIN_REF, true);
@@ -396,19 +434,20 @@ public class BlockchainImpl implements Blockchain {
         List<Address> links = block.getLinks();
         if (links == null || links.size() == 0) {
             updateBlockFlag(block, BI_APPLIED, true);
-            return 0;
+            return UnsignedLong.ZERO;
         }
 
         for (Address link : links) {
             Block ref = getBlockByHash(link.getHashLow(), true);
-            long ret = applyBlock(ref);
-            if (ret == -1) {
+            UnsignedLong ret = applyBlock(ref);
+            if (ret.compareTo(UnsignedLong.ZERO.minus(UnsignedLong.ONE))==0){
+//            if (ret == -1) {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (amount2xdag(block.getInfo().getAmount() + link.getAmount().longValue()) >= amount2xdag(
+            if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue()) >= amount2xdag(
                     block.getInfo().getAmount())) {
-                acceptAmount(block, link.getAmount().longValue());
+                acceptAmount(block, ret);
             }
         }
 
@@ -417,55 +456,107 @@ public class BlockchainImpl implements Blockchain {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
                 if (amount2xdag(ref.getInfo().getAmount()) < amount2xdag(link.getAmount().longValue())) {
-                    return 0;
+                    log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",Hex.toHexString(ref.getInfo().getHashlow()),ref.getInfo().getAmount(),
+                            link.getAmount().longValue());
+                    return UnsignedLong.ZERO;
                 }
-                if (amount2xdag(sumIn + link.getAmount().longValue()) < amount2xdag(sumIn)) {
-                    return 0;
+                if (amount2xdag(sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue()) < amount2xdag(sumIn.longValue())) {
+                    log.debug("This input ref's amount less than 0");
+                    return UnsignedLong.ZERO;
                 }
-                sumIn += link.getAmount().longValue();
+                sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
             } else {
-                if (amount2xdag(sumOut + link.getAmount().longValue()) < amount2xdag(sumOut)) {
-                    return 0;
+                if (amount2xdag(sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue()) < amount2xdag(sumOut.longValue())) {
+                    log.debug("This output ref's amount less than 0");
+                    return UnsignedLong.ZERO;
                 }
-                sumOut += link.getAmount().longValue();
+                sumOut = sumOut.plus(UnsignedLong.valueOf(link.getAmount()));
             }
         }
 
-        if (amount2xdag(sumIn + block.getInfo().getAmount()) < amount2xdag(sumOut)
-                || amount2xdag(sumIn + block.getInfo().getAmount()) < amount2xdag(sumIn)) {
+        if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumOut.longValue())
+                || amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumIn.longValue())) {
             log.debug("exec fail!");
-            return 0;
+            return UnsignedLong.ZERO;
         }
 
         for (Address link : links) {
             Block ref = getBlockByHash(link.getHashLow(), false);
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                acceptAmount(ref, -link.getAmount().longValue());
+                acceptAmount(ref, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(link.getAmount())));
             } else {
-                acceptAmount(ref, link.getAmount().longValue());
+                acceptAmount(ref, UnsignedLong.valueOf(link.getAmount()));
             }
             blockStore.saveBlockInfo(ref.getInfo());
         }
 
         // 不一定大于0 因为可能部分金额扣除
-        long remain = sumIn - sumOut;
+        UnsignedLong remain = sumIn.minus(sumOut);
         acceptAmount(block, remain);
         updateBlockFlag(block, BI_APPLIED, true);
-        return 0;
+        return UnsignedLong.ZERO;
     }
 
-    public long unApplyBlock(Block block) {
+
+    private void applyBlock1(Block block) {
+        List<Integer> list=new ArrayList<>();//建立一个整数列表，一个节点列表，两个栈
+        List<Block> curr=new ArrayList();
+        Stack<Block> stack1=new Stack();
+        Stack<Block> stack2=new Stack();
+        if(block!=null){  //根不空，进栈1
+            stack1.push(block);
+            while(!stack1.isEmpty()){//栈1不空出栈1，然后进栈2
+
+                Block temp=stack1.pop();
+                // 操作block
+
+
+                // 操作结束放进stack2
+                stack2.push(temp);
+
+
+                List<Address> links = temp.getLinks();
+
+                for (Address link : links) {
+                    Block ref = getBlockByHash(link.getHashLow(), true);
+                    stack1.push(ref);
+                }
+            }}
+        while(!stack2.isEmpty()){//栈2不空依次出栈，值加入列表
+            Block ss=stack2.pop();
+        }
+
+
+
+        Block root;
+        Stack<Block> stack=new Stack<>();
+
+        stack.push(block);
+
+        while(!stack.empty()){
+            // 操作
+            root = stack.pop();
+            List<Address> links = root.getLinks();
+
+            for (Address link : links) {
+                Block ref = getBlockByHash(link.getHashLow(), true);
+                stack.push(ref);
+            }
+        }
+    }
+
+    public UnsignedLong unApplyBlock(Block block) {
         List<Address> links = block.getLinks();
         if ((block.getInfo().flags & BI_APPLIED) != 0) {
-            long sum = 0;
+            UnsignedLong sum = UnsignedLong.ZERO;
             for (Address link : links) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                    acceptAmount(ref, link.getAmount().longValue());
-                    sum -= link.getAmount().longValue();
+                    acceptAmount(ref, UnsignedLong.valueOf(link.getAmount()));
+                    sum = sum.minus(UnsignedLong.valueOf(link.getAmount()));
                 } else {
-                    acceptAmount(ref, -link.getAmount().longValue());
-                    sum += link.getAmount().longValue();
+                    acceptAmount(ref, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(link.getAmount())));
+                    sum = sum.plus(UnsignedLong.valueOf(link.getAmount()));
                 }
             }
             acceptAmount(block, sum);
@@ -482,7 +573,7 @@ public class BlockchainImpl implements Blockchain {
                 acceptAmount(block, unApplyBlock(ref));
             }
         }
-        return 0;
+        return UnsignedLong.ZERO;
     }
 
     /** 设置以block为主块的主链 要么分叉 要么延长 * */
@@ -495,38 +586,52 @@ public class BlockchainImpl implements Blockchain {
         updateBlockFlag(block, BI_MAIN, true);
 
         // 接收奖励
-        acceptAmount(block, reward);
+        acceptAmount(block, UnsignedLong.valueOf(reward));
         xdagStats.nmain++;
+//        log.debug("After SetMain, Current main height:{}",xdagStats.nmain);
+
+//        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
 
         // 递归执行主块引用的区块 并获取手续费
         acceptAmount(block, applyBlock(block));
         // 主块REF指向自身
+        // TODO:补充手续费
         updateBlockRef(block, new Address(block));
     }
 
     /** 取消Block主块身份 * */
     public void unSetMain(Block block) {
-        xdagStats.nmain--;
+
+        log.debug("mainnumber = {}",xdagStats.nmain);
+        // 非主块不需要高度
+        block.getInfo().setHeight(0);
 
         long amount = getReward(xdagStats.nmain);
         updateBlockFlag(block, BI_MAIN, false);
 
+        xdagStats.nmain--;
+//        log.debug("After unSetMain, Current main height:{}",xdagStats.nmain);
+
         // 去掉奖励和引用块的手续费
-        acceptAmount(block, -amount);
+        acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
         acceptAmount(block, unApplyBlock(block));
     }
 
     @Override
-    public Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining) {
+    public Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark) {
+
+        int hasRemark = remark==null?0:1;
+
         if (pairs == null && to == null) {
             if (mining) {
                 return createMainBlock();
             }
         }
         int defKeyIndex = -1;
+
         // 遍历所有key 判断是否有defKey
         assert pairs != null;
-        List<ECKeyPair> keys = new ArrayList<>(pairs.values());
+        List<ECKeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey().ecKey)) {
                 defKeyIndex = i;
@@ -536,31 +641,55 @@ public class BlockchainImpl implements Blockchain {
         List<Address> all = Lists.newArrayList();
         all.addAll(pairs.keySet());
         all.addAll(to);
-        int res = 1 + pairs.size() + to.size() + 3 * pairs.size() + defKeyIndex == -1 ? 2 : 0;
-        long sendTime = XdagTime.getCurrentTimestamp();
-        if (mining) {
-            res += 1;
-            sendTime = XdagTime.getMainTime();
+
+        // TODO: 判断pair是否有重复
+        // header + input size + sendto size + (key + signature)
+        int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0) + hasRemark;
+
+        // TODO : 如果区块字段不足
+        if (res > 16) {
+            return null;
         }
+
+        long sendTime = XdagTime.getCurrentTimestamp();
+//        if (mining) {
+//            res += 1;
+//            sendTime = XdagTime.getMainTime();
+//            if (res > 16) {
+//                return null;
+//            }
+//        }
+
+        List<Address> refs = Lists.newArrayList();
 
         Address preTop = null;
-        if (getPreTopMainBlockForLink(sendTime) != null) {
+        byte[] pretopHash = getPreTopMainBlockForLink(sendTime);
 
-            preTop = new Address(getPreTopMainBlockForLink(sendTime), XdagField.FieldType.XDAG_FIELD_OUT);
-            res++;
-        }
-        List<Address> refs = Lists.newArrayList();
-        refs.add(preTop);
-        List<Address> orphan = getBlockFromOrphanPool(16 - res);
-        if(orphan!=null && orphan.size() != 0) {
-            refs.addAll(orphan);
+        if (pretopHash != null) {
+            if (getBlockByHash(pretopHash,false).getTimestamp() < sendTime ) {
+                preTop = new Address(getPreTopMainBlockForLink(sendTime), XdagField.FieldType.XDAG_FIELD_OUT);
+                res++;
+            }
         }
 
-        return new Block(sendTime, all, refs, mining, keys, null, defKeyIndex);
+        if (res < 16) {
+            if (preTop!=null) {
+                refs.add(preTop);
+            }
+            List<Address> orphan = getBlockFromOrphanPool(16 - res, sendTime);
+            if(orphan!=null && orphan.size() != 0) {
+                refs.addAll(orphan);
+            }
+            return new Block(sendTime, all, refs, mining, keys, remark, defKeyIndex);
+        }
+
+        return new Block(sendTime, all, refs, mining, keys, remark, defKeyIndex);
     }
 
     public Block createMainBlock() {
-        int res = 4;
+        // <header + remark + outsig + nonce>
+        int res = 1 + 1 + 2 + 1;
+
         long sendTime = XdagTime.getMainTime();
         Address preTop = null;
         if (getPreTopMainBlockForLink(sendTime) != null) {
@@ -571,9 +700,9 @@ public class BlockchainImpl implements Blockchain {
         if(preTop != null) {
             refs.add(preTop);
         }
-        List<Address> orphans = getBlockFromOrphanPool(16 - res);
+        List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
         if(CollectionUtils.isNotEmpty(orphans)) {
-            refs.addAll(getBlockFromOrphanPool(16 - res));
+            refs.addAll(orphans);
         }
         return new Block(sendTime, null, refs, true, null, kernel.getConfig().getPoolTag(), -1);
     }
@@ -589,8 +718,8 @@ public class BlockchainImpl implements Blockchain {
      *
      * @return java.util.List<io.xdag.core.Address>
      **/
-    public List<Address> getBlockFromOrphanPool(int num) {
-        return orphanPool.getOrphan(num);
+    public List<Address> getBlockFromOrphanPool(int num , long sendtime) {
+        return orphanPool.getOrphan(num, sendtime);
     }
 
     public byte[] getPreTopMainBlockForLink(long sendTime) {
@@ -662,7 +791,7 @@ public class BlockchainImpl implements Blockchain {
     public BigInteger calculateBlockDiff(Block block) {
 
         if (block.getInfo().getDifficulty() != null) {
-            log.debug("block 的难度不为空，hash[{}]", Hex.toHexString(block.getHash()));
+//            log.debug("block 的难度不为空，hash[{}]", Hex.toHexString(block.getHash()));
             return block.getInfo().getDifficulty();
         }
 
@@ -753,7 +882,7 @@ public class BlockchainImpl implements Blockchain {
         if (b != null && ((b.getInfo().flags & BI_REF) == 0) && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA || (b.getInfo().flags & BI_EXTRA) != 0)) {
             // 如果removeBlock是BI_EXTRA
             if ((b.getInfo().flags & BI_EXTRA) != 0) {
-                log.debug("移除Extra");
+//                log.debug("移除Extra");
                 // 那removeBlockInfo就是完整的
                 // 从MemOrphanPool中去除
                 ByteArrayWrapper key = new ByteArrayWrapper(b.getHashLow());
@@ -814,13 +943,13 @@ public class BlockchainImpl implements Blockchain {
             return;
         }
         block.isSaved = true;
-        log.info("save block:{}", Hex.toHexString(block.getHashLow()));
+//        log.info("save block:{}", Hex.toHexString(block.getHashLow()));
         blockStore.saveBlock(block);
         // 如果是自己的账户
         if (memOurBlocks.containsKey(new ByteArrayWrapper(block.getHash()))) {
-            log.info("new account:{}", Hex.toHexString(block.getHash()));
+//            log.info("new account:{}", Hex.toHexString(block.getHash()));
             if (xdagStats.getOurLastBlockHash() == null) {
-                log.info("Global miner");
+//                log.info("Global miner");
                 xdagStats.setGlobalMiner(block.getHash());
                 blockStore.saveXdagStatus(xdagStats);
             }
@@ -829,6 +958,8 @@ public class BlockchainImpl implements Blockchain {
         }
 
         if (block.isPretopCandidate()) {
+            xdagTopStatus.setPreTop(block.getHashLow().clone());
+            xdagTopStatus.setPreTopDiff(block.getPretopCandidateDiff());
             blockStore.saveXdagTopStatus(xdagTopStatus);
         }
 
@@ -853,15 +984,15 @@ public class BlockchainImpl implements Blockchain {
         for (Address in : inputs) {
             Block inBlock = getBlockByHash(in.getHashLow(), true);
             byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
-            log.debug("verify encoded:{}", Hex.toHexString(subdata));
+//            log.debug("verify encoded:{}", Hex.toHexString(subdata));
             ECDSASignature sig = inBlock.getOutsig();
 
             for (ECKeyPair ecKey : ecKeys) {
                 byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPublicKey(), true);
                 byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
-                log.debug("verify encoded:{}", Hex.toHexString(digest));
+//                log.debug("verify encoded:{}", Hex.toHexString(digest));
                 byte[] hash = Hash.hashTwice(digest);
-                log.debug("verify hash:{}", Hex.toHexString(hash));
+//                log.debug("verify hash:{}", Hex.toHexString(hash));
                 if (ecKey.verify(hash, sig)) {
                     canUse = true;
                 }
@@ -950,6 +1081,36 @@ public class BlockchainImpl implements Blockchain {
         return blockStore.getBlocksUsedTime(starttime, endtime);
     }
 
+    @Override
+    public void startCheckMain() {
+        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 1024, TimeUnit.MILLISECONDS);
+    }
+
+    public void checkMain() {
+        try {
+            checkNewMain();
+            // checkNewMain后xdagStats状态会发生改变
+            blockStore.saveXdagStatus(xdagStats);
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void stopCheckMain() {
+        try {
+
+            if (checkLoopFuture != null) {
+                checkLoopFuture.cancel(true);
+            }
+            // 关闭线程池
+            checkLoop.shutdownNow();
+            checkLoop.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public long getStartAmount(long nmain) {
         long startAmount;
         long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
@@ -963,10 +1124,15 @@ public class BlockchainImpl implements Blockchain {
     }
 
     /** 为区块block添加amount金额 * */
-    private void acceptAmount(Block block, long amount) {
-        block.getInfo().setAmount(block.getInfo().getAmount() + amount);
+    private void acceptAmount(Block block, UnsignedLong amount) {
+        block.getInfo().setAmount(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(amount).longValue());
+        if (block.isSaved) {
+            blockStore.saveBlockInfo(block.getInfo());
+        }
         if ((block.getInfo().flags & BI_OURS) != 0) {
-            xdagStats.setBalance(amount);
+//            System.out.println("Before Balance:"+amount2xdag(xdagStats.getBalance()));
+            xdagStats.setBalance(amount.plus(UnsignedLong.valueOf(xdagStats.getBalance())).longValue());
+//            System.out.println("After Balance:"+amount2xdag(xdagStats.getBalance()));
         }
     }
 
@@ -981,6 +1147,9 @@ public class BlockchainImpl implements Blockchain {
         Block temp = getBlockByHash(xdagTopStatus.getTop(), false);
         if(temp == null) {
             temp = getBlockByHash(xdagTopStatus.getPreTop(), false);
+            if (temp == null) {
+//                log.error("Pretop is null");
+            }
         }
         List<Block> res = new ArrayList<>();
         while (count > 0) {
@@ -999,11 +1168,15 @@ public class BlockchainImpl implements Blockchain {
         return res;
     }
 
+    // TODO: 列出本矿池生成的主块，如果本矿池只在前期产块或者从未产块，会导致需要遍历所有的区块数据，这部分应该需要优化
     @Override
     public List<Block> listMinedBlocks(int count) {
         Block temp = getBlockByHash(xdagTopStatus.getTop(), false);
         if(temp == null) {
             temp = getBlockByHash(xdagTopStatus.getPreTop(), false);
+            if (temp == null) {
+//                log.error("Pretop is null");
+            }
         }
         List<Block> res = new ArrayList<>();
         while (count > 0) {

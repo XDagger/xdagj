@@ -33,12 +33,18 @@ public enum ImportResult {
 
     byte[] hashLow;
 
+    String errorInfo;
+
     public byte[] getHashLow() {
         return hashLow;
     }
 
     public void setHashLow(byte[] hashLow) {
         this.hashLow = hashLow;
+    }
+
+    public void setError(String errorInfo) {
+        this.errorInfo = errorInfo;
     }
 
 }

@@ -74,6 +74,10 @@ public class XdagChannel {
     /** 该channel对应的节点 */
     private Node node;
 
+
+    // TODO：记录该连接发送错误消息的次数，一旦超过某个值将断开连接
+    private int failTimes;
+
     public XdagChannel(NioSocketChannel socketChannel) {
         this.socket = socketChannel;
     }

@@ -32,6 +32,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
+import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigInteger;
@@ -135,13 +136,13 @@ public class Block implements Cloneable {
             byte[] data = remark.getBytes();
             byte[] safeRemark = new byte[32];
             Arrays.fill(safeRemark, (byte)0);
-            System.arraycopy(data, 0, safeRemark, 0, data.length>=32?32:data.length);
+            System.arraycopy(data, 0, safeRemark, 0, Math.min(data.length, 32));
             this.info.setRemark(safeRemark);
         }
 
         if (CollectionUtils.isNotEmpty(keys)) {
             for (ECKeyPair key : keys) {
-                byte[] keydata = Sign.publicPointFromPrivate(key.getPrivateKey()).getEncoded(true);
+                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPublicKey(), true);
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
@@ -345,12 +346,12 @@ public class Block implements Cloneable {
 
     private void sign(ECKeyPair ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
-        log.debug("sign encoded:{}", Hex.toHexString(encoded));
+//        log.debug("sign encoded:{}", Hex.toHexString(encoded));
         byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
-        log.debug("sign digest:{}", Hex.toHexString(digest));
+//        log.debug("sign digest:{}", Hex.toHexString(digest));
         byte[] hash = Hash.hashTwice(digest);
-        log.debug("sign hash:{}", Hex.toHexString(hash));
+//        log.debug("sign hash:{}", Hex.toHexString(hash));
         ECDSASignature signature = ecKey.sign(hash);
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
@@ -379,10 +380,10 @@ public class Block implements Cloneable {
         for (ECKeyPair ecKey : keys) {
             byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
             hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
-            log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
-            log.debug(Hex.toHexString(hash) + ":hash");
-            log.debug(outsig + ":outsig");
-            log.debug(ecKey + ":eckey");
+//            log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
+//            log.debug(Hex.toHexString(hash) + ":hash");
+//            log.debug(outsig + ":outsig");
+//            log.debug(ecKey + ":eckey");
 
             if (ecKey.verify(hash, this.getOutsig())) {
                 res.add(ecKey);

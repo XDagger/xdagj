@@ -69,7 +69,8 @@ public class MessageQueue {
                     }
                 },
                 10,
-                10,
+                // TODO: 发送周期缩短会不会有影响，但能有效加快同步速度
+                2,
                 // 10毫秒执行一次
                 TimeUnit.MILLISECONDS);
     }

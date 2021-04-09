@@ -58,7 +58,7 @@ public class OrphanPool {
         this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
     }
 
-    public List<Address> getOrphan(long num) {
+    public List<Address> getOrphan(long num, long sendtime) {
         List<Address> res = new ArrayList<>();
         if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
             return null;
@@ -71,9 +71,15 @@ public class OrphanPool {
                 if (addNum == 0) {
                     break;
                 }
-                // TODO:判断时间
-                addNum--;
-                res.add(new Address(BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+                // TODO:判断时间，这里出现过orphanSource获取key时为空的情况
+                if (orphanSource.get(an)==null){
+                    continue;
+                }
+                long time = BytesUtils.bytesToLong(orphanSource.get(an),0,true);
+                if (time <= sendtime) {
+                    addNum--;
+                    res.add(new Address(BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+                }
             }
             return res;
         }
@@ -87,7 +93,7 @@ public class OrphanPool {
     }
 
     public void addOrphan(Block block) {
-        orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), new byte[0]);
+        orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), BytesUtils.longToBytes(block.getTimestamp(),true));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         log.debug("orphan current size:" + currentsize);
         log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));

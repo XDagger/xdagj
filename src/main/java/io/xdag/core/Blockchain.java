@@ -32,7 +32,7 @@ public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining);
+    Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark);
 
     Block getBlockByHash(byte[] hash, boolean isRaw);
 
@@ -52,4 +52,11 @@ public interface Blockchain {
     long getSupply(long nmain);
 
     List<Block> getBlocksByTime(long starttime, long endtime);
+
+    // TODO ： 补充单元测试
+    // 启动检查主块链线程
+    void startCheckMain();
+
+    // 关闭检查主块链线程
+    void stopCheckMain();
 }

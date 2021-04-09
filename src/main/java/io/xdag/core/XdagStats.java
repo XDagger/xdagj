@@ -23,6 +23,7 @@
  */
 package io.xdag.core;
 
+import com.google.common.primitives.UnsignedLong;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -45,7 +46,7 @@ public class XdagStats {
     public long maintime;
     public long balance;
 
-    //    private byte[] top;
+//    private byte[] top;
 //    private BigInteger topDiff;
 //    private byte[] preTop;
 //    private BigInteger preTopDiff;
@@ -138,4 +139,10 @@ public class XdagStats {
 //    public void decWaitsync() {
 //        this.nwaitsync--;
 //    }
+    @Override
+    public String toString() {
+        return "XdagStatus[nmain:"+
+                this.nmain+",totalmain:"+this.totalnmain+",nblocks:"+this.nblocks+",totalblocks:"+this.totalnblocks
+                +"]";
+    }
 }
