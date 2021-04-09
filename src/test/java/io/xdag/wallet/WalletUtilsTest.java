@@ -50,7 +50,7 @@ public class WalletUtilsTest {
 
     private File tempDir;
 
-    private String convertStreamToString(java.io.InputStream is) {
+    public static String convertStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
     }
@@ -236,8 +236,5 @@ public class WalletUtilsTest {
         assertFalse(isValidAddress(SampleKeys.ADDRESS.substring(1)));
     }
 
-//    public static void main(String[] args) throws Exception {
-//        System.out.println(WalletUtils.generateWalletFile(PASSWORD, KEY_PAIR, new File("/Users/reymondtu/git/xdagj/"), true));
-//    }
 }
 

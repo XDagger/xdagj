@@ -56,6 +56,9 @@ public class Config implements Serializable {
     /** 钱包文件 */
     public static final String WALLET_KEY_FILE = Config.MAINNET?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
 
+    /** bip44 wallet file */
+    public static final String BIP44_WALLET_KEYSTORE_FILE = Config.MAINNET?Config.root + "/keystore":Config.root + "/keystore-testnet";
+
     public final int MAX_CHANNELS = 1024;
     private final int connectionTimeout = 10000;
     private final int channelReadTimeout = 10000;

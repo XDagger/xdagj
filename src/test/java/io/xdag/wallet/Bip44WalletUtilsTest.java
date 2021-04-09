@@ -27,44 +27,27 @@ import io.xdag.crypto.Base58;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Credentials;
 import io.xdag.crypto.MnemonicUtils;
-import org.junit.After;
-import org.junit.Before;
+import io.xdag.utils.BytesUtils;
+import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-
-
+import org.junit.rules.TemporaryFolder;
 
 import static org.junit.Assert.assertEquals;
 import static io.xdag.crypto.Bip32Test.addChecksum;
 import static io.xdag.crypto.Bip32Test.serializePrivate;
 import static io.xdag.crypto.Bip32Test.serializePublic;
 import static io.xdag.crypto.SampleKeys.PASSWORD;
-import static io.xdag.wallet.WalletUtilsTest.createTempDir;
 
 public class Bip44WalletUtilsTest {
 
-    private File tempDir;
-
-    @Before
-    public void setUp() throws Exception {
-        tempDir = createTempDir();
-    }
-
-    @After
-    public void tearDown() {
-        for (File file : tempDir.listFiles()) {
-            file.delete();
-        }
-        tempDir.delete();
-    }
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
     public void generateBip44KeyPair() {
-        String mnemonic =
-                "spider elbow fossil truck deal circle divert sleep safe report laundry above";
+        String mnemonic = "spider elbow fossil truck deal circle divert sleep safe report laundry above";
         byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
-        String seedStr = bytesToHex(seed);
+        String seedStr = BytesUtils.toHexString(seed);
         assertEquals(
                 "f0d2ab78b96acd147119abad1cd70eb4fec4f0e0a95744cf532e6a09347b08101213b4cbf50eada0eb89cba444525fe28e69707e52aa301c6b47ce1c5ef82eb5",
                 seedStr);
@@ -93,7 +76,7 @@ public class Bip44WalletUtilsTest {
         String mnemonic =
                 "spider elbow fossil truck deal circle divert sleep safe report laundry above";
         byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
-        String seedStr = bytesToHex(seed);
+        String seedStr = BytesUtils.toHexString(seed);
         assertEquals(
                 "f0d2ab78b96acd147119abad1cd70eb4fec4f0e0a95744cf532e6a09347b08101213b4cbf50eada0eb89cba444525fe28e69707e52aa301c6b47ce1c5ef82eb5",
                 seedStr);
@@ -115,25 +98,12 @@ public class Bip44WalletUtilsTest {
 
     @Test
     public void testGenerateBip44Wallets() throws Exception {
-        Bip39Wallet wallet = Bip44WalletUtils.generateBip44Wallet(PASSWORD, tempDir);
+        Bip39Wallet wallet = Bip44WalletUtils.generateBip44Wallet(PASSWORD, temporaryFolder.newFolder());
         byte[] seed = MnemonicUtils.generateSeed(wallet.getMnemonic(), PASSWORD);
         Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
         Bip32ECKeyPair bip44Keypair = Bip44WalletUtils.generateBip44KeyPair(masterKeypair);
         Credentials credentials = Credentials.create(bip44Keypair);
-
-        assertEquals(
-                credentials, Bip44WalletUtils.loadBip44Credentials(PASSWORD, wallet.getMnemonic()));
-    }
-
-    private String bytesToHex(byte[] bytes) {
-        final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
-
-        char[] chars = new char[2 * bytes.length];
-        for (int i = 0; i < bytes.length; ++i) {
-            chars[2 * i] = HEX_CHARS[(bytes[i] & 0xF0) >>> 4];
-            chars[2 * i + 1] = HEX_CHARS[bytes[i] & 0x0F];
-        }
-        return new String(chars);
+        assertEquals(credentials, Bip44WalletUtils.loadBip44Credentials(PASSWORD, wallet.getMnemonic()));
     }
 }
 
