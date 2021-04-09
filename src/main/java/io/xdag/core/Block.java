@@ -23,17 +23,21 @@
  */
 package io.xdag.core;
 
-import static io.xdag.config.Config.MAINNET;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
-import static io.xdag.utils.BytesUtils.bytesToBigInteger;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
+import io.xdag.crypto.ECDSASignature;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.Numeric;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -42,22 +46,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.ECKeyPair;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.Numeric;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.BytesUtils;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
+import static io.xdag.config.Config.MAINNET;
+import static io.xdag.core.XdagField.FieldType.*;
+import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 @Slf4j
 @Getter
