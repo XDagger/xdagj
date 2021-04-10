@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Native {
-    private static final String LIB_FILE_PATH = "/native/";
+    private static final String LIB_FILE_PATH = "/native/dfs/";
 
     /** Initializes the native libraries */
     public static void init() {

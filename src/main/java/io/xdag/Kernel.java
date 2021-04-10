@@ -132,11 +132,11 @@ public class Kernel {
         // ====================================
         // wallet init
         // ====================================
-        if (wallet == null) {
+//        if (wallet == null) {
             wallet = new OldWallet();
             log.debug("Wallet init.");
             wallet.init(this.config);
-        }
+//        }
 
         dbFactory = new RocksdbFactory(this.config);
         blockStore = new BlockStore(

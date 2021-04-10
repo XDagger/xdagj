@@ -21,4 +21,13 @@ set(DFSLIB_SOURCE
 add_library(dfs SHARED ${DFSLIB_SOURCE})
 target_include_directories(dfs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../jni/)
 
+#copy library to target directory
+set(DFS_TARGET_DIR ${CMAKE_CURRENT_LIST_DIR}/../../main/resources/native/dfs)
+add_custom_command(
+    TARGET dfs
+    POST_BUILD
+    COMMAND mkdir -p ${DFS_TARGET_DIR}
+    COMMAND cp $<TARGET_FILE:dfs> ${DFS_TARGET_DIR}
+)
+
 

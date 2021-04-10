@@ -349,4 +349,13 @@ public class ECKeyTest {
         assertFalse("Key encryption is reversible with faulty encrypted bytes", ECKey.encryptionIsReversible(originalUnencryptedKey, badEncryptedKey, keyCrypter, keyCrypter.deriveKey(PASSWORD1)));
     }
 
+    @Test
+    public void getPubFromSignatures() throws SignatureException {
+        ECKey key = ECKey.fromPrivate(privateKey);
+        byte[] data = Hex.decode("11223344");
+        ECKey.ECDSASignature signature = key.sign(Sha256Hash.hash(data));
+        byte[] pub = ECKey.signatureToKeyBytes(Sha256Hash.hash(data),signature);
+        assertArrayEquals(pubKey,pub);
+    }
+
 }

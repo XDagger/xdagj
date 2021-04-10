@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Bootstrap {
-    
+
     public static void logPoolInfo(Config config) {
         log.info(
                 "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
@@ -47,7 +47,7 @@ public class Bootstrap {
                 config.getDirectRation(),
                 config.getFundRation());
     }
-    
+
     public static void main(String[] args) throws Exception {
         log.debug("Start main");
         Config config = new Config();
@@ -60,20 +60,20 @@ public class Bootstrap {
 
         // if dnet_keys.dat and wallet.dat exist
         OldWallet wallet = new OldWallet();
-        for (int i = 1; i <= 5; i++) {
-            try {
-                int err = wallet.init(config);
-                if (err >= 0) {
-                    break;
-                } else if (i == 5) {
-                    System.out.println("Too many wrong passwords, exit！");
-                    System.exit(0);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(0);
-            }
-        }
+//        for (int i = 1; i <= 5; i++) {
+//            try {
+//                int err = wallet.init(config);
+//                if (err >= 0) {
+//                    break;
+//                } else if (i == 5) {
+//                    System.out.println("Too many wrong passwords, exit！");
+//                    System.exit(0);
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                System.exit(0);
+//            }
+//        }
         Kernel kernel = new Kernel(config, wallet);
         // default start kernel
         kernel.testStart();
