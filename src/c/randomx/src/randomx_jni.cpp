@@ -28,7 +28,7 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_allocCache(
         jobject *obj) {
     randomx_flags flags = randomx_get_flags();
     randomx_cache* cache=randomx_alloc_cache(flags);
-    std::cout << "alloc randomx cache " << cache << std::endl;
+//    std::cout << "alloc randomx cache " << cache << std::endl;
     return (jlong)cache;
 }
 
@@ -44,7 +44,7 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_RandomX_initCache(
     env->GetByteArrayRegion(jkey,0,jlen,(jbyte*)key);
     randomx_cache* cache=(randomx_cache*)jcache;
     randomx_init_cache(cache,key,jlen);
-    std::cout << "init randomx cache " << cache << " with seed " << key << std::endl;
+//    std::cout << "init randomx cache " << cache << " with seed " << key << std::endl;
     return;
 }
 
@@ -55,7 +55,7 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_RandomX_releaseCache(
         jlong jcache) {
     randomx_cache* cache=(randomx_cache*)jcache;
     randomx_release_cache(cache);
-    std::cout << "release randomx cache " << cache << std::endl;
+//    std::cout << "release randomx cache " << cache << std::endl;
     return;
 }
 
@@ -65,7 +65,7 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_allocDataSet(
         jobject *obj) {
     randomx_flags flags = randomx_get_flags();
     randomx_dataset* dataset=randomx_alloc_dataset(flags);
-    std::cout << "alloc randomx dataset " << dataset << std::endl;
+//    std::cout << "alloc randomx dataset " << dataset << std::endl;
     return (jlong)dataset;
 }
 
@@ -89,14 +89,14 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_RandomX_initDataSet(
 
         si = (seedinfo*)malloc(jminers * sizeof(seedinfo));
         if (si == NULL){
-            std::cout << "Couldn't allocate RandomX mining threadinfo" << std::endl;
+//            std::cout << "Couldn't allocate RandomX mining threadinfo" << std::endl;
             //TODO: throw exception here
         }
 
         st = (CTHR_THREAD_TYPE *)malloc(jminers * sizeof(CTHR_THREAD_TYPE));
         if (st == NULL) {
             free(si);
-            std::cout << "Couldn't allocate RandomX mining threadlist" << std::endl;
+//            std::cout << "Couldn't allocate RandomX mining threadlist" << std::endl;
             //TODO: throw exception here
         }
 
@@ -130,7 +130,7 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_RandomX_initDataSet(
         randomx_init_dataset(rx_dataset, rs_cache, 0, randomx_dataset_item_count());
     }
 
-    std::cout << "init randomx dataset " << rx_dataset << std::endl;
+//    std::cout << "init randomx dataset " << rx_dataset << std::endl;
     return;
 }
 
@@ -142,7 +142,7 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_RandomX_releaseDataSet(
 
     randomx_dataset* rx_dataset=(randomx_dataset*)jdataset;
     randomx_release_dataset(rx_dataset);
-    std::cout << "release randomx dataset " << rx_dataset << std::endl;
+//    std::cout << "release randomx dataset " << rx_dataset << std::endl;
 }
 
 extern "C"
@@ -157,7 +157,7 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_createVm(
     randomx_flags flags = randomx_get_flags();
     randomx_vm *rx_vm = randomx_create_vm(flags | RANDOMX_FLAG_LARGE_PAGES, rs_cache, rx_dataset);
     if(rx_vm == NULL) {
-        std::cout <<"Couldn't use largePages for RandomX VM" << std::endl;
+//        std::cout <<"Couldn't use largePages for RandomX VM" << std::endl;
         rx_vm = randomx_create_vm(flags, rs_cache, rx_dataset);
     }
     if(rx_vm == NULL) {
@@ -166,11 +166,11 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_createVm(
         rx_vm = randomx_create_vm(flags, rs_cache, rx_dataset);
     }
     if (rx_vm == NULL){
-        std::cout << "Couldn't allocate RandomX VM" << std::endl;
+//        std::cout << "Couldn't allocate RandomX VM" << std::endl;
         //TODO: throw an exception
         return 0;
     }
-    std::cout << "alloc randomx vm " << rx_vm << std::endl;
+//    std::cout << "alloc randomx vm " << rx_vm << std::endl;
     return (jlong)rx_vm;
 }
 
@@ -181,7 +181,7 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_RandomX_destroyVm(
         jlong jrxvm) {
     randomx_vm* rx_vm=(randomx_vm*)jrxvm;
     randomx_destroy_vm(rx_vm);
-    std::cout << "randomx destroy vm " << rx_vm << std::endl;
+//    std::cout << "randomx destroy vm " << rx_vm << std::endl;
 }
 
 extern "C"

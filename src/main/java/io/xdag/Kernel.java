@@ -56,6 +56,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
+import io.xdag.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
 import lombok.Getter;
@@ -101,6 +102,8 @@ public class Kernel {
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
     protected TelnetServer telnetServer;
+
+    protected RandomX randomXUtils;
 
     public Kernel(Config config, OldWallet wallet) {
         this.config = config;
@@ -156,6 +159,12 @@ public class Kernel {
         netDB = new NetDB();
 
         // ====================================
+        // randomX init
+        // ====================================
+        randomXUtils = new RandomX();
+        randomXUtils.init();
+
+        // ====================================
         // initialize blockchain database
         // ====================================
         blockchain = new BlockchainImpl(this);
@@ -173,6 +182,9 @@ public class Kernel {
         } else {
             poolMiner = new Miner(xdagStats.getGlobalMiner());
         }
+
+        // randomX loading
+        randomXUtils.randomXLoadingForkTime();
 
         // log.debug("Net Status:"+netStatus);
 
@@ -274,6 +286,9 @@ public class Kernel {
         for (DatabaseName name : DatabaseName.values()) {
             dbFactory.getDB(name).close();
         }
+
+        // release
+        randomXUtils.randomXPoolReleaseMem();
 
         minerServer.close();
         minerManager.close();

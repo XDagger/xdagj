@@ -31,6 +31,7 @@ import io.xdag.crypto.ECKey;
 import io.xdag.crypto.Sha256Hash;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.randomx.RandomX;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -39,6 +40,7 @@ import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
@@ -57,7 +59,6 @@ import java.util.stream.Collectors;
 import static io.xdag.config.Constants.*;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.FastByteComparisons.compareTo;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 import static io.xdag.utils.MapUtils.getHead;
 
@@ -89,6 +90,8 @@ public class BlockchainImpl implements Blockchain {
     private ScheduledExecutorService checkLoop;
     private ScheduledFuture<?> checkLoopFuture;
 
+    private RandomX randomXUtils;
+
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
@@ -109,6 +112,13 @@ public class BlockchainImpl implements Blockchain {
         } else {
             this.xdagTopStatus = new XdagTopStatus();
         }
+
+        // add randomx utils
+        randomXUtils = kernel.getRandomXUtils();
+        if (randomXUtils != null) {
+            randomXUtils.setBlockchain(this);
+        }
+
         checkLoop = new ScheduledThreadPoolExecutor(1, factory);
         // 检查主块链
         this.startCheckMain();
@@ -587,15 +597,15 @@ public class BlockchainImpl implements Blockchain {
         // 接收奖励
         acceptAmount(block, UnsignedLong.valueOf(reward));
         xdagStats.nmain++;
-//        log.debug("After SetMain, Current main height:{}",xdagStats.nmain);
-
-//        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
 
         // 递归执行主块引用的区块 并获取手续费
         acceptAmount(block, applyBlock(block));
         // 主块REF指向自身
         // TODO:补充手续费
         updateBlockRef(block, new Address(block));
+
+        randomXUtils.randomXSetForkTime(block);
+
     }
 
     /** 取消Block主块身份 * */
@@ -614,6 +624,8 @@ public class BlockchainImpl implements Blockchain {
         // 去掉奖励和引用块的手续费
         acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
         acceptAmount(block, unApplyBlock(block));
+
+        randomXUtils.randomXUnsetForkTime(block);
     }
 
     @Override
@@ -790,12 +802,18 @@ public class BlockchainImpl implements Blockchain {
     public BigInteger calculateBlockDiff(Block block) {
 
         if (block.getInfo().getDifficulty() != null) {
-//            log.debug("block 的难度不为空，hash[{}]", Hex.toHexString(block.getHash()));
             return block.getInfo().getDifficulty();
         }
 
+        BigInteger diff0 = BigInteger.ZERO;
         // 初始区块自身难度设置
-        BigInteger diff0 = getDiffByHash(block.getHash());
+        if (randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
+                && XdagTime.isEndOfEpoch(block.getTimestamp())) {
+            diff0 = getDiffByRandomXHash(block);
+
+        } else {
+            diff0 = getDiffByRawHash(block.getHash());
+        }
         block.getInfo().setDifficulty(diff0);
 
         BigInteger maxDiff = diff0;
@@ -854,6 +872,42 @@ public class BlockchainImpl implements Blockchain {
             block.getInfo().setMaxDiffLink(maxDiffLink.getHashLow());
         }
         return maxDiff;
+    }
+
+    public BigInteger getDiffByRandomXHash(Block block) {
+        long epoch = XdagTime.getEpoch(block.getTimestamp());
+        byte[] data = new byte[64];
+        byte[] rxHash = Sha256Hash.hash(block.getXdagBlock().getData(),0,480);
+        System.arraycopy(rxHash,0,data,0,32);
+        System.arraycopy(block.getXdagBlock().getField(15).getData(),0,data,32,32);
+        byte[] hash = Arrays.reverse(randomXUtils.randomXBlockHash(data,data.length,epoch));
+        if (hash != null) {
+            return getDiffByRawHash(hash);
+        }
+        return getDiffByRawHash(block.getHash());
+    }
+
+    public BigInteger getDiffByRawHash(byte[] hash) {
+        return getDiffByHash(hash);
+    }
+
+    @Override
+    public Block getBlockByHeight(long height) {
+        if (height > xdagStats.nmain) {
+            return null;
+        }
+
+        Block block;
+        int i = 0;
+        for (block = getBlockByHash(xdagTopStatus.getTop(), false); block!=null && (i < xdagStats.nmain); block = getBlockByHash(block.getInfo().getMaxDiffLink(),false) ) {
+            if ( (block.getInfo().getFlags() & BI_MAIN )!= 0) {
+                if (height == block.getInfo().getHeight()) {
+                    break;
+                }
+                ++i;
+            }
+        }
+        return block;
     }
 
     @Override
@@ -1126,9 +1180,7 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
         }
         if ((block.getInfo().flags & BI_OURS) != 0) {
-//            System.out.println("Before Balance:"+amount2xdag(xdagStats.getBalance()));
             xdagStats.setBalance(amount.plus(UnsignedLong.valueOf(xdagStats.getBalance())).longValue());
-//            System.out.println("After Balance:"+amount2xdag(xdagStats.getBalance()));
         }
     }
 

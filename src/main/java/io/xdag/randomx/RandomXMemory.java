@@ -1,15 +1,23 @@
 package io.xdag.randomx;
 
-import com.google.common.primitives.UnsignedLong;
 
+import lombok.Data;
+
+@Data
 public class RandomXMemory {
-    byte[] seed;
-    long seedHeight;
-    long seedTime;
-    long epochTime;
-    boolean isSwitched;
-    long rxCache;
-    long rxDataset;
-    long poolVm;
-    long blockVm;
+
+    protected byte[] seed;
+    protected long seedHeight;
+    protected long seedTime;
+    protected long switchTime;
+    protected int isSwitched;
+    protected long rxCache;
+    protected long rxDataset;
+    protected long poolVm;
+    protected long blockVm;
+
+    public RandomXMemory() {
+        this.switchTime = -1;
+        this.isSwitched = -1;
+    }
 }

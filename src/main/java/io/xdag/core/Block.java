@@ -189,10 +189,16 @@ public class Block implements Cloneable {
     }
 
     /** 计算区块hash* */
-    public byte[] calcHash() {
+    private byte[] calcHash() {
         if (xdagBlock == null) {
             xdagBlock = getXdagBlock();
         }
+        return Arrays.reverse(Sha256Hash.hashTwice(xdagBlock.getData()));
+    }
+
+    /** 重计算hash **/
+    public byte[] recalcHash() {
+        xdagBlock = new XdagBlock(toBytes());
         return Arrays.reverse(Sha256Hash.hashTwice(xdagBlock.getData()));
     }
 

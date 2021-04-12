@@ -23,7 +23,6 @@
  */
 package io.xdag;
 
-import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
 import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
@@ -60,20 +59,7 @@ public class Bootstrap {
 
         // if dnet_keys.dat and wallet.dat exist
         OldWallet wallet = new OldWallet();
-//        for (int i = 1; i <= 5; i++) {
-//            try {
-//                int err = wallet.init(config);
-//                if (err >= 0) {
-//                    break;
-//                } else if (i == 5) {
-//                    System.out.println("Too many wrong passwords, exit！");
-//                    System.exit(0);
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                System.exit(0);
-//            }
-//        }
+
         Kernel kernel = new Kernel(config, wallet);
         // default start kernel
         kernel.testStart();

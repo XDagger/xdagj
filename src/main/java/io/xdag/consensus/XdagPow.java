@@ -35,7 +35,10 @@ import java.util.concurrent.TimeUnit;
 
 import io.xdag.core.*;
 
+import io.xdag.crypto.Sha256Hash;
 import io.xdag.libp2p.manager.ChannelManager;
+import io.xdag.randomx.RandomX;
+import io.xdag.randomx.RandomXMemory;
 import org.apache.commons.lang3.RandomUtils;
 import io.xdag.Kernel;
 import io.xdag.mine.MinerChannel;
@@ -57,16 +60,17 @@ public class XdagPow implements PoW, Runnable {
     protected Timer timer;
     protected Broadcaster broadcaster;
 
+    // 当前区块
     protected Block generateBlock;
 
     protected byte[] minShare;
     protected byte[] minHash;
-    protected Task currentTask;
-    protected XdagSha256Digest currentTaskDigest;
 
-    protected long sendTime;
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
+
+    protected Task currentTask;
+    protected long taskIndex = 0;
 
     /** 存放的是过去十六个区块的hash */
     protected List<byte[]> blockHashs = new CopyOnWriteArrayList<byte[]>();
@@ -76,13 +80,14 @@ public class XdagPow implements PoW, Runnable {
     protected AwardManager awardManager;
     protected MinerManager minerManager;
 
-    protected long taskIndex = 0;
 
     private Kernel kernel;
 
     private boolean isRunning = false;
 
     private ChannelManager channelManager;
+
+    protected RandomX randomXUtils;
 
     public XdagPow(Kernel kernel) {
         this.kernel = kernel;
@@ -93,6 +98,8 @@ public class XdagPow implements PoW, Runnable {
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
         this.channelManager = kernel.getChannelManager();
+
+        this.randomXUtils = kernel.getRandomXUtils();
     }
 
     @Override
@@ -107,9 +114,9 @@ public class XdagPow implements PoW, Runnable {
             }
 
             // PoW换成Schedule任务
+            new Thread(this, "xdag-pow-main").start();
             new Thread(this.timer, "xdag-pow-timer").start();
             new Thread(this.broadcaster, "xdag-pow-broadcaster").start();
-            new Thread(this, "xdag-pow-main").start();
         }
     }
 
@@ -123,22 +130,76 @@ public class XdagPow implements PoW, Runnable {
     }
 
     public void newBlock() {
-        sendTime = XdagTime.getMainTime();
+        log.debug("Start new block generate....");
+        long sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
-        generateBlock = generateBlock();
+
+        if (randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
+            if (randomXUtils.getRandomXPoolMemIndex() == 0) {
+                randomXUtils.setRandomXPoolMemIndex( (randomXUtils.getRandomXHashEpochIndex() - 1) & 1);
+            }
+            long randomXMemIndex = randomXUtils.getRandomXPoolMemIndex() + 1;
+            RandomXMemory memory = randomXUtils.getGlobalMemory()[(int)(randomXMemIndex) & 1];
+
+            if(( XdagTime.getEpoch(XdagTime.getMainTime()) >= memory.getSwitchTime() ) && (memory.getIsSwitched() == 0)) {
+                randomXUtils.setRandomXPoolMemIndex(randomXUtils.getRandomXPoolMemIndex()+1);
+                memory.setIsSwitched(1);
+            }
+
+            generateBlock = generateRandomXBlock(sendTime);
+        } else {
+            generateBlock = generateBlock(sendTime);
+        }
     }
 
-    public Block generateBlock() {
+
+    public Block generateRandomXBlock(long sendTime) {
+        log.debug("Generate RandomX block...");
+        // 新增任务
+        taskIndex++;
 
         // 固定sendtime
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
 
+        // 随机
         minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);
-        minHash = block.calcHash();
+
+        // 设置最小hash
+        minHash = Hex.decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+        //
+        currentTask = createTaskByRandomXBlock(block, sendTime);
+        log.debug("Send Task to Miners");
+
+        // 更新poolminer的贡献
+        minerManager.updateNewTaskandBroadcast(currentTask);
+        awardManager.onNewTask(currentTask);
+
+//        MinerCalculate.calculateNopaidShares(
+//                awardManager.getPoolMiner(), minHash, block.getTimestamp());
+
+        return block;
+    }
+
+    public Block generateBlock(long sendTime) {
+        // 新增任务
+        taskIndex++;
+
+        // 新建区块
+        Block block = blockchain.createNewBlock(null, null, true, null);
+        block.signOut(kernel.getWallet().getDefKey().ecKey);
+
+        minShare = RandomUtils.nextBytes(32);
+        block.setNonce(minShare);
+
+        // 初始nonce, 计算minhash但不作为最终hash
+        minHash = block.recalcHash();
+
         // 发送给矿工
-        currentTask = createTaskByNewBlock(block);
+        currentTask = createTaskByNewBlock(block,sendTime);
+
         log.debug("Send Task to Miners");
 
         // 更新poolminer的贡献
@@ -185,22 +246,28 @@ public class XdagPow implements PoW, Runnable {
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
         try {
-            XdagSha256Digest digest = new XdagSha256Digest(currentTaskDigest);
-            byte[] hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
-
+            log.debug("On new share...");
+            byte[] hash;
+            // if randomx fork
+            if (kernel.getRandomXUtils().isRandomxFork(currentTask.getTaskTime())) {
+                byte[] taskData = new byte[64];
+                System.arraycopy(currentTask.getTask()[0].getData(),0,taskData,0,32);
+                System.arraycopy(Arrays.reverse(shareInfo.getData()),0,taskData,32,32);
+                hash = Arrays.reverse(kernel.getRandomXUtils().randomXPoolCalcHash(taskData, taskData.length, currentTask.getTaskTime()));
+            } else{
+                XdagSha256Digest digest = new XdagSha256Digest(currentTask.getDigest());
+                hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
+            }
             MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
             MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
                 minShare = Arrays.reverse(shareInfo.getData());
-                byte[] hashlow = new byte[32];
-                System.arraycopy(minHash, 8, hashlow, 8, 24);
-                generateBlock.setNonce(minShare);
-                generateBlock.getInfo().setHash(minHash);
-                generateBlock.getInfo().setHashlow(hashlow);
 
                 // 把计算出来的最后的结果放到nonce里面
+                generateBlock.setNonce(minShare);
+
                 int index = (int) ((currentTask.getTaskTime() >> 16) & 0xf);
                 // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
                 minShares.set(index, minShare);
@@ -208,9 +275,7 @@ public class XdagPow implements PoW, Runnable {
 
                 log.debug("New MinHash :" + Hex.toHexString(minHash));
                 log.debug("New MinShare :" + Hex.toHexString(minShare));
-                log.debug("区块放入的对应的hash 为【{}】", Hex.toHexString(generateBlock.getHash()));
-                log.debug("区块放入的对应的hash 为【{}】", Hex.toHexString(generateBlock.getHashLow()));
-                log.debug("对应的区块【{}】", Hex.toHexString(generateBlock.toBytes()));
+
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -218,20 +283,22 @@ public class XdagPow implements PoW, Runnable {
     }
 
     protected void onTimeout() {
-        log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
-                Hex.toHexString(generateBlock.getHash()));
-        // 发送区块 如果有的话 然后开始生成新区块
-        log.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(sendTime));
-        log.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
-        log.debug("发送区块:" + Hex.toHexString(generateBlock.toBytes()));
-        log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
-        log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
-        kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
-        awardManager.payAndaddNewAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
-                generateBlock.getTimestamp());
-        BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL());
+        if (generateBlock != null) {
+            log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
+                    Hex.toHexString(generateBlock.getHash()));
+            // 发送区块 如果有的话 然后开始生成新区块
+            log.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(generateBlock.getTimestamp()));
+            log.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
+            log.debug("发送区块:" + Hex.toHexString(generateBlock.toBytes()));
+            log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
+            log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
+            kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
+            awardManager.payAndaddNewAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
+                    generateBlock.getTimestamp());
+            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL());
 
-        broadcaster.broadcast(bw);
+            broadcaster.broadcast(bw);
+        }
         newBlock();
     }
 
@@ -240,13 +307,36 @@ public class XdagPow implements PoW, Runnable {
         newBlock();
     }
 
-    public Task createTaskByNewBlock(Block block) {
+    public Task createTaskByRandomXBlock(Block block, long sendTime) {
         Task newTask = new Task();
+        XdagField[] task = new XdagField[2];
+
+        RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
+
+        byte[] rxHash = Sha256Hash.hash(block.getXdagBlock().getData(),0,480);
+
+
+        // todo
+        task[0] = new XdagField(rxHash);
+        task[1] = new XdagField(memory.getSeed().clone());
+
+        newTask.setTask(task);
+        newTask.setTaskTime(XdagTime.getEpoch(sendTime));
+        newTask.setTaskIndex(taskIndex);
+
+        return newTask;
+    }
+
+    public Task createTaskByNewBlock(Block block, long sendTime) {
+        Task newTask = new Task();
+
         XdagField[] task = new XdagField[2];
         task[1] = block.getXdagBlock().getField(14);
         byte[] data = new byte[448];
+
         System.arraycopy(block.getXdagBlock().getData(), 0, data, 0, 448);
-        currentTaskDigest = new XdagSha256Digest();
+
+        XdagSha256Digest currentTaskDigest = new XdagSha256Digest();
         try {
             currentTaskDigest.sha256Update(data);
             byte[] state = currentTaskDigest.getState();
@@ -256,14 +346,15 @@ public class XdagPow implements PoW, Runnable {
             e.printStackTrace();
         }
         newTask.setTask(task);
-        newTask.setTaskTime(XdagTime.getMainTime());
-        newTask.setTaskIndex(taskIndex++);
+        newTask.setTaskTime(XdagTime.getEpoch(sendTime));
+        newTask.setTaskIndex(taskIndex);
+        newTask.setDigest(currentTaskDigest);
         return newTask;
     }
 
     @Override
     public void run() {
-        newBlock();
+        resetTimeout(XdagTime.getMainTime());
         while (this.isRunning) {
             try {
                 Event ev = events.poll(10, TimeUnit.MILLISECONDS);

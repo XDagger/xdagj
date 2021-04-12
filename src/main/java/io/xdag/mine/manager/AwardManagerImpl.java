@@ -241,12 +241,11 @@ public class AwardManagerImpl implements AwardManager {
         Block block = blockchain.getBlockByHash(hashlow, false);
         //TODO
 //        keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
-
-        if (keyPos < 0) {
-            keyPos = blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash)) != null
-                    ? blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash))
-                    : -2;
-        }
+//        if (keyPos < 0) {
+//            keyPos = blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash)) != null
+//                    ? blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash))
+//                    : -2;
+//        }
 
         if (block == null) {
             log.debug("can't find the block");
@@ -269,6 +268,9 @@ public class AwardManagerImpl implements AwardManager {
             log.debug("Balance no enough");
             return -5;
         }
+
+        keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
+
 
         if (keyPos < 0) {
             log.debug("can't find the key");

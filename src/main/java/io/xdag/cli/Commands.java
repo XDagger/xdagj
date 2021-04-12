@@ -198,7 +198,7 @@ public class Commands {
         List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark);
         for(BlockWrapper blockWrapper : txs) {
             // blockWrapper.setTransaction(true);
-//            System.out.println("tx:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
+            System.out.println("tx:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
