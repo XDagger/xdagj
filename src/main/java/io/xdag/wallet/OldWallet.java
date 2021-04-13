@@ -23,13 +23,11 @@
  */
 package io.xdag.wallet;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -45,7 +43,7 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.utils.FileUtils;
 
 public class OldWallet {
-    
+
     private List<KeyInternalItem> keyLists = new ArrayList<>();
     private KeyInternalItem defKey;
     private int keysNum = 0;
@@ -55,14 +53,14 @@ public class OldWallet {
         File dnetDatFile = new File(Config.DNET_KEY_FILE);
         Native.dfslib_random_init();
         Native.crc_init();
-        boolean fileExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
-//        Pair<String, String> pair = getPassword(fileExist);
+        boolean fileNotExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
+//        Pair<String, String> pair = getPassword(fileNotExist);
         Pair<String, String> pair = Pair.of("123456", "123456");
         if (pair == null) {
             System.out.println("wallet init fail");
             System.exit(1);
         }
-        if (fileExist) {
+        if (fileNotExist) {
             // 文件不存在 创建
             byte[] dnetKeyBytes = Native.general_dnet_key(pair.getLeft(), pair.getRight());
             config.setDnetKeyBytes(dnetKeyBytes);
@@ -143,28 +141,26 @@ public class OldWallet {
         }
     }
 
-    private Pair<String, String> getPassword(boolean fileExist) {
-        if (fileExist) {
-            System.out.println("Pleasr set Your Password :");
+    private Pair<String, String> getPassword(boolean fileNotExist) {
+        char[] passwordB;
+        if (fileNotExist) {
+            passwordB = System.console().readPassword("Please set password: ");
         } else {
-            System.out.println("Pleasr Input Your Password :");
+            passwordB = System.console().readPassword("Please input password: ");
         }
-        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8.name());
-        String password = scanner.nextLine();
+        String password = Arrays.toString(passwordB);
         String random = null;
         // 文件存在 仅需要输入一次密码 不存在 则需要重复输入一次
-        if (fileExist) {
-            System.out.println("Please replace your password :");
-            String replacePassword = scanner.nextLine();
-            if (!replacePassword.equals(password)) {
+        if (fileNotExist) {
+            char[] repeatPasswordB = System.console().readPassword("Please repeat password: ");
+            if (!Arrays.equals(repeatPasswordB, passwordB)) {
                 System.out.println("passwords are inconsistent, please check");
-                //scanner.close();
                 return null;
             }
-            System.out.println("Please Input random:");
-            random = scanner.nextLine();
+            char[] randomB = System.console().readPassword("Please Input random: ");
+            random = Arrays.toString(randomB);
         }
-        //scanner.close();
+
         return Pair.of(password, random);
     }
 

@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Native {
-    private static final String LIB_FILE_PATH = "/native/";
+    private static final String LIB_FILE_PATH = "/native/dfs/";
 
     /** Initializes the native libraries */
     public static void init() {
@@ -55,17 +55,6 @@ public class Native {
      * @param name
      * @return
      */
-    protected static boolean loadLibrary1(String name) {
-        try {
-            String absolutePath = Native.class.getClassLoader().getResource(name).getPath();
-            System.load(absolutePath);
-            return true;
-        } catch (Exception | UnsatisfiedLinkError e) {
-            log.warn("Failed to load native library: {}", name, e);
-            return false;
-        }
-    }
-
     protected static boolean loadLibrary(String copyName, String name) {
         try {
 

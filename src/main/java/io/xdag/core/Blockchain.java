@@ -36,6 +36,8 @@ public interface Blockchain {
 
     Block getBlockByHash(byte[] hash, boolean isRaw);
 
+    Block getBlockByHeight(long height);
+
     void checkNewMain();
 
     long loadBlockchain(String srcFilePath);

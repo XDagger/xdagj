@@ -46,6 +46,7 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 @Slf4j
@@ -193,6 +194,20 @@ public class BlockStore {
 
     public byte[] getOurBlock(int index) {
         return indexSource.get(getOurKey(index,null));
+    }
+
+    public int getKeyIndexByHash(byte[] hashlow) {
+        AtomicInteger keyIndex = new AtomicInteger(-1);
+        fetchOurBlocks(pair -> {
+            Block block = pair.getValue();
+            if(FastByteComparisons.equalBytes(hashlow, block.getHashLow())) {
+                int index = pair.getKey();
+                keyIndex.set(index);
+                return Boolean.TRUE;
+            }
+            return Boolean.FALSE;
+        });
+        return keyIndex.get();
     }
 
     public void removeOurBlock(byte[] hashlow) {

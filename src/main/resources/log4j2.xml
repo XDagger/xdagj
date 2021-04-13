@@ -12,6 +12,7 @@
         <property name="XdagChannel_Debug_File_Name">xdag_channel_debug</property>
         <property name="XdagChannelMgr_Debug_File_Name">xdag_channel_mgr_debug</property>
         <property name="Xdag03_File_Name">xdag03_debug</property>
+        <property name="XdagAward_File_Name">xdag_award_debug</property>
 
     </properties>
 
@@ -41,6 +42,17 @@
         <RollingRandomAccessFile name="Debug"
                                  fileName="${Logs_Dir}/${Debug_File_Name}.log"
                                  filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="AwardDebug"
+                                 fileName="${Logs_Dir}/${XdagAward_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagAward_File_Name}-%d{yyyy-MM-dd}.log">
             <PatternLayout
                     pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
             <Policies>
@@ -168,6 +180,10 @@
 
         <logger name="io.xdag.net.handler.Xdag03" level="DEBUG">
             <AppenderRef ref="Xdag03_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.mine.manager.AwardManagerImpl" level="DEBUG">
+            <AppenderRef ref="AwardDebug"/>
         </logger>
 
         <Root level="INFO">

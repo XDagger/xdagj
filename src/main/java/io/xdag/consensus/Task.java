@@ -24,6 +24,7 @@
 package io.xdag.consensus;
 
 import io.xdag.core.XdagField;
+import io.xdag.utils.XdagSha256Digest;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -39,6 +40,10 @@ public class Task {
     @Getter
     @Setter
     private long taskIndex;
+
+    @Getter
+    @Setter
+    private XdagSha256Digest digest;
 
     @Override
     public String toString() {
