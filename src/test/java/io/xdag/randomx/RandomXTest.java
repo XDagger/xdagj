@@ -3,6 +3,7 @@ package io.xdag.randomx;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.RandomXConstants;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKey;
 import io.xdag.crypto.jni.Native;
@@ -19,6 +20,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +36,6 @@ import static io.xdag.BlockBuilder.generateExtraBlock;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.INVALID_BLOCK;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -44,6 +45,9 @@ public class RandomXTest {
     public TemporaryFolder root = new TemporaryFolder();
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+
+    private final String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
+    private final BigInteger privateKey = new BigInteger(privString, 16);
 
     Config config = new Config();
     OldWallet xdagWallet;
@@ -55,6 +59,11 @@ public class RandomXTest {
     public void setUp() throws Exception {
         config.setStoreDir(root.newFolder().getAbsolutePath());
         config.setStoreBackupDir(root.newFolder().getAbsolutePath());
+
+        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 32;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
+
 
         Native.init();
         if (Native.dnet_crypt_init() < 0) {
@@ -84,7 +93,6 @@ public class RandomXTest {
 
         blockchain = new BlockchainImpl(kernel);
         randomX.init();
-        randomX.randomXLoadingForkTime();
     }
 
 
@@ -92,12 +100,11 @@ public class RandomXTest {
 
     @Test
     public void addMainBlock() throws ParseException {
-        XdagStats stats = blockchain.getXdagStats();
+
         XdagTopStatus xdagTopStatus = blockchain.getXdagTopStatus();
 
-
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
-        ECKey key = new ECKey();
+        ECKey key = ECKey.fromPrivate(privateKey);
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result = INVALID_BLOCK;
@@ -111,7 +118,7 @@ public class RandomXTest {
         assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
-        for(int i = 1; i <= 200; i++) {
+        for(int i = 1; i <= 100; i++) {
             log.debug("create No." + i + " extra block");
             date = DateUtils.addSeconds(date, 64);
             pending.clear();
@@ -127,7 +134,6 @@ public class RandomXTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        System.out.println(stats.nmain);
     }
 
     public void unwindMainBlock() {
@@ -141,20 +147,11 @@ public class RandomXTest {
         unwindMainBlock();
     }
 
-    @Test
-    public void testRandomXHash() throws ParseException {
-        addMainBlock();
-        ECKey ecKey = new ECKey();
-        Block block = generateAddressBlock(ecKey,25009890);
-        BigInteger rawDiff = blockchain.getDiffByRawHash(block.getHash());
-        System.out.println("Raw Diff:"+rawDiff.toString(16));
-        BigInteger rxDiff = blockchain.getDiffByRandomXHash(block);
-        System.out.println("RandomX Diff:"+rxDiff.toString(16));
-    }
 
 
     @Test
     public void testDiffCalculate() {
+
         String expectedRawDiff = "461465028";
 
         String[] blocks = new String[]{
@@ -176,55 +173,23 @@ public class RandomXTest {
                 "561452034c58c079dc06665e485f1ab2fca8cdde5bcc8e8ceed527f1495c0c8f"
         };
 
-
         StringBuilder stringBuilder = new StringBuilder();
         for(int i = 0; i < 16; i++) {
             stringBuilder.append(Hex.toHexString(Arrays.reverse(Hex.decode(blocks[i]))));
         }
 
-
         Block block = new Block(new XdagBlock(Hex.decode(stringBuilder.toString())));
         BigInteger rawDiff = blockchain.getDiffByRawHash(block.recalcHash());
-
         assertEquals(expectedRawDiff,rawDiff.toString(16));
-
-        String[] rxBlock = new String[]{
-                "000000000000000000000181cad2ffff40000000000055380000000000000000",
-                "00000000000000005ef574cff88be6bc09e5c9689d0ac7263607249a7b6b570c",
-                "572db6fce584bc215291473d9b8cad52fb3a261c42e82ee227d2bcad93289d94",
-                "c522105b431ee950578b111ce179a0129d5afb31d08bf00221b52a0d4491c59f",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "62c0b478e98efef59d611aba3109caa95d3e9e3372777a1e733f6c0daf5e037f"
-        };
-
-        stringBuilder = new StringBuilder();
-        for(int i = 0; i < 16; i++) {
-            stringBuilder.append(Hex.toHexString(Arrays.reverse(Hex.decode(rxBlock[i]))));
-        }
-
-        block = new Block(new XdagBlock(Hex.decode(stringBuilder.toString())));
-        BigInteger rxDiff = blockchain.getDiffByRandomXHash(block);
-        System.out.println(rxDiff.toString(16));
-
-
     }
+
 
     @Test
-    public void bytesTest() {
-        byte[] a = BytesUtils.longToBytes(255,true);
-        byte[] b = BytesUtils.generateRandomArray();
-
+    public void testRandomXBlockHash() throws ParseException {
+        String expectedDiff = "31943fcc136";
+        addMainBlock();
+        randomX.randomXPoolReleaseMem();
+        assertEquals(expectedDiff,blockchain.getXdagTopStatus().getTopDiff().toString(16));
     }
-
 
 }

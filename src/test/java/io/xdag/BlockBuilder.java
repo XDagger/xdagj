@@ -35,7 +35,9 @@ import java.util.Random;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 
+import io.xdag.crypto.Sha256Hash;
 import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BlockBuilder {
 
@@ -48,7 +50,8 @@ public class BlockBuilder {
     public static Block generateExtraBlock(ECKey key, long xdagTime, List<Address> pendings) {
         Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
         b.signOut(key);
-        b.setNonce(RandomUtils.nextBytes(32));
+        byte[] random = Sha256Hash.hash(Hex.decode("1234"));
+        b.setNonce(random);
         return b;
     }
 
