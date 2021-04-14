@@ -169,7 +169,7 @@ public class BlockchainTest {
         // skip first 2 extra block amount assert
         Lists.reverse(extraBlockList).stream().skip(2).forEach(b->{
             Block sb = blockchain.getBlockByHash(b.getHashLow(), false);
-            System.out.println(Hex.toHexString(sb.getHashLow()) + ": " + String.valueOf(amount2xdag(sb.getInfo().getAmount())));
+//            System.out.println(Hex.toHexString(sb.getHashLow()) + ": " + String.valueOf(amount2xdag(sb.getInfo().getAmount())));
             assertEquals("1024.0", String.valueOf(amount2xdag(sb.getInfo().getAmount())));
         });
     }
@@ -296,38 +296,38 @@ public class BlockchainTest {
         assertEquals((double)0.93, amount2xdag(xdag2amount(0.93)), 0);
 
         // this maybe issue
-        System.out.println(amount2xdag(4000000001L));
+//        System.out.println(amount2xdag(4000000001L));
 
-        System.out.println(xdag2amount(500.2));
-        System.out.println(xdag2amount(1024 - 500.2));
-        System.out.println(amount2xdag(xdag2amount(1024 - 500.2) + xdag2amount(500.2)));
-        System.out.println(
-                xdag2amount(1024 - 500.2 - 234.4 - 312.2)
-                        + xdag2amount(500.2)
-                        + xdag2amount(234.4)
-                        + xdag2amount(312.2));
-        System.out.println(xdag2amount(1024));
-
-        System.out.println(
-                amount2xdag(
-                        xdag2amount(
-                                1024 - 500.2 - 234.4 - 312.2 - 10.3 - 1.1 - 2.2 - 3.3 - 2.2 - 4.4 - 10.3 - 1.1
-                                        - 2.2 - 3.3 - 2.2 - 4.4)
-                                + xdag2amount(500.2)
-                                + xdag2amount(234.4)
-                                + xdag2amount(312.2)
-                                + xdag2amount(10.3)
-                                + xdag2amount(1.1)
-                                + xdag2amount(2.2)
-                                + xdag2amount(3.3)
-                                + xdag2amount(2.2)
-                                + xdag2amount(4.4)
-                                + xdag2amount(10.3)
-                                + xdag2amount(1.1)
-                                + xdag2amount(2.2)
-                                + xdag2amount(3.3)
-                                + xdag2amount(2.2)
-                                + xdag2amount(4.4)));
+//        System.out.println(xdag2amount(500.2));
+//        System.out.println(xdag2amount(1024 - 500.2));
+//        System.out.println(amount2xdag(xdag2amount(1024 - 500.2) + xdag2amount(500.2)));
+//        System.out.println(
+//                xdag2amount(1024 - 500.2 - 234.4 - 312.2)
+//                        + xdag2amount(500.2)
+//                        + xdag2amount(234.4)
+//                        + xdag2amount(312.2));
+//        System.out.println(xdag2amount(1024));
+//
+//        System.out.println(
+//                amount2xdag(
+//                        xdag2amount(
+//                                1024 - 500.2 - 234.4 - 312.2 - 10.3 - 1.1 - 2.2 - 3.3 - 2.2 - 4.4 - 10.3 - 1.1
+//                                        - 2.2 - 3.3 - 2.2 - 4.4)
+//                                + xdag2amount(500.2)
+//                                + xdag2amount(234.4)
+//                                + xdag2amount(312.2)
+//                                + xdag2amount(10.3)
+//                                + xdag2amount(1.1)
+//                                + xdag2amount(2.2)
+//                                + xdag2amount(3.3)
+//                                + xdag2amount(2.2)
+//                                + xdag2amount(4.4)
+//                                + xdag2amount(10.3)
+//                                + xdag2amount(1.1)
+//                                + xdag2amount(2.2)
+//                                + xdag2amount(3.3)
+//                                + xdag2amount(2.2)
+//                                + xdag2amount(4.4)));
     }
 
     @Test

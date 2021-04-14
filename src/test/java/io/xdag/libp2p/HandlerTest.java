@@ -91,7 +91,7 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
-            System.out.println("channelActive");
+//            System.out.println("channelActive");
             String msg = "A message";
             byte[] bytes = msg.getBytes(CharsetUtil.UTF_8);
             ByteBuf buf = Unpooled.wrappedBuffer(bytes);
@@ -105,7 +105,7 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
         @Override
         protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) throws Exception {
             String s = buf.toString(CharsetUtil.UTF_8);
-            System.out.println(s);
+//            System.out.println(s);
         }
     }
 }

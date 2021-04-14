@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.utils.BasicUtils.xdag2amount;
+import static org.junit.Assert.assertEquals;
 
 public class MintTest {
     @Test
@@ -37,8 +38,8 @@ public class MintTest {
         long reward = getCurrentReward();
         long reward1 = getReward(0, num);
 
-        System.out.println(reward);
-        System.out.println(reward1);
+        assertEquals(4398046511104L,reward);
+        assertEquals(274877906944L,reward1);
 
     }
 

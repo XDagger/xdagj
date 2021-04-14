@@ -28,19 +28,22 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class BasicUtilsTest {
 
     @Test
     public void xdag2amount() {
 
         BigDecimal a = BigDecimal.valueOf(972.8);
-        System.out.println(BasicUtils.xdag2amount(a.doubleValue()));
+        assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()));
 
         BigDecimal b = BigDecimal.valueOf(51.2);
-        System.out.println(BasicUtils.xdag2amount(b.doubleValue()));
+        assertEquals(219902325556L, BasicUtils.xdag2amount(b.doubleValue()));
 
         BigDecimal c = BigDecimal.valueOf(100);
-        System.out.println(BasicUtils.xdag2amount(c.doubleValue()));
+        assertEquals(429496729600L,BasicUtils.xdag2amount(c.doubleValue()));
     }
 
     @Test
@@ -48,19 +51,16 @@ public class BasicUtilsTest {
 
         long a = 4178144185548L;
         // 3CC CCCC CCCD?
-        System.out.println(BasicUtils.amount2xdag(a));
+        assertEquals(972.8, BasicUtils.amount2xdag(a), 0.0);
 
         long b = 219902325556L;
         // 3333333334
-        System.out.println(BasicUtils.amount2xdag(b));
+        assertEquals(51.2, BasicUtils.amount2xdag(b), 0.0);
 
 //        long c = 4398046511104L;
         // 400 0000 0000?
-        System.out.println(BasicUtils.amount2xdag(6400000000L));
+        assertEquals(1.49, BasicUtils.amount2xdag(6400000000L), 0.0);
 
-//        long d = 4398046511106L;
-        // 400 0000 0001
-        System.out.println(BasicUtils.amount2xdag(6400000000L));
     }
 
     @Test
@@ -69,7 +69,7 @@ public class BasicUtilsTest {
                 BasicUtils.getDiffByHash(
                         Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8")));
 
-        System.out.println(res);
+//        System.out.println(res);
 
     }
 
@@ -82,6 +82,6 @@ public class BasicUtilsTest {
     @Test
     public void xdag_log_difficulty2hashrateTest() {
         double res = BasicUtils.xdag_log_difficulty2hashrate(100);
-        System.out.println("this is res :" + res);
+//        System.out.println("this is res :" + res);
     }
 }

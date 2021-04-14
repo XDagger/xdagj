@@ -49,10 +49,10 @@ public class RSATest {
         Assert.assertTrue(StringUtils.equals(decodeResult,data ));
     }
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
-        Map<String, String> keyPairMap = RSAUtils.createKeys(1024);
-        RSAPublicKey pub = RSAUtils.getPublicKey(keyPairMap.get("publicKey"));
-
-        System.out.println("getModulus length:" + pub.getModulus().bitLength() + " bits");
-    }
+//    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException {
+//        Map<String, String> keyPairMap = RSAUtils.createKeys(1024);
+//        RSAPublicKey pub = RSAUtils.getPublicKey(keyPairMap.get("publicKey"));
+//
+//        System.out.println("getModulus length:" + pub.getModulus().bitLength() + " bits");
+//    }
 }

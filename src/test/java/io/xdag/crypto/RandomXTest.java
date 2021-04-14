@@ -19,12 +19,12 @@ public class RandomXTest {
     public void rxCacheTest(){
         final String key="hello rx";
         final long rxCache= allocCache();
-        System.out.printf("alloc cache address 0x" + Long.toHexString(rxCache));
+//        System.out.printf("alloc cache address 0x" + Long.toHexString(rxCache));
 
         initCache(rxCache,key.getBytes(),key.length());
 
         releaseCache(rxCache);
-        System.out.printf("release cache address 0x" + Long.toHexString(rxCache));
+//        System.out.printf("release cache address 0x" + Long.toHexString(rxCache));
     }
 
     @Test
@@ -32,7 +32,7 @@ public class RandomXTest {
         final String key="hello rx 1";
         final long rxCache= allocCache();
         initCache(rxCache,key.getBytes(),key.length());
-        System.out.printf("release cache address 0x" + Long.toHexString(rxCache));
+//        System.out.printf("release cache address 0x" + Long.toHexString(rxCache));
 
         final long rxDataSet=allocDataSet();
         initDataSet(rxCache,rxDataSet,1);
@@ -46,7 +46,7 @@ public class RandomXTest {
         final String key="hello rx 1";
         final long rxCache= allocCache();
         initCache(rxCache,key.getBytes(),key.length());
-        System.out.printf("release cache address 0x" + Long.toHexString(rxCache));
+//        System.out.printf("release cache address 0x" + Long.toHexString(rxCache));
 
         final long rxDataSet = allocDataSet();
         initDataSet(rxCache,rxDataSet,4);
@@ -55,7 +55,7 @@ public class RandomXTest {
 
         final String data="hello world 1";
         byte[] bs = calculateHash(rxVm,data.getBytes(),data.getBytes().length);
-        System.out.println("get randomx hash " + BytesUtils.toHexString(bs));
+//        System.out.println("get randomx hash " + BytesUtils.toHexString(bs));
         releaseCache(rxCache);
         releaseDataSet(rxDataSet);
         destroyVm(rxVm);
