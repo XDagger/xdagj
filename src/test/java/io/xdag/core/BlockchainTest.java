@@ -208,7 +208,13 @@ public class BlockchainTest {
         Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(date.getTime()));
         Block txBlock = generateTransactionBlock(poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
+
+        // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
+        // 5. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
+
+
         result = blockchain.tryToConnect(txBlock);
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
         assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
@@ -256,7 +262,11 @@ public class BlockchainTest {
 
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(date.getTime()));
         Block txBlock = generateTransactionBlock(fromKey, xdagTime - 1, from, to, xdag2amount(100.00));
+
+        // 1. local check
         assertTrue(blockchain.canUseInput(txBlock));
+        // 2. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
     }
 
     public List<String> getFileName(long time) {

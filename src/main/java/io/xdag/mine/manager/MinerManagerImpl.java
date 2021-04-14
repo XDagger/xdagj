@@ -25,11 +25,7 @@ package io.xdag.mine.manager;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -45,7 +41,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MinerManagerImpl implements MinerManager {
+public class MinerManagerImpl implements MinerManager, Runnable {
     /** 保存活跃的channel */
     protected Map<InetSocketAddress, MinerChannel> activateMinerChannels = new ConcurrentHashMap<>();
 
@@ -53,6 +49,13 @@ public class MinerManagerImpl implements MinerManager {
     protected Map<ByteArrayWrapper, Miner> activateMiners = new ConcurrentHashMap<>(200);
 
     private Task currentTask = null;
+
+    /**
+     * 存放任务的阻塞队列
+     */
+    private final BlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
+    private Thread t;
+
 
     @Setter
     private PoW poW;
@@ -70,9 +73,50 @@ public class MinerManagerImpl implements MinerManager {
         this.kernel = kernel;
     }
 
-    /** 启动 函数 开启遍历和server */
+
+
     @Override
-    public void start() {
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()){
+            try {
+                currentTask = taskQueue.take();
+                updateNewTaskandBroadcast();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error(" can not take the task from taskQueue ");
+                break;
+            }
+        }
+    }
+
+    @Override
+    public synchronized void start() {
+        init();
+        if (t == null){
+            t = new Thread(this, "MinerManager");
+            t.start();
+        }
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (t != null) {
+            try {
+                t.interrupt();
+                t.join();
+            }catch (InterruptedException e) {
+                log.error("Failed to stop MinerManager");
+                Thread.currentThread().interrupt();
+            }
+            t = null;
+            close();
+        }
+    }
+
+
+
+    /** 启动 函数 开启遍历和server */
+    public void init() {
         updateFuture = server.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
         cleanChannelFuture = server.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = server.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
@@ -99,7 +143,7 @@ public class MinerManagerImpl implements MinerManager {
         activateMinerChannels.put(channel.getInetAddress(), channel);
     }
 
-    @Override
+
     public void close() {
         if (updateFuture != null) {
             updateFuture.cancel(true);
@@ -155,10 +199,16 @@ public class MinerManagerImpl implements MinerManager {
         }
     }
 
-    /** 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况 */
+
     @Override
-    public void updateNewTaskandBroadcast(Task task) {
-        currentTask = task;
+    public void updateTask(Task task) {
+        if (!taskQueue.offer(task)) {
+            log.debug("Failed to add a task to the queue!");
+        }
+    }
+
+    /** 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况 */
+    public void updateNewTaskandBroadcast() {
         for (MinerChannel channel : activateMinerChannels.values()) {
             if (channel.isActive()) {
 

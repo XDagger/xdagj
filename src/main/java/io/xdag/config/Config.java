@@ -121,6 +121,9 @@ public class Config implements Serializable {
     private DnetKeys xKeys;
 
 
+    /** 等待超过10个epoch默认启动挖矿 **/
+    public static long WAIT_EPOCH = 10;
+
     // BIP32
     public static final int BIP32_HEADER_P2PKH_PUB= 0x0488b21e; // The 4 byte header that serializes in base58 to "xpub".
     public static final int BIP32_HEADER_P2PKH_PRIV = 0x0488ade4; // The 4 byte header that serializes in base58 to "xprv"

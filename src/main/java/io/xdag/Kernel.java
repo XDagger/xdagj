@@ -59,10 +59,12 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -105,6 +107,13 @@ public class Kernel {
 
     protected RandomX randomXUtils;
 
+    // 记录运行状态
+    protected AtomicBoolean isRunning = new AtomicBoolean(false);
+    // 记录启动时间片
+    @Getter
+    protected long startEpoch;
+
+
     public Kernel(Config config, OldWallet wallet) {
         this.config = config;
         this.wallet = wallet;
@@ -121,6 +130,11 @@ public class Kernel {
     public synchronized void testStart() throws Exception {
 
         log.debug("Kernel start...");
+        if (isRunning.get())  {
+            return;
+        }
+        isRunning.set(true);
+        startEpoch = XdagTime.getCurrentEpoch();
 
         EventProcesser.getEventBus().register(this);
 
@@ -136,9 +150,9 @@ public class Kernel {
         // wallet init
         // ====================================
 //        if (wallet == null) {
-            wallet = new OldWallet();
-            log.debug("Wallet init.");
-            wallet.init(this.config);
+        wallet = new OldWallet();
+        log.debug("Wallet init.");
+        wallet.init(this.config);
 //        }
 
         dbFactory = new RocksdbFactory(this.config);
@@ -244,10 +258,11 @@ public class Kernel {
         pow = new XdagPow(this);
         minerManager.setPoW(pow);
         minerManager.start();
+        awardManager.start();
         if (Config.MAINNET) {
-            xdagState.setState(XdagState.WAIT);
+            xdagState = XdagState.WAIT;
         } else {
-            xdagState.setState(XdagState.WTST);
+            xdagState = XdagState.WTST;
         }
 
         // ====================================
@@ -260,11 +275,20 @@ public class Kernel {
 
     /** Stops the kernel. */
     public synchronized void testStop() {
+
+        if (!isRunning.get()) {
+            return;
+        }
+
+        isRunning.set(false);
+
+        // 1. 工作层关闭
         // stop consensus
         sync.stop();
         syncMgr.stop();
         pow.stop();
 
+        // 2. 连接层关闭
         // stop node manager and channel manager
         channelMgr.stop();
         nodeMgr.stop();
@@ -280,6 +304,11 @@ public class Kernel {
         // close client
         client.close();
 
+        minerServer.close();
+        minerManager.stop();
+        awardManager.stop();
+
+        // 3. 数据层关闭
         // TODO 关闭checkmain线程
         blockchain.stopCheckMain();
 
@@ -290,8 +319,6 @@ public class Kernel {
         // release
         randomXUtils.randomXPoolReleaseMem();
 
-        minerServer.close();
-        minerManager.close();
     }
     public ChannelManager getLibp2pChannelManager() {
         return channelManager;

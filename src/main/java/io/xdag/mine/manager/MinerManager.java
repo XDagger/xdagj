@@ -33,7 +33,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 public interface MinerManager {
-    void updateNewTaskandBroadcast(Task task);
 
     Map<ByteArrayWrapper, Miner> getActivateMiners();
 
@@ -46,11 +45,13 @@ public interface MinerManager {
 
     void addActivateChannel(MinerChannel channel);
 
-    void close();
+    void stop();
 
     MinerChannel getChannelByHost(InetSocketAddress host);
 
     Map<InetSocketAddress, MinerChannel> getActivateMinerChannels();
 
     void removeUnactivateChannel(MinerChannel channel);
+
+    void updateTask(Task task);
 }

@@ -29,7 +29,6 @@ import io.xdag.utils.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.bouncycastle.util.encoders.Hex;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;
@@ -343,32 +342,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-//    private void processRun(CommandInput input) {
-//        final String[] usage = {
-//                "run - run node after loading local blocks if option -r is used",
-//                "Usage: run",
-//                "  -? --help                    Show help",
-//        };
-//        try {
-//            Options opt = parseOptions(usage, input.args());
-//            if (opt.isSet("help")) {
-//                throw new Options.HelpException(opt.usage());
-//            }
-//            commands.run();
-//            println(
-//                    "Xdag Server system booting up: network = "
-//                            + (Config.MAINNET ? "MainNet" : "TestNet")
-//                            + ", version "
-//                            + XdagVersion.V03 + "(base Xdagger V0.3.1)"
-//                            + ", user host = ["
-//                            + commands.getKernel().getConfig().getNodeIp()
-//                            + ":"
-//                            + commands.getKernel().getConfig().getNodePort()
-//                            + "]");
-//        } catch (Exception e) {
-//            saveException(e);
-//        }
-//    }
 
     private void processKeygen(CommandInput input) {
         final String[] usage = {

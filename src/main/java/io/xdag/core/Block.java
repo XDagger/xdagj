@@ -133,7 +133,7 @@ public class Block implements Cloneable {
 
         if (CollectionUtils.isNotEmpty(keys)) {
             for (ECKeyPair key : keys) {
-                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPublicKey(), true);
+                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey(), true);
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
@@ -190,10 +190,10 @@ public class Block implements Cloneable {
         return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
     }
 
-    /** 重计算hash **/
+    /** 重计算 避免矿工挖矿发送share时直接更新 hash **/
     public byte[] recalcHash() {
         xdagBlock = new XdagBlock(toBytes());
-        return Arrays.reverse(Sha256Hash.hashTwice(xdagBlock.getData()));
+        return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
     }
 
     /** 解析512字节数据* */
@@ -248,7 +248,7 @@ public class Block implements Cloneable {
                         }
                     }
                     if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                        this.nonce = Numeric.toBytesPadded(r, 32);
+                        this.nonce = xdagBlock.getField(i).getData();
                         continue;
                     }
                     break;
@@ -258,7 +258,11 @@ public class Block implements Cloneable {
                     boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
                     //ECPoint point = Sign.decompressKey(bytesToBigInteger(key), yBit);
                     ECPoint point = Sign.decompressKey(Numeric.toBigInt(key), yBit);
-                    pubKeys.add(new ECKeyPair(null, Numeric.toBigInt(point.getEncoded(false))));
+                    // 解析成非压缩去前缀 公钥
+                    byte[] encodePub = point.getEncoded(false);
+                    ECKeyPair ecKeyPair = new ECKeyPair(null,
+                            new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
+                    pubKeys.add(ecKeyPair);
                     break;
                 default:
 //                    log.debug("no match xdagBlock field type:" + field.getType());
@@ -366,23 +370,23 @@ public class Block implements Cloneable {
         for (ECDSASignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 2);
             for (ECKeyPair ecKey : keys) {
-                byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
+                byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
                 hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
-                if (ecKey.verify(hash, sig)) {
+                if (ECKeyPair.verify(hash, sig, pubkeyBytes)) {
                     res.add(ecKey);
                 }
             }
         }
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKeyPair ecKey : keys) {
-            byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
+            byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
             hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
 //            log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
 //            log.debug(Hex.toHexString(hash) + ":hash");
 //            log.debug(outsig + ":outsig");
 //            log.debug(ecKey + ":eckey");
 
-            if (ecKey.verify(hash, this.getOutsig())) {
+            if (ECKeyPair.verify(hash, this.getOutsig(),pubkeyBytes)) {
                 res.add(ecKey);
             }
         }

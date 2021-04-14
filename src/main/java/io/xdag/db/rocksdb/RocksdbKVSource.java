@@ -344,14 +344,20 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     @Override
     public List<byte[]> prefixValueLookup(byte[] key) {
         List<byte[]> retList = Lists.newLinkedList();
-        fetchPrefix(key, pair -> retList.add(pair.getValue()));
+        fetchPrefix(key, pair -> {
+            retList.add(pair.getKey());
+            return Boolean.FALSE;
+        });
         return retList;
     }
 
     @Override
     public List<byte[]> prefixKeyLookup(byte[] key) {
         List<byte[]> retList = Lists.newLinkedList();
-        fetchPrefix(key, pair -> retList.add(pair.getKey()));
+        fetchPrefix(key, pair -> {
+            retList.add(pair.getKey());
+            return Boolean.FALSE;
+        });
         return retList;
     }
 

@@ -23,6 +23,7 @@
  */
 package io.xdag.crypto;
 
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import lombok.extern.slf4j.Slf4j;
 import org.bitcoin.NativeSecp256k1;
@@ -43,6 +44,8 @@ import java.util.Arrays;
 public class ECKeyPair {
 
     private final BigInteger privateKey;
+
+    /** 非压缩+去前缀0x04 **/
     private final BigInteger publicKey;
 
     public ECKeyPair(BigInteger privateKey, BigInteger publicKey) {
@@ -171,6 +174,27 @@ public class ECKeyPair {
         int result = privateKey != null ? privateKey.hashCode() : 0;
         result = 31 * result + (publicKey != null ? publicKey.hashCode() : 0);
         return result;
+    }
+
+
+    /**
+     *
+     * ECKey 存储公钥类型为 非压缩+去前缀（0x04）
+     * 验证签名的时候需要获得压缩公钥
+     * 添加compressPubKey方法，将非压缩公钥解析成压缩公钥
+     *
+     * @param pubKey
+     * @return
+     */
+    public static byte[] compressPubKey(BigInteger pubKey) {
+        byte pubKeyYPrefix;
+        // pubkey 是奇数公钥
+        if (pubKey.testBit(0)) {
+            pubKeyYPrefix = 0x03;
+        } else {
+            pubKeyYPrefix = 0x02;
+        }
+        return BytesUtils.merge(pubKeyYPrefix,BytesUtils.subArray(Numeric.toBytesPadded(pubKey,64),0,32));
     }
 
 }

@@ -179,7 +179,7 @@ public class NodeManager {
             return null;
         }
     }
-
+    //todo:明天测试 逻辑思路
     public void doConnect() {
 
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();

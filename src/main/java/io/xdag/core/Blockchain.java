@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 import io.xdag.crypto.ECKeyPair;
+import io.xdag.listener.Listener;
 import io.xdag.utils.ByteArrayWrapper;
 import java.util.List;
 import java.util.Map;
@@ -61,4 +62,7 @@ public interface Blockchain {
 
     // 关闭检查主块链线程
     void stopCheckMain();
+
+    // 注册监听器
+    void registerListener(Listener listener);
 }

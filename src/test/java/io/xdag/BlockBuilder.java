@@ -34,7 +34,8 @@ import java.util.List;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 
 import io.xdag.crypto.ECKeyPair;
-import org.apache.commons.lang3.RandomUtils;
+import io.xdag.crypto.Hash;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BlockBuilder {
 
@@ -47,7 +48,8 @@ public class BlockBuilder {
     public static Block generateExtraBlock(ECKeyPair key, long xdagTime, List<Address> pendings) {
         Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
         b.signOut(key);
-        b.setNonce(RandomUtils.nextBytes(32));
+        byte[] random = Hash.sha256(Hex.decode("1234"));
+        b.setNonce(random);
         return b;
     }
 

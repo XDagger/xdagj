@@ -33,12 +33,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import io.xdag.config.Config;
 import io.xdag.core.*;
 
-import io.xdag.crypto.Sha256Hash;
+import io.xdag.crypto.Hash;
 import io.xdag.libp2p.manager.ChannelManager;
+import io.xdag.listener.Listener;
 import io.xdag.randomx.RandomX;
 import io.xdag.randomx.RandomXMemory;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.FastByteComparisons;
 import org.apache.commons.lang3.RandomUtils;
 import io.xdag.Kernel;
 import io.xdag.mine.MinerChannel;
@@ -54,7 +58,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
-public class XdagPow implements PoW, Runnable {
+public class XdagPow implements PoW, Listener, Runnable {
 
     protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
     protected Timer timer;
@@ -69,6 +73,7 @@ public class XdagPow implements PoW, Runnable {
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
 
+    protected byte[] globalPretop;
     protected Task currentTask;
     protected long taskIndex = 0;
 
@@ -106,14 +111,15 @@ public class XdagPow implements PoW, Runnable {
     public void start() {
         if (!this.isRunning) {
             this.isRunning = true;
+
             this.minerManager = kernel.getMinerManager();
+
             // 容器的初始化
             for (int i = 0; i < 16; i++) {
                 this.blockHashs.add(null);
                 this.minShares.add(null);
             }
 
-            // PoW换成Schedule任务
             new Thread(this, "xdag-pow-main").start();
             new Thread(this.timer, "xdag-pow-timer").start();
             new Thread(this.broadcaster, "xdag-pow-broadcaster").start();
@@ -154,32 +160,27 @@ public class XdagPow implements PoW, Runnable {
 
 
     public Block generateRandomXBlock(long sendTime) {
-        log.debug("Generate RandomX block...");
         // 新增任务
+        log.debug("Generate RandomX block...");
         taskIndex++;
 
-        // 固定sendtime
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
 
-        // 随机
         minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);
 
-        // 设置最小hash
         minHash = Hex.decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
-        //
         currentTask = createTaskByRandomXBlock(block, sendTime);
-        log.debug("Send Task to Miners");
 
         // 更新poolminer的贡献
-        minerManager.updateNewTaskandBroadcast(currentTask);
+        log.debug("Send Task to Miners");
+        minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
 
 //        MinerCalculate.calculateNopaidShares(
 //                awardManager.getPoolMiner(), minHash, block.getTimestamp());
-
         return block;
     }
 
@@ -187,28 +188,23 @@ public class XdagPow implements PoW, Runnable {
         // 新增任务
         taskIndex++;
 
-        // 新建区块
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey().ecKey);
 
         minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);
-
         // 初始nonce, 计算minhash但不作为最终hash
         minHash = block.recalcHash();
 
-        // 发送给矿工
         currentTask = createTaskByNewBlock(block,sendTime);
-
+        // 发送给矿工
         log.debug("Send Task to Miners");
-
         // 更新poolminer的贡献
-        minerManager.updateNewTaskandBroadcast(currentTask);
+        minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
 
-        MinerCalculate.calculateNopaidShares(
-                awardManager.getPoolMiner(), minHash, block.getTimestamp());
-
+//        MinerCalculate.calculateNopaidShares(
+//                awardManager.getPoolMiner(), minHash, block.getTimestamp());
         return block;
     }
 
@@ -235,13 +231,15 @@ public class XdagPow implements PoW, Runnable {
         events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 
-    @Override
     public void receiveNewPretop(byte[] pretop) {
         log.debug("ReceiveNewPretop");
         if (!this.isRunning) {
             return;
         }
-        events.add(new Event(Event.Type.NEW_PRETOP, pretop));
+        if (!FastByteComparisons.equalBytes(pretop,globalPretop)) {
+            globalPretop = blockchain.getXdagTopStatus().getPreTop();
+            events.add(new Event(Event.Type.NEW_PRETOP, pretop));
+        }
     }
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
@@ -271,7 +269,7 @@ public class XdagPow implements PoW, Runnable {
                 int index = (int) ((currentTask.getTaskTime() >> 16) & 0xf);
                 // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
                 minShares.set(index, minShare);
-                blockHashs.set(index, minHash);
+                blockHashs.set(index, generateBlock.recalcHash());
 
                 log.debug("New MinHash :" + Hex.toHexString(minHash));
                 log.debug("New MinShare :" + Hex.toHexString(minShare));
@@ -293,7 +291,7 @@ public class XdagPow implements PoW, Runnable {
             log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
             log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
-            awardManager.payAndaddNewAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
+            awardManager.addAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
                     generateBlock.getTimestamp());
             BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL());
 
@@ -307,13 +305,19 @@ public class XdagPow implements PoW, Runnable {
         newBlock();
     }
 
-    public Task createTaskByRandomXBlock(Block block, long sendTime) {
+    /**
+     * 创建RandomX的任务
+     * @param block
+     * @param sendTime
+     * @return
+     */
+    private Task createTaskByRandomXBlock(Block block, long sendTime) {
         Task newTask = new Task();
         XdagField[] task = new XdagField[2];
 
         RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
 
-        byte[] rxHash = Sha256Hash.hash(block.getXdagBlock().getData(),0,480);
+        byte[] rxHash = Hash.sha256(BytesUtils.subArray(block.getXdagBlock().getData(),0,480));
 
 
         // todo
@@ -327,7 +331,13 @@ public class XdagPow implements PoW, Runnable {
         return newTask;
     }
 
-    public Task createTaskByNewBlock(Block block, long sendTime) {
+    /**
+     * 创建原始任务
+     * @param block
+     * @param sendTime
+     * @return
+     */
+    private Task createTaskByNewBlock(Block block, long sendTime) {
         Task newTask = new Task();
 
         XdagField[] task = new XdagField[2];
@@ -354,7 +364,10 @@ public class XdagPow implements PoW, Runnable {
 
     @Override
     public void run() {
+        log.debug("Main PoW start ....");
         resetTimeout(XdagTime.getMainTime());
+        // init pretop
+        globalPretop = blockchain.getXdagTopStatus().getPreTop();
         while (this.isRunning) {
             try {
                 Event ev = events.poll(10, TimeUnit.MILLISECONDS);
@@ -368,13 +381,17 @@ public class XdagPow implements PoW, Runnable {
                     onNewShare(ev.getData(), ev.getChannel());
                     break;
                 case TIMEOUT:
+                    log.debug("Time out");
+                    log.debug(kernel.getXdagState().toString());
                     // TODO : 判断当前是否可以进行产块
-//                    if(kernel.getXdagState().equals(XdagState.STST) || kernel.getXdagState().equals(XdagState.SYNC)) {
+                    if(kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
                         onTimeout();
-//                    }
+                    }
                     break;
                 case NEW_PRETOP:
-                    onNewPreTop();
+                    if(kernel.getXdagState()==XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                        onNewPreTop();
+                    }
                     break;
                 default:
                     break;
@@ -383,6 +400,11 @@ public class XdagPow implements PoW, Runnable {
                 log.debug(e.getMessage(), e);
             }
         }
+    }
+
+    @Override
+    public void onMessage(io.xdag.listener.Message message) {
+        receiveNewPretop(message.getData());
     }
 
     public static class Event {

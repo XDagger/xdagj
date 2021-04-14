@@ -21,34 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.consensus;
+package io.xdag.listener;
 
-import io.xdag.mine.MinerChannel;
-import io.xdag.net.message.Message;
+public interface Listener {
 
-public interface PoW {
-
-    /** Start thread */
-    void start();
-
-    /** Stop thread */
-    void stop();
-
-    /**
-     * is running
-     *
-     * @return .
-     */
-    boolean isRunning();
-
-    /**
-     * Receive and process shares sent by miners
-     *
-     * @param channel
-     *            minerchannel
-     * @param msg
-     *            share
-     */
-    void receiveNewShare(MinerChannel channel, Message msg);
-
+    void onMessage(Message message);
 }

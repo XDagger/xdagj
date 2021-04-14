@@ -5,14 +5,15 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.RandomXConstants;
 import io.xdag.core.*;
-import io.xdag.crypto.ECKey;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,6 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,7 +104,7 @@ public class RandomXTest {
         XdagTopStatus xdagTopStatus = blockchain.getXdagTopStatus();
 
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
-        ECKey key = ECKey.fromPrivate(privateKey);
+        ECKeyPair key = ECKeyPair.create(privateKey);
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result = INVALID_BLOCK;
@@ -136,31 +136,17 @@ public class RandomXTest {
         }
     }
 
-    public void unwindMainBlock() {
-
-    }
-
-    @Test
-    public void testIsFork() throws ParseException {
-        addMainBlock();
-        assertTrue(randomX.isRandomxFork(25009794+1));
-        unwindMainBlock();
-    }
-
-
 
     @Test
     public void testDiffCalculate() {
 
-        String expectedRawDiff = "461465028";
+        String expectedRawDiff = "382ceb150";
 
         String[] blocks = new String[]{
-                "000000000000000000000181caa5ffff40000000005533380000000000000000",
-                "0000000000000000ec6bda9802c1779f2cd9d9785917669eaa6d61cb9928cd8a",
-                "00000000000000008b956448c1990e16386ae1a962e47213f21b57b6a7d6e9eb",
-                "0000000000000000e3eac3bf10f4d30e0708f3b86c7e7028866b3f4270870b78",
-                "b76d51c96bb292fd1d208a10219c691e7eccd3e0956bd75517e706a8e969a288",
-                "170e82edc59bca5e2e8742ee2c65ff291a8eb2acf2c28fa40a1cec761ac021ad",
+                "000000000000000000000181cac9ffff40000000000055380000000000000000",
+                "000000000000000019e5f0b41d83d26cd9f0c5855f36f75c369c51121a7e62c3",
+                "8fb20675341a8d9314633c402593f3e5c9cc2b19bf9dc356f13eb632116a0b8d",
+                "77cb18fc224742884641595ba808e608d5be56608c9ea888bbf73ee238b193f4",
                 "0000000000000000000000000000000000000000000000000000000000000000",
                 "0000000000000000000000000000000000000000000000000000000000000000",
                 "0000000000000000000000000000000000000000000000000000000000000000",
@@ -170,7 +156,9 @@ public class RandomXTest {
                 "0000000000000000000000000000000000000000000000000000000000000000",
                 "0000000000000000000000000000000000000000000000000000000000000000",
                 "0000000000000000000000000000000000000000000000000000000000000000",
-                "561452034c58c079dc06665e485f1ab2fca8cdde5bcc8e8ceed527f1495c0c8f"
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "7a5da62bcee326f589cab57cf943b843fdf4c390a56ba803dbaf408cfcd2e2c0"
         };
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -190,6 +178,20 @@ public class RandomXTest {
         addMainBlock();
         randomX.randomXPoolReleaseMem();
         assertEquals(expectedDiff,blockchain.getXdagTopStatus().getTopDiff().toString(16));
+    }
+
+
+    @Test
+    public void testECKeypairParity() {
+        ECKeyPair ecKey = Keys.createEcKeyPair();
+        byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), false);
+        byte lastByte = publicKeyBytes[publicKeyBytes.length - 1];
+        // 奇偶
+        boolean pubKeyParity = (lastByte & 1) == 0;
+
+        // 奇偶
+        boolean pubKeyParity1 = !ecKey.getPublicKey().testBit(0);
+        assertEquals(pubKeyParity, pubKeyParity1);
     }
 
 }

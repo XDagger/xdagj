@@ -34,6 +34,7 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.utils.FastByteComparisons;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;
@@ -120,6 +121,7 @@ public class BlockStoreTest {
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
         Block block = generateAddressBlock(key, time);
+        bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow());
         assertArrayEquals(block.getHashLow(), bs.getOurBlock(1));
     }
@@ -135,7 +137,7 @@ public class BlockStoreTest {
         bs.saveOurBlock(1, block.getHashLow());
         assertFalse(bs.getOurBlock(1) == null);
         bs.removeOurBlock(block.getHashLow());
-        assertTrue(bs.getOurBlock(1) == null);
+        assertTrue(FastByteComparisons.equalBytes(bs.getOurBlock(1) ,new byte[]{0}));
     }
 
     @Test

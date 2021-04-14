@@ -47,6 +47,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 @Slf4j
@@ -193,7 +194,21 @@ public class BlockStore {
     }
 
     public byte[] getOurBlock(int index) {
-        return indexSource.get(getOurKey(index,null));
+        AtomicReference<byte[]> blockHashLow = new AtomicReference<>(new byte[]{0});
+        fetchOurBlocks(pair -> {
+            int keyIndex = pair.getKey();
+            if (keyIndex == index) {
+                if (pair.getValue() != null && pair.getValue().getHashLow()!=null) {
+                    assert blockHashLow != null;
+                    blockHashLow.set(pair.getValue().getHashLow());
+                    return Boolean.TRUE;
+                }else {
+                    return Boolean.FALSE;
+                }
+            }
+            return Boolean.FALSE;
+        });
+        return blockHashLow.get();
     }
 
     public int getKeyIndexByHash(byte[] hashlow) {
@@ -406,11 +421,12 @@ public class BlockStore {
 
     public List<Block> getBlocksByTime(long startTime) {
         List<Block> blocks = Lists.newArrayList();
-//        long key = UnsignedLong.fromLongBits(startTime >> 16).longValue();
         byte[] keyPrefix = getTimeKey(startTime, null);
         List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
         for (byte[] bytes : keys) {
-            Block block = getBlockByHash(bytes, true);
+            // 1 + 8 : prefix + time
+            byte[] hash = BytesUtils.subArray(bytes, 1+8, 32);
+            Block block = getBlockByHash(hash, true);
             if (block != null) {
                 blocks.add(block);
             }

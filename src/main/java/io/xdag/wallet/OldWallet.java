@@ -53,7 +53,7 @@ public class OldWallet {
         File dnetDatFile = new File(Config.DNET_KEY_FILE);
         Native.dfslib_random_init();
         Native.crc_init();
-        boolean fileNotExist = !dnetDatFile.exists() || dnetDatFile.length() == 0;
+        boolean fileNotExist = !dnetDatFile.exists() || (dnetDatFile.length() == 0);
 //        Pair<String, String> pair = getPassword(fileNotExist);
         Pair<String, String> pair = Pair.of("123456", "123456");
         if (pair == null) {
@@ -105,10 +105,9 @@ public class OldWallet {
         if (priv == null) {
             File walletDatFile = new File(Config.WALLET_KEY_FILE);
             ECKeyPair ecKey = Keys.createEcKeyPair();
-            byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), false);
-            byte lastByte = publicKeyBytes[publicKeyBytes.length - 1];
-            // 奇偶
-            boolean pubKeyParity = (lastByte & 1) == 0;
+
+            // 奇偶 true为偶 false为奇
+            boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
             KeyInternalItem newKey = new KeyInternalItem();
             newKey.ecKey = ecKey;
             newKey.pubKeyParity = pubKeyParity;
@@ -169,10 +168,8 @@ public class OldWallet {
         if (!walletDatFile.exists() || walletDatFile.length() == 0) {
             // if wallet.dat not exist create it
             ECKeyPair ecKey = Keys.createEcKeyPair();
-            byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), false);
-            byte lastByte = publicKeyBytes[publicKeyBytes.length - 1];
             // 奇偶
-            boolean pubKeyParity = (lastByte & 1) == 0;
+            boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
             KeyInternalItem newKey = new KeyInternalItem();
             newKey.ecKey = ecKey;
             newKey.pubKeyParity = pubKeyParity;
@@ -197,10 +194,8 @@ public class OldWallet {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
-                byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), false);
-                byte lastByte = publicKeyBytes[publicKeyBytes.length - 1];
                 // 奇偶
-                boolean pubKeyParity = (lastByte & 1) == 0;
+                boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);;
                 KeyInternalItem newKey = new KeyInternalItem();
                 newKey.ecKey = ecKey;
                 newKey.pubKeyParity = pubKeyParity;

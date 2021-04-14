@@ -29,7 +29,8 @@ public class RandomX {
     protected long randomXForkSeedHeight;
     protected long randomXForkLag;
 
-    protected long randomXForkTime;
+    // 默认为最大值
+    protected long randomXForkTime = Long.MAX_VALUE;
 
     protected long randomXPoolMemIndex;
     protected long randomXHashEpochIndex;

@@ -71,13 +71,12 @@ public class MessageQueue {
                 10,
                 // TODO: 发送周期缩短会不会有影响，但能有效加快同步速度
                 2,
-                // 10毫秒执行一次
+                // 2毫秒执行一次
                 TimeUnit.MILLISECONDS);
     }
 
-    /** 每十毫秒执行一次 */
+    /** 每2毫秒执行一次 */
     private void nudgeQueue() {
-        // 1000 / 10 * 5 * 2 = 1000 messages per second
         int n = Math.min(5, size());
         if (n == 0) {
             return;

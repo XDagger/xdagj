@@ -16,9 +16,9 @@ typedef struct seedinfo {
 
 static CTHR_THREAD_RTYPE rx_seedthread(void *arg) {
 	seedinfo *si = (seedinfo*)arg;
-	printf("randomx init dataset begin start %lu count %lu \n",si->si_start,si->si_count);
+//	printf("randomx init dataset begin start %lu count %lu \n",si->si_start,si->si_count);
 	randomx_init_dataset(si->si_dataset, si->si_cache, si->si_start, si->si_count);
-	printf("randomx init dataset end   start %lu count %lu \n",si->si_start,si->si_count);
+//	printf("randomx init dataset end   start %lu count %lu \n",si->si_start,si->si_count);
 	CTHR_THREAD_RETURN;
 }
 

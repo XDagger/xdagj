@@ -33,6 +33,8 @@ import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.listener.Listener;
+import io.xdag.listener.Message;
 import io.xdag.randomx.RandomX;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
@@ -42,6 +44,7 @@ import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -93,6 +96,8 @@ public class BlockchainImpl implements Blockchain {
 
     private RandomX randomXUtils;
 
+    private List<Listener> listeners = new ArrayList<>();
+
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
@@ -124,6 +129,13 @@ public class BlockchainImpl implements Blockchain {
         // 检查主块链
         this.startCheckMain();
     }
+
+
+    @Override
+    public void registerListener(Listener listener) {
+        this.listeners.add(listener);
+    }
+
     //读取C版本区块
     public long loadBlockchain(
             String srcFilePath) {
@@ -293,6 +305,9 @@ public class BlockchainImpl implements Blockchain {
             setPreTop(block);
             setPreTop(getBlockByHash(xdagTopStatus.getTop(), false));
 
+            // 通知XdagPoW 新pretop产生
+            onNewPretop();
+
             // TODO:extra 处理
             if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
                 Block reuse = getHead(memOrphanPool).getValue();
@@ -367,6 +382,12 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    private void onNewPretop() {
+        for (Listener listener : listeners) {
+            listener.onMessage(new Message(xdagTopStatus.getPreTop()));
+        }
+    }
+
     /** 检查更新主链 * */
     @Override
     public synchronized void checkNewMain() {
@@ -389,23 +410,24 @@ public class BlockchainImpl implements Blockchain {
                 && ct >= p.getTimestamp() + 2 * 1024) {
 //            log.info("setMain success block:{}", Hex.toHexString(p.getHashLow()));
             setMain(p);
-        } else {
-            log.debug("setMain fail block:{}", p != null?Hex.toHexString(p.getHashLow()):"null");
-            if(p != null) {
-                log.debug("""
-                        condition {
-                            1. p != null:{}
-                            2. ((p.flags & BI_REF) != 0):{}
-                            3. i > 1:{}, i={}
-                            4. XdagTime.getCurrentTimestamp() >= p.getTimestamp() + 2 * 1024:{}
-                        }
-                        """,
-                        p != null,
-                        ((p.getInfo().flags & BI_REF) != 0),
-                        i > 1, i,
-                        ct >= p.getTimestamp() + 2 * 1024);
-            }
         }
+//        else {
+//            log.debug("setMain fail block:{}", p != null?Hex.toHexString(p.getHashLow()):"null");
+//            if(p != null) {
+//                log.debug("""
+//                        condition {
+//                            1. p != null:{}
+//                            2. ((p.flags & BI_REF) != 0):{}
+//                            3. i > 1:{}, i={}
+//                            4. XdagTime.getCurrentTimestamp() >= p.getTimestamp() + 2 * 1024:{}
+//                        }
+//                        """,
+//                        p != null,
+//                        ((p.getInfo().flags & BI_REF) != 0),
+//                        i > 1, i,
+//                        ct >= p.getTimestamp() + 2 * 1024);
+//            }
+//        }
     }
 
     /** 回退到区块block * */
@@ -507,7 +529,7 @@ public class BlockchainImpl implements Blockchain {
         return UnsignedLong.ZERO;
     }
 
-
+    // TODO: 改递归为迭代
     private void applyBlock1(Block block) {
         List<Integer> list=new ArrayList<>();//建立一个整数列表，一个节点列表，两个栈
         List<Block> curr=new ArrayList();
@@ -598,6 +620,9 @@ public class BlockchainImpl implements Blockchain {
         // 接收奖励
         acceptAmount(block, UnsignedLong.valueOf(reward));
         xdagStats.nmain++;
+//        log.debug("After SetMain, Current main height:{}",xdagStats.nmain);
+
+//        xdagStats.totalnmain = Math.max(xdagStats.nmain,xdagStats.totalnmain);
 
         // 递归执行主块引用的区块 并获取手续费
         acceptAmount(block, applyBlock(block));
@@ -605,7 +630,9 @@ public class BlockchainImpl implements Blockchain {
         // TODO:补充手续费
         updateBlockRef(block, new Address(block));
 
-        randomXUtils.randomXSetForkTime(block);
+        if (randomXUtils != null) {
+            randomXUtils.randomXSetForkTime(block);
+        }
 
     }
 
@@ -626,7 +653,9 @@ public class BlockchainImpl implements Blockchain {
         acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
         acceptAmount(block, unApplyBlock(block));
 
-        randomXUtils.randomXUnsetForkTime(block);
+        if (randomXUtils != null) {
+            randomXUtils.randomXUnsetForkTime(block);
+        }
     }
 
     @Override
@@ -676,10 +705,9 @@ public class BlockchainImpl implements Blockchain {
 
         Address preTop = null;
         byte[] pretopHash = getPreTopMainBlockForLink(sendTime);
-
         if (pretopHash != null) {
             if (getBlockByHash(pretopHash,false).getTimestamp() < sendTime ) {
-                preTop = new Address(getPreTopMainBlockForLink(sendTime), XdagField.FieldType.XDAG_FIELD_OUT);
+                preTop = new Address(pretopHash, XdagField.FieldType.XDAG_FIELD_OUT);
                 res++;
             }
         }
@@ -704,8 +732,9 @@ public class BlockchainImpl implements Blockchain {
 
         long sendTime = XdagTime.getMainTime();
         Address preTop = null;
-        if (getPreTopMainBlockForLink(sendTime) != null) {
-            preTop = new Address(getPreTopMainBlockForLink(sendTime), XdagField.FieldType.XDAG_FIELD_OUT);
+        byte[] pretopHash = getPreTopMainBlockForLink(sendTime);
+        if (pretopHash != null) {
+            preTop = new Address(pretopHash, XdagField.FieldType.XDAG_FIELD_OUT);
             res++;
         }
         List<Address> refs = Lists.newArrayList();
@@ -719,12 +748,9 @@ public class BlockchainImpl implements Blockchain {
         return new Block(sendTime, null, refs, true, null, kernel.getConfig().getPoolTag(), -1);
     }
 
-    /*
-     * @Author punk
+    /**
      *
      * @Description 从orphan中获取一定数量的orphan块用来link
-     *
-     * @Date 2020/4/21
      *
      * @Param [num]
      *
@@ -803,15 +829,15 @@ public class BlockchainImpl implements Blockchain {
     public BigInteger calculateBlockDiff(Block block) {
 
         if (block.getInfo().getDifficulty() != null) {
+//            log.debug("block 的难度不为空，hash[{}]", Hex.toHexString(block.getHash()));
             return block.getInfo().getDifficulty();
         }
 
-        BigInteger diff0 = BigInteger.ZERO;
+        BigInteger diff0;
         // 初始区块自身难度设置
-        if (randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
+        if (randomXUtils!=null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
                 && XdagTime.isEndOfEpoch(block.getTimestamp())) {
             diff0 = getDiffByRandomXHash(block);
-
         } else {
             diff0 = getDiffByRawHash(block.getHash());
         }
@@ -859,6 +885,9 @@ public class BlockchainImpl implements Blockchain {
                         && (XdagTime.getEpoch(tmpBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp()))) {
                     curDiff = tmpBlock.getInfo().getDifficulty().add(diff0);
                 }
+                if (curDiff == null) {
+                    curDiff = BigInteger.ZERO;
+                }
                 if (curDiff.compareTo(maxDiff) > 0) {
                     maxDiff = curDiff;
                     maxDiffLink = ref;
@@ -878,11 +907,12 @@ public class BlockchainImpl implements Blockchain {
     public BigInteger getDiffByRandomXHash(Block block) {
         long epoch = XdagTime.getEpoch(block.getTimestamp());
         byte[] data = new byte[64];
-        byte[] rxHash = Sha256Hash.hash(block.getXdagBlock().getData(),0,480);
+        byte[] rxHash = Hash.sha256(BytesUtils.subArray(block.getXdagBlock().getData(),0,512-32));
         System.arraycopy(rxHash,0,data,0,32);
         System.arraycopy(block.getXdagBlock().getField(15).getData(),0,data,32,32);
         byte[] hash = Arrays.reverse(randomXUtils.randomXBlockHash(data,data.length,epoch));
         if (hash != null) {
+            log.debug("New Block randomX hash:{}",Hex.toHexString(hash));
             return getDiffByRawHash(hash);
         }
         return getDiffByRawHash(block.getHash());
@@ -1042,12 +1072,11 @@ public class BlockchainImpl implements Blockchain {
             ECDSASignature sig = inBlock.getOutsig();
 
             for (ECKeyPair ecKey : ecKeys) {
-                byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPublicKey(), true);
+                byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
                 byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
 //                log.debug("verify encoded:{}", Hex.toHexString(digest));
                 byte[] hash = Hash.hashTwice(digest);
-//                log.debug("verify hash:{}", Hex.toHexString(hash));
-                if (ecKey.verify(hash, sig)) {
+                if (ECKeyPair.verify(hash, sig, publicKeyBytes)) {
                     canUse = true;
                 }
             }
@@ -1056,9 +1085,9 @@ public class BlockchainImpl implements Blockchain {
                 //TODO this maybe some old issue( input and output was same )
                 List<ECKeyPair> keys = block.getPubKeys();
                 for (ECKeyPair ecKey : keys) {
-                    byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
+                    byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
                     byte[] hash = Hash.hashTwice(BytesUtils.merge(subdata, publicKeyBytes));
-                    if (ecKey.verify(hash, sig)) {
+                    if (ECKeyPair.verify(hash, sig, publicKeyBytes)) {
                         return true;
                     }
                 }
@@ -1199,9 +1228,6 @@ public class BlockchainImpl implements Blockchain {
         Block temp = getBlockByHash(xdagTopStatus.getTop(), false);
         if(temp == null) {
             temp = getBlockByHash(xdagTopStatus.getPreTop(), false);
-            if (temp == null) {
-//                log.error("Pretop is null");
-            }
         }
         List<Block> res = new ArrayList<>();
         while (count > 0) {
@@ -1226,9 +1252,7 @@ public class BlockchainImpl implements Blockchain {
         Block temp = getBlockByHash(xdagTopStatus.getTop(), false);
         if(temp == null) {
             temp = getBlockByHash(xdagTopStatus.getPreTop(), false);
-            if (temp == null) {
-//                log.error("Pretop is null");
-            }
+            //                log.error("Pretop is null");
         }
         List<Block> res = new ArrayList<>();
         while (count > 0) {

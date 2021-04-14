@@ -148,7 +148,6 @@ public class Xdag03 extends XdagHandler {
         for (Block block : blocks) {
             sendNewBlock(block, 1);
         }
-        log.debug("Have Send {} block",blocks.size());
         sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
     }
 

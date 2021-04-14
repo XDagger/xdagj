@@ -56,6 +56,7 @@ import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -88,11 +89,17 @@ public class SyncManager {
     private ScheduledFuture<?> connectlibp2pFuture;
     private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
 
+
+    // 监听是否需要自己启动
+    private StateListener stateListener;
+
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
         this.channelManager = kernel.getChannelManager();
+
+        this.stateListener = new StateListener();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
 
     }
@@ -105,6 +112,47 @@ public class SyncManager {
 
     public void start() {
         log.debug("Download receiveBlock run...");
+        new Thread(this.stateListener, "xdag-stateListener").start();
+    }
+
+
+    private class StateListener implements Runnable {
+
+        boolean isRunning = false;
+
+        @Override
+        public void run() {
+            this.isRunning = true;
+            while (this.isRunning) {
+                if (isTimeToStart()) {
+                    makeSyncDone();
+                }
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * 监听kernel状态 判断是否该自启
+     */
+    public boolean isTimeToStart() {
+        boolean res = false;
+        if(Config.MAINNET) {
+            if (kernel.getXdagState() != XdagState.CONN && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ Config.WAIT_EPOCH)) {
+                res = true;
+            }
+        } else {
+            if (kernel.getXdagState() != XdagState.CTST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ Config.WAIT_EPOCH)) {
+                makeSyncDone();
+                res = true;
+            }
+        }
+        return res;
     }
 
     /** Processing the queue adding blocks to the chain. */
@@ -118,17 +166,21 @@ public class SyncManager {
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
-            if (!syncDone && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0) {
-//                log.info("current maxDiff:" + blockchain.getXdagStats().getMaxdifficulty().toString(16));
-                // 只有同步完成的时候 才能开始线程 再一次
-                if (!syncDone) {
-                    if (Config.MAINNET) {
-                        kernel.getXdagState().setState(XdagState.CONN);
-                    } else {
-                        kernel.getXdagState().setState(XdagState.CTST);
-                    }
+            // 状态设置为正在同步
+            if (!syncDone) {
+                if (Config.MAINNET) {
+                    kernel.setXdagState(XdagState.CONN);
+                } else {
+                    kernel.setXdagState(XdagState.CTST);
                 }
+            }
+
+            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
+            if (!syncDone
+                    && ((blockchain.getXdagStats().getMaxdifficulty().compareTo(BigInteger.ZERO)>0
+                    && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)
+                    )
+            ) {
                 makeSyncDone();
             }
         }
@@ -233,12 +285,9 @@ public class SyncManager {
      * @return
      */
     public void syncPopBlock(BlockWrapper blockWrapper) {
-//        AtomicBoolean result = new AtomicBoolean(false);
         Block block = blockWrapper.getBlock();
         ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
-        // re import all for waiting this block
         syncMap.computeIfPresent(key, (k, v)->{
-//            result.set(true);
             blockchain.getXdagStats().nwaitsync--;
             v.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
@@ -247,9 +296,6 @@ public class SyncManager {
                     case IMPORTED_BEST:
                     case IMPORTED_NOT_BEST:
                         // TODO import成功后都需要移除
-//                        if(syncPopBlock(bw)) {
-//                            v.remove(bw);
-//                        }
                         syncPopBlock(bw);
                         v.remove(bw);
                         break;
@@ -275,7 +321,6 @@ public class SyncManager {
             }
             return v;
         });
-//        return result.get();
     }
 
     public void makeSyncDone() {
@@ -285,22 +330,30 @@ public class SyncManager {
         }
         syncDone = true;
 
+        System.out.println("Sync done");
+        // 关闭状态检测进程
+        this.stateListener.isRunning = false;
+
         if (Config.MAINNET) {
-            kernel.getXdagState().setState(XdagState.SYNC);
+            if (kernel.getXdagState() != XdagState.SYNC){
+                kernel.setXdagState(XdagState.SYNC);
+            }
         } else {
-            kernel.getXdagState().setState(XdagState.STST);
+            if (kernel.getXdagState() != XdagState.STST) {
+                kernel.setXdagState(XdagState.STST);
+            }
         }
 
-//        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
+        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
 
         SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         Date date = new Date(System.currentTimeMillis());
         System.out.println("Start PoW at:"+formatter.format(date));
 
         // 检查主块链
-//        kernel.getBlockchain().startCheckMain();
         kernel.getMinerServer().start();
         kernel.getPow().start();
+//        kernel.getBlockchain().registerListener(kernel.getPow());
         kernel.getLibp2pNetwork().start();
 //        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
 

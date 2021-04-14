@@ -31,18 +31,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.wallet.OldWallet;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.consensus.Task;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
@@ -54,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
-public class AwardManagerImpl implements AwardManager {
+public class AwardManagerImpl implements AwardManager, Runnable {
     /** 每一轮的确认数是16 */
     private static final int CONFIRMATIONS_COUNT = 16;
     /** 矿池自己的收益 */
@@ -92,6 +91,58 @@ public class AwardManagerImpl implements AwardManager {
         init();
         setPoolConfig();
     }
+    private final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
+    private Thread t;
+
+    @Override
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                AwardBlock awardBlock = awardBlockBlockingQueue.take();
+                payAndaddNewAwardBlock(awardBlock);
+            }catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error(" can not take the awardBlock from awardBlockQueue ");
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void start() {
+        if (t == null) {
+            t = new Thread(this, "AwardManagerImpl");
+            t.start();
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (t != null) {
+            try {
+                t.interrupt();
+                t.join();
+            } catch (InterruptedException e) {
+                log.error("Failed to stop AwardManagerImpl");
+                Thread.currentThread().interrupt();
+            }
+            t = null;
+        }
+    }
+
+
+
+
+    @Override
+    public void addAwardBlock(byte[] share, byte[] hash, long generateTime){
+        AwardBlock awardBlock = new AwardBlock();
+        awardBlock.share = share;
+        awardBlock.hash = hash;
+        awardBlock.generateTime = generateTime;
+        if (!awardBlockBlockingQueue.offer(awardBlock)) {
+            log.error("Failed to add a awardBlock to the b queue!" );
+        }
+    }
 
     /** 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值 */
     private static double processOutdatedMiner(Miner miner) {
@@ -123,6 +174,7 @@ public class AwardManagerImpl implements AwardManager {
     }
 
     public void init() {
+        log.debug("容器初始化");
         // 容器的初始化
         for (int i = 0; i < 16; i++) {
             blockHashs.add(null);
@@ -163,21 +215,13 @@ public class AwardManagerImpl implements AwardManager {
 
     /**
      * 对主块进行支付 并且设置当前这一轮主块的相关信息
-     *
-     * @param share
-     *            接收到的满足最小hash 的shares
-     * @param hash
-     *            主块的hash
-     * @param generateTime
-     *            generate
      */
-    @Override
-    public void payAndaddNewAwardBlock(byte[] share, byte[] hash, long generateTime) {
+    public void payAndaddNewAwardBlock(AwardBlock awardBlock) {
         log.debug("Pay miner");
-        payMiners(generateTime);
-        log.debug("set index:" + (int) ((generateTime >> 16) & 0xf));
-        blockHashs.set((int) ((generateTime >> 16) & 0xf), new ByteArrayWrapper(hash));
-        minShares.set((int) ((generateTime >> 16) & 0xf), new ByteArrayWrapper(share));
+        payMiners(awardBlock.generateTime);
+        log.debug("set index:" + (int) ((awardBlock.generateTime >> 16) & 0xf));
+        blockHashs.set((int) ((awardBlock.generateTime >> 16) & 0xf), new ByteArrayWrapper(awardBlock.hash));
+        minShares.set((int) ((awardBlock.generateTime >> 16) & 0xf), new ByteArrayWrapper(awardBlock.share));
     }
 
     @Override
@@ -199,8 +243,8 @@ public class AwardManagerImpl implements AwardManager {
     /**
      * @param time
      *            时间段
-     * @return 错误代码 -1 没有矿工参与挖矿 不进行支付操作 -2 找不到对应的区块hash 或者 结果nonce -3 找不到对应的区块 -4
-     *         区块余额不足，不是主块不进行支付 -5 余额分配失败 -6 找不到签名密钥 -7 难度太小 不予支付
+     * @return 错误代码   -1 没有矿工参与挖矿 不进行支付操作 -2 找不到对应的区块hash 或者 结果nonce -3 找不到对应的区块
+     *                  -4区块余额不足，不是主块不进行支付 -5 余额分配失败 -6 找不到签名密钥 -7 难度太小 不予支付
      */
     public int payMiners(long time) {
         log.debug("this is payMiners........");
@@ -241,11 +285,18 @@ public class AwardManagerImpl implements AwardManager {
         Block block = blockchain.getBlockByHash(hashlow, false);
         //TODO
 //        keyPos = kernel.getBlockStore().getBlockKeyIndex(hashlow);
-//        if (keyPos < 0) {
-//            keyPos = blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash)) != null
-//                    ? blockchain.getMemOurBlocks().get(new ByteArrayWrapper(hash))
-//                    : -2;
-//        }
+        log.debug("Hash low : "+Hex.toHexString(hashlow));
+        if (keyPos < 0) {
+            if (kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow)) == null) {
+                keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
+            } else {
+                keyPos = kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow));
+            }
+            log.debug("keypos : "+keyPos);
+            if (keyPos < 0){
+                return -2;
+            }
+        }
 
         if (block == null) {
             log.debug("can't find the block");
@@ -268,9 +319,6 @@ public class AwardManagerImpl implements AwardManager {
             log.debug("Balance no enough");
             return -5;
         }
-
-        keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
-
 
         if (keyPos < 0) {
             log.debug("can't find the key");
@@ -353,7 +401,7 @@ public class AwardManagerImpl implements AwardManager {
         if (miner.getMinerStates() == MinerStates.MINER_ARCHIVE
                 &&
                 // c好过十六个时间戳没有进行计算
-                currentTaskTime - miner.getTaskTime() > 65536 * 16) {
+                currentTaskIndex - miner.getTaskIndex() > 16) {
             // 这个主要是为了超过十六个快没有挖矿 所以要给他支付
             diffSum += processOutdatedMiner(miner);
             diffCount++;
@@ -373,6 +421,7 @@ public class AwardManagerImpl implements AwardManager {
 
     public void doPayments(
             byte[] hash, int paymentsPerBlock, PayData payData, int keyPos, long time) {
+        log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
@@ -396,6 +445,7 @@ public class AwardManagerImpl implements AwardManager {
          */
         // 不断循环 支付给矿工
         for (Miner miner : miners) {
+            log.debug("Do payments for every miner");
             // 保存的是一个矿工所有的收入
             long paymentSum = 0L;
             // 根据以前的情况分发奖励
@@ -435,6 +485,7 @@ public class AwardManagerImpl implements AwardManager {
 
     public void transaction(byte[] hashLow, ArrayList<Address> receipt, long payAmount, int keypos) {
         log.debug("All Payment: {}", payAmount);
+        log.debug("解锁的keypos为[{}]",keypos);
         for (Address address : receipt) {
             log.debug("pay data: {}", Hex.toHexString(address.getData()));
         }
@@ -450,6 +501,13 @@ public class AwardManagerImpl implements AwardManager {
             block.signOut(xdagWallet.getDefKey().ecKey);
         }
         log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
+        // 打印block的值
+        log.debug("---------------交易块打印出来的字段为------------------");
+        XdagBlock b = block.getXdagBlock();
+        for (int i = 0; i < 15; i++) {
+            log.debug("字段[{}]对应的数据为[{}]",i,Hex.toHexString(b.getField(i).getData()));
+        }
+        log.debug("---------------交易块打印完毕------------------");
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
         // kernel.getBlockchain().tryToConnect(block);
@@ -475,5 +533,14 @@ public class AwardManagerImpl implements AwardManager {
         double prevDiffSums;
         // 记录奖励矿工的位置
         byte[] rewardMiner = null;
+    }
+
+
+    /** 用于记录奖励主块的信息 */
+    public class AwardBlock {
+        byte[] share;
+        byte[] hash;
+        long generateTime;
+
     }
 }
