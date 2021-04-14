@@ -29,6 +29,7 @@ import io.xdag.crypto.jni.Native;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -120,6 +121,7 @@ public class Config implements Serializable {
     private byte[] dnetKeyBytes = new byte[2048];
     private DnetKeys xKeys;
 
+    private List<String> whiteIPList = new ArrayList<>(){};
 
     /** 等待超过10个epoch默认启动挖矿 **/
     public static long WAIT_EPOCH = 10;
@@ -291,5 +293,11 @@ public class Config implements Serializable {
         globalMinerChannelLimit = setting.getInt("globalMinerChannelLimit");
         maxConnectPerIp = setting.getInt("maxConnectPerIp");
         maxMinerPerAccount = setting.getInt("maxMinerPerAccount");
+
+        String[] list = setting.getStrings("whiteIPs");
+        if (list != null) {
+            log.debug("{} IP access", list.length);
+            whiteIPList.addAll(Arrays.asList(list));
+        }
     }
 }

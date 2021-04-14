@@ -142,6 +142,7 @@ public class Kernel {
         // start channel manager
         // ====================================
         channelMgr = new XdagChannelManager(this);
+        channelMgr.start();
         netDBMgr = new NetDBManager(this.config);
         log.debug("NetDB Manager init.");
         netDBMgr.init();

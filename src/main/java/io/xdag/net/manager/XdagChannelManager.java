@@ -28,10 +28,7 @@ import io.xdag.core.BlockWrapper;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -47,10 +44,16 @@ public class XdagChannelManager {
     // 广播区块
     private final Thread blockDistributeThread;
 
+    private Set<InetSocketAddress> addressSet  = new HashSet<>();
+
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
         // Resending new blocks to network in loop
         this.blockDistributeThread = new Thread(this::newBlocksDistributeLoop, "NewSyncThreadBlocks");
+        initWhiteIPs();
+    }
+
+    public void start() {
         blockDistributeThread.start();
     }
 
@@ -153,16 +156,27 @@ public class XdagChannelManager {
 
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
-//        if (address.getAddress().isLoopbackAddress()) {
-//            // 测试期间 只保留一个
-//            return false;
-//        }
+
+        // 默认空为允许所有连接
+        if (addressSet.size() != 0) {
+            if (!addressSet.contains(address)) {
+                return false;
+            }
+        }
+
         if (isSelfAddress(address)) {
             // 不连接自己
             return false;
         }
-
         return true;
+    }
+
+    private void initWhiteIPs() {
+        List<String> ipList = kernel.getConfig().getWhiteIPList();
+        for(String ip : ipList){
+            String [] ips = ip.split(":");
+            addressSet.add(new InetSocketAddress(ips[0],Integer.parseInt(ips[1])));
+        }
     }
 
     // use for ipv4
