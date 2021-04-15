@@ -1,4 +1,7 @@
 # Welcome to XDAGJ
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_shield)
+![](https://github.com/XDagger/xdagj/actions/workflows/maven.yml/badge.svg)
+
 
 ## About
 
@@ -101,14 +104,14 @@ start para:
 -f yourpath     [Change the file storage path to yourpath ]
 -p ip:port      [Bind ip:port as whitelist address]
 -P (CFG)
-                [set pool config; CFG is miners:maxip:maxconn:fee:reward:direct:fund
-                  miners - maximum allowed number of miners
-                  maxip - maximum allowed number of miners connected from single ip
-                  maxconn - maximum allowed number of miners with the same address
-                  fee - pool fee in percent
-                  reward - reward to miner who got a block in percent
-                  direct - reward to miners participated in earned block in percent
-                  fund - community fund fee in percent
+[set pool config; CFG is miners:maxip:maxconn:fee:reward:direct:fund
+miners - maximum allowed number of miners
+maxip - maximum allowed number of miners connected from single ip
+maxconn - maximum allowed number of miners with the same address
+fee - pool fee in percent
+reward - reward to miner who got a block in percent
+direct - reward to miners participated in earned block in percent
+fund - community fund fee in percent
 ```
 
 Execution parameters :
@@ -136,7 +139,7 @@ xdag> terminate                 [Terminate xdag process]
 
 ## Contribute
 
-This is an Open Source Project and we welcome all sorts of contributions, including reporting issues, contributing code, and helping us improve our community. Here are the instructions to get you started. 
+This is an Open Source Project and we welcome all sorts of contributions, including reporting issues, contributing code, and helping us improve our community. Here are the instructions to get you started.
 
 ### Reporting Issues
 
