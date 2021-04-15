@@ -24,14 +24,16 @@
 package io.xdag.core;
 
 public enum ImportResult {
-    //
-    IMPORTED_BEST, IMPORTED_NOT_BEST,
-    // 已存在
+    ERROR,
     EXIST,
-    // 无法找到这个块对应的输入
-    NO_PARENT, INVALID_BLOCK, CONSENSUS_BREAK;
+    NO_PARENT,
+    INVALID_BLOCK,
+    IMPORTED_NOT_BEST,
+    IMPORTED_BEST;
 
     byte[] hashLow;
+
+    String errorInfo;
 
     public byte[] getHashLow() {
         return hashLow;
@@ -41,7 +43,8 @@ public enum ImportResult {
         this.hashLow = hashLow;
     }
 
-    public boolean isSuccessful() {
-        return equals(IMPORTED_BEST) || equals(IMPORTED_NOT_BEST);
+    public void setError(String errorInfo) {
+        this.errorInfo = errorInfo;
     }
+
 }

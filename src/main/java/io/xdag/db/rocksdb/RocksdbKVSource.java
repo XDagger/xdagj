@@ -23,35 +23,8 @@
  */
 package io.xdag.db.rocksdb;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.commons.codec.binary.Hex;
-import org.rocksdb.BackupEngine;
-import org.rocksdb.BackupableDBOptions;
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.BloomFilter;
-import org.rocksdb.CompressionType;
-import org.rocksdb.Env;
-import org.rocksdb.LRUCache;
-import org.rocksdb.Options;
-import org.rocksdb.ReadOptions;
-import org.rocksdb.RestoreOptions;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
-import org.rocksdb.WriteBatch;
-import org.rocksdb.WriteOptions;
-
+import cn.hutool.core.lang.Pair;
+import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
@@ -59,37 +32,37 @@ import io.xdag.utils.FileUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
+import org.rocksdb.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Slf4j
+@Setter
+@Getter
 public class RocksdbKVSource implements KVSource<byte[], byte[]> {
-
-    public static final int HASH_LEN = 32;
-    public static final int PREFIX_BYTES = 8;
-    // public static final int PREFIX_BYTES = 8;
 
     static {
         RocksDB.loadLibrary();
     }
 
-    @Setter
-    @Getter
     private Config config;
-
-    @Setter
-    @Getter
     private String name;
-
-    @Setter
-    @Getter
     private RocksDB db;
-
-    @Setter
-    @Getter
     private ReadOptions readOpts;
-
-    @Setter
-    @Getter
     private boolean alive;
+    private int prefixSeekLength;
 
     /**
      * The native RocksDB insert/update/delete are normally thread-safe However
@@ -97,16 +70,17 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
      * concurrent execution of insert/delete/update operations however blocks them
      * on init/close/delete operations
      */
-    private ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
+    private final ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
 
     public RocksdbKVSource(String name) {
         this.name = name;
         log.debug("New RocksdbKVSource: " + name);
     }
 
-    public RocksdbKVSource(Config config, String name) {
-        this.config = config;
+    public RocksdbKVSource(String name, int prefixSeekLength) {
         this.name = name;
+        this.prefixSeekLength = prefixSeekLength;
+        log.debug("New RocksdbKVSource: " + name);
     }
 
     @Override
@@ -136,7 +110,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 options.setIncreaseParallelism(config.getStoreMaxThreads());
 
                 // key prefix for state node lookups
-                options.useFixedLengthPrefixExtractor(16);
+                options.useFixedLengthPrefixExtractor(prefixSeekLength);
 
                 // table options
                 final BlockBasedTableConfig tableCfg;
@@ -152,7 +126,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 readOpts = readOpts.setPrefixSameAsStart(true).setVerifyChecksums(false);
 
                 try {
-                    log.debug("Opening database");
+                    log.info("Opening database");
                     final Path dbPath = getPath();
                     if (!Files.isSymbolicLink(dbPath.getParent())) {
                         Files.createDirectories(dbPath.getParent());
@@ -173,7 +147,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                             log.error("Failed to restore database '{}' from backup", name, e);
                         }
                     }
-
                     log.debug("Initializing new or existing database: '{}'", name);
                     try {
                         db = RocksDB.open(options, dbPath.toString());
@@ -235,8 +208,9 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             }
             if (val != null) {
                 if (db == null) {
-                    System.out.println("db is null");
+                    log.error("db is null");
                 } else {
+                    log.info("put block key ={} ,val = {}",Hex.encodeHexString(key),Hex.encodeHexString(val));
                     db.put(key, val);
                 }
             } else {
@@ -252,6 +226,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                                 + (val == null ? "null" : val.length));
             }
         } catch (RocksDBException e) {
+            System.out.println("Failed to put into db");
             log.error("Failed to put into db '{}'", name, e);
             hintOnTooManyOpenFiles(e);
             throw new RuntimeException(e);
@@ -259,7 +234,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             resetDbLock.readLock().unlock();
         }
     }
-
+    //get 不到
     @Override
     public byte[] get(byte[] key) {
         resetDbLock.readLock().lock();
@@ -367,97 +342,42 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     }
 
     @Override
-    public List<byte[]> prefixValueLookup(byte[] key, int prefixBytes) {
-        // if (prefixBytes != PREFIX_BYTES)
-        // throw new RuntimeException("RocksdbKVSource.prefixLookup() supports only " +
-        // prefixBytes + "-bytes prefix");
-
-        resetDbLock.readLock().lock();
-        try {
-
-            if (log.isTraceEnabled()) {
-                log.trace(
-                        "~> RocksdbKVSource.prefixLookup(): " + name + ", key: " + Hex.encodeHexString(key));
-            }
-
-            // RocksDB sets initial position of iterator to the first key which is greater
-            // or equal to the
-            // seek key
-            // since keys in RocksDB are ordered in asc order iterator must be initiated
-            // with the lowest
-            // key
-            // thus bytes with indexes greater than PREFIX_BYTES must be nullified
-            // byte[] prefix = new byte[PREFIX_BYTES];
-            // arraycopy(key, 0, prefix, 0, PREFIX_BYTES);
-
-            List<byte[]> retList = new ArrayList<>();
-            try (RocksIterator it = db.newIterator(readOpts)) {
-                // it.seek(prefix);
-                it.seek(key);
-                for (; it.isValid(); it.next()) {
-                    if (BytesUtils.keyStartsWith(it.key(), key)) {
-                        retList.add(it.value());
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Failed to seek by prefix in db '{}'", name, e);
-                hintOnTooManyOpenFiles(e);
-                throw new RuntimeException(e);
-            }
-
-            if (log.isTraceEnabled()) {
-                log.trace(
-                        "<~ RocksdbKVSource.prefixLookup(): "
-                                + name
-                                + ", key: "
-                                + Hex.encodeHexString(key)
-                                + ", "
-                                + (retList.isEmpty() ? "null" : retList.size()));
-            }
-
-            return retList;
-
-        } finally {
-            resetDbLock.readLock().unlock();
-        }
+    public List<byte[]> prefixValueLookup(byte[] key) {
+        List<byte[]> retList = Lists.newLinkedList();
+        fetchPrefix(key, pair -> {
+            retList.add(pair.getKey());
+            return Boolean.FALSE;
+        });
+        return retList;
     }
 
     @Override
-    public List<byte[]> prefixKeyLookup(byte[] key, int prefixBytes) {
+    public List<byte[]> prefixKeyLookup(byte[] key) {
+        List<byte[]> retList = Lists.newLinkedList();
+        fetchPrefix(key, pair -> {
+            retList.add(pair.getKey());
+            return Boolean.FALSE;
+        });
+        return retList;
+    }
+
+    @Override
+    public void fetchPrefix(byte[] key, Function<Pair<byte[], byte[]>, Boolean> func) {
         resetDbLock.readLock().lock();
-        try {
-
-            if (log.isTraceEnabled()) {
-                log.trace(
-                        "~> RocksdbKVSource.prefixLookup(): " + name + ", key: " + Hex.encodeHexString(key));
-            }
-
-            List<byte[]> retList = new ArrayList<>();
-            try (RocksIterator it = db.newIterator(readOpts)) {
-                it.seek(key);
-                for (; it.isValid(); it.next()) {
-                    if (BytesUtils.keyStartsWith(it.key(), key)) {
-                        retList.add(it.key());
+        try (RocksIterator it = db.newIterator(readOpts)) {
+            for (it.seek(key); it.isValid(); it.next()) {
+                if (BytesUtils.keyStartsWith(it.key(), key)) {
+                    if (func.apply(Pair.of(it.key(), it.value()))){
+                        return;
                     }
+                } else {
+                    return;
                 }
-            } catch (Exception e) {
-                log.error("Failed to seek by prefix in db '{}'", name, e);
-                hintOnTooManyOpenFiles(e);
-                throw new RuntimeException(e);
             }
-
-            if (log.isTraceEnabled()) {
-                log.trace(
-                        "<~ RocksdbKVSource.prefixLookup(): "
-                                + name
-                                + ", key: "
-                                + Hex.encodeHexString(key)
-                                + ", "
-                                + (retList.isEmpty() ? "null" : retList.size()));
-            }
-
-            return retList;
-
+        } catch (Exception e) {
+            log.error("Failed to seek by prefix in db '{}'", name, e);
+            hintOnTooManyOpenFiles(e);
+            throw new RuntimeException(e);
         } finally {
             resetDbLock.readLock().unlock();
         }

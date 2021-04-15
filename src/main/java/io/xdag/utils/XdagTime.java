@@ -40,21 +40,18 @@ public class XdagTime {
         return xdag_timestamp;
     }
 
-    public static long xdagtimestampToMs(long timestamp) {
-        long ms = timestamp * 1000;
-        return (ms >> 10) - 1;
+    public static long xdagTimestampToMs(long timestamp) {
+        return (timestamp * 1000) >> 10;
     }
 
     /** 获取该时间戳所属的epoch */
     public static long getEpoch(long time) {
-        long epoch = time >> 16;
-        return epoch;
+        return time >> 16;
     }
 
     /** 获取时间戳所属epoch的最后一个时间戳 主要用于mainblock */
     public static long getEndOfEpoch(long time) {
-        long result = time | 0xffff;
-        return result;
+        return time | 0xffff;
     }
 
     /** 获取当前时间所属epoch的最后一个时间戳 */
@@ -63,8 +60,7 @@ public class XdagTime {
     }
 
     public static long MainTime() {
-        long time = getCurrentTimestamp();
-        return time >> 16;
+        return getCurrentTimestamp() >> 16;
     }
 
     public static boolean isEndOfEpoch(long time) {

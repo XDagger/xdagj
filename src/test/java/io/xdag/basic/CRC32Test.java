@@ -23,37 +23,17 @@
  */
 package io.xdag.basic;
 
-import io.xdag.crypto.Sha256Hash;
 import io.xdag.utils.BytesUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 import static io.xdag.utils.BasicUtils.crc32Verify;
+import static org.junit.Assert.*;
 
 public class CRC32Test {
 
     @Test
     public void TestCrc() {
-        // 278b7f95
-        // String reque =
-        // "8b010002278b7f95200000000000000000000000000000000000000000000100" +
-        // "8ec4205108aba99b000000000000000000000000000000000000000000000000" +
-        // "204a5dc8bbf9727f3e03000000000000204a5dc8bbf9727f3e03000000000000" +
-        // "6400000000000000640000000000000032000000000000003200000000000000" +
-        // "04000000040000003ef47801000000007f000001611e7f000001b8227f000001" +
-        // "5f767f000001d49d000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000" +
-        // "0000000000000000000000000000000000000000000000000000000000000000";
-
         String reque = "8b050002a353147e3853050000000040ffffc63c7b0100000000000000000000"
                 + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"
                 + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"
@@ -63,13 +43,7 @@ public class CRC32Test {
 
         byte[] uncryptData = Hex.decode(reque);
         int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-        // System.out.println(Integer.toHexString(crc));
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-        // System.out.println(Hex.toHexString(uncryptData));
-
-        // System.out.println(crc32Verify(uncryptData,crc));
-        assert (crc32Verify(uncryptData, crc));
-
-        System.out.println(Hex.toHexString(Arrays.reverse(Sha256Hash.hashTwice(Hex.decode(reque)))));
+        assertTrue(crc32Verify(uncryptData, crc));
     }
 }

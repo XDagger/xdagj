@@ -28,10 +28,7 @@ import io.xdag.core.BlockWrapper;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -41,17 +38,22 @@ import lombok.extern.slf4j.Slf4j;
 public class XdagChannelManager {
     protected ConcurrentHashMap<InetSocketAddress, XdagChannel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, XdagChannel> activeChannels = new ConcurrentHashMap<>();
-    private Kernel kernel;
+    private final Kernel kernel;
     /** Queue with new blocks from other peers */
-    private BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
+    private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
     // 广播区块
-    private Thread blockDistributeThread;
+    private final Thread blockDistributeThread;
+
+    private Set<InetSocketAddress> addressSet  = new HashSet<>();
 
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
-
         // Resending new blocks to network in loop
         this.blockDistributeThread = new Thread(this::newBlocksDistributeLoop, "NewSyncThreadBlocks");
+        initWhiteIPs();
+    }
+
+    public void start() {
         blockDistributeThread.start();
     }
 
@@ -69,7 +71,6 @@ public class XdagChannelManager {
 
     public Set<InetSocketAddress> getActiveAddresses() {
         Set<InetSocketAddress> set = new HashSet<>();
-
         for (XdagChannel c : activeChannels.values()) {
             Node p = c.getNode();
             set.add(new InetSocketAddress(p.getHost(), p.getPort()));
@@ -103,8 +104,7 @@ public class XdagChannelManager {
 
     // TODO:怎么发送 目前是发给除receive的节点
     public void sendNewBlock(BlockWrapper blockWrapper) {
-
-        Node receive = null;
+        Node receive;
         // 说明是自己产生的
         if (blockWrapper.getRemoteNode() == null
                 || blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
@@ -123,12 +123,6 @@ public class XdagChannelManager {
         }
     }
 
-    /**
-     * When a channel becomes active.
-     *
-     * @param channel
-     * @param node
-     */
     public void onChannelActive(XdagChannel channel, Node node) {
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
@@ -136,7 +130,6 @@ public class XdagChannelManager {
     }
 
     public void onNewForeignBlock(BlockWrapper blockWrapper) {
-
         newForeignBlocks.add(blockWrapper);
     }
 
@@ -148,19 +141,8 @@ public class XdagChannelManager {
         return channels.size();
     }
 
-    public List<XdagChannel> getIdleChannels() {
-        List<XdagChannel> list = new ArrayList<>();
-
-        for (XdagChannel c : activeChannels.values()) {
-            if (c.getMsgQueue().isIdle()) {
-                list.add(c);
-            }
-        }
-        return list;
-    }
-
     public void remove(XdagChannel ch) {
-        log.debug("Channel removed: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
+//        log.debug("Channel removed: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
         channels.remove(ch.getInetSocketAddress());
         if (ch.isActive()) {
             activeChannels.remove(ch.getNode().getHexId());
@@ -173,8 +155,38 @@ public class XdagChannelManager {
     }
 
     public boolean isAcceptable(InetSocketAddress address) {
-        // todo:boolean res = netDBManager.canAccept(address);
+        //TODO res = netDBManager.canAccept(address);
+
+        // 默认空为允许所有连接
+        if (addressSet.size() != 0) {
+            if (!addressSet.contains(address)) {
+                return false;
+            }
+        }
+
+        if (isSelfAddress(address)) {
+            // 不连接自己
+            return false;
+        }
         return true;
+    }
+
+    private void initWhiteIPs() {
+        List<String> ipList = kernel.getConfig().getWhiteIPList();
+        for(String ip : ipList){
+            String [] ips = ip.split(":");
+            addressSet.add(new InetSocketAddress(ips[0],Integer.parseInt(ips[1])));
+        }
+    }
+
+    // use for ipv4
+    private boolean isSelfAddress(InetSocketAddress address) {
+        String inIP = address.getAddress().toString();
+        inIP = inIP.substring(inIP.lastIndexOf("/")+1);
+        if (inIP.equals(kernel.getConfig().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodePort())) {
+            return true;
+        }
+        return false;
     }
 
     public void stop() {

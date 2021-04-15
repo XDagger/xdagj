@@ -28,6 +28,4 @@ public interface DatabaseFactory {
 
     /** Close all opened resources. */
     void close();
-
-    SimpleFileStore getSumsDB();
 }

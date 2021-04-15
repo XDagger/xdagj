@@ -23,35 +23,19 @@
  */
 package io.xdag.net;
 
-import static io.xdag.utils.BytesUtils.isFullZero;
+import io.xdag.net.message.NetDB;
+import io.xdag.net.message.impl.SumRequestMessage;
+import io.xdag.utils.BytesUtils;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
-
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.net.message.NetDB;
-import io.xdag.net.message.impl.SumRequestMessage;
-import io.xdag.utils.BytesUtils;
+import static io.xdag.utils.BytesUtils.isFullZero;
 
 public class NetTest {
-
-    Config config;
-    Kernel kernel;
-
-    @Before
-    public void setUp() throws Exception {
-        config = new Config();
-        // config.initKeys();
-        kernel = new Kernel(config);
-        kernel.testStart();
-    }
-
     @Test
     public void testNetDB() {
         NetDB netDB = new NetDB();

@@ -97,7 +97,7 @@ public class MinerCalculate {
         return diffToPay(sum, count);
     }
 
-    public static void printfMinerStats(Miner miner) {
+    public static String minerStats(Miner miner) {
         StringBuilder res = new StringBuilder();
         String address = BasicUtils.hash2Address(miner.getAddressHash());
         double unpaid = calculateUnpaidShares(miner);
@@ -139,7 +139,7 @@ public class MinerCalculate {
                     .append("\n");
             res.append(channelStr);
         }
-        System.out.println(res);
+        return res.toString();
     }
 
     /**

@@ -39,9 +39,9 @@ import org.apache.commons.codec.binary.Hex;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
-    private Config config;
-    private XdagChannel channel;
-    private Kernel kernel;
+    private final Config config;
+    private final XdagChannel channel;
+    private final Kernel kernel;
     private boolean isServer;
 
     public XdagHandshakeHandler(Kernel kernel, Config config, XdagChannel channel) {
@@ -60,7 +60,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         channel.initWithNode(
                 // 连接到对方的channel 并将对方记录为node
                 remoteAddress.getHostName(), remoteAddress.getPort());
-        // TODO:如果为服务器端 发送pubkey
+        // TODO:如果为服务器端 发送pubKey
         if (isServer) {
             channel.sendPubkey(ctx);
         }
@@ -107,9 +107,8 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
 
                     log.info("connect a new pool,host[{}]", channel.getInetSocketAddress().toString());
 
-                    log.debug("握手协议结束，开始传输数据");
-                    // 握手协议通过
-                    kernel.getChannelManager().onChannelActive(channel, channel.getNode());
+                    // handshake ok
+                    kernel.getChannelMgr().onChannelActive(channel, channel.getNode());
                     ctx.pipeline().remove(this);
                     channel.activateXdag(ctx, XdagVersion.V03);
 
@@ -140,9 +139,6 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
     }
 
     public boolean checkDnetPubkey(byte[] pubkey) {
-        if (Arrays.equals(config.getXKeys().pub, pubkey)) {
-            return true;
-        }
-        return false;
+        return Arrays.equals(config.getXKeys().pub, pubkey);
     }
 }

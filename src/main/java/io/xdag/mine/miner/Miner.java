@@ -32,14 +32,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.mine.MinerChannel;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class Miner {
@@ -93,7 +91,6 @@ public class Miner {
         this.meanLogDiff = 0.0;
         this.registeredTime = Calendar.getInstance().getTime();
         boundedTaskCounter = 0;
-
         // 容器的初始化
         for (int i = 0; i < 16; i++) {
             maxDiffs.add(0.0);

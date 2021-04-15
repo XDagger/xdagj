@@ -23,15 +23,13 @@
  */
 package io.xdag.net.node;
 
-import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomUtils;
 
-import io.xdag.utils.BytesUtils;
-import lombok.Getter;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 public class Node {
 
@@ -45,7 +43,7 @@ public class Node {
     private byte[] id;
     
     @Getter
-    private NodeStat stat = new NodeStat();
+    private final NodeStat stat = new NodeStat();
 
     public Node(String host, int port) {
         this.host = host;
@@ -76,25 +74,8 @@ public class Node {
         return new InetSocketAddress(this.getHost(), this.getPort());
     }
 
-    public String getAddressAsString() {
-        InetSocketAddress address = this.getAddress();
-        InetAddress addr = address.getAddress();
-        // addr == null if the hostname can't be resolved
-        return (addr == null ? address.getHostString() : addr.getHostAddress())
-                + ":"
-                + address.getPort();
-    }
-
     public String getHexIdShort() {
         return getNodeIdShort(getHexId());
-    }
-
-    public BigInteger getTotalDifficulty() {
-        return null;
-    }
-
-    public double getAvgLatency() {
-        return 0.0;
     }
 
     @Override

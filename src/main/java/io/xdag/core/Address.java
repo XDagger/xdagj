@@ -26,12 +26,13 @@ package io.xdag.core;
 import static io.xdag.utils.BytesUtils.bytesToBigInteger;
 
 import java.math.BigInteger;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.Numeric;
 import lombok.Getter;
 import lombok.Setter;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 public class Address {
     /** 放入字段的数据 正常顺序 */
@@ -101,7 +102,7 @@ public class Address {
             System.arraycopy(data, 8, hashLow, 8, 24);
             byte[] amountbyte = new byte[8];
             System.arraycopy(data, 0, amountbyte, 0, 8);
-            amount = bytesToBigInteger(amountbyte);
+            amount = Numeric.toBigInt(amountbyte);
             parsed = true;
         }
     }

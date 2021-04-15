@@ -39,7 +39,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 @Slf4j
 public class MessageQueue {
 
-    private static AtomicInteger cnt = new AtomicInteger(0);
+    private static final AtomicInteger cnt = new AtomicInteger(0);
     public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
             4,
             new BasicThreadFactory.Builder()
@@ -47,28 +47,14 @@ public class MessageQueue {
                     .daemon(true)
                     .build());
     boolean isRunning = false;
-    private Queue<MessageRoundtrip> requestQueue = new ConcurrentLinkedQueue<>();
-    private Queue<MessageRoundtrip> respondQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Message> respondQueue = new ConcurrentLinkedQueue<>();
     private ChannelHandlerContext ctx = null;
     private ScheduledFuture<?> timerTask;
-    private XdagChannel channel;
+    private final XdagChannel channel;
 
     public MessageQueue(XdagChannel channel) {
         this.channel = channel;
-    }
-
-    public void receivedMessage(Message msg) { // 负责打印记录信息 实际接收信息的业务操作在xdaghandler
-        log.debug("MessageQueue接收到新消息");
-        if (requestQueue.peek() != null) {
-            MessageRoundtrip messageRoundtrip = requestQueue.peek();
-            Message waitingMessage = messageRoundtrip.getMsg();
-
-            if (waitingMessage.getAnswerMessage() != null
-                    && msg.getClass() == waitingMessage.getAnswerMessage()) {
-                messageRoundtrip.answer();
-                log.trace("Message round trip covered: [{}] ", messageRoundtrip.getMsg().getClass());
-            }
-        }
     }
 
     public void activate(ChannelHandlerContext ctx) {
@@ -83,56 +69,45 @@ public class MessageQueue {
                     }
                 },
                 10,
-                10,
-                // 10毫秒执行一次
+                // TODO: 发送周期缩短会不会有影响，但能有效加快同步速度
+                2,
+                // 2毫秒执行一次
                 TimeUnit.MILLISECONDS);
     }
 
-    /** 每十毫秒执行一次 */
+    /** 每2毫秒执行一次 */
     private void nudgeQueue() {
-        removeAnsweredMessage(requestQueue.peek());
-        // Now send the next message
-        sendToWire(respondQueue.poll());
-        sendToWire(requestQueue.peek());
+        int n = Math.min(5, size());
+        if (n == 0) {
+            return;
+        }
+        // write out n messages
+        for (int i = 0; i < n; i++) {
+            // Now send the next message
+            // log.debug("Sent to Wire with the message,msg:"+msg.getCommand());
+            Message respondMsg = respondQueue.poll();
+            Message requestMsg = requestQueue.poll();
+            if(respondMsg != null) {
+                ctx.write(respondMsg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            }
+            if(requestMsg != null) {
+                ctx.write(requestMsg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            }
+
+        }
+        ctx.flush();
     }
 
     public void sendMessage(Message msg) {
         if (channel.isDisconnected()) {
-            log.warn(
-                    "{}: attempt to send [{}] message after disconnect", channel, msg.getCommand().name());
+            log.warn("{}: attempt to send [{}] message after disconnect", channel, msg.getCommand().name());
             return;
         }
 
         if (msg.getAnswerMessage() != null) {
-
-            requestQueue.add(new MessageRoundtrip(msg));
-            // log.debug("add new Request message current requestQueue size
-            // is:"+requestQueue.size());
+            requestQueue.add(msg);
         } else {
-            respondQueue.add(new MessageRoundtrip(msg));
-            // log.debug("add new Response message current responseQueue size
-            // is:"+respondQueue.size());
-
-        }
-    }
-
-    private void sendToWire(MessageRoundtrip messageRoundtrip) {
-        if (messageRoundtrip != null && messageRoundtrip.getRetryTimes() == 0) {
-            // TODO: retry logic || messageRoundtrip.hasToRetry()){
-            Message msg = messageRoundtrip.getMsg();
-            // log.debug("Sent to Wire with the message,msg:"+msg.getCommand());
-            ctx.writeAndFlush(msg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-
-            if (msg.getAnswerMessage() != null) {
-                messageRoundtrip.incRetryTimes();
-                messageRoundtrip.saveTime();
-            }
-        }
-    }
-
-    private void removeAnsweredMessage(MessageRoundtrip messageRoundtrip) {
-        if (messageRoundtrip != null && messageRoundtrip.isAnswered()) {
-            requestQueue.remove();
+            respondQueue.add(msg);
         }
     }
 

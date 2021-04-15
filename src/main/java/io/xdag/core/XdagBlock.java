@@ -25,9 +25,8 @@ package io.xdag.core;
 
 import static io.xdag.core.XdagField.FieldType.fromByte;
 
-import org.spongycastle.util.Arrays;
-
 import io.xdag.utils.BytesUtils;
+import org.bouncycastle.util.Arrays;
 
 public class XdagBlock {
     public static final int XDAG_BLOCK_FIELDS = 16;
@@ -35,7 +34,7 @@ public class XdagBlock {
 
     /** data 以添加签名 */
     private byte[] data;
-
+    private long sum;
     private XdagField[] fields;
 
     public XdagBlock() {
@@ -54,22 +53,17 @@ public class XdagBlock {
                 byte[] fieldBytes = new byte[32];
                 System.arraycopy(data, i * 32, fieldBytes, 0, 32);
                 fields[i] = new XdagField(fieldBytes);
+                fields[i].setType(fromByte(getMsgCode(i)));
             }
             for (int i = 0; i < XDAG_BLOCK_FIELDS; i++) {
-                fields[i].setType(fromByte(getMsgcode(i)));
+                sum += fields[i].getSum();
+                fields[i].setType(fromByte(getMsgCode(i)));
             }
         }
     }
 
-    /**
-     * 获取每个字段的类型
-     *
-     * @param n
-     * @return
-     */
-    public byte getMsgcode(int n) {
+    public byte getMsgCode(int n) {
         long type = BytesUtils.bytesToLong(this.data, 8, true);
-
         return (byte) (type >> (n << 2) & 0xf);
     }
 
@@ -89,12 +83,17 @@ public class XdagBlock {
     public byte[] getData() {
         if (this.data == null) {
             this.data = new byte[512];
-            // todo:transfer fields to data
             for (int i = 0; i < XDAG_BLOCK_FIELDS; i++) {
+                sum += fields[i].getSum();
                 int index = i * 32;
                 System.arraycopy(Arrays.reverse(fields[i].getData()), 0, this.data, index, 32);
             }
         }
         return data;
+    }
+
+    /** 获取区块sums* */
+    public long getSum() {
+        return sum;
     }
 }

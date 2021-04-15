@@ -38,5 +38,19 @@ public class FormatDateUtils {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
         return simpleDateFormat.format(date);
     }
-    
+
+    /**
+     * Returns the current time in milliseconds since the epoch, or a mocked out equivalent.
+     */
+    public static long currentTimeMillis() {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * Returns the current time in seconds since the epoch, or a mocked out equivalent.
+     */
+    public static long currentTimeSeconds() {
+        return currentTimeMillis() / 1000;
+    }
+
 }

@@ -23,7 +23,6 @@
  */
 package io.xdag.net.handler;
 
-import com.google.common.util.concurrent.SettableFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -35,11 +34,7 @@ import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.XdagMessageCodes;
-import io.xdag.net.message.impl.SumReplyMessage;
 import java.math.BigInteger;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -56,15 +51,11 @@ public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> i
     protected Block bestKnownBlock;
     protected BigInteger totalDifficulty;
     protected SyncManager syncMgr;
-    protected SettableFuture<List<Block>> futureBlocks;
-    protected SettableFuture<SumReplyMessage> futureSum;
-    protected Queue<SettableFuture<SumReplyMessage>> futureSumSublist = new LinkedList<>();
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         if (XdagMessageCodes.inRange(msg.getCommand().asByte(), version)) {
             log.trace("XdagHandler invoke: [{}]", msg.getCommand());
         }
-        msgQueue.receivedMessage(msg);
     }
 }

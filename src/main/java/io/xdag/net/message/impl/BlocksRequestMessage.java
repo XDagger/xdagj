@@ -25,29 +25,22 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REQUEST;
 
+import org.apache.commons.lang3.RandomUtils;
+
 import io.xdag.net.message.AbstractMessage;
-import io.xdag.net.message.NetStatus;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
-import io.xdag.utils.BytesUtils;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
-@Data
 public class BlocksRequestMessage extends AbstractMessage {
 
     public BlocksRequestMessage(byte[] bytes) {
         super(bytes);
     }
 
-    public BlocksRequestMessage(long starttime, long endtime, NetStatus netStatus) {
-        // 调用jni的generate_random
-        super(
-                BLOCKS_REQUEST,
-                starttime,
-                endtime,
-                BytesUtils.bytesToLong(BytesUtils.generateRandomBytes(), 0, true),
-                netStatus);
+    public BlocksRequestMessage(long starttime, long endtime, XdagStats xdagStats) {
+        super(BLOCKS_REQUEST, starttime, endtime, RandomUtils.nextLong(), xdagStats);
         updateCrc();
     }
 

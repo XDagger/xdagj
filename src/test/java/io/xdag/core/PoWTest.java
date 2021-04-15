@@ -23,18 +23,8 @@
  */
 package io.xdag.core;
 
-import io.xdag.crypto.ECKey;
-import io.xdag.utils.XdagTime;
-import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 public class PoWTest {
-
+/**
     @Test
     public void powBlock() {
         String blockRawdata = "000000000000000038324654050000004d3782fa780100000000000000000000"
@@ -109,7 +99,7 @@ public class PoWTest {
         System.out.println(block.getPubKeys().size());
         System.out.println("verified keys size");
         System.out.println(block.verifiedKeys().size());
-        System.out.println("blockdiff:" + block.getDifficulty());
+        System.out.println("blockdiff:" + block.getInfo().getDifficulty());
         printXdagBlock(block.getXdagBlock(), "xdagblock:");
         printListKeys(block.getPubKeys());
         printHash(block.getOutsig().toByteArray(), "outsig:");
@@ -161,4 +151,5 @@ public class PoWTest {
         System.out.println(hash);
         System.out.println(hash2);
     }
+    **/
 }
