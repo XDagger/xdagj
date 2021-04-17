@@ -100,7 +100,7 @@
 - 安装依赖项
 
   ```shell
-  yum install cmake gcc pkg-config openssl gmp-devel libtool 
+  yum install cmake gcc pkg-config openssl gmp-devel libtool ncurses-devel gcc-c++
   ```
 
   **gcc版本不低于4.9**
@@ -303,7 +303,6 @@ whiteIPs								#允许链接的对等矿池节点，形式为ip:port，用‘�
 - 运行矿池 
 
 ```shell
-mvn license:format
 mvn package 
 cd target
 nohup java -jar --enable-preview xdagj-0.4.0-shaded.jar > xdagj.log 2>&1 &
