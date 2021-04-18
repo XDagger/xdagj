@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
+import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
@@ -35,6 +36,7 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -49,6 +51,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.*;
 
@@ -345,6 +348,81 @@ public class BlockchainTest {
         assertEquals("3072.0", String.valueOf(amount2xdag(blockchain.getSupply(3))));
         long apolloSypply = blockchain.getSupply(Constants.MAIN_APOLLO_TESTNET_HEIGHT);
         assertEquals(String.valueOf(Constants.MAIN_APOLLO_TESTNET_HEIGHT * 1024 - (1024-128)), BasicUtils.formatDouble(amount2xdag(apolloSypply)));
+    }
+
+    @Test
+    public void testFork() throws ParseException {
+        String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
+        BigInteger privateKey = new BigInteger(privString, 16);
+
+        String firstDiff = "a1eead599e";
+        String secondDiff = "aa9f0825b3";
+
+        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 16;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
+
+        RandomX randomXUtils = new RandomX();
+        randomXUtils.init();
+        kernel.setRandomXUtils(randomXUtils);
+
+
+        ECKeyPair addrKey = ECKeyPair.create(privateKey);
+        ECKeyPair poolKey = ECKeyPair.create(privateKey);
+        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        // 1. add one address block
+        Block addressBlock = generateAddressBlock(addrKey, date.getTime());
+        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertTrue(result == IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        byte[] ref = addressBlock.getHashLow();
+
+        byte[] unwindRef = null;
+        Date unwindDate = null;
+        // 2. create 32 mainblocks
+        for(int i = 1; i <= 32; i++) {
+            date = DateUtils.addSeconds(date, 64);
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertTrue(result == IMPORTED_BEST);
+            assertChainStatus(i+1, i-1, 1, i<2?1:0, blockchain);
+            ref = extraBlock.getHashLow();
+            if (i == 16) {
+                unwindRef = ref.clone();
+                unwindDate = date;
+            }
+            extraBlockList.add(extraBlock);
+        }
+
+
+        assertEquals(firstDiff,blockchain.getXdagTopStatus().getTopDiff().toString(16));
+
+
+        date = unwindDate;
+        ref = unwindRef;
+
+        // 3. create 20 fork blocks
+        for (int i = 0; i < 20; i++ ) {
+            date = DateUtils.addSeconds(date, 64);
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlockGivenRandom(poolKey, xdagTime, pending,"3456");
+            blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+
+        assertEquals(secondDiff,blockchain.getXdagTopStatus().getTopDiff().toString(16));
+
     }
 
 }

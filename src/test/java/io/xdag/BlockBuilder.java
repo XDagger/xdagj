@@ -53,6 +53,14 @@ public class BlockBuilder {
         return b;
     }
 
+    public static Block generateExtraBlockGivenRandom(ECKeyPair key, long xdagTime, List<Address> pendings, String randomS) {
+        Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
+        b.signOut(key);
+        byte[] random = Hash.sha256(Hex.decode(randomS));
+        b.setNonce(random);
+        return b;
+    }
+
     public static Block generateTransactionBlock(ECKeyPair key, long xdagTime, Address from, Address to, long amount) {
         List refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1

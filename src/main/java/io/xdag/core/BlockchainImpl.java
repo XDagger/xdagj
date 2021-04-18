@@ -640,8 +640,6 @@ public class BlockchainImpl implements Blockchain {
     public void unSetMain(Block block) {
 
         log.debug("mainnumber = {}",xdagStats.nmain);
-        // 非主块不需要高度
-        block.getInfo().setHeight(0);
 
         long amount = getReward(xdagStats.nmain);
         updateBlockFlag(block, BI_MAIN, false);
@@ -656,6 +654,8 @@ public class BlockchainImpl implements Blockchain {
         if (randomXUtils != null) {
             randomXUtils.randomXUnsetForkTime(block);
         }
+        // 非主块不需要高度
+        block.getInfo().setHeight(0);
     }
 
     @Override
