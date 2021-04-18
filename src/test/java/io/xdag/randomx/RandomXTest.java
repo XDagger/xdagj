@@ -98,7 +98,6 @@ public class RandomXTest {
 
 
 
-    @Test
     public void addMainBlock() throws ParseException {
 
         XdagTopStatus xdagTopStatus = blockchain.getXdagTopStatus();

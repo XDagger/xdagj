@@ -120,8 +120,8 @@ public class XdagPow implements PoW, Listener, Runnable {
                 this.minShares.add(null);
             }
 
-            new Thread(this, "xdag-pow-main").start();
             new Thread(this.timer, "xdag-pow-timer").start();
+            new Thread(this, "xdag-pow-main").start();
             new Thread(this.broadcaster, "xdag-pow-broadcaster").start();
         }
     }
