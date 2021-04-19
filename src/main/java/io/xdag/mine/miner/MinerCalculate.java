@@ -157,9 +157,8 @@ public class MinerCalculate {
         // 不可能出现大于的情况 防止对老的任务重复计算
         long minerTaskTime = miner.getTaskTime();
         long channelTaskTime = channel.getTaskTime();
-        log.debug("calculateNopaidShares,currentTaskTime = [{}]",currentTaskTime);
-        log.debug("calculateNopaidShares,miner tasktime = [{}]",minerTaskTime);
-        log.debug("calculateNopaidShares,channelTaskTime = [{}]",channelTaskTime);
+        log.debug("channer = [{}],calculateNopaidShares,currentTaskTime = [{}],miner tasktime = [{}],channelTaskTime = [{}]",
+                Hex.toHexString(channel.getAccountAddressHash()),currentTaskTime, minerTaskTime,channelTaskTime);
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
             int i = (int) (((currentTaskTime >> 16) + 1) & 0xf);
@@ -172,11 +171,13 @@ public class MinerCalculate {
                 diff = 1;
             }
             diff = 46 - Math.log(diff);
-            log.debug("calculateNopaidShares, 最新难度的diff为[{}]",diff);
+            log.debug("address [{}] calculateNopaidShares, 最新难度的diff为[{}]",
+                    Hex.toHexString(channel.getAccountAddressHash())  , diff);
             if (channelTaskTime < currentTaskTime) {
                 channel.setTaskTime(currentTaskTime);
                 double maxDiff = channel.getMaxDiffs(i);
-                log.debug("calculateNopaidShares,首次channel获取到的maxdiff[{}] = [{}]",i,maxDiff);
+                log.debug("address [{}] calculateNopaidShares,首次channel获取到的maxdiff[{}] = [{}]",
+                        Hex.toHexString(channel.getAccountAddressHash()),i,maxDiff);
                 if (maxDiff > 0) {
 
                     channel.addPrevDiff(maxDiff);
@@ -184,7 +185,8 @@ public class MinerCalculate {
                 }
                 channel.addMaxDiffs(i, diff);
             } else if (diff > channel.getMaxDiffs(i)) {
-                log.debug("calculateNopaidShares,channel获取到的maxdiff[{}] = [{}]",i,diff);
+                log.debug("address [{}] calculateNopaidShares,channel获取到的maxdiff[{}] = [{}]",
+                        Hex.toHexString(channel.getAccountAddressHash()),i,diff);
                 channel.addMaxDiffs(i, diff);
             }
             // 给对应的矿工设置
@@ -265,9 +267,10 @@ public class MinerCalculate {
                         BasicUtils.xdag_diff2log(BasicUtils.getDiffByHash(miner.getLastMinHash())),
                         miner.getBoundedTaskCounter());
 
-                log.debug("miner updateMeanLogDiff [{}]", meanLogDiff);
+                log.debug("miner[{}] updateMeanLogDiff [{}]",
+                        Hex.toHexString(miner.getAddressHash()), meanLogDiff);
                 miner.setMeanLogDiff(meanLogDiff);
-                log.debug("miner updateMeanLogDiff [{}]", miner.getMeanLogDiff());
+                //log.debug("miner updateMeanLogDiff [{}]", miner.getMeanLogDiff());
 
                 if (miner.boundedTaskCounter < NSAMPLES_MAX){
                     miner.addBoundedTaskCounter();

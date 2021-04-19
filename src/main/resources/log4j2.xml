@@ -14,6 +14,7 @@
         <property name="Xdag03_File_Name">xdag03_debug</property>
         <property name="XdagAward_File_Name">xdag_award_debug</property>
         <property name="XdagPoW_File_Name">xdag_pow_debug</property>
+        <property name="MinerCal_File_Name">xdag_minerCal_debug</property>
 
     </properties>
 
@@ -139,33 +140,28 @@
             <DefaultRolloverStrategy max="100"/>
         </RollingRandomAccessFile>
 
+        <RollingRandomAccessFile name="MinerCalcDebug"
+                                 fileName="${Logs_Dir}/${MinerCal_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${MinerCal_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
     </Appenders>
 
 
     <Loggers>
-        <!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
-        <!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
-        <!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
-        <!--    <logger name="io.xdag.consensus.SyncManager" level="DEBUG"/>-->
-        <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
-        <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
-        <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
-        <!--        <logger name="io.xdag.net.handler" level="INFO"/>-->
-        <!--        <logger name="io.xdag.core.Block" level="DEBUG"/>-->
-        <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
-        <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
+
 
         <logger name="io.xdag" level="WARN">
             <AppenderRef ref="Error"/>
         </logger>
 
-<!--        <logger name="io.xdag" level="INFO">-->
-<!--            <AppenderRef ref="Info"/>-->
-<!--        </logger>-->
 
-<!--        <logger name="io.xdag.cli" level="DEBUG">-->
-<!--            <AppenderRef ref="Debug"/>-->
-<!--        </logger>-->
 
         <logger name="io.xdag.consensus.XdagSync" level="DEBUG">
             <AppenderRef ref="Sync_Debug"/>
@@ -200,6 +196,10 @@
 
         <logger name="io.xdag.mine.manager.AwardManagerImpl" level="DEBUG">
             <AppenderRef ref="AwardDebug"/>
+        </logger>
+
+        <logger name="io.xdag.mine.miner.MinerCalculate" level="DEBUG">
+            <AppenderRef ref="MinerCalcDebug"/>
         </logger>
 
         <Root level="INFO">
