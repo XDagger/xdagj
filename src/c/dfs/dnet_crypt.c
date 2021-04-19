@@ -3,7 +3,7 @@
 #include "dfslib_crypt.h"
 #include "dfsrsa.h"
 #include "crc.h"
-#include <jni.h>
+#include "jni.h"
 #include <string.h>
 #include <stdlib.h>
 #define MINERS_PWD             "minersgonnamine"

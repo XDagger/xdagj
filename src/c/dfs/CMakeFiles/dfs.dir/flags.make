@@ -5,13 +5,13 @@
 # compile CXX with /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++
 C_DEFINES = -Ddfs_EXPORTS
 
-C_INCLUDES = -I/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/../jni
+C_INCLUDES = -I/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/../jni
 
-C_FLAGS = -O3 -DNDEBUG -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -fPIC   -g -O2 -Wall
+C_FLAGS =  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -fPIC   -g -O2 -Wall
 
 CXX_DEFINES = -Ddfs_EXPORTS
 
-CXX_INCLUDES = -I/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/../jni
+CXX_INCLUDES = -I/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/../jni
 
-CXX_FLAGS = -O3 -DNDEBUG -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -fPIC   -g -O2 -Wall
+CXX_FLAGS =  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk -fPIC   -g -O2 -Wall
 

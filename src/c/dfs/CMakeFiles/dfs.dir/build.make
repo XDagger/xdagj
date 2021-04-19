@@ -62,10 +62,10 @@ RM = /usr/local/Cellar/cmake/3.19.6/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c
+CMAKE_SOURCE_DIR = /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c
+CMAKE_BINARY_DIR = /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c
 
 # Include any dependencies generated for this target.
 include dfs/CMakeFiles/dfs.dir/depend.make
@@ -78,94 +78,94 @@ include dfs/CMakeFiles/dfs.dir/flags.make
 
 dfs/CMakeFiles/dfs.dir/crc.c.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/crc.c.o: dfs/crc.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object dfs/CMakeFiles/dfs.dir/crc.c.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/crc.c.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object dfs/CMakeFiles/dfs.dir/crc.c.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/crc.c.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.c
 
 dfs/CMakeFiles/dfs.dir/crc.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dfs.dir/crc.c.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.c > CMakeFiles/dfs.dir/crc.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.c > CMakeFiles/dfs.dir/crc.c.i
 
 dfs/CMakeFiles/dfs.dir/crc.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dfs.dir/crc.c.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.c -o CMakeFiles/dfs.dir/crc.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.c -o CMakeFiles/dfs.dir/crc.c.s
 
 dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.o: dfs/dfslib_crypt.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfslib_crypt.c.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfslib_crypt.c.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.c
 
 dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dfs.dir/dfslib_crypt.c.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.c > CMakeFiles/dfs.dir/dfslib_crypt.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.c > CMakeFiles/dfs.dir/dfslib_crypt.c.i
 
 dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dfs.dir/dfslib_crypt.c.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.c -o CMakeFiles/dfs.dir/dfslib_crypt.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.c -o CMakeFiles/dfs.dir/dfslib_crypt.c.s
 
 dfs/CMakeFiles/dfs.dir/dfslib_random.c.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/dfslib_random.c.o: dfs/dfslib_random.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object dfs/CMakeFiles/dfs.dir/dfslib_random.c.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfslib_random.c.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object dfs/CMakeFiles/dfs.dir/dfslib_random.c.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfslib_random.c.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.c
 
 dfs/CMakeFiles/dfs.dir/dfslib_random.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dfs.dir/dfslib_random.c.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.c > CMakeFiles/dfs.dir/dfslib_random.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.c > CMakeFiles/dfs.dir/dfslib_random.c.i
 
 dfs/CMakeFiles/dfs.dir/dfslib_random.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dfs.dir/dfslib_random.c.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.c -o CMakeFiles/dfs.dir/dfslib_random.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.c -o CMakeFiles/dfs.dir/dfslib_random.c.s
 
 dfs/CMakeFiles/dfs.dir/dfslib_string.c.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/dfslib_string.c.o: dfs/dfslib_string.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object dfs/CMakeFiles/dfs.dir/dfslib_string.c.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfslib_string.c.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object dfs/CMakeFiles/dfs.dir/dfslib_string.c.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfslib_string.c.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.c
 
 dfs/CMakeFiles/dfs.dir/dfslib_string.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dfs.dir/dfslib_string.c.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.c > CMakeFiles/dfs.dir/dfslib_string.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.c > CMakeFiles/dfs.dir/dfslib_string.c.i
 
 dfs/CMakeFiles/dfs.dir/dfslib_string.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dfs.dir/dfslib_string.c.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.c -o CMakeFiles/dfs.dir/dfslib_string.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.c -o CMakeFiles/dfs.dir/dfslib_string.c.s
 
 dfs/CMakeFiles/dfs.dir/dfsrsa.c.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/dfsrsa.c.o: dfs/dfsrsa.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object dfs/CMakeFiles/dfs.dir/dfsrsa.c.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfsrsa.c.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object dfs/CMakeFiles/dfs.dir/dfsrsa.c.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dfsrsa.c.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.c
 
 dfs/CMakeFiles/dfs.dir/dfsrsa.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dfs.dir/dfsrsa.c.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.c > CMakeFiles/dfs.dir/dfsrsa.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.c > CMakeFiles/dfs.dir/dfsrsa.c.i
 
 dfs/CMakeFiles/dfs.dir/dfsrsa.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dfs.dir/dfsrsa.c.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.c -o CMakeFiles/dfs.dir/dfsrsa.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.c -o CMakeFiles/dfs.dir/dfsrsa.c.s
 
 dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o: dfs/dnet_crypt.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dnet_crypt.c.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dnet_crypt.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/dfs.dir/dnet_crypt.c.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dnet_crypt.c
 
 dfs/CMakeFiles/dfs.dir/dnet_crypt.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dfs.dir/dnet_crypt.c.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dnet_crypt.c > CMakeFiles/dfs.dir/dnet_crypt.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dnet_crypt.c > CMakeFiles/dfs.dir/dnet_crypt.c.i
 
 dfs/CMakeFiles/dfs.dir/dnet_crypt.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dfs.dir/dnet_crypt.c.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dnet_crypt.c -o CMakeFiles/dfs.dir/dnet_crypt.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dnet_crypt.c -o CMakeFiles/dfs.dir/dnet_crypt.c.s
 
 dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o: dfs/CMakeFiles/dfs.dir/flags.make
 dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o: dfs/dfs_jni.cc
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/dfs.dir/dfs_jni.cc.o -c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfs_jni.cc
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/dfs.dir/dfs_jni.cc.o -c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfs_jni.cc
 
 dfs/CMakeFiles/dfs.dir/dfs_jni.cc.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/dfs.dir/dfs_jni.cc.i"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfs_jni.cc > CMakeFiles/dfs.dir/dfs_jni.cc.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfs_jni.cc > CMakeFiles/dfs.dir/dfs_jni.cc.i
 
 dfs/CMakeFiles/dfs.dir/dfs_jni.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/dfs.dir/dfs_jni.cc.s"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfs_jni.cc -o CMakeFiles/dfs.dir/dfs_jni.cc.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfs_jni.cc -o CMakeFiles/dfs.dir/dfs_jni.cc.s
 
 # Object files for target dfs
 dfs_OBJECTS = \
@@ -189,10 +189,10 @@ dfs/libdfs.dylib: dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o
 dfs/libdfs.dylib: dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o
 dfs/libdfs.dylib: dfs/CMakeFiles/dfs.dir/build.make
 dfs/libdfs.dylib: dfs/CMakeFiles/dfs.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX shared library libdfs.dylib"
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/dfs.dir/link.txt --verbose=$(VERBOSE)
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && mkdir -p /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/../../main/resources/native/dfs
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && cp /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/libdfs.dylib /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/../../main/resources/native/dfs
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX shared library libdfs.dylib"
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/dfs.dir/link.txt --verbose=$(VERBOSE)
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && mkdir -p /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/../../main/resources/native/Darwin-x86_64
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && cp /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/libdfs.dylib /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/../../main/resources/native/Darwin-x86_64
 
 # Rule to build all files generated by this target.
 dfs/CMakeFiles/dfs.dir/build: dfs/libdfs.dylib
@@ -200,10 +200,10 @@ dfs/CMakeFiles/dfs.dir/build: dfs/libdfs.dylib
 .PHONY : dfs/CMakeFiles/dfs.dir/build
 
 dfs/CMakeFiles/dfs.dir/clean:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs && $(CMAKE_COMMAND) -P CMakeFiles/dfs.dir/cmake_clean.cmake
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs && $(CMAKE_COMMAND) -P CMakeFiles/dfs.dir/cmake_clean.cmake
 .PHONY : dfs/CMakeFiles/dfs.dir/clean
 
 dfs/CMakeFiles/dfs.dir/depend:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/CMakeFiles/dfs.dir/DependInfo.cmake --color=$(COLOR)
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/CMakeFiles/dfs.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : dfs/CMakeFiles/dfs.dir/depend
 
