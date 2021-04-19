@@ -23,92 +23,127 @@
  */
 package io.xdag.crypto.jni;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
 
+import io.xdag.utils.SystemUtil;
 import org.apache.commons.lang3.SystemUtils;
 
 import io.xdag.config.Config;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Slf4j
 public class Native {
-    private static final String LIB_FILE_PATH = "/native/dfs/";
+    private static final Logger logger = LoggerFactory.getLogger(Native.class);
+
+    protected static File nativeDir;
+    protected static boolean enabled = false;
 
     /** Initializes the native libraries */
     public static void init() {
-        String libPath = LIB_FILE_PATH;
-        if (SystemUtils.IS_OS_WINDOWS) {
-            loadLibrary("/libdfs.dll", libPath + "libdfs.dll");
-        } else if (SystemUtils.IS_OS_MAC) {
-            loadLibrary("/libdfs.dylib", libPath + "libdfs.dylib");
-        } else if (SystemUtils.IS_OS_LINUX) {
-            loadLibrary("/libdfs.so", libPath + "libdfs.so");
+        if (SystemUtil.is32bitJvm()) {
+            // No more support for 32-bit systems
+            return;
+        }
+
+        SystemUtil.OsName os = SystemUtil.getOsName();
+        switch (os) {
+            case LINUX:
+                if (SystemUtil.getOsArch().equals("aarch64")) {
+                    enabled = loadLibrary("/native/Linux-aarch64/libdfs.so");
+                } else {
+                    enabled = loadLibrary("/native/Linux-x86_64/libdfs.so");
+                }
+                break;
+            case MACOS:
+                enabled = loadLibrary("/native/Darwin-x86_64/libdfs.dylib");
+                break;
+            case WINDOWS:
+                enabled = loadLibrary("/native/Windows-x86_64/libdfs.dll");
+                break;
+            default:
+                break;
         }
     }
 
     /**
      * Loads a library file from bundled resource.
      *
-     * @param name
+     * @param
      * @return
      */
-    protected static boolean loadLibrary(String copyName, String name) {
+    protected static boolean loadLibrary(String resource) {
         try {
+            if (nativeDir == null) {
+                nativeDir = Files.createTempDirectory("native").toFile();
+                nativeDir.deleteOnExit();
+            }
 
-            String absolutePath = loadlib(Config.root, copyName, name);
-            System.load("/" + absolutePath);
+            String name = resource.contains("/") ? resource.substring(resource.lastIndexOf('/') + 1) : resource;
+            File file = new File(nativeDir, name);
+
+            if (!file.exists()) {
+                InputStream in = Native.class.getResourceAsStream(resource); // null pointer exception
+                OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+                for (int c; (c = in.read()) != -1;) {
+                    out.write(c);
+                }
+                out.close();
+                in.close();
+            }
+
+            System.load(file.getAbsolutePath());
             return true;
         } catch (Exception | UnsatisfiedLinkError e) {
-            log.warn("Failed to load native library: {}", name, e);
+            logger.warn("Failed to load native library: {}", resource, e);
             return false;
         }
     }
 
-    public static String loadlib(String root, String fileName, String sourcePath) throws Exception {
-        InputStream in = Native.class.getResourceAsStream(sourcePath);
-        byte[] buffer = new byte[1024];
-        File temp = new File(root);
-        if (!temp.exists()) {
-            if (!temp.mkdirs()) {
-                log.debug("Create Dir Failed..");
-                throw new Exception();
-            }
-        }
-        temp = new File(root + fileName);
-        if (!temp.exists()) {
-            if (!temp.createNewFile()) {
-                log.debug("Create File Failed..");
-                throw new Exception();
-            }
-        }
-        FileOutputStream fos = new FileOutputStream(temp);
-        int read = -1;
-        while ((read = in.read(buffer)) != -1) {
-            fos.write(buffer, 0, read);
-        }
-        fos.close();
-        in.close();
-        String abPath = temp.getAbsolutePath();
-        return abPath;
-    }
-
-    public static String loadlib(String fileName, String sourcePath) throws IOException {
-        InputStream in = Native.class.getResourceAsStream(sourcePath);
-        byte[] buffer = new byte[1024];
-        File temp = new File(fileName);
-        FileOutputStream fos = new FileOutputStream(temp);
-        int read = -1;
-        while ((read = in.read(buffer)) != -1) {
-            fos.write(buffer, 0, read);
-        }
-        fos.close();
-        in.close();
-        String abPath = temp.getAbsolutePath();
-        return abPath;
-    }
+//    public static String loadlib(String root, String fileName, String sourcePath) throws Exception {
+//        InputStream in = Native.class.getResourceAsStream(sourcePath);
+//        byte[] buffer = new byte[1024];
+//        File temp = new File(root);
+//        if (!temp.exists()) {
+//            if (!temp.mkdirs()) {
+//                log.debug("Create Dir Failed..");
+//                throw new Exception();
+//            }
+//        }
+//        temp = new File(root + fileName);
+//        if (!temp.exists()) {
+//            if (!temp.createNewFile()) {
+//                log.debug("Create File Failed..");
+//                throw new Exception();
+//            }
+//        }
+//        FileOutputStream fos = new FileOutputStream(temp);
+//        int read = -1;
+//        while ((read = in.read(buffer)) != -1) {
+//            fos.write(buffer, 0, read);
+//        }
+//        fos.close();
+//        in.close();
+//        String abPath = temp.getAbsolutePath();
+//        return abPath;
+//    }
+//
+//    public static String loadlib(String fileName, String sourcePath) throws IOException {
+//        InputStream in = Native.class.getResourceAsStream(sourcePath);
+//        byte[] buffer = new byte[1024];
+//        File temp = new File(fileName);
+//        FileOutputStream fos = new FileOutputStream(temp);
+//        int read = -1;
+//        while ((read = in.read(buffer)) != -1) {
+//            fos.write(buffer, 0, read);
+//        }
+//        fos.close();
+//        in.close();
+//        String abPath = temp.getAbsolutePath();
+//        return abPath;
+//    }
 
     public static native int crypt_start();
 
