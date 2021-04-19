@@ -20,6 +20,6 @@ logs
 
 #for macos
 .DS_Store
-src/c/dfs
+src/c/
 src/main/resources/native
 src/main/resources/xdag.config
