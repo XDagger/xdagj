@@ -17,17 +17,15 @@ set(DFSLIB_SOURCE
     dfsrsa.c
     dnet_crypt.c
     dfs_jni.cc)
-
 add_library(dfs SHARED ${DFSLIB_SOURCE})
 target_include_directories(dfs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../jni/)
 
 #copy library to target directory
-set(DFS_TARGET_DIR ${CMAKE_CURRENT_LIST_DIR}/../../main/resources/native/dfs)
+set(DFS_TARGET_DIR ${CMAKE_CURRENT_LIST_DIR}/../../main/resources/native/${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
 add_custom_command(
     TARGET dfs
     POST_BUILD
     COMMAND mkdir -p ${DFS_TARGET_DIR}
     COMMAND cp $<TARGET_FILE:dfs> ${DFS_TARGET_DIR}
 )
-
 

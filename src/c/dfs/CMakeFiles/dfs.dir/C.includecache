@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.c
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.c
 stdlib.h
 -
 stdio.h
@@ -14,25 +14,25 @@ stdio.h
 dus/error.h
 -
 crc.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.h
 stdio.h
 -
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.c
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.c
 string.h
 -
 dfslib_crypt.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.h
 dfslib_types.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_types.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_types.h
 dfslib_string.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.c
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.c
 stdlib.h
 -
 time.h
@@ -41,32 +41,26 @@ unistd.h
 -
 sys/time.h
 -
-sys/times.h
--
-Windows.h
--
-process.h
--
 dfslib_random.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.h
 dfslib_string.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.h
 dfslib_crypt.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.c
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.c
 dfslib_string.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.h
 dfslib_types.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_types.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_types.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_types.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_types.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.c
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.c
 stdio.h
 -
 stdlib.h
@@ -74,7 +68,7 @@ stdlib.h
 string.h
 -
 dfsrsa.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.h
 stdio.h
 -
 limits.h
@@ -82,43 +76,43 @@ limits.h
 unistd.h
 -
 time.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/time.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/time.h
 sys/times.h
 -
 dfslib_random.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_random.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_random.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.h
 stdint.h
 -
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dnet_crypt.c
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dnet_crypt.c
 dnet_crypt.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dnet_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dnet_crypt.h
 dfslib_string.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_string.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_string.h
 dfslib_crypt.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.h
 dfsrsa.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.h
 crc.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/crc.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/crc.h
 jni.h
--
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/jni.h
 string.h
 -
 stdlib.h
 -
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dnet_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dnet_crypt.h
 stdint.h
 -
 dfslib_crypt.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfslib_crypt.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfslib_crypt.h
 dfsrsa.h
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/dfsrsa.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/dfsrsa.h
 
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/time.h
+/Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs/time.h
 WinSock2.h
 -
 time.h

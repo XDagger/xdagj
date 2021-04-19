@@ -1,9 +1,9 @@
 #include "crc.h"
-#include "jni.h"
 #include "dfslib_crypt.h"
 #include "dfslib_random.h"
 #include "dnet_crypt.h"
 #include "dfsrsa.h"
+#include <jni.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -122,6 +122,7 @@ int dnet_generate_random_array(void *array, unsigned long size) {
 	return 0;
 }
 
+//todo add by myron
 static int dnet_detect_keylen(dfsrsa_t *key, int keylen) {
 
 	if (g_keylen && (key == g_dnet_keys->priv.key || key == g_dnet_keys->pub.key))

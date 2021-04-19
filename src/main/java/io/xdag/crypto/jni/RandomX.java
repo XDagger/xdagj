@@ -26,16 +26,16 @@ public class RandomX {
         switch (os) {
             case LINUX:
                 if (SystemUtil.getOsArch().equals("aarch64")) {
-                    enabled = loadLibrary("/native/randomx/librandomx.so");
+                    enabled = loadLibrary("/native/Linux-aarch64/librandomx.so");
                 } else {
-                    enabled = loadLibrary("/native/randomx/librandomx.so");
+                    enabled = loadLibrary("/native/Linux-x86_64/librandomx.so");
                 }
                 break;
             case MACOS:
-                enabled = loadLibrary("/native/randomx/librandomx.dylib");
+                enabled = loadLibrary("/native/Darwin-x86_64/librandomx.dylib");
                 break;
             case WINDOWS:
-                enabled = loadLibrary("/native/randomx/librandomx.dll");
+                enabled = loadLibrary("/native/Windows-x86_64/librandomx.dll");
                 break;
             default:
                 break;

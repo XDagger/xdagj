@@ -2,16 +2,16 @@
 
 #include <stdlib.h>
 #include <time.h>
-#if !defined(_WIN32) && !defined(_WIN64)
+//#if !defined(_WIN32) && !defined(_WIN64)
 #include <unistd.h>
 #include <sys/time.h>
-#include <sys/times.h>
-#define USE_RAND48
-#else
-#include <Windows.h>
-#include <process.h>
-#define getpid _getpid
-#endif
+//#include <sys/times.h>
+//#define USE_RAND48
+//#else
+//#include <Windows.h>
+//#include <process.h>
+//#define getpid _getpid
+//#endif
 #include "dfslib_random.h"
 
 #ifdef __cplusplus
@@ -80,20 +80,21 @@ void dfslib_random_sector(dfs32 *sector, struct dfslib_crypt *crypt0,
 
 void dfslib_random_init(void) {
 	dfs64 seed = 0, time1, time2, clock, pid;
-#if !defined(_WIN32) && !defined(_WIN64)
+//#if !defined(_WIN32) && !defined(_WIN64)
 	struct timeval tv[1];
-	struct tms tms[1];
+	//struct tms tms[1];
 	gettimeofday(tv, NULL);
 	time1 = tv->tv_sec;
 	time2 = tv->tv_usec;
-	clock = times(tms);
-#else
-	FILETIME ft[1];
-	GetSystemTimeAsFileTime(ft);
-	time1 = ft->dwHighDateTime;
-	time2 = ft->dwLowDateTime;
-	clock = GetTickCount();
-#endif
+	//clock = times(tms);
+	clock=0;
+//#else
+//	FILETIME ft[1];
+//	GetSystemTimeAsFileTime(ft);
+//	time1 = ft->dwHighDateTime;
+//	time2 = ft->dwLowDateTime;
+//	clock = GetTickCount();
+//#endif
 	pid = getpid();
 	seed ^= time1;	seed *= 0x8E230615u;
 	seed ^= time2;	seed *= 0x40D95A7Bu;
