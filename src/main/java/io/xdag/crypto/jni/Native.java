@@ -43,6 +43,11 @@ public class Native {
 
     /** Initializes the native libraries */
     public static void init() {
+        try {
+            rootInit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (SystemUtil.is32bitJvm()) {
             // No more support for 32-bit systems
             return;
@@ -65,6 +70,16 @@ public class Native {
                 break;
             default:
                 break;
+        }
+    }
+
+    private static void rootInit() throws Exception {
+        File temp = new File(Config.root);
+        if (!temp.exists()) {
+            if (!temp.mkdirs()) {
+                log.debug("Create Dir Failed..");
+                throw new Exception();
+            }
         }
     }
 
