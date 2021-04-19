@@ -67,10 +67,10 @@ RM = /usr/local/Cellar/cmake/3.19.6/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c
+CMAKE_SOURCE_DIR = /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c
+CMAKE_BINARY_DIR = /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -145,14 +145,14 @@ install/local/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(CMAKE_COMMAND) -E cmake_progress_start /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs//CMakeFiles/progress.marks
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/CMakeFiles 0
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(CMAKE_COMMAND) -E cmake_progress_start /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/dfs//CMakeFiles/progress.marks
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/clean
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/clean
 .PHONY : clean
 
 # The main clean target
@@ -162,22 +162,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/preinstall
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/preinstall
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 dfs/CMakeFiles/dfs.dir/rule:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/CMakeFiles/dfs.dir/rule
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 dfs/CMakeFiles/dfs.dir/rule
 .PHONY : dfs/CMakeFiles/dfs.dir/rule
 
 # Convenience name for target.
@@ -187,7 +187,7 @@ dfs: dfs/CMakeFiles/dfs.dir/rule
 
 # fast build rule for target.
 dfs/fast:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/build
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/build
 .PHONY : dfs/fast
 
 crc.o: crc.c.o
@@ -196,7 +196,7 @@ crc.o: crc.c.o
 
 # target to build an object file
 crc.c.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/crc.c.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/crc.c.o
 .PHONY : crc.c.o
 
 crc.i: crc.c.i
@@ -205,7 +205,7 @@ crc.i: crc.c.i
 
 # target to preprocess a source file
 crc.c.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/crc.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/crc.c.i
 .PHONY : crc.c.i
 
 crc.s: crc.c.s
@@ -214,7 +214,7 @@ crc.s: crc.c.s
 
 # target to generate assembly for a file
 crc.c.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/crc.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/crc.c.s
 .PHONY : crc.c.s
 
 dfs_jni.o: dfs_jni.cc.o
@@ -223,7 +223,7 @@ dfs_jni.o: dfs_jni.cc.o
 
 # target to build an object file
 dfs_jni.cc.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfs_jni.cc.o
 .PHONY : dfs_jni.cc.o
 
 dfs_jni.i: dfs_jni.cc.i
@@ -232,7 +232,7 @@ dfs_jni.i: dfs_jni.cc.i
 
 # target to preprocess a source file
 dfs_jni.cc.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfs_jni.cc.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfs_jni.cc.i
 .PHONY : dfs_jni.cc.i
 
 dfs_jni.s: dfs_jni.cc.s
@@ -241,7 +241,7 @@ dfs_jni.s: dfs_jni.cc.s
 
 # target to generate assembly for a file
 dfs_jni.cc.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfs_jni.cc.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfs_jni.cc.s
 .PHONY : dfs_jni.cc.s
 
 dfslib_crypt.o: dfslib_crypt.c.o
@@ -250,7 +250,7 @@ dfslib_crypt.o: dfslib_crypt.c.o
 
 # target to build an object file
 dfslib_crypt.c.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.o
 .PHONY : dfslib_crypt.c.o
 
 dfslib_crypt.i: dfslib_crypt.c.i
@@ -259,7 +259,7 @@ dfslib_crypt.i: dfslib_crypt.c.i
 
 # target to preprocess a source file
 dfslib_crypt.c.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.i
 .PHONY : dfslib_crypt.c.i
 
 dfslib_crypt.s: dfslib_crypt.c.s
@@ -268,7 +268,7 @@ dfslib_crypt.s: dfslib_crypt.c.s
 
 # target to generate assembly for a file
 dfslib_crypt.c.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_crypt.c.s
 .PHONY : dfslib_crypt.c.s
 
 dfslib_random.o: dfslib_random.c.o
@@ -277,7 +277,7 @@ dfslib_random.o: dfslib_random.c.o
 
 # target to build an object file
 dfslib_random.c.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_random.c.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_random.c.o
 .PHONY : dfslib_random.c.o
 
 dfslib_random.i: dfslib_random.c.i
@@ -286,7 +286,7 @@ dfslib_random.i: dfslib_random.c.i
 
 # target to preprocess a source file
 dfslib_random.c.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_random.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_random.c.i
 .PHONY : dfslib_random.c.i
 
 dfslib_random.s: dfslib_random.c.s
@@ -295,7 +295,7 @@ dfslib_random.s: dfslib_random.c.s
 
 # target to generate assembly for a file
 dfslib_random.c.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_random.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_random.c.s
 .PHONY : dfslib_random.c.s
 
 dfslib_string.o: dfslib_string.c.o
@@ -304,7 +304,7 @@ dfslib_string.o: dfslib_string.c.o
 
 # target to build an object file
 dfslib_string.c.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_string.c.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_string.c.o
 .PHONY : dfslib_string.c.o
 
 dfslib_string.i: dfslib_string.c.i
@@ -313,7 +313,7 @@ dfslib_string.i: dfslib_string.c.i
 
 # target to preprocess a source file
 dfslib_string.c.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_string.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_string.c.i
 .PHONY : dfslib_string.c.i
 
 dfslib_string.s: dfslib_string.c.s
@@ -322,7 +322,7 @@ dfslib_string.s: dfslib_string.c.s
 
 # target to generate assembly for a file
 dfslib_string.c.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_string.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfslib_string.c.s
 .PHONY : dfslib_string.c.s
 
 dfsrsa.o: dfsrsa.c.o
@@ -331,7 +331,7 @@ dfsrsa.o: dfsrsa.c.o
 
 # target to build an object file
 dfsrsa.c.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfsrsa.c.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfsrsa.c.o
 .PHONY : dfsrsa.c.o
 
 dfsrsa.i: dfsrsa.c.i
@@ -340,7 +340,7 @@ dfsrsa.i: dfsrsa.c.i
 
 # target to preprocess a source file
 dfsrsa.c.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfsrsa.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfsrsa.c.i
 .PHONY : dfsrsa.c.i
 
 dfsrsa.s: dfsrsa.c.s
@@ -349,7 +349,7 @@ dfsrsa.s: dfsrsa.c.s
 
 # target to generate assembly for a file
 dfsrsa.c.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfsrsa.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dfsrsa.c.s
 .PHONY : dfsrsa.c.s
 
 dnet_crypt.o: dnet_crypt.c.o
@@ -358,7 +358,7 @@ dnet_crypt.o: dnet_crypt.c.o
 
 # target to build an object file
 dnet_crypt.c.o:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dnet_crypt.c.o
 .PHONY : dnet_crypt.c.o
 
 dnet_crypt.i: dnet_crypt.c.i
@@ -367,7 +367,7 @@ dnet_crypt.i: dnet_crypt.c.i
 
 # target to preprocess a source file
 dnet_crypt.c.i:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dnet_crypt.c.i
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dnet_crypt.c.i
 .PHONY : dnet_crypt.c.i
 
 dnet_crypt.s: dnet_crypt.c.s
@@ -376,7 +376,7 @@ dnet_crypt.s: dnet_crypt.c.s
 
 # target to generate assembly for a file
 dnet_crypt.c.s:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dnet_crypt.c.s
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(MAKE) $(MAKESILENT) -f dfs/CMakeFiles/dfs.dir/build.make dfs/CMakeFiles/dfs.dir/dnet_crypt.c.s
 .PHONY : dnet_crypt.c.s
 
 # Help Target
@@ -424,6 +424,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /Users/punk/Documents/code/java_project/xdagJ_net/node1/xdagj/src/c && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

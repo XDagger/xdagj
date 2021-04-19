@@ -216,13 +216,12 @@ install(TARGETS randomx
 #set_property(TARGET randomx-benchmark PROPERTY CXX_STANDARD 11)
 
 #copy library to target directory
-set(RANDOMX_TARGET_DIR ${CMAKE_CURRENT_LIST_DIR}/../../main/resources/native/randomx)
+set(RANDOMX_TARGET_DIR ${CMAKE_CURRENT_LIST_DIR}/../../main/resources/native/${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
 add_custom_command(
     TARGET randomx
     POST_BUILD
     COMMAND mkdir -p ${RANDOMX_TARGET_DIR}
     COMMAND cp $<TARGET_FILE:randomx> ${RANDOMX_TARGET_DIR}
 )
-
 
 

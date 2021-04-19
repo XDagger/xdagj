@@ -1,3 +1,0 @@
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/CMakeFiles/rebuild_cache.dir
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/CMakeFiles/edit_cache.dir
-/Users/punk/Documents/code/java_project/xdag_net/node4/xdagj/src/c/dfs/CMakeFiles/dfs.dir
