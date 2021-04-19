@@ -104,6 +104,7 @@ public class MinerChannel {
     private byte[] lastMinHash = new byte[32];
     /** 记录prevDiff的次数 实际上类似于进行了多少次计算 */
     @Getter
+    @Setter
     private int prevDiffCounts;
 
     @Setter
@@ -316,8 +317,8 @@ public class MinerChannel {
         this.prevDiffCounts++;
     }
 
-    public void setMaxDiffs(int index, double diff) {
-        maxDiffs.set(index, diff);
+    public void addMaxDiffs(int index, double diff) {
+        maxDiffs.add(index, diff);
     }
 
     public double getMaxDiffs(int index) {

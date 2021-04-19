@@ -23,6 +23,7 @@
  */
 package io.xdag.mine.miner;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class MinerCalculateTest {
@@ -35,10 +36,10 @@ public class MinerCalculateTest {
 
     @Test
     public void minerCalculateUnpaidSharesTest() {
-        double sum = 344.0293;
-        int count = 5;
+        double sum = 265.56357765870297;
+        int count = 16;
 
-        double res = MinerCalculate.diffToPay(sum, count);
-//        System.out.println(res);
+        double res = MinerCalculate.diffToPay(0, 0);
+        Assert.assertTrue(Double.valueOf(0).compareTo(res) >= 0);
     }
 }

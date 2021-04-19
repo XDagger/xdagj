@@ -21,4 +21,5 @@ logs
 #for macos
 .DS_Store
 src/c/dfs
-src/main/resources
+src/main/resources/native
+src/main/resources/xdag.config

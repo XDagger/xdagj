@@ -256,16 +256,16 @@ public class XdagPow implements PoW, Listener, Runnable {
                 XdagSha256Digest digest = new XdagSha256Digest(currentTask.getDigest());
                 hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
             }
-            MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
-            MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
+
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
                 minShare = Arrays.reverse(shareInfo.getData());
 
-                // 把计算出来的最后的结果放到nonce里面
+                // put minshare into nonce
                 generateBlock.setNonce(minShare);
 
+                //myron
                 int index = (int) ((currentTask.getTaskTime() >> 16) & 0xf);
                 // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
                 minShares.set(index, minShare);
@@ -275,6 +275,9 @@ public class XdagPow implements PoW, Listener, Runnable {
                 log.debug("New MinShare :" + Hex.toHexString(minShare));
 
             }
+            //update miner state
+            MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
+            MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
@@ -318,8 +321,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
 
         byte[] rxHash = Hash.sha256(BytesUtils.subArray(block.getXdagBlock().getData(),0,480));
-
-
         // todo
         task[0] = new XdagField(rxHash);
         task[1] = new XdagField(memory.getSeed().clone());
@@ -475,8 +476,10 @@ public class XdagPow implements PoW, Listener, Runnable {
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
                     log.error(e.getMessage(), e);
                 }
+
             }
         }
 

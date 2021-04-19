@@ -81,7 +81,7 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_log_difficulty2hashrateTest() {
-        double res = BasicUtils.xdag_log_difficulty2hashrate(100);
-//        System.out.println("this is res :" + res);
+        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
+        //System.out.println("this is res :" + res);
     }
 }
