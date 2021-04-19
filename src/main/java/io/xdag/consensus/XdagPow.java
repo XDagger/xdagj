@@ -144,6 +144,27 @@ public class XdagPow implements PoW, Listener, Runnable {
             if (randomXUtils.getRandomXPoolMemIndex() == 0) {
                 randomXUtils.setRandomXPoolMemIndex( (randomXUtils.getRandomXHashEpochIndex() - 1) & 1);
             }
+
+            if(randomXUtils.getRandomXPoolMemIndex() == -1) {
+
+                long switchTime0 = randomXUtils.getGlobalMemory()[0] == null?0:randomXUtils.getGlobalMemory()[0].getSwitchTime();
+                long switchTime1 = randomXUtils.getGlobalMemory()[1] == null?0:randomXUtils.getGlobalMemory()[1].getSwitchTime();
+
+                if(switchTime0 > switchTime1) {
+                    if(XdagTime.getEpoch(sendTime) > switchTime0) {
+                        randomXUtils.setRandomXPoolMemIndex(2);
+                    } else {
+                        randomXUtils.setRandomXPoolMemIndex(1);
+                    }
+                } else {
+                    if(XdagTime.getEpoch(sendTime) > switchTime1) {
+                        randomXUtils.setRandomXPoolMemIndex(1);
+                    } else {
+                        randomXUtils.setRandomXPoolMemIndex(2);
+                    }
+                }
+            }
+
             long randomXMemIndex = randomXUtils.getRandomXPoolMemIndex() + 1;
             RandomXMemory memory = randomXUtils.getGlobalMemory()[(int)(randomXMemIndex) & 1];
 

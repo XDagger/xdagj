@@ -288,6 +288,9 @@ public class RandomX {
             long preSeedHeight = seedHeight - seedEpoch - 1;
 
             if (preSeedHeight >= randomXForkSeedHeight) {
+                randomXHashEpochIndex = 0;
+                randomXPoolMemIndex = -1;
+
                 block = blockchain.getBlockByHeight(preSeedHeight);
                 long memoryIndex = randomXHashEpochIndex + 1;
                 RandomXMemory memory = globalMemory[(int) (memoryIndex) & 1];
@@ -312,7 +315,12 @@ public class RandomX {
 
                 randomXPoolUpdateSeed(memoryIndex);
                 randomXHashEpochIndex = memoryIndex;
-                memory.isSwitched = 0;
+//                memory.isSwitched = 0;
+                if(XdagTime.getEpoch(blockchain.getBlockByHeight(blockchain.getXdagStats().nmain).getTimestamp()) >= memory.getSwitchTime()) {
+                    memory.isSwitched = 1;
+                } else {
+                    memory.isSwitched = 0;
+                }
             }
         }
     }
