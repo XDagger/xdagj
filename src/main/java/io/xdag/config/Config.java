@@ -26,6 +26,8 @@ package io.xdag.config;
 import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
+
+import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
