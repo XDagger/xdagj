@@ -39,6 +39,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
+import static java.lang.Double.NaN;
+
 @Slf4j
 public class Miner {
     protected int boundedTaskCounter;
@@ -122,11 +124,16 @@ public class Miner {
         this.minerStates = states;
     }
 
-    /** 判断这个miner 是不是可以被移除 */
+    /** 判断这个miner 是不是可以被移除
+     * 没有矿机接入
+     * 状态等于归档
+     * maxdiff 全部为0
+     *
+     * */
     public boolean canRemove() {
         if (minerStates == MinerStates.MINER_ARCHIVE && connChannelCounts.get() == 0) {
             for (Double maxDiff : maxDiffs) {
-                if (maxDiff != 0.0) {
+                if (maxDiff.compareTo(Double.valueOf(0)) > 0) {
                     return false;
                 }
             }

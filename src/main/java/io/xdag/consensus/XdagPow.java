@@ -23,6 +23,7 @@
  */
 package io.xdag.consensus;
 
+import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
 import java.io.IOException;
@@ -248,7 +249,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
 
         XdagField shareInfo = new XdagField(msg.getEncoded());
-        log.debug("shareinfo:{}", Hex.toHexString(shareInfo.getData()));
+        log.debug("shareinfo:" + Hex.toHexString(shareInfo.getData()));
         events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 
@@ -277,17 +278,18 @@ public class XdagPow implements PoW, Listener, Runnable {
                 XdagSha256Digest digest = new XdagSha256Digest(currentTask.getDigest());
                 hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
             }
-            MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
-            MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
+
+            log.debug("the new Hash is [{}]",Hex.toHexString(hash));
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
                 minShare = Arrays.reverse(shareInfo.getData());
 
-                // 把计算出来的最后的结果放到nonce里面
+                // put minshare into nonce
                 generateBlock.setNonce(minShare);
 
-                int index = (int) ((currentTask.getTaskTime() >> 16) & 0xf);
+                //myron
+                int index = (int) ((currentTask.getTaskTime() >> 16) & AWARD_EPOCH);
                 // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
                 minShares.set(index, minShare);
                 blockHashs.set(index, generateBlock.recalcHash());
@@ -296,6 +298,9 @@ public class XdagPow implements PoW, Listener, Runnable {
                 log.debug("New MinShare :" + Hex.toHexString(minShare));
 
             }
+            //update miner state
+            MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
+            MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
