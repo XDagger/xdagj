@@ -6,8 +6,6 @@ import io.xdag.config.Config;
 import io.xdag.config.RandomXConstants;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -64,7 +62,6 @@ public class RandomXTest {
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
 
-
         Native.init();
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
@@ -96,10 +93,7 @@ public class RandomXTest {
     }
 
 
-
-
     public void addMainBlock() throws ParseException {
-
         XdagTopStatus xdagTopStatus = blockchain.getXdagTopStatus();
 
         Date date = fastDateFormat.parse("2020-09-20 23:45:00");
@@ -136,39 +130,39 @@ public class RandomXTest {
     }
 
 
-    @Test
-    public void testDiffCalculate() {
-
-        String expectedRawDiff = "382ceb150";
-
-        String[] blocks = new String[]{
-                "000000000000000000000181cac9ffff40000000000055380000000000000000",
-                "000000000000000019e5f0b41d83d26cd9f0c5855f36f75c369c51121a7e62c3",
-                "8fb20675341a8d9314633c402593f3e5c9cc2b19bf9dc356f13eb632116a0b8d",
-                "77cb18fc224742884641595ba808e608d5be56608c9ea888bbf73ee238b193f4",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "7a5da62bcee326f589cab57cf943b843fdf4c390a56ba803dbaf408cfcd2e2c0"
-        };
-
-        StringBuilder stringBuilder = new StringBuilder();
-        for(int i = 0; i < 16; i++) {
-            stringBuilder.append(Hex.toHexString(Arrays.reverse(Hex.decode(blocks[i]))));
-        }
-
-        Block block = new Block(new XdagBlock(Hex.decode(stringBuilder.toString())));
-        BigInteger rawDiff = blockchain.getDiffByRawHash(block.recalcHash());
-        assertEquals(expectedRawDiff,rawDiff.toString(16));
-    }
+//    @Test
+//    public void testDiffCalculate() {
+//
+//        String expectedRawDiff = "382ceb150";
+//
+//        String[] blocks = new String[]{
+//                "000000000000000000000181cac9ffff40000000000055380000000000000000",
+//                "000000000000000019e5f0b41d83d26cd9f0c5855f36f75c369c51121a7e62c3",
+//                "8fb20675341a8d9314633c402593f3e5c9cc2b19bf9dc356f13eb632116a0b8d",
+//                "77cb18fc224742884641595ba808e608d5be56608c9ea888bbf73ee238b193f4",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "0000000000000000000000000000000000000000000000000000000000000000",
+//                "7a5da62bcee326f589cab57cf943b843fdf4c390a56ba803dbaf408cfcd2e2c0"
+//        };
+//
+//        StringBuilder stringBuilder = new StringBuilder();
+//        for(int i = 0; i < 16; i++) {
+//            stringBuilder.append(Hex.toHexString(Arrays.reverse(Hex.decode(blocks[i]))));
+//        }
+//
+//        Block block = new Block(new XdagBlock(Hex.decode(stringBuilder.toString())));
+//        BigInteger rawDiff = blockchain.getDiffByRawHash(block.recalcHash());
+//        assertEquals(expectedRawDiff,rawDiff.toString(16));
+//    }
 
 
     @Test
@@ -180,17 +174,5 @@ public class RandomXTest {
     }
 
 
-    @Test
-    public void testECKeypairParity() {
-        ECKeyPair ecKey = Keys.createEcKeyPair();
-        byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), false);
-        byte lastByte = publicKeyBytes[publicKeyBytes.length - 1];
-        // 奇偶
-        boolean pubKeyParity = (lastByte & 1) == 0;
-
-        // 奇偶
-        boolean pubKeyParity1 = !ecKey.getPublicKey().testBit(0);
-        assertEquals(pubKeyParity, pubKeyParity1);
-    }
 
 }

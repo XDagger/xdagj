@@ -61,6 +61,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.xdag.config.Constants.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
@@ -223,6 +225,21 @@ public class BlockchainImpl implements Blockchain {
     public synchronized ImportResult tryToConnect(Block block) {
         try {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
+
+            long type = block.getType()&0xf;
+            if (Config.MAINNET) {
+                if (type != XDAG_FIELD_HEAD.asByte()) {
+                    result = ImportResult.ERROR;
+                    result.setError("Block type error, is not a mainnet block");
+                    return result;
+                }
+            } else {
+                if (type != XDAG_FIELD_HEAD_TEST.asByte()) {
+                    result = ImportResult.ERROR;
+                    result.setError("Block type error, is not a testnet block");
+                    return result;
+                }
+            }
 
             if (block.getTimestamp() > (XdagTime.getCurrentTimestamp()+ MAIN_CHAIN_PERIOD/4)
                     || block.getTimestamp() < XDAG_ERA
@@ -1166,6 +1183,9 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public void startCheckMain() {
+        if(checkLoop == null) {
+            return;
+        }
         checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 1024, TimeUnit.MILLISECONDS);
     }
 

@@ -68,6 +68,7 @@ public class MinerChannel {
     private boolean isActive;
     /** 记录对应的矿工对象 */
     @Getter
+    @Setter
     private Miner miner;
     /** 当前接受的最近的任务编号 */
     @Getter
