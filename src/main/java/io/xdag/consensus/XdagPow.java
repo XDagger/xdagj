@@ -386,7 +386,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     @Override
     public void run() {
         log.debug("Main PoW start ....");
-        resetTimeout(XdagTime.getMainTime());
+        resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()+64));
         // init pretop
         globalPretop = blockchain.getXdagTopStatus().getPreTop();
         while (this.isRunning) {
