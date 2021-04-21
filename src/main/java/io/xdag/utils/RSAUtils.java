@@ -135,11 +135,11 @@ public class RSAUtils {
         KeyPair keyPair = kpg.generateKeyPair();
         Key publicKey = keyPair.getPublic();
         String publicKeyStr = Base64.encodeBase64URLSafeString(publicKey.getEncoded());
-        System.out.println(
-                "pubkey byte length:"
-                        + publicKey.getEncoded().length
-                        + ", str length:"
-                        + publicKeyStr.length());
+//        System.out.println(
+//                "pubkey byte length:"
+//                        + publicKey.getEncoded().length
+//                        + ", str length:"
+//                        + publicKeyStr.length());
         Key privateKey = keyPair.getPrivate();
         String privateKeyStr = Base64.encodeBase64URLSafeString(privateKey.getEncoded());
         Map<String, String> keyPairMap = new HashMap<String, String>();

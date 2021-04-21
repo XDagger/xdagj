@@ -182,14 +182,14 @@ public class Xdag03 extends XdagHandler {
     }
 
     protected void processBlockRequest(BlockRequestMessage msg) {
-        log.debug("processBlockRequest: hash:{}" + Hex.toHexString(msg.getHash()));
+//        log.debug("processBlockRequest: hash:{}" + Hex.toHexString(msg.getHash()));
         byte[] find = new byte[32];
         byte[] hash = msg.getHash();
         hash = Arrays.reverse(hash);
         System.arraycopy(hash, 8, find, 8, 24);
         Block block = blockchain.getBlockByHash(find, true);
         if (block != null) {
-            log.debug("processBlockRequest: findBlock" + Hex.toHexString(block.getHashLow()));
+//            log.debug("processBlockRequest: findBlock" + Hex.toHexString(block.getHashLow()));
             NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getTTL());
             sendMessage(message);
         }
@@ -198,7 +198,7 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Sending * *********************** */
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
-        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
+//        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
         NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
         sendMessage(msg);
     }
@@ -217,7 +217,7 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetBlock(byte[] hash) {
-        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
+//        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);
         return msg.getRandom();

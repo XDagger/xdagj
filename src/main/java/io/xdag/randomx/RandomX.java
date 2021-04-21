@@ -184,6 +184,7 @@ public class RandomX {
 
         readWriteLock.writeLock().lock();
         try{
+            log.debug("Use seed {}",Hex.toHexString(Arrays.reverse(memory.seed)));
             hash = calculateHash(memory.blockVm, data, dataSize);
         } finally {
             readWriteLock.writeLock().unlock();
