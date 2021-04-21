@@ -39,6 +39,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
+import static java.lang.Double.NaN;
+
 @Slf4j
 public class Miner {
     protected int boundedTaskCounter;
@@ -131,10 +133,14 @@ public class Miner {
     public boolean canRemove() {
         if (minerStates == MinerStates.MINER_ARCHIVE && connChannelCounts.get() == 0) {
             for (Double maxDiff : maxDiffs) {
-                if (maxDiff != 0.0) {
+                //// TODO: 2021/4/20 myron 修改删除的情况
+                System.out.println("这个时候的diff为" + maxDiff);
+                if (maxDiff.compareTo(Double.valueOf(0)) > 0) {
+                    System.out.println("还不能删除这个miners");
                     return false;
                 }
             }
+            System.out.println("可以删除了。。。");
             return true;
         } else {
             return false;

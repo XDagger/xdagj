@@ -36,6 +36,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
+import io.xdag.utils.*;
 import io.xdag.wallet.OldWallet;
 
 import io.xdag.Kernel;
@@ -43,10 +44,6 @@ import io.xdag.config.Config;
 import io.xdag.consensus.Task;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
-import io.xdag.utils.BigDecimalUtils;
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FastByteComparisons;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
@@ -365,10 +362,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
     private double precalculatePayments(byte[] nonce, int index, PayData payData) {
-
-
         log.debug("precalculatePayments........");
-
         //这里缺少对矿池的计算
         //现对矿池进行计算
         payData.prevDiffSums = countpay(poolMiner,index,payData);
@@ -398,7 +392,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             }
             channel.setPrevDiff(0.0);
             channel.setPrevDiffCounts(0);
-
         }
 
         // 要进行参与奖励的支付
@@ -472,8 +465,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     }
 
-    public void doPayments(
-            byte[] hash, int paymentsPerBlock, PayData payData, int keyPos) {
+    public void doPayments(byte[] hash, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
@@ -533,6 +525,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         if (receipt.size() > 0) {
+            System.out.println("执行剩下的付款");
             transaction(hash, receipt, payAmount, keyPos);
             payAmount = 0L;
             receipt.clear();
@@ -544,6 +537,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("unlock keypos =[{}]",keypos);
         for (Address address : receipt) {
             log.debug("pay data: {}", Hex.toHexString(address.getData()));
+            System.out.println("pay data: " + Hex.toHexString(address.getData()));
         }
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
@@ -557,6 +551,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             block.signOut(xdagWallet.getDefKey().ecKey);
         }
         log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
+        System.out.println("pay block hash【{}】"+ Hex.toHexString(block.getHash()));
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
         // kernel.getBlockchain().tryToConnect(block);

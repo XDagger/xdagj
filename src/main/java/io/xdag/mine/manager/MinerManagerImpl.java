@@ -51,7 +51,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     /** 根据miner的地址保存的数组 activate 代表的是一个已经注册的矿工 */
     protected Map<ByteArrayWrapper, Miner> activateMiners = new ConcurrentHashMap<>(200);
 
-    private Task currentTask = null;
+    private Task currentTask;
 
     /**
      * 存放任务的阻塞队列
@@ -202,6 +202,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         for (Miner miner : activateMiners.values()) {
             if (miner.canRemove()) {
                 log.debug("remove a miner,miner address=[{}]", Hex.toHexString(miner.getAddressHash()));
+                System.out.println("清除一个miners");
                 activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash()));
             }
         }
@@ -211,8 +212,14 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     @Override
     public void updateTask(Task task) {
         if (!taskQueue.offer(task)) {
+            System.out.println("Failed to add a task to the queue!");
             log.debug("Failed to add a task to the queue!");
         }
+    }
+
+    @Override
+    public void addActiveMiner(Miner miner) {
+        activateMiners.put(new ByteArrayWrapper(miner.getAddressHash()), miner);
     }
 
     /** 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况 */
@@ -234,6 +241,9 @@ public class MinerManagerImpl implements MinerManager, Runnable {
 
     @Override
     public void onNewShare(MinerChannel channel, Message msg) {
+        if (currentTask == null){
+            System.out.println("currentTask 唯恐啦");
+        }
         if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
             poW.receiveNewShare(channel, msg);
         }

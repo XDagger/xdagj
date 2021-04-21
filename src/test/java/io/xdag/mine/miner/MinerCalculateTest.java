@@ -41,5 +41,11 @@ public class MinerCalculateTest {
 
         double res = MinerCalculate.diffToPay(0, 0);
         Assert.assertTrue(Double.valueOf(0).compareTo(res) >= 0);
+
+        Double a = Double.valueOf(0.000001);
+        Assert.assertTrue(a.compareTo(Double.valueOf(0)) > 0);
+
+
+
     }
 }

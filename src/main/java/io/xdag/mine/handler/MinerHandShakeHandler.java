@@ -48,6 +48,7 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FormatDateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
@@ -87,8 +88,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
             Block addressBlock = new Block(new XdagBlock(uncryptData));
             // Todo:加入block_queue
-            syncManager.validateAndAddNewBlock(
-                    new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
+            syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
 
             if (!channel.initMiner(addressBlock.getHash())) {
                 log.debug("too many connect for a miner");

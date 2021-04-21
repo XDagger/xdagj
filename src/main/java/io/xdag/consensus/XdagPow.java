@@ -248,7 +248,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
 
         XdagField shareInfo = new XdagField(msg.getEncoded());
-        log.debug("shareinfo:" + Hex.toHexString(shareInfo.getData()));
+        log.debug(" shareinfo:" + Hex.toHexString(shareInfo.getData()));
         events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 
@@ -271,6 +271,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             if (kernel.getRandomXUtils().isRandomxFork(currentTask.getTaskTime())) {
                 byte[] taskData = new byte[64];
                 System.arraycopy(currentTask.getTask()[0].getData(),0,taskData,0,32);
+                log.debug("反转前的share Info[{}]",Hex.toHexString(shareInfo.getData()));
                 System.arraycopy(Arrays.reverse(shareInfo.getData()),0,taskData,32,32);
                 hash = Arrays.reverse(kernel.getRandomXUtils().randomXPoolCalcHash(taskData, taskData.length, currentTask.getTaskTime()));
             } else{
@@ -278,6 +279,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                 hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
             }
 
+            log.debug("the new Hash is [{}]",Hex.toHexString(hash));
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;

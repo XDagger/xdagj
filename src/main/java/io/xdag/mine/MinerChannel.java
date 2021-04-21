@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.xdag.mine.miner.MinerStates;
 import org.apache.commons.codec.binary.Hex;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -68,6 +69,7 @@ public class MinerChannel {
     private boolean isActive;
     /** 记录对应的矿工对象 */
     @Getter
+    @Setter
     private Miner miner;
     /** 当前接受的最近的任务编号 */
     @Getter
@@ -93,6 +95,8 @@ public class MinerChannel {
     @Getter
     @Setter
     private byte[] accountAddressHash;
+    @Getter
+    @Setter
     private byte[] accountAddressHashLow;
     /** 保存上一轮的share */
     @Getter
@@ -142,6 +146,9 @@ public class MinerChannel {
     private MinerMessageHandler minerMessageHandler;
     private Miner03 miner03;
     private ConnectionLimitHandler connectionLimitHandler;
+
+    @Getter
+    private boolean isMill = false;
 
     /** 初始化 同时需要判断是服务器端还是客户端 */
     public MinerChannel(Kernel kernel, NioSocketChannel socket, boolean isServer) {
@@ -290,13 +297,13 @@ public class MinerChannel {
 
     /** 矿池发送余额给矿工 */
     public void sendBalance() {
-        Block block = blockStore.getBlockByHash(accountAddressHashLow, false);
+        Block block = blockStore.getBlockByHash(accountAddressHash, false);
         if (block == null) {
             return;
         }
         long amount = block.getInfo().getAmount();
         byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false),
-                BytesUtils.subArray(accountAddressHashLow, 8, 24));
+                BytesUtils.subArray(accountAddressHash, 8, 24));
         log.debug("update miner balance {}", Hex.encodeHexString(data));
         miner03.sendMessage(data);
     }
@@ -358,5 +365,15 @@ public class MinerChannel {
         public String toString() {
             return count.toString();
         }
+    }
+
+
+    public void updateMiner(Miner miner) {
+        this.miner = miner;
+        this.accountAddressHash = miner.getAddressHash();
+        miner.putChannel(this.getInetAddress(), this);
+        miner.addChannelCounts(1);
+        miner.setMinerStates(MinerStates.MINER_ACTIVE);
+        isMill = true;
     }
 }

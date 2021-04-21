@@ -113,8 +113,7 @@ public class MinerCalculate {
                 .append("   unpaid: ")
                 .append(String.format("%.6f", unpaid))
                 .append("   HashRate: ")
-                .append(
-                        String.format("%.6f", BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff())))
+                .append(String.format("%.6f", BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff())))
                 .append("\n");
 
         Map<InetSocketAddress, MinerChannel> channels = miner.getChannels();
@@ -141,6 +140,8 @@ public class MinerCalculate {
                     .append("     ")
                     .append("HashRate:  ")
                     .append(String.format("%.6f", rate))
+                    .append("   ")
+                    .append(channel.isMill() ? "RandomXMiner" : "xdagClient")
                     .append("\n");
             res.append(channelStr);
         }

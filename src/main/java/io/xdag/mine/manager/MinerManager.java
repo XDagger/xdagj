@@ -54,4 +54,6 @@ public interface MinerManager {
     void removeUnactivateChannel(MinerChannel channel);
 
     void updateTask(Task task);
+
+    void addActiveMiner(Miner miner);
 }
