@@ -3,9 +3,9 @@
 
     <properties>
         <property name="Logs_Dir">./logs</property>
-        <property name="Info_File_Name">xdag_info</property>
+<!--        <property name="Info_File_Name">xdag_info</property>-->
         <property name="Error_File_Name">xdag_error</property>
-        <property name="Debug_File_Name">xdag_debug</property>
+<!--        <property name="Debug_File_Name">xdag_debug</property>-->
         <property name="Sync_Debug_File_Name">xdag_sync_debug</property>
         <property name="SyncMgr_Debug_File_Name">xdag_sync_mgr_debug</property>
         <property name="Chain_Debug_File_Name">xdag_chain_debug</property>
@@ -29,27 +29,27 @@
         </File>
 
 
-        <RollingRandomAccessFile name="Info"
-                                 fileName="${Logs_Dir}/${Info_File_Name}.log"
-                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">
-            <PatternLayout
-                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1"/>
-            </Policies>
-            <DefaultRolloverStrategy max="100"/>
-        </RollingRandomAccessFile>
+<!--        <RollingRandomAccessFile name="Info"-->
+<!--                                 fileName="${Logs_Dir}/${Info_File_Name}.log"-->
+<!--                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">-->
+<!--            <PatternLayout-->
+<!--                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+<!--            <Policies>-->
+<!--                <TimeBasedTriggeringPolicy interval="1"/>-->
+<!--            </Policies>-->
+<!--            <DefaultRolloverStrategy max="100"/>-->
+<!--        </RollingRandomAccessFile>-->
 
-        <RollingRandomAccessFile name="Debug"
-                                 fileName="${Logs_Dir}/${Debug_File_Name}.log"
-                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">
-            <PatternLayout
-                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1"/>
-            </Policies>
-            <DefaultRolloverStrategy max="100"/>
-        </RollingRandomAccessFile>
+<!--        <RollingRandomAccessFile name="Debug"-->
+<!--                                 fileName="${Logs_Dir}/${Debug_File_Name}.log"-->
+<!--                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">-->
+<!--            <PatternLayout-->
+<!--                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+<!--            <Policies>-->
+<!--                <TimeBasedTriggeringPolicy interval="1"/>-->
+<!--            </Policies>-->
+<!--            <DefaultRolloverStrategy max="100"/>-->
+<!--        </RollingRandomAccessFile>-->
 
         <RollingRandomAccessFile name="AwardDebug"
                                  fileName="${Logs_Dir}/${XdagAward_File_Name}.log"
@@ -155,7 +155,7 @@
         <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
         <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
 
-        <logger name="io.xdag" level="WARN">
+        <logger name="io.xdag" level="ERROR">
             <AppenderRef ref="Error"/>
         </logger>
 
@@ -165,6 +165,9 @@
 
 <!--        <logger name="io.xdag.cli" level="DEBUG">-->
 <!--            <AppenderRef ref="Debug"/>-->
+<!--        </logger>-->
+<!--        <logger name="io.xdag" level="DEBUG">-->
+<!--            <AppenderRef ref="Error"/>-->
 <!--        </logger>-->
 
         <logger name="io.xdag.consensus.XdagSync" level="DEBUG">

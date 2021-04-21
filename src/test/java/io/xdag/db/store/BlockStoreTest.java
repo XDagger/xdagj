@@ -166,9 +166,9 @@ public class BlockStoreTest {
 
         long time = block.getTimestamp();
 
-        System.out.println("first block time:"+time);
-        System.out.println("second block time:"+block1.getTimestamp());
-        System.out.println("hashlow:"+bh);
+//        System.out.println("first block time:"+time);
+//        System.out.println("second block time:"+block1.getTimestamp());
+//        System.out.println("hashlow:"+bh);
 
         blockStore.saveBlock(block);
         blockStore.saveBlock(block1);

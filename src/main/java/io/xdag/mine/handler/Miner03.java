@@ -36,8 +36,13 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.NewBalanceMessage;
 import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
+import io.xdag.mine.miner.Miner;
+import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
@@ -115,14 +120,66 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
   protected void processTaskShare(TaskShareMessage msg) {
     log.debug(" Pool Receive Share");
-    if (FastByteComparisons.compareTo(
-                msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
-            == 0
-        && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
+//    if (FastByteComparisons.compareTo(
+//                msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24)
+//            == 0
+//        && channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
+//
+//      channel.addShareCounts(1);
+//      minerManager.onNewShare(channel, msg);
+//    } else {
+//      log.debug("Too many Shares,Reject...");
+//    }
+    if (FastByteComparisons.compareTo( msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) != 0) {
+      byte[] zero = new byte[8];
+      byte[] blockHash = new byte[32];
+      BytesUtils.isFullZero(zero);
 
+      byte[] hashLow = BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded(),8 ,24));
+      System.out.println("拼接后的hashlow = " + Hex.toHexString(hashLow));
+      Block block = kernel.getBlockchain().getBlockByHash(hashLow,false);
+      if (block != null) {
+        Miner oldMiner = channel.getMiner();
+
+        //blockHash = Hex.decode("ea2f91226a076ae36d73ef789f3618088edbd22e52e2516b48062fc61ee22ce6");
+        blockHash = block.getHash();
+        System.out.println("查找到的区块哈希为 = " + Hex.toHexString(blockHash) + "转换的地址为 = " + BasicUtils.hash2Address(blockHash ));
+        Miner miner = kernel.getMinerManager().getActivateMiners().get(new ByteArrayWrapper(blockHash));
+        if (miner != null) {
+          System.out.println("查找到对应的miner，miner,地址为 = " + BasicUtils.hash2Address(miner.getAddressHash()));
+          channel.setMiner(miner);
+          miner.putChannel(channel.getInetAddress(), channel);
+          miner.addChannelCounts(1);
+          miner.setMinerStates(MinerStates.MINER_ACTIVE);
+
+        }else {
+          //创建一个新的miner对象
+          System.out.println("创建一个新对象");
+          miner = new Miner(blockHash);
+          channel.setMiner(miner);
+          miner.putChannel(channel.getInetAddress(), channel);
+          minerManager.getActivateMiners().put(new ByteArrayWrapper(channel.getAccountAddressHash()), miner);
+          miner.addChannelCounts(1);
+          miner.setMinerStates(MinerStates.MINER_ACTIVE);
+        }
+        channel.setAccountAddressHash(blockHash);
+        oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
+        minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash()));
+      }else {
+        //to do nothing
+        System.out.println("找不到对应的区块");
+        log.debug("can not receive the share, No such address exists.");
+      }
+    }else {
+      System.out.println("直接接入");
+    }
+
+    if (channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
+      System.out.println("接收到的share为 [" + Hex.toHexString(msg.getEncoded()));
       channel.addShareCounts(1);
       minerManager.onNewShare(channel, msg);
-    } else {
+    }else {
+      System.out.println("Too many Shares,Reject...");
       log.debug("Too many Shares,Reject...");
     }
   }

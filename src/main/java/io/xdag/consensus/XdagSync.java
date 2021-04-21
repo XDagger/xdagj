@@ -51,6 +51,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
@@ -117,7 +118,9 @@ public class XdagSync {
         long randomSeq;
         SettableFuture<byte[]> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
-            XdagChannel xc = any.get(0);
+            // TODO:随机选一个
+            int index = RandomUtils.nextInt()%any.size();
+            XdagChannel xc = any.get(index);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
                 randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
 //                log.debug("sendGetBlocks seq:{}",randomSeq);

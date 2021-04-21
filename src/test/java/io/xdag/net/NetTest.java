@@ -34,54 +34,59 @@ import java.net.UnknownHostException;
 import java.util.Objects;
 
 import static io.xdag.utils.BytesUtils.isFullZero;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class NetTest {
     @Test
     public void testNetDB() {
+        String expected = "7f000001611e7f0000015f767f000001d49d7f000001b822";
         NetDB netDB = new NetDB();
         String first = "7f000001611e";
         String second = "7f0000015f76";
         String third = "7f000001d49d";
         String fourth = "7f000001b822";
+
+        int size = 4;
         netDB.addNewIP(Hex.decode(first));
         netDB.addNewIP(Hex.decode(second));
         netDB.addNewIP(Hex.decode(third));
         netDB.addNewIP(Hex.decode(fourth));
 
-        System.out.println(netDB.getSize());
-        System.out.println(Hex.toHexString(netDB.getEncoded()));
+        assertEquals(size,netDB.getSize());
+
+        assertEquals(expected,Hex.toHexString(netDB.getEncoded()));
 
         String all = "7f000001611e7f0000015f767f000001" + "d49d7f000001b822";
 
         NetDB netDB1 = new NetDB(Hex.decode(all));
-        System.out.println(netDB1.getSize());
-        System.out.println(Hex.toHexString(netDB1.getEncoded()));
+        assertEquals(size,netDB1.getSize());
+        assertEquals(all,Hex.toHexString(netDB1.getEncoded()));
 
-        System.out.println(netDB);
     }
 
-    public void TestNetIPGet() {
-        NetDB netDB = new NetDB();
-        String first = "7f000001611e";
-        String second = "7f0000015f76";
-        String third = "7f000001d49d";
-        String fourth = "7f000001b822";
-        netDB.addNewIP(Hex.decode(first));
-        netDB.addNewIP(Hex.decode(second));
-        netDB.addNewIP(Hex.decode(third));
-        netDB.addNewIP(Hex.decode(fourth));
-
-        byte[] hash = netDB.encode(netDB.getIpList());
-        System.out.println(Hex.toHexString(hash));
-    }
+//    public void TestNetIPGet() {
+//        NetDB netDB = new NetDB();
+//        String first = "7f000001611e";
+//        String second = "7f0000015f76";
+//        String third = "7f000001d49d";
+//        String fourth = "7f000001b822";
+//        netDB.addNewIP(Hex.decode(first));
+//        netDB.addNewIP(Hex.decode(second));
+//        netDB.addNewIP(Hex.decode(third));
+//        netDB.addNewIP(Hex.decode(fourth));
+//
+//        byte[] hash = netDB.encode(netDB.getIpList());
+//        System.out.println(Hex.toHexString(hash));
+//    }
 
     @Test
     public void TestNetUpdate() {
         String ip = "127.0.0.1:40404";
         NetDB netDB = new NetDB();
         netDB.addNewIP(ip);
-        System.out.println(netDB);
-        System.out.println(Hex.toHexString(netDB.getEncoded()));
+        assertEquals(1,netDB.getSize());
+        assertEquals("7f000001d49d",Hex.toHexString(netDB.getEncoded()));
     }
 
     class IP {
@@ -142,44 +147,26 @@ public class NetTest {
         }
     }
 
-    @Test
-    public void TestIP() throws UnknownHostException {
-        byte[] address = Hex.decode("7f000001d49d");
-        byte[] ip = BytesUtils.subArray(address, 0, 4);
-        byte[] port = BytesUtils.subArray(address, 4, 2);
-        IP ip1 = new IP(
-                InetAddress.getByAddress(ip),
-                Short.toUnsignedInt(BytesUtils.bytesToShort(port, 0, true)));
-        System.out.println(ip1);
+//    @Test
+//    public void TestIP() throws UnknownHostException {
+//        byte[] address = Hex.decode("7f000001d49d");
+//        byte[] ip = BytesUtils.subArray(address, 0, 4);
+//        byte[] port = BytesUtils.subArray(address, 4, 2);
+//        IP ip1 = new IP(
+//                InetAddress.getByAddress(ip),
+//                Short.toUnsignedInt(BytesUtils.bytesToShort(port, 0, true)));
+//        System.out.println(ip1);
+//
+//        String address1 = "127.0.0.1:40404";
+//        String ip2 = address1.split(":")[0];
+//        int port2 = Integer.parseInt(address1.split(":")[1]);
+//        IP ip3 = new IP(ip2, port2);
+//        System.out.println(ip3);
+//
+//        assertEquals(Hex.toHexString(address),Hex.toHexString(ip3.getData()));
+//
+//    }
 
-        String address1 = "127.0.0.1:40404";
-        String ip2 = address1.split(":")[0];
-        int port2 = Integer.parseInt(address1.split(":")[1]);
-        IP ip3 = new IP(ip2, port2);
-        System.out.println(ip3);
-
-        System.out.println(Hex.toHexString(ip3.getData()));
-
-        byte[] temp = new byte[6];
-        byte[] temp2 = new byte[2];
-        System.out.println(isFullZero(temp));
-        System.out.println(isFullZero(temp2));
-    }
-
-    @Test
-    public void TestParse() {
-        String res = "7f000001611e7f000001b8227f0000015f767f000001d49d000000000000000000000000";
-        NetDB netDB = new NetDB(Hex.decode(res));
-        System.out.println(netDB);
-        System.out.println(netDB.getSize());
-    }
-
-    @Test
-    public void TestIPequals() {
-        IP ip1 = new IP("127.0.0.1", 3333);
-        IP ip2 = new IP("127.0.0.1", 3333);
-        System.out.println(ip1.equals(ip2));
-    }
 
     @Test
     public void TestNetDBParse() {
@@ -202,6 +189,6 @@ public class NetTest {
 
         SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
         NetDB netDB = sumRequestMessage.getNetDB();
-        System.out.println(netDB);
+        assertEquals(4,netDB.getSize());
     }
 }
