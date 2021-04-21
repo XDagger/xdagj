@@ -23,6 +23,7 @@
  */
 package io.xdag.consensus;
 
+import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
 import java.io.IOException;
@@ -271,7 +272,6 @@ public class XdagPow implements PoW, Listener, Runnable {
             if (kernel.getRandomXUtils().isRandomxFork(currentTask.getTaskTime())) {
                 byte[] taskData = new byte[64];
                 System.arraycopy(currentTask.getTask()[0].getData(),0,taskData,0,32);
-                log.debug("反转前的share Info[{}]",Hex.toHexString(shareInfo.getData()));
                 System.arraycopy(Arrays.reverse(shareInfo.getData()),0,taskData,32,32);
                 hash = Arrays.reverse(kernel.getRandomXUtils().randomXPoolCalcHash(taskData, taskData.length, currentTask.getTaskTime()));
             } else{
@@ -289,7 +289,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                 generateBlock.setNonce(minShare);
 
                 //myron
-                int index = (int) ((currentTask.getTaskTime() >> 16) & 0xf);
+                int index = (int) ((currentTask.getTaskTime() >> 16) & AWARD_EPOCH);
                 // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
                 minShares.set(index, minShare);
                 blockHashs.set(index, generateBlock.recalcHash());

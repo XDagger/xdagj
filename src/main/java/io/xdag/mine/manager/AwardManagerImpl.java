@@ -23,6 +23,7 @@
  */
 package io.xdag.mine.manager;
 
+import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static java.lang.Math.E;
@@ -218,9 +219,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void payAndaddNewAwardBlock(AwardBlock awardBlock) {
         log.debug("Pay miner");
         payMiners(awardBlock.generateTime);
-        log.debug("set index:" + (int) ((awardBlock.generateTime >> 16) & 0xf));
-        blockHashs.set((int) ((awardBlock.generateTime >> 16) & 0xf), new ByteArrayWrapper(awardBlock.hash));
-        minShares.set((int) ((awardBlock.generateTime >> 16) & 0xf), new ByteArrayWrapper(awardBlock.share));
+        log.debug("set index:" + (int) ((awardBlock.generateTime >> 16) & AWARD_EPOCH));
+        blockHashs.set((int) ((awardBlock.generateTime >> 16) & AWARD_EPOCH), new ByteArrayWrapper(awardBlock.hash));
+        minShares.set((int) ((awardBlock.generateTime >> 16) & AWARD_EPOCH), new ByteArrayWrapper(awardBlock.share));
     }
 
     @Override
@@ -248,7 +249,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public int payMiners(long time) {
         log.debug("=========== start  payMiners for time [{}]===========",time);
         // 获取到的是当前任务的对应的+1的位置 以此延迟16轮
-        int index = (int) (((time >> 16) + 1) & 0xf);
+        int index = (int) (((time >> 16) + 1) & AWARD_EPOCH);
         int keyPos = -1;
         int minerCounts = 0;
         PayData payData = new PayData();
@@ -327,9 +328,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 决定一个区块是否需要再有一个签名字段
         // todo 这里不够严谨把 如果时第三把第四把呢
         if (xdagWallet.getKey_internal().size() - 1 == keyPos) {
-            payminersPerBlock = 12;
+            payminersPerBlock = 11;
         } else {
-            payminersPerBlock = 10;
+            payminersPerBlock = 9;
         }
 
         //矿池设置自己本身的 其实可以不用设置吧
@@ -525,7 +526,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         if (receipt.size() > 0) {
-            System.out.println("执行剩下的付款");
             transaction(hash, receipt, payAmount, keyPos);
             payAmount = 0L;
             receipt.clear();
@@ -537,7 +537,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("unlock keypos =[{}]",keypos);
         for (Address address : receipt) {
             log.debug("pay data: {}", Hex.toHexString(address.getData()));
-            System.out.println("pay data: " + Hex.toHexString(address.getData()));
         }
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
@@ -551,7 +550,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             block.signOut(xdagWallet.getDefKey().ecKey);
         }
         log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
-        System.out.println("pay block hash【{}】"+ Hex.toHexString(block.getHash()));
+
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
         // kernel.getBlockchain().tryToConnect(block);

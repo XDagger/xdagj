@@ -23,6 +23,7 @@
  */
 package io.xdag.mine.miner;
 
+import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 import static java.lang.Math.E;
 import static java.lang.Math.subtractExact;
@@ -162,7 +163,7 @@ public class MinerCalculate {
                 Hex.toHexString(channel.getAccountAddressHash()),currentTaskTime, minerTaskTime,channelTaskTime);
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
-            int i = (int) (((currentTaskTime >> 16) + 1) & 0xf);
+            int i = (int) (((currentTaskTime >> 16) + 1) & AWARD_EPOCH);
             // int i = (int) (((currentTaskTime>> 16) +1 ) & 7);
             diff = BytesUtils.hexBytesToDouble(hash, 8, false);
             diff *= Math.pow(2, -64);
