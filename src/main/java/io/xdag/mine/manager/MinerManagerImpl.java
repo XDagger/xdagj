@@ -202,7 +202,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         for (Miner miner : activateMiners.values()) {
             if (miner.canRemove()) {
                 log.debug("remove a miner,miner address=[{}]", Hex.toHexString(miner.getAddressHash()));
-                System.out.println("清除一个miners");
                 activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash()));
             }
         }

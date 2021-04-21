@@ -48,7 +48,6 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FormatDateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {

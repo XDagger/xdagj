@@ -262,7 +262,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 miners.add(miner);
                 minerCounts++;
-                log.debug("添加的矿工地址为[{}],共计[{}]个矿工",Hex.toHexString(miner.getAddressHash()), minerCounts);
+                log.debug("矿工的数量为[{}]",minerCounts);
+                //log.debug("添加的矿工地址为[{}],共计[{}]个矿工",Hex.toHexString(miner.getAddressHash()), minerCounts);
             }
         }
 

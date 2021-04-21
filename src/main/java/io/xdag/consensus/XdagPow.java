@@ -249,7 +249,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
 
         XdagField shareInfo = new XdagField(msg.getEncoded());
-        log.debug("shareinfo:" + Hex.toHexString(shareInfo.getData()));
+        log.debug("shareinfo:{}", Hex.toHexString(shareInfo.getData()));
         events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 

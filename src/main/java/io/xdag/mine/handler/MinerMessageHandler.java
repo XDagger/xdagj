@@ -138,7 +138,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 channel.getInBound().add(16);
             }
         } else {
-            System.out.println("接收到的数据的长度为 " + len/16);
             log.debug("There is no type message of corresponding length, please check......");
             throw new IllegalArgumentException(
                     "There is no type message of corresponding length, please check");

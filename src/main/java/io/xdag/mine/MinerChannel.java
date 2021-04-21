@@ -95,9 +95,6 @@ public class MinerChannel {
     @Getter
     @Setter
     private byte[] accountAddressHash;
-    @Getter
-    @Setter
-    private byte[] accountAddressHashLow;
     /** 保存上一轮的share */
     @Getter
     @Setter
@@ -229,7 +226,6 @@ public class MinerChannel {
 
     public boolean initMiner(byte[] accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        this.accountAddressHashLow = BytesUtils.fixBytes(accountAddressHash, 8, 24);
         log.debug("init a Miner:" + Hex.encodeHexString(accountAddressHash));
         // 判断这个矿工是否已经存在了
         if (minerManager.getActivateMiners().containsKey(new ByteArrayWrapper(accountAddressHash))) {
