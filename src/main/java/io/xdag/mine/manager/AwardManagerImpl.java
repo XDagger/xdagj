@@ -333,7 +333,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             payminersPerBlock = 9;
         }
 
-        //矿池设置自己本身的 其实可以不用设置吧
 //        poolMiner.setDiffSum(time, 0.0);
 //        poolMiner.setPrevDiffSum(time, minerCounts);
 

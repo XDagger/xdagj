@@ -91,7 +91,6 @@ public class HandlerTest implements ProtocolBinding<HandlerTest.Controller> {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
-//            System.out.println("channelActive");
             String msg = "A message";
             byte[] bytes = msg.getBytes(CharsetUtil.UTF_8);
             ByteBuf buf = Unpooled.wrappedBuffer(bytes);
