@@ -118,6 +118,12 @@ public class RandomX {
             randomXForkLag = SEEDHASH_EPOCH_LAG;
         }
 
+        long seedEpoch = isTestNet ? SEEDHASH_EPOCH_TESTNET_BLOCKS : SEEDHASH_EPOCH_BLOCKS;
+        if ((randomXForkSeedHeight & (seedEpoch -1)) != 0) {
+            // TODO:
+            return;
+        }
+
         // init memory and lock
         for (int i = 0 ; i < 2; i++) {
             globalMemoryLock[i] = new ReentrantReadWriteLock();
