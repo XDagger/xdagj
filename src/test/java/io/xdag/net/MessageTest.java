@@ -37,6 +37,8 @@ import org.junit.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import static org.junit.Assert.assertEquals;
+
 public class MessageTest {
 
     Config config = new Config();
@@ -298,19 +300,13 @@ public class MessageTest {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        System.out.println(Hex.toHexString(inetAddress.getAddress()));
-
-        try {
-            System.out.println(InetAddress.getByAddress(Hex.decode(ip)).getHostAddress());
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+        assertEquals(ip,Hex.toHexString(inetAddress.getAddress()));
 
         String port = "b822";
         byte[] portbyte = Hex.decode(port);
-        System.out.println(BytesUtils.bytesToShort(portbyte, 0, true));
+        assertEquals(8888,BytesUtils.bytesToShort(portbyte, 0, true));
 
         byte[] res = BytesUtils.merge(inetAddress.getAddress(), BytesUtils.shortToBytes((short) 4444, true));
-        System.out.println(Hex.toHexString(res));
+        assertEquals("7f0000015c11",Hex.toHexString(res));
     }
 }
