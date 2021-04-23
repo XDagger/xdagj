@@ -30,13 +30,13 @@ XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私�
 
 [XDAGJ测试网接入教程](./XDAJ_TestNet_Turial_zh.md)
 
-[XDAJ私有链搭建教程](XDAGJ_PrivateChain_Turial_zh.md)
+[XDAGJ私有链搭建教程](XDAGJ_PrivateChain_Turial_zh.md)
 
 [区块浏览器](http://146.56.240.230/)
 
 ## 发展
 
-XDAGJ已经具备了一个矿池基本的功能，后续的工作继续优化现有代码，提升系统的稳定性。及时吸纳优秀的区块链技术，不断为XDAG注入新鲜血液。
+XDAGJ已经具备了一个矿池基本的功能，后续的工作继续优化现有代码，提升系统的稳定性。及时吸纳优秀的区块链技术，不断为XDAG注入新鲜血液
 
 下一阶段的主要工作包括但不限于下述内容
 
@@ -62,12 +62,12 @@ XDAGJ已经具备了一个矿池基本的功能，后续的工作继续优化现
 
 - Git
 
-  我们使用如下所描述的Git分支模型：
+  我们使用如下所描述的gitflow分支模型：
 
   - `master`为主分支，也是用于部署生产环境的分支，任何时间都不能直接修改代码
   - `develop`为开发分支，始终保持最新完成以及bug修复后的代码
   - `feature`为新功能分支，开发新功能时，以`develop`分支为基础，并且按照开发特性创建对应的`feature/xxx`分支
-  - `release`为预上线分支，发布提测阶段，会release分支代码为基准提测。当有一组feature开发完成，首先会合并到develop分支，进入提测时会创建release分支。如果测试过程中若存在bug需要修复，则直接由开发者在release分支修复并提交。当测试完成之后，合并release分支到master和develop分支，此时master为最新代码，用作上线。
+  - `release`为预上线分支，发布提测阶段，会release分支代码为基准提测。当有一组feature开发完成，首先会合并到develop分支，进入提测时会创建release分支。如果测试过程中若存在bug需要修复，则直接由开发者在release分支修复并提交。当测试完成之后，合并release分支到master和develop分支，此时master为最新代码，用作上线
   - `hotfix`为修复线上紧急问题的分支，以`master`分支为基线，创建`hotfix/xxx`分支，修复完成后，需要合并到`master`分支和`develop`分支
 
 - 提交信息
@@ -105,7 +105,7 @@ XDAGJ已经具备了一个矿池基本的功能，后续的工作继续优化现
 
 ## 赞助
 
-自阿波罗计划的提出至今，社区实现了XDAGJ由0到1的突破，XDAGJ的开发工作也逐渐步入正轨。但是由于资源的有限，您的支持能更好的帮助我们开发和完善XDAGJ
+自阿波罗计划的提出至今，社区实现了XDAGJ由0到1的突破，XDAGJ的开发工作也逐渐步入正轨。但是由于资源的有限，我们希望能获得您的帮助，您的支持能更好的帮助我们开发和完善XDAGJ
 
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
@@ -114,9 +114,9 @@ XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)  
 
-XDAG白皮书     [English](https://github.com/XDagger/xdag/blob/master/WhitePaper.md)  |  [中文](https://github.com/XDagger/xdag/blob/master/WhitePaper%20zh-cn.md)
+[XDAG白皮书](https://github.com/XDagger/xdag/blob/master/WhitePaper%20zh-cn.md)
 
-XDAG协议规范 [English](https://github.com/XDagger/xdag/blob/master/Protocol.md)  |  [中文](https://github.com/XDagger/xdag/blob/master/Protocol-cn.md)
+[XDAG协议规范](https://github.com/XDagger/xdag/blob/master/Protocol-cn.md)
 
 
 ## 执照

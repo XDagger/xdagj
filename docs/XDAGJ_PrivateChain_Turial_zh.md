@@ -46,7 +46,7 @@
 
 - 构建Jar包
 
-  ```she
+  ```shell
   #请先回退至xdagj根目录
   mvn clean package
   ```
@@ -86,7 +86,7 @@ maxConnectPerIP           #相同ip地址允许最多的接入矿工数
 maxMinerPerAccount        #相同钱包账户允许最多的接入矿工数
 
 #白名单配置
-whiteIPs                  #允许链接的对等矿池节点，形式为ip:port，用‘，’隔开
+whiteIPs                  #允许连接的矿池节点，形式为ip:port，用‘，’隔开
 ```
 
 
@@ -104,13 +104,13 @@ whiteIPs                  #允许链接的对等矿池节点，形式为ip:port�
 -f yourpath             [修改区块的存储路径 ]
 -p ip:port              [暴露给对等矿池的连接，即白名单内的名单]
 -P (CFG)                [设置矿池对应的参数; CFG is miners:maxip:maxconn:fee:reward:direct:fund
-   miners              - 最大所能允许接入的矿工数量
-   maxip               - 每一个ip所能接入的最大
-   maxconn             - 相同地址允许接入的最大矿工数量
-   fee                 - 每产生一个主块矿池获得的奖励
-   reward              - 奖励最大难度主块的矿工
-   direct              - 给予参与挖矿的矿工奖励份额
-   fund                - 基金会抽成比例
+   miners               - 最大所能允许接入的矿工数量
+   maxip                - 每一个ip所能接入的最大
+   maxconn              - 相同地址允许接入的最大矿工数量
+   fee                  - 每产生一个主块矿池获得的奖励
+   reward               - 奖励最大难度主块的矿工
+   direct               - 给予参与挖矿的矿工奖励份额
+   fund                 - 基金会抽成比例
 ```
 
 ### 矿池命令行参数
@@ -119,7 +119,7 @@ whiteIPs                  #允许链接的对等矿池节点，形式为ip:port�
 
   ```she
   xdag>account [N]
-  N为可选项，显示N个账户信息，默认20
+  [N为可选项，显示N个账户信息，默认20]
   ```
 
 - 查看矿池网络状态
