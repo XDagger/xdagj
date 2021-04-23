@@ -14,6 +14,7 @@
         <property name="Xdag03_File_Name">xdag03_debug</property>
         <property name="XdagAward_File_Name">xdag_award_debug</property>
         <property name="XdagPoW_File_Name">xdag_pow_debug</property>
+        <property name="XdagMine_File_Name">xdag_mine_debug</property>
 
     </properties>
 
@@ -54,6 +55,17 @@
         <RollingRandomAccessFile name="AwardDebug"
                                  fileName="${Logs_Dir}/${XdagAward_File_Name}.log"
                                  filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagAward_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="MineDebug"
+                                 fileName="${Logs_Dir}/${XdagMine_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagMine_File_Name}-%d{yyyy-MM-dd}.log">
             <PatternLayout
                     pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
             <Policies>
@@ -173,6 +185,11 @@
         <logger name="io.xdag.consensus.XdagSync" level="DEBUG">
             <AppenderRef ref="Sync_Debug"/>
         </logger>
+
+        <logger name="io.xdag.mine" level="DEBUG">
+            <AppenderRef ref="MineDebug"/>
+        </logger>
+
         <logger name="io.xdag.consensus.SyncManager" level="DEBUG">
             <AppenderRef ref="SyncMgr_Debug"/>
         </logger>

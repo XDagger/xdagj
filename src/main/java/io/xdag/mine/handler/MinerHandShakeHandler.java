@@ -65,44 +65,48 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        log.debug("Receive a address block");
-        Native.crypt_start();
-        byte[] address = new byte[512];
-        in.readBytes(address);
+        if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
+            log.debug("Receive a address block");
+            Native.crypt_start();
+            byte[] address = new byte[512];
+            in.readBytes(address);
 
-        long sectorNo = channel.getInBound().get();
+            long sectorNo = channel.getInBound().get();
 
-        /* 解密数据 */
-        byte[] uncryptData = Native.dfslib_uncrypt_array(address, 16, sectorNo);
-        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-        int head = BytesUtils.bytesToInt(uncryptData, 0, true);
+            /* 解密数据 */
+            byte[] uncryptData = Native.dfslib_uncrypt_array(address, 16, sectorNo);
+            int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+            int head = BytesUtils.bytesToInt(uncryptData, 0, true);
 
-        // 清除transportheader
-        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-        if (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc)) {
-            log.debug(" not a block from miner");
-            ctx.channel().closeFuture();
-        } else {
-            // 把区块头置0了
-            System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
-            Block addressBlock = new Block(new XdagBlock(uncryptData));
-            // Todo:加入block_queue
-            syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
+            // 清除transportheader
+            System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+            if (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc)) {
+                log.debug(" not a block from miner");
+                ctx.channel().closeFuture();
+            } else {
+                // 把区块头置0了
+                System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
+                Block addressBlock = new Block(new XdagBlock(uncryptData));
+                // Todo:加入block_queue
+                syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
 
-            if (!channel.initMiner(addressBlock.getHash())) {
-                log.debug("too many connect for a miner");
-                ctx.close();
+                if (!channel.initMiner(addressBlock.getHash())) {
+                    log.debug("too many connect for a miner");
+                    ctx.close();
+                }
+
+                channel.getInBound().add(16L);
+                minerManager.addActivateChannel(channel);
+                channel.setIsActivate(true);
+                channel.setConnectTime(FormatDateUtils.getCurrentTime());
+                channel.setAccountAddressHash(addressBlock.getHash());
+                ctx.pipeline().remove(this);
+                channel.activateHadnler(ctx, V03);
+                // TODO: 2020/5/8 这里可能还有一点小bug 如果无限加入 岂不是会无线创建了
+                log.info("add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
             }
-
-            channel.getInBound().add(16L);
-            minerManager.addActivateChannel(channel);
-            channel.setIsActivate(true);
-            channel.setConnectTime(FormatDateUtils.getCurrentTime());
-            channel.setAccountAddressHash(addressBlock.getHash());
-            ctx.pipeline().remove(this);
-            channel.activateHadnler(ctx, V03);
-            // TODO: 2020/5/8 这里可能还有一点小bug 如果无限加入 岂不是会无线创建了
-            log.info("add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
+        } else {
+            log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
         }
     }
 
