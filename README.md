@@ -31,5 +31,6 @@ Maven : v3.6.3
 ## Other
 
 ## License
-![FOSSA Status](README_zh.assets/git%252Bgithub.com%252FXDagger%252Fxdagj.svg)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_large)
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_large)
 
