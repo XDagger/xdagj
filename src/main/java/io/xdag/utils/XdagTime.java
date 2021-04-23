@@ -59,9 +59,6 @@ public class XdagTime {
         return getEndOfEpoch(getCurrentTimestamp());
     }
 
-    public static long MainTime() {
-        return getCurrentTimestamp() >> 16;
-    }
 
     public static boolean isEndOfEpoch(long time) {
         return (time & 0xffff) == 0xffff;

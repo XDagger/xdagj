@@ -89,7 +89,7 @@ public class Keys {
         try {
             keyPair = createSecp256k1KeyPair(random);
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException  | NoSuchProviderException e) {
-            new RuntimeException(e.getMessage(), e.getCause());
+            throw new RuntimeException(e.getMessage(), e.getCause());
         }
         return ECKeyPair.create(keyPair);
     }

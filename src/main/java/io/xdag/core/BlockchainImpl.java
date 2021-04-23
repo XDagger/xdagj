@@ -326,17 +326,18 @@ public class BlockchainImpl implements Blockchain {
             onNewPretop();
 
             // TODO:extra 处理
-            if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
-                Block reuse = getHead(memOrphanPool).getValue();
-                log.debug("remove when extra too big");
-                removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
-                xdagStats.nblocks--;
-                xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
-
-                if ((reuse.getInfo().flags & BI_OURS) != 0) {
-                    removeOurBlock(reuse);
-                }
-            }
+            processExtraBlock();
+//            if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
+//                Block reuse = getHead(memOrphanPool).getValue();
+//                log.debug("remove when extra too big");
+//                removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
+//                xdagStats.nblocks--;
+//                xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
+//
+//                if ((reuse.getInfo().flags & BI_OURS) != 0) {
+//                    removeOurBlock(reuse);
+//                }
+//            }
 
             // 根据难度更新主链
             // 判断难度是否是比当前最大，并以此更新topMainChain
@@ -396,6 +397,20 @@ public class BlockchainImpl implements Blockchain {
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
             return ImportResult.ERROR;
+        }
+    }
+
+    public void processExtraBlock() {
+        if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
+            Block reuse = getHead(memOrphanPool).getValue();
+            log.debug("remove when extra too big");
+            removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
+            xdagStats.nblocks--;
+            xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
+
+            if ((reuse.getInfo().flags & BI_OURS) != 0) {
+                removeOurBlock(reuse);
+            }
         }
     }
 

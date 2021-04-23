@@ -241,7 +241,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     @Override
     public void onNewShare(MinerChannel channel, Message msg) {
         if (currentTask == null){
-            System.out.println("currentTask 唯恐啦");
+            System.out.println("currentTask 为空");
         }
         if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
             poW.receiveNewShare(channel, msg);
