@@ -264,4 +264,4 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 我们欢迎您将使用过程发生的错误或者其他一切可以帮助我们完善项目的信息，您可以通过[Issues](https://github.com/XDagger/xdagj/issues)向我们反馈
 
-如果您有其他疑问，或者希望我们提供更多的教程，也可以在[Issues](https://github.com/XDagger/xdagj/issues)中进行提问。
+如果您有其他疑问，或者希望我们提供更多的教程，也可以在[Issues](https://github.com/XDagger/xdagj/issues)中进行提问
