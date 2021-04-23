@@ -61,7 +61,7 @@
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
-					<skip>true</skip>
+					<skip>false</skip>
                     <compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>

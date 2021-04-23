@@ -300,6 +300,7 @@ public class MessageTest {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+        assert inetAddress != null;
         assertEquals(ip,Hex.toHexString(inetAddress.getAddress()));
 
         String port = "b822";
