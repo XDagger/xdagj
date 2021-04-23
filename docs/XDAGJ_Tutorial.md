@@ -4,15 +4,13 @@
 
 ## XDAGJ矿池接入
 
-### 钱包
+### MacOS / Linux
 
-#### MacOS / Linux
-
-##### 从C源码构建客户端
+#### 从C源码构建客户端
 
 现阶段XDAGJ只提供矿池功能，用户可以采用编译C语言版本的XDAG客户端来进行接入
 
-###### MacOS平台
+##### MacOS平台
 
 - 安装依赖项目
 
@@ -56,7 +54,7 @@
   make
   ```
 
-###### Ubuntu平台
+##### Ubuntu平台
 
 - 安装依赖项
 
@@ -95,12 +93,12 @@
   make
   ```
 
-###### CentOS
+##### CentOS
 
 - 安装依赖项
 
   ```shell
-  yum install cmake gcc pkg-config openssl gmp-devel libtool ncurses-devel gcc-c++
+  yum install cmake gcc-c++ gmp-devel libtool pkg-config openssl ncurses-devel gcc
   ```
 
   **gcc版本不低于4.9**
@@ -131,9 +129,8 @@
   
   ```
 
-###### 
 
-##### 用法
+#### 用法
 
 - 连接至矿池
 
@@ -191,7 +188,7 @@
   xdag> help
   ```
 
-#### Widnows平台
+##### Widnows平台
 
 官网下载可视化钱包使用，[下载地址](https://xdag.io/zh/)
 
