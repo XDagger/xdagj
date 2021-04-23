@@ -27,10 +27,9 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.*;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static org.junit.Assert.*;
 
@@ -143,14 +142,14 @@ public class RandomXSyncTest {
 //        System.out.println(key.getPrivateKey().toString(16));
         List<Address> pending = Lists.newArrayList();
 
-        ImportResult result = INVALID_BLOCK;
+        ImportResult result;
         log.debug("1. create 1 address block");
 
         Block addressBlock = generateAddressBlock(key, date.getTime());
 
         // 1. add address block
         result = kernel.getBlockchain().tryToConnect(addressBlock);
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
@@ -168,7 +167,7 @@ public class RandomXSyncTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(key, xdagTime, pending);
             result = kernel.getBlockchain().tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             assertArrayEquals(extraBlock.getHashLow(), xdagTopStatus.getTop());
             Block storedExtraBlock = kernel.getBlockchain().getBlockByHash(xdagTopStatus.getTop(), false);
             assertArrayEquals(extraBlock.getHashLow(), storedExtraBlock.getHashLow());

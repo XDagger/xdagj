@@ -25,7 +25,6 @@ package io.xdag.crypto;
 
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
-import lombok.extern.slf4j.Slf4j;
 import org.bitcoin.NativeSecp256k1;
 import org.bitcoin.NativeSecp256k1Util;
 import org.bitcoin.Secp256k1Context;
@@ -40,6 +39,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class ECKeyPair {
 
@@ -158,15 +158,11 @@ public class ECKeyPair {
 
         ECKeyPair ecKeyPair = (ECKeyPair) o;
 
-        if (privateKey != null
-                ? !privateKey.equals(ecKeyPair.privateKey)
-                : ecKeyPair.privateKey != null) {
+        if (!Objects.equals(privateKey, ecKeyPair.privateKey)) {
             return false;
         }
 
-        return publicKey != null
-                ? publicKey.equals(ecKeyPair.publicKey)
-                : ecKeyPair.publicKey == null;
+        return Objects.equals(publicKey, ecKeyPair.publicKey);
     }
 
     @Override

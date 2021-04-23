@@ -32,7 +32,6 @@ public class Constants {
     public static final long XDAG_TEST_ERA = 0x16900000000L;
     public static final long XDAG_MAIN_ERA = 0x16940000000L;
     public static final long XDAG_ERA = MAINNET ? XDAG_MAIN_ERA : XDAG_TEST_ERA;
-    public static final long XDAG_MAIN_CHAIN_PERIOD = (64 << 10);
     /** setmain设置区块为主块时标志该位 */
     public static final byte BI_MAIN = 0x01;
     /** 跟BI_MAIN差不多 不过BI_MAIN是确定的 BI_MAIN_CHAIN是还未确定的 */
@@ -48,11 +47,9 @@ public class Constants {
     /** 候补主块未持久化 */
     public static final byte BI_EXTRA = 0x40;
     public static final byte BI_REMARK = (byte) 0x80;
-    public static final Long SEND_PERIOD = 10L;
     public static final int DNET_PKT_XDAG = 0x8B;
     public static final int BLOCK_HEAD_WORD = 0x3fca9e2b;
     public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
-    public static final long REQUEST_WAIT = 64;
     public static final long MAX_ALLOWED_EXTRA = 65536;
     public static final String FUND_ADDRESS = "FQglVQtb60vQv2DOWEUL7yh3smtj7g1s";
     /** 每一轮的确认数是16 */

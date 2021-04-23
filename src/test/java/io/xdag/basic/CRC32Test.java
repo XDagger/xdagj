@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 public class CRC32Test {
 
     @Test
-    public void TestCrc() {
+    public void testCrc() {
         String reque = "8b050002a353147e3853050000000040ffffc63c7b0100000000000000000000"
                 + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"
                 + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"

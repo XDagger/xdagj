@@ -30,8 +30,6 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +59,7 @@ public class Firewall extends ChannelInboundHandlerAdapter {
 
     class FirewallExceptionHandler extends ChannelInboundHandlerAdapter {
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             if (cause instanceof WriteTimeoutException) {
                 log.debug("Firewall closed channel by write timeout. No writes during " + writeTimeout);
             } else {

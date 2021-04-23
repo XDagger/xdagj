@@ -26,12 +26,12 @@ package io.xdag.net.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.xdag.core.XdagBlock;
-import io.xdag.net.XdagChannel;
 import io.xdag.net.message.Message;
-import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = false)
 @Data

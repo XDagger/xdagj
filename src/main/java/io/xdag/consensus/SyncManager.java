@@ -211,13 +211,13 @@ public class SyncManager {
                 syncPopBlock(blockWrapper);
                 break;
             case NO_PARENT: {
-                if (syncPushBlock(blockWrapper, result.getHashLow())) {
+                if (syncPushBlock(blockWrapper, result.getHashlow())) {
                     log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                        Hex.toHexString(result.getHashLow()));
+                        Hex.toHexString(result.getHashlow()));
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
-                            channel.getXdag().sendGetBlock(result.getHashLow());
+                            channel.getXdag().sendGetBlock(result.getHashlow());
 
                         }
                     }
@@ -282,7 +282,6 @@ public class SyncManager {
      *  根据接收到的区块，将子区块释放
      *
      * @param blockWrapper 接收到的区块
-     * @return
      */
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
@@ -300,13 +299,13 @@ public class SyncManager {
                         v.remove(bw);
                         break;
                     case NO_PARENT:
-                        if (syncPushBlock(bw, importResult.getHashLow())) {
+                        if (syncPushBlock(bw, importResult.getHashlow())) {
                             log.error("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
-                                    Hex.toHexString(importResult.getHashLow()));
+                                    Hex.toHexString(importResult.getHashlow()));
                             List<XdagChannel> channels = channelMgr.getActiveChannels();
                             for (XdagChannel channel : channels) {
                                 if (channel.getNode().equals(bw.getRemoteNode())) {
-                                    channel.getXdag().sendGetBlock(importResult.getHashLow());
+                                    channel.getXdag().sendGetBlock(importResult.getHashlow());
                                 }
                             }
                         }

@@ -44,7 +44,6 @@ import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -80,25 +79,25 @@ public class BlockchainImpl implements Blockchain {
         }
     };
 
-    private OldWallet wallet;
-    private BlockStore blockStore;
+    private final OldWallet wallet;
+    private final BlockStore blockStore;
     /** 非Extra orphan存放 */
-    private OrphanPool orphanPool;
+    private final OrphanPool orphanPool;
 
-    private LinkedHashMap<ByteArrayWrapper, Block> memOrphanPool = new LinkedHashMap<>();
-    private Map<ByteArrayWrapper, Integer> memOurBlocks = new ConcurrentHashMap<>();
-    private XdagStats xdagStats;
-    private Kernel kernel;
+    private final LinkedHashMap<ByteArrayWrapper, Block> memOrphanPool = new LinkedHashMap<>();
+    private final Map<ByteArrayWrapper, Integer> memOurBlocks = new ConcurrentHashMap<>();
+    private final XdagStats xdagStats;
+    private final Kernel kernel;
 
 
-    private XdagTopStatus xdagTopStatus;
+    private final XdagTopStatus xdagTopStatus;
 
-    private ScheduledExecutorService checkLoop;
+    private final ScheduledExecutorService checkLoop;
     private ScheduledFuture<?> checkLoopFuture;
 
-    private RandomX randomXUtils;
+    private final RandomX randomXUtils;
 
-    private List<Listener> listeners = new ArrayList<>();
+    private final List<Listener> listeners = new ArrayList<>();
 
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
@@ -115,11 +114,7 @@ public class BlockchainImpl implements Blockchain {
         }
 
         XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
-        if(storedTopStatus != null) {
-            this.xdagTopStatus = storedTopStatus;
-        } else {
-            this.xdagTopStatus = new XdagTopStatus();
-        }
+        this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
 
         // add randomx utils
         randomXUtils = kernel.getRandomXUtils();
@@ -145,7 +140,7 @@ public class BlockchainImpl implements Blockchain {
         long starttime = 1583368095744L;
         long endtime = 1583389441664L;
         ByteBuffer buffer = ByteBuffer.allocate(512);
-        StringBuffer file = new StringBuffer(srcFilePath);
+        StringBuilder file = new StringBuilder(srcFilePath);
         FileInputStream inputStream = null;
         FileChannel channel = null;
         starttime |= 0x00000;
@@ -160,10 +155,10 @@ public class BlockchainImpl implements Blockchain {
             fileImpl = new File(file.toString());
             if (!fileImpl.exists()) {
                 starttime += 0x10000;
-                file = new StringBuffer(srcFilePath);
+                file = new StringBuilder(srcFilePath);
                 continue;
             }
-            System.out.println("Block from:" + file.toString());
+            System.out.println("Block from:" + file);
             try {
 
                 inputStream = new FileInputStream(fileImpl);
@@ -196,7 +191,7 @@ public class BlockchainImpl implements Blockchain {
             }
 
             starttime += 0x10000;
-            file = new StringBuffer(srcFilePath);
+            file = new StringBuilder(srcFilePath);
         }
         System.out.println("读取结束");
         return res;
@@ -205,7 +200,7 @@ public class BlockchainImpl implements Blockchain {
     public List<String> getFileName(long time) {
         List<String> file = new ArrayList<>();
         file.add("");
-        StringBuffer stringBuffer = new StringBuffer(
+        StringBuilder stringBuffer = new StringBuilder(
                 Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
         stringBuffer.append("/");
         file.add(String.valueOf(stringBuffer));
@@ -230,13 +225,13 @@ public class BlockchainImpl implements Blockchain {
             if (Config.MAINNET) {
                 if (type != XDAG_FIELD_HEAD.asByte()) {
                     result = ImportResult.ERROR;
-                    result.setError("Block type error, is not a mainnet block");
+                    result.setErrorInfo("Block type error, is not a mainnet block");
                     return result;
                 }
             } else {
                 if (type != XDAG_FIELD_HEAD_TEST.asByte()) {
                     result = ImportResult.ERROR;
-                    result.setError("Block type error, is not a testnet block");
+                    result.setErrorInfo("Block type error, is not a testnet block");
                     return result;
                 }
             }
@@ -246,7 +241,7 @@ public class BlockchainImpl implements Blockchain {
 //                    || (limit && timestamp - tmpNodeBlock.time > limit)
             ){
                 result = ImportResult.INVALID_BLOCK;
-                result.setError("Block's time is illegal");
+                result.setErrorInfo("Block's time is illegal");
                 return result;
             }
 
@@ -266,15 +261,15 @@ public class BlockchainImpl implements Blockchain {
                     if (refBlock == null) {
                         log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
                         result = ImportResult.NO_PARENT;
-                        result.setHashLow(ref.getHashLow());
-                        result.setError("Block have no parent for "+Hex.toHexString(result.getHashLow()));
+                        result.setHashlow(ref.getHashLow());
+                        result.setErrorInfo("Block have no parent for "+Hex.toHexString(result.getHashlow()));
                         return result;
                     } else {
                         // 链接块的时间需要小于该块时间，否则为不合法区块
                         if(refBlock.getTimestamp() >= block.getTimestamp()) {
                             result = ImportResult.INVALID_BLOCK;
-                            result.setHashLow(refBlock.getHashLow());
-                            result.setError("Ref block's time >= block's time");
+                            result.setHashlow(refBlock.getHashLow());
+                            result.setErrorInfo("Ref block's time >= block's time");
                             return result;
                         }
 
@@ -304,8 +299,8 @@ public class BlockchainImpl implements Blockchain {
             // 检查区块合法性 检查input是否能使用
             if (!canUseInput(block)) {
                 result = ImportResult.INVALID_BLOCK;
-                result.setHashLow(block.getHashLow());
-                result.setError("Block's input can't be used");
+                result.setHashlow(block.getHashLow());
+                result.setErrorInfo("Block's input can't be used");
                 return ImportResult.INVALID_BLOCK;
             }
 

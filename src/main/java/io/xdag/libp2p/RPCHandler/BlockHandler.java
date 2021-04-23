@@ -64,7 +64,7 @@ public class BlockHandler extends ByteToMessageCodec<XdagBlock> {
 
         return (byte) (type >> (n << 2) & 0xf);
     }
-    /** T 加解密的过程outbound应该先用上一次结束后的值 发完才加 */
+    /* T 加解密的过程outbound应该先用上一次结束后的值 发完才加 */
     /**出去的最后一道*/
     @Override
     protected void encode(

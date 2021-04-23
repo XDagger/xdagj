@@ -41,9 +41,6 @@ public class WalletManager {
      *
      * @param password User Password
      * @param destinationDirectory Keystore Directory
-     * @return
-     * @throws CipherException
-     * @throws IOException
      */
     public static Optional<Credentials> createBip44Wallet(String password, File destinationDirectory) throws CipherException, IOException {
         Bip39Wallet wallet = Bip44WalletUtils.generateBip44Wallet(password, destinationDirectory);
@@ -56,7 +53,6 @@ public class WalletManager {
      *
      * @param password User Password
      * @param mnemonic Mnemonic of 12 Worlds
-     * @return
      */
     public static Optional<Credentials> importBip44WalletFromMnemonic(String password, String mnemonic)  {
         return Optional.of(Bip44WalletUtils.loadBip44Credentials(password, mnemonic));
@@ -67,9 +63,6 @@ public class WalletManager {
      *
      * @param password User Password
      * @param keystore Keystore String
-     * @return
-     * @throws JsonProcessingException
-     * @throws CipherException
      */
     public static Optional<Credentials> importBip44WalletFromKeystore(String password, String keystore) throws JsonProcessingException, CipherException {
         ObjectMapper objectMapper = new ObjectMapper();

@@ -31,7 +31,7 @@ import io.xdag.net.message.XdagMessageCodes;
 
 public class TaskShareMessage extends Message {
 
-    private XdagField xdagField;
+    private final XdagField xdagField;
 
     public TaskShareMessage(byte[] encoded) {
         super(encoded);

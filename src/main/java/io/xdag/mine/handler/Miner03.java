@@ -23,8 +23,6 @@
  */
 package io.xdag.mine.handler;
 
-import java.io.IOException;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -40,21 +38,22 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.io.IOException;
+
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
-    private Kernel kernel;
-    private MinerChannel channel;
+    private final Kernel kernel;
+    private final MinerChannel channel;
     private ChannelHandlerContext ctx;
-    private MinerManager minerManager;
-    private SyncManager syncManager;
+    private final MinerManager minerManager;
+    private final SyncManager syncManager;
 
     public Miner03(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
@@ -66,21 +65,11 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         switch (msg.getCommand()) {
-            case NEW_BALANCE:
-                processNewBalance((NewBalanceMessage) msg);
-                break;
-            case TASK_SHARE:
-                processTaskShare((TaskShareMessage) msg);
-                break;
-            case NEW_TASK:
-                processNewTask((NewTaskMessage) msg);
-                break;
-            case NEW_BLOCK:
-                processNewBlock((NewBlockMessage) msg);
-                break;
-            default:
-                log.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
-                break;
+            case NEW_BALANCE -> processNewBalance((NewBalanceMessage) msg);
+            case TASK_SHARE -> processTaskShare((TaskShareMessage) msg);
+            case NEW_TASK -> processNewTask((NewTaskMessage) msg);
+            case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
+            default -> log.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
         }
     }
 
@@ -124,7 +113,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         //share地址不一致，修改对应的miner地址
         if (FastByteComparisons.compareTo( msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) != 0) {
             byte[] zero = new byte[8];
-            byte[] blockHash = new byte[32];
+            byte[] blockHash;
             BytesUtils.isFullZero(zero);
 
             byte[] hashLow = BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded(),8 ,24));

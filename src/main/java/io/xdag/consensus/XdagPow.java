@@ -23,8 +23,27 @@
  */
 package io.xdag.consensus;
 
-import static io.xdag.config.Config.AWARD_EPOCH;
-import static io.xdag.utils.FastByteComparisons.compareTo;
+import io.xdag.Kernel;
+import io.xdag.core.*;
+import io.xdag.crypto.Hash;
+import io.xdag.libp2p.manager.ChannelManager;
+import io.xdag.listener.Listener;
+import io.xdag.mine.MinerChannel;
+import io.xdag.mine.manager.AwardManager;
+import io.xdag.mine.manager.MinerManager;
+import io.xdag.mine.miner.MinerCalculate;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.message.Message;
+import io.xdag.randomx.RandomX;
+import io.xdag.randomx.RandomXMemory;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.FastByteComparisons;
+import io.xdag.utils.XdagSha256Digest;
+import io.xdag.utils.XdagTime;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,29 +53,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import io.xdag.config.Config;
-import io.xdag.core.*;
-
-import io.xdag.crypto.Hash;
-import io.xdag.libp2p.manager.ChannelManager;
-import io.xdag.listener.Listener;
-import io.xdag.randomx.RandomX;
-import io.xdag.randomx.RandomXMemory;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FastByteComparisons;
-import org.apache.commons.lang3.RandomUtils;
-import io.xdag.Kernel;
-import io.xdag.mine.MinerChannel;
-import io.xdag.mine.manager.AwardManager;
-import io.xdag.mine.manager.MinerManager;
-import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.Message;
-import io.xdag.utils.XdagSha256Digest;
-import io.xdag.utils.XdagTime;
-import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
+import static io.xdag.config.Config.AWARD_EPOCH;
+import static io.xdag.utils.FastByteComparisons.compareTo;
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {
@@ -79,7 +77,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected long taskIndex = 0;
 
     /** 存放的是过去十六个区块的hash */
-    protected List<byte[]> blockHashs = new CopyOnWriteArrayList<byte[]>();
+    protected List<byte[]> blockHashs = new CopyOnWriteArrayList<>();
     /** 存放的是最小的hash */
     protected List<byte[]> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     /** 引入矿工与奖励 */
@@ -87,11 +85,11 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected MinerManager minerManager;
 
 
-    private Kernel kernel;
+    private final Kernel kernel;
 
     private boolean isRunning = false;
 
-    private ChannelManager channelManager;
+    private final ChannelManager channelManager;
 
     protected RandomX randomXUtils;
 

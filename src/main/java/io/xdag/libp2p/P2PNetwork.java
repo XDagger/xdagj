@@ -66,7 +66,6 @@ public interface P2PNetwork<P> {
     /**
      * Starts the P2P network layer.
      *
-     * @return
      */
     SafeFuture<?> start();
 

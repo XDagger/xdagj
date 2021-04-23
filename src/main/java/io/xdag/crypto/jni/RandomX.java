@@ -44,9 +44,6 @@ public class RandomX {
 
     /**
      * Loads a library file from bundled resource.
-     *
-     * @param resource
-     * @return
      */
     protected static boolean loadLibrary(String resource) {
         try {
@@ -87,11 +84,7 @@ public class RandomX {
     public static native long allocDataSet();
     public static native long initDataSet(long cache,long dataset,int miners);
     public static native void releaseDataSet(long dataset);
-    //    public static native long datasetItemCount();
-//    public static native long getDatasetMemory();
     public static native long createVm(long cache,long dataset,int miners);
-    //    public static native long vmSetCache();
-//    public static native long vmSetDataset();
     public static native long destroyVm(long vm);
     public static native byte[] calculateHash(long vm,byte[] data,int length);
 }

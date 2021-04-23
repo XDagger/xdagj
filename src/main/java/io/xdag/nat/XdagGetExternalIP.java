@@ -49,7 +49,6 @@ public class XdagGetExternalIP extends GetExternalIP {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public void success(final ActionInvocation invocation) {
         RemoteService service = (RemoteService) invocation.getAction().getService();
         RemoteDevice device = service.getDevice();
@@ -73,7 +72,6 @@ public class XdagGetExternalIP extends GetExternalIP {
      *
      * @param invocation The failed invocation, call its <code>getFailure()</code> method for more details.
      * @param operation  If the invocation was on a remote service, the response message, otherwise null.
-     * @param defaultMsg A user-friendly error message generated from the invocation exception and response.
      * @see #createDefaultFailureMessage
      */
     @Override

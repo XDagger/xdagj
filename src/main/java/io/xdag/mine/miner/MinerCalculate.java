@@ -23,14 +23,6 @@
  */
 package io.xdag.mine.miner;
 
-import static io.xdag.config.Config.AWARD_EPOCH;
-import static io.xdag.utils.FastByteComparisons.compareTo;
-import static java.lang.Math.E;
-import static java.lang.Math.subtractExact;
-
-import java.net.InetSocketAddress;
-import java.util.Map;
-
 import io.xdag.config.Constants;
 import io.xdag.consensus.Task;
 import io.xdag.mine.MinerChannel;
@@ -39,8 +31,14 @@ import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FormatDateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
+
+import java.net.InetSocketAddress;
+import java.util.Map;
+
+import static io.xdag.config.Config.AWARD_EPOCH;
+import static io.xdag.utils.FastByteComparisons.compareTo;
+import static java.lang.Math.E;
 
 @Slf4j
 public class MinerCalculate {

@@ -252,13 +252,13 @@ public class BlockStore {
         List<String> files = Lists.newArrayList(SUM_FILE_NAME);
         StringBuilder stringBuffer = new StringBuilder(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
         stringBuffer.append("/");
-        files.add(stringBuffer.toString() + SUM_FILE_NAME);
+        files.add(stringBuffer + SUM_FILE_NAME);
         stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
         stringBuffer.append("/");
-        files.add(stringBuffer.toString() + SUM_FILE_NAME);
+        files.add(stringBuffer + SUM_FILE_NAME);
         stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
         stringBuffer.append("/");
-        files.add(stringBuffer.toString() + SUM_FILE_NAME);
+        files.add(stringBuffer + SUM_FILE_NAME);
         return files;
     }
 
@@ -470,30 +470,8 @@ public class BlockStore {
                 log.error(e.getMessage(), e);
             }
         }
-        Block block = new Block(blockInfo);
-        return block;
+        return new Block(blockInfo);
     }
 
-//    public void updateBlockKeyIndex(byte[] hashlow, int keyIndex) {
-//        indexSource.put(
-//                BytesUtils.merge(BLOCK_KEY_INDEX, hashlow), BytesUtils.intToBytes(keyIndex, false));
-//    }
-//
-//    public void deleteBlockKeyIndex(byte[] hashlow) {
-//        if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) == null) {
-//            return;
-//        }
-//        indexSource.delete(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow));
-//    }
-//
-//    public int getBlockKeyIndex(byte[] hashlow) {
-//        if (indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)) != null) {
-//            return BytesUtils.bytesToInt(
-//                    indexSource.get(BytesUtils.merge(BLOCK_KEY_INDEX, hashlow)), 0, false);
-//        } else {
-//            // 不存在
-//            return -2;
-//        }
-//    }
 }
 

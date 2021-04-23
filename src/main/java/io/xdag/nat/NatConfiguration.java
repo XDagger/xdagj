@@ -40,7 +40,7 @@ public class NatConfiguration {
 
     public static class Builder {
 
-        public Builder() {};
+        public Builder() {}
 
         private NatMethod natMethod;
 

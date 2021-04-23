@@ -59,7 +59,6 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

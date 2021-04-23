@@ -23,11 +23,8 @@
  */
 package io.xdag.cli;
 
-import cn.hutool.core.lang.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.UnsignedLong;
-import com.google.common.util.concurrent.AtomicDouble;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
@@ -36,7 +33,10 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
-import io.xdag.utils.*;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.StringUtils;
+import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -48,9 +48,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
@@ -75,14 +73,7 @@ public class Commands {
      */
     public String account(int num) {
         // account in memory, do not store in rocksdb, do not show in terminal
-        Map<ByteArrayWrapper, Integer> memOurBlocks = kernel.getBlockchain().getMemOurBlocks();
         StringBuilder str = new StringBuilder();
-//        memOurBlocks.keySet().stream().limit(num).forEach(key-> str.append(hash2Address(key.getData()))
-//                .append(" ")
-//                .append("0.00")
-//                .append(" XDAG")
-//                .append(" key ")
-//                .append(memOurBlocks.get(key)).append("\n"));
 
         Map<Block,Integer> ours = new HashMap<>();
         kernel.getBlockStore().fetchOurBlocks(pair -> {
@@ -92,14 +83,14 @@ public class Commands {
             return false;
         });
 
-        List<Map.Entry<Block,Integer>> list = new ArrayList<Map.Entry<Block,Integer>>(ours.entrySet());
+        List<Map.Entry<Block,Integer>> list = new ArrayList<>(ours.entrySet());
 
         // 按balance降序排序，按key index降序排序
-        Collections.sort(list, (o1, o2) -> {
+        list.sort((o1, o2) -> {
             // TODO
-            if (o2.getKey().getInfo().getAmount()>o1.getKey().getInfo().getAmount()){
+            if (o2.getKey().getInfo().getAmount() > o1.getKey().getInfo().getAmount()) {
                 return 1;
-            } else if (o2.getKey().getInfo().getAmount()==o1.getKey().getInfo().getAmount()){
+            } else if (o2.getKey().getInfo().getAmount() == o1.getKey().getInfo().getAmount()) {
                 return o2.getValue().compareTo(o1.getValue());
             } else {
                 return -1;
@@ -169,23 +160,20 @@ public class Commands {
         Map<Address, ECKeyPair> ourBlocks = Maps.newHashMap();
 
         // our block select
-        kernel.getBlockStore().fetchOurBlocks(new Function<Pair<Integer, Block>, Boolean>() {
-            @Override
-            public Boolean apply(Pair<Integer, Block> pair) {
-                int index = pair.getKey();
-                Block block = pair.getValue();
-                if (remain.get() <= block.getInfo().getAmount()) {
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
-                    remain.set(0);
-                    return true;
-                } else {
-                    if (block.getInfo().getAmount() > 0) {
-                        remain.set(remain.get() - block.getInfo().getAmount());
-                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
-                        return false;
-                    }
+        kernel.getBlockStore().fetchOurBlocks(pair -> {
+            int index = pair.getKey();
+            Block block = pair.getValue();
+            if (remain.get() <= block.getInfo().getAmount()) {
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
+                remain.set(0);
+                return true;
+            } else {
+                if (block.getInfo().getAmount() > 0) {
+                    remain.set(remain.get() - block.getInfo().getAmount());
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
                     return false;
                 }
+                return false;
             }
         });
 
@@ -197,8 +185,6 @@ public class Commands {
         // 生成多个交易块
         List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark);
         for(BlockWrapper blockWrapper : txs) {
-            // blockWrapper.setTransaction(true);
-//            System.out.println("tx:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
@@ -341,10 +327,8 @@ public class Commands {
     }
 
     public void connectbylibp2p(String server,int port,String ip){
-        StringBuilder stringBuilder = new StringBuilder();
-//       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-        stringBuilder.append("/ip4/").append(server).append("/tcp/").append(port).append("/ipfs/").append(ip.replaceAll(":",""));
-        kernel.getLibp2pNetwork().dail(stringBuilder.toString());
+        //       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
+        kernel.getLibp2pNetwork().dail("/ip4/" + server + "/tcp/" + port + "/ipfs/" + ip.replaceAll(":", ""));
     }
 
 
@@ -426,8 +410,7 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                block.getInfo().getRemark() == null?
-                        "":new String(block.getInfo().getRemark()),
+                block.getInfo().getRemark() == null?"":new String(block.getInfo().getRemark()),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
                 //fee目前为0

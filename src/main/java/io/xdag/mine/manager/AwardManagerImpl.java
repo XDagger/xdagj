@@ -74,9 +74,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private List<Miner> miners;
     @Setter
     private MinerManager minerManager;
-    private Kernel kernel;
-    private Blockchain blockchain;
-    private OldWallet xdagWallet;
+    private final Kernel kernel;
+    private final Blockchain blockchain;
+    private final OldWallet xdagWallet;
 
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
@@ -580,7 +580,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
 
     /** 用于记录奖励主块的信息 */
-    public class AwardBlock {
+    public static class AwardBlock {
         byte[] share;
         byte[] hash;
         long generateTime;

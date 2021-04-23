@@ -81,7 +81,7 @@ public class NetTest {
 //    }
 
     @Test
-    public void TestNetUpdate() {
+    public void testNetUpdate() {
         String ip = "127.0.0.1:40404";
         NetDB netDB = new NetDB();
         netDB.addNewIP(ip);
@@ -169,7 +169,7 @@ public class NetTest {
 
 
     @Test
-    public void TestNetDBParse() {
+    public void testNetDBParse() {
         String sumsRequest = "8b010002f91eb6eb200000000000000000000000000000000000000000000100"
                 + "257b369b5a89d009000000000000000000000000000000000000000000000000"
                 + "511e9e9274800c750200000000000000511e9e9274800c750200000000000000"

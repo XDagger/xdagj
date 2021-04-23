@@ -23,7 +23,6 @@
  */
 package io.xdag.core;
 
-import com.google.common.primitives.UnsignedLong;
 import lombok.Getter;
 import lombok.Setter;
 

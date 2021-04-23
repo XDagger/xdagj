@@ -40,10 +40,7 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.xdag.config.Config.MAINNET;
@@ -227,7 +224,7 @@ public class Block implements Cloneable {
                     break;
                 case XDAG_FIELD_SIGN_IN:
                 case XDAG_FIELD_SIGN_OUT:
-                    BigInteger r = BigInteger.ZERO;
+                    BigInteger r;
                     BigInteger s;
                     int j, signo_s = -1;
                     XdagField ixf;
@@ -291,11 +288,7 @@ public class Block implements Cloneable {
         for (int i = 0; i < res; i++) {
             encoder.writeField(new byte[32]);
         }
-        if (nonce != null) {
-            encoder.writeField(nonce);
-        } else {
-            encoder.writeField(new byte[32]);
-        }
+        encoder.writeField(Objects.requireNonNullElseGet(nonce, () -> new byte[32]));
         return encoder.toBytes();
     }
 
@@ -381,10 +374,6 @@ public class Block implements Cloneable {
         for (ECKeyPair ecKey : keys) {
             byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
             hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
-//            log.debug("verify hash:{}", Hex.toHexString(this.getHash()));
-//            log.debug(Hex.toHexString(hash) + ":hash");
-//            log.debug(outsig + ":outsig");
-//            log.debug(ecKey + ":eckey");
 
             if (ECKeyPair.verify(hash, this.getOutsig(),pubkeyBytes)) {
                 res.add(ecKey);

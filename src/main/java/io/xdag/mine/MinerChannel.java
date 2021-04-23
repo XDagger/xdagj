@@ -61,8 +61,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MinerChannel {
     /** 对应的是服务端的还是客户端的 */
     private final boolean isServer;
-    private Kernel kernel;
-    private Config config;
+    private final Kernel kernel;
+    private final Config config;
     /** 这个channel是否是活跃的 仅当连接成功后变为true */
     @Getter
     @Setter
@@ -111,12 +111,12 @@ public class MinerChannel {
     @Setter
     private ChannelHandlerContext ctx;
 
-    private BlockStore blockStore;
+    private final BlockStore blockStore;
 
-    private MinerManager minerManager;
+    private final MinerManager minerManager;
 
     /** 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs */
-    private List<Double> maxDiffs = new CopyOnWriteArrayList<>();
+    private final List<Double> maxDiffs = new CopyOnWriteArrayList<>();
 
     /** 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个 */
     @Getter
@@ -136,8 +136,8 @@ public class MinerChannel {
     @Setter
     private byte[] minHash;
     /** 记录的是出入站的消息 */
-    private StatHandle inBound;
-    private StatHandle outBound;
+    private final StatHandle inBound;
+    private final StatHandle outBound;
     /** 各种处理器* */
     private MinerHandShakeHandler minerHandShakeHandler;
     private MinerMessageHandler minerMessageHandler;

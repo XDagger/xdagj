@@ -73,7 +73,7 @@ public class NatManager extends Service {
                             log.debug("Failed to release port forwards", error);
                             return null;
                         })
-                .alwaysRun(() -> upnpClient.shutdown());
+                .alwaysRun(upnpClient::shutdown);
     }
 
     @VisibleForTesting

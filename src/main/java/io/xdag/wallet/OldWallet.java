@@ -23,28 +23,27 @@
  */
 package io.xdag.wallet;
 
-import java.io.*;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
-
+import io.xdag.config.Config;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.jni.Native;
+import io.xdag.utils.FileUtils;
 import io.xdag.utils.Numeric;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import io.xdag.config.Config;
-import io.xdag.crypto.jni.Native;
-import io.xdag.utils.FileUtils;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class OldWallet {
 
-    private List<KeyInternalItem> keyLists = new ArrayList<>();
+    private final List<KeyInternalItem> keyLists = new ArrayList<>();
     private KeyInternalItem defKey;
     private int keysNum = 0;
 
@@ -195,7 +194,7 @@ public class OldWallet {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
                 // 奇偶
-                boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);;
+                boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
                 KeyInternalItem newKey = new KeyInternalItem();
                 newKey.ecKey = ecKey;
                 newKey.pubKeyParity = pubKeyParity;
