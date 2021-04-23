@@ -5,7 +5,16 @@
 
 
 ## 目录
-[TOC]
+- [欢迎来到XDAGJ](#欢迎来到xdagj)
+  - [目录](#目录)
+  - [系统环境](#系统环境)
+  - [安装与用法](#安装与用法)
+  - [发展](#发展)
+  - [代码规范](#代码规范)
+  - [贡献](#贡献)
+  - [赞助](#赞助)
+  - [其他](#其他)
+  - [执照](#执照)
 
 ## 系统环境
 
@@ -102,8 +111,11 @@ XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## 其他
 [XDAGJ_Libp2P介绍](./XDAGJ_Networking_Specification.md)
+
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)  
+
 XDAG白皮书     [English](https://github.com/XDagger/xdag/blob/master/WhitePaper.md)  |  [中文](https://github.com/XDagger/xdag/blob/master/WhitePaper%20zh-cn.md)
+
 XDAG协议规范 [English](https://github.com/XDagger/xdag/blob/master/Protocol.md)  |  [中文](https://github.com/XDagger/xdag/blob/master/Protocol-cn.md)
 
 

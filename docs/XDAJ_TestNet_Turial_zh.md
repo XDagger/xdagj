@@ -2,7 +2,23 @@
 
 现阶段XDAGJ只提供矿池功能，用户可以利用原有C语言版本的XDAG客户端钱包参与到测试环节中。本教程提供的环境非必需，用户可以根据自身操作系统执行对应的步骤。
 
-[TOC]
+- [XDAGJ测试网接入教程](#xdagj测试网接入教程)
+  - [钱包接入教程](#钱包接入教程)
+    - [MacOS/Linux命令行钱包](#macoslinux命令行钱包)
+      - [MacOS](#macos)
+      - [Ubuntu](#ubuntu)
+    - [XDAG命令行客户端用法](#xdag命令行客户端用法)
+    - [Windows 可视化钱包](#windows-可视化钱包)
+  - [钱包备份与还原](#钱包备份与还原)
+    - [备份](#备份)
+    - [还原](#还原)
+  - [挖矿教程](#挖矿教程)
+    - [Linux系统为RandomX算法打开hugepage功能](#linux系统为randomx算法打开hugepage功能)
+    - [MacOS / Linux](#macos--linux)
+    - [Windows](#windows)
+    - [通用问题](#通用问题)
+  - [矿池地址](#矿池地址)
+  - [其他](#其他)
 
 
 

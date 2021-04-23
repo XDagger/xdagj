@@ -2,7 +2,16 @@
 
 [中文版](./docs/README_zh.md)
 ## Director
-[TOC]
+- [welcome to XDAGJ](#welcome-to-xdagj)
+  - [Director](#director)
+  - [System environment](#system-environment)
+  - [Installation and usage](#installation-and-usage)
+  - [Develop](#develop)
+  - [Code](#code)
+  - [Contribution](#contribution)
+  - [Sponsorship](#sponsorship)
+  - [Other](#other)
+  - [License](#license)
 
 ## System environment
 ```yaml

@@ -1,6 +1,24 @@
 # XDAGJ说明
 
-[TOC]
+- [XDAGJ说明](#xdagj说明)
+  - [XDAGJ矿池接入](#xdagj矿池接入)
+    - [MacOS / Linux](#macos--linux)
+      - [从C源码构建客户端](#从c源码构建客户端)
+        - [MacOS平台](#macos平台)
+        - [Ubuntu平台](#ubuntu平台)
+        - [CentOS](#centos)
+      - [用法](#用法)
+        - [Widnows平台](#widnows平台)
+    - [挖矿](#挖矿)
+      - [MacOS / Linux](#macos--linux-1)
+        - [Linux为RandomX算法打开hugepages功能（MacOS忽略）](#linux为randomx算法打开hugepages功能macos忽略)
+        - [用法](#用法-1)
+      - [Windows](#windows)
+        - [用法](#用法-2)
+    - [备份与还原](#备份与还原)
+    - [矿池地址](#矿池地址)
+  - [搭建私有网络](#搭建私有网络)
+  - [捐赠地址](#捐赠地址)
 
 ## XDAGJ矿池接入
 
@@ -222,7 +240,7 @@ DaggerMiner -cpu -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
 
 #### Windows
 
-请参考[Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
+请参考[Enable the Lock Pages in Memory Option [Windows](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
 
 ##### 用法
 
