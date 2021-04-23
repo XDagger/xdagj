@@ -1,7 +1,15 @@
 # XDAGJ Private Chain Construction Tutorial
 
 
-
+- [XDAGJ Private Chain Construction Tutorial](#xdagj-private-chain-construction-tutorial)
+  - [System environment and hardware requirements](#system-environment-and-hardware-requirements)
+  - [Build](#build)
+  - [Modify pool parameters](#modify-pool-parameters)
+  - [Usage](#usage)
+    - [Miner access](#miner-access)
+    - [Pool startup parameters](#pool-startup-parameters)
+    - [Pool command line](#pool-command-line)
+  - [Other](#other)
 ## System environment and hardware requirements
 
 - System environment
@@ -94,13 +102,13 @@ For details, please refer to [XDAGJ Access Test Net Tutorial]
 -f yourpath             [Modify the storage path of the block]
 -p ip:port              [The connection exposed to the peer-to-peer mining pool, that is, the list in the whitelist]
 -P (CFG)                [Set pool parameters; CFG is miners:maxip:maxconn:fee:reward:direct:fund
-   miners              - Maximum number of miners allowed to access
-   maxip               - The maximum that each ip can access
-   maxconn             - The maximum number of miners allowed to access the same address
-   fee                 - Reward for each generation of a main block
-   reward              - Reward the miner with the most difficult master block
-   direct              - Give reward shares to miners participating in mining
-   fund                - Foundation draw ratio
+   miners               - Maximum number of miners allowed to access
+   maxip                - The maximum that each ip can access
+   maxconn               - The maximum number of miners allowed to access the same address
+   fee                  - Reward for each generation of a main block
+   reward               - Reward the miner with the most difficult master block
+   direct               - Give reward shares to miners participating in mining
+   fund                 - Foundation draw ratio
 ```
 
 ### Pool command line 
@@ -119,7 +127,7 @@ For details, please refer to [XDAGJ Access Test Net Tutorial]
   [Display the connection information of the pool, whether it is connected to other pools]
   ```
 
-- Show Chain status
+- Show chain status
 
   ```shell
   xdag>stats
@@ -192,6 +200,6 @@ For details, please refer to [XDAGJ Access Test Net Tutorial]
 
 At this point, you can use XDAGJ to build a private chain environment unique to you
 
-You can test the existing functions and look for any errors that may cause the system to fail or crash. We welcome you to put forward any existing problems or suggestions for improvement in [Issue](https://github.com/XDagger/xdagj/issues).
+You can test the existing functions and look for any errors that may cause the system to fail or crash. We welcome you to put forward any existing problems or suggestions for improvement in [Issue](https://github.com/XDagger/xdagj/issues)
 
 

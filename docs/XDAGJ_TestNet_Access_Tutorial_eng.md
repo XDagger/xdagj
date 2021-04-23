@@ -1,5 +1,24 @@
 # XDAGJ Test Network Access Tutorial
 
+- [XDAGJ Test Network Access Tutorial](#xdagj-test-network-access-tutorial)
+  - [Wallet Access Tutorial](#wallet-access-tutorial)
+    - [MacOS/Linux Command Line Wallet](#macoslinux-command-line-wallet)
+      - [MacOS](#macos)
+      - [Ubuntu](#ubuntu)
+    - [Usage](#usage)
+    - [Windows Visual Wallet](#windows-visual-wallet)
+  - [Wallet Backup and Restore](#wallet-backup-and-restore)
+    - [Backup](#backup)
+    - [Recover](#recover)
+  - [Mining Tutorial](#mining-tutorial)
+    - [Linux system turns on hugepage for RandomX algorithm](#linux-system-turns-on-hugepage-for-randomx-algorithm)
+    - [MacOS / Linux](#macos--linux)
+    - [Windows](#windows)
+    - [General question](#general-question)
+  - [Pool Address](#pool-address)
+  - [Other](#other)
+
+
 At this stage, XDAGJ only provides pool functions, and users can use the original C language version of the XDAG client wallet to participate in the test. The environment provided in this tutorial is not necessary, and users can perform the corresponding steps according to their own operating system
 
 
