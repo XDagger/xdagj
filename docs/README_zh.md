@@ -3,6 +3,7 @@
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_shield) ![](https://github.com/XDagger/xdagj/actions/workflows/maven.yml/badge.svg) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/XDagger/xdagj) ![GitHub](https://img.shields.io/github/license/XDagger/xdagj) ![GitHub issues](https://img.shields.io/github/issues/XDagger/xdagj)
 
 
+[English Version](../README.md)
 
 ## 目录
 - [欢迎来到XDAGJ](#欢迎来到xdagj)
@@ -35,7 +36,7 @@ XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私�
 
 ## 发展
 
-XDAGJ线已经具备了一个矿池基本的功能，后续的工作将会以优化现有代码为主。结合业界较为优秀的技术不断改进现有的XDAG系统，与时俱进，不断为XDAG注入新鲜血液。
+XDAGJ已经具备了一个矿池基本的功能，后续的工作继续优化现有代码，提升系统的稳定性。及时吸纳优秀的区块链技术，不断为XDAG注入新鲜血液。
 
 下一阶段的主要工作包括但不限于下述内容
 
@@ -49,8 +50,7 @@ XDAGJ线已经具备了一个矿池基本的功能，后续的工作将会以优
 - 优化地址块结构，避免粉尘攻击
 
 
-
-于此同时，我们也在积极的为XDAG更多的应用场景，包括但不限于以下内容
+与此同时，我们也在积极的为XDAG更多的应用场景，包括但不限于以下内容
 
 - 探索使用neo4j作为存储层的可能，提供一种可视化的DAG存储
 - 探索一种在XDAG中加入虚拟机，实现智能合约的方法，提高系统的可用性

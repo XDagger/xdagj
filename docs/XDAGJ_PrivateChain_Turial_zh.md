@@ -70,23 +70,23 @@
 
 ```yaml
 #链接设置
-telnetIP && telnetPort  #用于绑定telnet服务的ip和端口
-nodeIP && nodePort 			#暴露给对等矿池的ip和端口
-poolIP && poolPort			#矿工接入挖矿的ip和端口
+telnetIP && telnetPort    #用于绑定telnet服务的ip和端口
+nodeIP && nodePort        #暴露给对等矿池的ip和端口
+poolIP && poolPort        #矿工接入挖矿的ip和端口
 
 #奖励设置
-poolRation							#挖矿矿池抽成比例(1-100)
-rewardRation						#出块矿工奖励比例(1-100)
-fundRation							#基金会抽成比例(1-100)
-directRation						#参与奖励比例(1-100)
+poolRation				  #挖矿矿池抽成比例(1-100)
+rewardRation              #出块矿工奖励比例(1-100)
+fundRation                #基金会抽成比例(1-100)
+directRation              #参与奖励比例(1-100)
 
 #矿工限制
-globalMinerLimit				#矿池最大允许接入矿工数量
-maxConnectPerIP					#相同ip地址允许最多的接入矿工数
-maxMinerPerAccount			#相同钱包账户允许最多的接入矿工数
+globalMinerLimit          #矿池最大允许接入矿工数量
+maxConnectPerIP           #相同ip地址允许最多的接入矿工数
+maxMinerPerAccount        #相同钱包账户允许最多的接入矿工数
 
 #白名单配置
-whiteIPs								#允许链接的对等矿池节点，形式为ip:port，用‘，’隔开
+whiteIPs                  #允许链接的对等矿池节点，形式为ip:port，用‘，’隔开
 ```
 
 
@@ -100,21 +100,20 @@ whiteIPs								#允许链接的对等矿池节点，形式为ip:port，用‘�
 ### 矿池启动参数
 
 ```yaml
--t              [作为测试网接入]
--f yourpath     [修改区块的存储路径 ]
--p ip:port      [暴露给对等矿池的连接，即白名单内的名单]
--P (CFG)
-[设置矿池对应的参数; CFG is miners:maxip:maxconn:fee:reward:direct:fund
-miners - 最大所能允许接入的矿工数量
-maxip - 每一个ip所能接入的最大
-maxconn - 相同地址允许接入的最大矿工数量
-fee - 每产生一个主块矿池获得的奖励
-reward - 奖励最大难度主块的矿工
-direct - 给予参与挖矿的矿工奖励份额
-fund - 基金会抽成比例
+-t                      [作为测试网接入]
+-f yourpath             [修改区块的存储路径 ]
+-p ip:port              [暴露给对等矿池的连接，即白名单内的名单]
+-P (CFG)                [设置矿池对应的参数; CFG is miners:maxip:maxconn:fee:reward:direct:fund
+   miners              - 最大所能允许接入的矿工数量
+   maxip               - 每一个ip所能接入的最大
+   maxconn             - 相同地址允许接入的最大矿工数量
+   fee                 - 每产生一个主块矿池获得的奖励
+   reward              - 奖励最大难度主块的矿工
+   direct              - 给予参与挖矿的矿工奖励份额
+   fund                - 基金会抽成比例
 ```
 
-### 矿池命令行参数（待补充每一个命令）
+### 矿池命令行参数
 
 - 查看您的XDAG地址
 
@@ -127,49 +126,49 @@ fund - 基金会抽成比例
 
   ```shell
   xdag>state
-  显示矿池的连接信息，是否连接上其它对等矿池
+  [显示矿池的连接信息，是否连接上其它对等矿池]
   ```
 
 - 查看链上状态
 
   ```shell
   xdag>stats
-  查看当前链上的统计信息
+  [查看当前链上的统计信息]
   ```
 
 - 查询主块信息
 
   ```shell
   xdag>mainblocks [N]
-  N为可选项，显示最新N个主块信息，默认20
+  [N为可选项，显示最新N个主块信息，默认20]
   ```
 
 - 查询自身出块情况
 
   ```shell
   xdag>minedblocks
-  N为可选项，显示最新N个本地产生的区块信息，默认20
+  [N为可选项，显示最新N个本地产生的区块信息，默认20]
   ```
 
 - 查询余额
 
   ```shell
   xdag>balance
-  显示自身的余额
+  [显示自身的余额]
   ```
 
 - 转账操作
 
   ```shell
   xdag>xfer amount addressto
-  转amount个金额的XDAG至地址为addressto的账户
+  [转amount个金额的XDAG至地址为addressto的账户]
   ```
 
 - 查看区块详细信息
 
   ```shell
   xdag>block  blockhash
-  查询哈希为[blockhash]的区块的详细信息
+  [查询哈希为 blockhash 的区块的详细信息]
   ```
 
 - 查看已链接的矿池信息
@@ -182,7 +181,7 @@ fund - 基金会抽成比例
 
   ```shell
   xdag>net -c IP:Port
-  连接对等节点，添加矿池
+  [连接对等节点，添加矿池]
   ```
 
 - 查看已链接的矿工信息
