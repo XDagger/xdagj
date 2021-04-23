@@ -167,6 +167,8 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 ## 钱包备份与还原
 
+**强烈建议您将测试网和主网的钱包分开存放，避免意外导致主网钱包数据的丢失**
+
 ### 备份
 
 - 建议您备份整个工作目录，并且以只读的方式存储
@@ -182,7 +184,7 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 ## 挖矿教程
 
-建议下载XDAG的专用挖矿软件[XdagRandomXMiner]()
+建议下载XDAG的专用挖矿软件[XdagRandomXMiner](https://github.com/XDagger/XdagRandomxMiner/releases/tag/0.4.1 )
 
 **须知1：使用挖矿软件，一个矿工需要占用2.5G的运行内存，该内存与矿工数量呈线性关系增长，若使用多个矿工，需要确保开启的内存页为1280*对应矿工数量**
 
@@ -207,26 +209,36 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 - 启动命令
 
   ```shell
-  DaggerMiner -cpu  -test -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
+  DaggerMiner -cpu  -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
   ```
 
 ### Windows
 
-请参考[Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
+请参考[Win10配置RandomX](./Win10_RandomX.md)或者[Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
 
 - 启动命令
 
   ```shell
-  DaggerMiner.exe -cpu -test -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址> 
+  DaggerMiner.exe -cpu -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址> 
   ```
 
+- 常见问题
 
+  - 缺少VC++依赖库
+
+    下载地址：[VC++运行依赖库](https://download.visualstudio.microsoft.com/download/pr/89a3b9df-4a09-492e-8474-8f92c115c51d/B1A32C71A6B7D5978904FB223763263EA5A7EB23B2C44A0D60E90D234AD99178/VC_redist.x64.exe)
+
+  - 缺少.Net依赖库
+
+    下载地址：[.Net运行库](http://info.xdagmine.com/dotNetFx40_Full_x86_x64.exe)
+
+### 通用问题
+
+挖矿显示`Dataset allocation failed`，确定hugepage已成功配置，否则请确保系统内存足够支撑一个矿工所需的内存
 
 ## 矿池地址
 
-南京: 146.56.240.230:8882
-
-新加坡: 51.79.222.25:8882
+上海:  1.15.78.91:9992
 
 
 
@@ -234,6 +246,6 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 现在您已经可以接入XDAGJ测试网络并进行转账功能了，同时可以在浏览器中查看一下你想要知道的信息
 
-我们欢迎您将使用过程发生的错误或者其他一切可以帮助我们完善项目的信息，您可以在【Issues】向我们反馈
+我们欢迎您将使用过程发生的错误或者其他一切可以帮助我们完善项目的信息，您可以通过[Issues](https://github.com/XDagger/xdagj/issues)向我们反馈
 
-如果您有其他疑问，或者希望我们提供更多的教程，也可以在[Issues]()中进行提问。
+如果您有其他疑问，或者希望我们提供更多的教程，也可以在[Issues](https://github.com/XDagger/xdagj/issues)中进行提问。

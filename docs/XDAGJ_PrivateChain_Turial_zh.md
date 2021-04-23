@@ -15,7 +15,7 @@
 
 - 硬件参数
 
-  由于RandomX算法对内存要求较高，为了确保XDAGJ矿池的正常运行，请确保系统可用内存大于5.5G
+  **由于RandomX算法对内存要求较高，为了确保XDAGJ矿池的正常运行，请确保系统可用内存大于5.5G**
 
 
 
@@ -87,7 +87,7 @@ whiteIPs								#允许链接的对等矿池节点，形式为ip:port，用‘�
 
 ### 矿工接入
 
-详见[接入测试网教程]
+详见[接入测试网教程](./XDAJ_TestNet_Turial_zh.md)
 
 ### 矿池启动参数
 
@@ -109,18 +109,85 @@ fund - 基金会抽成比例
 ### 矿池命令行参数（待补充每一个命令）
 
 - 查看您的XDAG地址
+
+  ```she
+  xdag>account [N]
+  N为可选项，显示N个账户信息，默认20
+  ```
+
 - 查看矿池网络状态
+
+  ```shell
+  xdag>state
+  显示矿池的连接信息，是否连接上其它对等矿池
+  ```
+
 - 查看链上状态
+
+  ```shell
+  xdag>stats
+  查看当前链上的统计信息
+  ```
+
 - 查询主块信息
+
+  ```shell
+  xdag>mainblocks [N]
+  N为可选项，显示最新N个主块信息，默认20
+  ```
+
 - 查询自身出块情况
+
+  ```shell
+  xdag>minedblocks
+  N为可选项，显示最新N个本地产生的区块信息，默认20
+  ```
+
 - 查询余额
+
+  ```shell
+  xdag>balance
+  显示自身的余额
+  ```
+
 - 转账操作
+
+  ```shell
+  xdag>xfer amount addressto
+  转amount个金额的XDAG至地址为addressto的账户
+  ```
+
 - 查看区块详细信息
+
+  ```shell
+  xdag>block  blockhash
+  查询哈希为[blockhash]的区块的详细信息
+  ```
+
 - 查看已链接的矿池信息
+
+  ```shell
+  xdag>net -l
+  ```
+
 - 连接新矿池
+
+  ```shell
+  xdag>net -c IP:Port
+  连接对等节点，添加矿池
+  ```
+
 - 查看已链接的矿工信息
-- 断开与矿工的连接
+
+  ```shell
+  xdag>miners
+  ```
+
 - 退出
+
+  ```shell
+  xdag>terminate
+  ```
 
 
 
@@ -128,4 +195,6 @@ fund - 基金会抽成比例
 
 至此，您已经可以使用XDAGJ构建一个属于您独有的私有链环境
 
-您可以对现有的功能进行测试，寻找任何有可能令系统出错或者崩溃的错误。我们非常欢迎您在Issue中提出任何存在的问题或者改进的建议。
+您可以对现有的功能进行测试，寻找任何有可能令系统出错或者崩溃的错误。我们非常欢迎您在[Issue](https://github.com/XDagger/xdagj/issues)中提出任何存在的问题或者改进的建议。
+
+

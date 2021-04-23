@@ -20,7 +20,7 @@ XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私�
 
 [XDAGJ测试网接入教程](./XDAJ_TestNet_Turial_zh.md)
 
-[XDAJ私有链搭建教程](./XDAGJ_PrivateChain_Turial.md)
+[XDAJ私有链搭建教程](XDAGJ_PrivateChain_Turial_zh.md)
 
 [区块浏览器](http://146.56.240.230/)
 
@@ -52,15 +52,6 @@ XDAGJ线已经具备了一个矿池基本的功能，后续的工作将会以优
 ## 代码规范
 
 - Git
-
-  ```
-  We use a simple git branching model:
-  
-  - `master` must always work
-  - `develop` is the branch for development
-  - create feature-branches to merge into `develop`
-  - all commits must pass testing so that git bisect is easy to run
-  ```
 
   我们使用如下所描述的Git分支模型：
 
@@ -110,9 +101,11 @@ XDAGJ线已经具备了一个矿池基本的功能，后续的工作将会以优
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## 其他
+[XDAGJ_Libp2P介绍](./XDAGJ_Networking_Specification.md)
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)  
 XDAG白皮书     [English](https://github.com/XDagger/xdag/blob/master/WhitePaper.md)  |  [中文](https://github.com/XDagger/xdag/blob/master/WhitePaper%20zh-cn.md)
 XDAG协议规范 [English](https://github.com/XDagger/xdag/blob/master/Protocol.md)  |  [中文](https://github.com/XDagger/xdag/blob/master/Protocol-cn.md)
+
 
 ## 执照
 
