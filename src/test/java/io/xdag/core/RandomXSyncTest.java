@@ -54,8 +54,8 @@ public class RandomXSyncTest {
 
     @Before
     public void init() {
-        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 48;
-        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 32;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 32;
+        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 64;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
         forkHeight = 3;
 
