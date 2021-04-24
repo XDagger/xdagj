@@ -47,10 +47,6 @@ public class PeerManager implements ConnectionHandler {
             new ConcurrentHashMap<>();
     RPCHandler rpcHandler;
     Host host;
-    public PeerManager(RPCHandler rpcHandler, Host host) {
-        this.rpcHandler = rpcHandler;
-        this.host = host;
-    }
 
     public PeerManager() {
 

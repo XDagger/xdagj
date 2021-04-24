@@ -51,10 +51,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
-    private MinerChannel channel;
-    private Kernel kernel;
-    private MinerManager minerManager;
-    private SyncManager syncManager;
+    private final MinerChannel channel;
+    private final Kernel kernel;
+    private final MinerManager minerManager;
+    private final SyncManager syncManager;
 
     public MinerHandShakeHandler(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
@@ -126,8 +126,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         try {
             Channel nettyChannel = ctx.channel();
-            if (evt instanceof IdleStateEvent) {
-                IdleStateEvent e = (IdleStateEvent) evt;
+            if (evt instanceof IdleStateEvent e) {
                 if (e.state() == IdleState.READER_IDLE) {
                     nettyChannel.closeFuture();
                     if (log.isDebugEnabled()) {

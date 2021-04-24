@@ -35,15 +35,15 @@ public enum ImportResult {
 
     String errorInfo;
 
-    public byte[] getHashLow() {
+    public byte[] getHashlow() {
         return hashLow;
     }
 
-    public void setHashLow(byte[] hashLow) {
+    public void setHashlow(byte[] hashLow) {
         this.hashLow = hashLow;
     }
 
-    public void setError(String errorInfo) {
+    public void setErrorInfo(String errorInfo) {
         this.errorInfo = errorInfo;
     }
 

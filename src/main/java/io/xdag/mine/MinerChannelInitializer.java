@@ -35,8 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel> {
-    private Kernel kernel;
-    private boolean isServer;
+    private final Kernel kernel;
+    private final boolean isServer;
 
     public MinerChannelInitializer(Kernel kernel, boolean isServer) {
         log.debug("init a minerchannelInitilizer");

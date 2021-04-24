@@ -58,7 +58,6 @@ public class XdagPortMappingDelete extends PortMappingDelete {
      * when we override it.
      */
     @Override
-    @SuppressWarnings("rawtypes")
     public void failure(
             final ActionInvocation invocation, final UpnpResponse operation, final String msg) {
         log.warn(

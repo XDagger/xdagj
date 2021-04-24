@@ -23,16 +23,14 @@
  */
 package io.xdag.crypto.jni;
 
-import java.io.*;
-import java.nio.file.Files;
-
-import io.xdag.utils.SystemUtil;
-import org.apache.commons.lang3.SystemUtils;
-
 import io.xdag.config.Config;
+import io.xdag.utils.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.file.Files;
 
 @Slf4j
 public class Native {
@@ -85,9 +83,6 @@ public class Native {
 
     /**
      * Loads a library file from bundled resource.
-     *
-     * @param
-     * @return
      */
     protected static boolean loadLibrary(String resource) {
         try {

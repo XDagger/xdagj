@@ -42,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MinerClient {
     private static final ThreadFactory FACTORY = new ThreadFactory() {
-        AtomicInteger cnt = new AtomicInteger(0);
+        final AtomicInteger cnt = new AtomicInteger(0);
 
         @Override
         public Thread newThread(@Nonnull Runnable r) {
@@ -50,7 +50,7 @@ public class MinerClient {
         }
     };
     private final EventLoopGroup workerGroup;
-    private Config config;
+    private final Config config;
 
     public MinerClient(Config config) {
         this.config = config;

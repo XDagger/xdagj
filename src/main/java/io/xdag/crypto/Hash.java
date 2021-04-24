@@ -28,10 +28,7 @@ import org.bouncycastle.crypto.digests.RIPEMD160Digest;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.jcajce.provider.digest.Blake2b;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -117,14 +114,5 @@ public class Hash {
         return out;
     }
 
-    /**
-     * Blake2-256 hash function.
-     *
-     * @param input binary encoded input data
-     * @return hash value
-     */
-    public static byte[] blake2b256(byte[] input) {
-        return new Blake2b.Blake2b256().digest(input);
-    }
 }
 

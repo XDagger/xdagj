@@ -25,6 +25,8 @@ package io.xdag.crypto;
 
 import io.xdag.utils.Numeric;
 
+import java.util.Objects;
+
 /** Credentials wrapper. */
 public class Credentials {
 
@@ -68,11 +70,11 @@ public class Credentials {
 
         Credentials that = (Credentials) o;
 
-        if (ecKeyPair != null ? !ecKeyPair.equals(that.ecKeyPair) : that.ecKeyPair != null) {
+        if (!Objects.equals(ecKeyPair, that.ecKeyPair)) {
             return false;
         }
 
-        return address != null ? address.equals(that.address) : that.address == null;
+        return Objects.equals(address, that.address);
     }
 
     @Override

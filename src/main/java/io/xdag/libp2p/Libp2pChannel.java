@@ -26,7 +26,6 @@ package io.xdag.libp2p;
 import io.libp2p.core.Connection;
 import io.xdag.core.BlockWrapper;
 import io.xdag.libp2p.RPCHandler.RPCHandler;
-import io.xdag.libp2p.message.MessageQueueLib;
 import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
@@ -37,7 +36,6 @@ public class Libp2pChannel {
     private boolean isActive;
     private boolean isDisconnected = false;
     private Node node;
-    private MessageQueueLib messageQueue;
     private final RPCHandler handler;
 
     public Libp2pChannel(Connection connection, RPCHandler handler) {

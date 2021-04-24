@@ -23,24 +23,20 @@
  */
 package io.xdag.wallet;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.xdag.crypto.*;
 import io.xdag.utils.Numeric;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-
-import static io.xdag.crypto.Hash.*;
+import static io.xdag.crypto.Hash.sha256;
 import static io.xdag.crypto.Keys.ADDRESS_LENGTH_IN_HEX;
 import static io.xdag.crypto.Keys.PRIVATE_KEY_LENGTH_IN_HEX;
 

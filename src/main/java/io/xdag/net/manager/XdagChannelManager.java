@@ -44,7 +44,7 @@ public class XdagChannelManager {
     // 广播区块
     private final Thread blockDistributeThread;
 
-    private Set<InetSocketAddress> addressSet  = new HashSet<>();
+    private final Set<InetSocketAddress> addressSet  = new HashSet<>();
 
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
@@ -150,10 +150,6 @@ public class XdagChannelManager {
         }
     }
 
-    public boolean isConnected(InetSocketAddress address) {
-        return channels.containsKey(address);
-    }
-
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
 
@@ -164,11 +160,8 @@ public class XdagChannelManager {
             }
         }
 
-        if (isSelfAddress(address)) {
-            // 不连接自己
-            return false;
-        }
-        return true;
+        // 不连接自己
+        return !isSelfAddress(address);
     }
 
     private void initWhiteIPs() {
@@ -183,10 +176,7 @@ public class XdagChannelManager {
     private boolean isSelfAddress(InetSocketAddress address) {
         String inIP = address.getAddress().toString();
         inIP = inIP.substring(inIP.lastIndexOf("/")+1);
-        if (inIP.equals(kernel.getConfig().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodePort())) {
-            return true;
-        }
-        return false;
+        return inIP.equals(kernel.getConfig().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodePort());
     }
 
     public void stop() {

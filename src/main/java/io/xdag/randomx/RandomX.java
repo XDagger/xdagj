@@ -140,7 +140,7 @@ public class RandomX {
 
     // 计算出hash
     public byte[] randomXPoolCalcHash(byte[] data, int dataSize, long taskTime) {
-        byte[] hash = new byte[32];
+        byte[] hash;
         RandomXMemory memory = globalMemory[(int) (randomXPoolMemIndex)&1];
         ReadWriteLock readWriteLock;
         if (taskTime < memory.switchTime) {
@@ -162,7 +162,7 @@ public class RandomX {
 
 
     public byte[] randomXBlockHash(byte[] data, int dataSize, long blockTime) {
-        byte[] hash = new byte[32];
+        byte[] hash;
         ReadWriteLock readWriteLock;
         RandomXMemory memory;
         // no seed

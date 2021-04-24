@@ -23,26 +23,18 @@
  */
 package io.xdag.net.manager;
 
-import static io.xdag.config.Config.MAINNET;
-import static io.xdag.config.Config.WHITELIST_URL;
-import static io.xdag.config.Config.WHITELIST_URL_TESTNET;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
-import org.apache.commons.io.FileUtils;
-
 import io.xdag.config.Config;
 import io.xdag.net.message.NetDB;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import static io.xdag.config.Config.*;
 
 @Slf4j
 public class NetDBManager {
@@ -105,8 +97,6 @@ public class NetDBManager {
                 }
                 log.debug("File have exist..");
             }
-        } catch (MalformedURLException e) {
-            log.error(e.getMessage(), e);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } finally {

@@ -23,13 +23,6 @@
  */
 package io.xdag.discovery;
 
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.discovery.data.Packet;
-import io.xdag.discovery.data.PacketData;
-import io.xdag.discovery.data.PacketType;
-import io.xdag.utils.discoveryutils.*;
-import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import com.google.common.annotations.VisibleForTesting;
 import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
@@ -37,27 +30,32 @@ import io.libp2p.core.crypto.PrivKey;
 import io.vertx.core.Vertx;
 import io.vertx.core.datagram.DatagramPacket;
 import io.vertx.core.datagram.DatagramSocket;
-import lombok.extern.slf4j.Slf4j;
+import io.xdag.Kernel;
+import io.xdag.discovery.data.Packet;
+import io.xdag.discovery.data.PacketData;
+import io.xdag.discovery.data.PacketType;
 import io.xdag.discovery.message.FindNeighborsPacketData;
 import io.xdag.discovery.message.NeighborsPacketData;
 import io.xdag.discovery.message.PingPacketData;
 import io.xdag.discovery.message.PongPacketData;
-import org.apache.commons.codec.DecoderException;
-import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 import io.xdag.discovery.peers.DiscoveryPeer;
 import io.xdag.discovery.peers.Endpoint;
 import io.xdag.discovery.peers.Peer;
 import io.xdag.discovery.peers.PeerTable;
+import io.xdag.utils.discoveryutils.PeerDiscoveryPacketDecodingException;
+import io.xdag.utils.discoveryutils.PeerDiscoveryStatus;
+import io.xdag.utils.discoveryutils.Subscribers;
+import io.xdag.utils.discoveryutils.bytes.BytesValue;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.DecoderException;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
 
 import static io.xdag.utils.discoveryutils.Preconditions.checkGuard;
 import static io.xdag.utils.discoveryutils.bytes.MutableBytesValue.wrapBuffer;
@@ -68,7 +66,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 @Slf4j
 public class DiscoveryController {
     private boolean isbootnode;
-    private int discoveryPort;
     private static final int MAX_PACKET_SIZE_BYTES = 1600;
     private PeerTable peerTable;
     private DatagramSocket socket;
@@ -78,7 +75,7 @@ public class DiscoveryController {
     private Endpoint mynode;
     private List<DiscoveryPeer> bootnodes;
     private PrivKey privKey;
-    private Kernel kernel;
+    private final Kernel kernel;
     private static final long REFRESH_CHECK_INTERVAL_MILLIS = MILLISECONDS.convert(30, SECONDS);
     private final long tableRefreshIntervalMs = MILLISECONDS.convert(30, SECONDS);
     private final RetryDelayFunction retryDelayFunction = RetryDelayFunction.linear(1.5, 2000, 60000);
@@ -92,7 +89,6 @@ public class DiscoveryController {
 
     public void start() throws DecoderException, IOException {
         this.isbootnode = kernel.getConfig().isbootnode;
-        this.discoveryPort = this.kernel.getConfig().discoveryPort;
         final BytesValue myid ;
         if(isbootnode){
             log.debug("seed node start");
@@ -300,7 +296,6 @@ public class DiscoveryController {
         // Load the peer from the table, or use the instance that comes in.
         final Optional<DiscoveryPeer> maybeKnownPeer = peerTable.get(sender);
         final DiscoveryPeer peer = maybeKnownPeer.orElse(sender);
-        final boolean peerKnown = maybeKnownPeer.isPresent();
 
         switch (packet.getType()) {
             case PING:

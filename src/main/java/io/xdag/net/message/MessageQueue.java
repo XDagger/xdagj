@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
+import static io.xdag.config.Constants.SEND_PERIOD;
+
 @Slf4j
 public class MessageQueue {
 
@@ -70,7 +72,7 @@ public class MessageQueue {
                 },
                 10,
                 // TODO: 发送周期缩短会不会有影响，但能有效加快同步速度
-                2,
+                SEND_PERIOD,
                 // 2毫秒执行一次
                 TimeUnit.MILLISECONDS);
     }

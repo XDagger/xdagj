@@ -41,9 +41,9 @@ public class ChannelManager {
     protected ConcurrentHashMap<InetSocketAddress, Libp2pChannel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, Libp2pChannel> activeChannels = new ConcurrentHashMap<>();
     /** Queue with new blocks from other peers */
-    private BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
+    private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
     // 广播区块
-    private Thread blockDistributeThread;
+    private final Thread blockDistributeThread;
 
     public ChannelManager( ) {
         this.blockDistributeThread = new Thread(this::newBlocksDistributeLoop, "NewSyncThreadBlocks");

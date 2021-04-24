@@ -40,7 +40,7 @@ public class OrphanPool {
     /** size key */
     private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
     // <hash,nexthash>
-    private KVSource<byte[], byte[]> orphanSource;
+    private final KVSource<byte[], byte[]> orphanSource;
 
     public OrphanPool(KVSource<byte[], byte[]> orphan) {
         this.orphanSource = orphan;

@@ -24,19 +24,15 @@
 package io.xdag.libp2p.peer;
 
 import io.libp2p.core.PeerId;
-import io.libp2p.core.PeerInfo;
 import io.xdag.net.node.NodeStat;
 import lombok.Getter;
-import org.apache.commons.codec.binary.Hex;
-
-import java.util.concurrent.CompletableFuture;
 
 public class Libp2pNode {
 
-    private PeerId peerId;
+    private final PeerId peerId;
 
     @Getter
-    private NodeStat stat = new NodeStat();
+    private final NodeStat stat = new NodeStat();
 
     //输出控制台用的。。。
     public Libp2pNode(PeerId peerId) {

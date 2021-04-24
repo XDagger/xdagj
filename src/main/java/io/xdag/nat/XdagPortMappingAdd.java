@@ -46,7 +46,6 @@ public class XdagPortMappingAdd extends PortMappingAdd {
      * @param invocation The successful invocation, call its <code>getOutput()</code> method for results.
      */
     @Override
-    @SuppressWarnings("rawtypes")
     public void success(final ActionInvocation invocation) {
         log.info(
                 "Port forward request for {} {} -> {} succeeded.",
@@ -72,7 +71,6 @@ public class XdagPortMappingAdd extends PortMappingAdd {
      * when we override it.
      */
     @Override
-    @SuppressWarnings("rawtypes")
     public void failure(
             final ActionInvocation invocation, final UpnpResponse operation, final String msg) {
         log.warn(

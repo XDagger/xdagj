@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class XdagClient {
     private static final ThreadFactory factory = new ThreadFactory() {
-        AtomicInteger cnt = new AtomicInteger(0);
+        final AtomicInteger cnt = new AtomicInteger(0);
 
         @Override
         public Thread newThread(@Nonnull Runnable r) {
@@ -54,9 +54,9 @@ public class XdagClient {
 
     private final EventLoopGroup workerGroup;
     private final int port;
-    private Config config;
+    private final Config config;
     private ChannelFuture f;
-    private String ip;
+    private final String ip;
     private Node node;
 
     public XdagClient(Config config) {

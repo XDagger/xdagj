@@ -23,14 +23,6 @@
  */
 package io.xdag.mine.manager;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.*;
-
-import io.xdag.config.Config;
-import io.xdag.mine.miner.MinerCalculate;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-
 import io.xdag.Kernel;
 import io.xdag.consensus.PoW;
 import io.xdag.consensus.Task;
@@ -41,7 +33,12 @@ import io.xdag.net.message.Message;
 import io.xdag.utils.ByteArrayWrapper;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.bouncycastle.util.encoders.Hex;
+
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.*;
 
 @Slf4j
 public class MinerManagerImpl implements MinerManager, Runnable {
@@ -62,8 +59,8 @@ public class MinerManagerImpl implements MinerManager, Runnable {
 
     @Setter
     private PoW poW;
-    private Kernel kernel;
-    private ScheduledExecutorService server = new ScheduledThreadPoolExecutor(3, new BasicThreadFactory.Builder()
+    private final Kernel kernel;
+    private final ScheduledExecutorService server = new ScheduledThreadPoolExecutor(3, new BasicThreadFactory.Builder()
             .namingPattern("MinerManagerThread")
             .daemon(true)
             .build());
@@ -160,9 +157,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (cleanMinerFuture != null) {
             cleanMinerFuture.cancel(true);
         }
-        if (server != null) {
-            server.shutdown();
-        }
+        server.shutdown();
         closeMiners();
     }
 
@@ -242,8 +237,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void onNewShare(MinerChannel channel, Message msg) {
         if (currentTask == null){
             System.out.println("currentTask 为空");
-        }
-        if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
+        } else if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
             poW.receiveNewShare(channel, msg);
         }
     }

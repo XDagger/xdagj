@@ -23,7 +23,6 @@
  */
 package io.xdag.core;
 
-import com.google.common.primitives.UnsignedLong;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -46,18 +45,12 @@ public class XdagStats {
     public long maintime;
     public long balance;
 
-//    private byte[] top;
-//    private BigInteger topDiff;
-//    private byte[] preTop;
-//    private BigInteger preTopDiff;
-    private byte[] globalMiner;
+private byte[] globalMiner;
     private byte[] ourLastBlockHash;
 
     public XdagStats(){
         difficulty = BigInteger.ZERO;
         maxdifficulty = BigInteger.ZERO;
-//        topDiff = BigInteger.ZERO;
-//        preTopDiff = BigInteger.ZERO;
     }
 
     /** 用于记录remote node的 */
@@ -104,41 +97,6 @@ public class XdagStats {
         return maxdifficulty;
     }
 
-//    @Override
-//    public String toString() {
-//        return "NetStatus:[ total block size:"
-//                + this.totalnblocks
-//                + ",total mainblock size:"
-//                + this.totalnmain
-//                + ",max diff:"
-//                + this.maxdifficulty.toString(16)
-//                + " ]";
-//    }
-
-//    /** 仅在新block加入时执行 可以不考虑并行的情况 */
-//    public void incMain() {
-//        this.nmain++;
-//    }
-//
-//    public void decMain() {
-//        this.nmain--;
-//    }
-//
-//    public void incBlock() {
-//        this.nblocks++;
-//    }
-//
-//    public void decBlock() {
-//        this.nblocks--;
-//    }
-//
-//    public void incWaitsync() {
-//        this.nwaitsync++;
-//    }
-//
-//    public void decWaitsync() {
-//        this.nwaitsync--;
-//    }
     @Override
     public String toString() {
         return "XdagStatus[nmain:"+

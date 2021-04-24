@@ -41,11 +41,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Slf4j
@@ -282,40 +280,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     }
 
     @Override
-    public void updateBatch(Map<byte[], byte[]> rows) {
-        resetDbLock.readLock().lock();
-        try {
-            if (log.isTraceEnabled()) {
-                log.trace("~> RocksDbDataSource.updateBatch(): " + name + ", " + rows.size());
-            }
-            try {
-
-                try (WriteBatch batch = new WriteBatch();
-                        WriteOptions writeOptions = new WriteOptions()) {
-                    for (Map.Entry<byte[], byte[]> entry : rows.entrySet()) {
-                        if (entry.getValue() == null) {
-                            batch.delete(entry.getKey());
-                        } else {
-                            batch.put(entry.getKey(), entry.getValue());
-                        }
-                    }
-                    db.write(writeOptions, batch);
-                }
-
-                if (log.isTraceEnabled()) {
-                    log.trace("<~ RocksDbDataSource.updateBatch(): " + name + ", " + rows.size());
-                }
-            } catch (RocksDBException e) {
-                log.error("Error in batch update on db '{}'", name, e);
-                hintOnTooManyOpenFiles(e);
-                throw new RuntimeException(e);
-            }
-        } finally {
-            resetDbLock.readLock().unlock();
-        }
-    }
-
-    @Override
     public Set<byte[]> keys() throws RuntimeException {
         resetDbLock.readLock().lock();
         try {
@@ -381,11 +345,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         } finally {
             resetDbLock.readLock().unlock();
         }
-    }
-
-    @Override
-    public boolean flush() {
-        return false;
     }
 
     @Override

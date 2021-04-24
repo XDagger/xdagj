@@ -33,7 +33,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class EventProcesser {
 
-    private static EventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
+    private static final EventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
 
     public static EventBus getEventBus() {
         return eventBus;

@@ -97,7 +97,7 @@ public class UpnpClientTest {
         assertThat(upnpClient.getWanIpFuture().join()).isEqualTo(wanIpConnectionService);
     }
     @Test
-    public void TestClientnomalRun(){
+    public void testClientnomalRun(){
         NatService natService = new NatService(10000,true, Optional.of(new NatManager()));
         SafeFuture<Void> start = natService.doStart();
         assertThat(start).isCompleted();

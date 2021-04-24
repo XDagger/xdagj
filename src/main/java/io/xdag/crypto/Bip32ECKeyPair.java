@@ -45,7 +45,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
     private final int childNumber;
     private final int depth;
     private final byte[] chainCode;
-    private int parentFingerprint;
+    private final int parentFingerprint;
 
     private ECPoint publicKeyPoint;
 

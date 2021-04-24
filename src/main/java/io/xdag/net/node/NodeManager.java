@@ -77,19 +77,19 @@ public class NodeManager {
     private final Cache<Node, Long> lastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
     /** 定时处理 */
     private final ScheduledExecutorService exec;
-    private Kernel kernel;
-    private XdagClient client;
-    private XdagChannelManager channelMgr;
-    private NetDBManager netDBManager;
-    private NetDB netDB;
-    private Config config;
+    private final Kernel kernel;
+    private final XdagClient client;
+    private final XdagChannelManager channelMgr;
+    private final NetDBManager netDBManager;
+    private final NetDB netDB;
+    private final Config config;
     private volatile boolean isRunning;
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
     private ScheduledFuture<?> connectlibp2pFuture;
-    private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
-    private ChannelManager channelManager;
-    private DiscoveryController discoveryController;
+    private final Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
+    private final ChannelManager channelManager;
+    private final DiscoveryController discoveryController;
     Libp2pNetwork libp2pNetwork;
 
     public NodeManager(Kernel kernel) {

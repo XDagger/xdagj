@@ -35,26 +35,17 @@ public class Xdag03MessageFactory implements MessageFactory {
     public Message create(byte code, byte[] encoded) {
         XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, V03);
 
-        switch (receivedCommand) {
-        case BLOCKS_REQUEST:
-            return new BlocksRequestMessage(encoded);
-        case BLOCKS_REPLY:
-            return new BlocksReplyMessage(encoded);
-        case SUMS_REQUEST:
-            return new SumRequestMessage(encoded);
-        case SUMS_REPLY:
-            return new SumReplyMessage(encoded);
-        case BLOCKEXT_REQUEST:
-            return new BlockExtRequestMessage(encoded);
-        case BLOCKEXT_REPLY:
-            return new BlockExtReplyMessage(encoded);
-        case BLOCK_REQUEST:
-            return new BlockRequestMessage(encoded);
-        case NEW_BLOCK:
-            return new NewBlockMessage(encoded);
-        default:
-            throw new IllegalArgumentException("No such message code" + code);
-        }
+        return switch (receivedCommand) {
+            case BLOCKS_REQUEST -> new BlocksRequestMessage(encoded);
+            case BLOCKS_REPLY -> new BlocksReplyMessage(encoded);
+            case SUMS_REQUEST -> new SumRequestMessage(encoded);
+            case SUMS_REPLY -> new SumReplyMessage(encoded);
+            case BLOCKEXT_REQUEST -> new BlockExtRequestMessage(encoded);
+            case BLOCKEXT_REPLY -> new BlockExtReplyMessage(encoded);
+            case BLOCK_REQUEST -> new BlockRequestMessage(encoded);
+            case NEW_BLOCK -> new NewBlockMessage(encoded);
+            default -> throw new IllegalArgumentException("No such message code" + code);
+        };
     }
     
 }

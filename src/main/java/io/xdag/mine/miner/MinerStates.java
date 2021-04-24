@@ -40,18 +40,13 @@ public enum MinerStates {
     }
 
     public static MinerStates fromByte(byte i) throws Exception {
-        switch ((int) i) {
-        case 0x00:
-            return MINER_UNKNOWN;
-        case 0x01:
-            return MINER_ACTIVE;
-        case 0x02:
-            return MINER_ARCHIVE;
-        case 0x03:
-            return MINER_SERVICE;
-        default:
-            throw new Exception("can find the miner state......please check the param!!");
-        }
+        return switch ((int) i) {
+            case 0x00 -> MINER_UNKNOWN;
+            case 0x01 -> MINER_ACTIVE;
+            case 0x02 -> MINER_ARCHIVE;
+            case 0x03 -> MINER_SERVICE;
+            default -> throw new Exception("can find the miner state......please check the param!!");
+        };
     }
 
     public byte asByte() {
@@ -60,17 +55,12 @@ public enum MinerStates {
 
     @Override
     public String toString() {
-        switch (cmd) {
-        case 0x00:
-            return "MINER_UNKNOWN";
-        case 0x01:
-            return "MINER_ACTIVE";
-        case 0x02:
-            return "MINER_ARCHIVE";
-        case 0x03:
-            return "MINER_SERVICE";
-        default:
-            return "can find the miner state......please check the param!!";
-        }
+        return switch (cmd) {
+            case 0x00 -> "MINER_UNKNOWN";
+            case 0x01 -> "MINER_ACTIVE";
+            case 0x02 -> "MINER_ARCHIVE";
+            case 0x03 -> "MINER_SERVICE";
+            default -> "can find the miner state......please check the param!!";
+        };
     }
 }

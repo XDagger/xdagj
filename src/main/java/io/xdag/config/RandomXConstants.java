@@ -11,10 +11,6 @@ public class RandomXConstants {
     public static final long RANDOMX_FORK_HEIGHT = 1540096;
     public static long RANDOMX_TESTNET_FORK_HEIGHT = 4096;// 196288
 
-    public static final int XDAG_RAW = 1;
     public static final int XDAG_RANDOMX = 2;
-
-    public static final int RANDOMX_LIGHT = 0;
-    public static final int RANDOMX_FAST = 1;
 
 }
