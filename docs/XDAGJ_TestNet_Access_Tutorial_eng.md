@@ -225,7 +225,7 @@ It is recommended to download XDAG's dedicated mining software [XdagRandomXMiner
 - Start command
 
   ```shell
-  DaggerMiner -cpu  -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
+  DaggerMiner -cpu  -T -p <pool ip:pool port> -t <thread number> -a <account address>
   ```
 
 ### Windows
@@ -235,7 +235,7 @@ Please refer to [Win10 Configuration RandomX](Win10_Configuration_RandomX_Algori
 - Start command
 
   ```shell
-  DaggerMiner.exe -cpu -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址> 
+  DaggerMiner.exe -cpu -T -p <pool ip:pool port> -t <thread number> -a <account address> 
   ```
 
 - Common problem
