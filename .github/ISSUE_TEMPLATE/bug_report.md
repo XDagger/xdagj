@@ -37,6 +37,3 @@ If can ,If you can, please tell us the detailed steps:
 
 **Additional context**
 Add any other context about the problem here.
-
-**XDAG Address**
-You can write your XDAG address here, and we will give you certain rewards based on the severity of the bug you submitted.
