@@ -91,13 +91,13 @@ At the same time, we are also actively providing more application scenarios for 
 
 - features
 
-  We are very happy to add more useful and interesting new features to XDAGJ, you can talk about any interesting new features
+  We are very happy to add more useful and interesting new features to XDAGJ. You can talk about any interesting new features.
 
-If you are interested in the development of XDAGJ, we also welcome you to join the developer team and contribute your strength to XDAGJ. You can get in touch with us at xdagj@xdag.io
+If you are interested in the development of XDAGJ, we also welcome you to join the developer team and contribute your strength to XDAGJ. You can get in touch with us at xdagj@xdag.io .
 
 ## Sponsorship
 
-Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough as a milestone.The development of XDAGJ has gradually been on the right track, but due to limited resources, we hope to get your help. Your support can better help us to develop and improve XDAGJ
+Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough as a milestone.The development of XDAGJ has gradually been on the right track. Due to limited resources, your support can better help us to improve XDAGJ.
 
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
