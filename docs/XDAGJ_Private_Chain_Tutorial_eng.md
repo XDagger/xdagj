@@ -151,7 +151,7 @@ For details, please refer to [XDAGJ Access Test Net Tutorial](./XDAGJ_TestNet_Ac
 
   ```shell
   xdag>balance
-  [Show your own balance
+  [Show your own balance]
   ```
 
 - Transfer
