@@ -103,7 +103,7 @@ XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## Other
 
-[XDAGJ Libp2P Introduce](./docs/XDAGJ_Networking_Specification.md)
+[XDAGJ Libp2P Introduction](./docs/XDAGJ_Networking_Specification.md)
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)
 
