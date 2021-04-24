@@ -22,8 +22,8 @@ Maven : v3.6.3
 ```
 ## Installation and usage
 
-XDAGJ TestNet Tutorial can help you quickly access XDAGJ Test net by using wallets and mining functions
-And the Private Chain Building Tutorial helps you to build a private-chain for testing and finding bugs
+XDAGJ TestNet Tutorial can help you quickly access XDAGJ test net by using wallets and mining functions.
+The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
 
 [XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
 
@@ -33,7 +33,7 @@ And the Private Chain Building Tutorial helps you to build a private-chain for t
 
 ## Develop
 
-XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code.Timely absorb excellent blockchain technology, and continue to inject fresh blood into XDAG
+XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
 
 The main work of the next stage includes but not limited
 
