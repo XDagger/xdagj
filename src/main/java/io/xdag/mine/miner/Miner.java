@@ -52,7 +52,7 @@ public class Miner {
     // private XdagField id = new XdagField();
     /** 记录收到任务的时间 */
     private long taskTime;
-    
+
     @Getter
     @Setter
     /* 记录任务索引 * */

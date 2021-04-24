@@ -47,9 +47,11 @@ public class Constants {
     /** 候补主块未持久化 */
     public static final byte BI_EXTRA = 0x40;
     public static final byte BI_REMARK = (byte) 0x80;
+    public static final Long SEND_PERIOD = 2L;
     public static final int DNET_PKT_XDAG = 0x8B;
     public static final int BLOCK_HEAD_WORD = 0x3fca9e2b;
     public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
+    public static final long REQUEST_WAIT = 64;
     public static final long MAX_ALLOWED_EXTRA = 65536;
     public static final String FUND_ADDRESS = "FQglVQtb60vQv2DOWEUL7yh3smtj7g1s";
     /** 每一轮的确认数是16 */

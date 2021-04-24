@@ -41,6 +41,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.config.Constants.REQUEST_WAIT;
 
 @Slf4j
 public class XdagSync {
@@ -112,7 +113,7 @@ public class XdagSync {
 //                log.debug("sendGetBlocks seq:{}",randomSeq);
                 blocksRequestMap.put(randomSeq, sf);
                 try {
-                    sf.get(64, TimeUnit.SECONDS);
+                    sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     blocksRequestMap.remove(randomSeq);
                     log.error(e.getMessage(), e);
@@ -130,7 +131,7 @@ public class XdagSync {
                 sumsRequestMap.put(randomSeq, sf);
                 log.debug("sendGetSums seq:{}.", randomSeq);
                 try {
-                    byte[] sums = sf.get(64, TimeUnit.SECONDS);
+                    byte[] sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
                     rSums = Arrays.copyOf(sums, 256);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     sumsRequestMap.remove(randomSeq);
