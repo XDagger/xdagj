@@ -231,7 +231,7 @@ It is recommended to download XDAG's dedicated mining software [XdagRandomXMiner
 
 ### Windows
 
-Please refer to [Win10 Configuration RandomX](./Win10_RandomX.md) or [Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx) to open the hugepage
+Please refer to [Win10 Configuration RandomX](Win10_Configuration_RandomX_Algorithm_Environment_zh.md) or [Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx) to open the hugepage
 
 - Start command
 

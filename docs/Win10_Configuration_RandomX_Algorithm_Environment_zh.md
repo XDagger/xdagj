@@ -28,8 +28,14 @@ pause
 
 - 找到`windows管理工具`，并在里面到`本地安全策略`后打开
 
+![RandomX_first](./RandomX_first.png)
+
 - 点击`本地策略`->`用户权限分配`->`锁定内存页`
+
+![RandomX_two](./RandomX_two.png)
 
 - 为锁定内存页添加计算机用户名，确认之后重启电脑
 
-  （补充一些截图吧）
+![RandomX_three](./RandomX_three.png)
+
+  

@@ -5,9 +5,7 @@
 [中文版](./docs/README_zh.md)
 
 
-## Director
-- [welcome to XDAGJ](#welcome-to-xdagj)
-  - [Director](#director)
+## Directory
   - [System environment](#system-environment)
   - [Installation and usage](#installation-and-usage)
   - [Develop](#develop)
@@ -24,9 +22,8 @@ Maven : v3.6.3
 ```
 ## Installation and usage
 
-XDAGJ TestNet Tutorial can help you quickly access XDAGJ Test net to experience wallet and mining functions
-
-And the Private Chain Building Tutorial helps you build a private-chain that you can use the pool function and better test and find bug
+XDAGJ TestNet Tutorial can help you quickly access XDAGJ Test net by using wallets and mining functions
+And the Private Chain Building Tutorial helps you to build a private-chain for testing and finding bugs
 
 [XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
 
@@ -38,7 +35,7 @@ And the Private Chain Building Tutorial helps you build a private-chain that you
 
 XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code.Timely absorb excellent blockchain technology, and continue to inject fresh blood into XDAG
 
-The main work of the next stage includes but not limited to the following
+The main work of the next stage includes but not limited
 
 - Optimize the XDAG consensus process and synchronization protocol
 - LibP2P is used to replace the  DNET network and gradually improve the degree of decentralization as long as the system stability allows
@@ -48,7 +45,7 @@ The main work of the next stage includes but not limited to the following
 - Add snapshot function to solve the problem of slow loading speed of historical main block
 - Optimize the address block structure to avoid dust attacks
 
-At the same time, we are also actively providing more application scenarios for XDAG, including but not limited to the following
+At the same time, we are also actively providing more application scenarios for XDAG, including but not limited
 
 - Explore the possibility of using neo4j as the storage layer to provide a visual DAG storage
 - Explore a way to add a virtual machine to XDAG to implement smart contracts and improve the usability of the system
@@ -100,7 +97,7 @@ If you are interested in the development of XDAGJ, we also welcome you to join t
 
 ## Sponsorship
 
-Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough as a milestone.The development of XDAGJ has gradually been on the right track, but due to limited resources, we hope to get your help. Your support can better help us develop and improve XDAGJ
+Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough as a milestone.The development of XDAGJ has gradually been on the right track, but due to limited resources, we hope to get your help. Your support can better help us to develop and improve XDAGJ
 
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 

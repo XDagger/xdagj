@@ -230,7 +230,7 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 ### Windows
 
-请参考[Win10配置RandomX](./Win10_RandomX.md)或者[Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
+请参考[Win10配置RandomX](Win10_Configuration_RandomX_Algorithm_Environment_zh.md)或者[Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
 
 - 启动命令
 

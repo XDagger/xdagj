@@ -95,7 +95,7 @@ whiteIPs                  #允许连接的矿池节点，形式为ip:port，用�
 
 ### 矿工接入
 
-详见[接入测试网教程](./XDAJ_TestNet_Turial_zh.md)
+详见[接入测试网教程](XDAGJ_TestNet_Access_Turial_zh.md)
 
 ### 矿池启动参数
 

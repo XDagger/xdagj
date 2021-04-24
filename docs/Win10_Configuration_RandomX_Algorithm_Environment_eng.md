@@ -28,8 +28,12 @@ pause
 
 - Find the `windows management tool`, and open it after going to the `local security policy`
 
+![RandomX_first](./RandomX_first.png)
+
 - Click `Local Policies`->`User Rights Assignment`->`Lock Memory Pages`
+
+![RandomX_two](./RandomX_two.png)
 
 - Add the computer user name for the locked memory page, restart the computer after confirmation
 
-  （补充一些截图吧）
+![RandomX_three](./RandomX_three.png)
