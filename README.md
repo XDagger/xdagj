@@ -22,7 +22,7 @@ Maven : v3.6.3
 ```
 ## Installation and usage
 
-XDAGJ TestNet Tutorial can help you quickly access XDAGJ test net by using wallets and mining functions.
+XDAGJ Testnet Tutorial can help you quickly access XDAGJ testnet by using wallets and mining functions.
 The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
 
 [XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
