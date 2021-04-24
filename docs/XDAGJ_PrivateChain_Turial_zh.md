@@ -1,6 +1,6 @@
 # XDAGJ私有链搭建教程
 
-- [XDAGJ私有链搭建教程](#xdagj私有链搭建教程)
+
   - [系统环境与硬件要求](#系统环境与硬件要求)
   - [构建XDAGJ客户端](#构建xdagj客户端)
   - [修改矿池参数](#修改矿池参数)
@@ -75,7 +75,7 @@ nodeIP && nodePort        #暴露给对等矿池的ip和端口
 poolIP && poolPort        #矿工接入挖矿的ip和端口
 
 #奖励设置
-poolRation				  #挖矿矿池抽成比例(1-100)
+poolRation                #挖矿矿池抽成比例(1-100)
 rewardRation              #出块矿工奖励比例(1-100)
 fundRation                #基金会抽成比例(1-100)
 directRation              #参与奖励比例(1-100)
@@ -202,6 +202,6 @@ whiteIPs                  #允许连接的矿池节点，形式为ip:port，用�
 
 至此，您已经可以使用XDAGJ构建一个属于您独有的私有链环境
 
-您可以对现有的功能进行测试，寻找任何有可能令系统出错或者崩溃的错误。我们非常欢迎您在[Issue](https://github.com/XDagger/xdagj/issues)中提出任何存在的问题或者改进的建议。
+您可以对现有的功能进行测试，寻找任何有可能令系统出错或者崩溃的错误。我们非常欢迎您在[Issue](https://github.com/XDagger/xdagj/issues)中提出任何存在的问题或者改进的建议
 
 

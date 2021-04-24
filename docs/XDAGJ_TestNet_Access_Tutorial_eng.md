@@ -1,6 +1,5 @@
 # XDAGJ Test Network Access Tutorial
 
-- [XDAGJ Test Network Access Tutorial](#xdagj-test-network-access-tutorial)
   - [Wallet Access Tutorial](#wallet-access-tutorial)
     - [MacOS/Linux Command Line Wallet](#macoslinux-command-line-wallet)
       - [MacOS](#macos)
@@ -247,7 +246,7 @@ Please refer to [Win10 Configuration RandomX](Win10_Configuration_RandomX_Algori
 
   - Missing .Net dependency library
 
-    Download link ：：[.Net runtime library(http://info.xdagmine.com/dotNetFx40_Full_x86_x64.exe)
+    Download link ：[.Net runtime library](http://info.xdagmine.com/dotNetFx40_Full_x86_x64.exe)
 
 ### General question
 

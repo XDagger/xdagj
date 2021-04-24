@@ -22,6 +22,8 @@ pause
 
 - 修改上述文件为xxx.bat文件，然后右键用管理员身份运行，等待程序运行结束即可
 
+![Open the security group](./Open_the_security_group.png)
+
 ## 开启hugeoage功能
 
 - 右键点击Win10电脑`开始`

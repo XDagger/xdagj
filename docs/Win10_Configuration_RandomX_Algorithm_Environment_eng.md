@@ -20,7 +20,9 @@ for /f %%i in ('findstr /i . List.txt 2^>nul') do dism /online /norestart /add-p
 pause
 ```
 
-- Modify the above file to xxx.bat file, then right-click to run as an administrator, and wait for the program to end.
+- Modify the above file to xxx.bat file, then right-click to run as an administrator, and wait for the program to end
+
+![Open the security group](./Open_the_security_group.png)
 
 ### Open hugeoage
 

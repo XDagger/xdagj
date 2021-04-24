@@ -27,7 +27,7 @@ And the Private Chain Building Tutorial helps you to build a private-chain for t
 
 [XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
 
-[XDAGJ Private Chain Construction Tutorial](./docs/XDAGJ_PrivateChain_Turial_zh.md)
+[XDAGJ Private Chain Construction Tutorial](./docs/XDAGJ_Private_Chain_Tutorial_eng.md)
 
 [Explorer](http://146.56.240.230/)
 
@@ -103,7 +103,7 @@ XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## Other
 
-[XDAGJ Libp2P Introduce](file:/Users/myron/code/github/turial/xdagj/docs/XDAGJ_Networking_Specification.md)
+[XDAGJ Libp2P Introduce](./docs/XDAGJ_Networking_Specification.md)
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)
 

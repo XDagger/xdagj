@@ -1,7 +1,6 @@
 # XDAGJ Private Chain Construction Tutorial
 
 
-- [XDAGJ Private Chain Construction Tutorial](#xdagj-private-chain-construction-tutorial)
   - [System environment and hardware requirements](#system-environment-and-hardware-requirements)
   - [Build](#build)
   - [Modify pool parameters](#modify-pool-parameters)
@@ -64,7 +63,7 @@
 
 ## Modify pool parameters
 
-The configuration file is located in `src/main/resources/xdag.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction.
+The configuration file is located in `src/main/resources/xdag.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
 
 ```yaml
 #Connection settings
@@ -73,7 +72,7 @@ nodeIP && nodePort        #The ip and port exposed to other pool
 poolIP && poolPort        #The ip and port for miners to access mining
 
 #Reward settings
-poolRation				  			#Proportion of mining pool (1-100)
+poolRation                #Proportion of mining pool (1-100)
 rewardRation              #Reward ratio of block miners (1-100)
 fundRation                #Foundation draw ratio (1-100)
 directRation              #Participation reward ratio (1-100)
@@ -93,7 +92,7 @@ whiteIPs                  #The mining pool nodes that are allowed to connect, in
 
 ### Miner access
 
-For details, please refer to [XDAGJ Access Test Net Tutorial]
+For details, please refer to [XDAGJ Access Test Net Tutorial](./XDAGJ_TestNet_Access_Tutorial_eng.md)
 
 ### Pool startup parameters
 
@@ -104,7 +103,7 @@ For details, please refer to [XDAGJ Access Test Net Tutorial]
 -P (CFG)                [Set pool parameters; CFG is miners:maxip:maxconn:fee:reward:direct:fund
    miners               - Maximum number of miners allowed to access
    maxip                - The maximum that each ip can access
-   maxconn               - The maximum number of miners allowed to access the same address
+   maxconn              - The maximum number of miners allowed to access the same address
    fee                  - Reward for each generation of a main block
    reward               - Reward the miner with the most difficult master block
    direct               - Give reward shares to miners participating in mining
