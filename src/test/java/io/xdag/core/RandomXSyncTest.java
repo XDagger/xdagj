@@ -40,10 +40,6 @@ public class RandomXSyncTest {
     public TemporaryFolder root1 = new TemporaryFolder();
     @Rule
     public TemporaryFolder root2 = new TemporaryFolder();
-    @Rule
-    public TemporaryFolder root3 = new TemporaryFolder();
-    @Rule
-    public TemporaryFolder root4 = new TemporaryFolder();
 
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
@@ -67,7 +63,6 @@ public class RandomXSyncTest {
         // 构建三个mockKernel
         Kernel kernel1 = createKernel(root1);
         Kernel kernel2 = createKernel(root2);
-        Kernel kernel3 = createKernel(root3);
 
         // 第一个kernel新增区块数据
         long end = addBlocks(kernel1,100);
@@ -76,11 +71,9 @@ public class RandomXSyncTest {
         String expected = kernel1.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
 
         // 第二个跟第三个同步第一个的数据
-        CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(1);
         Thread thread1 = new SyncThread(latch,kernel1,kernel2,date.getTime(),end,"1");
-        Thread thread2 = new SyncThread(latch,kernel1,kernel3,date.getTime(),end,"2");
         thread1.start();
-        thread2.start();
 
         latch.await();
 
@@ -88,13 +81,8 @@ public class RandomXSyncTest {
 //        System.out.println("第二次同步");
         assertEquals(expected,kernel2Diff);
 
-        String kernel3Diff = kernel3.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
-        assertEquals(expected,kernel3Diff);
-
-
         kernel1.getRandomXUtils().randomXPoolReleaseMem();
         kernel2.getRandomXUtils().randomXPoolReleaseMem();
-        kernel3.getRandomXUtils().randomXPoolReleaseMem();
     }
 
     public class SyncThread extends Thread {

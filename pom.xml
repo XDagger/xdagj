@@ -73,6 +73,7 @@
 				<version>2.22.2</version>
 				<configuration>
 					<argLine>--enable-preview</argLine>
+					<argLine>-Xmx1024m</argLine>
 				</configuration>
 			</plugin>
 

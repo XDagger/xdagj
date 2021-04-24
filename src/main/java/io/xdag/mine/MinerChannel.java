@@ -293,8 +293,11 @@ public class MinerChannel {
 
     /** 矿池发送余额给矿工 */
     public void sendBalance() {
-        Block block = blockStore.getBlockByHash(accountAddressHash, false);
+        byte[] hashlow = new byte[32];
+        System.arraycopy(accountAddressHash,8,hashlow,8,24);
+        Block block = blockStore.getBlockByHash(hashlow, false);
         if (block == null) {
+            log.debug("Can't found block,{}",Hex.encodeHex(hashlow));
             return;
         }
         long amount = block.getInfo().getAmount();
