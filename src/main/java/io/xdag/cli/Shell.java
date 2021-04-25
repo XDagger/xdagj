@@ -472,6 +472,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         if(isTelnet) {
             if (line.equals(kernel.getConfig().getPassword())) {
                 return true;
+            } else {
+                return false;
             }
         } else {
             int err = Native.verify_dnet_key(line, kernel.getConfig().getDnetKeyBytes());
