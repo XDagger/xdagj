@@ -40,6 +40,7 @@ import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
+import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
@@ -48,6 +49,7 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FormatDateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
@@ -75,12 +77,16 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
             /* 解密数据 */
             byte[] uncryptData = Native.dfslib_uncrypt_array(address, 16, sectorNo);
-            int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-            int head = BytesUtils.bytesToInt(uncryptData, 0, true);
+//            int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+//            int head = BytesUtils.bytesToInt(uncryptData, 0, true);
+//
+//            // 清除transportheader
+//            System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+//            System.out.println(Hex.toHexString(uncryptData));
+//            if (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc)) {
+//                System.out.println(head != BLOCK_HEAD_WORD);
 
-            // 清除transportheader
-            System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-            if (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc)) {
+            if (isDataIllegal(uncryptData.clone())) {
                 log.debug(" not a block from miner");
                 ctx.channel().closeFuture();
             } else {
@@ -88,9 +94,14 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
                 Block addressBlock = new Block(new XdagBlock(uncryptData));
                 // Todo:加入block_queue
-                syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
+                ImportResult importResult = tryToConnect(addressBlock);
 
-                if (!channel.initMiner(addressBlock.getHash())) {
+                if (importResult.getErrorInfo()!=null) {
+                    log.debug("ErrorInfo:{}",importResult.getErrorInfo());
+                    ctx.close();
+                }
+
+                if (!initMiner(addressBlock.getHash())) {
                     log.debug("too many connect for a miner");
                     ctx.close();
                 }
@@ -108,6 +119,23 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         } else {
             log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
         }
+    }
+
+    public boolean isDataIllegal(byte[] uncryptData) {
+        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+        int head = BytesUtils.bytesToInt(uncryptData, 0, true);
+        // 清除transportheader
+        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+        return  (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc));
+
+    }
+
+    public boolean initMiner(byte[] hash) {
+        return channel.initMiner(hash);
+    }
+
+    public ImportResult tryToConnect(Block addressBlock) {
+        return syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
     }
 
     @Override
