@@ -30,6 +30,7 @@ import io.xdag.discovery.peers.DiscoveryPeer;
 import io.xdag.discovery.peers.Endpoint;
 import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -128,6 +129,10 @@ public class Config implements Serializable {
 
     /** 奖励支付的周期**/
     public static int AWARD_EPOCH = 0xf;
+
+    /** admin for telnet **/
+    @Getter
+    public String password;
 
     // BIP32
     public static final int BIP32_HEADER_P2PKH_PUB= 0x0488b21e; // The 4 byte header that serializes in base58 to "xpub".
@@ -296,6 +301,8 @@ public class Config implements Serializable {
         globalMinerChannelLimit = setting.getInt("globalMinerChannelLimit");
         maxConnectPerIp = setting.getInt("maxConnectPerIp");
         maxMinerPerAccount = setting.getInt("maxMinerPerAccount");
+
+        password = setting.getStr("password");
 
         String[] list = setting.getStrings("whiteIPs");
         if (list != null) {

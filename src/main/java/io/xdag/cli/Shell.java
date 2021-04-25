@@ -291,7 +291,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             double amount = StringUtils.getDouble(argv.get(0));
 
             String remark = argv.size()==3 ? argv.get(2):null;
-            System.out.println("remark:"+remark);
 
             if (amount < 0) {
                 println("The transfer amount must be greater than 0");
@@ -314,8 +313,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            // xfer must check passwor
-            if(!readPassword()) {
+            // xfer must check dnet password
+            if(!readPassword(false)) {
                 return;
             }
             println(commands.xfer(amount, hash, remark));
@@ -463,16 +462,23 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private boolean readPassword() {
+    private boolean readPassword(boolean isTelnet) {
         Character mask = '*';
         String line;
         do {
             line = reader.readLine("Enter password> ", mask);
         } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
-        int err = Native.verify_dnet_key(line, kernel.getConfig().getDnetKeyBytes());
-        if (err < 0) {
-            println("The password is incorrect");
-            return false;
+
+        if(isTelnet) {
+            if (line.equals(kernel.getConfig().getPassword())) {
+                return true;
+            }
+        } else {
+            int err = Native.verify_dnet_key(line, kernel.getConfig().getDnetKeyBytes());
+            if (err < 0) {
+                println("The password is incorrect");
+                return false;
+            }
         }
         return true;
     }
@@ -496,7 +502,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
         this.setReader(reader);
 
-        if(!readPassword()) {
+        if(!readPassword(true)) {
             return;
         }
 
