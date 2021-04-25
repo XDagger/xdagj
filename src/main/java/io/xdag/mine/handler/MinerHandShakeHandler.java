@@ -99,11 +99,13 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 if (importResult.getErrorInfo()!=null) {
                     log.debug("ErrorInfo:{}",importResult.getErrorInfo());
                     ctx.close();
+                    return;
                 }
 
                 if (!initMiner(addressBlock.getHash())) {
                     log.debug("too many connect for a miner");
                     ctx.close();
+                    return;
                 }
 
                 channel.getInBound().add(16L);
