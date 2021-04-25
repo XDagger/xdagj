@@ -96,7 +96,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 // Todo:加入block_queue
                 ImportResult importResult = tryToConnect(addressBlock);
 
-                if (importResult.getErrorInfo()!=null) {
+                if (importResult == ImportResult.ERROR) {
                     log.debug("ErrorInfo:{}",importResult.getErrorInfo());
                     ctx.close();
                     return;
