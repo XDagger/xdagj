@@ -47,4 +47,7 @@ public enum ImportResult {
         this.errorInfo = errorInfo;
     }
 
+    public String getErrorInfo() {
+        return errorInfo;
+    }
 }
