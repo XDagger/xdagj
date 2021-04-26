@@ -10,8 +10,8 @@
     - [Backup](#backup)
     - [Recover](#recover)
   - [Mining Tutorial](#mining-tutorial)
-    - [Linux system turns on hugepage for RandomX algorithm](#linux-system-turns-on-hugepage-for-randomx-algorithm)
-    - [MacOS / Linux](#macos--linux)
+    - [MacOS](#macos-1)
+    - [Linux](#linux)
     - [Windows](#windows)
     - [General question](#general-question)
   - [Pool Address](#pool-address)
@@ -177,7 +177,7 @@ System version : Ubuntu20.04 LTS
 
 ### Windows Visual Wallet
 
-Download the visual wallet from the official website, [download link](https://xdag.io/zh/)
+Download the visual wallet from github, [download link](https://github.com/swordlet/win-wallet/releases/tag/0.4.0)
 
 After decompression, open the `wallet-config.json` file, modify `pool_address` to the testnet mining pool address, and modify `is_test_net` to `true`
 
@@ -200,36 +200,84 @@ After decompression, open the `wallet-config.json` file, modify `pool_address` t
 
 ## Mining Tutorial
 
-It is recommended to download XDAG's dedicated mining software [XdagRandomXMiner](https://github.com/XDagger/XdagRandomxMiner/releases/tag/0.4.1 )
-
 **Note 1: To use mining software, a miner needs to take up 2.5G of running memory, which grows linearly with the number of miners. If multiple miners are used, make sure that the opened memory page is 1280*corresponding to the number of miners**
 
 **Note 2: Please make sure that the wallet address has been confirmed on the XDAG network, otherwise the mining operation cannot be performed**
 
-### Linux system turns on hugepage for RandomX algorithm
+### MacOS
 
-- Temporarily
+- Install dependencies
+
+  ```shell
+  brew install boost
+  ```
+
+- Download source code
+
+  ```shell
+  git clone https://github.com/XDagger/XdagRandomxMiner.git
+  ```
+
+- Build(compile RandomX for the first time,ref [Mac build RandomX](#MacOS)
+
+  ```shell
+  mkdir build && cd build
+  cmake ..
+  make
+  ```
+
+- Start
+
+  ```shell
+  ./DaggerMiner -cpu  -T -p <pool ip:port> -t <number of mining threads> -a <wallet address>
+  ```
+
+### Linux
+
+- Install dependencies
+
+  ```shell
+  apt-get install cmake libboost-all-dev  openssl librandomx-dev 
+  ```
+
+- Download source code
+
+  ```shell
+  https://github.com/XDagger/XdagRandomxMiner.git
+  ```
+
+- Build
+
+  ```shell
+  mkdir build && cd build
+  cmake ..
+  make
+  ```
+
+- Linux system turns on hugepage for RandomX algorithm
+
+  - Temporarily
 
   ```shell
   sudo sysctl -w vm.nr_hugepages=1280
   ```
 
-- Permanently
+  - Permanently
 
   ```shell
   sudo bash -c "echo vm.nr_hugepages=1280 >> /etc/sysctl.conf"
   ```
 
-### MacOS / Linux
-
-- Start command
+- Start
 
   ```shell
-  DaggerMiner -cpu  -T -p <pool ip:pool port> -t <thread number> -a <account address>
+  ./DaggerMiner -cpu  -T -p <pool ip:port> -t <number of mining threads> -a <wallet address>
   ```
+
 
 ### Windows
 
+It is recommended to download XDAG's dedicated mining software [XdagRandomXMiner for win](https://github.com/XDagger/XdagRandomxMiner/releases/download/0.4.1/Release_win_x64_0.4.1.zip)
 Please refer to [Win10 Configuration RandomX](Win10_Configuration_RandomX_Algorithm_Environment_zh.md) or [Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx) to open the hugepage
 
 - Start command
@@ -254,6 +302,8 @@ Mining shows `Dataset allocation failed`, confirm that hugepage has been success
 
 
 
+
+
 ## Pool Address
 
 ShangHai:  1.15.78.91:9992
@@ -266,4 +316,4 @@ Now you can access the XDAGJ test network and perform the transfer function. At 
 
 We welcome you to inform us about errors in the use process or any other information that can help us improve the project. You can give us feedback through [Issues](https://github.com/XDagger/xdagj/issues)
 
-If you have other questions, or if you want us to provide more tutorials, you can also ask questions in [Issues](https://github.com/XDagger/xdagj/issues)
+If you have other questions, or if you want us to provide more tutorials, you can also ask questions in [Issues](
