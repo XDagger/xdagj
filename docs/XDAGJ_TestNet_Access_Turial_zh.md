@@ -12,8 +12,8 @@
     - [备份](#备份)
     - [还原](#还原)
   - [挖矿教程](#挖矿教程)
-    - [Linux系统为RandomX算法打开hugepage功能](#linux系统为randomx算法打开hugepage功能)
-    - [MacOS / Linux](#macos--linux)
+    - [MacOS](#macos-1)
+    - [Linux](#linux)
     - [Windows](#windows)
     - [通用问题](#通用问题)
   - [矿池地址](#矿池地址)
@@ -176,7 +176,7 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 ### Windows 可视化钱包
 
-官网下载可视化钱包使用，[下载地址](https://xdag.io/zh/)
+github下载官方的可视化钱包使用，[下载地址](https://github.com/swordlet/win-wallet/releases/tag/0.4.0)
 
 解压后打开`wallet-config.json`文件，修改`pool_address`为测试网矿池地址，并将`is_test_net`修改为`true`
 
@@ -199,35 +199,82 @@ MacOS 和 LInux平台目前没有可视化钱包，用户需要根据自身环�
 
 ## 挖矿教程
 
-建议下载XDAG的专用挖矿软件[XdagRandomXMiner](https://github.com/XDagger/XdagRandomxMiner/releases/tag/0.4.1 )
-
 **须知1：使用挖矿软件，一个矿工需要占用2.5G的运行内存，该内存与矿工数量呈线性关系增长，若使用多个矿工，需要确保开启的内存页为1280*对应矿工数量**
 
 **须知2：请确保钱包地址已经在XDAG网络上被确认，否则无法进行挖矿操作**
 
-### Linux系统为RandomX算法打开hugepage功能
+### MacOS
 
-- 临时开启
+- 安装依赖
+
+  ```shell
+  brew install boost
+  ```
+
+- 下载源码
+
+  ```shell
+  git clone https://github.com/XDagger/XdagRandomxMiner.git
+  ```
+
+- 编译(首次运行请先编译RandomX，详见[MacOS编译RandomX](#MacOS)
+
+  ```shell
+  mkdir build && cd build
+  cmake ..
+  make
+  ```
+
+- 启动
+
+  ```shell
+  ./DaggerMiner -cpu  -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
+  ```
+
+### Linux
+
+- 安装依赖
+
+  ```shell
+  apt-get install cmake libboost-all-dev  openssl librandomx-dev 
+  ```
+
+- 下载源码
+
+  ```shell
+  https://github.com/XDagger/XdagRandomxMiner.git
+  ```
+
+- 编译
+
+  ```shell
+  mkdir build && cd build
+  cmake ..
+  make
+  ```
+
+- Linux系统为RandomX算法打开hugepage功能
+  - 临时开启
 
   ```shell
   sudo sysctl -w vm.nr_hugepages=1280
   ```
 
-- 永久开启
+  - 永久开启
 
   ```shell
   sudo bash -c "echo vm.nr_hugepages=1280 >> /etc/sysctl.conf"
   ```
 
-### MacOS / Linux
-
 - 启动命令
 
   ```shell
-  DaggerMiner -cpu  -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
+  ./DaggerMiner -cpu  -T -p <矿池地址:端口> -t <挖矿线程数> -a <钱包地址>
   ```
 
 ### Windows
+
+下载编译好的二进制挖矿软件[XdagRandomXMiner for windows](https://github.com/XDagger/XdagRandomxMiner/releases/download/0.4.1/Release_win_x64_0.4.1.zip)
 
 请参考[Win10配置RandomX](Win10_Configuration_RandomX_Algorithm_Environment_zh.md)或者[Enable the Lock Pages in Memory Option (Windows)](https://msdn.microsoft.com/en-gb/library/ms190730.aspx)打开hugepage
 
