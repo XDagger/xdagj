@@ -28,6 +28,7 @@ import static io.xdag.net.XdagVersion.V03;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
@@ -107,6 +108,13 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                     ctx.close();
                     return;
                 }
+
+                // 如果是新增的地址块
+                if (importResult != ImportResult.EXIST) {
+                    log.debug("Punk:Add new addressblock {}", addressBlock.getHash());
+                }
+
+                log.debug("Punk:New channel {} connectTime {}", channel.getInetAddress().getHostString(),FormatDateUtils.format(new Date()));
 
                 channel.getInBound().add(16L);
                 minerManager.addActivateChannel(channel);

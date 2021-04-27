@@ -91,7 +91,7 @@ public class XdagSync {
         try {
             requestBlocks(0, 1L << 48);
         } catch (Throwable e) {
-            log.error(e.getMessage(), e);
+            log.error("error when requestBlocks {}",e.getMessage());
         }
         log.info("end syncLoop");
     }
@@ -126,10 +126,10 @@ public class XdagSync {
                 if(blockStore.loadSum(t, t + dt, lSums) <= 0) {
                     return;
                 }
-                log.debug("lSum is " + Hex.toHexString(lSums));
+//                log.debug("lSum is " + Hex.toHexString(lSums));
                 randomSeq = xc.getXdag().sendGetSums(t, t + dt);
                 sumsRequestMap.put(randomSeq, sf);
-                log.debug("sendGetSums seq:{}.", randomSeq);
+//                log.debug("sendGetSums seq:{}.", randomSeq);
                 try {
                     byte[] sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
                     rSums = Arrays.copyOf(sums, 256);
@@ -139,7 +139,7 @@ public class XdagSync {
                     return;
                 }
                 sumsRequestMap.remove(randomSeq);
-                log.debug("rSum is " + Hex.toHexString(rSums));
+//                log.debug("rSum is " + Hex.toHexString(rSums));
                 dt >>= 4;
                 for (int i = 0; i < 16; i++) {
                     long lSumsSum = BytesUtils.bytesToLong(lSums, i * 16, true);

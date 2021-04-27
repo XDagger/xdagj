@@ -362,7 +362,10 @@ public class BlockchainImpl implements Blockchain {
                     blockRef = getMaxDiffLink(blockRef, false);
                 }
                 // 将主链回退到blockRef
+                long currentHeight = xdagStats.nmain;
+                log.debug("Punk:Before unwind, height = {}",xdagStats.nmain);
                 unWindMain(blockRef);
+                log.debug("Punk:After unwind, unwind number = {}",currentHeight - xdagStats.nmain);
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow());
                 result = ImportResult.IMPORTED_BEST;
@@ -388,6 +391,14 @@ public class BlockchainImpl implements Blockchain {
                 xdagStats.nnoref++;
             }
             blockStore.saveXdagStatus(xdagStats);
+
+            // 如果区块输入不为0说明是交易块
+            if (block.getInputs().size() != 0) {
+                if (block.isOurs()) {
+                    log.debug("Punk:Pool transaction(reward) {}", Hex.toHexString(block.getHash()));
+                }
+            }
+
             return result;
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
@@ -666,7 +677,7 @@ public class BlockchainImpl implements Blockchain {
     /** 取消Block主块身份 * */
     public void unSetMain(Block block) {
 
-        log.debug("mainnumber = {}",xdagStats.nmain);
+        log.debug("UnSet main,{}, mainnumber = {}",Hex.toHexString(block.getHash()),xdagStats.nmain);
 
         long amount = getReward(xdagStats.nmain);
         updateBlockFlag(block, BI_MAIN, false);

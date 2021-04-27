@@ -130,7 +130,6 @@ public class PeerTable {
         if (!res.isPresent()) {
             distanceCache.put(id, distance);
             log.info("distanceCache.size = {}",distanceCache.size());
-            log.info("add suss");
             return AddResult.added();
         }
 

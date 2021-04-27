@@ -127,8 +127,6 @@ public class Kernel {
 
     /** Start the kernel. */
     public synchronized void testStart() throws Exception {
-
-        log.debug("Kernel start...");
         if (isRunning.get())  {
             return;
         }
@@ -143,16 +141,16 @@ public class Kernel {
         channelMgr = new XdagChannelManager(this);
         channelMgr.start();
         netDBMgr = new NetDBManager(this.config);
-        log.debug("NetDB Manager init.");
         netDBMgr.init();
+        log.info("NetDB Manager init.");
 
         // ====================================
         // wallet init
         // ====================================
 //        if (wallet == null) {
         wallet = new OldWallet();
-        log.debug("Wallet init.");
         wallet.init(this.config);
+        log.info("Wallet init.");
 //        }
 
         dbFactory = new RocksdbFactory(this.config);
@@ -160,11 +158,11 @@ public class Kernel {
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));
-        log.debug("Block Store init.");
+        log.info("Block Store init.");
         blockStore.init();
 
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        log.debug("Orphan Pool init.");
+        log.info("Orphan Pool init.");
         orphanPool.init();
 
         // ====================================
