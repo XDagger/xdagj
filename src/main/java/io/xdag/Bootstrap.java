@@ -48,7 +48,6 @@ public class Bootstrap {
     }
 
     public static void main(String[] args) throws Exception {
-        log.debug("Start main");
         Config config = new Config();
         config.changePara(config, args);
         config.setDir();

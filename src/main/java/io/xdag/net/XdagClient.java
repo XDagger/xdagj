@@ -64,7 +64,7 @@ public class XdagClient {
         this.ip = config.getNodeIp();
         this.port = config.getNodePort();
         this.workerGroup = new NioEventLoopGroup(0, factory);
-        log.debug("XdagClient nodeId {}", getNode().getHexId());
+//        log.debug("XdagClient nodeId {}", getNode().getHexId());
     }
 
     /** Connects to the node and returns only upon connection close */

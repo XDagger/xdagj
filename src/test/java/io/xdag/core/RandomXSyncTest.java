@@ -46,12 +46,12 @@ public class RandomXSyncTest {
     private final String privString = "421d725da10c056a955d2444a5a043b1a5d4515db126b8631806a8ccbda93369";
     private final BigInteger privateKey = new BigInteger(privString, 16);
 
-    private long forkHeight = 2;
+    private long forkHeight;
 
     @Before
     public void init() {
-        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 32;
-        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 64;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 64;
+        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 128;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
         forkHeight = 3;
 
@@ -65,7 +65,7 @@ public class RandomXSyncTest {
         Kernel kernel2 = createKernel(root2);
 
         // 第一个kernel新增区块数据
-        long end = addBlocks(kernel1,100);
+        long end = addBlocks(kernel1,130);
         log.debug("Add block done");
         long nmain = kernel1.getBlockchain().getXdagStats().nmain;
         String expected = kernel1.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
@@ -171,7 +171,7 @@ public class RandomXSyncTest {
         ref = forkHash;
 
         // 3. create number fork blocks
-        for (int i = 0; i < number; i++ ) {
+        for (int i = 0; i < forkHeight + 10; i++ ) {
             date = DateUtils.addSeconds(date, 64);
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));

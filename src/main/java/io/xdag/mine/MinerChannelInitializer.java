@@ -39,7 +39,6 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
     private final boolean isServer;
 
     public MinerChannelInitializer(Kernel kernel, boolean isServer) {
-        log.debug("init a minerchannelInitilizer");
         this.kernel = kernel;
         this.isServer = isServer;
     }
@@ -52,7 +51,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
             System.out.println("too many channels in this pool");
             return;
         }
-        log.debug("init a new MinerChannel......" + "是否是客户端：" + isServer);
+        log.info("init a new MinerChannel...... isServer：{}" , isServer);
         // 如果是服务器 就会获取到的是外部的地址 否则获取到自己本地的地址
         channelsAccount.getAndIncrement();
         InetSocketAddress channelAddress = isServer

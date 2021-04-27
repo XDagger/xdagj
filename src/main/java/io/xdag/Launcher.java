@@ -59,7 +59,7 @@ public class Launcher {
         // shutdown hooks
         for (Pair<String, Runnable> r : shutdownHooks) {
             try {
-                log.debug("Shutting down {}", r.getLeft());
+                log.info("Shutting down {}", r.getLeft());
                 r.getRight().run();
             } catch (Exception e) {
                 log.debug("Failed to shutdown {}", r.getLeft(), e);
