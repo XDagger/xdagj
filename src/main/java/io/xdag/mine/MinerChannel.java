@@ -217,7 +217,7 @@ public class MinerChannel {
      *            版本号
      */
     public void activateHadnler(ChannelHandlerContext ctx, XdagVersion version) {
-        log.debug("激活其他处理器");
+        log.info("activate handler");
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
@@ -239,7 +239,7 @@ public class MinerChannel {
                 this.miner.setMinerStates(MINER_ACTIVE);
                 return true;
             } else {
-                log.debug("同一个矿工连接了太多啦");
+                log.debug("同一个矿工连接了太多");
                 return false;
             }
         } else {

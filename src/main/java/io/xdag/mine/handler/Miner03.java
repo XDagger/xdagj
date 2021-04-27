@@ -41,10 +41,12 @@ import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
+import io.xdag.utils.FormatDateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
+import java.util.Date;
 
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
@@ -82,7 +84,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
-            log.debug("远程主机关闭了一个连接");
+            log.debug("Close miner at time:{}", FormatDateUtils.format(new Date()));
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();
@@ -92,23 +94,23 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
-        log.debug(" Receive a Tx");
         Block block = msg.getBlock();
+        log.debug("Punk:Receive a Transaction from wallet/miner, block hash:{}",Hex.toHexString(block.getHash()));
         syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL()));
     }
 
     protected void processNewBalance(NewBalanceMessage msg) {
         // TODO: 2020/5/9 处理矿工接受到的余额信息 矿工功能
-        log.debug(" Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
+        log.debug("Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
     }
 
     protected void processNewTask(NewTaskMessage msg) {
         // TODO: 2020/5/9 处理矿工收到的新任务 矿工功能
-        log.debug(" Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
+        log.debug("Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
-        log.debug(" Pool Receive Share");
+        log.debug("Pool Receive Share");
 
         //share地址不一致，修改对应的miner地址
         if (FastByteComparisons.compareTo( msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) != 0) {
@@ -131,6 +133,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 }
                 //改变channel对应的地址，并替换新的miner连接
                 channel.updateMiner(miner);
+                log.debug("Punk:{} this channel is randomXminer",channel.getInetAddress().getHostString());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
                 minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash()));
