@@ -111,10 +111,10 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // 如果是新增的地址块
                 if (importResult != ImportResult.EXIST) {
-                    log.debug("Punk:Add new addressblock {}", addressBlock.getHash());
+                    log.debug("Punk:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                } else {
+                    log.debug("Punk:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
                 }
-
-                log.debug("Punk:New channel {} connectTime {}", channel.getInetAddress().getHostString(),FormatDateUtils.format(new Date()));
 
                 channel.getInBound().add(16L);
                 minerManager.addActivateChannel(channel);

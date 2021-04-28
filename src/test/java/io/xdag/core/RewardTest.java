@@ -103,9 +103,10 @@ public class RewardTest {
 
         ECKeyPair addrKey = ECKeyPair.create(privateKey);
         ECKeyPair poolKey = ECKeyPair.create(privateKey);
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
         // 1. add one address block
-        Block addressBlock = generateAddressBlock(addrKey, date.getTime());
+        Block addressBlock = generateAddressBlock(addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -115,13 +116,13 @@ public class RewardTest {
         byte[] ref = addressBlock.getHashLow();
 
         byte[] unwindRef = null;
-        Date unwindDate = null;
+        long unwindDate = 0;
         // 2. create 20 mainblocks
         for(int i = 1; i <= 20; i++) {
-            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
@@ -129,7 +130,7 @@ public class RewardTest {
             ref = extraBlock.getHashLow();
             if (i == 10) {
                 unwindRef = ref.clone();
-                unwindDate = date;
+                unwindDate = generateTime;
             }
             if (i == 15) {
                 targetBlock = ref.clone();
@@ -138,15 +139,16 @@ public class RewardTest {
             extraBlockList.add(extraBlock);
         }
 
-        date = unwindDate;
+        generateTime = unwindDate;
         ref = unwindRef;
 
         // 3. create 20 fork blocks
         for (int i = 0; i < 30; i++ ) {
-            date = DateUtils.addSeconds(date, 64);
+//            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(poolKey, xdagTime, pending,"3456");
             blockchain.tryToConnect(extraBlock);

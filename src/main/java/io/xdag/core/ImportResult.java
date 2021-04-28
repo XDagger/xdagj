@@ -50,4 +50,8 @@ public enum ImportResult {
     public String getErrorInfo() {
         return errorInfo;
     }
+
+    public boolean isIllegal() {
+        return this == IMPORTED_NOT_BEST || this == IMPORTED_BEST || this == EXIST;
+    }
 }
