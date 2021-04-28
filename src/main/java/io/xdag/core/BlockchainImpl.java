@@ -259,7 +259,7 @@ public class BlockchainImpl implements Blockchain {
                 if (ref != null) {
                     Block refBlock = getBlockByHash(ref.getHashLow(), false);
                     if (refBlock == null) {
-                        log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
+//                        log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
                         result = ImportResult.NO_PARENT;
                         result.setHashlow(ref.getHashLow());
                         result.setErrorInfo("Block have no parent for "+Hex.toHexString(result.getHashlow()));
@@ -349,7 +349,7 @@ public class BlockchainImpl implements Blockchain {
                             (tmpRef == null || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
                                     (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime.getEpoch(blockRef.getTimestamp()))
                     ) {
-                        log.debug("update BI_MAIN_CHAIN block:{}", Hex.toHexString(blockRef.getHashLow()));
+//                        log.debug("update BI_MAIN_CHAIN block:{}", Hex.toHexString(blockRef.getHashLow()));
                         updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
                         blockRef0 = blockRef;
                     }
@@ -363,9 +363,11 @@ public class BlockchainImpl implements Blockchain {
                 }
                 // 将主链回退到blockRef
                 long currentHeight = xdagStats.nmain;
-                log.debug("Punk:Before unwind, height = {}",xdagStats.nmain);
                 unWindMain(blockRef);
-                log.debug("Punk:After unwind, unwind number = {}",currentHeight - xdagStats.nmain);
+                // 发生回退
+                if (xdagStats.nmain - currentHeight > 0) {
+                    log.debug("Punk:Before unwind, height = {}, After unwind, height = {}, unwind number = {}", currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
+                }
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow());
                 result = ImportResult.IMPORTED_BEST;
@@ -379,7 +381,7 @@ public class BlockchainImpl implements Blockchain {
             }
 
             //orphan (hash , block)
-            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
+//            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
 //                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 memOrphanPool.put(new ByteArrayWrapper(block.getHashLow()), block);
@@ -394,8 +396,8 @@ public class BlockchainImpl implements Blockchain {
 
             // 如果区块输入不为0说明是交易块
             if (block.getInputs().size() != 0) {
-                if (block.isOurs()) {
-                    log.debug("Punk:Pool transaction(reward) {}", Hex.toHexString(block.getHash()));
+                if ((block.getInfo().getFlags()&BI_OURS) != 0) {
+                    log.debug("Punk:pool transaction(reward). block hash:{}", Hex.toHexString(block.getHash()));
                 }
             }
 
@@ -409,7 +411,7 @@ public class BlockchainImpl implements Blockchain {
     public void processExtraBlock() {
         if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
             Block reuse = getHead(memOrphanPool).getValue();
-            log.debug("remove when extra too big");
+            log.info("Remove when extra too big");
             removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
             xdagStats.nblocks--;
             xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
@@ -950,7 +952,7 @@ public class BlockchainImpl implements Blockchain {
         System.arraycopy(block.getXdagBlock().getField(15).getData(),0,data,32,32);
         byte[] hash = Arrays.reverse(randomXUtils.randomXBlockHash(data,data.length,epoch));
         if (hash != null) {
-            log.debug("New Block randomX hash:{}",Hex.toHexString(hash));
+//            log.debug("New Block randomX hash:{}",Hex.toHexString(hash));
             return getDiffByRawHash(hash);
         }
         return getDiffByRawHash(block.getHash());
