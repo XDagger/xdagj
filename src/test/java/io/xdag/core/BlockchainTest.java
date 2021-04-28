@@ -113,11 +113,24 @@ public class BlockchainTest {
         assertEquals("orphan:", norphan, bci.getXdagStats().nnoref);
     }
 
+
+    class MockBlockchain extends BlockchainImpl {
+
+        public MockBlockchain(Kernel kernel) {
+            super(kernel);
+        }
+
+        @Override
+        public void startCheckMain() {
+
+        }
+    }
+
     @Test
     public void testAddressBlock() {
         ECKeyPair key = Keys.createEcKeyPair();
         Block addressBlock = generateAddressBlock(key, new Date().getTime());
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         assertTrue(result == IMPORTED_BEST);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
@@ -130,16 +143,17 @@ public class BlockchainTest {
 
     @Test
     public void testExtraBlock() throws ParseException {
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
         ECKeyPair key = Keys.createEcKeyPair();
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result = INVALID_BLOCK;
         log.debug("1. create 1 address block");
-        Block addressBlock = generateAddressBlock(key, date.getTime());
+        Block addressBlock = generateAddressBlock(key, generateTime);
 
         // 1. add address block
         result = blockchain.tryToConnect(addressBlock);
@@ -151,10 +165,10 @@ public class BlockchainTest {
         // 2. create 100 mainblocks
         for(int i = 1; i <= 100; i++) {
             log.debug("create No." + i + " extra block");
-            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(key, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
@@ -179,10 +193,11 @@ public class BlockchainTest {
     public void testTransactionBlock() throws ParseException {
         ECKeyPair addrKey = Keys.createEcKeyPair();
         ECKeyPair poolKey = Keys.createEcKeyPair();
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
         // 1. add one address block
-        Block addressBlock = generateAddressBlock(addrKey, date.getTime());
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        Block addressBlock = generateAddressBlock(addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertTrue(result == IMPORTED_BEST);
@@ -191,10 +206,11 @@ public class BlockchainTest {
         byte[] ref = addressBlock.getHashLow();
         // 2. create 10 mainblocks
         for(int i = 1; i <= 10; i++) {
-            date = DateUtils.addSeconds(date, 64);
+//            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
@@ -207,7 +223,7 @@ public class BlockchainTest {
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
         Address from  = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN);
         Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
-        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(date.getTime()));
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateTransactionBlock(poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
         // 4. local check
@@ -227,9 +243,9 @@ public class BlockchainTest {
         ref = extraBlockList.get(extraBlockList.size()-1).getHashLow();
         // 4. confirm transaction block with 3 mainblocks
         for(int i = 1; i <= 3; i++) {
-            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
@@ -248,20 +264,21 @@ public class BlockchainTest {
 
     @Test
     public void testCanUseInput() throws ParseException {
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
         ECKeyPair fromKey = Keys.createEcKeyPair();
         ECKeyPair toKey = Keys.createEcKeyPair();
-        Block fromAddrBlock = generateAddressBlock(fromKey, date.getTime());
-        Block toAddrBlock = generateAddressBlock(toKey, date.getTime());
+        Block fromAddrBlock = generateAddressBlock(fromKey, generateTime);
+        Block toAddrBlock = generateAddressBlock(toKey, generateTime);
 
         Address from = new Address(fromAddrBlock.getHashLow(), XDAG_FIELD_IN);
         Address to = new Address(toAddrBlock);
 
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
         blockchain.tryToConnect(fromAddrBlock);
         blockchain.tryToConnect(toAddrBlock);
 
-        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(date.getTime()));
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateTransactionBlock(fromKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
         // 1. local check
@@ -359,10 +376,10 @@ public class BlockchainTest {
 
         ECKeyPair addrKey = ECKeyPair.create(privateKey);
         ECKeyPair poolKey = ECKeyPair.create(privateKey);
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
         // 1. add one address block
-        Block addressBlock = generateAddressBlock(addrKey, date.getTime());
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        Block addressBlock = generateAddressBlock(addrKey,generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertTrue(result == IMPORTED_BEST);
@@ -371,13 +388,13 @@ public class BlockchainTest {
         byte[] ref = addressBlock.getHashLow();
 
         byte[] unwindRef = null;
-        Date unwindDate = null;
+        long unwindDate = 0;
         // 2. create 20 mainblocks
         for(int i = 1; i <= 20; i++) {
-            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
@@ -386,7 +403,7 @@ public class BlockchainTest {
             ref = extraBlock.getHashLow();
             if (i == 16) {
                 unwindRef = ref.clone();
-                unwindDate = date;
+                unwindDate = generateTime;
             }
             extraBlockList.add(extraBlock);
         }
@@ -396,15 +413,15 @@ public class BlockchainTest {
         assertEquals(firstDiff,blockchain.getXdagTopStatus().getTopDiff().toString(16));
 
 
-        date = unwindDate;
+        generateTime = unwindDate;
         ref = unwindRef;
 
         // 3. create 20 fork blocks
         for (int i = 0; i < 20; i++ ) {
-            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(poolKey, xdagTime, pending,"3456");
             blockchain.tryToConnect(extraBlock);
