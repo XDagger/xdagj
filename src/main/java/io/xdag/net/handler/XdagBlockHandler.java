@@ -101,6 +101,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
                 unCryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length,
                         channel.getNode().getStat().Inbound.get()  + 1);
             }
+
             // 该通道的输入记录加一
             channel.getNode().getStat().Inbound.add();
 

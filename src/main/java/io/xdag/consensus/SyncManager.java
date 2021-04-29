@@ -23,6 +23,7 @@
  */
 package io.xdag.consensus;
 
+
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -39,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
+
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -49,6 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
+
 
 @Slf4j
 @Getter
@@ -161,7 +164,7 @@ public class SyncManager {
             if (!syncDone
                     && ((blockchain.getXdagStats().getMaxdifficulty().compareTo(BigInteger.ZERO)>0
                     && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)
-                    )
+            )
             ) {
                 makeSyncDone();
             }
@@ -195,7 +198,7 @@ public class SyncManager {
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
                     log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                        Hex.toHexString(result.getHashlow()));
+                            Hex.toHexString(result.getHashlow()));
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
@@ -203,11 +206,6 @@ public class SyncManager {
 
                         }
                     }
-//                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
-//                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
-//                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
-//                        }
-//                    }
                 }
                 break;
             }
@@ -247,7 +245,7 @@ public class SyncManager {
                                 b.setTime(now);
                                 r.set(true);
                             } else {
-                            //TODO should be consider timeout not received request block
+                                //TODO should be consider timeout not received request block
                                 r.set(false);
                             }
                             return oldQ;
@@ -337,8 +335,10 @@ public class SyncManager {
 
     }
 
+
     public void stop() {
         log.debug("sync manager stop");
+        kernel.getLibp2pNetwork().stop();
     }
 
     public void distributeBlock(BlockWrapper blockWrapper) {

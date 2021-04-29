@@ -98,7 +98,7 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
         @Override
         protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) throws Exception {
             String s = buf.toString(CharsetUtil.UTF_8);
-            System.out.println(s);
+//            System.out.println(s);
         }
     }
 }

@@ -92,10 +92,12 @@ public class XdagAdapter implements Xdag {
     @Override
     public void sendMessage(Message message) {
         // TODO Auto-generated method stub
+
     }
 
     @Override
     public void updateXdagStats(AbstractMessage message) {
+
 
     }
 }

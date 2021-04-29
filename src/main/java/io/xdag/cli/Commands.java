@@ -23,11 +23,8 @@
  */
 package io.xdag.cli;
 
-import cn.hutool.core.lang.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.UnsignedLong;
-import com.google.common.util.concurrent.AtomicDouble;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
@@ -48,9 +45,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
@@ -169,23 +164,21 @@ public class Commands {
         Map<Address, ECKeyPair> ourBlocks = Maps.newHashMap();
 
         // our block select
-        kernel.getBlockStore().fetchOurBlocks(new Function<Pair<Integer, Block>, Boolean>() {
-            @Override
-            public Boolean apply(Pair<Integer, Block> pair) {
-                int index = pair.getKey();
-                Block block = pair.getValue();
-                if (remain.get() <= block.getInfo().getAmount()) {
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
-                    remain.set(0);
-                    return true;
-                } else {
-                    if (block.getInfo().getAmount() > 0) {
-                        remain.set(remain.get() - block.getInfo().getAmount());
-                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
-                        return false;
-                    }
+
+        kernel.getBlockStore().fetchOurBlocks(pair -> {
+            int index = pair.getKey();
+            Block block = pair.getValue();
+            if (remain.get() <= block.getInfo().getAmount()) {
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
+                remain.set(0);
+                return true;
+            } else {
+                if (block.getInfo().getAmount() > 0) {
+                    remain.set(remain.get() - block.getInfo().getAmount());
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
                     return false;
                 }
+                return false;
             }
         });
 
@@ -199,6 +192,7 @@ public class Commands {
         for (BlockWrapper blockWrapper : txs) {
             // blockWrapper.setTransaction(true);
 //            System.out.println("tx:"+Hex.toHexString(blockWrapper.getBlock().getXdagBlock().getData()));
+
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
@@ -214,6 +208,7 @@ public class Commands {
     private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, byte[] to, String remark) {
         // 判断是否有remark
         int hasRemark = remark == null ? 0 : 1;
+
 
         List<BlockWrapper> res = new ArrayList<>();
 
@@ -231,6 +226,7 @@ public class Commands {
         // base count a block <header + send address + defKey signature>
         int base = 1 + 1 + 2 + hasRemark;
         long amount = 0;
+
 
         while (stack.size() > 0) {
             Map.Entry<Address, ECKeyPair> key = stack.peek();
@@ -329,6 +325,7 @@ public class Commands {
                 maxDiff.toString(16),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
                 amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))
+
         );
     }
 
@@ -387,22 +384,23 @@ public class Commands {
     public String printBlockInfo(Block block) {
         block.parse();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
-        String heightFormat = ((block.getInfo().getFlags() & BI_MAIN) == 0 ? "" : "    height: %08d\n");
+
+        String heightFormat = ((block.getInfo().getFlags() & BI_MAIN) == 0? "":"    height: %08d\n");
         String otherFormat = """
-                      time: %s
-                 timestamp: %s
-                     flags: %s
-                     state: %s
-                      hash: %s
-                    remark: %s
-                difficulty: %s
-                   balance: %s  %.9f
-                -----------------------------------------------------------------------------------------------------------------------------
-                                               block as transaction: details
-                 direction  address                                    amount
-                       fee: %s           %.9f""";
+                         time: %s
+                    timestamp: %s
+                        flags: %s
+                        state: %s
+                         hash: %s
+                       remark: %s
+                   difficulty: %s
+                      balance: %s  %.9f
+                   -----------------------------------------------------------------------------------------------------------------------------
+                                                  block as transaction: details
+                    direction  address                                    amount
+                          fee: %s           %.9f""";
         StringBuilder inputs = null;
-        if (block.getInputs().size() != 0) {
+        if (block.getInputs().size()!=0) {
             inputs = new StringBuilder();
             for (int i = 0; i < block.getInputs().size(); i++) {
                 inputs.append(String.format("     input: %s           %.9f\n",
@@ -411,7 +409,8 @@ public class Commands {
             }
         }
         StringBuilder outputs = null;
-        if (block.getOutputs().size() != 0) {
+
+        if (block.getOutputs().size()!=0) {
             outputs = new StringBuilder();
             for (int i = 0; i < block.getOutputs().size(); i++) {
                 outputs.append(String.format("    output: %s           %.9f\n",
@@ -426,15 +425,15 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                block.getInfo().getRemark() == null ?
-                        "" : new String(block.getInfo().getRemark()),
+
+                block.getInfo().getRemark() == null?"":new String(block.getInfo().getRemark()),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
                 //fee目前为0
-                block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(block.getInfo().getRef()), 0.0
-        )
-                + "\n"
-                + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
+                block.getInfo().getRef()==null?"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":hash2Address(block.getInfo().getRef()),0.0
+                )
+                +"\n"
+                +(inputs==null?"":inputs.toString())+(outputs==null?"":outputs.toString())
                 ;
     }
 
@@ -447,6 +446,7 @@ public class Commands {
         StringBuilder sbd = new StringBuilder();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
         if (print_only_addresses) {
+
             sbd.append(String.format("%s   %08d",
                     BasicUtils.hash2Address(block.getHash()),
                     block.getInfo().getHeight()));
@@ -535,6 +535,7 @@ public class Commands {
                     .append(node.getStat().Outbound.get())
                     .append(" out").append(System.getProperty("line.separator"));
         }
+
         return stringBuilder.toString();
     }
 

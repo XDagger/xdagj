@@ -42,7 +42,6 @@ import javax.annotation.Nonnull;
 import com.google.common.util.concurrent.*;
 
 import io.xdag.net.Channel;
-
 import io.xdag.Kernel;
 import io.xdag.db.store.BlockStore;
 import io.xdag.net.XdagChannel;
@@ -67,7 +66,7 @@ public class XdagSync {
     private XdagChannelManager channelMgr;
     private BlockStore blockStore;
     private Status status;
-    private ScheduledExecutorService sendTask;
+    private final ScheduledExecutorService sendTask;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
 
@@ -110,6 +109,7 @@ public class XdagSync {
         if (status != Status.SYNCING) {
             return;
         }
+
         List<Channel> any = getAnyNode();
         long randomSeq;
         SettableFuture<byte[]> sf = SettableFuture.create();
@@ -126,7 +126,9 @@ public class XdagSync {
                     return;
                 }
                 blocksRequestMap.remove(randomSeq);
+
                 return;
+
             } else {
                 byte[] lSums = new byte[256];
                 byte[] rSums;

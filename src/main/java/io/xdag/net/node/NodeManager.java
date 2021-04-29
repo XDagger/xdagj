@@ -23,6 +23,7 @@
  */
 package io.xdag.net.node;
 
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.xdag.Kernel;
@@ -34,6 +35,7 @@ import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
 import java.net.InetSocketAddress;
@@ -59,15 +61,17 @@ public class NodeManager {
     private final Cache<Node, Long> lastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
     /** 定时处理 */
     private final ScheduledExecutorService exec;
-    private Kernel kernel;
-    private XdagClient client;
-    private XdagChannelManager channelMgr;
-    private NetDBManager netDBManager;
-    private NetDB netDB;
-    private Config config;
+    private final Kernel kernel;
+    private final XdagClient client;
+    private final XdagChannelManager channelMgr;
+    private final NetDBManager netDBManager;
+    private final NetDB netDB;
+    private final Config config;
     private volatile boolean isRunning;
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
+    private ScheduledFuture<?> connectlibp2pFuture;
+
 
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
@@ -153,7 +157,7 @@ public class NodeManager {
             return null;
         }
     }
-
+    //todo:明天测试 逻辑思路
     public void doConnect() {
 
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
@@ -164,7 +168,7 @@ public class NodeManager {
 
             if (!client.getNode().equals(node)
                     && !(Objects.equals(node.getHost(), client.getNode().getHost())
-                            && node.getPort() == client.getNode().getPort())
+                    && node.getPort() == client.getNode().getPort())
                     && !activeAddress.contains(node.getAddress())
                     && (lastCon == null || lastCon + RECONNECT_WAIT < now )) {
                 XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, node);
@@ -185,6 +189,7 @@ public class NodeManager {
     }
 
 
+
     public Set<Node> getNewNode() {
         return netDB.getIPList();
     }
@@ -199,5 +204,4 @@ public class NodeManager {
         }
         return nodes;
     }
-
 }

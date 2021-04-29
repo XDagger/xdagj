@@ -77,7 +77,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected long taskIndex = 0;
 
     /** 存放的是过去十六个区块的hash */
-    protected List<byte[]> blockHashs = new CopyOnWriteArrayList<byte[]>();
+    protected List<byte[]> blockHashs = new CopyOnWriteArrayList<>();
     /** 存放的是最小的hash */
     protected List<byte[]> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     /** 引入矿工与奖励 */
@@ -85,7 +85,8 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected MinerManager minerManager;
 
 
-    private Kernel kernel;
+
+    private final Kernel kernel;
 
     private boolean isRunning = false;
 
@@ -175,6 +176,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
 
+
     public Block generateRandomXBlock(long sendTime) {
         // 新增任务
         log.debug("Generate RandomX block...");
@@ -186,17 +188,19 @@ public class XdagPow implements PoW, Listener, Runnable {
         minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);
 
+
         minHash = Hex.decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
         currentTask = createTaskByRandomXBlock(block, sendTime);
 
         // 更新poolminer的贡献
-        log.debug("Send Task to Miners");
+        log.debug("Send randomx task to Miners");
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
 
 //        MinerCalculate.calculateNopaidShares(
 //                awardManager.getPoolMiner(), minHash, block.getTimestamp());
+
         return block;
     }
 
@@ -214,7 +218,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         currentTask = createTaskByNewBlock(block,sendTime);
         // 发送给矿工
-        log.debug("Send Task to Miners");
+        log.debug("Send origin task to Miners");
         // 更新poolminer的贡献
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
@@ -237,18 +241,17 @@ public class XdagPow implements PoW, Listener, Runnable {
     /** 每收到一个miner的信息 之后都会在这里进行一次计算 */
     @Override
     public void receiveNewShare(MinerChannel channel, Message msg) {
-        log.debug("Receive share From PoolChannel");
         if (!this.isRunning) {
             return;
         }
 
         XdagField shareInfo = new XdagField(msg.getEncoded());
-        log.debug("shareinfo:{}", Hex.toHexString(shareInfo.getData()));
+
+        log.debug("Receive share From PoolChannel, Shareinfo:{}", Hex.toHexString(shareInfo.getData()));
         events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 
     public void receiveNewPretop(byte[] pretop) {
-        log.debug("ReceiveNewPretop");
         if (!this.isRunning) {
             return;
         }
@@ -260,7 +263,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
         try {
-            log.debug("On new share...");
             byte[] hash;
             // if randomx fork
             if (kernel.getRandomXUtils().isRandomxFork(currentTask.getTaskTime())) {
@@ -305,11 +307,6 @@ public class XdagPow implements PoW, Listener, Runnable {
             log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                     Hex.toHexString(generateBlock.getHash()));
             // 发送区块 如果有的话 然后开始生成新区块
-            log.debug("添加并发送现有区块 开始生成新区块 sendTime:" + Long.toHexString(generateBlock.getTimestamp()));
-            log.debug("End Time:" + Long.toHexString(XdagTime.getCurrentTimestamp()));
-            log.debug("发送区块:" + Hex.toHexString(generateBlock.toBytes()));
-            log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHashLow()));
-            log.debug("发送区块hash:" + Hex.toHexString(generateBlock.getHash()));
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
             awardManager.addAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
                     generateBlock.getTimestamp());
@@ -384,7 +381,8 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     @Override
     public void run() {
-        log.debug("Main PoW start ....");
+
+        log.info("Main PoW start ....");
         resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()+64));
         // init pretop
         globalPretop = blockchain.getXdagTopStatus().getPreTop();
@@ -395,26 +393,25 @@ public class XdagPow implements PoW, Listener, Runnable {
                     continue;
                 }
                 switch (ev.getType()) {
-                case NEW_DIFF:
-                    break;
-                case NEW_SHARE:
-                    onNewShare(ev.getData(), ev.getChannel());
-                    break;
-                case TIMEOUT:
-                    log.debug("Time out");
-                    log.debug(kernel.getXdagState().toString());
-                    // TODO : 判断当前是否可以进行产块
-                    if(kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
-                        onTimeout();
-                    }
-                    break;
-                case NEW_PRETOP:
-                    if(kernel.getXdagState()==XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
-                        onNewPreTop();
-                    }
-                    break;
-                default:
-                    break;
+                    case NEW_DIFF:
+                        break;
+                    case NEW_SHARE:
+                        onNewShare(ev.getData(), ev.getChannel());
+                        break;
+                    case TIMEOUT:
+
+                        // TODO : 判断当前是否可以进行产块
+                        if(kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                            onTimeout();
+                        }
+                        break;
+                    case NEW_PRETOP:
+                        if(kernel.getXdagState()==XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                            onNewPreTop();
+                        }
+                        break;
+                    default:
+                        break;
                 }
             } catch (InterruptedException e) {
                 log.debug(e.getMessage(), e);

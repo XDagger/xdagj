@@ -27,10 +27,11 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
 
 import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.*;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static org.junit.Assert.*;
 
@@ -41,60 +42,69 @@ public class RandomXSyncTest {
     public TemporaryFolder root1 = new TemporaryFolder();
     @Rule
     public TemporaryFolder root2 = new TemporaryFolder();
-    @Rule
-    public TemporaryFolder root3 = new TemporaryFolder();
-    @Rule
-    public TemporaryFolder root4 = new TemporaryFolder();
+
 
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     private final String privString = "421d725da10c056a955d2444a5a043b1a5d4515db126b8631806a8ccbda93369";
     private final BigInteger privateKey = new BigInteger(privString, 16);
 
-    private long forkHeight = 2;
+
+    private long forkHeight;
 
     @Before
     public void init() {
-        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
-        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 32;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 64;
+        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 128;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
         forkHeight = 3;
+
+    }
+
+    class MockBlockchain extends BlockchainImpl {
+
+        public MockBlockchain(Kernel kernel) {
+            super(kernel);
+        }
+
+        @Override
+        public void startCheckMain() {
+
+        }
+
     }
 
     @Test
     public void syncTest() throws Exception {
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
         // 构建三个mockKernel
         Kernel kernel1 = createKernel(root1);
         Kernel kernel2 = createKernel(root2);
-        Kernel kernel3 = createKernel(root3);
 
         // 第一个kernel新增区块数据
-        long end = addBlocks(kernel1,100);
+        long end = addBlocks(kernel1,130);
+
         log.debug("Add block done");
         long nmain = kernel1.getBlockchain().getXdagStats().nmain;
         String expected = kernel1.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
 
         // 第二个跟第三个同步第一个的数据
-        CountDownLatch latch = new CountDownLatch(2);
-        Thread thread1 = new SyncThread(latch,kernel1,kernel2,date.getTime(),end,"1");
-        Thread thread2 = new SyncThread(latch,kernel1,kernel3,date.getTime(),end,"2");
+
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread thread1 = new SyncThread(latch,kernel1,kernel2,generateTime,end,"1");
         thread1.start();
-        thread2.start();
+
 
         latch.await();
 
         String kernel2Diff = kernel2.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
 //        System.out.println("第二次同步");
         assertEquals(expected,kernel2Diff);
-
-        String kernel3Diff = kernel3.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
-        assertEquals(expected,kernel3Diff);
-
-
         kernel1.getRandomXUtils().randomXPoolReleaseMem();
         kernel2.getRandomXUtils().randomXPoolReleaseMem();
-        kernel3.getRandomXUtils().randomXPoolReleaseMem();
+
     }
 
     public class SyncThread extends Thread {
@@ -136,58 +146,62 @@ public class RandomXSyncTest {
     public long addBlocks(Kernel kernel, int number) throws ParseException {
         XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
 
-        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
 //        ECKeyPair key = ECKeyPair.create(privateKey);
         ECKeyPair key = ECKeyPair.create(privateKey);
 //        System.out.println(key.getPrivateKey().toString(16));
         List<Address> pending = Lists.newArrayList();
 
-        ImportResult result = INVALID_BLOCK;
+        ImportResult result;
         log.debug("1. create 1 address block");
 
-        Block addressBlock = generateAddressBlock(key, date.getTime());
+        Block addressBlock = generateAddressBlock(key, generateTime);
 
         // 1. add address block
         result = kernel.getBlockchain().tryToConnect(addressBlock);
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
         long endTime = 0;
 
         byte[] forkHash = new byte[0];
-        Date forkDate = null;
+        long forkDate = 0;
 
         for(int i = 1; i <= number; i++) {
             log.debug("create No." + i + " extra block");
-            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(key, xdagTime, pending);
             result = kernel.getBlockchain().tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             assertArrayEquals(extraBlock.getHashLow(), xdagTopStatus.getTop());
             Block storedExtraBlock = kernel.getBlockchain().getBlockByHash(xdagTopStatus.getTop(), false);
             assertArrayEquals(extraBlock.getHashLow(), storedExtraBlock.getHashLow());
             ref = extraBlock.getHashLow();
             if (i == number-forkHeight) {
                 forkHash = ref.clone();
-                forkDate = date;
+
+                forkDate = generateTime;
+
             }
             extraBlockList.add(extraBlock);
         }
 
-        date = forkDate;
+        generateTime = forkDate;
         ref = forkHash;
 
         // 3. create number fork blocks
-        for (int i = 0; i < number; i++ ) {
-            date = DateUtils.addSeconds(date, 64);
+        for (int i = 0; i < forkHeight + 10; i++ ) {
+            generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(date.getTime());
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(key, xdagTime, pending, "3456");
             kernel.getBlockchain().tryToConnect(extraBlock);
@@ -231,7 +245,7 @@ public class RandomXSyncTest {
         RandomX randomX = new RandomX();
         kernel.setRandomXUtils(randomX);
 
-        BlockchainImpl blockchain = new BlockchainImpl(kernel);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setBlockchain(blockchain);
         randomX.init();
 

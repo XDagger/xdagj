@@ -1,188 +1,119 @@
 # Welcome to XDAGJ
 
-## About
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_shield) ![](https://github.com/XDagger/xdagj/actions/workflows/maven.yml/badge.svg) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/XDagger/xdagj) ![GitHub](https://img.shields.io/github/license/XDagger/xdagj) ![GitHub issues](https://img.shields.io/github/issues/XDagger/xdagj)
 
-XDAGJ is a Java implementation of XDAG. It is rebuilt on the basis of C Version XDAG. For more information, please check [XDagger](https://github.com/XDagger/xdag) .
+[中文版](./docs/README_zh.md)
 
-Alpha version is being improved.
-## Development environment
 
+## Directory
+  - [System environment](#system-environment)
+  - [Installation and usage](#installation-and-usage)
+  - [Develop](#develop)
+  - [Code](#code)
+  - [Contribution](#contribution)
+  - [Sponsorship](#sponsorship)
+  - [Other](#other)
+  - [License](#license)
+
+## System environment
 ```yaml
-JDK   : v1.8
-Maven : 3.6.3
+JDK   : v15
+Maven : v3.6.3
 ```
+## Installation and usage
 
-Make sure the above environment is installed before you build this project.
+XDAGJ Testnet Tutorial can help you quickly access XDAGJ testnet by using wallets and mining functions.
+The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
 
+[XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
 
+[XDAGJ Private Chain Construction Tutorial](./docs/XDAGJ_Private_Chain_Tutorial_eng.md)
 
-## Documentation
+[Explorer](http://146.56.240.230/)
 
-[XDAGJ_Documentation.md](./XDAGJ_Documentation.md)
+## Develop
 
-### for project
-The generated files are stored in MainNet/TestNet during runtime. It depends on whether you access main network or the test network.
-```yaml
-* dnet_key.dat	 : Used to verify your password
-* wallet_*.dat	 : Store your accounts' private key
-* Rocksdb        : Storage blocks
-* sumsStoreDir   : Blocks sums storage path
-* storeDir       : Block information storage path (include block, account and orphan)   
-```
+XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
 
-## Build XDAGJ
+The main work of the next stage includes but not limited
 
-Download the source code from the master branch.
+- Optimize the XDAG consensus process and synchronization protocol
+- LibP2P is used to replace the  DNET network and gradually improve the degree of decentralization as long as the system stability allows.
+- Open API interface, provide black box testing.
+- Add a commission to the transaction.
+- Use BIPxx and other specifications to improve the existing public and private key and address generation methods, and provide a more convenient and universal key storage method.
+- Add snapshot function to solve the problem of slow loading speed of historical main block.
+- Optimize the address block structure to avoid dust attacks.
 
-Configure a new library file for it.
+At the same time, we are also actively providing more application scenarios for XDAG, including but not limited.
 
-```shell
-> cd src/c
-> make_so.bat  ## for Windows
-> ### or for Mac OS or Linux
-> make_so.sh
-```
+- Explore the possibility of using neo4j as the storage layer to provide a visual DAG storage.
+- Explore a way to add a virtual machine to XDAG to implement smart contracts and improve the usability of the system.
+- Explore effective cross-chain solutions to break the closed ecology of XDAG.
 
+## Code
 
+- Git
 
-### for Win/Mac/Linux
+  We use the gitflow branch model
 
-##### Building an executable JAR
+  - `master` is the main branch, which is also used to deploy the production environment. Cannot modify the code directly at any time.
+  - `develop` is the development branch, always keep the latest code after completion and bug fixes.
+  - `feature` is a new feature branch. When developing new features, use the `develop` branch as the basis, and create the corresponding `feature/xxx` branch according to the development characteristics.
+  - `release` is the pre-launch branch. During the release test phase, the release branch code will be used as the benchmark test. When a set of features is developed, it will be merged into the develop branch first, and a release branch will be created when entering the test. If there is a bug that needs to be fixed during the testing process, it will be directly fixed and submitted by the developer in the release branch. When the test is completed, merge the release branch to the master and develop branches. At this time, the master is the latest code and is used to go online.
+  - `hotfix` is the branch for repairing urgent problems on the line. Using the `master` branch as the baseline, create a `hotfix/xxx` branch. After the repair is completed, it needs to be merged into the `master` branch and the `develop` branch.
 
-```shell
-> git clone https://github.com/Holt666/xdagj.git
-> cd xdagj
-> mvn clean package 
-```
+- Commit Message
 
-## Run XDAGJ
+  The submission message must begin with a short subject line, followed by an optional, more detailed explanatory text, which is separated from the abstract by a blank line.
 
-In XDAGJ，`resource/conf.setting` is a global configuration file. If specified configuration parameters are not configured，the default parameters will be used.Refer [hutool](https://www.hutool.cn/docs/#/setting/%E6%A6%82%E8%BF%B0)
+- Pull Request
 
-To avoid stack overflow, increase the STACK value of the JVM to at least 4096k when loading the test network data.
+  The pull request must be as clear and detailed as possible, including all related issues. If the pull request is to close an issue, please use the Github keyword convention [close, fix, or resolve](https://help.github.com/articles/closing-issues-via-commit-messages/). If the pull request only completes part of the problem, use the `connected` keyword. This helps our tool to correctly link the issue to the pull request.
 
-The startup method based on the default configuration file :
-```shell
-> java -jar xdaj.jar
-> run ##start the program
-> terminate ##trun off
-```
+- Code Style
 
-Startup method with the appointed configuration file:
+  Use the `formatter_eclipse.xml` or `formatter_intellij.xml` of the `xdagj` code style in the `misc/code-style` folder.
 
-```shell	
-> java -jar xdagj.jar -f [file storage path] -t -p [ip：port]  -P [CFG]
-```
+- Code Review
 
-For more commands:
+  We value the quality and accuracy of the code. Therefore, we will review all the code that needs to be changed.
 
-```shell
-> java -jar xdagj.jar -h
-```
+## Contribution
 
-#### Build test enviroment
-Refer [How to build a test environment](./docs/Build_Test_Environment.md)
+- Security Question
 
-#### Commands currently implemented
+  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, I hope you can give it back as soon as possible.
 
-start para:
+  If you find a problem that may affect the security of the deployed system, we hope that you can send the problem privately to xdagj@xdag.io. Please do not discuss it publicly!
 
-```yaml
--t              [Use testnet]
--f yourpath     [Change the file storage path to yourpath ]
--p ip:port      [Bind ip:port as whitelist address]
--P (CFG)
-                [set pool config; CFG is miners:maxip:maxconn:fee:reward:direct:fund
-                  miners - maximum allowed number of miners
-                  maxip - maximum allowed number of miners connected from single ip
-                  maxconn - maximum allowed number of miners with the same address
-                  fee - pool fee in percent
-                  reward - reward to miner who got a block in percent
-                  direct - reward to miners participated in earned block in percent
-                  fund - community fund fee in percent
-```
+  If the problem is a weakness of the agreement or does not affect the online system, it can be discussed publicly and posted to [issues](https://github.com/XDagger/xdagj.git).
 
-Execution parameters :
+- features
 
-```yaml
-xdag> run                       [Run,start working]
-xdag> account N                 [Check your accounrs ,N is optional ]
-xdag> state                     [Check your pool state if you are connected to other pool]
-xdag> stats                     [Check network status]
-xdag> balance                   [Check you balance]
-xdag> block A                   [Check the block info use hash or address]
-xdag> mainblocks N              [Print list of N (20 by default) main blocks]
-xdag> minedblocks N             [Print list of N (20 by default) main blocks mined by current pool]
-xdag> keygen                    [Generate new private/public key pair and set it by default]
-xdag> net conn                  [List connections]
-xdag> net connect ip:port       [connect a new pool]
-xdag> miners                    [Printf list of activite miners in our pool]
-xdag> xfer N A                  [Transfer N XDAG to the address A]
-xdag> disconnect all|ip:port    [all : disconnect all miners / ip:port  disconnect the specified miner]
-xdag> exit                      [Terminate xdag process]
-xdag> terminate                 [Terminate xdag process]
-```
+  We are very happy to add more useful and interesting new features to XDAGJ. You can talk about any interesting new features.
+
+If you are interested in the development of XDAGJ, we also welcome you to join the developer team and contribute your strength to XDAGJ. You can get in touch with us at xdagj@xdag.io .
+
+## Sponsorship
+
+Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough as a milestone.The development of XDAGJ has gradually been on the right track. Due to limited resources, your support can strongly help us to improve XDAGJ.
+
+XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
+
+## Other
+
+[XDAGJ Libp2P Introduction](./docs/XDAGJ_Networking_Specification.md)
+
+[XDAG WIKI](https://github.com/XDagger/xdag/wiki)
+
+[XDAG Whitepaper](https://github.com/XDagger/xdag/blob/master/WhitePaper.md)
+
+[XDAG Protocol](https://github.com/XDagger/xdag/blob/master/Protocol.md)
 
 
 
-## Contribute
+## License
 
-This is an Open Source Project and we welcome all sorts of contributions, including reporting issues, contributing code, and helping us improve our community. Here are the instructions to get you started. 
-
-### Reporting Issues
-
-Whether you find any errors, bugs or inconsistencies in the code or documents of the XDAGJ project, or have any other problems or suggestions, please let us know on the Issue section.
-
-The main Issues for bug reporting are as follows:
-
-* [XDAGJ/issues](https://github.com/Holt666/xdagj/issues)
-
-## Implementation Design
-
-When considering design proposals for implementations, we are looking for:
-
-- A description of the problem this design proposal solves
-- Discussion of the tradeoffs involved
-- Discussion of the proposed solution
-
-### Git
-
-We use a simple git branching model:
-
-- `master` must always work
-- `develop` is the branch for development
-- create feature-branches to merge into `develop`
-- all commits must pass testing so that git bisect is easy to run
-
-Just stay current with `develop` (rebase).
-
-### Commit messages
-
-Commit messages must start with a short subject line, followed by an optional, more detailed explanatory text which is separated from the summary by an empty line.
-
-### Code
-
-Write clean code. Universally formatted code promotes ease of writing, reading, and maintenance.
-
-### Documentation
-
-Update documentation when creating or modifying features. Test your documentation changes for clarity, concision, and correctness, as well as a clean documentation build.
-
-### Pull Requests
-
-The pull request must be as clear as possible and as detailed as possible, including all related issues. If the pull request is meant to close an issue please use the Github keyword conventions of [closes, fixes, or resolves](https://help.github.com/articles/closing-issues-via-commit-messages/). If the pull request only completes part of an issue use the connects keywords. This helps our tools properly link issues to pull requests.
-
-### Code Style
-
-use xdagj code style formatter_eclipse.xml or formatter_intellij.xml at misc/code-style folder import to your IDE for format code.
-
-
-### Code Review
-
-We value the quality and accuracy of the code. Therefor, we will review all the codes that need to be changed.
-
-### Merge Approval
-
-We use `Thank you for your efforts.` in comments on the code review to indicate acceptance. A change **requires** `Thank you for your efforts.` from the maintainers of each component affected. If you know whom it may be, ping them.
-
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FXDagger%2Fxdagj.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FXDagger%2Fxdagj?ref=badge_large)
 

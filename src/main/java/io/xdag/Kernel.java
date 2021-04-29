@@ -88,7 +88,6 @@ public class Kernel {
     /** 初始化一个后续都可以用的handler */
     protected ConnectionLimitHandler connectionLimitHandler;
     protected Libp2pNetwork libp2pNetwork;
-
     protected Block firstAccount;
     protected Miner poolMiner;
     protected AwardManager awardManager;
@@ -96,9 +95,9 @@ public class Kernel {
     protected MinerServer minerServer;
     protected XdagState xdagState;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
+    protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
     protected TelnetServer telnetServer;
-
     protected RandomX randomXUtils;
 
     // 记录运行状态
@@ -199,14 +198,12 @@ public class Kernel {
         // set up client
         // ====================================
 
-
         p2p = new XdagServer(this);
         p2p.start();
         client = new XdagClient(this.config);
 
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
-
 
 
 
@@ -282,10 +279,9 @@ public class Kernel {
 
         // 2. 连接层关闭
         // stop node manager and channel manager
-        channelMgr.stop();
         nodeMgr.stop();
 
-
+        libp2pNetwork.stop();
         // close timer
         MessageQueue.timer.shutdown();
 
@@ -293,11 +289,11 @@ public class Kernel {
         p2p.close();
         // close client
         client.close();
-        libp2pNetwork.stop();
 
         minerServer.close();
         minerManager.stop();
         awardManager.stop();
+
 
         // 3. 数据层关闭
         // TODO 关闭checkmain线程

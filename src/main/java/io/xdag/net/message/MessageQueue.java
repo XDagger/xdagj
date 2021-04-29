@@ -56,6 +56,7 @@ public class MessageQueue {
     private ScheduledFuture<?> timerTask;
     private final Channel channel;
 
+
     public MessageQueue(Channel channel) {
         this.channel = channel;
     }

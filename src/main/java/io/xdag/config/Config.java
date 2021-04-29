@@ -26,6 +26,7 @@ package io.xdag.config;
 import cn.hutool.setting.Setting;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
+
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -178,41 +179,41 @@ public class Config implements Serializable {
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
-            case "-a":
-                break;
-            case "-c":
-                break;
-            case "-m":
-                i++;
-                // todo 设置挖矿的线程数
-                break;
-            case "-f":
-                i++;
-                Config.root = args[i];
-                break;
-            case "-t":
-                Config.MAINNET = false;
-                break;
-            case "-p":
-                i++;
-                config.changeNode(config, args[i]);
-                break;
-            case "-P":
-                i++;
-                config.changePoolPara(config, args[i]);
-                break;
-            case "-r":
-                // todo only load block but no run
-                break;
-            case "-s":
-                i++;
-                // todo bind the host for us
-                break;
-            case "-tag":
-                config.poolTag = StringUtils.substring(args[i+1], 0, 31);
-                break;
-            default:
-                System.out.println("Illegal instruction");
+                case "-a":
+                    break;
+                case "-c":
+                    break;
+                case "-m":
+                    i++;
+                    // todo 设置挖矿的线程数
+                    break;
+                case "-f":
+                    i++;
+                    Config.root = args[i];
+                    break;
+                case "-t":
+                    Config.MAINNET = false;
+                    break;
+                case "-p":
+                    i++;
+                    config.changeNode(config, args[i]);
+                    break;
+                case "-P":
+                    i++;
+                    config.changePoolPara(config, args[i]);
+                    break;
+                case "-r":
+                    // todo only load block but no run
+                    break;
+                case "-s":
+                    i++;
+                    // todo bind the host for us
+                    break;
+                case "-tag":
+                    config.poolTag = StringUtils.substring(args[i+1], 0, 31);
+                    break;
+                default:
+                    System.out.println("Illegal instruction");
             }
         }
     }
@@ -239,6 +240,7 @@ public class Config implements Serializable {
         config.directRation = Double.parseDouble(args[7]);
         config.fundRation = Double.parseDouble(args[8]);
     }
+
 
     /** 设置存储的路径 */
     public void setDir() {
