@@ -23,9 +23,11 @@
  */
 package io.xdag.db;
 
+import cn.hutool.core.lang.Pair;
+
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public interface KVSource<K, V> {
 
@@ -47,13 +49,12 @@ public interface KVSource<K, V> {
 
     void delete(K key);
 
-    boolean flush();
-
     Set<byte[]> keys() throws RuntimeException;
 
-    List<K> prefixKeyLookup(byte[] key, int prefixBytes);
+    List<K> prefixKeyLookup(byte[] key);
 
-    List<V> prefixValueLookup(byte[] key, int prefixBytes);
+    void fetchPrefix(byte[] key, Function<Pair<K,V>, Boolean> func);
 
-    void updateBatch(Map<K, V> rows);
+    List<V> prefixValueLookup(byte[] key);
+
 }

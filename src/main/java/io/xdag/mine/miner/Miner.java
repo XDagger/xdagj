@@ -32,39 +32,37 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.mine.MinerChannel;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class Miner {
     protected int boundedTaskCounter;
     /** 保存这个矿工的地址 */
-    private byte[] addressHash;
+    private final byte[] addressHash;
     /** 这个保存的是前8位为0 的地址 主要用于查询 */
-    private byte[] addressHashLow;
+    private final byte[] addressHashLow;
     /** 相同账户地址的channel数量 */
-    private AtomicInteger connChannelCounts = new AtomicInteger(0);
-    /** 保存的时该矿工每一次进行任务计算的nonce + 低192bites的hash */
+    private final AtomicInteger connChannelCounts = new AtomicInteger(0);
+    /* 保存的时该矿工每一次进行任务计算的nonce + 低192bites的hash */
     // private XdagField id = new XdagField();
     /** 记录收到任务的时间 */
     private long taskTime;
-    
+
     @Getter
     @Setter
-    /** 记录任务索引 * */
+    /* 记录任务索引 * */
     private long taskIndex;
     /** 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个 */
     private double prevDiff;
     /** 记录prevDiff的次数 实际上类似于进行了多少次计算 */
     private int prevDiffCounts;
     /** 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs */
-    private List<Double> maxDiffs = new CopyOnWriteArrayList<>();
+    private final List<Double> maxDiffs = new CopyOnWriteArrayList<>();
     /** 记录这个矿工的状态 */
     private MinerStates minerStates;
     /** 类似于id 也是保存的nonce +hasholow的值 */
@@ -77,12 +75,12 @@ public class Miner {
     private double meanLogDiff;
     private Date registeredTime;
     /** 保存的是这个矿工对应的channel */
-    private Map<InetSocketAddress, MinerChannel> channels = new ConcurrentHashMap<>();
+    private final Map<InetSocketAddress, MinerChannel> channels = new ConcurrentHashMap<>();
 
     /** 分别存放的是本轮中 的难度 以及前面所有计算的难度 */
-    private Map<Long, Double> diffSum = new ConcurrentHashMap<>();
+    private final Map<Long, Double> diffSum = new ConcurrentHashMap<>();
 
-    private Map<Long, Double> prevDiffSum = new ConcurrentHashMap<>();
+    private final Map<Long, Double> prevDiffSum = new ConcurrentHashMap<>();
 
     public Miner(byte[] addressHash) {
         log.debug("init a new miner {}", Hex.toHexString(addressHash));
@@ -93,7 +91,6 @@ public class Miner {
         this.meanLogDiff = 0.0;
         this.registeredTime = Calendar.getInstance().getTime();
         boundedTaskCounter = 0;
-
         // 容器的初始化
         for (int i = 0; i < 16; i++) {
             maxDiffs.add(0.0);
@@ -125,11 +122,16 @@ public class Miner {
         this.minerStates = states;
     }
 
-    /** 判断这个miner 是不是可以被移除 */
+    /** 判断这个miner 是不是可以被移除
+     * 没有矿机接入
+     * 状态等于归档
+     * maxdiff 全部为0
+     *
+     * */
     public boolean canRemove() {
         if (minerStates == MinerStates.MINER_ARCHIVE && connChannelCounts.get() == 0) {
             for (Double maxDiff : maxDiffs) {
-                if (maxDiff != 0.0) {
+                if (maxDiff.compareTo((double) 0) > 0) {
                     return false;
                 }
             }

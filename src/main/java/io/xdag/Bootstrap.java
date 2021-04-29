@@ -23,25 +23,15 @@
  */
 package io.xdag;
 
-import io.xdag.cli.Command;
-import io.xdag.cli.ShellCommand;
 import io.xdag.config.Config;
-import io.xdag.wallet.WalletImpl;
-import java.io.IOException;
+import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
+
 
 @Slf4j
 public class Bootstrap {
-    public static void main(String[] args) throws IOException {
-        Config config = new Config();
-        config.changePara(config, args);
-        config.setDir();
+
+    public static void logPoolInfo(Config config) {
         log.info(
                 "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
                 config.getNodeIp(),
@@ -55,50 +45,22 @@ public class Bootstrap {
                 config.getRewardRation(),
                 config.getDirectRation(),
                 config.getFundRation());
+    }
 
-        try {
-            // 初始密钥
-            config.initKeys();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public static void main(String[] args) throws Exception {
+        Config config = new Config();
+        config.changePara(config, args);
+        config.setDir();
+        logPoolInfo(config);
 
-        // 启动前先要判断dnet_keys.dat 与 wallet.dat是否生成
-        WalletImpl wallet = new WalletImpl();
-        for (int i = 1; i <= 5; i++) {
-            try {
-                int err = wallet.init(config);
-                if (err >= 0) {
-                    break;
-                } else if (i == 5) {
-                    System.out.println("Too many wrong passwords, exit！");
-                    System.exit(0);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(0);
-            }
-        }
+        // init keys
+        config.initKeys();
 
-        Terminal terminal = TerminalBuilder.builder().system(true).build();
-        LineReader lineReader = LineReaderBuilder.builder().terminal(terminal).build();
+        // if dnet_keys.dat and wallet.dat exist
+        OldWallet wallet = new OldWallet();
+
         Kernel kernel = new Kernel(config, wallet);
-        ShellCommand shellCommand = new ShellCommand(new Command(kernel));
-        String prompt = "xdag> ";
-        while (true) {
-            String line = null;
-            try {
-                line = lineReader.readLine(prompt);
-                shellCommand.handle(line);
-                if (shellCommand.getStopFlag()) {
-                    throw new EndOfFileException();
-                }
-            } catch (UserInterruptException e) {
-                // Do nothing
-            } catch (EndOfFileException e) {
-                System.out.println("\nBye.");
-                return;
-            }
-        }
+        // default start kernel
+        kernel.testStart();
     }
 }

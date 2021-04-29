@@ -32,7 +32,7 @@ import io.xdag.utils.BytesUtils;
 
 public class NewTaskMessage extends Message {
 
-    private XdagField[] xdagFields = new XdagField[2];
+    private final XdagField[] xdagFields = new XdagField[2];
 
     public NewTaskMessage(byte[] bytes) {
         super(bytes);

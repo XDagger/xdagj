@@ -44,19 +44,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class XdagClient {
     private static final ThreadFactory factory = new ThreadFactory() {
-        AtomicInteger cnt = new AtomicInteger(0);
+        final AtomicInteger cnt = new AtomicInteger(0);
 
         @Override
         public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "XdagJMinerWorker-" + cnt.getAndIncrement());
+            return new Thread(r, "client-" + cnt.getAndIncrement());
         }
     };
 
     private final EventLoopGroup workerGroup;
     private final int port;
-    private Config config;
+    private final Config config;
     private ChannelFuture f;
-    private String ip;
+    private final String ip;
     private Node node;
 
     public XdagClient(Config config) {
@@ -64,12 +64,8 @@ public class XdagClient {
         this.ip = config.getNodeIp();
         this.port = config.getNodePort();
         this.workerGroup = new NioEventLoopGroup(0, factory);
-        log.debug("XdagClient nodeId:" + getNode().getHexId());
+//        log.debug("XdagClient nodeId {}", getNode().getHexId());
     }
-
-    // public Node getNode(){
-    // return new Node(ip,port);
-    // }
 
     /** Connects to the node and returns only upon connection close */
     public void connect(String host, int port, XdagChannelInitializer xdagChannelInitializer) {
@@ -78,29 +74,22 @@ public class XdagClient {
             f.sync();
         } catch (Exception e) {
             if (e instanceof IOException) {
-                log.debug(
-                        "XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-                log.debug("XdagClient.connect(" + host + ":" + port + ") exception:");
+                log.debug("XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
             } else {
-                log.error("Exception:", e);
+                log.error("message:" + e.getMessage(), e);
             }
         }
     }
 
     public ChannelFuture connectAsync(
             String host, int port, XdagChannelInitializer xdagChannelInitializer) {
-        // xdagListener.trace("Connecting to: " + host + ":" + port);
         Bootstrap b = new Bootstrap();
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
-        // b.option(ChannelOption.SO_KEEPALIVE, true);
         b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
         b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectionTimeout());
         b.remoteAddress(host, port);
-
         b.handler(xdagChannelInitializer);
-
-        // Start the client.
         return b.connect();
     }
 

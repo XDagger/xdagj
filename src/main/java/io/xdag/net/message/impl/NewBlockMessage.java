@@ -30,8 +30,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
+import org.bouncycastle.util.encoders.Hex;
+
 import java.util.zip.CRC32;
-import org.spongycastle.util.encoders.Hex;
 
 public class NewBlockMessage extends Message {
 
@@ -64,7 +65,7 @@ public class NewBlockMessage extends Message {
         return block;
     }
 
-    private synchronized void parse() {
+    private void parse() {
         if (parsed) {
             return;
         }

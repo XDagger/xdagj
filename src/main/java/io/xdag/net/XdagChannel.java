@@ -45,11 +45,11 @@ import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.spongycastle.util.encoders.Hex;
+import org.bouncycastle.util.encoders.Hex;
 
 @Data
 @Slf4j
-public class XdagChannel {
+public class XdagChannel extends Channel{
     private final NioSocketChannel socket;
     private InetSocketAddress inetSocketAddress;
     private boolean isActive;
@@ -74,6 +74,10 @@ public class XdagChannel {
     /** 该channel对应的节点 */
     private Node node;
 
+
+    // TODO：记录该连接发送错误消息的次数，一旦超过某个值将断开连接
+    private int failTimes;
+
     public XdagChannel(NioSocketChannel socketChannel) {
         this.socket = socketChannel;
     }
@@ -90,7 +94,7 @@ public class XdagChannel {
         handshakeHandler.setServer(isServer);
         pipeline.addLast("handshakeHandler", handshakeHandler);
         this.msgQueue = new MessageQueue(this);
-        this.messageCodec = new MessageCodes(this);
+        this.messageCodec = new MessageCodes();
         this.blockHandler = new XdagBlockHandler(this);
         this.xdagHandlerFactory = new XdagHandlerFactoryImpl(kernel, this);
     }
@@ -130,6 +134,11 @@ public class XdagChannel {
         return isDisconnected;
     }
 
+    @Override
+    public MessageQueue getmessageQueue() {
+        return msgQueue;
+    }
+
     public void sendPubkey(ChannelHandlerContext ctx) throws Exception {
         ByteBuf buffer = ctx.alloc().buffer(1024);
         buffer.writeBytes(config.getXKeys().pub);
@@ -145,7 +154,7 @@ public class XdagChannel {
     }
 
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        log.debug("send a block hash is:+" + Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+        log.debug("send a block hash is {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
         log.debug("ttl:" + blockWrapper.getTtl());
         xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }
@@ -166,12 +175,10 @@ public class XdagChannel {
     }
 
     private MessageFactory createXdagMessageFactory(XdagVersion version) {
-        switch (version) {
-        case V03:
+        if (version == XdagVersion.V03) {
             return new Xdag03MessageFactory();
-        default:
-            throw new IllegalArgumentException("Xdag" + version + " is not supported");
         }
+        throw new IllegalArgumentException("Xdag" + version + " is not supported");
     }
 
     @Override

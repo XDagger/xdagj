@@ -39,12 +39,9 @@ public class XdagHandlerFactoryImpl implements XdagHandlerFactory {
 
     @Override
     public XdagHandler create(XdagVersion version) {
-        switch (version) {
-        case V03:
+        if (version == XdagVersion.V03) {
             return new Xdag03(kernel, channel);
-
-        default:
-            throw new IllegalArgumentException("Xdag " + version + " is not supported");
         }
+        throw new IllegalArgumentException("Xdag " + version + " is not supported");
     }
 }

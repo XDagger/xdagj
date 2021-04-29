@@ -59,13 +59,11 @@ public class XdagField {
             for (int i = 0; i < 4; i++) {
                 sum += BytesUtils.bytesToLong(getData(), i * 8, true);
             }
-            return sum;
-        } else {
-            return sum;
         }
+        return sum;
     }
 
-    public static enum FieldType {
+    public enum FieldType {
         // nonce字段
         XDAG_FIELD_NONCE(0x00),
         // 头部字段
@@ -77,10 +75,17 @@ public class XdagField {
         // 输入签名
         XDAG_FIELD_SIGN_IN(0x04),
         // 输出签名
-        XDAG_FIELD_SIGN_OUT(0x05), XDAG_FIELD_PUBLIC_KEY_0(0x06), XDAG_FIELD_PUBLIC_KEY_1(0x07), XDAG_FIELD_HEAD_TEST(
-                0x08), XDAG_FIELD_REMARK(0x09), XDAG_FIELD_RESERVE1(0x0A), XDAG_FIELD_RESERVE2(
-                        0x0B), XDAG_FIELD_RESERVE3(
-                                0x0C), XDAG_FIELD_RESERVE4(0x0D), XDAG_FIELD_RESERVE5(0x0E), XDAG_FIELD_RESERVE6(0x0F);
+        XDAG_FIELD_SIGN_OUT(0x05),
+        XDAG_FIELD_PUBLIC_KEY_0(0x06),
+        XDAG_FIELD_PUBLIC_KEY_1(0x07),
+        XDAG_FIELD_HEAD_TEST(0x08),
+        XDAG_FIELD_REMARK(0x09),
+        XDAG_FIELD_RESERVE1(0x0A),
+        XDAG_FIELD_RESERVE2(0x0B),
+        XDAG_FIELD_RESERVE3(0x0C),
+        XDAG_FIELD_RESERVE4(0x0D),
+        XDAG_FIELD_RESERVE5(0x0E),
+        XDAG_FIELD_RESERVE6(0x0F);
 
         private static final Map<Integer, FieldType> intToTypeMap = new HashMap<>();
 
@@ -92,7 +97,7 @@ public class XdagField {
 
         private final int cmd;
 
-        private FieldType(int cmd) {
+        FieldType(int cmd) {
             this.cmd = cmd;
         }
 

@@ -23,50 +23,46 @@
  */
 package io.xdag.core;
 
-import io.xdag.crypto.ECKey;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.listener.Listener;
 import io.xdag.utils.ByteArrayWrapper;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, ECKey> pairs, List<Address> to, boolean mining);
+    Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark);
 
     Block getBlockByHash(byte[] hash, boolean isRaw);
 
-    BigInteger getTopDiff();
-
-    BigInteger getPretopDiff();
-
-    boolean hasBlock(byte[] hash);
-
-    byte[] getTop_main_chain();
-
-    long getMainBlockSize();
-
-    long getBlockSize();
-
-    long getOrphanSize();
-
-    long getExtraSize();
-
-    List<Block> getBlockByTime(long starttime, long endtime);
+    Block getBlockByHeight(long height);
 
     void checkNewMain();
+
+    long loadBlockchain(String srcFilePath);
 
     List<Block> listMainBlocks(int count);
 
     List<Block> listMinedBlocks(int count);
 
-    List<byte[]> getAllAccount();
+    Map<ByteArrayWrapper, Integer> getMemOurBlocks();
 
-    Map<ByteArrayWrapper, Integer> getMemAccount();
+    XdagStats getXdagStats();
+    XdagTopStatus getXdagTopStatus();
 
-    ReentrantReadWriteLock getStateLock();
+    long getSupply(long nmain);
 
-    Block getExtraBlock(byte[] hash);
+    List<Block> getBlocksByTime(long starttime, long endtime);
+
+    // TODO ： 补充单元测试
+    // 启动检查主块链线程
+    void startCheckMain();
+
+    // 关闭检查主块链线程
+    void stopCheckMain();
+
+    // 注册监听器
+    void registerListener(Listener listener);
 }

@@ -1,63 +1,228 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="warn" shutdownHook="disable">
 
-  <properties>
-    <property name="Logs_Dir">./logs</property>
-    <property name="Info_File_Name">xdag_info</property>
-    <property name="Error_File_Name">xdag_error</property>
-  </properties>
+    <properties>
+        <property name="Logs_Dir">./logs</property>
+<!--        <property name="Info_File_Name">xdag_info</property>-->
+        <property name="Error_File_Name">xdag_error</property>
+<!--        <property name="Debug_File_Name">xdag_debug</property>-->
+        <property name="Sync_Debug_File_Name">xdag_sync_debug</property>
+        <property name="SyncMgr_Debug_File_Name">xdag_sync_mgr_debug</property>
+        <property name="Chain_Debug_File_Name">xdag_chain_debug</property>
+        <property name="XdagChannel_Debug_File_Name">xdag_channel_debug</property>
+        <property name="XdagChannelMgr_Debug_File_Name">xdag_channel_mgr_debug</property>
+        <property name="Xdag03_File_Name">xdag03_debug</property>
+        <property name="XdagAward_File_Name">xdag_award_debug</property>
+        <property name="XdagPoW_File_Name">xdag_pow_debug</property>
+        <property name="Libp2pNetwork_Name">Libp2pNetwork_debug</property>>
 
-  <Appenders>
+    </properties>
 
-
-    <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-    </Console>
-
-    <File fileName="${Logs_Dir}/${Error_File_Name}.log" name="Error">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-    </File>
-
-
-    <RollingRandomAccessFile name="Info"
-      fileName="${Logs_Dir}/${Info_File_Name}.log"
-      filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">
-      <PatternLayout
-        pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-      <Policies>
-        <TimeBasedTriggeringPolicy interval="1"/>
-      </Policies>
-      <DefaultRolloverStrategy max="20"/>
-    </RollingRandomAccessFile>
+    <Appenders>
 
 
-  </Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <File fileName="${Logs_Dir}/${Error_File_Name}.log" name="Error">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>
 
 
-  <Loggers>
-    <!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
-    <!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
-    <!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
-    <!--    <logger name="io.xdag.consensus.SyncManager" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.net.handler" level="INFO"/>-->
-    <!--        <logger name="io.xdag.core.Block" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
-    <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
+<!--        <RollingRandomAccessFile name="Info"-->
+<!--                                 fileName="${Logs_Dir}/${Info_File_Name}.log"-->
+<!--                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">-->
+<!--            <PatternLayout-->
+<!--                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+<!--            <Policies>-->
+<!--                <TimeBasedTriggeringPolicy interval="1"/>-->
+<!--            </Policies>-->
+<!--            <DefaultRolloverStrategy max="100"/>-->
+<!--        </RollingRandomAccessFile>-->
 
-    <logger name="io.xdag" level="WARN">
-      <AppenderRef ref="Error"/>
-    </logger>
+<!--        <RollingRandomAccessFile name="Debug"-->
+<!--                                 fileName="${Logs_Dir}/${Debug_File_Name}.log"-->
+<!--                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">-->
+<!--            <PatternLayout-->
+<!--                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+<!--            <Policies>-->
+<!--                <TimeBasedTriggeringPolicy interval="1"/>-->
+<!--            </Policies>-->
+<!--            <DefaultRolloverStrategy max="100"/>-->
+<!--        </RollingRandomAccessFile>-->
 
-    <logger name="io.xdag" level="INFO">
-      <AppenderRef ref="Info"/>
-    </logger>
+        <RollingRandomAccessFile name="AwardDebug"
+                                 fileName="${Logs_Dir}/${XdagAward_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagAward_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="PoWDebug"
+                                 fileName="${Logs_Dir}/${XdagPoW_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagPoW_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="Xdag03_Debug"
+                                 fileName="${Logs_Dir}/${Xdag03_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Xdag03_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="XdagChannelMgr_Debug"
+                                 fileName="${Logs_Dir}/${XdagChannelMgr_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagChannelMgr_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="XdagChannel_Debug"
+                                 fileName="${Logs_Dir}/${XdagChannel_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${XdagChannel_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="Chain_Debug"
+                                 fileName="${Logs_Dir}/${Chain_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Chain_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="Sync_Debug"
+                                 fileName="${Logs_Dir}/${Sync_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Sync_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="SyncMgr_Debug"
+                                 fileName="${Logs_Dir}/${SyncMgr_Debug_File_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${SyncMgr_Debug_File_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="Libp2pNetwork"
+                                 fileName="${Logs_Dir}/${Libp2pNetwork_Name}.log"
+                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Libp2pNetwork_Name}-%d{yyyy-MM-dd}.log">
+            <PatternLayout
+                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100"/>
+        </RollingRandomAccessFile>
+
+    </Appenders>
 
 
-    <Root level="INFO">
-    </Root>
+    <Loggers>
+        <!--        <logger name="io.xdag.consensus.XdagPow" level="DEBUG"></logger>-->
+        <!--        <logger name="io.xdag.mine.payment.Payment" level="DEBUG"></logger>-->
+        <!--        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG"></logger>-->
+        <!--    <logger name="io.xdag.consensus.SyncManager" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.mine.manager" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.mine.MinerChannel" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.net.handler" level="INFO"/>-->
+        <!--        <logger name="io.xdag.core.Block" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.cli.Command" level="DEBUG"/>-->
+        <!--        <logger name="io.xdag.db.store.AccountStore" level="DEBUG"/>-->
 
-  </Loggers>
+        <logger name="io.xdag" level="ERROR">
+            <AppenderRef ref="Error"/>
+        </logger>
+
+<!--        <logger name="io.xdag" level="INFO">-->
+<!--            <AppenderRef ref="Info"/>-->
+<!--        </logger>-->
+
+<!--        <logger name="io.xdag.cli" level="DEBUG">-->
+<!--            <AppenderRef ref="Debug"/>-->
+<!--        </logger>-->
+<!--        <logger name="io.xdag" level="DEBUG">-->
+<!--            <AppenderRef ref="Error"/>-->
+<!--        </logger>-->
+
+        <logger name="io.xdag.consensus.XdagSync" level="DEBUG">
+            <AppenderRef ref="Sync_Debug"/>
+        </logger>
+        <logger name="io.xdag.consensus.SyncManager" level="DEBUG">
+            <AppenderRef ref="SyncMgr_Debug"/>
+        </logger>
+        <logger name="io.xdag.net.handler.Xdag03" level="DEBUG">
+            <AppenderRef ref="Debug"/>
+        </logger>
+
+        <logger name="io.xdag.core.BlockchainImpl" level="DEBUG">
+            <AppenderRef ref="Chain_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.net.XdagChannel" level="DEBUG">
+            <AppenderRef ref="XdagChannel_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.net.manager.XdagChannelManager" level="DEBUG">
+            <AppenderRef ref="XdagChannelMgr_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.consensus.XdagPow" level="DEBUG">
+            <AppenderRef ref="PoWDebug"/>
+        </logger>
+
+
+        <logger name="io.xdag.net.handler.Xdag03" level="DEBUG">
+            <AppenderRef ref="Xdag03_Debug"/>
+        </logger>
+
+        <logger name="io.xdag.mine.manager.AwardManagerImpl" level="DEBUG">
+            <AppenderRef ref="AwardDebug"/>
+        </logger>
+
+        <logger name="io.xdag.net.libp2p.Libp2pNetwork" level="DEBUG">
+            <AppenderRef ref="Libp2pNetwork"/>
+        </logger>
+
+        <Root level="INFO">
+        </Root>
+
+    </Loggers>
 </Configuration>

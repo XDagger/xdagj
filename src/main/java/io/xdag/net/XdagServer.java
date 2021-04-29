@@ -61,7 +61,6 @@ public class XdagServer {
             b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
             b.childOption(
                     ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getConnectionTimeout());
-            // b.handler(new LoggingHandler());
             b.childHandler(new XdagChannelInitializer(kernel, true, null));
             log.debug("Listening for incoming connections, address: {}:{} ", ip, port);
             channelFuture = b.bind(ip, port).sync();
@@ -89,7 +88,4 @@ public class XdagServer {
         }
     }
 
-    public boolean isListening() {
-        return listening;
-    }
 }

@@ -23,16 +23,6 @@
  */
 package io.xdag.mine.manager;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-
 import io.xdag.Kernel;
 import io.xdag.consensus.PoW;
 import io.xdag.consensus.Task;
@@ -43,21 +33,34 @@ import io.xdag.net.message.Message;
 import io.xdag.utils.ByteArrayWrapper;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.bouncycastle.util.encoders.Hex;
+
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.*;
 
 @Slf4j
-public class MinerManagerImpl implements MinerManager {
+public class MinerManagerImpl implements MinerManager, Runnable {
     /** 保存活跃的channel */
     protected Map<InetSocketAddress, MinerChannel> activateMinerChannels = new ConcurrentHashMap<>();
 
     /** 根据miner的地址保存的数组 activate 代表的是一个已经注册的矿工 */
     protected Map<ByteArrayWrapper, Miner> activateMiners = new ConcurrentHashMap<>(200);
 
-    private Task currentTask = null;
+    private Task currentTask;
+
+    /**
+     * 存放任务的阻塞队列
+     */
+    private final BlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
+    private Thread t;
+
 
     @Setter
     private PoW poW;
-    private Kernel kernel;
-    private ScheduledExecutorService server = new ScheduledThreadPoolExecutor(3, new BasicThreadFactory.Builder()
+    private final Kernel kernel;
+    private final ScheduledExecutorService server = new ScheduledThreadPoolExecutor(3, new BasicThreadFactory.Builder()
             .namingPattern("MinerManagerThread")
             .daemon(true)
             .build());
@@ -70,9 +73,53 @@ public class MinerManagerImpl implements MinerManager {
         this.kernel = kernel;
     }
 
-    /** 启动 函数 开启遍历和server */
+
+
     @Override
-    public void start() {
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()){
+            try {
+                currentTask = taskQueue.take();
+                log.debug("take a new Task from queue");
+                updateNewTaskandBroadcast();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error(" can not take the task from taskQueue ");
+                break;
+            }
+        }
+    }
+
+    @Override
+    public synchronized void start() {
+        log.debug("MinerManager start!!!");
+        init();
+        if (t == null){
+            t = new Thread(this, "MinerManager");
+            t.start();
+        }
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (t != null) {
+            try {
+                t.interrupt();
+                t.join();
+            }catch (InterruptedException e) {
+                log.error("Failed to stop MinerManager");
+                Thread.currentThread().interrupt();
+            }
+            t = null;
+            close();
+        }
+    }
+
+
+
+    /** 启动 函数 开启遍历和server */
+    public void init() {
+        log.debug("start futulre");
         updateFuture = server.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
         cleanChannelFuture = server.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = server.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
@@ -82,7 +129,7 @@ public class MinerManagerImpl implements MinerManager {
         try {
             for (MinerChannel channel : activateMinerChannels.values()) {
                 if (channel.isActive()) {
-                    // log.debug("给channel发送余额");
+                    //log.debug("给channel发送余额");
                     channel.sendBalance();
                 }
             }
@@ -99,7 +146,7 @@ public class MinerManagerImpl implements MinerManager {
         activateMinerChannels.put(channel.getInetAddress(), channel);
     }
 
-    @Override
+
     public void close() {
         if (updateFuture != null) {
             updateFuture.cancel(true);
@@ -110,9 +157,7 @@ public class MinerManagerImpl implements MinerManager {
         if (cleanMinerFuture != null) {
             cleanMinerFuture.cancel(true);
         }
-        if (server != null) {
-            server.shutdown();
-        }
+        server.shutdown();
         closeMiners();
     }
 
@@ -125,6 +170,7 @@ public class MinerManagerImpl implements MinerManager {
 
     @Override
     public void removeUnactivateChannel(MinerChannel channel) {
+
         if (!channel.isActive()) {
             log.debug("remove a channel");
             activateMinerChannels.remove(channel.getInetAddress(), channel);
@@ -133,6 +179,7 @@ public class MinerManagerImpl implements MinerManager {
             miner.subChannelCounts();
             kernel.getChannelsAccount().getAndDecrement();
             if (miner.getConnChannelCounts() == 0) {
+                log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ",Hex.toHexString(miner.getAddressHash()));
                 miner.setMinerStates(MinerStates.MINER_ARCHIVE);
             }
         }
@@ -149,23 +196,32 @@ public class MinerManagerImpl implements MinerManager {
     public void cleanUnactivateMiner() {
         for (Miner miner : activateMiners.values()) {
             if (miner.canRemove()) {
-                log.debug("remove a miner");
+                log.debug("remove a miner,miner address=[{}]", Hex.toHexString(miner.getAddressHash()));
                 activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash()));
             }
         }
     }
 
-    /** 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况 */
+
     @Override
-    public void updateNewTaskandBroadcast(Task task) {
-        currentTask = task;
+    public void updateTask(Task task) {
+        if (!taskQueue.offer(task)) {
+            System.out.println("Failed to add a task to the queue!");
+            log.debug("Failed to add a task to the queue!");
+        }
+    }
+
+    @Override
+    public void addActiveMiner(Miner miner) {
+        activateMiners.put(new ByteArrayWrapper(miner.getAddressHash()), miner);
+    }
+
+    /** 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况 */
+    public void updateNewTaskandBroadcast() {
         for (MinerChannel channel : activateMinerChannels.values()) {
             if (channel.isActive()) {
 
                 channel.setTaskIndex(currentTask.getTaskIndex());
-                if (channel.getMiner().getTaskTime() < currentTask.getTaskTime()) {
-                    channel.getMiner().setTaskTime(currentTask.getTaskTime());
-                }
                 channel.sendTaskToMiner(currentTask.getTask());
                 channel.setSharesCounts(0);
             }
@@ -179,7 +235,9 @@ public class MinerManagerImpl implements MinerManager {
 
     @Override
     public void onNewShare(MinerChannel channel, Message msg) {
-        if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
+        if (currentTask == null){
+            System.out.println("currentTask 为空");
+        } else if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
             poW.receiveNewShare(channel, msg);
         }
     }

@@ -31,59 +31,58 @@ import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 import java.math.BigInteger;
 import java.util.zip.CRC32;
 
-import org.spongycastle.util.encoders.Hex;
+import io.xdag.core.XdagStats;
 
 import io.xdag.utils.BytesUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractMessage extends Message {
     @Getter
     @Setter
     protected long starttime;
-    
+
     @Getter
     @Setter
     protected long endtime;
-    
+
     @Getter
     @Setter
     protected long random;
-    
+
     @Getter
     @Setter
     protected byte[] hash;
-    
+
     /** 获取对方节点的netstatus */
     @Setter
-    protected NetStatus netStatus;
+    protected XdagStats xdagStats;
     /** 获取对方节点的netdb */
     protected NetDB netDB;
     protected XdagMessageCodes codes;
 
     public AbstractMessage(
-            XdagMessageCodes type, long starttime, long endtime, long random, NetStatus netStatus) {
+            XdagMessageCodes type, long starttime, long endtime, long random, XdagStats xdagStats) {
         parsed = true;
         this.starttime = starttime;
         this.endtime = endtime;
         this.random = random;
-        this.netStatus = netStatus;
+        this.xdagStats = xdagStats;
         this.codes = type;
         encode();
     }
 
-    public AbstractMessage(
-            XdagMessageCodes type, long starttime, long endtime, byte[] hash, NetStatus netStatus) {
+    public AbstractMessage(XdagMessageCodes type, long starttime, long endtime, byte[] hash, XdagStats xdagStats) {
         parsed = true;
         this.starttime = starttime;
         this.endtime = endtime;
         this.hash = hash;
-        this.netStatus = netStatus;
+        this.xdagStats = xdagStats;
         this.codes = type;
         encode();
-        updateCrc();
     }
 
     public AbstractMessage(byte[] data) {
@@ -91,8 +90,8 @@ public abstract class AbstractMessage extends Message {
         parse();
     }
 
-    public NetStatus getNetStatus() {
-        return netStatus;
+    public XdagStats getXdagStats() {
+        return xdagStats;
     }
 
     public NetDB getNetDB() {
@@ -111,7 +110,7 @@ public abstract class AbstractMessage extends Message {
         long totalnmains = BytesUtils.bytesToLong(encoded, 120, true);
         int totalnhosts = BytesUtils.bytesToInt(encoded, 132, true);
         long maintime = BytesUtils.bytesToLong(encoded, 136, true);
-        netStatus = new NetStatus(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
+        xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
 
         // test netdb
         int length = getCommand() == SUMS_REPLY ? 6 : 14;
@@ -130,12 +129,12 @@ public abstract class AbstractMessage extends Message {
         long transportheader = (ttl << 8) | DNET_PKT_XDAG | (XDAG_BLOCK_SIZE << 16);
         long type = (codes.asByte() << 4) | XDAG_FIELD_NONCE.asByte();
 
-        BigInteger diff = netStatus.difficulty;
-        BigInteger maxDiff = netStatus.maxdifficulty;
-        long nmain = netStatus.nmain;
-        long totalMainNumber = netStatus.totalnmain;
-        long nblocks = netStatus.nblocks;
-        long totalBlockNumber = netStatus.totalnblocks;
+        BigInteger diff = xdagStats.difficulty;
+        BigInteger maxDiff = xdagStats.maxdifficulty;
+        long nmain = xdagStats.nmain;
+        long totalMainNumber = Math.max(xdagStats.totalnmain,nmain);
+        long nblocks = xdagStats.nblocks;
+        long totalBlockNumber = xdagStats.totalnblocks;
 
         // TODO：后续根据ip替换
         String tmp = "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
@@ -170,6 +169,7 @@ public abstract class AbstractMessage extends Message {
     public void updateCrc() {
         CRC32 crc32 = new CRC32();
         crc32.update(encoded, 0, 512);
-        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
+        System.arraycopy(BytesUtils.longToBytes(crc32.getValue(), true), 0, encoded, 4, 4);
     }
+
 }

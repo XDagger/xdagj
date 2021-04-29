@@ -23,10 +23,11 @@
  */
 package io.xdag.utils;
 
+import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.io.DigestOutputStream;
+import org.bouncycastle.util.Arrays;
+
 import java.io.IOException;
-import org.spongycastle.crypto.digests.SHA256Digest;
-import org.spongycastle.crypto.io.DigestOutputStream;
-import org.spongycastle.util.Arrays;
 
 public class XdagSha256Digest {
     private SHA256Digest sha256Digest;

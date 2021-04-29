@@ -24,28 +24,47 @@
 package io.xdag.config;
 
 import cn.hutool.setting.Setting;
-import io.xdag.cli.ShellCommand;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
-import java.io.InputStream;
 import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+@Slf4j
 @Data
-public class Config {
-    public static boolean MainNet = false;
+public class Config implements Serializable {
+    public static boolean MAINNET = false;
+    /** 配置存储root */
+    public static String root = MAINNET ? "mainnet" : "testnet";
     public static final String WHITELIST_URL_TESTNET = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
     public static final String WHITELIST_URL = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
-    /** 配置存储root */
-    public static String root = MainNet ? "./mainnet" : "./testnet";
+    /** 保存得密钥文件 */
+    public static final String DNET_KEY_FILE = Config.MAINNET?Config.root + "/dnet_key.dat":Config.root + "/dnet_key.dat";
+    /** 钱包文件 */
+    public static final String WALLET_KEY_FILE = Config.MAINNET?Config.root + "/wallet.dat":Config.root + "/wallet-testnet.dat";
+
+    /** bip44 wallet file */
+    public static final String BIP44_WALLET_KEYSTORE_FILE = Config.MAINNET?Config.root + "/keystore":Config.root + "/keystore-testnet";
+
     public final int MAX_CHANNELS = 1024;
-    private final int connectionTimeout = 10;
-    private final int channelReadTimeout = 10;
+    private final int connectionTimeout = 10000;
+    private final int channelReadTimeout = 10000;
     /** 同一个channel 某一个任务种最多允许发share的次数 */
     private final int maxShareCountPerChannel = 20;
     private final int storeMaxOpenFiles = 1024;
     private final int storeMaxThreads = 1;
+    /** telnet监听地址 */
+    private String telnetIp;
+    private int telnetPort;
 
     /** 配置节点监听地址 */
     private String nodeIp;
@@ -54,6 +73,8 @@ public class Config {
     private String poolIp;
     /** 矿池的端口 */
     private int poolPort;
+    /** Pool Tag */
+    private String poolTag;
     /** 一个矿池最多允许接入的矿工数量 */
     private int globalMinerLimit;
     /** 允许最大的接入连接 g_max_connections_count */
@@ -62,6 +83,10 @@ public class Config {
     private int maxConnectPerIp;
     /** 拥有相同地址块的矿工最多允许同时在线的数量 g_connections_per_miner_limit */
     private int maxMinerPerAccount;
+    public boolean isbootnode ;
+    public int discoveryPort;
+    private int libp2pPort;
+    private String Privkey;
     private boolean nodeDiscoveryEnabled = true;
     private boolean nodeSyncEnabled = true;
     private int nodeMaxActive = 100;
@@ -89,6 +114,25 @@ public class Config {
     private int TTL = 5;
     private byte[] dnetKeyBytes = new byte[2048];
     private DnetKeys xKeys;
+
+    private List<String> whiteIPList = new ArrayList<>(){};
+
+    /** 等待超过10个epoch默认启动挖矿 **/
+    public static long WAIT_EPOCH = 10;
+
+    /** 奖励支付的周期**/
+    public static int AWARD_EPOCH = 0xf;
+
+    /** admin for telnet **/
+    @Getter
+    public String password;
+
+    // BIP32
+    public static final int BIP32_HEADER_P2PKH_PUB= 0x0488b21e; // The 4 byte header that serializes in base58 to "xpub".
+    public static final int BIP32_HEADER_P2PKH_PRIV = 0x0488ade4; // The 4 byte header that serializes in base58 to "xprv"
+
+    public int dumpedPrivateKeyHeader = 128;
+    public int addressHeader = 0;
 
     public Config() {
         getSetting();
@@ -119,7 +163,7 @@ public class Config {
     }
 
     public String getWhiteListDir() {
-        if (MainNet) {
+        if (MAINNET) {
             return whiteListDir;
         } else {
             return whiteListDirTest;
@@ -138,10 +182,6 @@ public class Config {
                 break;
             case "-c":
                 break;
-            case "-h":
-                ShellCommand.printHelp();
-                System.exit(0);
-                break;
             case "-m":
                 i++;
                 // todo 设置挖矿的线程数
@@ -151,7 +191,7 @@ public class Config {
                 Config.root = args[i];
                 break;
             case "-t":
-                Config.MainNet = false;
+                Config.MAINNET = false;
                 break;
             case "-p":
                 i++;
@@ -167,6 +207,9 @@ public class Config {
             case "-s":
                 i++;
                 // todo bind the host for us
+                break;
+            case "-tag":
+                config.poolTag = StringUtils.substring(args[i+1], 0, 31);
                 break;
             default:
                 System.out.println("Illegal instruction");
@@ -184,7 +227,6 @@ public class Config {
     public void changePoolPara(Config config, String para) {
         String[] args = para.split(":");
         if (args.length != 9) {
-            ShellCommand.printHelp();
             throw new IllegalArgumentException("Illegal instruction");
         }
         config.setPoolIp(args[0]);
@@ -201,7 +243,7 @@ public class Config {
     /** 设置存储的路径 */
     public void setDir() {
         // 配置存储root
-        root = Config.MainNet ? "./mainnet" : "./testnet";
+        root = Config.MAINNET ? "./mainnet" : "./testnet";
         storeDir = root + "/rocksdb/xdagdb";
         storeBackupDir = root + "/rocksdb/xdagdb/backupdata";
         whiteListDirTest = root + "/netdb-white-testnet.txt";
@@ -211,25 +253,42 @@ public class Config {
     }
 
     public void getSetting() {
-        // 获取对应的配置文件以及默认组
-        Setting setting = new Setting("conf.setting");
+        Setting setting = new Setting("xdag.config");
         setting = setting.getSetting("default");
+
+        telnetIp = setting.getStr("telnetIp");
+        telnetPort = setting.getInt("telnetPort");
 
         nodeIp = setting.getStr("nodeIp");
         nodePort = setting.getInt("nodePort");
+
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
 
-        // 获取矿池奖励的分配比例
+        libp2pPort = setting.getInt("libp2pPort");
+        isbootnode = setting.getBool("isbootnode");
+
+        discoveryPort = setting.getInt("discoveryPort");
+
+        Privkey = setting.getStr("libp2pPrivkey");
+        poolTag = setting.getOrDefault("poolTag", "XdagJ");
+
         poolRation = setting.getInt("poolRation");
         rewardRation = setting.getInt("rewardRation");
         fundRation = setting.getInt("fundRation");
         directRation = setting.getInt("directRation");
 
-        // 矿池的限制
         globalMinerLimit = setting.getInt("globalMinerLimit");
         globalMinerChannelLimit = setting.getInt("globalMinerChannelLimit");
         maxConnectPerIp = setting.getInt("maxConnectPerIp");
         maxMinerPerAccount = setting.getInt("maxMinerPerAccount");
+
+        password = setting.getStr("password");
+
+        String[] list = setting.getStrings("whiteIPs");
+        if (list != null) {
+            log.debug("{} IP access", list.length);
+            whiteIPList.addAll(Arrays.asList(list));
+        }
     }
 }

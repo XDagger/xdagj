@@ -23,13 +23,15 @@
  */
 package io.xdag.utils;
 
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.NumberFormat;
 import java.util.zip.CRC32;
-import org.spongycastle.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 public class BasicUtils {
     // 过去4小时产出的块的数量
@@ -113,6 +115,13 @@ public class BasicUtils {
         input = input * Math.pow(2, 32);
         double tmp = Math.ceil(input);
         return (long) (res + tmp);
+    }
+
+    public static String formatDouble(double d) {
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMaximumFractionDigits(9);
+        nf.setGroupingUsed(false);
+        return nf.format(d);
     }
 
     /**

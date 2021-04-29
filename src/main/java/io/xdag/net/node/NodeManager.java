@@ -23,36 +23,23 @@
  */
 package io.xdag.net.node;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nonnull;
-
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-
 import io.xdag.Kernel;
 import io.xdag.config.Config;
-import io.xdag.net.XdagChannel;
+import io.xdag.net.Channel;
 import io.xdag.net.XdagClient;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.annotation.Nonnull;
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class NodeManager {
@@ -85,7 +72,7 @@ public class NodeManager {
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
         this.client = kernel.getClient();
-        this.channelMgr = kernel.getChannelManager();
+        this.channelMgr = kernel.getChannelMgr();
         this.netDB = kernel.getNetDB();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
         this.config = kernel.getConfig();
@@ -103,6 +90,7 @@ public class NodeManager {
             // every 100 seconds, delayed by 5 seconds (public IP lookup)
             fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
+//            connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,1,5,TimeUnit.SECONDS);
             isRunning = true;
             log.debug("Node manager started");
         }
@@ -112,7 +100,6 @@ public class NodeManager {
         if (isRunning) {
             connectFuture.cancel(true);
             fetchFuture.cancel(false);
-
             isRunning = false;
             exec.shutdown();
             log.debug("Node manager stop...");
@@ -142,6 +129,8 @@ public class NodeManager {
         }
     }
 
+
+
     /** from net update seed nodes */
     protected void doFetch() {
         log.debug("Do fetch");
@@ -152,6 +141,8 @@ public class NodeManager {
         addNodes(getSeedNodes(netDBManager.getWhiteDB()));
         // 从netdb获取新节点
         addNodes(getSeedNodes(netDBManager.getNetDB()));
+
+
         log.debug("node size:" + deque.size());
     }
 
@@ -164,6 +155,7 @@ public class NodeManager {
     }
 
     public void doConnect() {
+
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
         Node node;
         while ((node = deque.pollFirst()) != null && channelMgr.size() < config.getMAX_CHANNELS()) {
@@ -174,13 +166,14 @@ public class NodeManager {
                     && !(Objects.equals(node.getHost(), client.getNode().getHost())
                             && node.getPort() == client.getNode().getPort())
                     && !activeAddress.contains(node.getAddress())
-                    && (lastCon == null || lastCon + RECONNECT_WAIT < now)) {
+                    && (lastCon == null || lastCon + RECONNECT_WAIT < now )) {
                 XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, node);
                 client.connect(node.getHost(), node.getPort(), initializer);
                 lastConnect.put(node, now);
                 break;
             }
         }
+
     }
 
     public void doConnect(String ip, int port) {
@@ -191,18 +184,20 @@ public class NodeManager {
         }
     }
 
+
     public Set<Node> getNewNode() {
         return netDB.getIPList();
     }
 
     public Map<Node, Long> getActiveNode() {
         Map<Node, Long> nodes = new HashMap<>();
-        List<XdagChannel> activeAddress = channelMgr.getActiveChannels();
-        for (XdagChannel address : activeAddress) {
+        List<Channel> activeAddress = channelMgr.getActiveChannels();
+        for (Channel address : activeAddress) {
             Node node = address.getNode();
             Long time = lastConnect.getIfPresent(node);
             nodes.put(node, time);
         }
         return nodes;
     }
+
 }

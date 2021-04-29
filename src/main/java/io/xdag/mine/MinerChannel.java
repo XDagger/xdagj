@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.xdag.mine.miner.MinerStates;
 import org.apache.commons.codec.binary.Hex;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -60,14 +61,15 @@ import lombok.extern.slf4j.Slf4j;
 public class MinerChannel {
     /** 对应的是服务端的还是客户端的 */
     private final boolean isServer;
-    private Kernel kernel;
-    private Config config;
+    private final Kernel kernel;
+    private final Config config;
     /** 这个channel是否是活跃的 仅当连接成功后变为true */
     @Getter
     @Setter
     private boolean isActive;
     /** 记录对应的矿工对象 */
     @Getter
+    @Setter
     private Miner miner;
     /** 当前接受的最近的任务编号 */
     @Getter
@@ -93,7 +95,6 @@ public class MinerChannel {
     @Getter
     @Setter
     private byte[] accountAddressHash;
-    private byte[] accountAddressHashLow;
     /** 保存上一轮的share */
     @Getter
     @Setter
@@ -104,17 +105,18 @@ public class MinerChannel {
     private byte[] lastMinHash = new byte[32];
     /** 记录prevDiff的次数 实际上类似于进行了多少次计算 */
     @Getter
+    @Setter
     private int prevDiffCounts;
 
     @Setter
     private ChannelHandlerContext ctx;
 
-    private BlockStore blockStore;
+    private final BlockStore blockStore;
 
-    private MinerManager minerManager;
+    private final MinerManager minerManager;
 
     /** 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs */
-    private List<Double> maxDiffs = new CopyOnWriteArrayList<>();
+    private final List<Double> maxDiffs = new CopyOnWriteArrayList<>();
 
     /** 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个 */
     @Getter
@@ -134,13 +136,16 @@ public class MinerChannel {
     @Setter
     private byte[] minHash;
     /** 记录的是出入站的消息 */
-    private StatHandle inBound;
-    private StatHandle outBound;
+    private final StatHandle inBound;
+    private final StatHandle outBound;
     /** 各种处理器* */
     private MinerHandShakeHandler minerHandShakeHandler;
     private MinerMessageHandler minerMessageHandler;
     private Miner03 miner03;
     private ConnectionLimitHandler connectionLimitHandler;
+
+    @Getter
+    private boolean isMill = false;
 
     /** 初始化 同时需要判断是服务器端还是客户端 */
     public MinerChannel(Kernel kernel, NioSocketChannel socket, boolean isServer) {
@@ -212,7 +217,7 @@ public class MinerChannel {
      *            版本号
      */
     public void activateHadnler(ChannelHandlerContext ctx, XdagVersion version) {
-        log.debug("激活其他处理器");
+        log.info("activate handler");
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
@@ -221,7 +226,6 @@ public class MinerChannel {
 
     public boolean initMiner(byte[] accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        this.accountAddressHashLow = BytesUtils.fixBytes(accountAddressHash, 8, 24);
         log.debug("init a Miner:" + Hex.encodeHexString(accountAddressHash));
         // 判断这个矿工是否已经存在了
         if (minerManager.getActivateMiners().containsKey(new ByteArrayWrapper(accountAddressHash))) {
@@ -235,7 +239,7 @@ public class MinerChannel {
                 this.miner.setMinerStates(MINER_ACTIVE);
                 return true;
             } else {
-                log.debug("同一个矿工连接了太多啦");
+                log.debug("同一个矿工连接了太多");
                 return false;
             }
         } else {
@@ -289,13 +293,16 @@ public class MinerChannel {
 
     /** 矿池发送余额给矿工 */
     public void sendBalance() {
-        Block block = blockStore.getBlockByHash(accountAddressHashLow, false);
+        byte[] hashlow = new byte[32];
+        System.arraycopy(accountAddressHash,8,hashlow,8,24);
+        Block block = blockStore.getBlockByHash(hashlow, false);
         if (block == null) {
+            log.debug("Can't found block,{}",Hex.encodeHex(hashlow));
             return;
         }
-        long amount = block.getAmount();
+        long amount = block.getInfo().getAmount();
         byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false),
-                BytesUtils.subArray(accountAddressHashLow, 8, 24));
+                BytesUtils.subArray(accountAddressHash, 8, 24));
         log.debug("update miner balance {}", Hex.encodeHexString(data));
         miner03.sendMessage(data);
     }
@@ -316,8 +323,8 @@ public class MinerChannel {
         this.prevDiffCounts++;
     }
 
-    public void setMaxDiffs(int index, double diff) {
-        maxDiffs.set(index, diff);
+    public void addMaxDiffs(int index, double diff) {
+        maxDiffs.add(index, diff);
     }
 
     public double getMaxDiffs(int index) {
@@ -357,5 +364,15 @@ public class MinerChannel {
         public String toString() {
             return count.toString();
         }
+    }
+
+
+    public void updateMiner(Miner miner) {
+        this.miner = miner;
+        this.accountAddressHash = miner.getAddressHash();
+        miner.putChannel(this.getInetAddress(), this);
+        miner.addChannelCounts(1);
+        miner.setMinerStates(MinerStates.MINER_ACTIVE);
+        isMill = true;
     }
 }

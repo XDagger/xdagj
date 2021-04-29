@@ -27,12 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public enum XdagVersion {
-    V03((byte) 03);
+    V03((byte) 3);
 
     public static final byte LOWER = V03.getCode();
     public static final byte UPPER = V03.getCode();
 
-    private byte code;
+    private final byte code;
 
     XdagVersion(byte code) {
         this.code = code;
@@ -66,11 +66,4 @@ public enum XdagVersion {
         return code;
     }
 
-    public boolean isCompatible(XdagVersion version) {
-        if (version.getCode() >= V03.getCode()) {
-            return this.getCode() >= V03.getCode();
-        } else {
-            return this.getCode() < V03.getCode();
-        }
-    }
 }

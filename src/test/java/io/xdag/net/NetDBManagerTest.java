@@ -23,10 +23,9 @@
  */
 package io.xdag.net;
 
-import org.junit.Before;
-
 import io.xdag.config.Config;
 import io.xdag.crypto.jni.Native;
+import org.junit.Before;
 
 public class NetDBManagerTest {
     Config config = new Config();

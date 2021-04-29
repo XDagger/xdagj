@@ -24,11 +24,12 @@
 package io.xdag.utils;
 
 import io.xdag.crypto.jni.Native;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import org.spongycastle.util.encoders.Hex;
 
 public class BytesUtils {
 
@@ -117,30 +118,13 @@ public class BytesUtils {
         return bytes;
     }
 
-    public static BigInteger bytesToBigInteger(byte[] bb) {
-        return (bb == null || bb.length == 0) ? BigInteger.ZERO : new BigInteger(1, bb);
-    }
-
     public static BigInteger bytesToBigInteger(byte[] input, int offset, boolean littleEndian) {
         byte[] bb = new byte[16];
         System.arraycopy(input, offset, bb, 0, 16);
         if (littleEndian) {
             arrayReverse(bb);
         }
-        return bytesToBigInteger(bb);
-    }
-
-    public static byte[] bigIntegerToBytesSigned(BigInteger b, int numBytes) {
-        if (b == null) {
-            return null;
-        }
-        byte[] bytes = new byte[numBytes];
-        Arrays.fill(bytes, b.signum() < 0 ? (byte) 0xFF : 0x00);
-        byte[] biBytes = b.toByteArray();
-        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
-        int length = Math.min(biBytes.length, numBytes);
-        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
-        return bytes;
+        return Numeric.toBigInt(bb);
     }
 
     /**
@@ -169,7 +153,6 @@ public class BytesUtils {
         byte[] res = new byte[1 + b2.length];
         res[0] = b1;
         System.arraycopy(b2, 0, res, 1, b2.length);
-
         return res;
     }
 
@@ -314,9 +297,9 @@ public class BytesUtils {
         byte[] data = new byte[8];
         System.arraycopy(input, offset, data, 0, 8);
         if (littleEndian) {
-            data = org.spongycastle.util.Arrays.reverse(data);
+            data = Arrays.reverse(data);
         }
-        return BytesUtils.bytesToBigInteger(data).doubleValue();
+        return Numeric.toBigInt(data).doubleValue();
     }
 
     public String byteToBinaryString(byte b) {

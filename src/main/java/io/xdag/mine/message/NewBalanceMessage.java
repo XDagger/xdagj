@@ -31,7 +31,7 @@ import io.xdag.net.message.XdagMessageCodes;
 
 public class NewBalanceMessage extends Message {
 
-    private XdagField xdagField;
+    private final XdagField xdagField;
 
     public NewBalanceMessage(byte[] encoded) {
         super(encoded);

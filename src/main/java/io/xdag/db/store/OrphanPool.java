@@ -26,14 +26,13 @@ package io.xdag.db.store;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.spongycastle.util.encoders.Hex;
-
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class OrphanPool {
@@ -41,7 +40,7 @@ public class OrphanPool {
     /** size key */
     private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
     // <hash,nexthash>
-    private KVSource<byte[], byte[]> orphanSource;
+    private final KVSource<byte[], byte[]> orphanSource;
 
     public OrphanPool(KVSource<byte[], byte[]> orphan) {
         this.orphanSource = orphan;
@@ -59,7 +58,7 @@ public class OrphanPool {
         this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
     }
 
-    public List<Address> getOrphan(long num) {
+    public List<Address> getOrphan(long num, long sendtime) {
         List<Address> res = new ArrayList<>();
         if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
             return null;
@@ -67,28 +66,34 @@ public class OrphanPool {
             long orphanSize = getOrphanSize();
             long addNum = Math.min(orphanSize, num);
             byte[] key = BytesUtils.of(ORPHAN_PREFEX);
-            List<byte[]> ans = orphanSource.prefixKeyLookup(key, key.length);
+            List<byte[]> ans = orphanSource.prefixKeyLookup(key);
             for (byte[] an : ans) {
                 if (addNum == 0) {
                     break;
                 }
-                // TODO:判断时间
-                addNum--;
-                res.add(new Address(BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+                // TODO:判断时间，这里出现过orphanSource获取key时为空的情况
+                if (orphanSource.get(an)==null){
+                    continue;
+                }
+                long time = BytesUtils.bytesToLong(orphanSource.get(an),0,true);
+                if (time <= sendtime) {
+                    addNum--;
+                    res.add(new Address(BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+                }
             }
             return res;
         }
     }
 
-    public synchronized void deleteByHash(byte[] hashlow) {
+    public void deleteByHash(byte[] hashlow) {
         log.debug("deleteByhash");
         orphanSource.delete(BytesUtils.merge(ORPHAN_PREFEX, hashlow));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentsize - 1, false));
     }
 
-    public synchronized void addOrphan(Block block) {
-        orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), new byte[0]);
+    public void addOrphan(Block block) {
+        orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), BytesUtils.longToBytes(block.getTimestamp(),true));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         log.debug("orphan current size:" + currentsize);
         log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
@@ -103,9 +108,6 @@ public class OrphanPool {
     }
 
     public boolean containsKey(byte[] hashlow) {
-        if (orphanSource.get(BytesUtils.merge(ORPHAN_PREFEX, hashlow)) != null) {
-            return true;
-        }
-        return false;
+        return orphanSource.get(BytesUtils.merge(ORPHAN_PREFEX, hashlow)) != null;
     }
 }

@@ -51,5 +51,4 @@ public interface PoW {
      */
     void receiveNewShare(MinerChannel channel, Message msg);
 
-    void receiveNewPretop(byte[] pretop);
 }
