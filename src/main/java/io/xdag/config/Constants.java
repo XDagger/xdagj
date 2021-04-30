@@ -25,13 +25,9 @@ package io.xdag.config;
 
 import com.google.common.primitives.UnsignedLong;
 
-import static io.xdag.config.Config.MAINNET;
-
 public class Constants {
     public static final long MAIN_CHAIN_PERIOD = 64<<10;
-    public static final long XDAG_TEST_ERA = 0x16900000000L;
-    public static final long XDAG_MAIN_ERA = 0x16940000000L;
-    public static final long XDAG_ERA = MAINNET ? XDAG_MAIN_ERA : XDAG_TEST_ERA;
+
     /** setmain设置区块为主块时标志该位 */
     public static final byte BI_MAIN = 0x01;
     /** 跟BI_MAIN差不多 不过BI_MAIN是确定的 BI_MAIN_CHAIN是还未确定的 */
@@ -56,10 +52,5 @@ public class Constants {
     public static final String FUND_ADDRESS = "FQglVQtb60vQv2DOWEUL7yh3smtj7g1s";
     /** 每一轮的确认数是16 */
     public static final int CONFIRMATIONS_COUNT = 16;
-    /** Apollo */
     public static final int MAIN_BIG_PERIOD_LOG = 21;
-    public static final long MAIN_APOLLO_HEIGHT = 1017323;
-    public static final long MAIN_APOLLO_TESTNET_HEIGHT = 196250;
-    public static final long MAIN_START_AMOUNT = UnsignedLong.fromLongBits(1L << 42).longValue();
-    public static final long MAIN_APOLLO_AMOUNT = UnsignedLong.fromLongBits(1L << 39).longValue();
 }

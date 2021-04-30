@@ -160,7 +160,7 @@ public class NodeManager {
     /** from net update seed nodes */
     protected void doFetch() {
         log.debug("Do fetch");
-        if (config.isEnableRefresh()) {
+        if (config.getNodeSpec().enableRefresh()) {
             netDBManager.refresh();
         }
         // 从白名单获得新节点
@@ -184,7 +184,7 @@ public class NodeManager {
 
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
         Node node;
-        while ((node = deque.pollFirst()) != null && channelMgr.size() < config.getMAX_CHANNELS()) {
+        while ((node = deque.pollFirst()) != null && channelMgr.size() < config.getNodeSpec().getMaxConnections()) {
             Long lastCon = lastConnect.getIfPresent(node);
             long now = System.currentTimeMillis();
 

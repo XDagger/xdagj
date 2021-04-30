@@ -39,14 +39,12 @@ import org.apache.commons.codec.binary.Hex;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
-    private final Config config;
     private final XdagChannel channel;
     private final Kernel kernel;
     private boolean isServer;
 
-    public XdagHandshakeHandler(Kernel kernel, Config config, XdagChannel channel) {
+    public XdagHandshakeHandler(Kernel kernel, XdagChannel channel) {
         this.kernel = kernel;
-        this.config = config;
         this.channel = channel;
     }
 
@@ -139,6 +137,6 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
     }
 
     public boolean checkDnetPubkey(byte[] pubkey) {
-        return Arrays.equals(config.getXKeys().pub, pubkey);
+        return Arrays.equals(kernel.getConfig().getNodeSpec().getXKeys().pub, pubkey);
     }
 }

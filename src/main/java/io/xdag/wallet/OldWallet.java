@@ -46,10 +46,12 @@ public class OldWallet {
     private final List<KeyInternalItem> keyLists = new ArrayList<>();
     private KeyInternalItem defKey;
     private int keysNum = 0;
+    private Config config;
 
 //    @Override
     public int init(Config config) throws Exception {
-        File dnetDatFile = new File(Config.DNET_KEY_FILE);
+        this.config = config;
+        File dnetDatFile = new File(config.getNodeSpec().getDnetKeyFile());
         Native.dfslib_random_init();
         Native.crc_init();
         boolean fileNotExist = !dnetDatFile.exists() || (dnetDatFile.length() == 0);
@@ -62,7 +64,7 @@ public class OldWallet {
         if (fileNotExist) {
             // 文件不存在 创建
             byte[] dnetKeyBytes = Native.general_dnet_key(pair.getLeft(), pair.getRight());
-            config.setDnetKeyBytes(dnetKeyBytes);
+            config.getNodeSpec().setDnetKeyBytes(dnetKeyBytes);
             FileOutputStream fileOutputStream = new FileOutputStream(dnetDatFile);
             IOUtils.write(dnetKeyBytes, fileOutputStream);
             fileOutputStream.close();
@@ -74,7 +76,7 @@ public class OldWallet {
             if (res < 0) {
                 return res;
             }
-            config.setDnetKeyBytes(dnetKeyBytes);
+            config.getNodeSpec().setDnetKeyBytes(dnetKeyBytes);
         }
         pasreWalletDat();
         return 0;
@@ -102,7 +104,7 @@ public class OldWallet {
 
     private void addKey(BigInteger priv)  {
         if (priv == null) {
-            File walletDatFile = new File(Config.WALLET_KEY_FILE);
+            File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
             ECKeyPair ecKey = Keys.createEcKeyPair();
 
             // 奇偶 true为偶 false为奇
@@ -163,7 +165,7 @@ public class OldWallet {
     }
 
     private void pasreWalletDat() throws Exception {
-        File walletDatFile = new File(Config.WALLET_KEY_FILE);
+        File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
         if (!walletDatFile.exists() || walletDatFile.length() == 0) {
             // if wallet.dat not exist create it
             ECKeyPair ecKey = Keys.createEcKeyPair();

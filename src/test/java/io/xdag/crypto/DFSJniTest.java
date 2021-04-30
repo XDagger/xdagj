@@ -24,6 +24,7 @@
 package io.xdag.crypto;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.jni.Native;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -37,7 +38,7 @@ public class DFSJniTest {
 
     @Before
     public void setUp() throws Exception {
-        config = new Config();
+        config = new DevnetConfig();
         config.initKeys();
     }
 

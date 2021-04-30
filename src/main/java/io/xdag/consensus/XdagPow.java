@@ -53,7 +53,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 
 @Slf4j
@@ -284,7 +283,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                 generateBlock.setNonce(minShare);
 
                 //myron
-                int index = (int) ((currentTask.getTaskTime() >> 16) & AWARD_EPOCH);
+                int index = (int) ((currentTask.getTaskTime() >> 16) & kernel.getConfig().getPoolSpec().getAwardEpoch());
                 // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
                 minShares.set(index, minShare);
                 blockHashs.set(index, generateBlock.recalcHash());
@@ -295,7 +294,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             }
             //update miner state
             MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
-            MinerCalculate.calculateNopaidShares(channel, hash, currentTask.getTaskTime());
+            MinerCalculate.calculateNopaidShares(kernel.getConfig(), channel, hash, currentTask.getTaskTime());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
@@ -309,7 +308,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
             awardManager.addAwardBlock(minShare.clone(), generateBlock.getHash().clone(),
                     generateBlock.getTimestamp());
-            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getTTL());
+            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())), kernel.getConfig().getNodeSpec().getTTL());
 
             broadcaster.broadcast(bw);
         }

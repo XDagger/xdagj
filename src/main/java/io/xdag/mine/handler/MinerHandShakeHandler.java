@@ -145,7 +145,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     }
 
     public ImportResult tryToConnect(Block addressBlock) {
-        return syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getTTL()));
+        return syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getNodeSpec().getTTL()));
     }
 
     @Override

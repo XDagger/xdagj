@@ -54,8 +54,7 @@ public class XdagChannel {
     private InetSocketAddress inetSocketAddress;
     private boolean isActive;
     private boolean isDisconnected = false;
-
-    private Config config;
+    private Kernel kernel;
 
     /** 握手 密钥 */
     private XdagHandshakeHandler handshakeHandler;
@@ -88,9 +87,9 @@ public class XdagChannel {
             boolean isServer,
             InetSocketAddress inetSocketAddress) {
 
-        this.config = kernel.getConfig();
+        this.kernel = kernel;
         this.inetSocketAddress = inetSocketAddress;
-        this.handshakeHandler = new XdagHandshakeHandler(kernel, config, this);
+        this.handshakeHandler = new XdagHandshakeHandler(kernel, this);
         handshakeHandler.setServer(isServer);
         pipeline.addLast("handshakeHandler", handshakeHandler);
         this.msgQueue = new MessageQueue(this);
@@ -136,14 +135,14 @@ public class XdagChannel {
 
     public void sendPubkey(ChannelHandlerContext ctx) throws Exception {
         ByteBuf buffer = ctx.alloc().buffer(1024);
-        buffer.writeBytes(config.getXKeys().pub);
+        buffer.writeBytes(kernel.getConfig().getNodeSpec().getXKeys().pub);
         ctx.writeAndFlush(buffer).sync();
         node.getStat().Outbound.add(2);
     }
 
     public void sendPassword(ChannelHandlerContext ctx) throws Exception {
         ByteBuf buffer = ctx.alloc().buffer(512);
-        buffer.writeBytes(config.getXKeys().sect0_encoded);
+        buffer.writeBytes(kernel.getConfig().getNodeSpec().getXKeys().sect0_encoded);
         ctx.writeAndFlush(buffer).sync();
         node.getStat().Outbound.add(1);
     }

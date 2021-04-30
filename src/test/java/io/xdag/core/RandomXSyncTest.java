@@ -3,6 +3,7 @@ package io.xdag.core;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.jni.Native;
@@ -15,7 +16,6 @@ import io.xdag.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,7 +24,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
 import java.text.ParseException;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -41,6 +40,7 @@ public class RandomXSyncTest {
     @Rule
     public TemporaryFolder root2 = new TemporaryFolder();
 
+    Config config = new DevnetConfig();
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     private final String privString = "421d725da10c056a955d2444a5a043b1a5d4515db126b8631806a8ccbda93369";
@@ -147,7 +147,7 @@ public class RandomXSyncTest {
         ImportResult result;
         log.debug("1. create 1 address block");
 
-        Block addressBlock = generateAddressBlock(key, generateTime);
+        Block addressBlock = generateAddressBlock(config, key, generateTime);
 
         // 1. add address block
         result = kernel.getBlockchain().tryToConnect(addressBlock);
@@ -167,7 +167,7 @@ public class RandomXSyncTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlock(key, xdagTime, pending);
+            Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             result = kernel.getBlockchain().tryToConnect(extraBlock);
             assertSame(result, IMPORTED_BEST);
             assertArrayEquals(extraBlock.getHashLow(), xdagTopStatus.getTop());
@@ -191,7 +191,7 @@ public class RandomXSyncTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlockGivenRandom(key, xdagTime, pending, "3456");
+            Block extraBlock = generateExtraBlockGivenRandom(config, key, xdagTime, pending, "3456");
             kernel.getBlockchain().tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
@@ -202,10 +202,10 @@ public class RandomXSyncTest {
     }
 
     public Kernel createKernel(TemporaryFolder root) throws Exception {
-        Config config = new Config();
-        config.setStoreDir(root.newFolder().getAbsolutePath());
-        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
-        Native.init();
+        Config config = new DevnetConfig();
+        config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
+        Native.init(config);
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
@@ -230,7 +230,7 @@ public class RandomXSyncTest {
         kernel.setOrphanPool(orphanPool);
         kernel.setWallet(xdagWallet);
 
-        RandomX randomX = new RandomX();
+        RandomX randomX = new RandomX(config);
         kernel.setRandomXUtils(randomX);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);

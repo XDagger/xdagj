@@ -3,6 +3,7 @@ package io.xdag.core;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.jni.Native;
@@ -14,7 +15,6 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,7 +23,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
 import java.text.ParseException;
-import java.util.Date;
 import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
@@ -39,7 +38,7 @@ public class RewardTest {
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
-    Config config = new Config();
+    Config config = new DevnetConfig();
     OldWallet xdagWallet;
     Kernel kernel;
     DatabaseFactory dbFactory;
@@ -59,10 +58,10 @@ public class RewardTest {
 
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir(root.newFolder().getAbsolutePath());
-        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
-        Native.init();
+        Native.init(config);
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
@@ -95,7 +94,7 @@ public class RewardTest {
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
 
-        RandomX randomXUtils = new RandomX();
+        RandomX randomXUtils = new RandomX(config);
         randomXUtils.init();
         kernel.setRandomXUtils(randomXUtils);
 
@@ -106,7 +105,7 @@ public class RewardTest {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
-        Block addressBlock = generateAddressBlock(addrKey, generateTime);
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -124,7 +123,7 @@ public class RewardTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
             assertTrue(result == IMPORTED_BEST);
             ref = extraBlock.getHashLow();
@@ -150,7 +149,7 @@ public class RewardTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlockGivenRandom(poolKey, xdagTime, pending,"3456");
+            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending,"3456");
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);

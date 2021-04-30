@@ -23,30 +23,6 @@
  */
 package io.xdag.consensus;
 
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.core.Block;
-import io.xdag.core.BlockchainImpl;
-import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.mine.manager.AwardManager;
-import io.xdag.mine.manager.AwardManagerImpl;
-import io.xdag.mine.manager.MinerManager;
-import io.xdag.mine.manager.MinerManagerImpl;
-import io.xdag.mine.miner.Miner;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Random;
-
 public class SyncTest {
 //    @Rule
 //    public TemporaryFolder root = new TemporaryFolder();

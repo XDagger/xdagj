@@ -46,7 +46,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
     @Override
     protected void initChannel(NioSocketChannel ch) {
         AtomicInteger channelsAccount = kernel.getChannelsAccount();
-        if (channelsAccount.get() >= kernel.getConfig().getGlobalMinerChannelLimit()) {
+        if (channelsAccount.get() >= kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit()) {
             ch.close();
             System.out.println("too many channels in this pool");
             return;
@@ -57,7 +57,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
         InetSocketAddress channelAddress = isServer
                 ? ch.remoteAddress()
                 : new InetSocketAddress(
-                        kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
+                        kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
         MinerChannel minerChannel = new MinerChannel(kernel, ch, isServer);
         minerChannel.init(ch.pipeline(), channelAddress);
         ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(256 * 1024));

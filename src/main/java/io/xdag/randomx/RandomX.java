@@ -1,6 +1,7 @@
 package io.xdag.randomx;
 
 import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.utils.FastByteComparisons;
@@ -40,8 +41,8 @@ public class RandomX {
     protected boolean is_full_mem;
     protected boolean is_Large_pages;
 
-    public RandomX() {
-        if (Config.MAINNET) {
+    public RandomX(Config config) {
+        if (config instanceof MainnetConfig) {
             isTestNet = false;
         }
         this.mineType = XDAG_RANDOMX;

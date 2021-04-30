@@ -52,7 +52,7 @@ public class MinerServer {
 
     /** 开启监听的事件 */
     public void start() {
-        start(kernel.getConfig().getPoolIp(), kernel.getConfig().getPoolPort());
+        start(kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
     }
 
     public void start(String ip, int port) {
@@ -66,7 +66,7 @@ public class MinerServer {
             bootstrap.childOption(
                     ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
             bootstrap.childOption(
-                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getConnectionTimeout());
+                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
             // 这个是这是可以远程主动关闭？
             // bootstrap.childOption(ChannelOption.ALLOW_HALF_CLOSURE,true);
             bootstrap.handler(new LoggingHandler());
