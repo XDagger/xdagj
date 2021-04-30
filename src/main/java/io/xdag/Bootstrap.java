@@ -34,24 +34,15 @@ public class Bootstrap {
 //        if (args == null || args.length == 0) {
 //            throw new RuntimeException("getConfig(args) args is empty! ");
 //        }
-        Config config = null;
-        if (args == null || args.length == 0) {
-
-            log.debug("Default config");
-            config = new MainnetConfig();
-            
-        } else {
-            for (String arg : args) {
-                switch (arg) {
-                    case "-t":
-                        config = new TestnetConfig();
-                        break;
-                    default:
-                        config = new MainnetConfig();
-                }
+        Config config = new MainnetConfig();
+        for (String arg : args) {
+            switch (arg) {
+                case "-t":
+                    config = new TestnetConfig();
+                    break;
             }
-            config.changePara(args);
         }
+        config.changePara(args);
         config.setDir();
         //logPoolInfo(oldConfig);
 
