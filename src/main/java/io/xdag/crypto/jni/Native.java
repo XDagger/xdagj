@@ -72,7 +72,7 @@ public class Native {
     }
 
     private static void rootInit(Config config) throws Exception {
-        File temp = new File(config.getNodeSpec().getRootDir());
+        File temp = new File(config.getRootDir());
         if (!temp.exists()) {
             if (!temp.mkdirs()) {
                 log.debug("Create Dir Failed..");

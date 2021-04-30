@@ -53,7 +53,6 @@ public interface NodeSpec {
     String getDnetKeyFile();
 
     // Store
-    String getRootDir();
     void setStoreDir(String dir);
     String getStoreDir();
     String getStoreBackupDir();

@@ -40,6 +40,11 @@ public interface Config {
     String getConfigName();
 
     /**
+     * Config Root Dir.
+     */
+    String getRootDir();
+
+    /**
      * Pool Specification.
      */
     PoolSpec getPoolSpec();
