@@ -470,13 +470,13 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
 
         if(isTelnet) {
-            if (line.equals(kernel.getConfig().getPassword())) {
+            if (line.equals(kernel.getConfig().getAdminSpec().getPassword())) {
                 return true;
             } else {
                 return false;
             }
         } else {
-            int err = Native.verify_dnet_key(line, kernel.getConfig().getDnetKeyBytes());
+            int err = Native.verify_dnet_key(line, kernel.getConfig().getNodeSpec().getDnetKeyBytes());
             if (err < 0) {
                 println("The password is incorrect");
                 return false;

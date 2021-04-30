@@ -190,7 +190,7 @@ public class Xdag03 extends XdagHandler {
         Block block = blockchain.getBlockByHash(find, true);
         if (block != null) {
 //            log.debug("processBlockRequest: findBlock" + Hex.toHexString(block.getHashLow()));
-            NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getTTL());
+            NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getNodeSpec().getTTL());
             sendMessage(message);
         }
     }

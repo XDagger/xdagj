@@ -40,9 +40,9 @@ public class Native {
     protected static boolean enabled = false;
 
     /** Initializes the native libraries */
-    public static void init() {
+    public static void init(Config config) {
         try {
-            rootInit();
+            rootInit(config);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -71,8 +71,8 @@ public class Native {
         }
     }
 
-    private static void rootInit() throws Exception {
-        File temp = new File(Config.root);
+    private static void rootInit(Config config) throws Exception {
+        File temp = new File(config.getRootDir());
         if (!temp.exists()) {
             if (!temp.mkdirs()) {
                 log.debug("Create Dir Failed..");

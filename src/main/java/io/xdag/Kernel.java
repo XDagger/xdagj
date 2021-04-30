@@ -28,6 +28,8 @@ import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
@@ -118,7 +120,7 @@ public class Kernel {
         this.wallet = wallet;
         // 启动的时候就是在初始化
         this.xdagState = XdagState.INIT;
-        this.telnetServer = new TelnetServer(config.getTelnetIp(), config.getTelnetPort(),this);
+        this.telnetServer = new TelnetServer(config.getAdminSpec().getTelnetIp(), config.getAdminSpec().getTelnetPort(),this);
     }
 
     public Kernel(Config config) {
@@ -173,7 +175,7 @@ public class Kernel {
         // ====================================
         // randomX init
         // ====================================
-        randomXUtils = new RandomX();
+        randomXUtils = new RandomX(config);
         randomXUtils.init();
 
         // ====================================
@@ -183,7 +185,7 @@ public class Kernel {
         XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {
-            firstAccount = new Block(XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
+            firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
             firstAccount.signOut(wallet.getDefKey().ecKey);
             poolMiner = new Miner(firstAccount.getHash());
             xdagStats.setOurLastBlockHash(firstAccount.getHashLow());
@@ -247,7 +249,7 @@ public class Kernel {
         // ====================================
         // poolnode open
         // ====================================
-        connectionLimitHandler = new ConnectionLimitHandler(this.config.getMaxConnectPerIp());
+        connectionLimitHandler = new ConnectionLimitHandler(this.config.getPoolSpec().getMaxConnectPerIp());
         minerServer = new MinerServer(this);
 
         // ====================================
@@ -257,9 +259,10 @@ public class Kernel {
         minerManager.setPoW(pow);
         minerManager.start();
         awardManager.start();
-        if (Config.MAINNET) {
+
+        if ( config instanceof MainnetConfig) {
             xdagState = XdagState.WAIT;
-        } else {
+        } else if (config instanceof TestnetConfig) {
             xdagState = XdagState.WTST;
         }
 

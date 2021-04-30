@@ -71,14 +71,14 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
     public Libp2pNetwork(Kernel kernel){
-        port = kernel.getConfig().getLibp2pPort();
+        port = kernel.getConfig().getNodeSpec().getLibp2pPort();
         rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
         peerManager = new PeerManager();
         //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
         //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
-        if(kernel.getConfig().isbootnode){
-            String Privkey = kernel.getConfig().getPrivkey();
+        if(kernel.getConfig().getNodeSpec().isBootnode()){
+            String Privkey = kernel.getConfig().getNodeSpec().getLibp2pPrivkey();
             Bytes privkeybytes = Bytes.fromHexString(Privkey);
             this.privKeyBytes = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
         }else{
@@ -89,7 +89,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         this.nodeId = new LibP2PNodeId(peerId);
         this.advertisedAddr =
                 MultiaddrUtil.fromInetSocketAddress(
-                        new InetSocketAddress(kernel.getConfig().getNodeIp(), port),nodeId);
+                        new InetSocketAddress(kernel.getConfig().getNodeSpec().getNodeIp(), port),nodeId);
 
         host = BuilderJKt.hostJ(Builder.Defaults.None,
                 b->{

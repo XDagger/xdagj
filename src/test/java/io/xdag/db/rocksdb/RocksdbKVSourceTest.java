@@ -24,6 +24,7 @@
 package io.xdag.db.rocksdb;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Hash;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -42,12 +43,12 @@ public class RocksdbKVSourceTest {
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
-    Config config = new Config();
+    Config config = new DevnetConfig();
 
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir(root.newFolder().getAbsolutePath());
-        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
     }
 
     @Test

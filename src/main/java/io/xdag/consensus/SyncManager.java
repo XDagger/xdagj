@@ -23,37 +23,20 @@
  */
 package io.xdag.consensus;
 
-import static io.xdag.core.ImportResult.EXIST;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
-
-import java.math.BigInteger;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
+import com.google.common.collect.Queues;
 import io.libp2p.core.PeerId;
-
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
 import io.xdag.core.*;
-
 import io.xdag.discovery.peers.DiscoveryPeer;
 import io.xdag.discovery.peers.PeerTable;
 import io.xdag.libp2p.Libp2pChannel;
 import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.libp2p.peer.LibP2PNodeId;
-import io.xdag.net.node.Node;
-
-import com.google.common.collect.Queues;
-
-import io.xdag.Kernel;
-import io.xdag.config.Config;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.node.Node;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -63,6 +46,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nonnull;
+import java.math.BigInteger;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
+import static io.xdag.core.ImportResult.*;
+import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 @Slf4j
 @Getter
@@ -142,12 +136,13 @@ public class SyncManager {
      */
     public boolean isTimeToStart() {
         boolean res = false;
-        if(Config.MAINNET) {
-            if (kernel.getXdagState() != XdagState.CONN && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ Config.WAIT_EPOCH)) {
+        Config config = kernel.getConfig();
+        if( config instanceof MainnetConfig) {
+            if (kernel.getXdagState() != XdagState.CONN && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ config.getPoolSpec().getWaitEpoch())) {
                 res = true;
             }
         } else {
-            if (kernel.getXdagState() != XdagState.CTST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ Config.WAIT_EPOCH)) {
+            if (kernel.getXdagState() != XdagState.CTST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ config.getPoolSpec().getWaitEpoch())) {
                 makeSyncDone();
                 res = true;
             }
@@ -165,10 +160,11 @@ public class SyncManager {
             log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
         }
 
+        Config config = kernel.getConfig();
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
             // 状态设置为正在同步
             if (!syncDone) {
-                if (Config.MAINNET) {
+                if (config instanceof MainnetConfig) {
                     kernel.setXdagState(XdagState.CONN);
                 } else {
                     kernel.setXdagState(XdagState.CTST);
@@ -332,8 +328,8 @@ public class SyncManager {
         System.out.println("Sync done");
         // 关闭状态检测进程
         this.stateListener.isRunning = false;
-
-        if (Config.MAINNET) {
+        Config config = kernel.getConfig();
+        if (config instanceof MainnetConfig) {
             if (kernel.getXdagState() != XdagState.SYNC){
                 kernel.setXdagState(XdagState.SYNC);
             }

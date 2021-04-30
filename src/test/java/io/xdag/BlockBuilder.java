@@ -24,6 +24,7 @@
 package io.xdag;
 
 import com.google.common.collect.Lists;
+import io.xdag.config.Config;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
@@ -39,35 +40,35 @@ import org.bouncycastle.util.encoders.Hex;
 
 public class BlockBuilder {
 
-    public static Block generateAddressBlock(ECKeyPair key, long xdagTime) {
-        Block b = new Block(xdagTime, null, null, false, null, null, -1);
+    public static Block generateAddressBlock(Config config, ECKeyPair key, long xdagTime) {
+        Block b = new Block(config, xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
         return b;
     }
 
-    public static Block generateExtraBlock(ECKeyPair key, long xdagTime, List<Address> pendings) {
-        Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
+    public static Block generateExtraBlock(Config config, ECKeyPair key, long xdagTime, List<Address> pendings) {
+        Block b = new Block(config, xdagTime, null, pendings, false, null, null, -1);
         b.signOut(key);
         byte[] random = Hash.sha256(Hex.decode("1234"));
         b.setNonce(random);
         return b;
     }
 
-    public static Block generateExtraBlockGivenRandom(ECKeyPair key, long xdagTime, List<Address> pendings, String randomS) {
-        Block b = new Block(xdagTime, null, pendings, false, null, null, -1);
+    public static Block generateExtraBlockGivenRandom(Config config, ECKeyPair key, long xdagTime, List<Address> pendings, String randomS) {
+        Block b = new Block(config, xdagTime, null, pendings, false, null, null, -1);
         b.signOut(key);
         byte[] random = Hash.sha256(Hex.decode(randomS));
         b.setNonce(random);
         return b;
     }
 
-    public static Block generateTransactionBlock(ECKeyPair key, long xdagTime, Address from, Address to, long amount) {
+    public static Block generateTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to, long amount) {
         List refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
         List<ECKeyPair> keys = new ArrayList<>();
         keys.add(key);
-        Block b = new Block(xdagTime, refs, null, false, keys, null, 0); // orphan
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
         b.signOut(key);
         return b;
     }

@@ -23,59 +23,24 @@
  */
 package io.xdag.config;
 
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.WalletSpec;
-import io.xdag.core.XdagField;
+import com.google.common.primitives.UnsignedLong;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
-/**
- * The Xdag blockchain configurations.
- */
-public interface Config {
+public class TestnetConfig extends AbstractConfig {
 
-    /**
-     * Config File Name.
-     */
-    String getConfigName();
+    public TestnetConfig() {
+        super("testnet","xdag-testnet.config");
+        this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
 
-    /**
-     * Config Root Dir.
-     */
-    String getRootDir();
+        this.xdagEra = 0x16900000000L;
+        this.mainStartAmount = UnsignedLong.fromLongBits(1L << 42).longValue();
 
-    /**
-     * Pool Specification.
-     */
-    PoolSpec getPoolSpec();
+        this.apolloForkHeight = 196250;
+        this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
+        this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
 
-    /**
-     * Node Specification.
-     */
-    NodeSpec getNodeSpec();
-
-    /**
-     * Admin Specification.
-     */
-    AdminSpec getAdminSpec();
-
-    /**
-     * Wallet Specification.
-     */
-    WalletSpec getWalletSpec();
-
-    long getMainStartAmount();
-
-    long getXdagEra();
-
-    long getApolloForkHeight();
-
-    long getApolloForkAmount();
-
-    XdagField.FieldType getXdagFieldHeader();
-
-    void changePara(String[] args);
-    void setDir();
-    void initKeys() throws Exception;
+        this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
+        this.walletKeyFile = this.rootDir+"/wallet-testnet.dat";
+    }
 
 }

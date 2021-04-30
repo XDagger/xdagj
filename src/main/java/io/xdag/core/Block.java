@@ -23,6 +23,7 @@
  */
 package io.xdag.core;
 
+import io.xdag.config.Config;
 import io.xdag.crypto.ECDSASignature;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Hash;
@@ -43,7 +44,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static io.xdag.config.Config.MAINNET;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 
@@ -85,6 +85,7 @@ public class Block implements Cloneable {
     private BigInteger pretopCandidateDiff;
 
     public Block(
+            Config config,
             long timestamp,
             List<Address> links,
             List<Address> pendings,
@@ -98,7 +99,7 @@ public class Block implements Cloneable {
         this.info.setFee(0);
         int lenghth = 0;
 
-        setType(MAINNET ? XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST, lenghth++);
+        setType(config.getXdagFieldHeader(), lenghth++);
 
         if (CollectionUtils.isNotEmpty(links)) {
             for (Address link : links) {
@@ -158,11 +159,11 @@ public class Block implements Cloneable {
     }
 
     /** main block */
-    public Block(long timestamp,
+    public Block(Config config,long timestamp,
                  List<Address> pendings,
                  boolean mining)
     {
-        this(timestamp, null, pendings, mining, null, null, -1);
+        this(config, timestamp, null, pendings, mining, null, null, -1);
     }
 
     /** 从512字节读取* */

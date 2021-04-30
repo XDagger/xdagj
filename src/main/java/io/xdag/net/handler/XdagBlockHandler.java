@@ -23,8 +23,6 @@
  */
 package io.xdag.net.handler;
 
-import static io.xdag.config.Config.MAINNET;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
 import java.util.List;
@@ -32,7 +30,6 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
-import io.xdag.config.Config;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.jni.Native;
@@ -50,7 +47,6 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     private XdagChannel channel;
-    private Config config;
     private MessageFactory messageFactory;
 
     public XdagBlockHandler(XdagChannel channel) {
@@ -113,7 +109,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             byte first_field_type = getMsgCode(xdagBlock, 0);
             Message msg = null;
             // 普通区块
-            XdagField.FieldType netType = MAINNET ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
+            XdagField.FieldType netType = channel.getKernel().getConfig().getXdagFieldHeader();
             if (netType.asByte() == first_field_type) {
                 msg = new NewBlockMessage(xdagBlock, ttl);
             }

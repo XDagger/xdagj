@@ -23,8 +23,6 @@
  */
 package io.xdag.mine.handler;
 
-import static io.xdag.config.Config.MAINNET;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
@@ -131,7 +129,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 System.arraycopy(BytesUtils.longToBytes(0, true), 0, unCryptData, 0, 8);
                 XdagBlock xdagBlock = new XdagBlock(unCryptData);
                 byte first_field_type = getMsgCode(xdagBlock, 0);
-                XdagField.FieldType netType = MAINNET ? XdagField.FieldType.XDAG_FIELD_HEAD : XDAG_FIELD_HEAD_TEST;
+                XdagField.FieldType netType = channel.getKernel().getConfig().getXdagFieldHeader();
                 if (netType.asByte() == first_field_type) {
                     msg = new NewBlockMessage(xdagBlock, ttl);
                 }

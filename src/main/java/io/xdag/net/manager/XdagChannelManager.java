@@ -165,7 +165,7 @@ public class XdagChannelManager {
     }
 
     private void initWhiteIPs() {
-        List<String> ipList = kernel.getConfig().getWhiteIPList();
+        List<String> ipList = kernel.getConfig().getNodeSpec().getWhiteIPList();
         for(String ip : ipList){
             String [] ips = ip.split(":");
             addressSet.add(new InetSocketAddress(ips[0],Integer.parseInt(ips[1])));
@@ -176,7 +176,7 @@ public class XdagChannelManager {
     private boolean isSelfAddress(InetSocketAddress address) {
         String inIP = address.getAddress().toString();
         inIP = inIP.substring(inIP.lastIndexOf("/")+1);
-        return inIP.equals(kernel.getConfig().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodePort());
+        return inIP.equals(kernel.getConfig().getNodeSpec().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodeSpec().getNodePort());
     }
 
     public void stop() {

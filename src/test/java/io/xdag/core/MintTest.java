@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
 import org.junit.Test;
 
 import static io.xdag.config.Constants.*;
@@ -31,6 +32,7 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.assertEquals;
 
 public class MintTest {
+    Config config = new MainnetConfig();
     @Test
     public void testMint() {
         // 每四年减半 大致就是增加了 2097152个块
@@ -55,12 +57,12 @@ public class MintTest {
     }
 
     private long getStartAmount(long time, long num) {
-        long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
+        long forkHeight = config.getApolloForkHeight();
         long startAmount = 0;
         if (num >= forkHeight) {
-            startAmount = MAIN_APOLLO_AMOUNT;
+            startAmount = config.getApolloForkAmount();
         } else {
-            startAmount = MAIN_START_AMOUNT;
+            startAmount = config.getMainStartAmount();
         }
 
         return startAmount;

@@ -34,8 +34,6 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-import static io.xdag.config.Config.*;
-
 @Slf4j
 public class NetDBManager {
     @Getter
@@ -54,9 +52,9 @@ public class NetDBManager {
     private final NetDB netDB;
 
     public NetDBManager(Config config) {
-        database = MAINNET ? config.getNetDBDir() : config.getNetDBDirTest();
-        databaseWhite = MAINNET ? config.getWhiteListDir() : config.getWhiteListDirTest();
-        whiteUrl = MAINNET ? WHITELIST_URL : WHITELIST_URL_TESTNET;
+        database = config.getNodeSpec().getNetDBDir();
+        databaseWhite = config.getNodeSpec().getWhiteListDir();
+        whiteUrl = config.getNodeSpec().getWhitelistUrl();
         whiteDB = new NetDB();
         netDB = new NetDB();
     }
@@ -71,7 +69,7 @@ public class NetDBManager {
                     log.debug("Create File failed");
                 }
                 // 白名单的地址 并且读取
-                URL url = new URL(WHITELIST_URL_TESTNET);
+                URL url = new URL(whiteUrl);
                 FileUtils.copyURLToFile(url, file);
                 if (file.exists() && file.isFile()) {
                     reader = new BufferedReader(
@@ -126,7 +124,7 @@ public class NetDBManager {
             BufferedReader reader;
             // 白名单的地址 并且读取
             URL url;
-            url = new URL(WHITELIST_URL_TESTNET);
+            url = new URL(whiteUrl);
 
             FileUtils.copyURLToFile(url, file);
             if (file.exists() && file.isFile()) {

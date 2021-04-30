@@ -88,11 +88,11 @@ public class DiscoveryController {
     }
 
     public void start() throws DecoderException, IOException {
-        this.isbootnode = kernel.getConfig().isbootnode;
+        this.isbootnode = kernel.getConfig().getNodeSpec().isBootnode();
         final BytesValue myid ;
         if(isbootnode){
             log.debug("seed node start");
-            String prikey = this.kernel.getConfig().getPrivkey();
+            String prikey = this.kernel.getConfig().getNodeSpec().getLibp2pPrivkey();
             // id = 08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2
             this.privKey = KeyKt.unmarshalPrivateKey(Bytes.fromHexString(prikey).toArrayUnsafe());
             myid = BytesValue.wrap(privKey.publicKey().bytes());
@@ -101,11 +101,11 @@ public class DiscoveryController {
             this.privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).getFirst();
             myid = BytesValue.wrap(privKey.publicKey().bytes());
         }
-        mynode = new Endpoint(this.kernel.getConfig().getNodeIp(),
-                this.kernel.getConfig().discoveryPort,OptionalInt.of(this.kernel.getConfig().getLibp2pPort()));
+        mynode = new Endpoint(this.kernel.getConfig().getNodeSpec().getNodeIp(),
+                this.kernel.getConfig().getNodeSpec().getDiscoveryPort(),OptionalInt.of(this.kernel.getConfig().getNodeSpec().getLibp2pPort()));
         myself = new DiscoveryPeer(myid,mynode);
         peerTable = new PeerTable(myid, 16);
-        bootnodes = this.kernel.getConfig().getBootnode();
+        bootnodes = this.kernel.getConfig().getNodeSpec().getBootnodes();
         log.debug("bootnodes {}", bootnodes.toString());
         this.vertx = Vertx.vertx();
         vertx.createDatagramSocket().listen(mynode.getUdpPort(),mynode.getHost(), ar -> {

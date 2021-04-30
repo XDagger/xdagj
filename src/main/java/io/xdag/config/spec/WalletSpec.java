@@ -21,61 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.config;
-
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.WalletSpec;
-import io.xdag.core.XdagField;
+package io.xdag.config.spec;
 
 /**
- * The Xdag blockchain configurations.
+ * The Wallet Specifications
  */
-public interface Config {
-
-    /**
-     * Config File Name.
-     */
-    String getConfigName();
-
-    /**
-     * Config Root Dir.
-     */
-    String getRootDir();
-
-    /**
-     * Pool Specification.
-     */
-    PoolSpec getPoolSpec();
-
-    /**
-     * Node Specification.
-     */
-    NodeSpec getNodeSpec();
-
-    /**
-     * Admin Specification.
-     */
-    AdminSpec getAdminSpec();
-
-    /**
-     * Wallet Specification.
-     */
-    WalletSpec getWalletSpec();
-
-    long getMainStartAmount();
-
-    long getXdagEra();
-
-    long getApolloForkHeight();
-
-    long getApolloForkAmount();
-
-    XdagField.FieldType getXdagFieldHeader();
-
-    void changePara(String[] args);
-    void setDir();
-    void initKeys() throws Exception;
-
+public interface WalletSpec {
+    String getWalletKeyFile();
 }

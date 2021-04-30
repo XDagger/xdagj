@@ -23,6 +23,7 @@
  */
 package io.xdag.mine.miner;
 
+import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.consensus.Task;
 import io.xdag.mine.MinerChannel;
@@ -36,7 +37,6 @@ import org.bouncycastle.util.encoders.Hex;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
-import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.utils.FastByteComparisons.compareTo;
 import static java.lang.Math.E;
 
@@ -151,7 +151,7 @@ public class MinerCalculate {
      * 根据一个矿工计算的hash 为他计算一个难度
      */
     public static void calculateNopaidShares(
-            MinerChannel channel, byte[] hash, long currentTaskTime) {
+            Config config, MinerChannel channel, byte[] hash, long currentTaskTime) {
         Miner miner = channel.getMiner();
         double diff = 0.0;
         // 不可能出现大于的情况 防止对老的任务重复计算
@@ -161,7 +161,7 @@ public class MinerCalculate {
                 Hex.toHexString(channel.getAccountAddressHash()),currentTaskTime, minerTaskTime,channelTaskTime);
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
-            int i = (int) (((currentTaskTime >> 16) + 1) & AWARD_EPOCH);
+            int i = (int) (((currentTaskTime >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
             // int i = (int) (((currentTaskTime>> 16) +1 ) & 7);
             diff = BytesUtils.hexBytesToDouble(hash, 8, false);
             diff *= Math.pow(2, -64);
