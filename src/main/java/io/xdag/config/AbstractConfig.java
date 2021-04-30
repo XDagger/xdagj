@@ -74,18 +74,18 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int maxMinerPerAccount;
     protected int maxConnectPerIp;
 
-    protected int maxShareCountPerChannel;
-    protected int awardEpoch;
-    protected int waitEpoch;
+    protected int maxShareCountPerChannel = 20;
+    protected int awardEpoch = 0xf;
+    protected int waitEpoch = 10;
 
     // =========================
     // Node spec
     // =========================
     protected String nodeIp;
     protected int nodePort;
-    protected int maxConnections;
-    protected int connectionTimeout;
-    protected int connectionReadTimeout;
+    protected int maxConnections = 1024;
+    protected int connectionTimeout = 10000;
+    protected int connectionReadTimeout = 10000;
 
     protected String rootDir;
     protected String storeDir;
@@ -93,13 +93,13 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected String whiteListDir;
     protected String netDBDir;
 
-    protected int storeMaxOpenFiles;
-    protected int storeMaxThreads;
-    protected boolean storeFromBackup;
-    protected String originStoreDir;
+    protected int storeMaxOpenFiles = 1024;
+    protected int storeMaxThreads = 1;
+    protected boolean storeFromBackup = false;
+    protected String originStoreDir = "./testdate";
 
     protected String whitelistUrl;
-    protected boolean enableRefresh;
+    protected boolean enableRefresh = false;
     protected String dnetKeyFile;
     protected String walletKeyFile;
 
