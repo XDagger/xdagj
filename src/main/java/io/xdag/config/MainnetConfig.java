@@ -32,7 +32,7 @@ public class MainnetConfig extends AbstractConfig {
         super("mainnet", "xdag-mainnet.config");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
-        this.dnetKeyFile = "dnet_keys.bin";
+
         this.xdagEra = 0x16940000000L;
         this.mainStartAmount = UnsignedLong.fromLongBits(1L << 42).longValue();
 
@@ -40,8 +40,8 @@ public class MainnetConfig extends AbstractConfig {
         this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
         this.xdagFieldHeader = XDAG_FIELD_HEAD;
 
-        this.dnetKeyFile = "dnet_keys.bin";
-        this.walletKeyFile = "wallet.dat";
+        this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
+        this.walletKeyFile = this.rootDir+"/wallet.dat";
     }
 
 }
