@@ -41,8 +41,8 @@ public class DevnetConfig extends AbstractConfig {
         this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
 
-        this.dnetKeyFile = "dnet_keys.bin";
-        this.walletKeyFile = "wallet.dat";
+        this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
+        this.walletKeyFile = this.rootDir+"/wallet-testnet.dat";
     }
 
 }
