@@ -31,20 +31,27 @@ import lombok.extern.slf4j.Slf4j;
 public class Bootstrap {
 
     public static Config getConfig(String[] args) throws Exception {
-        if (args == null || args.length == 0) {
-            throw new RuntimeException("getConfig(args) args is empty! ");
-        }
+//        if (args == null || args.length == 0) {
+//            throw new RuntimeException("getConfig(args) args is empty! ");
+//        }
         Config config = null;
-        for (String arg : args) {
-            switch (arg) {
-                case "-t":
-                    config = new TestnetConfig();
-                    break;
-                default:
-                    config = new MainnetConfig();
+        if (args == null || args.length == 0) {
+
+            log.debug("Default config");
+            config = new MainnetConfig();
+            
+        } else {
+            for (String arg : args) {
+                switch (arg) {
+                    case "-t":
+                        config = new TestnetConfig();
+                        break;
+                    default:
+                        config = new MainnetConfig();
+                }
             }
+            config.changePara(args);
         }
-        config.changePara(args);
         config.setDir();
         //logPoolInfo(oldConfig);
 
