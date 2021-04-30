@@ -12,9 +12,10 @@ logs
 
 
 #for project
-testnet
+devnet
 xdagj.jar
 testnet
+mainnet
 target
 logs
 
@@ -22,4 +23,4 @@ logs
 .DS_Store
 src/c/
 src/main/resources/native
-src/main/resources/xdag.config
+src/main/resources/xdag-mainnet.config

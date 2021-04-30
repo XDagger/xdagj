@@ -61,8 +61,8 @@ public class XdagClient {
 
     public XdagClient(Config config) {
         this.config = config;
-        this.ip = config.getNodeIp();
-        this.port = config.getNodePort();
+        this.ip = config.getNodeSpec().getNodeIp();
+        this.port = config.getNodeSpec().getNodePort();
         this.workerGroup = new NioEventLoopGroup(0, factory);
 //        log.debug("XdagClient nodeId {}", getNode().getHexId());
     }
@@ -87,7 +87,7 @@ public class XdagClient {
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
         b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
-        b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectionTimeout());
+        b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getPoolSpec().getConnectionTimeout());
         b.remoteAddress(host, port);
         b.handler(xdagChannelInitializer);
         return b.connect();

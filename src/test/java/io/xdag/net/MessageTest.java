@@ -24,6 +24,7 @@
 package io.xdag.net;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.jni.Native;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.XdagMessageCodes;
@@ -41,21 +42,21 @@ import static org.junit.Assert.assertEquals;
 
 public class MessageTest {
 
-    Config config = new Config();
+    Config config = new DevnetConfig();
     OldWallet xdagWallet;
 
     //
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir("/Users/punk/testRocksdb/XdagDB");
-        config.setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
+        config.getNodeSpec().setStoreDir("/Users/punk/testRocksdb/XdagDB");
+        config.getNodeSpec().setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
 
-        Native.init();
+        Native.init(config);
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
         xdagWallet = new OldWallet();
-        xdagWallet.init(new Config());
+        xdagWallet.init(config);
     }
     // blocksrequest
     // 8b010002f91eb6eb 0000000000000000 0000000000000000 0000000000100000

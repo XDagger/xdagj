@@ -47,7 +47,7 @@ public class XdagServer {
     }
 
     public void start() {
-        start(kernel.getConfig().getNodeIp(), kernel.getConfig().getNodePort());
+        start(kernel.getConfig().getNodeSpec().getNodeIp(), kernel.getConfig().getNodeSpec().getNodePort());
     }
 
     public void start(String ip, int port) {
@@ -60,7 +60,7 @@ public class XdagServer {
             b.childOption(ChannelOption.SO_KEEPALIVE, true);
             b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
             b.childOption(
-                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getConnectionTimeout());
+                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
             b.childHandler(new XdagChannelInitializer(kernel, true, null));
             log.debug("Listening for incoming connections, address: {}:{} ", ip, port);
             channelFuture = b.bind(ip, port).sync();

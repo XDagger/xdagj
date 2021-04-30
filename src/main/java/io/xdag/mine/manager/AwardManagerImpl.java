@@ -23,7 +23,6 @@
  */
 package io.xdag.mine.manager;
 
-import static io.xdag.config.Config.AWARD_EPOCH;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static java.lang.Math.E;
@@ -34,6 +33,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import io.xdag.config.Config;
 import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
@@ -41,7 +41,6 @@ import io.xdag.utils.*;
 import io.xdag.wallet.OldWallet;
 
 import io.xdag.Kernel;
-import io.xdag.config.Config;
 import io.xdag.consensus.Task;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
@@ -184,28 +183,28 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     /** 给矿池设置一些支付上的参数 */
     private void setPoolConfig() {
-        poolRation = BigDecimalUtils.div(config.getPoolRation(), 100);
+        poolRation = BigDecimalUtils.div(config.getPoolSpec().getPoolRation(), 100);
         if (poolRation < 0) {
             poolRation = 0;
         } else if (poolRation > 1) {
             poolRation = 1;
         }
 
-        minerRewardRation = BigDecimalUtils.div(config.getRewardRation(), 100);
+        minerRewardRation = BigDecimalUtils.div(config.getPoolSpec().getRewardRation(), 100);
         if (minerRewardRation < 0) {
             minerRewardRation = 0;
         } else if (poolRation + minerRewardRation > 1) {
             minerRewardRation = 1 - poolRation;
         }
 
-        directRation = BigDecimalUtils.div(config.getDirectRation(), 100);
+        directRation = BigDecimalUtils.div(config.getPoolSpec().getDirectRation(), 100);
         if (directRation < 0) {
             directRation = 0;
         } else if (poolRation + minerRewardRation + directRation > 1) {
             directRation = 1 - poolRation - minerRewardRation;
         }
 
-        fundRation = BigDecimalUtils.div(config.getFundRation(), 100);
+        fundRation = BigDecimalUtils.div(config.getPoolSpec().getFundRation(), 100);
         if (fundRation < 0) {
             fundRation = 0;
         } else if (poolRation + minerRewardRation + directRation + fundRation > 1) {
@@ -219,9 +218,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void payAndaddNewAwardBlock(AwardBlock awardBlock) {
         log.debug("Pay miner");
         payMiners(awardBlock.generateTime);
-        log.debug("set index:" + (int) ((awardBlock.generateTime >> 16) & AWARD_EPOCH));
-        blockHashs.set((int) ((awardBlock.generateTime >> 16) & AWARD_EPOCH), new ByteArrayWrapper(awardBlock.hash));
-        minShares.set((int) ((awardBlock.generateTime >> 16) & AWARD_EPOCH), new ByteArrayWrapper(awardBlock.share));
+        log.debug("set index:" + (int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()));
+        blockHashs.set((int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()), new ByteArrayWrapper(awardBlock.hash));
+        minShares.set((int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()), new ByteArrayWrapper(awardBlock.share));
     }
 
     @Override
@@ -249,7 +248,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public int payMiners(long time) {
         log.debug("=========== start  payMiners for time [{}]===========",time);
         // 获取到的是当前任务的对应的+1的位置 以此延迟16轮
-        int index = (int) (((time >> 16) + 1) & AWARD_EPOCH);
+        int index = (int) (((time >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
         int keyPos = -1;
         int minerCounts = 0;
         PayData payData = new PayData();

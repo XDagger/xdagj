@@ -279,7 +279,7 @@ public class Commands {
             block.signOut(kernel.getWallet().getDefKey().ecKey);
         }
 
-        return new BlockWrapper(block, kernel.getConfig().getTTL());
+        return new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL());
     }
 
     /**

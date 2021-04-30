@@ -24,6 +24,7 @@
 package io.xdag.db.store;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagStats;
@@ -41,7 +42,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
@@ -51,7 +51,7 @@ public class BlockStoreTest {
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
-    Config config = new Config();
+    Config config = new DevnetConfig();
     DatabaseFactory factory;
     KVSource<byte[], byte[]> indexSource;
     KVSource<byte[], byte[]> timeSource;
@@ -59,8 +59,8 @@ public class BlockStoreTest {
 
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir(root.newFolder().getAbsolutePath());
-        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
         factory = new RocksdbFactory(config);
         indexSource = factory.getDB(DatabaseName.INDEX);
         timeSource = factory.getDB(DatabaseName.TIME);
@@ -107,7 +107,7 @@ public class BlockStoreTest {
         bs.init();
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
-        Block block = generateAddressBlock(key, time);
+        Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         Block storedBlock = bs.getBlockByHash(block.getHashLow(), true);
 
@@ -120,7 +120,7 @@ public class BlockStoreTest {
         bs.init();
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
-        Block block = generateAddressBlock(key, time);
+        Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow());
         assertArrayEquals(block.getHashLow(), bs.getOurBlock(1));
@@ -132,7 +132,7 @@ public class BlockStoreTest {
         bs.init();
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
-        Block block = generateAddressBlock(key, time);
+        Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow());
         assertFalse(bs.getOurBlock(1) == null);
@@ -146,7 +146,7 @@ public class BlockStoreTest {
         bs.init();
         long time = 1602951025307L;
         ECKeyPair key = Keys.createEcKeyPair();
-        Block block = generateAddressBlock(key, time);
+        Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         byte[] sums = new byte[256];
         bs.loadSum(time, time + 64 * 1024, sums);

@@ -104,8 +104,8 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 options.setCompressionType(CompressionType.LZ4_COMPRESSION);
                 options.setBottommostCompressionType(CompressionType.LZ4_COMPRESSION);
                 options.setLevelCompactionDynamicLevelBytes(true);
-                options.setMaxOpenFiles(config.getStoreMaxOpenFiles());
-                options.setIncreaseParallelism(config.getStoreMaxThreads());
+                options.setMaxOpenFiles(config.getNodeSpec().getStoreMaxOpenFiles());
+                options.setIncreaseParallelism(config.getNodeSpec().getStoreMaxThreads());
 
                 // key prefix for state node lookups
                 options.useFixedLengthPrefixExtractor(prefixSeekLength);
@@ -130,7 +130,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                         Files.createDirectories(dbPath.getParent());
                     }
 
-                    if (config.isStoreFromBackup() && backupPath().toFile().canWrite()) {
+                    if (config.getNodeSpec().isStoreFromBackup() && backupPath().toFile().canWrite()) {
                         log.debug("Restoring database from backup: '{}'", name);
                         try (BackupableDBOptions backupOptions = new BackupableDBOptions(backupPath().toString());
                                 RestoreOptions restoreOptions = new RestoreOptions(false);
@@ -376,11 +376,11 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     }
 
     private Path getPath() {
-        return Paths.get(config.getStoreDir(), name);
+        return Paths.get(config.getNodeSpec().getStoreDir(), name);
     }
 
     private Path backupPath() {
-        return Paths.get(config.getStoreDir(), "backup", name);
+        return Paths.get(config.getNodeSpec().getStoreDir(), "backup", name);
     }
 
     private void hintOnTooManyOpenFiles(Exception e) {

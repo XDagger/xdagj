@@ -24,6 +24,7 @@
 package io.xdag.crypto;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.jni.Native;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
@@ -44,7 +45,7 @@ public class DnetKeysTest {
 
     @Before
     public void setUp() throws Exception {
-        config = new Config();
+        config = new DevnetConfig();
         config.initKeys();
         // Resource resource = new ClassPathResource("dnet_keys.bin");
         // File keyFile = resource.getFile();
@@ -71,13 +72,13 @@ public class DnetKeysTest {
 
         for (int i = 0; i < 3072; i++) {
             if (i < 1024) {
-                assertTrue(dnetKeys[i] == config.getXKeys().prv[i]);
+                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().prv[i]);
             } else if (i < 2048) {
-                assertTrue(dnetKeys[i] == config.getXKeys().pub[i - 1024]);
+                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().pub[i - 1024]);
             } else if (i < 2560) {
-                assertTrue(dnetKeys[i] == config.getXKeys().sect0_encoded[i - 2048]);
+                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().sect0_encoded[i - 2048]);
             } else if (i < 3072) {
-                assertTrue(dnetKeys[i] == config.getXKeys().sect0[i - 2560]);
+                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().sect0[i - 2560]);
             }
         }
     }

@@ -96,7 +96,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        ImportResult importResult = syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getTTL()));
+        ImportResult importResult = syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         if (importResult.isIllegal()) {
             log.debug("Punk:receive tansaction. A Transaction from wallet/miner, block hash:{}", Hex.toHexString(block.getHash()));
         }
@@ -148,7 +148,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             }
         }
 
-        if (channel.getSharesCounts() <= kernel.getConfig().getMaxShareCountPerChannel()) {
+        if (channel.getSharesCounts() <= kernel.getConfig().getPoolSpec().getMaxShareCountPerChannel()) {
             channel.addShareCounts(1);
             minerManager.onNewShare(channel, msg);
         }else {

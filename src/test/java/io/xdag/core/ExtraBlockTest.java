@@ -1,8 +1,32 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.core;
 
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -12,7 +36,6 @@ import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Before;
 import org.junit.Rule;
@@ -21,7 +44,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
 import java.text.ParseException;
-import java.util.Date;
 import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
@@ -39,7 +61,7 @@ public class ExtraBlockTest {
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
-    Config config = new Config();
+    Config config = new DevnetConfig();
     OldWallet xdagWallet;
     Kernel kernel;
     DatabaseFactory dbFactory;
@@ -48,10 +70,10 @@ public class ExtraBlockTest {
 
     @Before
     public void setUp() throws Exception {
-        config.setStoreDir(root.newFolder().getAbsolutePath());
-        config.setStoreBackupDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
+        config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
-        Native.init();
+        Native.init(config);
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
@@ -107,7 +129,7 @@ public class ExtraBlockTest {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
-        Block addressBlock = generateAddressBlock(addrKey, generateTime);
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -123,7 +145,7 @@ public class ExtraBlockTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlock(poolKey, xdagTime, pending);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
             assertTrue(result == IMPORTED_BEST);
             ref = extraBlock.getHashLow();
@@ -137,7 +159,7 @@ public class ExtraBlockTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlockGivenRandom(poolKey, xdagTime, pending,"1"+i);
+            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending,"1"+i);
             blockchain.tryToConnect(extraBlock);
             extraBlockList.add(extraBlock);
         }

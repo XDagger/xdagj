@@ -21,61 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.config;
-
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.WalletSpec;
-import io.xdag.core.XdagField;
+package io.xdag.config.spec;
 
 /**
- * The Xdag blockchain configurations.
+ * The Mining Pool Specifications
  */
-public interface Config {
+public interface PoolSpec {
 
-    /**
-     * Config File Name.
-     */
-    String getConfigName();
+    String getPoolIp();
+    int getPoolPort();
+    String getPoolTag();
+    int getGlobalMinerLimit();
+    int getGlobalMinerChannelLimit();
+    int getMaxConnectPerIp();
 
-    /**
-     * Config Root Dir.
-     */
-    String getRootDir();
+    /** 拥有相同地址块的矿工最多允许同时在线的数量 g_connections_per_miner_limit */
+    int getMaxMinerPerAccount();
+    int getMaxShareCountPerChannel();
 
-    /**
-     * Pool Specification.
-     */
-    PoolSpec getPoolSpec();
+    int getConnectionTimeout();
 
-    /**
-     * Node Specification.
-     */
-    NodeSpec getNodeSpec();
 
-    /**
-     * Admin Specification.
-     */
-    AdminSpec getAdminSpec();
+    /** 矿池自己的收益占比 */
+    double getPoolRation();
 
-    /**
-     * Wallet Specification.
-     */
-    WalletSpec getWalletSpec();
+    /** 出块矿工收益占比 */
+    double getRewardRation();
 
-    long getMainStartAmount();
+    /** 基金会收益占比 */
+    double getFundRation();
 
-    long getXdagEra();
+    /** 参与奖励的占比 */
+    double getDirectRation();
 
-    long getApolloForkHeight();
+    /** 奖励支付的周期 */
+    int getAwardEpoch();
 
-    long getApolloForkAmount();
-
-    XdagField.FieldType getXdagFieldHeader();
-
-    void changePara(String[] args);
-    void setDir();
-    void initKeys() throws Exception;
+    /** 等待超过10个epoch默认启动挖矿 */
+    int getWaitEpoch();
 
 }

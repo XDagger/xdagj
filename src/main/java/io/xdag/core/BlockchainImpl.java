@@ -26,7 +26,7 @@ package io.xdag.core;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
-import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.ECDSASignature;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Hash;
@@ -222,7 +222,7 @@ public class BlockchainImpl implements Blockchain {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
 
             long type = block.getType()&0xf;
-            if (Config.MAINNET) {
+            if (kernel.getConfig() instanceof MainnetConfig) {
                 if (type != XDAG_FIELD_HEAD.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a mainnet block");
@@ -237,7 +237,7 @@ public class BlockchainImpl implements Blockchain {
             }
 
             if (block.getTimestamp() > (XdagTime.getCurrentTimestamp()+ MAIN_CHAIN_PERIOD/4)
-                    || block.getTimestamp() < XDAG_ERA
+                    || block.getTimestamp() < kernel.getConfig().getXdagEra()
 //                    || (limit && timestamp - tmpNodeBlock.time > limit)
             ){
                 result = ImportResult.INVALID_BLOCK;
@@ -760,10 +760,10 @@ public class BlockchainImpl implements Blockchain {
             if(orphan!=null && orphan.size() != 0) {
                 refs.addAll(orphan);
             }
-            return new Block(sendTime, all, refs, mining, keys, remark, defKeyIndex);
+            return new Block(kernel.getConfig(), sendTime, all, refs, mining, keys, remark, defKeyIndex);
         }
 
-        return new Block(sendTime, all, refs, mining, keys, remark, defKeyIndex);
+        return new Block(kernel.getConfig(), sendTime, all, refs, mining, keys, remark, defKeyIndex);
     }
 
     public Block createMainBlock() {
@@ -785,7 +785,7 @@ public class BlockchainImpl implements Blockchain {
         if(CollectionUtils.isNotEmpty(orphans)) {
             refs.addAll(orphans);
         }
-        return new Block(sendTime, null, refs, true, null, kernel.getConfig().getPoolTag(), -1);
+        return new Block(kernel.getConfig(), sendTime, null, refs, true, null, kernel.getConfig().getPoolSpec().getPoolTag(), -1);
     }
 
     /**
@@ -1191,10 +1191,11 @@ public class BlockchainImpl implements Blockchain {
             amount >>= 1;
         }
         res = res.plus(UnsignedLong.valueOf(current_nmain).times(UnsignedLong.valueOf(amount)));
-        long fork_height = Config.MAINNET?MAIN_APOLLO_HEIGHT:MAIN_APOLLO_TESTNET_HEIGHT;
+        long fork_height = kernel.getConfig().getApolloForkHeight();
         if(nmain >= fork_height) {
             // add before apollo amount
-            res = res.plus(UnsignedLong.valueOf(fork_height - 1).times(UnsignedLong.valueOf(MAIN_START_AMOUNT - MAIN_APOLLO_AMOUNT)));
+            long diff = kernel.getConfig().getMainStartAmount() - kernel.getConfig().getApolloForkAmount();
+            res = res.plus(UnsignedLong.valueOf(fork_height - 1).times(UnsignedLong.valueOf(diff)));
         }
         return res.longValue();
     }
@@ -1239,11 +1240,11 @@ public class BlockchainImpl implements Blockchain {
 
     public long getStartAmount(long nmain) {
         long startAmount;
-        long forkHeight = Config.MAINNET ? MAIN_APOLLO_HEIGHT : MAIN_APOLLO_TESTNET_HEIGHT;
+        long forkHeight = kernel.getConfig().getApolloForkHeight();
         if (nmain >= forkHeight) {
-            startAmount = MAIN_APOLLO_AMOUNT;
+            startAmount = kernel.getConfig().getApolloForkAmount();
         } else {
-            startAmount = MAIN_START_AMOUNT;
+            startAmount = kernel.getConfig().getMainStartAmount();
         }
 
         return startAmount;

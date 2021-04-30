@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.xdag.config.Config;
 import io.xdag.mine.miner.MinerStates;
 import org.apache.commons.codec.binary.Hex;
 
@@ -38,7 +39,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
-import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.store.BlockStore;
@@ -58,6 +58,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
 public class MinerChannel {
     /** 对应的是服务端的还是客户端的 */
     private final boolean isServer;
@@ -232,7 +233,7 @@ public class MinerChannel {
             // 存在 但是会不会超过限制数
             log.debug("已经存在一个对应的矿工了");
             this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash));
-            if (miner.getConnChannelCounts() < config.getMaxMinerPerAccount()) {
+            if (miner.getConnChannelCounts() < config.getPoolSpec().getMaxMinerPerAccount()) {
                 this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash));
                 this.miner.addChannelCounts(1);
                 this.miner.putChannel(this.inetAddress, this);

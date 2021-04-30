@@ -248,7 +248,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
             System.arraycopy(hash, 8, find, 8, 24);
             Block block = blockchain.getBlockByHash(find, true);
             if (block != null) {
-                NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getTTL());
+                NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getNodeSpec().getTTL());
                 sendMessage(message);
             }
         }
