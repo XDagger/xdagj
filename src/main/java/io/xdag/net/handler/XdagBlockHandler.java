@@ -53,7 +53,6 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
         this.channel = channel;
     }
 
-    /** 获取第i个的第n个字节 */
     public static byte getMsgCode(XdagBlock xdagblock, int n) {
         byte[] data = xdagblock.getData();
         long type = BytesUtils.bytesToLong(data, 8, true);
@@ -61,7 +60,6 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
         return (byte) (type >> (n << 2) & 0xf);
     }
 
-    /** T 加解密的过程outbound应该先用上一次结束后的值 发完才加 */
     @Override
     protected void encode(
             ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
@@ -81,25 +79,12 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             in.readBytes(encryptData);
             byte[] unCryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length,
                     channel.getNode().getStat().Inbound.get() - 3 + 1);
-            // 该通道的输入记录加一
             channel.getNode().getStat().Inbound.add();
 
-            // TODO:处理xdagblock的传输头
-            // 8b010002f91eb6eb -> ebb61ef90200018b
-            long transportHeader = BytesUtils.bytesToLong(unCryptData, 0, true);
-            // 转发次数
-            int ttl = (int) ((transportHeader >> 8) & 0xff);
-            // 数据长度 应该为512
-            long dataLength = (transportHeader >> 16 & 0xffff);
-            // crc校验码
-            int crc = BytesUtils.bytesToInt(unCryptData, 4, true);
-            // 清除transportheader
-            System.arraycopy(BytesUtils.longToBytes(0, true), 0, unCryptData, 4, 4);
-
-            // 验证长度和crc校验 如果多次失败考虑断开
-            if (dataLength != 512 || !crc32Verify(unCryptData, crc)) {
-                log.debug(dataLength + " length");
-                log.debug("receive not block verify error!");
+            // TODO:process xdagblock transport header
+            int ttl = (int) ((BytesUtils.bytesToLong(unCryptData, 0, true)>> 8) & 0xff);
+            if (isDataIllegal(unCryptData.clone())) {
+                log.debug("Receive error block!");
                 return;
             }
 
@@ -127,4 +112,14 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
         }
     }
+    public boolean isDataIllegal(byte[] uncryptData) {
+        long transportHeader = BytesUtils.bytesToLong(uncryptData, 0, true);
+        long dataLength = (transportHeader >> 16 & 0xffff);
+        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+        // clean transport header
+        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+        return  (dataLength!=512 || !crc32Verify(uncryptData, crc));
+
+    }
+
 }

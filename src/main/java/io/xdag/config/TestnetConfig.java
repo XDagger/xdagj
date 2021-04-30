@@ -32,6 +32,9 @@ public class TestnetConfig extends AbstractConfig {
         super("testnet","xdag-testnet.config");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
 
+        // testnet wait 1 epoch
+        this.waitEpoch = 1;
+
         this.xdagEra = 0x16900000000L;
         this.mainStartAmount = UnsignedLong.fromLongBits(1L << 42).longValue();
 
