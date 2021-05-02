@@ -161,8 +161,8 @@ public class Kernel {
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME));
-        blockStore.init();
         log.info("Block Store init.");
+        blockStore.init();
 
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");

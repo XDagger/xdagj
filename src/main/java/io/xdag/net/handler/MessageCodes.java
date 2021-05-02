@@ -54,7 +54,6 @@ public class MessageCodes extends MessageToMessageCodec<Message, Message> {
     /**进来的第二道*/
     @Override
     protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
-        log.info("decode");
         out.add(msg);
     }
 

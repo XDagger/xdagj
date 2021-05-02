@@ -139,6 +139,7 @@ public class SyncManager {
         Config config = kernel.getConfig();
         if( config instanceof MainnetConfig) {
             if (kernel.getXdagState() != XdagState.CONN && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch()+ config.getPoolSpec().getWaitEpoch())) {
+                makeSyncDone();
                 res = true;
             }
         } else {
@@ -200,15 +201,16 @@ public class SyncManager {
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
-        log.info("Add New Block:{} result:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
+        log.debug("validateAndAddNewBlock:{}, {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
         switch (result) {
+            case EXIST:
             case IMPORTED_BEST:
             case IMPORTED_NOT_BEST:
                 syncPopBlock(blockWrapper);
                 break;
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
-                    log.error("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
+                    log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
                         Hex.toHexString(result.getHashlow()));
                     List<XdagChannel> channels = channelMgr.getActiveChannels();
                     for (XdagChannel channel : channels) {
@@ -282,9 +284,11 @@ public class SyncManager {
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
         ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
-        syncMap.computeIfPresent(key, (k, v)->{
+        Queue<BlockWrapper> queue = syncMap.getOrDefault(key,null);
+        if (queue!=null) {
+            syncMap.remove(key);
             blockchain.getXdagStats().nwaitsync--;
-            v.forEach(bw -> {
+            queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
                 switch (importResult) {
                     case EXIST:
@@ -292,11 +296,11 @@ public class SyncManager {
                     case IMPORTED_NOT_BEST:
                         // TODO import成功后都需要移除
                         syncPopBlock(bw);
-                        v.remove(bw);
+                        queue.remove(bw);
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashlow())) {
-                            log.error("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
+                            log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
                                     Hex.toHexString(importResult.getHashlow()));
                             List<XdagChannel> channels = channelMgr.getActiveChannels();
                             for (XdagChannel channel : channels) {
@@ -310,12 +314,42 @@ public class SyncManager {
                         break;
                 }
             });
-            if(v.size() == 0) {
-                syncMap.remove(k);
-                return null;
-            }
-            return v;
-        });
+        }
+//        syncMap.computeIfPresent(key, (k, v)->{
+//            syncMap.remove(k);
+//            blockchain.getXdagStats().nwaitsync--;
+//            v.forEach(bw -> {
+//                ImportResult importResult = importBlock(bw);
+//                switch (importResult) {
+//                    case EXIST:
+//                    case IMPORTED_BEST:
+//                    case IMPORTED_NOT_BEST:
+//                        // TODO import成功后都需要移除
+//                        syncPopBlock(bw);
+//                        v.remove(bw);
+//                        break;
+//                    case NO_PARENT:
+//                        if (syncPushBlock(bw, importResult.getHashlow())) {
+//                            log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
+//                                    Hex.toHexString(importResult.getHashlow()));
+//                            List<XdagChannel> channels = channelMgr.getActiveChannels();
+//                            for (XdagChannel channel : channels) {
+//                                if (channel.getNode().equals(bw.getRemoteNode())) {
+//                                    channel.getXdag().sendGetBlock(importResult.getHashlow());
+//                                }
+//                            }
+//                        }
+//                        break;
+//                    default:
+//                        break;
+//                }
+//            });
+////            if(v.size() == 0) {
+////                syncMap.remove(k);
+////                return null;
+////            }
+//            return null;
+//        });
     }
 
     public void makeSyncDone() {

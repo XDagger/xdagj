@@ -89,7 +89,7 @@ public class ChannelManager {
     public void onChannelActive(Libp2pChannel channel, Node node){
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
-        log.info("ActiveChannel size:"+ activeChannels.size());
+        log.info("activeChannel size:"+ activeChannels.size());
     }
     public void add(Libp2pChannel ch){
         channels.put(ch.getNode().getAddress(), ch);
