@@ -119,7 +119,7 @@ public class Libp2pNetwork implements P2PNetwork<Peer> {
         return SafeFuture.of(host.start())
                 .thenApply(
                         i -> {
-                            log.info(getNodeAddress());
+                            log.debug(getNodeAddress());
                             return null;
                         });
     }

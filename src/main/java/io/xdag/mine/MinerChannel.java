@@ -218,7 +218,7 @@ public class MinerChannel {
      *            版本号
      */
     public void activateHadnler(ChannelHandlerContext ctx, XdagVersion version) {
-        log.info("activate handler");
+        log.debug("activate handler");
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);

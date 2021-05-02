@@ -65,8 +65,8 @@ public class PeerManager implements ConnectionHandler {
 
     private SafeFuture<Peer> doConnect(final MultiaddrPeerAddress peer, final Network network) {
         log.debug("Connecting to {}", peer);
-        log.info("network = "+network.toString());
-        log.info("MultiaddrPeerAddress = "+ peer.toString());
+        log.debug("network = "+network.toString());
+        log.debug("MultiaddrPeerAddress = "+ peer.toString());
         return SafeFuture.of(() -> network.connect(peer.getMultiaddr()))
                 .thenApply(
                         connection -> {

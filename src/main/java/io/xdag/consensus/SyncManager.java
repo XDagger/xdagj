@@ -200,7 +200,7 @@ public class SyncManager {
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
-        log.info("validateAndAddNewBlock:{}, {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
+        log.info("Add New Block:{} result:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
         switch (result) {
             case IMPORTED_BEST:
             case IMPORTED_NOT_BEST:
@@ -319,7 +319,7 @@ public class SyncManager {
     }
 
     public void makeSyncDone() {
-//        log.debug("Sync Done");
+        log.info("Sync Done");
         if (syncDone) {
             return;
         }
@@ -378,6 +378,9 @@ public class SyncManager {
     }
     public void stop() {
         log.debug("sync manager stop");
+        if (this.stateListener.isRunning){
+            this.stateListener.isRunning = false;
+        }
     }
 
     public void distributeBlock(BlockWrapper blockWrapper) {

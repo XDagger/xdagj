@@ -96,7 +96,7 @@ public class OrphanPool {
         orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), BytesUtils.longToBytes(block.getTimestamp(),true));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         log.debug("orphan current size:" + currentsize);
-        log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
+//        log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
         orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
     }
 

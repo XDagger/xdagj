@@ -85,7 +85,7 @@ public class MinerServer {
     public void close() {
         if (isListening && channelFuture != null && channelFuture.channel().isOpen()) {
             try {
-                log.info("Closing MinerServer...");
+                log.debug("Closing MinerServer...");
                 channelFuture.channel().close().sync();
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();

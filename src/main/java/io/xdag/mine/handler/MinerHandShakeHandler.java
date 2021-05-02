@@ -111,9 +111,9 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // 如果是新增的地址块
                 if (importResult != ImportResult.EXIST) {
-                    log.debug("Punk:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
                 } else {
-                    log.debug("Punk:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
                 }
 
                 channel.getInBound().add(16L);
@@ -124,7 +124,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 ctx.pipeline().remove(this);
                 channel.activateHadnler(ctx, V03);
                 // TODO: 2020/5/8 这里可能还有一点小bug 如果无限加入 岂不是会无线创建了
-                log.info("add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
+                log.debug("add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
             }
         } else {
             log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
