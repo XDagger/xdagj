@@ -273,7 +273,6 @@ public class XdagPow implements PoW, Listener, Runnable {
                 hash = digest.sha256Final(Arrays.reverse(shareInfo.getData()));
             }
 
-            log.debug("the new Hash is [{}]",Hex.toHexString(hash));
 
             if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
                 minHash = hash;
@@ -302,7 +301,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void onTimeout() {
         if (generateBlock != null) {
-            log.info("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
+            log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                     Hex.toHexString(generateBlock.getHash()));
             // 发送区块 如果有的话 然后开始生成新区块
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
@@ -410,7 +409,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                     break;
                 }
             } catch (InterruptedException e) {
-                log.debug(e.getMessage(), e);
+                log.error(e.getMessage(), e);
             }
         }
     }

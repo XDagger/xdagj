@@ -306,7 +306,7 @@ public class BlockchainImpl implements Blockchain {
 
             // 如果是自己的区块
             if (checkMineAndAdd(block)) {
-                log.info("A block hash:" + Hex.toHexString(block.getHashLow()) + " become mine");
+                log.debug("A block hash:" + Hex.toHexString(block.getHashLow()) + " become mine");
                 updateBlockFlag(block, BI_OURS, true);
             }
 
@@ -366,7 +366,7 @@ public class BlockchainImpl implements Blockchain {
                 unWindMain(blockRef);
                 // 发生回退
                 if (xdagStats.nmain - currentHeight > 0) {
-                    log.debug("Punk:Before unwind, height = {}, After unwind, height = {}, unwind number = {}", currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
+                    log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}", currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow());
@@ -397,7 +397,7 @@ public class BlockchainImpl implements Blockchain {
             // 如果区块输入不为0说明是交易块
             if (block.getInputs().size() != 0) {
                 if ((block.getInfo().getFlags()&BI_OURS) != 0) {
-                    log.debug("Punk:pool transaction(reward). block hash:{}", Hex.toHexString(block.getHash()));
+                    log.info("XDAG:pool transaction(reward). block hash:{}", Hex.toHexString(block.getHash()));
                 }
             }
 
@@ -411,7 +411,7 @@ public class BlockchainImpl implements Blockchain {
     public void processExtraBlock() {
         if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
             Block reuse = getHead(memOrphanPool).getValue();
-            log.info("Remove when extra too big");
+            log.debug("Remove when extra too big");
             removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
             xdagStats.nblocks--;
             xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
@@ -652,7 +652,7 @@ public class BlockchainImpl implements Blockchain {
     public void setMain(Block block) {
         // 设置奖励
         long mainNumber = xdagStats.nmain + 1;
-        log.info("mainNumber = {},hash = {}",mainNumber,Hex.toHexString(block.getInfo().getHash()));
+        log.debug("mainNumber = {},hash = {}",mainNumber,Hex.toHexString(block.getInfo().getHash()));
         long reward = getReward(mainNumber);
         block.getInfo().setHeight(mainNumber);
         updateBlockFlag(block, BI_MAIN, true);
@@ -1150,7 +1150,7 @@ public class BlockchainImpl implements Blockchain {
                     block.getSubRawData(block.getOutsigIndex() - 2), publicKeyBytes);
             byte[] hash = Hash.hashTwice(digest);
             if (ecKey.verify(hash, signature)) {
-                log.info("Validate Success");
+                log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;
             }

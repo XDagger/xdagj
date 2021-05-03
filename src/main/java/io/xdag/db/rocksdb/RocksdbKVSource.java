@@ -208,7 +208,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 if (db == null) {
                     log.error("db is null");
                 } else {
-                    log.info("put block key ={} ,val = {}",Hex.encodeHexString(key),Hex.encodeHexString(val));
+                    log.debug("put block key ={} ,val = {}",Hex.encodeHexString(key),Hex.encodeHexString(val));
                     db.put(key, val);
                 }
             } else {
@@ -224,7 +224,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                                 + (val == null ? "null" : val.length));
             }
         } catch (RocksDBException e) {
-            System.out.println("Failed to put into db");
+//            System.out.println("Failed to put into db");
             log.error("Failed to put into db '{}'", name, e);
             hintOnTooManyOpenFiles(e);
             throw new RuntimeException(e);
