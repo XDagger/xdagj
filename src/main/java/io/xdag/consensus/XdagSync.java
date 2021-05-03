@@ -87,13 +87,13 @@ public class XdagSync {
     }
 
     private void syncLoop() {
-        log.info("start syncLoop");
+        log.debug("SyncLoop...");
         try {
             requestBlocks(0, 1L << 48);
         } catch (Throwable e) {
             log.error("error when requestBlocks {}",e.getMessage());
         }
-        log.info("end syncLoop");
+        log.debug("End syncLoop");
     }
 
     private void requestBlocks(long t, long dt) {

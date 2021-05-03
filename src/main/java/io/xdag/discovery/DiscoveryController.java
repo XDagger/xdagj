@@ -91,7 +91,7 @@ public class DiscoveryController {
         this.isbootnode = kernel.getConfig().getNodeSpec().isBootnode();
         final BytesValue myid ;
         if(isbootnode){
-            log.debug("seed node start");
+            log.info("Seed node start");
             String prikey = this.kernel.getConfig().getNodeSpec().getLibp2pPrivkey();
             // id = 08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2
             this.privKey = KeyKt.unmarshalPrivateKey(Bytes.fromHexString(prikey).toArrayUnsafe());
@@ -194,7 +194,7 @@ public class DiscoveryController {
 
     private void dispatchInteraction(final Peer peer, final PeerInteractionState state) {
         final PeerInteractionState previous = inflightInteractions.put(peer.getId(), state);
-        log.info("inflightInteractions.put {} " ,peer.getId());
+        log.debug("inflightInteractions.put {} " ,peer.getId());
         if (previous != null) {
             previous.cancelTimers();
         }
@@ -209,7 +209,7 @@ public class DiscoveryController {
     }
     // 30s询问一次时间是否够半小时 半小时刷新一次refreshTable
     public void timeRefreshTable() {
-        log.info("start RefreshTable");
+        log.debug("start RefreshTable");
         vertx.setPeriodic(
                 Math.min(REFRESH_CHECK_INTERVAL_MILLIS, tableRefreshIntervalMs),
                 (l) -> {
@@ -224,7 +224,7 @@ public class DiscoveryController {
     private void refreshTableIfRequired() throws IOException {
         final long now = System.currentTimeMillis();
         if (lastRefreshTime + tableRefreshIntervalMs < now) {
-            log.info("Peer table refresh triggered by timer expiry");
+            log.debug("Peer table refresh triggered by timer expiry");
             refreshTable();
         }
     }
@@ -286,10 +286,10 @@ public class DiscoveryController {
     }
 
     public void onMessage(final Packet packet, final DiscoveryPeer sender) throws IOException {
-        log.info("Received Packet Type {}",packet.getType());
+        log.debug("Received Packet Type {}",packet.getType());
         // Message from self. This should not happen.
         if (sender.getId().equals(myself.getId())) {
-            log.info("发送人是自己");
+            log.debug("发送人是自己");
             return;
         }
 
@@ -300,7 +300,7 @@ public class DiscoveryController {
         switch (packet.getType()) {
             case PING:
                 if (addToPeerTable(peer)) {
-                    log.info("Table成功添加peer");
+                    log.debug("Table成功添加peer");
                     final PingPacketData ping = packet.getPacketData(PingPacketData.class).get();
                     respondToPing(ping, packet.getHash(), peer);
                 }
@@ -311,7 +311,7 @@ public class DiscoveryController {
                 matchInteraction(packet)
                         .ifPresent(
                                 interaction -> {
-                                    log.info("Table成功添加peer");
+                                    log.debug("Table成功添加peer");
                                     try {
                                         addToPeerTable(peer);
                                     } catch (IOException e) {
@@ -321,7 +321,7 @@ public class DiscoveryController {
                                     // If this was a bootstrap peer, let's ask it for nodes near to us.
                                     // 如果是种子节点就询问对方离我最近的节点
                                     if (interaction.isBootstrap()) {
-                                        log.info("interaction.isBootstrap() = {}" ,interaction.isBootstrap());
+                                        log.debug("interaction.isBootstrap() = {}" ,interaction.isBootstrap());
                                         findNodes(peer, myself.getId());
                                     }
                                 });
@@ -333,7 +333,7 @@ public class DiscoveryController {
                         .ifPresent(
                                 interaction -> {
                                     // Extract the peers from the incoming packet.
-                                    log.info("enter NEIGHBORS");
+                                    log.debug("enter NEIGHBORS");
                                     final List<DiscoveryPeer> neighbors =
                                             packet
                                                     .getPacketData(NeighborsPacketData.class)
@@ -344,14 +344,14 @@ public class DiscoveryController {
                                         System.out.println("neighbors.size() = " + neighbors.size());
                                         try {
                                             if (peerTable.get(neighbor).isPresent() || myself.getId().equals(neighbor.getId())) {
-                                                log.info("peerTable had this peer or not ping myself");
+                                                log.debug("peerTable had this peer or not ping myself");
                                                 continue;
                                             }
                                         } catch (IOException e) {
                                             e.printStackTrace();
                                         }
                                         //todo
-                                        log.info("bond new peer and neighbor.getId() ="+ neighbor.getId());
+                                        log.debug("bond new peer and neighbor.getId() ="+ neighbor.getId());
                                         bond(neighbor, false);
                                     }
                                 });
@@ -375,7 +375,7 @@ public class DiscoveryController {
         // TODO: for now return 16 peers. Other implementations calculate how many
         // peers they can fit in a 1280-byte payload.
         final List<DiscoveryPeer> peers = peerTable.nearestPeers(packetData.getTarget(), 16);
-        log.info("DiscoveryPeer number {}",peers.size());
+        log.debug("DiscoveryPeer number {}",peers.size());
         final PacketData data = NeighborsPacketData.create(peers);
         sendPacket(sender, PacketType.NEIGHBORS, data);
     }
@@ -528,10 +528,10 @@ public class DiscoveryController {
     }
     private Optional<PeerInteractionState> matchInteraction(final Packet packet) {
         final PeerInteractionState interaction = inflightInteractions.get(packet.getNodeId());
-        log.info("packet.getNodeId() = {}",packet.getNodeId());
+        log.debug("packet.getNodeId() = {}",packet.getNodeId());
         if (interaction == null || !interaction.test(packet)) {
-            log.info("interaction == null = {}",interaction == null);
-            log.info("return Optional.empty()");
+            log.debug("interaction == null = {}",interaction == null);
+            log.debug("return Optional.empty()");
             return Optional.empty();
         }
         System.out.println("互动匹配");

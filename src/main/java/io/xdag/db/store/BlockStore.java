@@ -446,7 +446,7 @@ public class BlockStore {
         if (block == null) {
             return null;
         }
-        log.debug("data:{}",Hex.toHexString(blockSource.get(hashlow)));
+//        log.debug("Data:{}",Hex.toHexString(blockSource.get(hashlow)));
         block.setXdagBlock(new XdagBlock(blockSource.get(hashlow)));
         block.setParsed(false);
         block.parse();

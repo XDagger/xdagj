@@ -142,6 +142,7 @@ public class Kernel {
         // ====================================
         channelMgr = new XdagChannelManager(this);
         channelMgr.start();
+        log.info("Channel Manager start...");
         netDBMgr = new NetDBManager(this.config);
         netDBMgr.init();
         log.info("NetDB Manager init.");
@@ -171,12 +172,14 @@ public class Kernel {
         // netstatus netdb init
         // ====================================
         netDB = new NetDB();
+        log.info("NetDB init");
 
         // ====================================
         // randomX init
         // ====================================
         randomXUtils = new RandomX(config);
         randomXUtils.init();
+        log.info("RandomX init");
 
         // ====================================
         // initialize blockchain database
@@ -196,9 +199,11 @@ public class Kernel {
         } else {
             poolMiner = new Miner(xdagStats.getGlobalMiner());
         }
+        log.info("Blockchain init");
 
         // randomX loading
         randomXUtils.randomXLoadingForkTime();
+        log.info("RandomX reload");
 
         // log.debug("Net Status:"+netStatus);
 
@@ -210,7 +215,10 @@ public class Kernel {
 
         p2p = new XdagServer(this);
         p2p.start();
+        log.info("Node server start...");
         client = new XdagClient(this.config);
+        log.info("XdagClient nodeId {}", client.getNode().getHexId());
+
 
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
@@ -223,18 +231,22 @@ public class Kernel {
         // ====================================
         nodeMgr = new NodeManager(this);
         nodeMgr.start();
+        log.info("Node manager start...");
+
 
         // ====================================
         // send request
         // ====================================
         sync = new XdagSync(this);
         sync.start();
+        log.info("XdagSync start...");
 
         // ====================================
         // sync block
         // ====================================
         syncMgr = new SyncManager(this);
         syncMgr.start();
+        log.info("SyncManager start...");
 
         // ====================================
         // set up pool miner
@@ -251,6 +263,7 @@ public class Kernel {
         // ====================================
         connectionLimitHandler = new ConnectionLimitHandler(this.config.getPoolSpec().getMaxConnectPerIp());
         minerServer = new MinerServer(this);
+        log.info("Pool Server init");
 
         // ====================================
         // pow
@@ -286,15 +299,21 @@ public class Kernel {
         // 1. 工作层关闭
         // stop consensus
         sync.stop();
+        log.info("XdagSync stop.");
         syncMgr.stop();
+        log.info("SyncManager stop.");
         pow.stop();
+        log.info("Block production stop.");
 
         // 2. 连接层关闭
         // stop node manager and channel manager
         channelMgr.stop();
+        log.info("ChannelMgr stop.");
         nodeMgr.stop();
+        log.info("Node manager stop.");
 
         channelManager.stop();
+        log.info("ChannelManager stop.");
         discoveryController.stop();
         libp2pNetwork.stop();
         // close timer
@@ -302,11 +321,15 @@ public class Kernel {
 
         // close server
         p2p.close();
+        log.info("Node server stop.");
         // close client
         client.close();
+        log.info("Node client stop.");
 
         minerServer.close();
+        log.info("Pool server stop.");
         minerManager.stop();
+        log.info("Miner manager stop.");
         awardManager.stop();
 
         // 3. 数据层关闭
@@ -319,6 +342,7 @@ public class Kernel {
 
         // release
         randomXUtils.randomXPoolReleaseMem();
+        log.info("Release randomx");
 
     }
     public ChannelManager getLibp2pChannelManager() {

@@ -98,7 +98,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         Block block = msg.getBlock();
         ImportResult importResult = syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         if (importResult.isIllegal()) {
-            log.debug("Punk:receive tansaction. A Transaction from wallet/miner, block hash:{}", Hex.toHexString(block.getHash()));
+            log.info("XDAG:receive tansaction. A Transaction from wallet/miner, block hash:{}", Hex.toHexString(block.getHash()));
         }
     }
 
@@ -136,7 +136,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 }
                 //改变channel对应的地址，并替换新的miner连接
                 channel.updateMiner(miner);
-                log.debug("Punk:randomXminer. channel {} with wallet-address {} is randomXminer",channel.getInetAddress().toString(),Hex.toHexString(blockHash));
+                log.info("XDAG:randomXminer. channel {} with wallet-address {} is randomXminer",channel.getInetAddress().toString(),Hex.toHexString(blockHash));
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
                 minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash()));
@@ -171,6 +171,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         this.channel.setActive(false);
         kernel.getChannelsAccount().getAndDecrement();
         minerManager.removeUnactivateChannel(this.channel);
-        log.debug("Punk:channel close. channel {} with wallet-address {} close", this.channel.getInetAddress().toString(), Hex.toHexString(this.channel.getMiner().getAddressHash()));
+        log.info("XDAG:channel close. channel {} with wallet-address {} close", this.channel.getInetAddress().toString(), Hex.toHexString(this.channel.getMiner().getAddressHash()));
     }
 }

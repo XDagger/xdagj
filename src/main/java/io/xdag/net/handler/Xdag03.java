@@ -129,7 +129,7 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.info("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
+        log.debug("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
     }
