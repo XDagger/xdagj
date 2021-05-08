@@ -35,7 +35,7 @@ package io.xdag.utils;/*
  */
 
 import io.libp2p.core.multiformats.Multiaddr;
-import io.xdag.libp2p.peer.NodeId;
+import io.xdag.net.libp2p.peer.NodeId;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -61,7 +61,7 @@ public class MultiaddrUtil {
         return addPeerId(fromInetSocketAddress(address, "tcp"), nodeId);
     }
 
-    private static Multiaddr addPeerId(final Multiaddr addr, final NodeId nodeId) {
+    public static Multiaddr addPeerId(final Multiaddr addr, final NodeId nodeId) {
         return new Multiaddr(addr, Multiaddr.fromString("/p2p/" + nodeId.toBase58()));
     }
 

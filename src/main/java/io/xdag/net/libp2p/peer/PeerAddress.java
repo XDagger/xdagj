@@ -21,46 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils;
-
-
-import io.libp2p.core.PeerId;
-import io.libp2p.core.multiformats.Multiaddr;
-import io.libp2p.core.multiformats.Protocol;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
-import io.xdag.net.libp2p.peer.NodeId;
-import io.xdag.net.libp2p.peer.PeerAddress;
+package io.xdag.net.libp2p.peer;
 
 import java.util.Objects;
+import java.util.Optional;
 
+public class PeerAddress {
+    private final NodeId id;
 
-public class MultiaddrPeerAddress extends PeerAddress {
-
-    private final Multiaddr multiaddr;
-
-    MultiaddrPeerAddress(final NodeId nodeId, final Multiaddr multiaddr) {
-        super(nodeId);
-        this.multiaddr = multiaddr;
-    }
-
-    public static MultiaddrPeerAddress fromAddress(final String address) {
-        final Multiaddr multiaddr = Multiaddr.fromString(address);
-        return fromMultiaddr(multiaddr);
+    public PeerAddress(final NodeId id) {
+        this.id = id;
     }
 
 
+    public NodeId getId() {
+        return id;
+    }
 
-    private static MultiaddrPeerAddress fromMultiaddr(final Multiaddr multiaddr) {
-        final String p2pComponent = multiaddr.getStringComponent(Protocol.P2P);
-        if (p2pComponent == null) {
-            throw new IllegalArgumentException("No peer ID present in multiaddr: " + multiaddr);
+    @SuppressWarnings("unchecked")
+    public <T> Optional<T> as(final Class<T> clazz) {
+        if (clazz.isInstance(this)) {
+            return Optional.of((T) this);
+        } else {
+            return Optional.empty();
         }
-        final LibP2PNodeId nodeId = new LibP2PNodeId(PeerId.fromBase58(p2pComponent));
-        return new MultiaddrPeerAddress(nodeId, multiaddr);
     }
 
-    public Multiaddr getMultiaddr() {
-        return multiaddr;
+    @Override
+    public String toString() {
+        return id.toString();
     }
 
     @Override
@@ -71,15 +60,13 @@ public class MultiaddrPeerAddress extends PeerAddress {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final MultiaddrPeerAddress that = (MultiaddrPeerAddress) o;
-        return Objects.equals(multiaddr, that.multiaddr);
+        final PeerAddress that = (PeerAddress) o;
+        return id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), multiaddr);
+        return Objects.hash(id);
     }
 }
+

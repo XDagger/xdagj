@@ -506,7 +506,6 @@ public class Commands {
 
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
-        Map<Node,Long> map0 = kernel.getNodeMgr().getActiveNode0();
         StringBuilder stringBuilder = new StringBuilder();
         for (Node node : map.keySet()) {
             stringBuilder
@@ -519,19 +518,7 @@ public class Commands {
                     .append(node.getStat().Outbound.get())
                     .append(" out").append(System.getProperty("line.separator"));
         }
-        for (Node node0 : map0.keySet()) {
-            stringBuilder
-                    .append(node0.getAddress())
-                    .append(" ")
-                    .append("libp2p")
-                    .append(" ")
-                    .append(map0.get(node0) == null ? null : FormatDateUtils.format(new Date(map0.get(node0))))
-                    .append(" ")
-                    .append(node0.getStat().Inbound.get())
-                    .append(" in/")
-                    .append(node0.getStat().Outbound.get())
-                    .append(" out").append(System.getProperty("line.separator"));
-        }
+
         return stringBuilder.toString();
     }
 

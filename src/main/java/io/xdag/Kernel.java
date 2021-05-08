@@ -39,10 +39,9 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.discovery.DiscoveryController;
 import io.xdag.event.EventProcesser;
-import io.xdag.libp2p.Libp2pNetwork;
-import io.xdag.libp2p.manager.ChannelManager;
+import io.xdag.net.discovery.DiscoveryController;
+import io.xdag.net.libp2p.Libp2pNetwork;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
@@ -100,7 +99,6 @@ public class Kernel {
     protected XdagState xdagState;
     protected Libp2pNetwork libp2pNetwork;
     protected DiscoveryController discoveryController;
-    protected ChannelManager channelManager;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
@@ -211,7 +209,6 @@ public class Kernel {
         // set up client
         // ====================================
 
-        channelManager = new ChannelManager();
 
         p2p = new XdagServer(this);
         p2p.start();
@@ -225,6 +222,7 @@ public class Kernel {
 
         discoveryController = new DiscoveryController(this);
         discoveryController.start();
+
 
         // ====================================
         // start node manager
@@ -312,8 +310,7 @@ public class Kernel {
         nodeMgr.stop();
         log.info("Node manager stop.");
 
-        channelManager.stop();
-        log.info("ChannelManager stop.");
+
         discoveryController.stop();
         libp2pNetwork.stop();
         // close timer
@@ -344,9 +341,6 @@ public class Kernel {
         randomXUtils.randomXPoolReleaseMem();
         log.info("Release randomx");
 
-    }
-    public ChannelManager getLibp2pChannelManager() {
-        return channelManager;
     }
 
 

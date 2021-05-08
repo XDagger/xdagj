@@ -21,38 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.core;
+package io.xdag.net.libp2p.peer;
 
-import io.xdag.net.libp2p.peer.Libp2pNode;
-import io.xdag.net.node.Node;
-import lombok.Getter;
-import lombok.Setter;
+import io.libp2p.core.PeerId;
+import org.apache.tuweni.bytes.Bytes;
 
-@Getter
-@Setter
-public class BlockWrapper implements Cloneable {
-    private Block block;
-    private int ttl;
-    /** 记录区块接收节点 */
-    private Node remoteNode;
-    private Libp2pNode libp2pNode;
-    // NO_PARENT waiting time
-    private long time;
+public class  LibP2PNodeId extends NodeId {
+    private final PeerId peerId;
 
-    public BlockWrapper(Block block, int ttl, Node remoteNode) {
-        this.block = block;
-        this.ttl = ttl;
-        this.remoteNode = remoteNode;
+    public LibP2PNodeId(final PeerId peerId) {
+        this.peerId = peerId;
     }
 
-    public BlockWrapper(Block block, int ttl) {
-        this.block = block;
-        this.ttl = ttl;
+    @Override
+    public Bytes toBytes() {
+        return Bytes.wrap(peerId.getBytes());
     }
 
-    public BlockWrapper(Block block, int ttl, Libp2pNode libp2pNode) {
-        this.block = block;
-        this.ttl = ttl;
-        this.libp2pNode = libp2pNode;
+    @Override
+    public String toBase58() {
+        return peerId.toBase58();
     }
 }

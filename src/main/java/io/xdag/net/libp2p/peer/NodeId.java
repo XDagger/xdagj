@@ -21,38 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.core;
+package io.xdag.net.libp2p.peer;
 
-import io.xdag.net.libp2p.peer.Libp2pNode;
-import io.xdag.net.node.Node;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
-public class BlockWrapper implements Cloneable {
-    private Block block;
-    private int ttl;
-    /** 记录区块接收节点 */
-    private Node remoteNode;
-    private Libp2pNode libp2pNode;
-    // NO_PARENT waiting time
-    private long time;
+import org.apache.tuweni.bytes.Bytes;
 
-    public BlockWrapper(Block block, int ttl, Node remoteNode) {
-        this.block = block;
-        this.ttl = ttl;
-        this.remoteNode = remoteNode;
+public abstract class NodeId {
+
+    public abstract Bytes toBytes();
+
+    public abstract String toBase58();
+
+    @Override
+    public final int hashCode() {
+        return toBytes().hashCode();
     }
 
-    public BlockWrapper(Block block, int ttl) {
-        this.block = block;
-        this.ttl = ttl;
+    @Override
+    public final boolean equals(final Object obj) {
+        if (!(obj instanceof NodeId)) {
+            return false;
+        }
+        return toBytes().equals(((NodeId) obj).toBytes());
     }
 
-    public BlockWrapper(Block block, int ttl, Libp2pNode libp2pNode) {
-        this.block = block;
-        this.ttl = ttl;
-        this.libp2pNode = libp2pNode;
+    @Override
+    public final String toString() {
+        return toBase58();
     }
 }

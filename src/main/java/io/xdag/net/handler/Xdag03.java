@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.XdagStats;
+import io.xdag.net.Channel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
@@ -59,7 +60,7 @@ public class Xdag03 extends XdagHandler {
 
     private XdagVersion version = XdagVersion.V03;
 
-    public Xdag03(Kernel kernel, XdagChannel channel) {
+    public Xdag03(Kernel kernel, Channel channel) {
         this.kernel = kernel;
         this.channel = channel;
         this.blockchain = kernel.getBlockchain();

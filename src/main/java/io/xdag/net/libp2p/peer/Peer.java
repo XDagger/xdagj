@@ -21,38 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.core;
+package io.xdag.net.libp2p.peer;
 
-import io.xdag.net.libp2p.peer.Libp2pNode;
-import io.xdag.net.node.Node;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
-public class BlockWrapper implements Cloneable {
-    private Block block;
-    private int ttl;
-    /** 记录区块接收节点 */
-    private Node remoteNode;
-    private Libp2pNode libp2pNode;
-    // NO_PARENT waiting time
-    private long time;
-
-    public BlockWrapper(Block block, int ttl, Node remoteNode) {
-        this.block = block;
-        this.ttl = ttl;
-        this.remoteNode = remoteNode;
+public interface Peer {
+    default NodeId getId() {
+        return getAddress().getId();
     }
 
-    public BlockWrapper(Block block, int ttl) {
-        this.block = block;
-        this.ttl = ttl;
-    }
+    PeerAddress getAddress();
 
-    public BlockWrapper(Block block, int ttl, Libp2pNode libp2pNode) {
-        this.block = block;
-        this.ttl = ttl;
-        this.libp2pNode = libp2pNode;
-    }
+    boolean isConnected();
+
 }
