@@ -48,7 +48,6 @@ import io.xdag.net.libp2p.Libp2pNetwork;
 
 import io.xdag.net.XdagClient;
 import io.xdag.net.handler.XdagChannelInitializer;
-import io.xdag.net.libp2p.peer.PeerAddress;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
@@ -83,6 +82,7 @@ public class NodeManager {
     private volatile boolean isRunning;
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
+    private ScheduledFuture<?> connectlibp2PFuture;
     private final DiscoveryController discoveryController;
     Libp2pNetwork libp2pNetwork;
 
@@ -109,7 +109,7 @@ public class NodeManager {
             // every 100 seconds, delayed by 5 seconds (public IP lookup)
             fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
-            ScheduledFuture<?> connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p, 1, 5, TimeUnit.SECONDS);
+            connectlibp2PFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p, 1000, 500, TimeUnit.MILLISECONDS);
             isRunning = true;
             log.debug("Node manager started");
         }
@@ -119,6 +119,7 @@ public class NodeManager {
         if (isRunning) {
             connectFuture.cancel(true);
             fetchFuture.cancel(false);
+            connectlibp2PFuture.cancel(true);
             isRunning = false;
             exec.shutdown();
             log.debug("Node manager stop...");
