@@ -11,7 +11,7 @@ import java.util.List;
 
 @Getter
 public class DiscoveryController {
-    protected DiscoveryService discV5Service1;
+    protected DiscoveryService discV5Service;
     Kernel kernel;
     String ip;
     int port;
@@ -34,13 +34,13 @@ public class DiscoveryController {
             this.privKey = kernel.getPrivKey();
         }
         List<String> bootnodes = kernel.getConfig().getNodeSpec().getBootnodes();
-        discV5Service1 = DiscV5ServiceImpl.create(Bytes.wrap(privKey.raw()),ip,port,bootnodes);
-        discV5Service1.start();
-        discV5Service1.searchForPeers();
+        discV5Service = DiscV5ServiceImpl.create(Bytes.wrap(privKey.raw()),ip,port,bootnodes);
+        discV5Service.start();
+        discV5Service.searchForPeers();
 
     }
 
     public void stop() {
-        discV5Service1.stop();
+        discV5Service.stop();
     }
 }

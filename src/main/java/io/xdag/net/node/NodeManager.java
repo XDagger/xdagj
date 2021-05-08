@@ -84,6 +84,7 @@ public class NodeManager {
     private ScheduledFuture<?> fetchFuture;
     private ScheduledFuture<?> connectlibp2PFuture;
     private final DiscoveryController discoveryController;
+    private Set<Node> hadConnected;
     Libp2pNetwork libp2pNetwork;
 
     public NodeManager(Kernel kernel) {
@@ -109,7 +110,8 @@ public class NodeManager {
             // every 100 seconds, delayed by 5 seconds (public IP lookup)
             fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
 
-            connectlibp2PFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p, 1000, 500, TimeUnit.MILLISECONDS);
+            connectlibp2PFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p, 10, 10, TimeUnit.SECONDS);
+            hadConnected = new HashSet<>();
             isRunning = true;
             log.debug("Node manager started");
         }
@@ -202,16 +204,16 @@ public class NodeManager {
             client.connect(ip, port, initializer);
         }
     }
-
+    //todo：发现之后的节点只能自动连接一次
     public void doConnectlibp2p(){
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
         List<DiscoveryPeer> discoveryPeerList =
-                discoveryController.getDiscV5Service1().streamKnownPeers().collect(Collectors.toList());
+                discoveryController.getDiscV5Service().streamKnownPeers().collect(Collectors.toList());
         for (DiscoveryPeer p :discoveryPeerList){
             Node node = new Node(p.nodeAddress().getHostName(),p.nodeAddress().getPort());
-            if(!client.getNode().equals(node)&&!activeAddress.contains(p.getNodeAddress())){
+            if(!client.getNode().equals(node)&&!activeAddress.contains(p.getNodeAddress())&&!hadConnected.contains(node)){
                 kernel.getLibp2pNetwork().dail(discoveryPeerToDailId(p));
-
+                hadConnected.add(node);
             }
         }
     }
