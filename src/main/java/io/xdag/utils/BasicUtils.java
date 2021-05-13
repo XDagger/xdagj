@@ -31,6 +31,7 @@ import static io.xdag.utils.FastByteComparisons.equalBytes;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.NumberFormat;
+import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 
 public class BasicUtils {
@@ -185,5 +186,22 @@ public class BasicUtils {
 
     public static double xdag_log_difficulty2hashrate(double logDiff) {
         return Math.exp(logDiff) * Math.pow(2, -58) * (0.65);
+    }
+
+    /**
+     * @param number should be in form '0x34fabd34....'
+     * @return String
+     */
+    public static BigInteger unifiedNumericToBigInteger(String number) {
+
+        boolean match = Pattern.matches("0[xX][0-9a-fA-F]+", number);
+        if (!match) {
+            return (new BigInteger(number));
+        } else{
+            number = number.substring(2);
+            number = number.length() % 2 != 0 ? "0".concat(number) : number;
+            byte[] numberBytes = Hex.decode(number);
+            return (new BigInteger(1, numberBytes));
+        }
     }
 }

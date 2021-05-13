@@ -76,7 +76,7 @@ public class RandomXSyncTest {
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 64;
         RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 128;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
-        forkHeight = 3;
+        forkHeight = 2;
 
     }
 

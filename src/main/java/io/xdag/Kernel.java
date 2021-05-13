@@ -59,12 +59,20 @@ import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.randomx.RandomX;
+import io.xdag.rpc.Web3;
+import io.xdag.rpc.cors.CorsConfiguration;
+import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
+import io.xdag.rpc.netty.*;
+import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
+import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.OldWallet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -114,6 +122,14 @@ public class Kernel {
     @Getter
     protected long startEpoch;
 
+
+    // rpc
+    protected JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
+    protected Web3 web3;
+//    protected Web3WebSocketServer web3WebSocketServer;
+    protected Web3HttpServer web3HttpServer;
+    protected JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
+    protected JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
 
     public Kernel(Config config, OldWallet wallet) {
         this.config = config;
@@ -287,6 +303,79 @@ public class Kernel {
         Launcher.registerShutdownHook("kernel", this::testStop);
     }
 
+    private Web3 getWeb3() {
+        if (web3 == null) {
+            web3 = buildWeb3();
+        }
+
+        return web3;
+    }
+
+    private Web3 buildWeb3() {
+        return null;
+    }
+
+    private JsonRpcWeb3ServerHandler getJsonRpcWeb3ServerHandler() {
+        if (jsonRpcWeb3ServerHandler == null) {
+            jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
+                    getWeb3(),
+                    config.getRpcModules()
+            );
+        }
+
+        return jsonRpcWeb3ServerHandler;
+    }
+//
+//    private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
+//        if (web3WebSocketServer == null) {
+//            JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
+//            XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
+//            web3WebSocketServer = new Web3WebSocketServer(
+//                    InetAddress.getLocalHost(),
+//                    4444,
+//                    jsonRpcHandler,
+//                    getJsonRpcWeb3ServerHandler()
+//            );
+//        }
+//
+//        return web3WebSocketServer;
+//    }
+
+    private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
+        if (web3HttpServer == null) {
+            web3HttpServer = new Web3HttpServer(
+                    InetAddress.getLocalHost(),
+                    4445,
+                    123,
+                    true,
+                    new CorsConfiguration("*"),
+                    getJsonRpcWeb3FilterHandler(),
+                    getJsonRpcWeb3ServerHandler()
+            );
+        }
+
+        return web3HttpServer;
+    }
+
+    private JsonRpcWeb3FilterHandler getJsonRpcWeb3FilterHandler() throws UnknownHostException {
+        if (jsonRpcWeb3FilterHandler == null) {
+            jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
+                    "*",
+                    InetAddress.getLocalHost(),
+                    null
+            );
+        }
+
+        return jsonRpcWeb3FilterHandler;
+    }
+
+    private JsonRpcSerializer getJsonRpcSerializer() {
+        if (jacksonBasedRpcSerializer == null) {
+            jacksonBasedRpcSerializer = new JacksonBasedRpcSerializer();
+        }
+
+        return jacksonBasedRpcSerializer;
+    }
     /** Stops the kernel. */
     public synchronized void testStop() {
 

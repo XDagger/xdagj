@@ -134,7 +134,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     public void newBlock() {
-        log.debug("Start new block generate....");
+        log.info("Start new block generate....");
         long sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
 

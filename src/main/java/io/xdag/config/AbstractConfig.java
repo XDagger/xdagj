@@ -30,6 +30,7 @@ import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.discovery.peers.DiscoveryPeer;
 import io.xdag.discovery.peers.Endpoint;
+import io.xdag.rpc.modules.ModuleDescription;
 import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Getter;
 import lombok.Setter;
@@ -131,6 +132,12 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected long mainStartAmount;
     protected long apolloForkHeight;
     protected long apolloForkAmount;
+
+
+    // =========================
+    // Xdag RPC modules
+    // =========================
+    protected List<ModuleDescription> moduleDescriptions;
 
 
     public void setDir() {
@@ -323,5 +330,44 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public boolean enableRefresh() {
         return this.enableRefresh;
+    }
+
+    @Override
+    public List<ModuleDescription> getRpcModules() {
+        if (this.moduleDescriptions != null) {
+            return this.moduleDescriptions;
+        }
+
+        List<ModuleDescription> modules = new ArrayList<>();
+
+        // TODO: get modules from config
+//        if (!configFromFiles.hasPath("rpc.modules")) {
+//            return modules;
+//        }
+//
+//        List<? extends ConfigObject> list = configFromFiles.getObjectList("rpc.modules");
+//
+//        for (ConfigObject configObject : list) {
+//            Config configElement = configObject.toConfig();
+//            String name = configElement.getString("name");
+//            String version = configElement.getString("version");
+//            boolean enabled = configElement.getBoolean("enabled");
+//            List<String> enabledMethods = null;
+//            List<String> disabledMethods = null;
+//
+//            if (configElement.hasPath("methods.enabled")) {
+//                enabledMethods = configElement.getStringList("methods.enabled");
+//            }
+//
+//            if (configElement.hasPath("methods.disabled")) {
+//                disabledMethods = configElement.getStringList("methods.disabled");
+//            }
+//
+//            modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
+//        }
+
+        this.moduleDescriptions = modules;
+
+        return modules;
     }
 }
