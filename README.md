@@ -81,7 +81,7 @@ The current Mars Project is divided into four stages, and the development proces
 
 - [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete centralization
 
-#### Prosperity Phase: DAG & DeFi
+#### Prosperity phase: DAG & DeFi
 
 - [ ] Access to cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
 
