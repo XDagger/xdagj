@@ -36,7 +36,7 @@ The Private Chain Building Tutorial helps you to build a private-chain for testi
 
 XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
 
-### Mars Project
+### XDAG Mars Project
 
 The current Mars Project is divided into four stages, and the development process can be flexibly adjusted
 
