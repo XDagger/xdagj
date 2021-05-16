@@ -79,7 +79,7 @@ The current Mars Project is divided into four stages, and the development proces
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
-- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete centralization
+- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete decentralization
 
 #### Prosperity phase: DAG & DeFi
 
