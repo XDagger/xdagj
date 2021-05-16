@@ -44,9 +44,9 @@ The current Mars Project is divided into four stages, and the development proces
 
 - [x] Deploy XDAGJ test network environment, open beta
 
-- [x] Access RandomX algorithm
+- [x] Implement RandomX algorithm
 
-- [x] Access libp2p network protocol
+- [x] Implement libp2p network protocol
 
 - [x] Testnet blockchain browser
 
@@ -61,9 +61,9 @@ The current Mars Project is divided into four stages, and the development proces
 
 - [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [ ] Realize the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
+- [ ] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
 
-- [ ] Realize the RPC function: access to Web3j, realize the standardization of the interface
+- [ ] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
 - [ ] Improve the mining protocol: introduce the more mature Stratum protocol
 
@@ -83,9 +83,9 @@ The current Mars Project is divided into four stages, and the development proces
 
 #### Prosperity phase: DAG & DeFi
 
-- [ ] Access to cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
+- [ ] Implement cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
 
-- [ ] Realize the oracle function
+- [ ] Implement the oracle function
 
 - [ ] Join a distributed exchange
 
