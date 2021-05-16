@@ -9,7 +9,7 @@
   - [System environment](#system-environment)
   - [Installation and usage](#installation-and-usage)
   - [Develop](#develop)
-    - [Mars Project](#Mars-Project)
+    - [XDAG Mars Project](#XDAG-Mars-Project)
   - [Code](#code)
   - [Contribution](#contribution)
   - [Sponsorship](#sponsorship)
