@@ -44,9 +44,9 @@ The XDAG Mars Project is divided into four stages：
 
 - [x] Deploy XDAGJ test network environment, open beta
 
-- [x] Implement RandomX algorithm
+- [x] Implement the RandomX algorithm
 
-- [x] Implement libp2p network protocol
+- [x] Implement the libp2p network protocol
 
 - [x] Testnet blockchain browser
 
