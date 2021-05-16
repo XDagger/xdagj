@@ -38,7 +38,7 @@ XDAGJ already has the basic functions as a pool, and the follow-up work is to im
 
 ### XDAG Mars Project
 
-The current Mars Project is divided into four stages, and the development process can be flexibly adjusted
+The XDAG Mars Project is divided into four stages：
 
 #### Exploration phase: XDAGJ testnet is online (online, in beta)
 
