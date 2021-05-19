@@ -121,7 +121,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     // Wallet spec
     // =========================
-
+    protected String walletFilePath;
 
     // =========================
     // Xdag spec

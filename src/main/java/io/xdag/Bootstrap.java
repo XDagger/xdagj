@@ -24,8 +24,10 @@
 package io.xdag;
 
 import io.xdag.config.*;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
+
+import static io.xdag.wallet.WalletUtils.*;
 
 @Slf4j
 public class Bootstrap {
@@ -70,12 +72,29 @@ public class Bootstrap {
     public static void main(String[] args) throws Exception {
         Config config = getConfig(args);
 
-
         // if dnet_keys.dat and wallet.dat exist
-        OldWallet wallet = new OldWallet();
+        // OldWallet oldWallet = new OldWallet();
 
-        Kernel kernel = new Kernel(config, wallet);
+        // create or unlock wallet
+        Wallet newWallet = null;
+        if(loadWallet(config).exists()) {
+            String walletPassword = readPassword("Please enter your wallet password: ");
+            newWallet = loadAndUnlockWallet(config, walletPassword);
+        } else {
+            newWallet = createNewWallet(config);
+        }
+
+        if (!newWallet.isHdWalletInitialized()) {
+            initializedHdSeed(newWallet);
+        }
+
+        if(newWallet.getAccounts().size() == 0) {
+            newWallet.addAccountWithNextHdKey();
+        }
+
+        Kernel kernel = new Kernel(config, newWallet);
         // default start kernel
         kernel.testStart();
     }
+
 }

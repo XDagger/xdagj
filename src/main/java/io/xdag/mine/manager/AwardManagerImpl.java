@@ -38,12 +38,12 @@ import io.xdag.core.*;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
 import io.xdag.utils.*;
-import io.xdag.wallet.OldWallet;
 
 import io.xdag.Kernel;
 import io.xdag.consensus.Task;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
+import io.xdag.wallet.Wallet;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
@@ -75,7 +75,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private MinerManager minerManager;
     private final Kernel kernel;
     private final Blockchain blockchain;
-    private final OldWallet xdagWallet;
+    private final Wallet wallet;
 
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
@@ -84,7 +84,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         this.kernel = kernel;
         this.config = kernel.getConfig();
         this.blockchain = kernel.getBlockchain();
-        this.xdagWallet = kernel.getWallet();
+        this.wallet = kernel.getWallet();
         this.poolMiner = kernel.getPoolMiner();
         this.minerManager = kernel.getMinerManager();
         init();
@@ -327,7 +327,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         // 决定一个区块是否需要再有一个签名字段
         // todo 这里不够严谨把 如果时第三把第四把呢
-        if (xdagWallet.getKey_internal().size() - 1 == keyPos) {
+        if (wallet.getAccounts().size() - 1 == keyPos) {
             payminersPerBlock = 11;
         } else {
             payminersPerBlock = 9;
@@ -470,7 +470,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
-        ECKeyPair inputKey = xdagWallet.getKeyByIndex(keyPos);
+        ECKeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         long payAmount = 0L;
         /**
@@ -539,14 +539,14 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
-        ECKeyPair inputKey = xdagWallet.getKeyByIndex(keypos);
+        ECKeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
-        if (inputKey.equals(xdagWallet.getDefKey().ecKey)) {
+        if (inputKey.equals(wallet.getDefKey())) {
             block.signOut(inputKey);
         } else {
             block.signIn(inputKey);
-            block.signOut(xdagWallet.getDefKey().ecKey);
+            block.signOut(wallet.getDefKey());
         }
         log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
 

@@ -23,217 +23,102 @@
  */
 package io.xdag.wallet;
 
+import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.*;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
-import java.nio.file.Files;
-
-
-
+import java.io.IOException;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static io.xdag.crypto.Hash.sha256;
-import static io.xdag.crypto.SampleKeys.CREDENTIALS;
-import static io.xdag.crypto.SampleKeys.KEY_PAIR;
-import static io.xdag.crypto.SampleKeys.MNEMONIC;
-import static io.xdag.crypto.SampleKeys.PASSWORD;
-import static io.xdag.wallet.WalletUtils.isValidAddress;
-import static io.xdag.wallet.WalletUtils.isValidPrivateKey;
+import static io.xdag.crypto.Bip32Test.addChecksum;
+import static io.xdag.crypto.Bip32Test.serializePrivate;
+import static io.xdag.crypto.Bip32Test.serializePublic;
 
 public class WalletUtilsTest {
 
-    private File tempDir;
+    private String pwd;
+    private Wallet wallet;
 
-    public static String convertStreamToString(java.io.InputStream is) {
-        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-        return s.hasNext() ? s.next() : "";
-    }
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Before
-    public void setUp() throws Exception {
-        tempDir = createTempDir();
+    public void setUp() {
+        pwd = "password";
+        Config config = new DevnetConfig();
+        wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        wallet.setAccounts(Collections.singletonList(key));
+        wallet.flush();
+        wallet.lock();
+    }
+
+    @Test
+    public void generateBip44KeyPair() {
+
+        String mnemonic = "spider elbow fossil truck deal circle divert sleep safe report laundry above";
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
+        String seedStr = BytesUtils.toHexString(seed);
+        assertEquals(
+                "f0d2ab78b96acd147119abad1cd70eb4fec4f0e0a95744cf532e6a09347b08101213b4cbf50eada0eb89cba444525fe28e69707e52aa301c6b47ce1c5ef82eb5",
+                seedStr);
+
+        Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+        assertEquals(
+                "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
+                Base58.encode(addChecksum(serializePrivate(masterKeypair))));
+
+        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair,0);
+
+        assertEquals(
+                "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
+                Base58.encode(addChecksum(serializePrivate(bip44Keypair))));
+        assertEquals(
+                "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
+                Base58.encode(addChecksum(serializePublic(bip44Keypair))));
+
+        // Verify address according to https://iancoleman.io/bip39/
+        Bip32ECKeyPair key = WalletUtils.importMnemonic(wallet, pwd, mnemonic, 0);
+        assertEquals("d85a4d67fcb69b14b12a15ad60e5dc65852f9907", BytesUtils.toHexString(Keys.toAddress(key)));
+    }
+
+    @Test
+    public void generateBip44KeyPairTestNet() {
+        String mnemonic =
+                "spider elbow fossil truck deal circle divert sleep safe report laundry above";
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
+        String seedStr = BytesUtils.toHexString(seed);
+        assertEquals(
+                "f0d2ab78b96acd147119abad1cd70eb4fec4f0e0a95744cf532e6a09347b08101213b4cbf50eada0eb89cba444525fe28e69707e52aa301c6b47ce1c5ef82eb5",
+                seedStr);
+
+        Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+        assertEquals(
+                "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
+                Base58.encode(addChecksum(serializePrivate(masterKeypair))));
+
+        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair,0);
+
+        assertEquals(
+                "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
+                Base58.encode(addChecksum(serializePrivate(bip44Keypair))));
+        assertEquals(
+                "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
+                Base58.encode(addChecksum(serializePublic(bip44Keypair))));
     }
 
     @After
-    public void tearDown() throws Exception {
-        for (File file : tempDir.listFiles()) {
-            file.delete();
-        }
-        tempDir.delete();
-    }
-
-    @Test
-    public void testGenerateBip39Wallets() throws Exception {
-        Bip39Wallet wallet = WalletUtils.generateBip39Wallet(PASSWORD, tempDir);
-        byte[] seed = MnemonicUtils.generateSeed(wallet.getMnemonic(), PASSWORD);
-        Credentials credentials = Credentials.create(ECKeyPair.create(sha256(seed)));
-
-        assertEquals(credentials, WalletUtils.loadBip39Credentials(PASSWORD, wallet.getMnemonic()));
-    }
-
-    @Test
-    public void testGenerateBip39WalletFromMnemonic() throws Exception {
-        Bip39Wallet wallet =
-                WalletUtils.generateBip39WalletFromMnemonic(PASSWORD, MNEMONIC, tempDir);
-        byte[] seed = MnemonicUtils.generateSeed(wallet.getMnemonic(), PASSWORD);
-        Credentials credentials = Credentials.create(ECKeyPair.create(sha256(seed)));
-
-        assertEquals(credentials, WalletUtils.loadBip39Credentials(PASSWORD, wallet.getMnemonic()));
-    }
-
-    @Test
-    public void testGenerateFullNewWalletFile() throws Exception {
-        String fileName = WalletUtils.generateFullNewWalletFile(PASSWORD, tempDir);
-        testGeneratedNewWalletFile(fileName);
-    }
-
-    @Test
-    public void testGenerateNewWalletFile() throws Exception {
-        String fileName = WalletUtils.generateNewWalletFile(PASSWORD, tempDir);
-        testGeneratedNewWalletFile(fileName);
-    }
-
-    @Test
-    public void testGenerateLightNewWalletFile() throws Exception {
-        String fileName = WalletUtils.generateLightNewWalletFile(PASSWORD, tempDir);
-        testGeneratedNewWalletFile(fileName);
-    }
-
-    private void testGeneratedNewWalletFile(String fileName) throws Exception {
-        WalletUtils.loadCredentials(PASSWORD, new File(tempDir, fileName));
-    }
-
-    @Test
-    public void testGenerateFullWalletFile() throws Exception {
-        String fileName = WalletUtils.generateWalletFile(PASSWORD, KEY_PAIR, tempDir, true);
-        testGenerateWalletFile(fileName);
-    }
-
-    @Test
-    public void testGenerateLightWalletFile() throws Exception {
-        String fileName = WalletUtils.generateWalletFile(PASSWORD, KEY_PAIR, tempDir, false);
-        testGenerateWalletFile(fileName);
-    }
-
-    private void testGenerateWalletFile(String fileName) throws Exception {
-        Credentials credentials =
-                WalletUtils.loadCredentials(PASSWORD, new File(tempDir, fileName));
-
-        assertEquals(credentials, (CREDENTIALS));
-    }
-
-    @Test
-    public void testLoadCredentialsFromFile() throws Exception {
-        Credentials credentials =
-                WalletUtils.loadCredentials(
-                        PASSWORD,
-                        new File(
-                                WalletUtilsTest.class
-                                        .getResource(
-                                        "/keyfiles/UTC--2021-04-08T13-00-52.556433000Z--a15339b55796b3585127c180fd4cbc54612122cf.json")
-                                        .getFile()));
-
-        assertEquals(credentials, (CREDENTIALS));
-    }
-
-    @Test
-    public void testLoadCredentialsFromString() throws Exception {
-        Credentials credentials =
-                WalletUtils.loadCredentials(
-                        PASSWORD,
-                        WalletUtilsTest.class
-                                .getResource(
-                                "/keyfiles/UTC--2021-04-08T13-00-52.556433000Z--a15339b55796b3585127c180fd4cbc54612122cf.json")
-                                .getFile());
-
-        assertEquals(credentials, (CREDENTIALS));
-    }
-
-    @Test
-    public void testLoadCredentialsMyEtherWallet() throws Exception {
-        Credentials credentials =
-                WalletUtils.loadCredentials(
-                        PASSWORD,
-                        new File(
-                                WalletUtilsTest.class
-                                        .getResource(
-                                        "/keyfiles/UTC--2021-04-08T13-00-52.556433000Z--a15339b55796b3585127c180fd4cbc54612122cf.json")
-                                        .getFile()));
-
-        assertEquals(
-                credentials,
-                (Credentials.create(
-                        "a392604efc2fad9c0b3da43b5f698a2e3f270f170d859912be0d54742275c5f6")));
-    }
-
-    @Test
-    public void testLoadJsonCredentials() throws Exception {
-        Credentials credentials =
-                WalletUtils.loadJsonCredentials(
-                        PASSWORD,
-                        convertStreamToString(
-                                WalletUtilsTest.class.getResourceAsStream(
-                                        "/keyfiles/UTC--2021-04-08T13-00-52.556433000Z--a15339b55796b3585127c180fd4cbc54612122cf.json")));
-
-        assertEquals(credentials, (CREDENTIALS));
-    }
-
-    @Test
-    public void testGetDefaultKeyDirectory() {
-        assertTrue(
-                WalletUtils.getDefaultKeyDirectory("Mac OS X")
-                        .endsWith(
-                                String.format(
-                                        "%sLibrary%sXdag", File.separator, File.separator)));
-        assertTrue(
-                WalletUtils.getDefaultKeyDirectory("Windows")
-                        .endsWith(String.format("%sXdag", File.separator)));
-        assertTrue(
-                WalletUtils.getDefaultKeyDirectory("Linux")
-                        .endsWith(String.format("%s.xdag", File.separator)));
-    }
-
-    @Test
-    public void testGetTestnetKeyDirectory() {
-        assertTrue(
-                WalletUtils.getMainnetKeyDirectory()
-                        .endsWith(String.format("%skeystore", File.separator)));
-        assertTrue(
-                WalletUtils.getTestnetKeyDirectory()
-                        .endsWith(
-                                String.format(
-                                        "%stestnet%skeystore", File.separator, File.separator)));
-    }
-
-    static File createTempDir() throws Exception {
-        return Files.createTempDirectory(WalletUtilsTest.class.getSimpleName() + "-testkeys")
-                .toFile();
-    }
-
-    @Test
-    public void testIsValidPrivateKey() {
-        assertTrue(isValidPrivateKey(SampleKeys.PRIVATE_KEY_STRING));
-        assertTrue(isValidPrivateKey(Numeric.prependHexPrefix(SampleKeys.PRIVATE_KEY_STRING)));
-
-        assertFalse(isValidPrivateKey(""));
-        assertFalse(isValidPrivateKey(SampleKeys.PRIVATE_KEY_STRING + "a"));
-        assertFalse(isValidPrivateKey(SampleKeys.PRIVATE_KEY_STRING.substring(1)));
-    }
-
-    @Test
-    public void testIsValidAddress() {
-        assertTrue(isValidAddress(SampleKeys.ADDRESS));
-        assertTrue(isValidAddress(SampleKeys.ADDRESS_NO_PREFIX));
-
-        assertFalse(isValidAddress(""));
-        assertFalse(isValidAddress(SampleKeys.ADDRESS + 'a'));
-        assertFalse(isValidAddress(SampleKeys.ADDRESS.substring(1)));
+    public void tearDown() throws IOException {
+        wallet.delete();
     }
 
 }

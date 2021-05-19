@@ -28,22 +28,27 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
@@ -62,7 +67,8 @@ public class ExtraBlockTest {
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
     Config config = new DevnetConfig();
-    OldWallet xdagWallet;
+    Wallet wallet;
+    String pwd;
     Kernel kernel;
     DatabaseFactory dbFactory;
 
@@ -77,8 +83,13 @@ public class ExtraBlockTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        xdagWallet = new OldWallet();
-        xdagWallet.init(config);
+        pwd = "password";
+        Config config = new DevnetConfig();
+        wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        wallet.setAccounts(Collections.singletonList(key));
+        wallet.flush();
 
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
@@ -94,7 +105,7 @@ public class ExtraBlockTest {
 
         kernel.setBlockStore(blockStore);
         kernel.setOrphanPool(orphanPool);
-        kernel.setWallet(xdagWallet);
+        kernel.setWallet(wallet);
     }
 
 
@@ -166,5 +177,10 @@ public class ExtraBlockTest {
 
         assertEquals(expectedExtraBlocks+1,blockchain.getXdagStats().nextra);
 
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        wallet.delete();
     }
 }

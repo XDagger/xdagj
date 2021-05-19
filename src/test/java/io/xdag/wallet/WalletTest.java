@@ -23,91 +23,148 @@
  */
 package io.xdag.wallet;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.utils.Numeric;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class WalletTest {
 
-    @Test
-    public void testCreateStandard() throws Exception {
-        testCreate(Wallet.createStandard(SampleKeys.PASSWORD, SampleKeys.KEY_PAIR));
+    private String pwd;
+    private Wallet wallet;
+
+    @Before
+    public void setUp() {
+        pwd = "password";
+        Config config = new DevnetConfig();
+        wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        wallet.setAccounts(Collections.singletonList(key));
+        wallet.flush();
+        wallet.lock();
     }
 
     @Test
-    public void testCreateLight() throws Exception {
-        testCreate(Wallet.createLight(SampleKeys.PASSWORD, SampleKeys.KEY_PAIR));
-    }
-
-    private void testCreate(WalletFile walletFile) throws Exception {
-        assertEquals(walletFile.getAddress(), (SampleKeys.ADDRESS_NO_PREFIX));
+    public void testGetters() {
+        wallet.unlock(pwd);
+        assertEquals(pwd, wallet.getPassword());
     }
 
     @Test
-    public void testEncryptDecryptStandard() throws Exception {
-        testEncryptDecrypt(Wallet.createStandard(SampleKeys.PASSWORD, SampleKeys.KEY_PAIR));
+    public void testUnlock() {
+        assertFalse(wallet.isUnlocked());
+
+        wallet.unlock(pwd);
+        assertTrue(wallet.isUnlocked());
+
+        assertEquals(1, wallet.getAccounts().size());
     }
 
     @Test
-    public void testEncryptDecryptLight() throws Exception {
-        testEncryptDecrypt(Wallet.createLight(SampleKeys.PASSWORD, SampleKeys.KEY_PAIR));
-    }
-
-    private void testEncryptDecrypt(WalletFile walletFile) throws Exception {
-        assertEquals(Wallet.decrypt(SampleKeys.PASSWORD, walletFile), (SampleKeys.KEY_PAIR));
-    }
-
-    @Test
-    public void testDecryptScrypt() throws Exception {
-        WalletFile walletFile = load(SCRYPT);
-        ECKeyPair ecKeyPair = Wallet.decrypt(PASSWORD, walletFile);
-        assertEquals(Numeric.toHexStringNoPrefix(ecKeyPair.getPrivateKey()), (SECRET));
+    public void testLock() {
+        wallet.unlock(pwd);
+        wallet.lock();
+        assertFalse(wallet.isUnlocked());
     }
 
     @Test
-    public void testGenerateRandomBytes() {
-        assertArrayEquals(Wallet.generateRandomBytes(0), (new byte[] {}));
-        assertEquals(Wallet.generateRandomBytes(10).length, (10));
+    public void testAddAccounts() {
+        wallet.unlock(pwd);
+        wallet.setAccounts(Collections.emptyList());
+        ECKeyPair key1 = Keys.createEcKeyPair();
+        ECKeyPair key2 = Keys.createEcKeyPair();
+        wallet.addAccounts(Arrays.asList(key1, key2));
+        List<ECKeyPair> accounts = wallet.getAccounts();
+        ECKeyPair k1 = accounts.get(0);
+        ECKeyPair k2 = accounts.get(1);
+        assertEquals(k1, key1);
+        assertEquals(k2, key2);
     }
 
-    private WalletFile load(String source) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(source, WalletFile.class);
+    @Test
+    public void testFlush() throws InterruptedException {
+        File file = wallet.getFile();
+        long sz = wallet.getFile().length();
+        Thread.sleep(500);
+
+        wallet.unlock(pwd);
+        wallet.setAccounts(Collections.emptyList());
+        assertEquals(sz, file.length());
+
+        wallet.flush();
+        assertTrue(file.length() < sz);
     }
 
-    private static final String PASSWORD = "Insecure Pa55w0rd";
-    private static final String SECRET =
-            "a392604efc2fad9c0b3da43b5f698a2e3f270f170d859912be0d54742275c5f6";
+    @Test
+    public void testChangePassword() {
+        String pwd2 = "passw0rd2";
 
-    private static final String SCRYPT =
-            "{\n"
-                    + "    \"crypto\" : {\n"
-                    + "        \"cipher\" : \"aes-128-ctr\",\n"
-                    + "        \"cipherparams\" : {\n"
-                    + "            \"iv\" : \"525d33d781892fc3c743520a248c9cd5\"\n"
-                    + "        },\n"
-                    + "        \"ciphertext\" : \"3c56840c492c27efeb6ded513b5816996ae10589bbd9c9662b3f1e6158729b98\",\n"
-                    + "        \"kdf\" : \"scrypt\",\n"
-                    + "        \"kdfparams\" : {\n"
-                    + "            \"dklen\" : 32,\n"
-                    + "            \"n\" : 262144,\n"
-                    + "            \"r\" : 8,\n"
-                    + "            \"p\" : 1,\n"
-                    + "            \"salt\" : \"08cbb63ad8140ea2a6dedd69a723d668e83f950008049601f726660d6d50c2c8\"\n"
-                    + "        },\n"
-                    + "        \"mac\" : \"4691e03401d5b095a16c20cf185628cfa2d0b159021d7bc3fccac6478ce21c32\"\n"
-                    + "    },\n"
-                    + "    \"id\" : \"18153e96-657a-498e-a954-cba7e85d47b9\",\n"
-                    + "    \"version\" : 3\n"
-                    + "}";
+        wallet.unlock(pwd);
+        wallet.changePassword(pwd2);
+        wallet.flush();
+        wallet.lock();
 
+        assertFalse(wallet.unlock(pwd));
+        assertTrue(wallet.unlock(pwd2));
+    }
+
+    @Test
+    public void testAddAccountRandom() {
+        wallet.unlock(pwd);
+        int oldAccountSize = wallet.getAccounts().size();
+        wallet.addAccountRandom();
+        assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
+    }
+
+    @Test
+    public void testRemoveAccount() {
+        wallet.unlock(pwd);
+        int oldAccountSize = wallet.getAccounts().size();
+        ECKeyPair key = Keys.createEcKeyPair();
+        wallet.addAccount(key);
+        assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
+        wallet.removeAccount(key);
+        assertEquals(oldAccountSize, wallet.getAccounts().size());
+        wallet.addAccount(key);
+        assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
+        wallet.removeAccount(Keys.toAddress(key));
+        assertEquals(oldAccountSize, wallet.getAccounts().size());
+    }
+
+    @Test
+    public void testInitializeHdWallet() {
+        wallet.initializeHdWallet(SampleKeys.MNEMONIC);
+        assertEquals(0, wallet.getNextAccountIndex());
+        assertEquals(SampleKeys.MNEMONIC,wallet.getMnemonicPhrase());
+    }
+
+    @Test
+    public void testAddAccountWithNextHdKey() {
+        wallet.unlock(pwd);
+        wallet.initializeHdWallet(SampleKeys.MNEMONIC);
+        int hdkeyCount = 100;
+        for(int i = 0; i < hdkeyCount; i++) {
+            wallet.addAccountWithNextHdKey();
+        }
+        assertEquals(hdkeyCount, wallet.getNextAccountIndex());
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        wallet.delete();
+    }
 }
-
