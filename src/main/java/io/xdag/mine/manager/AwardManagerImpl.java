@@ -173,7 +173,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
     public void init() {
-        log.debug("容器初始化");
+        log.debug("AwardManager init.");
         // 容器的初始化
         for (int i = 0; i < 16; i++) {
             blockHashs.add(null);

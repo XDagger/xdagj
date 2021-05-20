@@ -81,9 +81,9 @@ public class WalletUtils {
         return new Wallet(config);
     }
 
-    public static Wallet loadAndUnlockWallet(Config config, String password) {
+    public static Wallet loadAndUnlockWallet(Config config) {
         Wallet wallet = loadWallet(config);
-        if (password == null) {
+        if (wallet.getPassword() == null) {
             if (wallet.unlock("")) {
                 wallet.setPassword("");
             } else {
@@ -91,7 +91,7 @@ public class WalletUtils {
             }
         }
 
-        if (!wallet.unlock(password)) {
+        if (!wallet.unlock(wallet.getPassword())) {
             log.error("Invalid password");
             System.exit(-1);
         }

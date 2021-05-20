@@ -266,6 +266,17 @@ public class Wallet {
     }
 
     /**
+     * Returns account by address.
+     */
+    public ECKeyPair getAccount(byte[] address) {
+        requireUnlocked();
+
+        synchronized (accounts) {
+            return accounts.get(ByteArrayWrapper.of(address));
+        }
+    }
+
+    /**
      * Flushes this wallet into the disk.
      */
     public boolean flush() {

@@ -21,14 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag;
+package io.xdag.cli;
 
-import io.xdag.cli.XdagCli;
+public enum XdagOption {
 
-public class Bootstrap {
+    HELP("help"),
 
-    public static void main(String[] args) throws Exception {
-        XdagCli.main(args);
+    VERSION("version"),
+
+    ACCOUNT("account"),
+
+    CHANGE_PASSWORD("changepassword"),
+
+    PASSWORD("password"),
+
+    DUMP_PRIVATE_KEY("dumpprivatekey"),
+
+    IMPORT_PRIVATE_KEY("importprivatekey");
+
+    private final String name;
+
+    XdagOption(String s) {
+        name = s;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 
 }
