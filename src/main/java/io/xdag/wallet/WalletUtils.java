@@ -23,26 +23,14 @@
  */
 package io.xdag.wallet;
 
-import io.xdag.config.Config;
 import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.utils.Numeric;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.Console;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Scanner;
 
 import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
 
 @Slf4j
 public class WalletUtils {
-
-    private static final Scanner scanner = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
     // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
     public static final int XDAG_BIP44_CION_TYPE = 586;
@@ -61,126 +49,4 @@ public class WalletUtils {
         return generateBip44KeyPair(masterKeypair, index);
     }
 
-    public static ECKeyPair importPrivateKey(Wallet wallet, String password, String privateKeyHexString) {
-        wallet.unlock(password);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(privateKeyHexString));
-        wallet.addAccount(key);
-        return key;
-    }
-
-    public static boolean convertOldWallet(Wallet newWallet, String password, OldWallet oldWallet) {
-        newWallet.unlock(password);
-        List<KeyInternalItem> oldKeyList = oldWallet.getKey_internal();
-        for(KeyInternalItem oldKey : oldKeyList) {
-            newWallet.addAccount(ECKeyPair.create(oldKey.ecKey.getPrivateKey()));
-        }
-        return newWallet.flush();
-    }
-
-    public static Wallet loadWallet(Config config) {
-        return new Wallet(config);
-    }
-
-    public static Wallet loadAndUnlockWallet(Config config) {
-        Wallet wallet = loadWallet(config);
-        if (wallet.getPassword() == null) {
-            if (wallet.unlock("")) {
-                wallet.setPassword("");
-            } else {
-                wallet.setPassword(readPassword("Please enter your password: "));
-            }
-        }
-
-        if (!wallet.unlock(wallet.getPassword())) {
-            log.error("Invalid password");
-            System.exit(-1);
-        }
-
-        return wallet;
-    }
-
-    /**
-     * Create a new wallet with a new password
-     */
-    public static Wallet createNewWallet(Config config) {
-        String newPassword = readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
-        if (newPassword == null) {
-            return null;
-        }
-
-        Wallet wallet = loadWallet(config);
-        wallet.setPassword(newPassword);
-
-        if (!wallet.unlock(newPassword) || !wallet.flush()) {
-            log.error("CreateNewWalletError");
-            System.exit(-1);
-            return null;
-        }
-
-        return wallet;
-    }
-
-    /**
-     * Read a new password from input and require confirmation
-     */
-    public static String readNewPassword(String newPasswordMessageKey, String reEnterNewPasswordMessageKey) {
-        String newPassword = readPassword(newPasswordMessageKey);
-        String newPasswordRe = readPassword(reEnterNewPasswordMessageKey);
-
-        if (!newPassword.equals(newPasswordRe)) {
-            log.error("ReEnter NewPassword Incorrect");
-            System.exit(-1);
-            return null;
-        }
-
-        return newPassword;
-    }
-
-    /**
-     * Reads a line from the console.
-     */
-    public static String readLine(String prompt) {
-        if (prompt != null) {
-            System.out.print(prompt);
-            System.out.flush();
-        }
-
-        return scanner.nextLine();
-    }
-
-    public static void initializedHdSeed(Wallet wallet) {
-        if (wallet.isUnlocked() && !wallet.isHdWalletInitialized()) {
-            // HD Mnemonic
-            System.out.println("HdWalletInitialize");
-            byte[] initialEntropy = new byte[16];
-            SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
-            String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
-            System.out.println("HdWalletMnemonic:"+ phrase);
-
-            String repeat = readLine("HdWalletMnemonicRepeat:");
-            repeat = String.join(" ", repeat.trim().split("\\s+"));
-
-            if (!repeat.equals(phrase)) {
-                log.error("HdWalletInitializationFailure");
-                System.exit(-1);
-                return;
-            }
-
-            wallet.initializeHdWallet(phrase);
-            wallet.flush();
-            log.info("HdWalletInitializationSuccess");
-        }
-    }
-
-    public static String readPassword(String prompt) {
-        Console console = System.console();
-        if (console == null) {
-            if (prompt != null) {
-                System.out.print(prompt);
-                System.out.flush();
-            }
-            return scanner.nextLine();
-        }
-      return new String(console.readPassword(prompt));
-    }
 }

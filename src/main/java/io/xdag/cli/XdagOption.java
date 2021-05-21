@@ -37,7 +37,11 @@ public enum XdagOption {
 
     DUMP_PRIVATE_KEY("dumpprivatekey"),
 
-    IMPORT_PRIVATE_KEY("importprivatekey");
+    IMPORT_PRIVATE_KEY("importprivatekey"),
+
+    IMPORT_MNEMONIC("importmnemonic"),
+
+    CONVERT_OLD_WALLET("convertoldwallet");
 
     private final String name;
 

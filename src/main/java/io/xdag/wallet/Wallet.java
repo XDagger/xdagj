@@ -140,6 +140,7 @@ public class Wallet {
                             readHdSeed(key, dec);
                         } catch (Exception e) {
                             log.warn("Failed to read HD mnemonic phrase");
+                            return false;
                         }
                     }
                     default -> throw new RuntimeException("Unknown wallet version.");

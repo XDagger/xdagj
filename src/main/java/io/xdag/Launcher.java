@@ -42,6 +42,7 @@ public class Launcher {
 
     private final Options options = new Options();
     private String password = null;
+    private Config config;
 
     /**
      * Here we make sure that all shutdown hooks will be executed in the order of
@@ -94,7 +95,7 @@ public class Launcher {
         return cmd;
     }
 
-    protected Config getConfig(String[] args) throws Exception {
+    protected Config buildConfig(String[] args) throws Exception {
         Config config = new MainnetConfig();
         for (String arg : args) {
             switch (arg) {

@@ -30,24 +30,32 @@ import io.xdag.config.Constants;
 import io.xdag.config.TestnetConfig;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.Numeric;
+import io.xdag.wallet.KeyInternalItem;
+import io.xdag.wallet.OldWallet;
 import io.xdag.wallet.Wallet;
-import io.xdag.wallet.WalletUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.io.FileUtils;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.xdag.wallet.WalletUtils.*;
+import java.util.Objects;
+import java.util.Scanner;
 
 @Slf4j
 public class XdagCli extends Launcher {
+
+    private static final Scanner scanner = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
     public static void main(String[] args, XdagCli cli) throws Exception {
         try {
@@ -67,45 +75,59 @@ public class XdagCli extends Launcher {
     public XdagCli() {
         Option helpOption = Option.builder()
                 .longOpt(XdagOption.HELP.toString())
-                .desc("PrintHelp")
+                .desc("print help")
                 .build();
         addOption(helpOption);
 
         Option versionOption = Option.builder()
                 .longOpt(XdagOption.VERSION.toString())
-                .desc("ShowVersion")
+                .desc("show version")
                 .build();
         addOption(versionOption);
 
         Option accountOption = Option.builder()
                 .longOpt(XdagOption.ACCOUNT.toString())
-                .desc("ChooseAction")
+                .desc("init|create|list")
                 .hasArg(true).numberOfArgs(1).optionalArg(false).argName("action").type(String.class)
                 .build();
         addOption(accountOption);
 
         Option changePasswordOption = Option.builder()
-                .longOpt(XdagOption.CHANGE_PASSWORD.toString()).desc("ChangeWalletPassword").build();
+                .longOpt(XdagOption.CHANGE_PASSWORD.toString()).desc("change wallet password").build();
         addOption(changePasswordOption);
 
         Option dumpPrivateKeyOption = Option.builder()
                 .longOpt(XdagOption.DUMP_PRIVATE_KEY.toString())
-                .desc("PrintHexKey")
+                .desc("print hex key")
                 .hasArg(true).optionalArg(false).argName("address").type(String.class)
                 .build();
         addOption(dumpPrivateKeyOption);
 
         Option importPrivateKeyOption = Option.builder()
                 .longOpt(XdagOption.IMPORT_PRIVATE_KEY.toString())
-                .desc("ImportHexKey")
+                .desc("import hex key")
                 .hasArg(true).optionalArg(false).argName("key").type(String.class)
                 .build();
         addOption(importPrivateKeyOption);
 
+        Option importMnemonicOption = Option.builder()
+                .longOpt(XdagOption.IMPORT_MNEMONIC.toString())
+                .desc("import HDWallet mnemonic")
+                .hasArg(true).optionalArg(false).argName("mnemonic").type(String.class)
+                .build();
+        addOption(importMnemonicOption);
+
+        Option convertOldWalletOption = Option.builder()
+                .longOpt(XdagOption.CONVERT_OLD_WALLET.toString())
+                .desc("convert xdag old wallet.dat to private key hex")
+                .hasArg(true).optionalArg(false).argName("filename").type(String.class)
+                .build();
+        addOption(convertOldWalletOption);
     }
 
     public void start(String[] args) throws Exception {
-        Config config = getConfig(args);
+        Config config = buildConfig(args);
+        setConfig(config);
         // move old args
         List<String> argsList = new ArrayList<>();
         for (String arg : args) {
@@ -120,52 +142,56 @@ public class XdagCli extends Launcher {
         try {
             cmd = parseOptions(newArgs);
         } catch (ParseException exception) {
-            log.error("ParsingFailed:" + exception.getMessage());
+            log.error("Parsing Failed:" + exception.getMessage());
         }
 
         if(cmd == null) {
-            start(config);
+            start();
         } else if (cmd.hasOption(XdagOption.HELP.toString())) {
             printHelp();
         } else if (cmd.hasOption(XdagOption.VERSION.toString())) {
             printVersion();
         } else if (cmd.hasOption(XdagOption.ACCOUNT.toString())) {
             String action = cmd.getOptionValue(XdagOption.ACCOUNT.toString()).trim();
-            if ("create".equals(action)) {
-                createAccount(config);
-            } else if ("list".equals(action)) {
-                listAccounts(config);
+            switch (action) {
+                case "init" -> initHDAccount();
+                case "create" -> createAccount();
+                case "list" -> listAccounts();
+                default -> System.out.println("No Action!");
             }
         } else if (cmd.hasOption(XdagOption.CHANGE_PASSWORD.toString())) {
-            changePassword(config);
+            changePassword();
         } else if (cmd.hasOption(XdagOption.DUMP_PRIVATE_KEY.toString())) {
-            dumpPrivateKey(config, cmd.getOptionValue(XdagOption.DUMP_PRIVATE_KEY.toString()).trim());
-
+            dumpPrivateKey(cmd.getOptionValue(XdagOption.DUMP_PRIVATE_KEY.toString()).trim());
         } else if (cmd.hasOption(XdagOption.IMPORT_PRIVATE_KEY.toString())) {
-            importPrivateKey(config, cmd.getOptionValue(XdagOption.IMPORT_PRIVATE_KEY.toString()).trim());
+            importPrivateKey(cmd.getOptionValue(XdagOption.IMPORT_PRIVATE_KEY.toString()).trim());
+        } else if (cmd.hasOption(XdagOption.IMPORT_MNEMONIC.toString())) {
+            importMnemonic(cmd.getOptionValue(XdagOption.IMPORT_MNEMONIC.toString()).trim());
+        } else if (cmd.hasOption(XdagOption.CONVERT_OLD_WALLET.toString())) {
+            File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
+            convertOldWallet(file);
         }
     }
 
     protected void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
         formatter.setWidth(200);
-        formatter.printHelp("./xdag-cli.sh [options]", getOptions());
-        formatter.printHelp("./xdag-cli.sh [options]", getOptions());
+        formatter.printHelp("./xdag.sh [options]", getOptions());
     }
 
     protected void printVersion() {
         System.out.println(Constants.CLIENT_VERSION);
     }
 
-    protected void start(Config config) throws IOException {
+    protected void start() throws IOException {
         // create/unlock wallet
-        Wallet wallet = loadWallet(config).exists() ? WalletUtils.loadAndUnlockWallet(config) : createNewWallet(config);
+        Wallet wallet = loadWallet().exists() ? loadAndUnlockWallet() : createNewWallet();
         if (wallet == null) {
             return;
         }
 
         if (!wallet.isHdWalletInitialized()) {
-            WalletUtils.initializedHdSeed(wallet);
+            initializedHdSeed(wallet, System.out);
         }
 
         // create a new account if the wallet is empty
@@ -173,12 +199,12 @@ public class XdagCli extends Launcher {
         if (accounts.isEmpty()) {
             ECKeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            log.info("NewAccountCreatedForAddress:" + BytesUtils.toHexString(Keys.toAddress(key)));
+            log.info("New Address:" + BytesUtils.toHexString(Keys.toAddress(key)));
         }
 
         // start kernel
         try {
-            startKernel(config, wallet);
+            startKernel(getConfig(), wallet);
         } catch (Exception e) {
             log.error("Uncaught exception during kernel startup.", e);
             exit(-1);
@@ -188,68 +214,218 @@ public class XdagCli extends Launcher {
     /**
      * Starts the kernel.
      */
-    protected void startKernel(Config config, Wallet wallet) throws Exception {
+    protected Kernel startKernel(Config config, Wallet wallet) throws Exception {
         Kernel kernel = new Kernel(config, wallet);
         kernel.testStart();
+        return kernel;
     }
 
-    protected void createAccount(Config config) {
-        Wallet wallet = loadAndUnlockWallet(config);
-        ECKeyPair key = wallet.addAccountWithNextHdKey();
-        if (wallet.flush()) {
-            log.info("NewAccountCreatedForAddress:" + BytesUtils.toHexString(Keys.toAddress(key)));
-            log.info("PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
+    protected void initHDAccount() {
+        // create/unlock wallet
+        Wallet wallet;
+        if(loadWallet().exists()) {
+            wallet = loadAndUnlockWallet();
+        } else {
+            wallet = createNewWallet();
+        }
+
+        if (wallet == null) {
+            return;
+        }
+        if (!wallet.isHdWalletInitialized()) {
+            initializedHdSeed(wallet, System.out);
+        } else {
+            System.out.println("HD Wallet Account already init.");
         }
     }
 
-    protected void listAccounts(Config config) {
-        Wallet wallet = loadAndUnlockWallet(config);
+    protected void createAccount() {
+        Wallet wallet = loadAndUnlockWallet();
+        if(Objects.nonNull(wallet) && !wallet.isHdWalletInitialized()) {
+            System.out.println("Please init HD Wallet account first!");
+            return;
+        }
+        ECKeyPair key = wallet.addAccountWithNextHdKey();
+        if (wallet.flush()) {
+            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toAddress(key)));
+            System.out.println("PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
+        }
+    }
+
+    protected void listAccounts() {
+        Wallet wallet = loadAndUnlockWallet();
         List<ECKeyPair> accounts = wallet.getAccounts();
 
         if (accounts.isEmpty()) {
-            log.info("AccountMissing");
+            System.out.println("Account Missing");
         } else {
             for (int i = 0; i < accounts.size(); i++) {
-                log.info("ListAccountItem:" + i + " " + BytesUtils.toHexString(Keys.toAddress(accounts.get(i))));
+                System.out.println("Address:" + i + " " + BytesUtils.toHexString(Keys.toAddress(accounts.get(i))));
             }
         }
     }
 
-    protected void changePassword(Config config) {
-        Wallet wallet = loadAndUnlockWallet(config);
-
-            String newPassword = readNewPassword();
+    protected void changePassword() {
+        Wallet wallet = loadAndUnlockWallet();
+        if(wallet.isUnlocked()) {
+            String newPassword = readNewPassword("EnterNewPassword", "ReEnterNewPassword");
             if (newPassword == null) {
                 return;
             }
-
             wallet.changePassword(newPassword);
             boolean isFlushed = wallet.flush();
             if (!isFlushed) {
-                log.error("WalletFileCannotBeUpdated");
-                exit(-1);
+                System.out.println("Wallet File Cannot Be Updated");
                 return;
             }
-
-            log.info("PasswordChangedSuccessfully");
-
+            System.out.println("Password Changed Successfully");
+        }
     }
 
     protected void exit(int code) {
         System.exit(code);
     }
 
+    protected void dumpPrivateKey(String address) {
+        Wallet wallet = loadAndUnlockWallet();
+        byte[] addressBytes = BytesUtils.hexStringToBytes(address);
+        ECKeyPair account = wallet.getAccount(addressBytes);
+        if (account == null) {
+            System.out.println("Address Not In Wallet");
+        } else {
+            System.out.println("Private:" + BytesUtils.toHexString(account.getPrivateKey().toByteArray()));
+        }
+    }
+
+    protected boolean importPrivateKey(String key) {
+        Wallet wallet = loadAndUnlockWallet();
+        byte[] keyBytes = BytesUtils.hexStringToBytes(key);
+        ECKeyPair account = ECKeyPair.create(keyBytes);
+
+        boolean accountAdded = wallet.addAccount(account);
+        if (!accountAdded) {
+            System.out.println("Private Key Already In Wallet");
+            return false;
+        }
+
+        boolean walletFlushed = wallet.flush();
+        if (!walletFlushed) {
+            System.out.println("Wallet File Cannot Be Updated");
+            return false;
+        }
+
+        System.out.println("Private Key Imported Successfully!");
+        System.out.println("Address:" + BytesUtils.toHexString(Keys.toAddress(account)));
+        System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().toByteArray()));
+        return true;
+    }
+
+    protected boolean importMnemonic(String mnemonic) {
+        Wallet wallet = loadAndUnlockWallet();
+
+        if(wallet.isHdWalletInitialized()) {
+            System.out.println("HDWallet Mnemonic Already In Wallet");
+            return false;
+        }
+
+        if(!MnemonicUtils.validateMnemonic(mnemonic)) {
+            System.out.println("Wrong Mnemonic");
+            return false;
+        }
+
+        wallet.initializeHdWallet(mnemonic);
+        // default add one hd key
+        wallet.addAccountWithNextHdKey();
+        if (!wallet.flush()) {
+            System.out.println("HDWallet File Cannot Be Updated");
+            return false;
+        }
+        return true;
+    }
+
+    protected boolean convertOldWallet(File file)   {
+        if(!file.exists()) {
+            System.out.println("File:" + file.getName() + " not exists.");
+            return false;
+        }
+        List<ECKeyPair> keyList = readOldWallet(file);
+        for(ECKeyPair key : keyList) {
+            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
+            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
+            System.out.println("   Address:" + BytesUtils.toHexString(Keys.toAddress(key)));
+        }
+        return true;
+    }
+
+    private List<ECKeyPair> readOldWallet(File walletDatFile) {
+        byte[] priv32Encrypted = new byte[32];
+        int keysNum = 0;
+        List<ECKeyPair> keyList = new ArrayList<>();
+        try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
+            while (fileInputStream.read(priv32Encrypted) != -1) {
+                byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
+                ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
+                keyList.add(ecKey);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return keyList;
+    }
+
+    public Wallet loadWallet() {
+        return new Wallet(getConfig());
+    }
+
+    public Wallet loadAndUnlockWallet() {
+        Wallet wallet = loadWallet();
+        if (getPassword() == null) {
+            if (wallet.unlock("")) {
+                setPassword("");
+            } else {
+                setPassword(readPassword());
+            }
+        }
+
+        if (!wallet.unlock(getPassword())) {
+            System.err.println("Invalid password");
+        }
+
+        return wallet;
+    }
+
+    /**
+     * Create a new wallet with a new password
+     */
+    public Wallet createNewWallet() {
+        String newPassword = readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
+        if (newPassword == null) {
+            return null;
+        }
+
+        setPassword(newPassword);
+        Wallet wallet = loadWallet();
+
+        if (!wallet.unlock(newPassword) || !wallet.flush()) {
+            log.error("Create New WalletError");
+            System.exit(-1);
+            return null;
+        }
+
+        return wallet;
+    }
+
     /**
      * Read a new password from input and require confirmation
-     *
-     * @return new password, or null if the confirmation failed
      */
-    protected String readNewPassword() {
-        String newPassword = readPassword("EnterNewPassword:");
-        String newPasswordRe = readPassword("ReEnterNewPassword:");
+    public String readNewPassword(String newPasswordMessageKey, String reEnterNewPasswordMessageKey) {
+        String newPassword = readPassword(newPasswordMessageKey);
+        String newPasswordRe = readPassword(reEnterNewPasswordMessageKey);
 
         if (!newPassword.equals(newPasswordRe)) {
-            log.error("ReEnterNewPasswordIncorrect");
+            log.error("ReEnter NewPassword Incorrect");
             System.exit(-1);
             return null;
         }
@@ -257,39 +433,56 @@ public class XdagCli extends Launcher {
         return newPassword;
     }
 
-    protected void dumpPrivateKey(Config config, String address) {
-        Wallet wallet = loadAndUnlockWallet(config);
-        byte[] addressBytes = BytesUtils.hexStringToBytes(address);
-        ECKeyPair account = wallet.getAccount(addressBytes);
-        if (account == null) {
-            log.error("AddressNotInWallet");
-            System.exit(-1);
-        } else {
-            System.out.println("PrivateKeyIs:" + BytesUtils.toHexString(account.getPrivateKey().toByteArray()));
+    /**
+     * Reads a line from the console.
+     */
+    public String readLine(String prompt) {
+        if (prompt != null) {
+            System.out.print(prompt);
+            System.out.flush();
         }
+
+        return scanner.nextLine();
     }
 
-    protected void importPrivateKey(Config config, String key) {
-        Wallet wallet = loadAndUnlockWallet(config);
-        byte[] keyBytes = BytesUtils.hexStringToBytes(key);
-        ECKeyPair account = ECKeyPair.create(keyBytes);
+    public boolean initializedHdSeed(Wallet wallet, PrintStream printer) {
+        if (wallet.isUnlocked() && !wallet.isHdWalletInitialized()) {
+            // HD Mnemonic
+            printer.println("HdWallet Initialize");
+            byte[] initialEntropy = new byte[16];
+            SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
+            String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
+            printer.println("HdWallet Mnemonic:"+ phrase);
 
-        boolean accountAdded = wallet.addAccount(account);
-        if (!accountAdded) {
-            log.error("PrivateKeyAlreadyInWallet");
-            System.exit(-1);
-            return;
+            String repeat = readLine("HdWallet Mnemonic Repeat:");
+            repeat = String.join(" ", repeat.trim().split("\\s+"));
+
+            if (!repeat.equals(phrase)) {
+                printer.println("HdWallet Initialization Failure");
+                return false;
+            }
+
+            wallet.initializeHdWallet(phrase);
+            wallet.flush();
+            printer.println("HdWallet Initialization Success");
+            return true;
         }
+        return false;
+    }
 
-        boolean walletFlushed = wallet.flush();
-        if (!walletFlushed) {
-            log.error("WalletFileCannotBeUpdated");
-            System.exit(-1);
-            return;
+    public String readPassword(String prompt) {
+        Console console = System.console();
+        if (console == null) {
+            if (prompt != null) {
+                System.out.print(prompt);
+                System.out.flush();
+            }
+            return scanner.nextLine();
         }
+        return new String(console.readPassword(prompt));
+    }
 
-        log.info("PrivateKeyImportedSuccessfully");
-        log.info("Address:" + BytesUtils.toHexString(Keys.toAddress(account)));
-        log.info("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().toByteArray()));
+    public String readPassword() {
+        return readPassword("Please enter your password: ");
     }
 }
