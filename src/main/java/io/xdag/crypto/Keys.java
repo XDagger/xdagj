@@ -88,11 +88,13 @@ public class Keys {
         return ECKeyPair.create(keyPair);
     }
 
-    /**
-     * Returns the address.
-     */
-    public static byte[] toAddress(ECKeyPair key) {
+    public static byte[] toBytesAddress(ECKeyPair key) {
         return Hash.sha256hash160(key.getPublicKey().toByteArray());
+    }
+
+    public static String toBase58Address(ECKeyPair key) {
+        byte[] addrBytes = toBytesAddress(key);
+        return Base58.encode(addrBytes);
     }
 }
 
