@@ -54,6 +54,7 @@ public class Wallet {
     private static final int VERSION = 4;
     private static final int SALT_LENGTH = 16;
     private static final int BCRYPT_COST = 12;
+    private static final String MNEMONIC_PASS_PHRASE = "";
 
     public static final Set<PosixFilePermission> POSIX_SECURED_PERMISSIONS = Set.of(OWNER_READ, OWNER_WRITE);
 
@@ -149,7 +150,7 @@ public class Wallet {
                 synchronized (accounts) {
                     accounts.clear();
                     for (ECKeyPair account : newAccounts) {
-                        ByteArrayWrapper baw = ByteArrayWrapper.of(Keys.toAddress(account));
+                        ByteArrayWrapper baw = ByteArrayWrapper.of(Keys.toBytesAddress(account));
                         accounts.put(baw, account);
                     }
                 }
@@ -328,7 +329,7 @@ public class Wallet {
         requireUnlocked();
 
         synchronized (accounts) {
-            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toAddress(newKey));
+            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(newKey));
             if (accounts.containsKey(address)) {
                 return false;
             }
@@ -364,7 +365,7 @@ public class Wallet {
      * Deletes an account in the wallet.
      */
     public boolean removeAccount(ECKeyPair key) {
-        return removeAccount(Keys.toAddress(key));
+        return removeAccount(Keys.toBytesAddress(key));
     }
 
     /**
@@ -419,10 +420,7 @@ public class Wallet {
      * Returns the HD seed.
      */
     public byte[] getSeed() {
-        byte[] initialEntropy = new byte[16];
-        SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
-        String mnemonic = MnemonicUtils.generateMnemonic(initialEntropy);
-        return MnemonicUtils.generateSeed(mnemonic, null);
+        return MnemonicUtils.generateSeed(this.mnemonicPhrase, MNEMONIC_PASS_PHRASE);
     }
 
     /**
@@ -437,7 +435,7 @@ public class Wallet {
             byte[] seed = getSeed();
             Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
             Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, nextAccountIndex++);
-            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toAddress(bip44Keypair));
+            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(bip44Keypair));
             accounts.put(address, bip44Keypair);
             return bip44Keypair;
         }

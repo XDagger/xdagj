@@ -29,12 +29,15 @@ import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.utils.Numeric;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,11 +48,12 @@ public class WalletTest {
 
     private String pwd;
     private Wallet wallet;
+    private Config config;
 
     @Before
     public void setUp() {
         pwd = "password";
-        Config config = new DevnetConfig();
+        config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
         ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
@@ -141,7 +145,7 @@ public class WalletTest {
         assertEquals(oldAccountSize, wallet.getAccounts().size());
         wallet.addAccount(key);
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
-        wallet.removeAccount(Keys.toAddress(key));
+        wallet.removeAccount(Keys.toBytesAddress(key));
         assertEquals(oldAccountSize, wallet.getAccounts().size());
     }
 
@@ -156,11 +160,35 @@ public class WalletTest {
     public void testAddAccountWithNextHdKey() {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
-        int hdkeyCount = 100;
+        int hdkeyCount = 5;
         for(int i = 0; i < hdkeyCount; i++) {
             wallet.addAccountWithNextHdKey();
         }
         assertEquals(hdkeyCount, wallet.getNextAccountIndex());
+    }
+
+    @Test
+    public void testHDKeyRecover() {
+        wallet.unlock(pwd);
+        wallet.initializeHdWallet(SampleKeys.MNEMONIC);
+        List<ECKeyPair> keyPairList1 = new ArrayList<>();
+        int hdkeyCount = 5;
+        for(int i = 0; i < hdkeyCount; i++) {
+            ECKeyPair key = wallet.addAccountWithNextHdKey();
+            keyPairList1.add(key);
+        }
+
+        assertEquals(hdkeyCount, wallet.getNextAccountIndex());
+        Wallet wallet2 = new Wallet(config);
+        // use different password and same mnemonic
+        wallet2.unlock(pwd + pwd);
+        wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
+        List<ECKeyPair> keyPairList2 = new ArrayList<>();
+        for(int i = 0; i < hdkeyCount; i++) {
+            ECKeyPair key = wallet2.addAccountWithNextHdKey();
+            keyPairList2.add(key);
+        }
+        assertTrue(CollectionUtils.isEqualCollection(keyPairList1, keyPairList2));
     }
 
     @After

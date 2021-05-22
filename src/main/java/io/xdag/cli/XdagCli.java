@@ -35,15 +35,12 @@ import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
-import io.xdag.wallet.KeyInternalItem;
-import io.xdag.wallet.OldWallet;
 import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -199,7 +196,7 @@ public class XdagCli extends Launcher {
         if (accounts.isEmpty()) {
             ECKeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            log.info("New Address:" + BytesUtils.toHexString(Keys.toAddress(key)));
+            log.info("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
         }
 
         // start kernel
@@ -247,7 +244,7 @@ public class XdagCli extends Launcher {
         }
         ECKeyPair key = wallet.addAccountWithNextHdKey();
         if (wallet.flush()) {
-            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toAddress(key)));
+            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
             System.out.println("PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
         }
     }
@@ -260,7 +257,7 @@ public class XdagCli extends Launcher {
             System.out.println("Account Missing");
         } else {
             for (int i = 0; i < accounts.size(); i++) {
-                System.out.println("Address:" + i + " " + BytesUtils.toHexString(Keys.toAddress(accounts.get(i))));
+                System.out.println("Address:" + i + " " + BytesUtils.toHexString(Keys.toBytesAddress(accounts.get(i))));
             }
         }
     }
@@ -315,7 +312,7 @@ public class XdagCli extends Launcher {
         }
 
         System.out.println("Private Key Imported Successfully!");
-        System.out.println("Address:" + BytesUtils.toHexString(Keys.toAddress(account)));
+        System.out.println("Address:" + BytesUtils.toHexString(Keys.toBytesAddress(account)));
         System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().toByteArray()));
         return true;
     }
@@ -352,7 +349,7 @@ public class XdagCli extends Launcher {
         for(ECKeyPair key : keyList) {
             System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
             System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
-            System.out.println("   Address:" + BytesUtils.toHexString(Keys.toAddress(key)));
+            System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
         }
         return true;
     }
