@@ -36,7 +36,6 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -49,7 +48,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
-@Slf4j
 public class XdagCli extends Launcher {
 
     private static final Scanner scanner = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
@@ -58,7 +56,7 @@ public class XdagCli extends Launcher {
         try {
             cli.start(args);
         } catch (IOException exception) {
-            log.error(exception.getMessage());
+            System.err.println(exception.getMessage());
         }
     }
 
@@ -139,7 +137,7 @@ public class XdagCli extends Launcher {
         try {
             cmd = parseOptions(newArgs);
         } catch (ParseException exception) {
-            log.error("Parsing Failed:" + exception.getMessage());
+            System.err.println("Parsing Failed:" + exception.getMessage());
         }
 
         if(cmd == null) {
@@ -196,14 +194,14 @@ public class XdagCli extends Launcher {
         if (accounts.isEmpty()) {
             ECKeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            log.info("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
         }
 
         // start kernel
         try {
             startKernel(getConfig(), wallet);
         } catch (Exception e) {
-            log.error("Uncaught exception during kernel startup.", e);
+            System.err.println("Uncaught exception during kernel startup:" + e.getMessage());
             exit(-1);
         }
     }
@@ -275,7 +273,7 @@ public class XdagCli extends Launcher {
                 System.out.println("Wallet File Cannot Be Updated");
                 return;
             }
-            System.out.println("Password Changed Successfully");
+            System.out.println("Password Changed Successfully!");
         }
     }
 
@@ -292,6 +290,7 @@ public class XdagCli extends Launcher {
         } else {
             System.out.println("Private:" + BytesUtils.toHexString(account.getPrivateKey().toByteArray()));
         }
+        System.out.println("Private Dump Successfully!");
     }
 
     protected boolean importPrivateKey(String key) {
@@ -311,9 +310,9 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        System.out.println("Private Key Imported Successfully!");
         System.out.println("Address:" + BytesUtils.toHexString(Keys.toBytesAddress(account)));
         System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().toByteArray()));
+        System.out.println("Private Key Imported Successfully!");
         return true;
     }
 
@@ -330,13 +329,14 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        wallet.initializeHdWallet(mnemonic);
         // default add one hd key
-        wallet.addAccountWithNextHdKey();
+        createAccount();
+
         if (!wallet.flush()) {
             System.out.println("HDWallet File Cannot Be Updated");
             return false;
         }
+        System.out.println("HDWallet Mnemonic Imported Successfully!");
         return true;
     }
 
@@ -351,6 +351,7 @@ public class XdagCli extends Launcher {
             System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
             System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
         }
+        System.out.println("Old Wallet Converted Successfully!");
         return true;
     }
 
@@ -406,7 +407,7 @@ public class XdagCli extends Launcher {
         Wallet wallet = loadWallet();
 
         if (!wallet.unlock(newPassword) || !wallet.flush()) {
-            log.error("Create New WalletError");
+            System.err.println("Create New WalletError");
             System.exit(-1);
             return null;
         }
@@ -422,7 +423,7 @@ public class XdagCli extends Launcher {
         String newPasswordRe = readPassword(reEnterNewPasswordMessageKey);
 
         if (!newPassword.equals(newPasswordRe)) {
-            log.error("ReEnter NewPassword Incorrect");
+            System.err.println("ReEnter NewPassword Incorrect");
             System.exit(-1);
             return null;
         }
@@ -445,7 +446,7 @@ public class XdagCli extends Launcher {
     public boolean initializedHdSeed(Wallet wallet, PrintStream printer) {
         if (wallet.isUnlocked() && !wallet.isHdWalletInitialized()) {
             // HD Mnemonic
-            printer.println("HdWallet Initialize");
+            printer.println("HdWallet Initializing...");
             byte[] initialEntropy = new byte[16];
             SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
             String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
@@ -455,13 +456,13 @@ public class XdagCli extends Launcher {
             repeat = String.join(" ", repeat.trim().split("\\s+"));
 
             if (!repeat.equals(phrase)) {
-                printer.println("HdWallet Initialization Failure");
+                printer.println("HdWallet Initialized Failure");
                 return false;
             }
 
             wallet.initializeHdWallet(phrase);
             wallet.flush();
-            printer.println("HdWallet Initialization Success");
+            printer.println("HdWallet Initialized Successfully!");
             return true;
         }
         return false;
