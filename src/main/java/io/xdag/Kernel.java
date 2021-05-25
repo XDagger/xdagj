@@ -71,7 +71,7 @@ import io.xdag.rpc.netty.*;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -88,7 +88,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Kernel {
     protected Status status = Status.STOPPED;
     protected Config config;
-    protected OldWallet wallet;
+    protected Wallet wallet;
     protected DatabaseFactory dbFactory;
     protected BlockStore blockStore;
     protected OrphanPool orphanPool;
@@ -136,7 +136,7 @@ public class Kernel {
     protected JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
     protected JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
 
-    public Kernel(Config config, OldWallet wallet) {
+    public Kernel(Config config, Wallet wallet) {
         this.config = config;
         this.wallet = wallet;
         // 启动的时候就是在初始化
@@ -171,11 +171,13 @@ public class Kernel {
         // ====================================
         // wallet init
         // ====================================
+
 //        if (wallet == null) {
-        wallet = new OldWallet();
-        wallet.init(this.config);
+//        wallet = new OldWallet();
+//        wallet.init(this.config);
+
         log.info("Wallet init.");
-//        }
+
 
         dbFactory = new RocksdbFactory(this.config);
         blockStore = new BlockStore(
@@ -210,7 +212,7 @@ public class Kernel {
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
-            firstAccount.signOut(wallet.getDefKey().ecKey);
+            firstAccount.signOut(wallet.getDefKey());
             poolMiner = new Miner(firstAccount.getHash());
             xdagStats.setOurLastBlockHash(firstAccount.getHashLow());
             if(xdagStats.getGlobalMiner() == null) {

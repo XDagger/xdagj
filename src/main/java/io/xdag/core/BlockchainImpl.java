@@ -40,7 +40,7 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.KeyInternalItem;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -79,7 +79,7 @@ public class BlockchainImpl implements Blockchain {
         }
     };
 
-    private final OldWallet wallet;
+    private final Wallet wallet;
     private final BlockStore blockStore;
     /** 非Extra orphan存放 */
     private final OrphanPool orphanPool;
@@ -714,7 +714,7 @@ public class BlockchainImpl implements Blockchain {
         assert pairs != null;
         List<ECKeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
-            if (keys.get(i).equals(wallet.getDefKey().ecKey)) {
+            if (keys.get(i).equals(wallet.getDefKey())) {
                 defKeyIndex = i;
             }
         }
@@ -1130,12 +1130,12 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<KeyInternalItem> ourkeys = wallet.getKey_internal();
+        List<ECKeyPair> ourkeys = wallet.getAccounts();
         // 输出签名只有一个
         ECDSASignature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            ECKeyPair ecKey = ourkeys.get(i).ecKey;
+            ECKeyPair ecKey = ourkeys.get(i);
             byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
             byte[] digest = BytesUtils.merge(
                     block.getSubRawData(block.getOutsigIndex() - 2), publicKeyBytes);

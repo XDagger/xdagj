@@ -44,6 +44,8 @@ public class TestnetConfig extends AbstractConfig {
 
         this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
         this.walletKeyFile = this.rootDir+"/wallet-testnet.dat";
+
+        this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }
 
 }

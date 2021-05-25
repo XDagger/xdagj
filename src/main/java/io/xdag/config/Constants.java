@@ -53,4 +53,8 @@ public class Constants {
     /** 每一轮的确认数是16 */
     public static final int CONFIRMATIONS_COUNT = 16;
     public static final int MAIN_BIG_PERIOD_LOG = 21;
+
+    public static final String WALLET_FILE_NAME = "wallet.data";
+
+    public static final String CLIENT_VERSION = "0.4.3";
 }

@@ -42,6 +42,8 @@ public class MainnetConfig extends AbstractConfig {
 
         this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
         this.walletKeyFile = this.rootDir+"/wallet.dat";
+
+        this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }
 
 }

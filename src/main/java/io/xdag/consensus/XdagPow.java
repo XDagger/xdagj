@@ -184,7 +184,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         taskIndex++;
 
         Block block = blockchain.createNewBlock(null, null, true, null);
-        block.signOut(kernel.getWallet().getDefKey().ecKey);
+        block.signOut(kernel.getWallet().getDefKey());
 
         minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);
@@ -208,7 +208,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         taskIndex++;
 
         Block block = blockchain.createNewBlock(null, null, true, null);
-        block.signOut(kernel.getWallet().getDefKey().ecKey);
+        block.signOut(kernel.getWallet().getDefKey());
 
         minShare = RandomUtils.nextBytes(32);
         block.setNonce(minShare);

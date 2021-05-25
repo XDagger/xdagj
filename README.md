@@ -9,6 +9,7 @@
   - [System environment](#system-environment)
   - [Installation and usage](#installation-and-usage)
   - [Develop](#develop)
+    - [XDAG Mars Project](#XDAG-Mars-Project)
   - [Code](#code)
   - [Contribution](#contribution)
   - [Sponsorship](#sponsorship)
@@ -35,21 +36,59 @@ The Private Chain Building Tutorial helps you to build a private-chain for testi
 
 XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
 
-The main work of the next stage includes but not limited
+### XDAG Mars Project
 
-- Optimize the XDAG consensus process and synchronization protocol
-- LibP2P is used to replace the  DNET network and gradually improve the degree of decentralization as long as the system stability allows.
-- Open API interface, provide black box testing.
-- Add a commission to the transaction.
-- Use BIPxx and other specifications to improve the existing public and private key and address generation methods, and provide a more convenient and universal key storage method.
-- Add snapshot function to solve the problem of slow loading speed of historical main block.
-- Optimize the address block structure to avoid dust attacks.
+The XDAG Mars Project is divided into four stages：
 
-At the same time, we are also actively providing more application scenarios for XDAG, including but not limited.
+#### Exploration phase: XDAGJ testnet is online (online, in beta)
 
-- Explore the possibility of using neo4j as the storage layer to provide a visual DAG storage.
-- Explore a way to add a virtual machine to XDAG to implement smart contracts and improve the usability of the system.
-- Explore effective cross-chain solutions to break the closed ecology of XDAG.
+- [x] Deploy XDAGJ test network environment, open beta
+
+- [x] Implement the RandomX algorithm
+
+- [x] Implement the libp2p network protocol
+
+- [x] Testnet blockchain browser
+
+- [x] Test coin acquisition
+
+
+#### Landing phase: XDAGJ mainnet is online
+
+- [ ] Improve test cases: write test cases for existing functions
+
+- [ ] Improve the log function: provide a relatively complete log service to facilitate trouble shooting
+
+- [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
+
+- [ ] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
+
+- [ ] Implement the RPC function: access to Web3j, realize the standardization of the interface
+
+- [ ] Improve the mining protocol: introduce the more mature Stratum protocol
+
+- [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
+
+- [ ] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
+
+#### Expansion phase: XDAGJ & EVM 
+
+- [ ] Improve the address block structure and increase the handling fee
+
+- [ ] Optimize and improve mobile wallets to improve user experience
+
+- [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
+
+- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete decentralization
+
+#### Prosperity phase: XDAGJ & DeFi
+
+- [ ] Implement cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
+
+- [ ] Implement the oracle function
+
+- [ ] Join a distributed exchange
+
 
 ## Code
 

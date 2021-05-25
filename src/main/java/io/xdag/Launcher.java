@@ -23,16 +23,26 @@
  */
 package io.xdag;
 
+import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.cli.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
+@Getter
+@Setter
 public class Launcher {
+
+    private final Options options = new Options();
+    private String password = null;
+    private Config config;
 
     /**
      * Here we make sure that all shutdown hooks will be executed in the order of
@@ -66,6 +76,59 @@ public class Launcher {
             }
         }
         LogManager.shutdown();
+    }
+
+    /**
+     * Adds a supported option.
+     */
+    protected void addOption(Option option) {
+        options.addOption(option);
+    }
+
+    /**
+     * Parses options from the given arguments.
+     */
+    protected CommandLine parseOptions(String[] args) throws ParseException {
+        if (args == null || args.length == 0 ) {
+            return null;
+        }
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(getOptions(), args);
+
+        return cmd;
+    }
+
+    protected Config buildConfig(String[] args) throws Exception {
+        Config config = new MainnetConfig();
+        for (String arg : args) {
+            switch (arg) {
+                case "-t" -> config = new TestnetConfig();
+            }
+        }
+        config.changePara(args);
+        config.setDir();
+        logPoolInfo(config);
+
+        // init keys
+        config.initKeys();
+
+        return config;
+    }
+
+    public static void logPoolInfo(Config config) {
+        log.info(
+                "Xdag Node IP Address：[{}:{}], Xdag Pool Service IP Address：[{}:{}]，Configure：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
+                config.getNodeSpec().getNodeIp(),
+                config.getNodeSpec().getNodePort(),
+                config.getPoolSpec().getPoolIp(),
+                config.getPoolSpec().getPoolPort(),
+                config.getPoolSpec().getGlobalMinerLimit(),
+                config.getPoolSpec().getMaxConnectPerIp(),
+                config.getPoolSpec().getMaxMinerPerAccount(),
+                config.getPoolSpec().getPoolRation(),
+                config.getPoolSpec().getRewardRation(),
+                config.getPoolSpec().getDirectRation(),
+                config.getPoolSpec().getFundRation());
     }
 
 }
