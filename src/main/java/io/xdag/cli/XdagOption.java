@@ -21,38 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.wallet;
+package io.xdag.cli;
 
-/** Data class encapsulating a BIP-39 compatible Xdag wallet. */
-public class Bip39Wallet {
-    /** Path to wallet file. */
-    private final String filename;
+public enum XdagOption {
 
-    /** Generated BIP-39 mnemonic for the wallet. */
-    private final String mnemonic;
+    HELP("help"),
 
-    public Bip39Wallet(String filename, String mnemonic) {
-        this.filename = filename;
-        this.mnemonic = mnemonic;
-    }
+    VERSION("version"),
 
-    public String getFilename() {
-        return filename;
-    }
+    ACCOUNT("account"),
 
-    public String getMnemonic() {
-        return mnemonic;
+    CHANGE_PASSWORD("changepassword"),
+
+    PASSWORD("password"),
+
+    DUMP_PRIVATE_KEY("dumpprivatekey"),
+
+    IMPORT_PRIVATE_KEY("importprivatekey"),
+
+    IMPORT_MNEMONIC("importmnemonic"),
+
+    CONVERT_OLD_WALLET("convertoldwallet");
+
+    private final String name;
+
+    XdagOption(String s) {
+        name = s;
     }
 
     @Override
     public String toString() {
-        return "XdagBip39Wallet{"
-                + "filename='"
-                + filename
-                + '\''
-                + ", mnemonic='"
-                + mnemonic
-                + '\''
-                + '}';
+        return this.name;
     }
+
 }

@@ -23,6 +23,7 @@
  */
 package io.xdag.utils;
 
+import java.nio.file.FileSystems;
 import java.util.Locale;
 
 public class SystemUtil {
@@ -84,6 +85,15 @@ public class SystemUtil {
      */
     public static String getOsArch() {
         return System.getProperty("os.arch");
+    }
+
+    /**
+     * Check if current OS is POSIX compliant.
+     *
+     * @return whether current OS is POSIX compliant
+     */
+    public static boolean isPosix() {
+        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
     }
 
 }

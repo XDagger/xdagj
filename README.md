@@ -9,7 +9,7 @@
   - [System environment](#system-environment)
   - [Installation and usage](#installation-and-usage)
   - [Develop](#develop)
-    - [Mars Project](#Mars-Project)
+    - [XDAG Mars Project](#XDAG-Mars-Project)
   - [Code](#code)
   - [Contribution](#contribution)
   - [Sponsorship](#sponsorship)
@@ -36,17 +36,17 @@ The Private Chain Building Tutorial helps you to build a private-chain for testi
 
 XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
 
-### Mars Project
+### XDAG Mars Project
 
-The current Mars Project is divided into four stages, and the development process can be flexibly adjusted
+The XDAG Mars Project is divided into four stages：
 
 #### Exploration phase: XDAGJ testnet is online (online, in beta)
 
 - [x] Deploy XDAGJ test network environment, open beta
 
-- [x] Access RandomX algorithm
+- [x] Implement the RandomX algorithm
 
-- [x] Access libp2p network protocol
+- [x] Implement the libp2p network protocol
 
 - [x] Testnet blockchain browser
 
@@ -61,9 +61,9 @@ The current Mars Project is divided into four stages, and the development proces
 
 - [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [ ] Realize the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
+- [ ] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
 
-- [ ] Realize the RPC function: access to Web3j, realize the standardization of the interface
+- [ ] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
 - [ ] Improve the mining protocol: introduce the more mature Stratum protocol
 
@@ -79,13 +79,13 @@ The current Mars Project is divided into four stages, and the development proces
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
-- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete centralization
+- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete decentralization
 
-#### Prosperity Phase: DAG & DeFi
+#### Prosperity phase: XDAGJ & DeFi
 
-- [ ] Access to cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
+- [ ] Implement cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
 
-- [ ] Realize the oracle function
+- [ ] Implement the oracle function
 
 - [ ] Join a distributed exchange
 

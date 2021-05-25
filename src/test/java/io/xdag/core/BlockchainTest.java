@@ -26,10 +26,10 @@ package io.xdag.core;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
-import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
+import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -38,8 +38,9 @@ import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
@@ -48,6 +49,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.*;
@@ -66,7 +68,8 @@ public class BlockchainTest {
     public TemporaryFolder root = new TemporaryFolder();
 
     Config config = new DevnetConfig();
-    OldWallet xdagWallet;
+    Wallet wallet;
+    String pwd;
     Kernel kernel;
     DatabaseFactory dbFactory;
 
@@ -79,8 +82,12 @@ public class BlockchainTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        xdagWallet = new OldWallet();
-        xdagWallet.init(config);
+        pwd = "password";
+        wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        wallet.setAccounts(Collections.singletonList(key));
+        wallet.flush();
 
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
@@ -96,11 +103,12 @@ public class BlockchainTest {
 
         kernel.setBlockStore(blockStore);
         kernel.setOrphanPool(orphanPool);
-        kernel.setWallet(xdagWallet);
+        kernel.setWallet(wallet);
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() throws IOException {
+        wallet.delete();
     }
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
@@ -427,10 +435,6 @@ public class BlockchainTest {
         }
 
         assertEquals(secondDiff, blockchain.getXdagTopStatus().getTopDiff().toString(16));
-
-
     }
-
-
 
 }

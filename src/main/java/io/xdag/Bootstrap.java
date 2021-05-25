@@ -23,59 +23,12 @@
  */
 package io.xdag;
 
-import io.xdag.config.*;
-import io.xdag.wallet.OldWallet;
-import lombok.extern.slf4j.Slf4j;
+import io.xdag.cli.XdagCli;
 
-@Slf4j
 public class Bootstrap {
 
-    public static Config getConfig(String[] args) throws Exception {
-//        if (args == null || args.length == 0) {
-//            throw new RuntimeException("getConfig(args) args is empty! ");
-//        }
-        Config config = new MainnetConfig();
-        for (String arg : args) {
-            switch (arg) {
-                case "-t":
-                    config = new TestnetConfig();
-                    break;
-            }
-        }
-        config.changePara(args);
-        config.setDir();
-        //logPoolInfo(oldConfig);
-
-        // init keys
-        config.initKeys();
-        return config;
-    }
-
-    public static void logPoolInfo(Config config) {
-        log.info(
-                "矿池节点地址 ：[{}:{}], 矿池服务地址：[{}:{}]，相关配置信息：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
-                config.getNodeSpec().getNodeIp(),
-                config.getNodeSpec().getNodePort(),
-                config.getPoolSpec().getPoolIp(),
-                config.getPoolSpec().getPoolPort(),
-                config.getPoolSpec().getGlobalMinerLimit(),
-                config.getPoolSpec().getMaxConnectPerIp(),
-                config.getPoolSpec().getMaxMinerPerAccount(),
-                config.getPoolSpec().getPoolRation(),
-                config.getPoolSpec().getRewardRation(),
-                config.getPoolSpec().getDirectRation(),
-                config.getPoolSpec().getFundRation());
-    }
-
     public static void main(String[] args) throws Exception {
-        Config config = getConfig(args);
-
-
-        // if dnet_keys.dat and wallet.dat exist
-        OldWallet wallet = new OldWallet();
-
-        Kernel kernel = new Kernel(config, wallet);
-        // default start kernel
-        kernel.testStart();
+        XdagCli.main(args);
     }
+
 }

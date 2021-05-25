@@ -39,6 +39,10 @@ public final class ByteArrayWrapper {
         return data;
     }
 
+    public static ByteArrayWrapper of(byte[] data) {
+        return new ByteArrayWrapper(data);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (!(other instanceof ByteArrayWrapper)) {
