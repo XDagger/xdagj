@@ -46,6 +46,7 @@ public class BlockBuilder {
         return b;
     }
 
+    // TODO:set nonce means this block is a mining block, the mining param need to set true
     public static Block generateExtraBlock(Config config, ECKeyPair key, long xdagTime, List<Address> pendings) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
         b.signOut(key);
@@ -54,6 +55,7 @@ public class BlockBuilder {
         return b;
     }
 
+    // TODO:set nonce means this block is a mining block, the mining param need to set true
     public static Block generateExtraBlockGivenRandom(Config config, ECKeyPair key, long xdagTime, List<Address> pendings, String randomS) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
         b.signOut(key);
