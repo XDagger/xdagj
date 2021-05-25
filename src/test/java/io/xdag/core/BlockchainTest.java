@@ -70,6 +70,9 @@ public class BlockchainTest {
     Kernel kernel;
     DatabaseFactory dbFactory;
 
+    BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
+    BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
+
     @Before
     public void setUp() throws Exception {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
@@ -125,7 +128,7 @@ public class BlockchainTest {
 
     @Test
     public void testAddressBlock() {
-        ECKeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.create(private_1);
         Block addressBlock = generateAddressBlock(config, key, new Date().getTime());
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
@@ -142,7 +145,7 @@ public class BlockchainTest {
     public void testExtraBlock() throws ParseException {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        ECKeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.create(private_1);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -188,8 +191,8 @@ public class BlockchainTest {
 
     @Test
     public void testTransactionBlock() throws ParseException {
-        ECKeyPair addrKey = Keys.createEcKeyPair();
-        ECKeyPair poolKey = Keys.createEcKeyPair();
+        ECKeyPair addrKey = ECKeyPair.create(private_1);
+        ECKeyPair poolKey = ECKeyPair.create(private_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -315,8 +318,8 @@ public class BlockchainTest {
     public void testCanUseInput() throws ParseException {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        ECKeyPair fromKey = Keys.createEcKeyPair();
-        ECKeyPair toKey = Keys.createEcKeyPair();
+        ECKeyPair fromKey = ECKeyPair.create(private_1);
+        ECKeyPair toKey = ECKeyPair.create(private_2);
         Block fromAddrBlock = generateAddressBlock(config, fromKey, generateTime);
         Block toAddrBlock = generateAddressBlock(config, toKey, generateTime);
 
@@ -420,11 +423,11 @@ public class BlockchainTest {
         BigInteger privateKey = new BigInteger(privString, 16);
 
 
-        String firstDiff = "aedbac91e1";
-        String secondDiff = "d936e19b89";
+        String firstDiff = "60b6a7744b";
+        String secondDiff = "b20217d6e2";
 
-        ECKeyPair addrKey = ECKeyPair.create(privateKey);
-        ECKeyPair poolKey = ECKeyPair.create(privateKey);
+        ECKeyPair addrKey = ECKeyPair.create(private_1);
+        ECKeyPair poolKey = ECKeyPair.create(private_2);
         long generateTime = 1600616700000L;
         // 1. add one address block
         Block addressBlock = generateAddressBlock(config, addrKey,generateTime);

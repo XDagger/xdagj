@@ -22,7 +22,7 @@ pause
 
 - 修改上述文件为xxx.bat文件，然后右键用管理员身份运行，等待程序运行结束即可
 
-![Open the security group](./Open_the_security_group.png)
+![Open the security group](img/Open_the_security_group.png)
 
 ## 开启hugeoage功能
 
@@ -30,14 +30,13 @@ pause
 
 - 找到`windows管理工具`，并在里面到`本地安全策略`后打开
 
-![RandomX_first](./RandomX_first.png)
+![RandomX_first](img/RandomX_first.png)
 
 - 点击`本地策略`->`用户权限分配`->`锁定内存页`
 
-![RandomX_two](./RandomX_two.png)
+![RandomX_two](img/RandomX_two.png)
 
 - 为锁定内存页添加计算机用户名，确认之后重启电脑
 
-![RandomX_three](./RandomX_three.png)
+![RandomX_three](img/RandomX_three.png)
 
-  

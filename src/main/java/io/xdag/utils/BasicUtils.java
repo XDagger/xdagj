@@ -23,6 +23,7 @@
  */
 package io.xdag.utils;
 
+import cn.hutool.core.codec.Base64;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -54,59 +55,72 @@ public class BasicUtils {
         return ans;
     }
 
+//    public static String hash2Address(byte[] hash) {
+//        hash = Arrays.reverse(hash);
+//        char[] newcha = new char[32];
+//        int c = 0;
+//        int d;
+//        int h;
+//        for (int i = d = h = 0; i < 32; i++) {
+//            if (d < 6) {
+//                d += 8;
+//                c <<= 8;
+//                c |= Byte.toUnsignedInt(hash[h]);
+//                h++;
+//            }
+//            d -= 6;
+//            int index = (c >> d) & 0x3f;
+//            newcha[i] = bit2mime[index];
+//        }
+//        return String.copyValueOf(newcha);
+//    }
+
     public static String hash2Address(byte[] hash) {
         hash = Arrays.reverse(hash);
-        char[] newcha = new char[32];
-        int c = 0;
-        int d;
-        int h;
-        for (int i = d = h = 0; i < 32; i++) {
-            if (d < 6) {
-                d += 8;
-                c <<= 8;
-                c |= Byte.toUnsignedInt(hash[h]);
-                h++;
-            }
-            d -= 6;
-            int index = (c >> d) & 0x3f;
-            newcha[i] = bit2mime[index];
-        }
-        return String.copyValueOf(newcha);
+        byte[] addr = new byte[24];
+        System.arraycopy(hash,0,addr,0,24);
+        return Base64.encode(addr);
     }
-
-    /**
-     * 返回低192bit的hash hashlow
-     *
-     * @param address
-     *            256bit hash
-     * @return 前64位置0的hashlow
-     */
     public static byte[] address2Hash(String address) {
-        byte[] hashlow = new byte[32];
-        int i, c, d, n;
-        int h = 0, j = 0;
-        for (int e = n = i = 0; i < 32; ++i) {
-            do {
-                if ((c = Byte.toUnsignedInt((byte) address.charAt(h++))) == 0) {
-                    return null;
-                }
-                d = Byte.toUnsignedInt(mime2bits[c]);
-            } while ((d & 0xC0) != 0);
-            e <<= 6;
-            e |= d;
-            n += 6;
-
-            if (n >= 8) {
-                n -= 8;
-                hashlow[j++] = (byte) (e >> n);
-            }
-        }
-
-        for (i = 0; i < 8; i++) {
-            hashlow[j++] = 0;
-        }
-        return Arrays.reverse(hashlow);
+        byte[] ret = Base64.decode(address);
+        byte[] res = new byte[32];
+        System.arraycopy(Arrays.reverse(ret),0,res,8,24);
+        return res;
     }
+
+//    /**
+//     * 返回低192bit的hash hashlow
+//     *
+//     * @param address
+//     *            256bit hash
+//     * @return 前64位置0的hashlow
+//     */
+//    public static byte[] address2Hash(String address) {
+//        byte[] hashlow = new byte[32];
+//        int i, c, d, n;
+//        int h = 0, j = 0;
+//        for (int e = n = i = 0; i < 32; ++i) {
+//            do {
+//                if ((c = Byte.toUnsignedInt((byte) address.charAt(h++))) == 0) {
+//                    return null;
+//                }
+//                d = Byte.toUnsignedInt(mime2bits[c]);
+//            } while ((d & 0xC0) != 0);
+//            e <<= 6;
+//            e |= d;
+//            n += 6;
+//
+//            if (n >= 8) {
+//                n -= 8;
+//                hashlow[j++] = (byte) (e >> n);
+//            }
+//        }
+//
+//        for (i = 0; i < 8; i++) {
+//            hashlow[j++] = 0;
+//        }
+//        return Arrays.reverse(hashlow);
+//    }
 
     // convert xdag to cheato
     public static long xdag2amount(double input) {

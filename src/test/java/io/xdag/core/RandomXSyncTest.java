@@ -66,7 +66,7 @@ public class RandomXSyncTest {
     Config config = new DevnetConfig();
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
-    private final String privString = "421d725da10c056a955d2444a5a043b1a5d4515db126b8631806a8ccbda93369";
+    private final String privString = "10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046";
     private final BigInteger privateKey = new BigInteger(privString, 16);
 
     private long forkHeight;
@@ -76,7 +76,7 @@ public class RandomXSyncTest {
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 64;
         RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 128;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
-        forkHeight = 2;
+        forkHeight = 3;
 
     }
 

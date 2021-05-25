@@ -1,9 +1,11 @@
 package io.xdag.rpc;
 
+import io.xdag.rpc.modules.web3.Web3XdagModule;
+
 import java.util.Arrays;
 import java.util.Map;
 
-public interface Web3  {
+public interface Web3 extends Web3XdagModule {
     class CallArguments {
         public String from;
         public String to;

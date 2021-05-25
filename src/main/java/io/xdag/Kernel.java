@@ -60,8 +60,13 @@ import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.randomx.RandomX;
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
+import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
+import io.xdag.rpc.modules.xdag.XdagModule;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionDisabled;
+import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
 import io.xdag.rpc.netty.*;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
@@ -126,7 +131,7 @@ public class Kernel {
     // rpc
     protected JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
     protected Web3 web3;
-//    protected Web3WebSocketServer web3WebSocketServer;
+    protected Web3WebSocketServer web3WebSocketServer;
     protected Web3HttpServer web3HttpServer;
     protected JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
     protected JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
@@ -296,6 +301,12 @@ public class Kernel {
         }
 
         // ====================================
+        // rpc start
+        // ====================================
+        getWeb3HttpServer().start();
+        getWeb3WebSocketServer().start();
+
+        // ====================================
         // telnet server
         // ====================================
         telnetServer.start();
@@ -312,7 +323,8 @@ public class Kernel {
     }
 
     private Web3 buildWeb3() {
-        return null;
+        Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(this.getBlockchain(),new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionDisabled()),this);
+        return new Web3Impl(web3XdagModule);
     }
 
     private JsonRpcWeb3ServerHandler getJsonRpcWeb3ServerHandler() {
@@ -325,26 +337,26 @@ public class Kernel {
 
         return jsonRpcWeb3ServerHandler;
     }
-//
-//    private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
-//        if (web3WebSocketServer == null) {
-//            JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
-//            XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
-//            web3WebSocketServer = new Web3WebSocketServer(
-//                    InetAddress.getLocalHost(),
-//                    4444,
-//                    jsonRpcHandler,
-//                    getJsonRpcWeb3ServerHandler()
-//            );
-//        }
-//
-//        return web3WebSocketServer;
-//    }
+
+    private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
+        if (web3WebSocketServer == null) {
+            JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
+            XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
+            web3WebSocketServer = new Web3WebSocketServer(
+                    InetAddress.getByName("127.0.0.1"),
+                    4444,
+                    jsonRpcHandler,
+                    getJsonRpcWeb3ServerHandler()
+            );
+        }
+
+        return web3WebSocketServer;
+    }
 
     private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
         if (web3HttpServer == null) {
             web3HttpServer = new Web3HttpServer(
-                    InetAddress.getLocalHost(),
+                    InetAddress.getByName("127.0.0.1"),
                     4445,
                     123,
                     true,
@@ -361,7 +373,7 @@ public class Kernel {
         if (jsonRpcWeb3FilterHandler == null) {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
                     "*",
-                    InetAddress.getLocalHost(),
+                    InetAddress.getByName("127.0.0.1"),
                     null
             );
         }
@@ -384,6 +396,11 @@ public class Kernel {
         }
 
         isRunning.set(false);
+
+        //
+        if (web3HttpServer != null) {
+            web3HttpServer.stop();
+        }
 
         // 1. 工作层关闭
         // stop consensus

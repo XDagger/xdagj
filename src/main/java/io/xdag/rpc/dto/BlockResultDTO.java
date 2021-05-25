@@ -10,6 +10,13 @@ public class BlockResultDTO {
     // blockInfo
     // rawData
 
+    String height;
+    String data;
+    public BlockResultDTO(long height) {
+        this.height = Long.toHexString(height);
+        this.data = "hello";
+    }
+
 
 
     public static BlockResultDTO fromBlock(Block b, boolean raw) {

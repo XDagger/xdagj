@@ -2,7 +2,9 @@ package io.xdag.rpc.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@JsonPropertyOrder({"jsonrpc", "id", "method", "result", "params", "error"})
 public abstract class JsonRpcMessage {
     private final JsonRpcVersion version;
 

@@ -32,6 +32,8 @@ public interface Web3XdagModule {
 
     String xdag_getBalance(String address) throws Exception;
 
+    String xdag_getTotalBalance() throws Exception;
+
     default BlockResultDTO xdag_getTransactionByHash(String hash, Boolean full)throws Exception{
         return xdag_getBlockByHash(hash,full);
     }

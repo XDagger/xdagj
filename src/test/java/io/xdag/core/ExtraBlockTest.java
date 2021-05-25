@@ -68,6 +68,9 @@ public class ExtraBlockTest {
 
     long expectedExtraBlocks = 5;
 
+    BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
+    BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
+
     @Before
     public void setUp() throws Exception {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
@@ -124,8 +127,8 @@ public class ExtraBlockTest {
         String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
         BigInteger privateKey = new BigInteger(privString, 16);
 
-        ECKeyPair addrKey = ECKeyPair.create(privateKey);
-        ECKeyPair poolKey = ECKeyPair.create(privateKey);
+        ECKeyPair addrKey = ECKeyPair.create(private_1);
+        ECKeyPair poolKey = ECKeyPair.create(private_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block

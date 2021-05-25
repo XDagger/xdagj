@@ -24,6 +24,8 @@
 package io.xdag.config;
 
 import cn.hutool.setting.Setting;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigObject;
 import io.xdag.config.spec.*;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
@@ -340,33 +342,39 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
         List<ModuleDescription> modules = new ArrayList<>();
 
-        // TODO: get modules from config
-//        if (!configFromFiles.hasPath("rpc.modules")) {
-//            return modules;
-//        }
-//
-//        List<? extends ConfigObject> list = configFromFiles.getObjectList("rpc.modules");
-//
-//        for (ConfigObject configObject : list) {
-//            Config configElement = configObject.toConfig();
-//            String name = configElement.getString("name");
-//            String version = configElement.getString("version");
-//            boolean enabled = configElement.getBoolean("enabled");
-//            List<String> enabledMethods = null;
-//            List<String> disabledMethods = null;
-//
-//            if (configElement.hasPath("methods.enabled")) {
-//                enabledMethods = configElement.getStringList("methods.enabled");
-//            }
-//
-//            if (configElement.hasPath("methods.disabled")) {
-//                disabledMethods = configElement.getStringList("methods.disabled");
-//            }
-//
-//            modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
-//        }
+        com.typesafe.config.Config configFromFiles = ConfigFactory.load("rpc_modules");
+        List<? extends ConfigObject> list = configFromFiles.getObjectList("rpc.modules");
+
+        for (ConfigObject configObject : list) {
+            com.typesafe.config.Config configElement = configObject.toConfig();
+            String name = configElement.getString("name");
+            String version = configElement.getString("version");
+            boolean enabled = configElement.getBoolean("enabled");
+            List<String> enabledMethods = null;
+            List<String> disabledMethods = null;
+
+            if (configElement.hasPath("methods.enabled")) {
+                enabledMethods = configElement.getStringList("methods.enabled");
+            }
+
+            if (configElement.hasPath("methods.disabled")) {
+                disabledMethods = configElement.getStringList("methods.disabled");
+            }
+
+            modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
+        }
 
         this.moduleDescriptions = modules;
+
+        // TODO: get modules from config
+//        String name = "xdag";
+//        String version = "1.0";
+//        boolean enabled = true;
+//        List<String> enabledMethods = null;
+//        List<String> disabledMethods = null;
+//
+//        modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
+//        this.moduleDescriptions = modules;
 
         return modules;
     }

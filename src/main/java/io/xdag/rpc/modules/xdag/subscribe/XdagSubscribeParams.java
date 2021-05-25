@@ -5,10 +5,10 @@
 //import io.netty.channel.Channel;
 //
 //
-//@JsonDeserialize(using = EthSubscribeParamsDeserializer.class)
+//@JsonDeserialize(using = XdagSubscribeParamsDeserializer.class)
 //@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
 //public interface XdagSubscribeParams {
-//    SubscriptionId accept(EthSubscribeParamsVisitor visitor, Channel channel);
+//    SubscriptionId accept(XdagSubscribeParamsVisitor visitor, Channel channel);
 //}
 //
 //

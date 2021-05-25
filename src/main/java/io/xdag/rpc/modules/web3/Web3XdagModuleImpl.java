@@ -2,8 +2,11 @@ package io.xdag.rpc.modules.web3;
 
 import com.sun.jdi.LongValue;
 import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
+import io.xdag.core.XdagState;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.StringUtils;
@@ -51,11 +54,19 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
     @Override
     public Object xdag_syncing() {
         long currentBlock = this.blockchain.getXdagStats().nmain;
-        long highestBlock = this.blockchain.getXdagStats().totalnmain;
+        long highestBlock = Math.max(this.blockchain.getXdagStats().totalnmain, currentBlock);
 
-        if (highestBlock < currentBlock){
-            return false;
+        Config config = kernel.getConfig();
+        if (config instanceof MainnetConfig) {
+            if (kernel.getXdagState() != XdagState.SYNC){
+                return false;
+            }
+        } else {
+            if (kernel.getXdagState() != XdagState.STST) {
+                return false;
+            }
         }
+
 
         SyncingResult s = new SyncingResult();
         try {
@@ -97,8 +108,21 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
     }
 
     @Override
+    public String xdag_getTotalBalance() throws Exception {
+        double balance = amount2xdag(kernel.getBlockchain().getXdagStats().getBalance());
+        return toQuantityJsonHex(balance);
+    }
+
+    @Override
     public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception {
-        return null;
+        System.out.println(bnOrId);
+        System.out.println(full);
+        if (full) {
+            System.out.println("hello");
+        }
+        BlockResultDTO blockResultDTO = new BlockResultDTO(Integer.parseInt(bnOrId));
+
+        return blockResultDTO;
     }
 
     @Override
