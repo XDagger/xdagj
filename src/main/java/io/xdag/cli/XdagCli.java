@@ -329,13 +329,15 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        // default add one hd key
-        createAccount();
-
+        wallet.initializeHdWallet(mnemonic);
         if (!wallet.flush()) {
             System.out.println("HDWallet File Cannot Be Updated");
             return false;
         }
+
+        // default add one hd key
+        createAccount();
+
         System.out.println("HDWallet Mnemonic Imported Successfully!");
         return true;
     }
