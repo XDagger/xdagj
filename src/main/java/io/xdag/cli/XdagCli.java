@@ -345,7 +345,9 @@ public class XdagCli extends Launcher {
             System.out.println("File:" + file.getName() + " not exists.");
             return false;
         }
-        List<ECKeyPair> keyList = readOldWallet(file);
+        String password = readPassword("Old wallet password:");
+        String random = readPassword("Old wallet random:");
+        List<ECKeyPair> keyList = readOldWallet(password, random, file);
         for(ECKeyPair key : keyList) {
             System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
             System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
@@ -355,13 +357,15 @@ public class XdagCli extends Launcher {
         return true;
     }
 
-    private List<ECKeyPair> readOldWallet(File walletDatFile) {
+    public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {
         byte[] priv32Encrypted = new byte[32];
         int keysNum = 0;
         List<ECKeyPair> keyList = new ArrayList<>();
+        Native.general_dnet_key(password, random);
         try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
+                BytesUtils.arrayReverse(priv32);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
                 keyList.add(ecKey);
             }
