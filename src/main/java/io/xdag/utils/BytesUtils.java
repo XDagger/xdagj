@@ -23,9 +23,9 @@
  */
 package io.xdag.utils;
 
+import com.google.common.io.BaseEncoding;
 import io.xdag.crypto.jni.Native;
 import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -95,7 +95,7 @@ public class BytesUtils {
     }
 
     public static String toHexString(byte[] data) {
-        return data == null ? "" : Hex.toHexString(data);
+        return data == null ? "" : BaseEncoding.base16().lowerCase().encode(data);
     }
 
     public static byte[] bigIntegerToBytes(BigInteger b, int numBytes) {

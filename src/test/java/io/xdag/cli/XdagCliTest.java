@@ -31,6 +31,7 @@ import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.Wallet;
+import org.assertj.core.util.Lists;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +48,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.spy;
 
 public class XdagCliTest {
     private Config config;
@@ -459,6 +461,26 @@ public class XdagCliTest {
         // execution
         assertFalse(xdagCLI.importMnemonic(errorMnemonic));
         assertTrue(xdagCLI.importMnemonic(rightMnemonic));
+    }
+
+    @Test
+    public void testConvertOldWallet() {
+        XdagCli xdagCLI = spy(new XdagCli());
+        File walletFile = spy(new File(""));
+        xdagCLI.setConfig(config);
+        String hexPrivKey = "008f30bc86f42f55d8d64dd26a5428fc1e65f0616823153c084b43aad76cd97e04";
+        byte[] keyBytes = BytesUtils.hexStringToBytes(hexPrivKey);
+        ECKeyPair account = ECKeyPair.create(keyBytes);
+        List<ECKeyPair> keyList = Lists.newArrayList(account);
+
+        // mock wallet
+        doReturn(keyList).when(xdagCLI).readOldWallet("111111", "111111", walletFile);
+        when(walletFile.exists()).thenReturn(true);
+        // mock passwords
+        doReturn("111111").when(xdagCLI).readPassword("Old wallet password:");
+        doReturn("111111").when(xdagCLI).readPassword("Old wallet random:");
+
+        assertTrue(xdagCLI.convertOldWallet(walletFile));
     }
 
 }
