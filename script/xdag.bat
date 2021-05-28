@@ -9,4 +9,4 @@ set XDAG_OPTS="-t"
 # default JVM options
 set JAVA_OPTS="--enable-preview -server -Xms1g -Xmx1g"
 
-java %JAVA_OPTS% -cp %XDAG_JARNAME% io.xdag.Bootstrap %*
+java %JAVA_OPTS% -cp .;%XDAG_JARNAME% io.xdag.Bootstrap %*
