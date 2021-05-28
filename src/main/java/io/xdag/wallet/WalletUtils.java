@@ -35,6 +35,8 @@ public class WalletUtils {
     // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
     public static final int XDAG_BIP44_CION_TYPE = 586;
 
+    public static final String WALLET_PASSWORD_PROMPT = "Please Enter Wallet Password: ";
+
     public static Bip32ECKeyPair generateBip44KeyPair(Bip32ECKeyPair master, int index) {
         // m/44'/586'/0'/0/0
         // xdag coin type 586 at https://github.com/satoshilabs/slips/blob/master/slip-0044.md
