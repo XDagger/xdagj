@@ -23,8 +23,54 @@
  */
 package io.xdag.core;
 
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_EXTRA;
+import static io.xdag.config.Constants.BI_MAIN;
+import static io.xdag.config.Constants.BI_MAIN_CHAIN;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
+import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
+import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.FastByteComparisons.equalBytes;
+import static io.xdag.utils.MapUtils.getHead;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
+
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.ECDSASignature;
@@ -39,33 +85,9 @@ import io.xdag.randomx.RandomX;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.KeyInternalItem;
 import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static io.xdag.config.Constants.*;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
-import static io.xdag.utils.MapUtils.getHead;
 
 @Slf4j
 @Getter
@@ -572,9 +594,9 @@ public class BlockchainImpl implements Blockchain {
     // TODO: 改递归为迭代
     private void applyBlock1(Block block) {
         List<Integer> list=new ArrayList<>();//建立一个整数列表，一个节点列表，两个栈
-        List<Block> curr=new ArrayList();
-        Stack<Block> stack1=new Stack();
-        Stack<Block> stack2=new Stack();
+        List<Block> curr=new ArrayList<>();
+        Stack<Block> stack1=new Stack<>();
+        Stack<Block> stack2=new Stack<>();
         if(block!=null){  //根不空，进栈1
             stack1.push(block);
             while(!stack1.isEmpty()){//栈1不空出栈1，然后进栈2

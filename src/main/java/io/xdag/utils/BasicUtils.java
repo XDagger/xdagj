@@ -30,6 +30,7 @@ import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.zip.CRC32;
 
@@ -125,18 +126,16 @@ public class BasicUtils {
     }
 
     /**
-     * Xfer: transferred 4479658898 10.430000000 XDAG to the address
-     * 0000002f28322e9d817fd94a1357e51a. 10.43 Xfer: transferred 42949672960
-     * 10.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10 Xfer:
-     * transferred 4398046511104 1024.000000000 XDAG to the address
-     * 0000002f28322e9d817fd94a1357e51a. 1024
+     * Xfer:transferred   44796588980   10.430000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10.43
+     * Xfer:transferred   42949672960   10.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10
+     * Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
      */
     public static double amount2xdag(long xdag) {
         long first = xdag >> 32;
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
         BigDecimal bigDecimal = new BigDecimal(first + tem);
-        return bigDecimal.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+        return bigDecimal.setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     public static boolean crc32Verify(byte[] src, int crc) {
