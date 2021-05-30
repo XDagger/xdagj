@@ -25,6 +25,7 @@ package io.xdag.net.manager;
 
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
+import io.xdag.net.Channel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
@@ -36,8 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagChannelManager {
-    protected ConcurrentHashMap<InetSocketAddress, XdagChannel> channels = new ConcurrentHashMap<>();
-    protected ConcurrentHashMap<String, XdagChannel> activeChannels = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<InetSocketAddress, Channel> channels = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<String, Channel> activeChannels = new ConcurrentHashMap<>();
     private final Kernel kernel;
     /** Queue with new blocks from other peers */
     private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
@@ -57,13 +58,13 @@ public class XdagChannelManager {
         blockDistributeThread.start();
     }
 
-    public void add(XdagChannel ch) {
+    public void add(Channel ch) {
         log.debug(
                 "xdag channel manager->Channel added: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
         channels.put(ch.getInetSocketAddress(), ch);
     }
 
-    public void notifyDisconnect(XdagChannel channel) {
+    public void notifyDisconnect(Channel channel) {
         log.debug("xdag channel manager-> node {}: notifies about disconnect", channel);
         remove(channel);
         channel.onDisconnect();
@@ -71,14 +72,14 @@ public class XdagChannelManager {
 
     public Set<InetSocketAddress> getActiveAddresses() {
         Set<InetSocketAddress> set = new HashSet<>();
-        for (XdagChannel c : activeChannels.values()) {
+        for (Channel c : activeChannels.values()) {
             Node p = c.getNode();
             set.add(new InetSocketAddress(p.getHost(), p.getPort()));
         }
         return set;
     }
 
-    public List<XdagChannel> getActiveChannels() {
+    public List<Channel> getActiveChannels() {
         return new ArrayList<>(activeChannels.values());
     }
 
@@ -110,10 +111,10 @@ public class XdagChannelManager {
                 || blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
             receive = kernel.getClient().getNode();
         } else {
-            XdagChannel receiveChannel = activeChannels.get(blockWrapper.getRemoteNode().getHexId());
+            Channel receiveChannel = activeChannels.get(blockWrapper.getRemoteNode().getHexId());
             receive = receiveChannel != null ? receiveChannel.getNode() : null;
         }
-        for (XdagChannel channel : activeChannels.values()) {
+        for (Channel channel : activeChannels.values()) {
             if (receive != null && channel.getNode().getHexId().equals(receive.getHexId())) {
                 log.debug("不发送给他");
                 continue;
@@ -123,7 +124,7 @@ public class XdagChannelManager {
         }
     }
 
-    public void onChannelActive(XdagChannel channel, Node node) {
+    public void onChannelActive(Channel channel, Node node) {
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
         log.debug("activeChannel size:" + activeChannels.size());
@@ -141,7 +142,7 @@ public class XdagChannelManager {
         return channels.size();
     }
 
-    public void remove(XdagChannel ch) {
+    public void remove(Channel ch) {
 //        log.debug("Channel removed: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
         channels.remove(ch.getInetSocketAddress());
         if (ch.isActive()) {
@@ -186,7 +187,7 @@ public class XdagChannelManager {
             blockDistributeThread.interrupt();
         }
         // 关闭所有连接
-        for (XdagChannel channel : activeChannels.values()) {
+        for (Channel channel : activeChannels.values()) {
             channel.dropConnection();
         }
     }

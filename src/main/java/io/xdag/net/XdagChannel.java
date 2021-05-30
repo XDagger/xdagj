@@ -44,17 +44,19 @@ import io.xdag.net.message.impl.Xdag03MessageFactory;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class XdagChannel {
+public class XdagChannel extends Channel {
     private final NioSocketChannel socket;
     private InetSocketAddress inetSocketAddress;
     private boolean isActive;
     private boolean isDisconnected = false;
-    private Kernel kernel;
+    protected Kernel kernel;
 
     /** 握手 密钥 */
     private XdagHandshakeHandler handshakeHandler;
@@ -103,7 +105,7 @@ public class XdagChannel {
         log.debug("Initwith Node host:" + host + " port:" + port + " node:" + node.getHexId());
     }
 
-    public void notifyDisconnect(XdagChannel channel) {
+    public void notifyDisconnect(Channel channel) {
         log.debug("Node {}: notifies about disconnect", channel);
         channel.onDisconnect();
     }
@@ -117,20 +119,29 @@ public class XdagChannel {
         xdag.onSyncDone(done);
     }
 
+    @Override
     public String getIp() {
         return inetSocketAddress.getAddress().getHostAddress();
     }
 
+    @Override
     public int getPort() {
         return inetSocketAddress.getPort();
     }
 
+    @Override
     public void onDisconnect() {
         isDisconnected = true;
     }
 
+    @Override
     public boolean isDisconnected() {
         return isDisconnected;
+    }
+
+    @Override
+    public MessageQueue getmessageQueue() {
+        return msgQueue;
     }
 
     public void sendPubkey(ChannelHandlerContext ctx) throws Exception {
@@ -147,6 +158,7 @@ public class XdagChannel {
         node.getStat().Outbound.add(1);
     }
 
+    @Override
     public void sendNewBlock(BlockWrapper blockWrapper) {
         log.debug("send a block hash is {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
         log.debug("ttl:" + blockWrapper.getTtl());
@@ -184,10 +196,12 @@ public class XdagChannel {
         return format;
     }
 
+    @Override
     public Xdag getXdag() {
         return xdag;
     }
 
+    @Override
     public void dropConnection() {
         xdag.dropConnection();
     }
