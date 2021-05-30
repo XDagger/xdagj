@@ -24,7 +24,6 @@
 package io.xdag.config.spec;
 
 import io.xdag.crypto.DnetKeys;
-import io.xdag.discovery.peers.DiscoveryPeer;
 
 import java.util.List;
 
@@ -46,7 +45,7 @@ public interface NodeSpec {
 
     // libp2p
     boolean isBootnode() ;
-    List<DiscoveryPeer> getBootnodes();
+    List<String> getBootnodes();
     int getDiscoveryPort();
     int getLibp2pPort();
     String getLibp2pPrivkey();

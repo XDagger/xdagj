@@ -33,6 +33,7 @@ import io.netty.handler.codec.ByteToMessageCodec;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.jni.Native;
+import io.xdag.net.Channel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
@@ -46,10 +47,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Data
 public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
-    private XdagChannel channel;
+    private Channel channel;
     private MessageFactory messageFactory;
 
-    public XdagBlockHandler(XdagChannel channel) {
+    public XdagBlockHandler(Channel channel) {
         this.channel = channel;
     }
 
@@ -64,9 +65,16 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     protected void encode(
             ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
         byte[] unCryptData = xdagblock.getData();
-
-        byte[] encryptData = Native.dfslib_encrypt_byte_sector(unCryptData, unCryptData.length,
-                channel.getNode().getStat().Outbound.get() - 3 + 1);
+        byte[] encryptData ;
+        // libp2p没有三次握手
+        if(channel.getClass().equals(XdagChannel.class)){
+            encryptData = Native.dfslib_encrypt_byte_sector(unCryptData, unCryptData.length,
+                    channel.getNode().getStat().Outbound.get() - 3 + 1);
+        }
+        else{
+            encryptData = Native.dfslib_encrypt_byte_sector(unCryptData, unCryptData.length,
+                    channel.getNode().getStat().Outbound.get()  + 1);
+        }
         out.writeBytes(encryptData);
         channel.getNode().getStat().Outbound.add();
     }
@@ -77,8 +85,16 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             log.trace("Decoding packet (" + in.readableBytes() + " bytes)");
             byte[] encryptData = new byte[512];
             in.readBytes(encryptData);
-            byte[] unCryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length,
-                    channel.getNode().getStat().Inbound.get() - 3 + 1);
+            byte[] unCryptData ;
+            if(channel.getClass().equals(XdagChannel.class)){
+                unCryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length,
+                        channel.getNode().getStat().Inbound.get() - 3 + 1);
+            }
+            // libp2p没有三次握手
+            else{
+                unCryptData = Native.dfslib_uncrypt_byte_sector(encryptData, encryptData.length,
+                        channel.getNode().getStat().Inbound.get()  + 1);
+            }
             channel.getNode().getStat().Inbound.add();
 
             // TODO:process xdagblock transport header

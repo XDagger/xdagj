@@ -26,7 +26,6 @@ package io.xdag.consensus;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.crypto.Hash;
-import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.listener.Listener;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
@@ -88,8 +87,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     private boolean isRunning = false;
 
-    private final ChannelManager channelManager;
-
     protected RandomX randomXUtils;
 
     public XdagPow(Kernel kernel) {
@@ -100,7 +97,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         this.broadcaster = new Broadcaster();
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
-        this.channelManager = kernel.getChannelManager();
 
         this.randomXUtils = kernel.getRandomXUtils();
     }
@@ -516,7 +512,6 @@ public class XdagPow implements PoW, Listener, Runnable {
                 }
                 if(bw != null) {
                     channelMgr.sendNewBlock(bw);
-                    channelManager.sendNewBlock(bw);
 
                 }
             }
