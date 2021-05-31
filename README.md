@@ -69,7 +69,7 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
 
-- [ ] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
+- [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
 #### Expansion phase: XDAGJ & EVM 
 
