@@ -140,6 +140,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // Xdag RPC modules
     // =========================
     protected List<ModuleDescription> moduleDescriptions;
+    protected boolean rpcEnabled = false;
 
 
     public void setDir() {
@@ -249,6 +250,8 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             log.debug("{} IP access", list.length);
             whiteIPList.addAll(Arrays.asList(list));
         }
+
+        rpcEnabled = setting.getBool("isRPCEnabled") != null && setting.getBool("isRPCEnabled");
     }
 
     @Override
@@ -336,6 +339,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     @Override
     public List<ModuleDescription> getRpcModules() {
+
+        if (!rpcEnabled) {
+            return null;
+        }
+
         if (this.moduleDescriptions != null) {
             return this.moduleDescriptions;
         }
@@ -377,5 +385,10 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 //        this.moduleDescriptions = modules;
 
         return modules;
+    }
+
+    @Override
+    public boolean isRPCEnabled() {
+        return rpcEnabled;
     }
 }

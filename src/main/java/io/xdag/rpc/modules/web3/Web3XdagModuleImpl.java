@@ -34,8 +34,8 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
     private final XdagModule xdagModule;
     private final Kernel kernel;
 
-    public Web3XdagModuleImpl(Blockchain blockchain, XdagModule xdagModule, Kernel kernel) {
-        this.blockchain = blockchain;
+    public Web3XdagModuleImpl(XdagModule xdagModule, Kernel kernel) {
+        this.blockchain = kernel.getBlockchain();
         this.xdagModule = xdagModule;
         this.kernel = kernel;
     }

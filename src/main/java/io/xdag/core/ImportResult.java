@@ -51,7 +51,7 @@ public enum ImportResult {
         return errorInfo;
     }
 
-    public boolean isIllegal() {
+    public boolean isLegal() {
         return this == IMPORTED_NOT_BEST || this == IMPORTED_BEST || this == EXIST;
     }
 }

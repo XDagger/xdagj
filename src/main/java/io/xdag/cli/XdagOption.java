@@ -41,6 +41,8 @@ public enum XdagOption {
 
     IMPORT_MNEMONIC("importmnemonic"),
 
+    ENABLE_RPC("enablerpc"),
+
     CONVERT_OLD_WALLET("convertoldwallet");
 
     private final String name;

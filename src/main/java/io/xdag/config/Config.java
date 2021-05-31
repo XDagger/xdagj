@@ -83,5 +83,6 @@ public interface Config {
 
     // rpc
     List<ModuleDescription> getRpcModules();
+    boolean isRPCEnabled();
 
 }

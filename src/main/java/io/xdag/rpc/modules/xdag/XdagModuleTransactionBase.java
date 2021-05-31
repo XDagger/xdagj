@@ -1,9 +1,11 @@
 package io.xdag.rpc.modules.xdag;
 
-import io.xdag.config.Constants;
+import io.xdag.core.Block;
+import io.xdag.core.Blockchain;
+import io.xdag.core.ImportResult;
+import io.xdag.core.XdagBlock;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.utils.TypeConverter;
-import io.xdag.wallet.Wallet;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,13 @@ import java.math.BigInteger;
 public class XdagModuleTransactionBase implements XdagModuleTransaction{
     protected static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionBase.class);
 
+    private final Blockchain blockchain;
 
+
+    public XdagModuleTransactionBase(Blockchain blockchain) {
+
+        this.blockchain = blockchain;
+    }
 
     @Override
     public synchronized String sendTransaction(Web3.CallArguments args) {
@@ -35,9 +43,15 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction{
     public String sendRawTransaction(String rawData) {
 
         // 1. build transaction
-
         // 2. try to add blockchain
-
-        return null;
+        System.out.println(rawData);
+        Block block = new Block(new XdagBlock(Hex.decode(rawData)));
+        ImportResult result = blockchain.tryToConnect(block);
+        System.out.println(result);
+        if (!result.isLegal()) {
+            return "0x";
+        } else {
+            return result.toString();
+        }
     }
 }

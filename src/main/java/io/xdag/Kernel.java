@@ -66,6 +66,7 @@ import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModuleTransactionDisabled;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
 import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
 import io.xdag.rpc.netty.*;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
@@ -305,8 +306,10 @@ public class Kernel {
         // ====================================
         // rpc start
         // ====================================
-        getWeb3HttpServer().start();
-        getWeb3WebSocketServer().start();
+        if (config.isRPCEnabled()) {
+            getWeb3HttpServer().start();
+            getWeb3WebSocketServer().start();
+        }
 
         // ====================================
         // telnet server
@@ -325,7 +328,7 @@ public class Kernel {
     }
 
     private Web3 buildWeb3() {
-        Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(this.getBlockchain(),new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionDisabled()),this);
+        Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionEnabled(this.getBlockchain())),this);
         return new Web3Impl(web3XdagModule);
     }
 
@@ -358,7 +361,7 @@ public class Kernel {
     private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
         if (web3HttpServer == null) {
             web3HttpServer = new Web3HttpServer(
-                    InetAddress.getByName("127.0.0.1"),
+                    InetAddress.getByName("192.168.3.229"),
                     4445,
                     123,
                     true,
@@ -375,7 +378,7 @@ public class Kernel {
         if (jsonRpcWeb3FilterHandler == null) {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
                     "*",
-                    InetAddress.getByName("127.0.0.1"),
+                    InetAddress.getByName("192.168.3.229"),
                     null
             );
         }
@@ -402,6 +405,9 @@ public class Kernel {
         //
         if (web3HttpServer != null) {
             web3HttpServer.stop();
+        }
+        if (web3WebSocketServer != null) {
+            web3WebSocketServer.stop();
         }
 
         // 1. 工作层关闭
