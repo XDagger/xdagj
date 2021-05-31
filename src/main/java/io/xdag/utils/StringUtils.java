@@ -26,13 +26,14 @@ package io.xdag.utils;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class StringUtils {
 
     public static double getDouble(String value) {
         double num = Double.parseDouble(value);
         BigDecimal bigDecimal = new BigDecimal(num);
-        return bigDecimal.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+        return bigDecimal.setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     public static byte[] getHash(String address) {
@@ -43,11 +44,4 @@ public class StringUtils {
         return hash;
     }
 
-    public static int getNum(String value) {
-        int num = 20;
-        if (value != null) {
-            num = Integer.parseInt(value);
-        }
-        return num;
-    }
 }

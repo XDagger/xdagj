@@ -23,8 +23,54 @@
  */
 package io.xdag.core;
 
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_EXTRA;
+import static io.xdag.config.Constants.BI_MAIN;
+import static io.xdag.config.Constants.BI_MAIN_CHAIN;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
+import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
+import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.FastByteComparisons.equalBytes;
+import static io.xdag.utils.MapUtils.getHead;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
+
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.ECDSASignature;
@@ -39,33 +85,9 @@ import io.xdag.randomx.RandomX;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.KeyInternalItem;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static io.xdag.config.Constants.*;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
-import static io.xdag.utils.MapUtils.getHead;
 
 @Slf4j
 @Getter
@@ -79,7 +101,7 @@ public class BlockchainImpl implements Blockchain {
         }
     };
 
-    private final OldWallet wallet;
+    private final Wallet wallet;
     private final BlockStore blockStore;
     /** 非Extra orphan存放 */
     private final OrphanPool orphanPool;
@@ -517,8 +539,8 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue()) >= amount2xdag(
-                    block.getInfo().getAmount())) {
+            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
+                    block.getInfo().getAmount()) {
                 acceptAmount(block, ret);
             }
         }
@@ -527,18 +549,18 @@ public class BlockchainImpl implements Blockchain {
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
-                if (amount2xdag(ref.getInfo().getAmount()) < amount2xdag(link.getAmount().longValue())) {
+                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",Hex.toHexString(ref.getInfo().getHashlow()),ref.getInfo().getAmount(),
                             link.getAmount().longValue());
                     return UnsignedLong.ZERO;
                 }
-                if (amount2xdag(sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue()) < amount2xdag(sumIn.longValue())) {
+                if (sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumIn.longValue()) {
                     log.debug("This input ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
                 sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
             } else {
-                if (amount2xdag(sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue()) < amount2xdag(sumOut.longValue())) {
+                if (sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumOut.longValue()) {
                     log.debug("This output ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
@@ -546,8 +568,8 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumOut.longValue())
-                || amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumIn.longValue())) {
+        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
+                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {
             log.debug("exec fail!");
             return UnsignedLong.ZERO;
         }
@@ -572,9 +594,9 @@ public class BlockchainImpl implements Blockchain {
     // TODO: 改递归为迭代
     private void applyBlock1(Block block) {
         List<Integer> list=new ArrayList<>();//建立一个整数列表，一个节点列表，两个栈
-        List<Block> curr=new ArrayList();
-        Stack<Block> stack1=new Stack();
-        Stack<Block> stack2=new Stack();
+        List<Block> curr=new ArrayList<>();
+        Stack<Block> stack1=new Stack<>();
+        Stack<Block> stack2=new Stack<>();
         if(block!=null){  //根不空，进栈1
             stack1.push(block);
             while(!stack1.isEmpty()){//栈1不空出栈1，然后进栈2
@@ -714,7 +736,7 @@ public class BlockchainImpl implements Blockchain {
         assert pairs != null;
         List<ECKeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
-            if (keys.get(i).equals(wallet.getDefKey().ecKey)) {
+            if (keys.get(i).equals(wallet.getDefKey())) {
                 defKeyIndex = i;
             }
         }
@@ -1116,21 +1138,12 @@ public class BlockchainImpl implements Blockchain {
                 byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
 //                log.debug("verify encoded:{}", Hex.toHexString(digest));
                 byte[] hash = Hash.hashTwice(digest);
-                if (ECKeyPair.verify(hash, sig, publicKeyBytes)) {
+                if (ECKeyPair.verify(hash, sig.toCanonicalised(), publicKeyBytes)) {
                     canUse = true;
                 }
             }
 
             if (!canUse) {
-                //TODO this maybe some old issue( input and output was same )
-                List<ECKeyPair> keys = block.getPubKeys();
-                for (ECKeyPair ecKey : keys) {
-                    byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
-                    byte[] hash = Hash.hashTwice(BytesUtils.merge(subdata, publicKeyBytes));
-                    if (ECKeyPair.verify(hash, sig, publicKeyBytes)) {
-                        return true;
-                    }
-                }
                 return false;
             }
         }
@@ -1139,12 +1152,12 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<KeyInternalItem> ourkeys = wallet.getKey_internal();
+        List<ECKeyPair> ourkeys = wallet.getAccounts();
         // 输出签名只有一个
         ECDSASignature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            ECKeyPair ecKey = ourkeys.get(i).ecKey;
+            ECKeyPair ecKey = ourkeys.get(i);
             byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
             byte[] digest = BytesUtils.merge(
                     block.getSubRawData(block.getOutsigIndex() - 2), publicKeyBytes);

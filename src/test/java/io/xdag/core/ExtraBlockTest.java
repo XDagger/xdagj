@@ -28,22 +28,27 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
@@ -62,11 +67,15 @@ public class ExtraBlockTest {
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
     Config config = new DevnetConfig();
-    OldWallet xdagWallet;
+    Wallet wallet;
+    String pwd;
     Kernel kernel;
     DatabaseFactory dbFactory;
 
     long expectedExtraBlocks = 5;
+
+    BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
+    BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
     @Before
     public void setUp() throws Exception {
@@ -77,8 +86,13 @@ public class ExtraBlockTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        xdagWallet = new OldWallet();
-        xdagWallet.init(config);
+        pwd = "password";
+        Config config = new DevnetConfig();
+        wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        wallet.setAccounts(Collections.singletonList(key));
+        wallet.flush();
 
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
@@ -94,7 +108,7 @@ public class ExtraBlockTest {
 
         kernel.setBlockStore(blockStore);
         kernel.setOrphanPool(orphanPool);
-        kernel.setWallet(xdagWallet);
+        kernel.setWallet(wallet);
     }
 
 
@@ -124,8 +138,8 @@ public class ExtraBlockTest {
         String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
         BigInteger privateKey = new BigInteger(privString, 16);
 
-        ECKeyPair addrKey = ECKeyPair.create(privateKey);
-        ECKeyPair poolKey = ECKeyPair.create(privateKey);
+        ECKeyPair addrKey = ECKeyPair.create(private_1);
+        ECKeyPair poolKey = ECKeyPair.create(private_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -166,5 +180,10 @@ public class ExtraBlockTest {
 
         assertEquals(expectedExtraBlocks+1,blockchain.getXdagStats().nextra);
 
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        wallet.delete();
     }
 }

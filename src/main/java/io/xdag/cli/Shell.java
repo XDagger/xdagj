@@ -314,7 +314,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             // xfer must check dnet password
-            if(!readPassword(false)) {
+            if(!readPassword("Enter Dnet password> ",false)) {
                 return;
             }
             println(commands.xfer(amount, hash, remark));
@@ -455,6 +455,10 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
+            // before terminate must verify admin password(config at AdminSpec)
+            if(!readPassword("Enter Admin password> ",true)) {
+                return;
+            }
             commands.stop();
             println("Stop.");
         } catch (Exception e) {
@@ -462,11 +466,11 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private boolean readPassword(boolean isTelnet) {
+    private boolean readPassword(String prompt, boolean isTelnet) {
         Character mask = '*';
         String line;
         do {
-            line = reader.readLine("Enter password> ", mask);
+            line = reader.readLine(prompt, mask);
         } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
 
         if(isTelnet) {
@@ -504,7 +508,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
         this.setReader(reader);
 
-        if(!readPassword(true)) {
+        if(!readPassword("Enter Admin password>",true)) {
             return;
         }
 

@@ -23,230 +23,428 @@
  */
 package io.xdag.wallet;
 
+import io.xdag.config.Config;
+import io.xdag.core.SimpleEncoder;
+import io.xdag.crypto.*;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SystemUtil;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.bouncycastle.crypto.generators.BCrypt;
 
-import io.xdag.crypto.ECKeyPair;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.Numeric;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.bouncycastle.crypto.generators.SCrypt;
-import org.bouncycastle.crypto.params.KeyParameter;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.UUID;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.xdag.crypto.SecureRandomUtils.secureRandom;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
+@Slf4j
+@Getter
+@Setter
 public class Wallet {
 
-    private static final int N_LIGHT = 1 << 12;
-    private static final int P_LIGHT = 6;
+    private static final int VERSION = 4;
+    private static final int SALT_LENGTH = 16;
+    private static final int BCRYPT_COST = 12;
+    private static final String MNEMONIC_PASS_PHRASE = "";
 
-    private static final int N_STANDARD = 1 << 18;
-    private static final int P_STANDARD = 1;
+    public static final Set<PosixFilePermission> POSIX_SECURED_PERMISSIONS = Set.of(OWNER_READ, OWNER_WRITE);
 
-    private static final int R = 8;
-    private static final int DKLEN = 32;
+    private final File file;
+    private final Config config;
 
-    private static final int CURRENT_VERSION = 3;
+    private final Map<ByteArrayWrapper, ECKeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
+    private String password;
 
-    private static final String CIPHER = "aes-128-ctr";
-    static final String AES_128_CTR = "pbkdf2";
-    static final String SCRYPT = "scrypt";
+    // hd wallet key
+    private String mnemonicPhrase = "";
+    private int nextAccountIndex = 0;
 
-    public static WalletFile create(String password, ECKeyPair ecKeyPair, int n, int p)
-            throws CipherException {
-
-        byte[] salt = generateRandomBytes(32);
-
-        byte[] derivedKey =
-                generateDerivedScryptKey(password.getBytes(UTF_8), salt, n, R, p, DKLEN);
-
-        byte[] encryptKey = Arrays.copyOfRange(derivedKey, 0, 16);
-        byte[] iv = generateRandomBytes(16);
-
-        byte[] privateKeyBytes =
-                Numeric.toBytesPadded(ecKeyPair.getPrivateKey(), Keys.PRIVATE_KEY_SIZE);
-
-        byte[] cipherText =
-                performCipherOperation(Cipher.ENCRYPT_MODE, iv, encryptKey, privateKeyBytes);
-
-        byte[] mac = generateMac(derivedKey, cipherText);
-
-        return createWalletFile(ecKeyPair, cipherText, iv, salt, mac, n, p);
+    /**
+     * Creates a new wallet instance.
+     */
+    public Wallet(Config config) {
+        this.file = FileUtils.getFile(config.getWalletSpec().getWalletFilePath());
+        this.config = config;
     }
 
-    public static WalletFile createStandard(String password, ECKeyPair ecKeyPair)
-            throws CipherException {
-        return create(password, ecKeyPair, N_STANDARD, P_STANDARD);
+    /**
+     * Returns whether the wallet file exists and non-empty.
+     */
+    public boolean exists() {
+        return file.length() > 0;
     }
 
-    public static WalletFile createLight(String password, ECKeyPair ecKeyPair)
-            throws CipherException {
-        return create(password, ecKeyPair, N_LIGHT, P_LIGHT);
+    /**
+     * Deletes the wallet file.
+     */
+    public void delete() throws IOException {
+        Files.delete(file.toPath());
     }
 
-    private static WalletFile createWalletFile(
-            ECKeyPair ecKeyPair,
-            byte[] cipherText,
-            byte[] iv,
-            byte[] salt,
-            byte[] mac,
-            int n,
-            int p) {
-
-        WalletFile walletFile = new WalletFile();
-        walletFile.setAddress(Keys.getAddress(ecKeyPair));
-
-        WalletFile.Crypto crypto = new WalletFile.Crypto();
-        crypto.setCipher(CIPHER);
-        crypto.setCiphertext(Numeric.toHexStringNoPrefix(cipherText));
-
-        WalletFile.CipherParams cipherParams = new WalletFile.CipherParams();
-        cipherParams.setIv(Numeric.toHexStringNoPrefix(iv));
-        crypto.setCipherparams(cipherParams);
-
-        crypto.setKdf(SCRYPT);
-        WalletFile.ScryptKdfParams kdfParams = new WalletFile.ScryptKdfParams();
-        kdfParams.setDklen(DKLEN);
-        kdfParams.setN(n);
-        kdfParams.setP(p);
-        kdfParams.setR(R);
-        kdfParams.setSalt(Numeric.toHexStringNoPrefix(salt));
-        crypto.setKdfparams(kdfParams);
-
-        crypto.setMac(Numeric.toHexStringNoPrefix(mac));
-        walletFile.setCrypto(crypto);
-        walletFile.setId(UUID.randomUUID().toString());
-        walletFile.setVersion(CURRENT_VERSION);
-
-        return walletFile;
+    /**
+     * Returns the file where the wallet is persisted.
+     */
+    public File getFile() {
+        return file;
     }
 
-    private static byte[] generateDerivedScryptKey(
-            byte[] password, byte[] salt, int n, int r, int p, int dkLen) {
-        return SCrypt.generate(password, salt, n, r, p, dkLen);
+    /**
+     * Locks the wallet.
+     */
+    public void lock() {
+        password = null;
+        accounts.clear();
     }
 
-    private static byte[] generateAes128CtrDerivedKey(
-            byte[] password, byte[] salt, int c, String prf) throws CipherException {
-
-        if (!prf.equals("hmac-sha256")) {
-            throw new CipherException("Unsupported prf:" + prf);
+    public ECKeyPair getDefKey() {
+        List<ECKeyPair> accountList = getAccounts();
+        if(CollectionUtils.isNotEmpty(accountList)) {
+            return accountList.get(0);
         }
-
-        // Java 8 supports this, but you have to convert the password to a character array, see
-        // http://stackoverflow.com/a/27928435/3211687
-
-        PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA256Digest());
-        gen.init(password, salt, c);
-        return ((KeyParameter) gen.generateDerivedParameters(256)).getKey();
+        return null;
     }
 
-    private static byte[] performCipherOperation(
-            int mode, byte[] iv, byte[] encryptKey, byte[] text) throws CipherException {
+    /**
+     * Unlocks this wallet
+     */
+    public boolean unlock(String password) {
+        if (password == null) {
+            throw new IllegalArgumentException("Password can not be null");
+        }
 
         try {
-            IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
-            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+            byte[] key;
+            byte[] salt;
 
-            SecretKeySpec secretKeySpec = new SecretKeySpec(encryptKey, "AES");
-            cipher.init(mode, secretKeySpec, ivParameterSpec);
-            return cipher.doFinal(text);
-        } catch (NoSuchPaddingException
-                | NoSuchAlgorithmException
-                | InvalidAlgorithmParameterException
-                | InvalidKeyException
-                | BadPaddingException
-                | IllegalBlockSizeException e) {
-            throw new CipherException("Error performing cipher operation", e);
+            if (exists()) {
+
+                SimpleDecoder dec = new SimpleDecoder(FileUtils.readFileToByteArray(file));
+                int version = dec.readInt(); // version
+
+                Set<ECKeyPair> newAccounts = null;
+                switch (version) {
+                    // only version 4
+                    case 4 -> {
+                        salt = dec.readBytes();
+                        key = BCrypt.generate(password.getBytes(UTF_8), salt, BCRYPT_COST);
+                        try {
+                            newAccounts = readAccounts(key, dec, true, version);
+                            readHdSeed(key, dec);
+                        } catch (Exception e) {
+                            log.warn("Failed to read HD mnemonic phrase");
+                            return false;
+                        }
+                    }
+                    default -> throw new RuntimeException("Unknown wallet version.");
+                }
+
+                synchronized (accounts) {
+                    accounts.clear();
+                    for (ECKeyPair account : newAccounts) {
+                        ByteArrayWrapper baw = ByteArrayWrapper.of(Keys.toBytesAddress(account));
+                        accounts.put(baw, account);
+                    }
+                }
+            }
+            this.password = password;
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to open wallet", e);
+        }
+        return false;
+    }
+
+    /**
+     * Reads the account keys.
+     */
+    protected LinkedHashSet<ECKeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version) {
+        LinkedHashSet<ECKeyPair> keys = new LinkedHashSet<>();
+        int total = dec.readInt(); // size
+
+        for (int i = 0; i < total; i++) {
+            byte[] iv = dec.readBytes(vlq);
+            byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
+            keys.add(ECKeyPair.create(privateKey));
+        }
+        return keys;
+    }
+
+    /**
+     * Writes the account keys.
+     */
+    protected void writeAccounts(byte[] key, SimpleEncoder enc) {
+        synchronized (accounts) {
+            enc.writeInt(accounts.size());
+            for (ECKeyPair a : accounts.values()) {
+                byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
+
+                enc.writeBytes(iv);
+                enc.writeBytes(Aes.encrypt(a.getPrivateKey().toByteArray(), key, iv));
+            }
         }
     }
 
-    private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) {
-        byte[] result = new byte[16 + cipherText.length];
+    /**
+     * Reads the mnemonic phase and next account index.
+     */
+    protected void readHdSeed(byte[] key, SimpleDecoder dec) {
+        byte[] iv = dec.readBytes();
+        byte[] hdSeedEncrypted = dec.readBytes();
+        byte[] hdSeedRaw = Aes.decrypt(hdSeedEncrypted, key, iv);
 
-        System.arraycopy(derivedKey, 16, result, 0, 16);
-        System.arraycopy(cipherText, 0, result, 16, cipherText.length);
-
-        return Hash.sha256(result);
+        SimpleDecoder d = new SimpleDecoder(hdSeedRaw);
+        mnemonicPhrase = d.readString();
+        nextAccountIndex = d.readInt();
     }
 
-    public static ECKeyPair decrypt(String password, WalletFile walletFile) throws CipherException {
+    /**
+     * Writes the mnemonic phase and next account index.
+     */
+    protected void writeHdSeed(byte[] key, SimpleEncoder enc) {
+        SimpleEncoder e = new SimpleEncoder();
+        e.writeString(mnemonicPhrase);
+        e.writeInt(nextAccountIndex);
 
-        validate(walletFile);
+        byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
+        byte[] hdSeedRaw = e.toBytes();
+        byte[] hdSeedEncrypted = Aes.encrypt(hdSeedRaw, key, iv);
 
-        WalletFile.Crypto crypto = walletFile.getCrypto();
-
-        byte[] mac = Numeric.hexStringToByteArray(crypto.getMac());
-        byte[] iv = Numeric.hexStringToByteArray(crypto.getCipherparams().getIv());
-        byte[] cipherText = Numeric.hexStringToByteArray(crypto.getCiphertext());
-
-        byte[] derivedKey;
-
-        WalletFile.KdfParams kdfParams = crypto.getKdfparams();
-        if (kdfParams instanceof WalletFile.ScryptKdfParams) {
-            WalletFile.ScryptKdfParams scryptKdfParams =
-                    (WalletFile.ScryptKdfParams) crypto.getKdfparams();
-            int dklen = scryptKdfParams.getDklen();
-            int n = scryptKdfParams.getN();
-            int p = scryptKdfParams.getP();
-            int r = scryptKdfParams.getR();
-            byte[] salt = Numeric.hexStringToByteArray(scryptKdfParams.getSalt());
-            derivedKey = generateDerivedScryptKey(password.getBytes(UTF_8), salt, n, r, p, dklen);
-        } else if (kdfParams instanceof WalletFile.Aes128CtrKdfParams) {
-            WalletFile.Aes128CtrKdfParams aes128CtrKdfParams =
-                    (WalletFile.Aes128CtrKdfParams) crypto.getKdfparams();
-            int c = aes128CtrKdfParams.getC();
-            String prf = aes128CtrKdfParams.getPrf();
-            byte[] salt = Numeric.hexStringToByteArray(aes128CtrKdfParams.getSalt());
-
-            derivedKey = generateAes128CtrDerivedKey(password.getBytes(UTF_8), salt, c, prf);
-        } else {
-            throw new CipherException("Unable to deserialize params: " + crypto.getKdf());
-        }
-
-        byte[] derivedMac = generateMac(derivedKey, cipherText);
-
-        if (!Arrays.equals(derivedMac, mac)) {
-            throw new CipherException("Invalid password provided");
-        }
-
-        byte[] encryptKey = Arrays.copyOfRange(derivedKey, 0, 16);
-        byte[] privateKey = performCipherOperation(Cipher.DECRYPT_MODE, iv, encryptKey, cipherText);
-        return ECKeyPair.create(privateKey);
+        enc.writeBytes(iv);
+        enc.writeBytes(hdSeedEncrypted);
     }
 
-    static void validate(WalletFile walletFile) throws CipherException {
-        WalletFile.Crypto crypto = walletFile.getCrypto();
+    /**
+     * Returns if this wallet is unlocked.
+     */
+    public boolean isUnlocked() {
+        return !isLocked();
+    }
 
-        if (walletFile.getVersion() != CURRENT_VERSION) {
-            throw new CipherException("Wallet version is not supported");
-        }
+    /**
+     * Returns whether the wallet is locked.
+     */
+    public boolean isLocked() {
+        return password == null;
+    }
 
-        if (!crypto.getCipher().equals(CIPHER)) {
-            throw new CipherException("Wallet cipher is not supported");
-        }
-
-        if (!crypto.getKdf().equals(AES_128_CTR) && !crypto.getKdf().equals(SCRYPT)) {
-            throw new CipherException("KDF type is not supported");
+    /**
+     * Sets the accounts inside this wallet.
+     */
+    public void setAccounts(List<ECKeyPair> list) {
+        requireUnlocked();
+        accounts.clear();
+        for (ECKeyPair key : list) {
+            addAccount(key);
         }
     }
 
-    static byte[] generateRandomBytes(int size) {
-        byte[] bytes = new byte[size];
-        secureRandom().nextBytes(bytes);
-        return bytes;
+    /**
+     * Returns a copy of the accounts inside this wallet.
+     */
+    public List<ECKeyPair> getAccounts(){
+        requireUnlocked();
+        synchronized (accounts) {
+            return new ArrayList<>(accounts.values());
+        }
     }
+
+    /**
+     * Returns account by index.
+     */
+    public ECKeyPair getAccount(int idx) {
+        requireUnlocked();
+        synchronized (accounts) {
+            return getAccounts().get(idx);
+        }
+    }
+
+    /**
+     * Returns account by address.
+     */
+    public ECKeyPair getAccount(byte[] address) {
+        requireUnlocked();
+
+        synchronized (accounts) {
+            return accounts.get(ByteArrayWrapper.of(address));
+        }
+    }
+
+    /**
+     * Flushes this wallet into the disk.
+     */
+    public boolean flush() {
+        requireUnlocked();
+
+        try {
+            SimpleEncoder enc = new SimpleEncoder();
+            enc.writeInt(VERSION);
+
+            byte[] salt = SecureRandomUtils.secureRandom().generateSeed(SALT_LENGTH);
+            enc.writeBytes(salt);
+
+            byte[] key = BCrypt.generate(password.getBytes(UTF_8), salt, BCRYPT_COST);
+
+            writeAccounts(key, enc);
+            writeHdSeed(key, enc);
+
+            if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
+                log.error("Failed to create the directory for wallet");
+                return false;
+            }
+
+            // set posix permissions
+            if (SystemUtil.isPosix() && !file.exists()) {
+                Files.createFile(file.toPath());
+                Files.setPosixFilePermissions(file.toPath(), POSIX_SECURED_PERMISSIONS);
+            }
+
+            FileUtils.writeByteArrayToFile(file, enc.toBytes());
+            return true;
+        } catch (IOException e) {
+            log.error("Failed to write wallet to disk", e);
+        }
+        return false;
+    }
+
+
+    private void requireUnlocked() {
+        if (!isUnlocked()) {
+            throw new RuntimeException("Wallet is Locked!");
+        }
+    }
+
+    /**
+     * Adds a new account to the wallet.
+     */
+    public boolean addAccount(ECKeyPair newKey) {
+        requireUnlocked();
+
+        synchronized (accounts) {
+            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(newKey));
+            if (accounts.containsKey(address)) {
+                return false;
+            }
+
+            accounts.put(address, newKey);
+            return true;
+        }
+    }
+
+    /**
+     * Add an account with randomly generated key.
+     */
+    public ECKeyPair addAccountRandom() {
+        ECKeyPair key = Keys.createEcKeyPair();
+        addAccount(key);
+        return key;
+    }
+
+    /**
+     * Adds a list of accounts to the wallet.
+     */
+    public int addAccounts(List<ECKeyPair> accounts) {
+        requireUnlocked();
+
+        int n = 0;
+        for (ECKeyPair acc : accounts) {
+            n += addAccount(acc) ? 1 : 0;
+        }
+        return n;
+    }
+
+    /**
+     * Deletes an account in the wallet.
+     */
+    public boolean removeAccount(ECKeyPair key) {
+        return removeAccount(Keys.toBytesAddress(key));
+    }
+
+    /**
+     * Deletes an account in the wallet.
+     */
+    public boolean removeAccount(byte[] address) {
+        requireUnlocked();
+        synchronized (accounts) {
+            return accounts.remove(ByteArrayWrapper.of(address)) != null;
+        }
+    }
+
+    /**
+     * Changes the password of the wallet.
+     */
+    public void changePassword(String newPassword) {
+        requireUnlocked();
+
+        if (newPassword == null) {
+            throw new IllegalArgumentException("Password can not be null");
+        }
+
+        this.password = newPassword;
+    }
+
+    // ================
+    // HD wallet
+    // ================
+
+    /**
+     * Returns whether the HD seed is initialized.
+     *
+     * @return true if set, otherwise false
+     */
+    public boolean isHdWalletInitialized() {
+        requireUnlocked();
+        return mnemonicPhrase != null && !mnemonicPhrase.isEmpty();
+    }
+
+    /**
+     * Initialize the HD wallet.
+     *
+     * @param mnemonicPhrase
+     *            the mnemonic word list
+     */
+    public void initializeHdWallet(String mnemonicPhrase) {
+        this.mnemonicPhrase = mnemonicPhrase;
+        this.nextAccountIndex = 0;
+    }
+
+    /**
+     * Returns the HD seed.
+     */
+    public byte[] getSeed() {
+        return MnemonicUtils.generateSeed(this.mnemonicPhrase, MNEMONIC_PASS_PHRASE);
+    }
+
+    /**
+     * Derives a key based on the current HD account index, and put it into the
+     * wallet.
+     */
+    public ECKeyPair addAccountWithNextHdKey() {
+        requireUnlocked();
+        requireHdWalletInitialized();
+
+        synchronized (accounts) {
+            byte[] seed = getSeed();
+            Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+            Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, nextAccountIndex++);
+            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(bip44Keypair));
+            accounts.put(address, bip44Keypair);
+            return bip44Keypair;
+        }
+    }
+
+    private void requireHdWalletInitialized() {
+        if (!isHdWalletInitialized()) {
+            throw new IllegalArgumentException("HD Seed is not initialized");
+        }
+    }
+
 }

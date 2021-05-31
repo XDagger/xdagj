@@ -24,19 +24,14 @@
 package io.xdag.consensus;
 
 import com.google.common.collect.Queues;
-import io.libp2p.core.PeerId;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.*;
-import io.xdag.discovery.peers.DiscoveryPeer;
-import io.xdag.discovery.peers.PeerTable;
-import io.xdag.libp2p.Libp2pChannel;
-import io.xdag.libp2p.manager.ChannelManager;
-import io.xdag.libp2p.peer.LibP2PNodeId;
+import io.xdag.net.Channel;
+import io.xdag.net.discovery.DiscoveryPeer;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.node.Node;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -53,7 +48,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
@@ -78,7 +72,6 @@ public class SyncManager {
     private AtomicLong importIdleTime = new AtomicLong();
     private boolean syncDone = false;
     private XdagChannelManager channelMgr;
-    private ChannelManager channelManager;
     private final ScheduledExecutorService exec;
     private ScheduledFuture<?> connectlibp2pFuture;
     private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
@@ -91,7 +84,6 @@ public class SyncManager {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
-        this.channelManager = kernel.getChannelManager();
 
         this.stateListener = new StateListener();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
@@ -155,10 +147,10 @@ public class SyncManager {
     //todo:修改共识
     public ImportResult importBlock(BlockWrapper blockWrapper) {
         log.debug("importBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
-        ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
+        ImportResult importResult = blockchain.tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData())));
 
         if (importResult == EXIST) {
-            log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+            log.debug("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
         }
 
         Config config = kernel.getConfig();
@@ -211,19 +203,15 @@ public class SyncManager {
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
                     log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                        Hex.toHexString(result.getHashlow()));
-                    List<XdagChannel> channels = channelMgr.getActiveChannels();
-                    for (XdagChannel channel : channels) {
+                            Hex.toHexString(result.getHashlow()));
+                    List<Channel> channels = channelMgr.getActiveChannels();
+                    for (Channel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
                             channel.getXdag().sendGetBlock(result.getHashlow());
 
                         }
                     }
-//                    for(Libp2pChannel libp2pChannel : channelManager.getactiveChannel()){
-//                        if(libp2pChannel.getNode().equals(blockWrapper.getRemoteNode())){
-//                            libp2pChannel.getHandler().getController().sendGetBlock(result.getHashLow());
-//                        }
-//                    }
+
                 }
                 break;
             }
@@ -302,8 +290,8 @@ public class SyncManager {
                         if (syncPushBlock(bw, importResult.getHashlow())) {
                             log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
                                     Hex.toHexString(importResult.getHashlow()));
-                            List<XdagChannel> channels = channelMgr.getActiveChannels();
-                            for (XdagChannel channel : channels) {
+                            List<Channel> channels = channelMgr.getActiveChannels();
+                            for (Channel channel : channels) {
                                 if (channel.getNode().equals(bw.getRemoteNode())) {
                                     channel.getXdag().sendGetBlock(importResult.getHashlow());
                                 }
@@ -383,33 +371,11 @@ public class SyncManager {
         kernel.getMinerServer().start();
         kernel.getPow().start();
 //        kernel.getBlockchain().registerListener(kernel.getPow());
-        kernel.getLibp2pNetwork().start();
-//        connectlibp2pFuture = exec.scheduleAtFixedRate(this::doConnectlibp2p,10,10, TimeUnit.SECONDS);
+//        kernel.getLibp2pNetwork().start();
 
     }
 
-    public void doConnectlibp2p(){
-        List<Libp2pChannel> libp2pChannels = kernel.getChannelManager().getactiveChannel();
-        Stream<Node> nodes = libp2pChannels.stream().map(a->a.getNode());
-        PeerTable peerTable = kernel.getDiscoveryController().getPeerTable();
-        Collection<DiscoveryPeer> discoveryPeers = peerTable.getAllPeers();
-        List<DiscoveryPeer> discoveryPeers1 = new ArrayList<>(discoveryPeers);
-        for (DiscoveryPeer d : discoveryPeers1) {
-            if ((d.getEndpoint().getHost().equals(kernel.getDiscoveryController().getMynode().getHost()) &&
-                    (d.getEndpoint().getTcpPort().equals(kernel.getDiscoveryController().getMynode().getTcpPort())))
-                    || hadConnectnode.contains(d) ||
-                    nodes.anyMatch(a -> a.equals(new Node(d.getEndpoint().getHost(), d.getEndpoint().getTcpPort().getAsInt())))) {
-                continue;
-            }
-            StringBuilder stringBuilder = new StringBuilder();
-//       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-            String id = new LibP2PNodeId(PeerId.fromHex(Hex.toHexString(d.getId().extractArray()))).toString();
-            stringBuilder.append("/ip4/").append(d.getEndpoint().getHost()).append("/tcp/").append(d.getEndpoint().getTcpPort().getAsInt()).
-                    append("/ipfs/").append(id);
-            kernel.getLibp2pNetwork().dail(stringBuilder.toString());
-            hadConnectnode.add(d);
-        }
-    }
+
     public void stop() {
         log.debug("sync manager stop");
         if (this.stateListener.isRunning){
@@ -419,7 +385,6 @@ public class SyncManager {
 
     public void distributeBlock(BlockWrapper blockWrapper) {
         channelMgr.onNewForeignBlock(blockWrapper);
-        channelManager.onNewForeignBlock(blockWrapper);
     }
 
 }

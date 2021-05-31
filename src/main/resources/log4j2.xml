@@ -68,7 +68,7 @@
 <!--            <AppenderRef ref="Info"/>-->
 <!--        </logger>-->
 
-        <Root level="DEBUG">
+        <Root level="INFO">
             <AppenderRef ref="Info"/>
             <AppenderRef ref="Error"/>
             <AppenderRef ref="Debug"/>

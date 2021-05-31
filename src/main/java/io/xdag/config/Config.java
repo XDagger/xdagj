@@ -23,11 +23,11 @@
  */
 package io.xdag.config;
 
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.config.spec.*;
 import io.xdag.core.XdagField;
+import io.xdag.rpc.modules.ModuleDescription;
+
+import java.util.List;
 
 /**
  * The Xdag blockchain configurations.
@@ -78,4 +78,8 @@ public interface Config {
     void setDir();
     void initKeys() throws Exception;
 
+    // rpc
+//    List<ModuleDescription> getRpcModules();
+//    boolean isRPCEnabled();
+    RPCSpec getRPCSpec();
 }

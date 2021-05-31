@@ -164,13 +164,13 @@ public class Commands {
             int index = pair.getKey();
             Block block = pair.getValue();
             if (remain.get() <= block.getInfo().getAmount()) {
-                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getKeyByIndex(index));
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getAccounts().get(index));
                 remain.set(0);
                 return true;
             } else {
                 if (block.getInfo().getAmount() > 0) {
                     remain.set(remain.get() - block.getInfo().getAmount());
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getKeyByIndex(index));
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getAccounts().get(index));
                     return false;
                 }
                 return false;
@@ -213,7 +213,7 @@ public class Commands {
         // 保证key的唯一性
         Set<ECKeyPair> keysPerBlock = new HashSet<>();
         // 放入defkey
-        keysPerBlock.add(kernel.getWallet().getDefKey().ecKey);
+        keysPerBlock.add(kernel.getWallet().getDefKey());
 
         // base count a block <header + send address + defKey signature>
         int base = 1 + 1 + 2 + hasRemark;
@@ -239,7 +239,7 @@ public class Commands {
                 // 清空keys，准备下一个
                 keys = new HashMap<>();
                 keysPerBlock = new HashSet<>();
-                keysPerBlock.add(kernel.getWallet().getDefKey().ecKey);
+                keysPerBlock.add(kernel.getWallet().getDefKey());
                 base = 1 + 1 + 2 + hasRemark;
                 amount = 0;
             }
@@ -262,7 +262,7 @@ public class Commands {
             return null;
         }
 
-        ECKeyPair defaultKey = kernel.getWallet().getDefKey().ecKey;
+        ECKeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isdefaultKey = false;
         // 签名
@@ -276,7 +276,7 @@ public class Commands {
         }
         // 如果默认密钥被更改，需要重新对输出签名签属
         if (!isdefaultKey) {
-            block.signOut(kernel.getWallet().getDefKey().ecKey);
+            block.signOut(kernel.getWallet().getDefKey());
         }
 
         return new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL());
@@ -506,7 +506,6 @@ public class Commands {
 
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
-        Map<Node,Long> map0 = kernel.getNodeMgr().getActiveNode0();
         StringBuilder stringBuilder = new StringBuilder();
         for (Node node : map.keySet()) {
             stringBuilder
@@ -519,26 +518,14 @@ public class Commands {
                     .append(node.getStat().Outbound.get())
                     .append(" out").append(System.getProperty("line.separator"));
         }
-        for (Node node0 : map0.keySet()) {
-            stringBuilder
-                    .append(node0.getAddress())
-                    .append(" ")
-                    .append("libp2p")
-                    .append(" ")
-                    .append(map0.get(node0) == null ? null : FormatDateUtils.format(new Date(map0.get(node0))))
-                    .append(" ")
-                    .append(node0.getStat().Inbound.get())
-                    .append(" in/")
-                    .append(node0.getStat().Outbound.get())
-                    .append(" out").append(System.getProperty("line.separator"));
-        }
+
         return stringBuilder.toString();
     }
 
     public String keygen() {
         kernel.getXdagState().tempSet(XdagState.KEYS);
-        kernel.getWallet().createNewKey();
-        int size = kernel.getWallet().getKey_internal().size();
+        kernel.getWallet().addAccountRandom();
+        int size = kernel.getWallet().getAccounts().size();
         kernel.getXdagState().rollback();
         return "Key " + (size - 1) + " generated and set as default,now key size is:" + size;
     }

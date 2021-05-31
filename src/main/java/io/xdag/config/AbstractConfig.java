@@ -24,18 +24,16 @@
 package io.xdag.config;
 
 import cn.hutool.setting.Setting;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigObject;
 import io.xdag.config.spec.*;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
-import io.xdag.discovery.peers.DiscoveryPeer;
-import io.xdag.discovery.peers.Endpoint;
-import io.xdag.utils.discoveryutils.bytes.BytesValue;
+import io.xdag.rpc.modules.ModuleDescription;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -43,12 +41,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.OptionalInt;
 
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec {
+public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec {
     protected String configName;
 
     // =========================
@@ -116,12 +113,12 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected boolean isBootnode;
     protected int discoveryPort;
     protected String libp2pPrivkey;
-    protected List<DiscoveryPeer> bootnodes = new ArrayList<>();
+    protected List<String> bootnodes = new ArrayList<>();
 
     // =========================
     // Wallet spec
     // =========================
-
+    protected String walletFilePath;
 
     // =========================
     // Xdag spec
@@ -133,6 +130,15 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected long apolloForkAmount;
 
 
+    // =========================
+    // Xdag RPC modules
+    // =========================
+    protected List<ModuleDescription> moduleDescriptions;
+    protected boolean rpcEnabled = false;
+    protected String rpcHost;
+    protected int rpcPortHttp;
+    protected int rpcPortWs;
+
     public void setDir() {
         storeDir = getRootDir() + "/rocksdb/xdagdb";
         storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
@@ -140,18 +146,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         netDBDir = getRootDir() + "/netdb.txt";
     }
 
-    //todo:修改成一个配置文件读取种子节点
-    protected List<DiscoveryPeer> getBootnode() throws DecoderException {
-        //逻辑是先连接config里面节点再进行发现
-        String id  = "08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2";
-        byte [] peerid= Hex.decodeHex(id);
-        OptionalInt tcpport = OptionalInt.of(getDiscoveryPort());
-        Endpoint endpoint = new Endpoint(getPoolIp(),getLibp2pPort(),tcpport);
-        BytesValue bytesValue= BytesValue.wrap(peerid);
-        DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
-        bootnodes.add(peer);
-        return bootnodes;
-    }
 
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
@@ -183,6 +177,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                 throw new Exception("dnet crypt init failed");
             }
         }
+    }
+
+    @Override
+    public RPCSpec getRPCSpec() {
+        return this;
     }
 
     @Override
@@ -240,6 +239,17 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             log.debug("{} IP access", list.length);
             whiteIPList.addAll(Arrays.asList(list));
         }
+        String[] bootnodelist = setting.getStrings("bootnode");
+        if (bootnodelist != null) {
+            bootnodes.addAll(Arrays.asList(bootnodelist));
+        }
+        // rpc
+        rpcEnabled = setting.getBool("isRPCEnabled") != null && setting.getBool("isRPCEnabled");
+        if (rpcEnabled) {
+            rpcHost = setting.getStr("rpcHost");
+            rpcPortHttp = setting.getInt("rpcPort_http");
+            rpcPortWs = setting.getInt("rpcPort_ws");
+        }
     }
 
     @Override
@@ -282,7 +292,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                     this.poolTag = StringUtils.substring(args[i+1], 0, 31);
                     break;
                 default:
-                    System.out.println("Illegal instruction");
+                    log.error("Illegal instruction");
             }
         }
     }
@@ -323,5 +333,75 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public boolean enableRefresh() {
         return this.enableRefresh;
+    }
+
+    @Override
+    public List<ModuleDescription> getRpcModules() {
+
+        if (!rpcEnabled) {
+            return null;
+        }
+
+        if (this.moduleDescriptions != null) {
+            return this.moduleDescriptions;
+        }
+
+        List<ModuleDescription> modules = new ArrayList<>();
+
+        com.typesafe.config.Config configFromFiles = ConfigFactory.load("rpc_modules");
+        List<? extends ConfigObject> list = configFromFiles.getObjectList("rpc.modules");
+
+        for (ConfigObject configObject : list) {
+            com.typesafe.config.Config configElement = configObject.toConfig();
+            String name = configElement.getString("name");
+            String version = configElement.getString("version");
+            boolean enabled = configElement.getBoolean("enabled");
+            List<String> enabledMethods = null;
+            List<String> disabledMethods = null;
+
+            if (configElement.hasPath("methods.enabled")) {
+                enabledMethods = configElement.getStringList("methods.enabled");
+            }
+
+            if (configElement.hasPath("methods.disabled")) {
+                disabledMethods = configElement.getStringList("methods.disabled");
+            }
+
+            modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
+        }
+
+        this.moduleDescriptions = modules;
+
+        // TODO: get modules from config
+//        String name = "xdag";
+//        String version = "1.0";
+//        boolean enabled = true;
+//        List<String> enabledMethods = null;
+//        List<String> disabledMethods = null;
+//
+//        modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
+//        this.moduleDescriptions = modules;
+
+        return modules;
+    }
+
+    @Override
+    public boolean isRPCEnabled() {
+        return rpcEnabled;
+    }
+
+    @Override
+    public String getRPCHost() {
+        return rpcHost;
+    }
+
+    @Override
+    public int getRPCPortByHttp() {
+        return rpcPortHttp;
+    }
+
+    @Override
+    public int getRPCPortByWebSocket() {
+        return rpcPortWs;
     }
 }

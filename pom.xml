@@ -6,7 +6,7 @@
 
 	<groupId>io.xdag</groupId>
 	<artifactId>xdagj</artifactId>
-	<version>0.4.2</version>
+	<version>0.4.3</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,6 +41,18 @@
 		<repository>
 			<id>jitpack.io</id>
 			<url>https://jitpack.io</url>
+		</repository>
+		<repository>
+			<id>consensys-maven</id>
+			<url>https://artifacts.consensys.net/public/maven/maven/</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
 		</repository>
 	</repositories>
 
@@ -86,7 +98,6 @@
 						<index>true</index>
 						<manifestEntries>
 							<Main-Class>io.xdag.Bootstrap</Main-Class>
-							<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
 							<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
 							<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
 						</manifestEntries>
@@ -137,8 +148,13 @@
 								<filter>
 									<artifact>*:*</artifact>
 									<excludes>
+										<exclude>junit:junit</exclude>
+										<exclude>netdb-testnet.txt</exclude>
+										<exclude>netdb-white-testnet.txt</exclude>
+										<exclude>*.config</exclude>
 										<exclude>module-info.class</exclude>
 										<exclude>META-INF/versions/9/*.class</exclude>
+										<exclude>META-INF/DISCLAIMER</exclude>
 										<exclude>META-INF/NOTICE</exclude>
 										<exclude>META-INF/NOTICE.txt</exclude>
 										<exclude>META-INF/NOTICE.md</exclude>
@@ -169,11 +185,11 @@
 		                        </transformer>
 		                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
 		                            <resource>LICENSE</resource>
+									<resource>en-mnemonic-word-list.txt</resource>
 		                        </transformer>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
 										<Main-Class>io.xdag.Bootstrap</Main-Class>
-										<Implementation-Version>${git.commit.id.abbrev}</Implementation-Version>
 		                                <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
 		                                <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
 		                                <Multi-Release>true</Multi-Release>
@@ -185,35 +201,60 @@
 				</executions>
 			</plugin>
 
+			<!-- prepare distribution -->
 			<plugin>
-                <groupId>pl.project13.maven</groupId>
-                <artifactId>git-commit-id-plugin</artifactId>
-                <version>4.0.0</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>validate-the-git-infos</id>
-                        <goals>
-                            <goal>validateRevision</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <abbrevLength>40</abbrevLength>
-                    <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
-                    <verbose>false</verbose>
-                    <dateFormat>yyyy-MM-dd HH:mm:ss</dateFormat>
-                    <prefix>git</prefix>
-                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-                </configuration>
-            </plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<id>package</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>dist</id>
+						<phase>${dist.phase}</phase>
+						<configuration>
+							<target>
+								<!-- windows build -->
+								<copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar" tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar" />
+								<copy file="src/main/resources/log4j2.xml" tofile="${dist.base}/windows/log4j2.xml" />
+								<copy file="src/main/resources/xdag-mainnet.config" tofile="${dist.base}/windows/xdag-mainnet.config" />
+								<copy file="src/main/resources/xdag-testnet.config" tofile="${dist.base}/windows/xdag-testnet.config" />
+								<copy file="${project.basedir}/script/xdag.bat" tofile="${dist.base}/windows/xdag.bat" />
+								<zip basedir="${dist.base}/windows/" destfile="${dist.base}/xdagj-windows.zip" />
+								<delete dir="${dist.base}/windows/" includeemptydirs="true"/>
+
+								<!-- linux build (executable jar) -->
+								<copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar" tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar" />
+								<copy file="src/main/resources/log4j2.xml" tofile="${dist.base}/linux/log4j2.xml" />
+								<copy file="src/main/resources/xdag-mainnet.config" tofile="${dist.base}/linux/xdag-mainnet.config" />
+								<copy file="src/main/resources/xdag-testnet.config" tofile="${dist.base}/linux/xdag-testnet.config" />
+								<copy file="${project.basedir}/script/xdag.sh" tofile="${dist.base}/linux/xdag.sh" />
+								<chmod file="${dist.base}/linux/xdag.sh" perm="755" />
+								<zip basedir="${dist.base}/linux/" destfile="${dist.base}/xdagj-linux.zip" />
+								<delete dir="${dist.base}/linux/" includeemptydirs="true"/>
+
+								<!-- macos build -->
+								<copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar" tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar" />
+								<copy file="src/main/resources/log4j2.xml" tofile="${dist.base}/macos/log4j2.xml" />
+								<copy file="src/main/resources/xdag-mainnet.config" tofile="${dist.base}/macos/xdag-mainnet.config" />
+								<copy file="src/main/resources/xdag-testnet.config" tofile="${dist.base}/macos/xdag-testnet.config" />
+								<copy file="${project.basedir}/script/xdag.sh" tofile="${dist.base}/macos/xdag.sh" />
+								<chmod file="${dist.base}/macos/xdag.sh" perm="755" />
+								<zip basedir="${dist.base}/macos/" destfile="${dist.base}/xdagj-macos.zip" />
+								<delete dir="${dist.base}/macos/" includeemptydirs="true"/>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 
 			<!-- clean -->
             <plugin>
@@ -286,6 +327,12 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.8.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-cli</groupId>
+			<artifactId>commons-cli</artifactId>
+			<version>1.4</version>
 		</dependency>
 
 		<dependency>
@@ -374,14 +421,6 @@
 					<groupId>org.jetbrains.kotlinx</groupId>
 					<artifactId>kotlinx-coroutines-core</artifactId>
 				</exclusion>
-<!--				<exclusion>-->
-<!--					<groupId>org.jetbrains.kotlin</groupId>-->
-<!--					<artifactId>kotlin-stdlib</artifactId>-->
-<!--				</exclusion>-->
-				<exclusion>
-					<groupId>org.jetbrains.kotlin</groupId>
-					<artifactId>kotlin-stdlib-common</artifactId>
-				</exclusion>
 				<exclusion>
 					<groupId>commons-codec</groupId>
 					<artifactId>commons-codec</artifactId>
@@ -450,6 +489,19 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.stefanbirkner</groupId>
+			<artifactId>system-rules</artifactId>
+			<version>1.19.0</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit-dep</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
 			<version>3.19.0</version>
@@ -464,14 +516,20 @@
 
 		<dependency>
 			<groupId>org.apache.tuweni</groupId>
-			<artifactId>tuweni-bytes</artifactId>
-			<version>1.1.0</version>
+			<artifactId>bytes</artifactId>
+			<version>1.3.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.guava</groupId>
 					<artifactId>guava</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tuweni</groupId>
+			<artifactId>units</artifactId>
+			<version>1.3.0</version>
 		</dependency>
 
 		<dependency>
@@ -489,7 +547,7 @@
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-core</artifactId>
-			<version>4.0.0</version>
+			<version>3.8.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>io.netty</groupId>
@@ -547,6 +605,10 @@
 					<groupId>com.fasterxml.jackson.core</groupId>
 					<artifactId>jackson-core</artifactId>
 				</exclusion>
+				<exclusion>
+					<artifactId>jackson-databind</artifactId>
+					<groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 
@@ -566,6 +628,89 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
 			<version>2.12.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>tech.pegasys.discovery</groupId>
+			<artifactId>discovery</artifactId>
+			<version>0.4.6</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>log4j-api</artifactId>
+					<groupId>org.apache.logging.log4j</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>log4j-core</artifactId>
+					<groupId>org.apache.logging.log4j</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>netty-all</artifactId>
+					<groupId>io.netty</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>guava</artifactId>
+					<groupId>com.google.guava</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>bcprov-jdk15on</artifactId>
+					<groupId>org.bouncycastle</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jackson-databind</artifactId>
+					<groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>logging-interceptor</artifactId>
+					<groupId>com.squareup.okhttp3</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>okhttp</artifactId>
+					<groupId>com.squareup.okhttp3</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jackson-core</artifactId>
+					<groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jffi</artifactId>
+					<groupId>com.github.jnr</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jnr-constants</artifactId>
+					<groupId>com.github.jnr</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jnr-ffi</artifactId>
+					<groupId>com.github.jnr</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
+		<dependency>
+			<groupId>com.github.briandilley.jsonrpc4j</groupId>
+			<artifactId>jsonrpc4j</artifactId>
+			<version>1.6</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>slf4j-api</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xml.ws</groupId>
+			<artifactId>jaxws-ri</artifactId>
+			<version>2.3.0</version>
+			<type>pom</type>
+		</dependency>
+
+		<!--config-->
+		<!-- https://mvnrepository.com/artifact/com.typesafe/config -->
+		<dependency>
+			<groupId>com.typesafe</groupId>
+			<artifactId>config</artifactId>
+			<version>1.4.1</version>
 		</dependency>
 
 	</dependencies>

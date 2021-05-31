@@ -351,7 +351,7 @@ public class Block implements Cloneable {
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
         } else {
-            insigs.put(signature, tempLength + 1);
+            insigs.put(signature, tempLength);
         }
     }
 
@@ -362,11 +362,11 @@ public class Block implements Cloneable {
         byte[] digest;
         byte[] hash;
         for (ECDSASignature sig : this.getInsigs().keySet()) {
-            digest = getSubRawData(this.getInsigs().get(sig) - 2);
+            digest = getSubRawData(this.getInsigs().get(sig) - 1);
             for (ECKeyPair ecKey : keys) {
                 byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
                 hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
-                if (ECKeyPair.verify(hash, sig, pubkeyBytes)) {
+                if (ECKeyPair.verify(hash, sig.toCanonicalised(), pubkeyBytes)) {
                     res.add(ecKey);
                 }
             }
@@ -376,7 +376,7 @@ public class Block implements Cloneable {
             byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
             hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
 
-            if (ECKeyPair.verify(hash, this.getOutsig(),pubkeyBytes)) {
+            if (ECKeyPair.verify(hash, this.getOutsig().toCanonicalised(),pubkeyBytes)) {
                 res.add(ecKey);
             }
         }
@@ -470,6 +470,14 @@ public class Block implements Cloneable {
         byte[] data = getXdagBlock().getData();
         byte[] res = new byte[512];
         System.arraycopy(data, 0, res, 0, (length + 1) * 32);
+        for (int i = length+1; i < 16; i++) {
+            long type = BytesUtils.bytesToLong(data, 8, true);
+            byte typeB = (byte) (type >> (i << 2) & 0xf);
+            if (XDAG_FIELD_SIGN_IN.asByte() == typeB || XDAG_FIELD_SIGN_OUT.asByte() == typeB) {
+                continue;
+            }
+            System.arraycopy(data, (i) * 32, res, (i) * 32, 32);
+        }
         return res;
     }
 

@@ -28,4 +28,5 @@ package io.xdag.config.spec;
  */
 public interface WalletSpec {
     String getWalletKeyFile();
+    String getWalletFilePath();
 }

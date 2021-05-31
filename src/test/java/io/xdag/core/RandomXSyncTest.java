@@ -29,6 +29,7 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -36,8 +37,9 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.randomx.RandomX;
+import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.junit.Before;
@@ -47,6 +49,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -66,7 +69,7 @@ public class RandomXSyncTest {
     Config config = new DevnetConfig();
 
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
-    private final String privString = "421d725da10c056a955d2444a5a043b1a5d4515db126b8631806a8ccbda93369";
+    private final String privString = "10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046";
     private final BigInteger privateKey = new BigInteger(privString, 16);
 
     private long forkHeight;
@@ -232,9 +235,11 @@ public class RandomXSyncTest {
         if (Native.dnet_crypt_init() < 0) {
             throw new Exception("dnet crypt init failed");
         }
-        OldWallet xdagWallet = new OldWallet();
-        xdagWallet.init(config);
-        xdagWallet.createNewKey();
+        String pwd = "password";
+        Wallet wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        wallet.setAccounts(Collections.singletonList(key));
 
 
         Kernel kernel = new Kernel(config);
@@ -251,7 +256,7 @@ public class RandomXSyncTest {
 
         kernel.setBlockStore(blockStore);
         kernel.setOrphanPool(orphanPool);
-        kernel.setWallet(xdagWallet);
+        kernel.setWallet(wallet);
 
         RandomX randomX = new RandomX(config);
         kernel.setRandomXUtils(randomX);

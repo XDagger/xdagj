@@ -39,10 +39,7 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.discovery.DiscoveryController;
 import io.xdag.event.EventProcesser;
-import io.xdag.libp2p.Libp2pNetwork;
-import io.xdag.libp2p.manager.ChannelManager;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
@@ -53,18 +50,34 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
+import io.xdag.net.discovery.DiscoveryController;
+import io.xdag.net.libp2p.Libp2pNetwork;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.randomx.RandomX;
+import io.xdag.rpc.Web3;
+import io.xdag.rpc.Web3Impl;
+import io.xdag.rpc.cors.CorsConfiguration;
+import io.xdag.rpc.modules.web3.Web3XdagModule;
+import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
+import io.xdag.rpc.modules.xdag.XdagModule;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionDisabled;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
+import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
+import io.xdag.rpc.netty.*;
+import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
+import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.OldWallet;
+import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,7 +88,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Kernel {
     protected Status status = Status.STOPPED;
     protected Config config;
-    protected OldWallet wallet;
+    protected Wallet wallet;
     protected DatabaseFactory dbFactory;
     protected BlockStore blockStore;
     protected OrphanPool orphanPool;
@@ -100,7 +113,6 @@ public class Kernel {
     protected XdagState xdagState;
     protected Libp2pNetwork libp2pNetwork;
     protected DiscoveryController discoveryController;
-    protected ChannelManager channelManager;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
@@ -115,7 +127,15 @@ public class Kernel {
     protected long startEpoch;
 
 
-    public Kernel(Config config, OldWallet wallet) {
+    // rpc
+    protected JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
+    protected Web3 web3;
+    protected Web3WebSocketServer web3WebSocketServer;
+    protected Web3HttpServer web3HttpServer;
+    protected JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
+    protected JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
+
+    public Kernel(Config config, Wallet wallet) {
         this.config = config;
         this.wallet = wallet;
         // 启动的时候就是在初始化
@@ -150,11 +170,13 @@ public class Kernel {
         // ====================================
         // wallet init
         // ====================================
+
 //        if (wallet == null) {
-        wallet = new OldWallet();
-        wallet.init(this.config);
+//        wallet = new OldWallet();
+//        wallet.init(this.config);
+
         log.info("Wallet init.");
-//        }
+
 
         dbFactory = new RocksdbFactory(this.config);
         blockStore = new BlockStore(
@@ -189,7 +211,7 @@ public class Kernel {
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
-            firstAccount.signOut(wallet.getDefKey().ecKey);
+            firstAccount.signOut(wallet.getDefKey());
             poolMiner = new Miner(firstAccount.getHash());
             xdagStats.setOurLastBlockHash(firstAccount.getHashLow());
             if(xdagStats.getGlobalMiner() == null) {
@@ -211,7 +233,6 @@ public class Kernel {
         // set up client
         // ====================================
 
-        channelManager = new ChannelManager();
 
         p2p = new XdagServer(this);
         p2p.start();
@@ -280,6 +301,14 @@ public class Kernel {
         }
 
         // ====================================
+        // rpc start
+        // ====================================
+        if (config.getRPCSpec().isRPCEnabled()) {
+            getWeb3HttpServer().start();
+            getWeb3WebSocketServer().start();
+        }
+
+        // ====================================
         // telnet server
         // ====================================
         telnetServer.start();
@@ -287,6 +316,80 @@ public class Kernel {
         Launcher.registerShutdownHook("kernel", this::testStop);
     }
 
+    private Web3 getWeb3() {
+        if (web3 == null) {
+            web3 = buildWeb3();
+        }
+
+        return web3;
+    }
+
+    private Web3 buildWeb3() {
+        Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionEnabled(this.getBlockchain())),this);
+        return new Web3Impl(web3XdagModule);
+    }
+
+    private JsonRpcWeb3ServerHandler getJsonRpcWeb3ServerHandler() {
+        if (jsonRpcWeb3ServerHandler == null) {
+            jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
+                    getWeb3(),
+                    config.getRPCSpec().getRpcModules()
+            );
+        }
+
+        return jsonRpcWeb3ServerHandler;
+    }
+
+    private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
+        if (web3WebSocketServer == null) {
+            JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
+            XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
+            web3WebSocketServer = new Web3WebSocketServer(
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    config.getRPCSpec().getRPCPortByWebSocket(),
+                    jsonRpcHandler,
+                    getJsonRpcWeb3ServerHandler()
+            );
+        }
+
+        return web3WebSocketServer;
+    }
+
+    private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
+        if (web3HttpServer == null) {
+            web3HttpServer = new Web3HttpServer(
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    config.getRPCSpec().getRPCPortByHttp(),
+                    123,
+                    true,
+                    new CorsConfiguration("*"),
+                    getJsonRpcWeb3FilterHandler(),
+                    getJsonRpcWeb3ServerHandler()
+            );
+        }
+
+        return web3HttpServer;
+    }
+
+    private JsonRpcWeb3FilterHandler getJsonRpcWeb3FilterHandler() throws UnknownHostException {
+        if (jsonRpcWeb3FilterHandler == null) {
+            jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
+                    "*",
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    null
+            );
+        }
+
+        return jsonRpcWeb3FilterHandler;
+    }
+
+    private JsonRpcSerializer getJsonRpcSerializer() {
+        if (jacksonBasedRpcSerializer == null) {
+            jacksonBasedRpcSerializer = new JacksonBasedRpcSerializer();
+        }
+
+        return jacksonBasedRpcSerializer;
+    }
     /** Stops the kernel. */
     public synchronized void testStop() {
 
@@ -295,6 +398,14 @@ public class Kernel {
         }
 
         isRunning.set(false);
+
+        //
+        if (web3HttpServer != null) {
+            web3HttpServer.stop();
+        }
+        if (web3WebSocketServer != null) {
+            web3WebSocketServer.stop();
+        }
 
         // 1. 工作层关闭
         // stop consensus
@@ -312,7 +423,6 @@ public class Kernel {
         nodeMgr.stop();
         log.info("Node manager stop.");
 
-        channelManager.stop();
         log.info("ChannelManager stop.");
         discoveryController.stop();
         libp2pNetwork.stop();
@@ -344,9 +454,6 @@ public class Kernel {
         randomXUtils.randomXPoolReleaseMem();
         log.info("Release randomx");
 
-    }
-    public ChannelManager getLibp2pChannelManager() {
-        return channelManager;
     }
 
 
