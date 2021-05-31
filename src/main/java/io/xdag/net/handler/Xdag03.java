@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.XdagStats;
+import io.xdag.net.Channel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
@@ -59,7 +60,7 @@ public class Xdag03 extends XdagHandler {
 
     private XdagVersion version = XdagVersion.V03;
 
-    public Xdag03(Kernel kernel, XdagChannel channel) {
+    public Xdag03(Kernel kernel, Channel channel) {
         this.kernel = kernel;
         this.channel = channel;
         this.blockchain = kernel.getBlockchain();
@@ -69,29 +70,29 @@ public class Xdag03 extends XdagHandler {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         switch (msg.getCommand()) {
-        case NEW_BLOCK:
-            processNewBlock((NewBlockMessage) msg);
-            break;
-        case BLOCK_REQUEST:
-            processBlockRequest((BlockRequestMessage) msg);
-            break;
-        case BLOCKS_REQUEST:
-            processBlocksRequest((BlocksRequestMessage) msg);
-            break;
-        case BLOCKS_REPLY:
-            processBlocksReply((BlocksReplyMessage) msg);
-            break;
-        case SUMS_REQUEST:
-            processSumsRequest((SumRequestMessage) msg);
-            break;
-        case SUMS_REPLY:
-            processSumsReply((SumReplyMessage) msg);
-            break;
-        case BLOCKEXT_REQUEST:
-            processBlockExtRequest((BlockExtRequestMessage) msg);
-            break;
-        default:
-            break;
+            case NEW_BLOCK:
+                processNewBlock((NewBlockMessage) msg);
+                break;
+            case BLOCK_REQUEST:
+                processBlockRequest((BlockRequestMessage) msg);
+                break;
+            case BLOCKS_REQUEST:
+                processBlocksRequest((BlocksRequestMessage) msg);
+                break;
+            case BLOCKS_REPLY:
+                processBlocksReply((BlocksReplyMessage) msg);
+                break;
+            case SUMS_REQUEST:
+                processSumsRequest((SumRequestMessage) msg);
+                break;
+            case SUMS_REPLY:
+                processSumsReply((SumReplyMessage) msg);
+                break;
+            case BLOCKEXT_REQUEST:
+                processBlockExtRequest((BlockExtRequestMessage) msg);
+                break;
+            default:
+                break;
         }
     }
 

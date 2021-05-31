@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.rpc.modules.web3;
 
 import com.sun.jdi.LongValue;
@@ -7,7 +30,9 @@ import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.core.XdagState;
+import io.xdag.core.XdagStats;
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.StringUtils;
 import org.bouncycastle.util.encoders.Hex;
@@ -128,5 +153,15 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
     @Override
     public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception {
         return null;
+    }
+
+    @Override
+    public StatusDTO xdag_getStatus() throws Exception {
+        XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
+        long nblocks = Math.max(xdagStats.getTotalnblocks(),xdagStats.getNblocks());
+        long nmain = Math.max(xdagStats.getTotalnblocks(),xdagStats.getNmain());
+        BigInteger diff = xdagStats.getDifficulty();
+        double supply = amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain,xdagStats.totalnmain)));
+        return new StatusDTO(nblocks,nmain,diff,supply);
     }
 }

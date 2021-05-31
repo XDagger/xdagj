@@ -30,15 +30,10 @@ import io.xdag.config.spec.*;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
-import io.xdag.discovery.peers.DiscoveryPeer;
-import io.xdag.discovery.peers.Endpoint;
 import io.xdag.rpc.modules.ModuleDescription;
-import io.xdag.utils.discoveryutils.bytes.BytesValue;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,7 +41,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.OptionalInt;
 
 @Slf4j
 @Getter
@@ -119,7 +113,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected boolean isBootnode;
     protected int discoveryPort;
     protected String libp2pPrivkey;
-    protected List<DiscoveryPeer> bootnodes = new ArrayList<>();
+    protected List<String> bootnodes = new ArrayList<>();
 
     // =========================
     // Wallet spec
@@ -150,18 +144,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         netDBDir = getRootDir() + "/netdb.txt";
     }
 
-    //todo:修改成一个配置文件读取种子节点
-    protected List<DiscoveryPeer> getBootnode() throws DecoderException {
-        //逻辑是先连接config里面节点再进行发现
-        String id  = "08021221027611680ca65e8fb7214a31b6ce6fcd8e6fe6a5f4d784dc6601dfe2bb9f8c96c2";
-        byte [] peerid= Hex.decodeHex(id);
-        OptionalInt tcpport = OptionalInt.of(getDiscoveryPort());
-        Endpoint endpoint = new Endpoint(getPoolIp(),getLibp2pPort(),tcpport);
-        BytesValue bytesValue= BytesValue.wrap(peerid);
-        DiscoveryPeer peer = new DiscoveryPeer(bytesValue,endpoint);
-        bootnodes.add(peer);
-        return bootnodes;
-    }
 
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
@@ -250,7 +232,10 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             log.debug("{} IP access", list.length);
             whiteIPList.addAll(Arrays.asList(list));
         }
-
+        String[] bootnodelist = setting.getStrings("bootnode");
+        if (bootnodelist != null) {
+            bootnodes.addAll(Arrays.asList(bootnodelist));
+        }
         rpcEnabled = setting.getBool("isRPCEnabled") != null && setting.getBool("isRPCEnabled");
     }
 

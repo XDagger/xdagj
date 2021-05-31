@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
+import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+
 public class XdagCli extends Launcher {
 
     private static final Scanner scanner = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
@@ -140,9 +142,7 @@ public class XdagCli extends Launcher {
             System.err.println("Parsing Failed:" + exception.getMessage());
         }
 
-        if(cmd == null) {
-            start();
-        } else if (cmd.hasOption(XdagOption.HELP.toString())) {
+        if (cmd.hasOption(XdagOption.HELP.toString())) {
             printHelp();
         } else if (cmd.hasOption(XdagOption.VERSION.toString())) {
             printVersion();
@@ -165,6 +165,8 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.CONVERT_OLD_WALLET.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
             convertOldWallet(file);
+        } else {
+            start();
         }
     }
 
@@ -329,13 +331,15 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        // default add one hd key
-        createAccount();
-
+        wallet.initializeHdWallet(mnemonic);
         if (!wallet.flush()) {
             System.out.println("HDWallet File Cannot Be Updated");
             return false;
         }
+
+        // default add one hd key
+        createAccount();
+
         System.out.println("HDWallet Mnemonic Imported Successfully!");
         return true;
     }
@@ -345,7 +349,9 @@ public class XdagCli extends Launcher {
             System.out.println("File:" + file.getName() + " not exists.");
             return false;
         }
-        List<ECKeyPair> keyList = readOldWallet(file);
+        String password = readPassword("Old wallet password:");
+        String random = readPassword("Old wallet random:");
+        List<ECKeyPair> keyList = readOldWallet(password, random, file);
         for(ECKeyPair key : keyList) {
             System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
             System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
@@ -355,13 +361,15 @@ public class XdagCli extends Launcher {
         return true;
     }
 
-    private List<ECKeyPair> readOldWallet(File walletDatFile) {
+    public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {
         byte[] priv32Encrypted = new byte[32];
         int keysNum = 0;
         List<ECKeyPair> keyList = new ArrayList<>();
+        Native.general_dnet_key(password, random);
         try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
+                BytesUtils.arrayReverse(priv32);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
                 keyList.add(ecKey);
             }
@@ -383,7 +391,7 @@ public class XdagCli extends Launcher {
             if (wallet.unlock("")) {
                 setPassword("");
             } else {
-                setPassword(readPassword());
+                setPassword(readPassword(WALLET_PASSWORD_PROMPT));
             }
         }
 
@@ -398,6 +406,7 @@ public class XdagCli extends Launcher {
      * Create a new wallet with a new password
      */
     public Wallet createNewWallet() {
+        System.out.println("Create New Wallet...");
         String newPassword = readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
         if (newPassword == null) {
             return null;
@@ -480,7 +489,4 @@ public class XdagCli extends Launcher {
         return new String(console.readPassword(prompt));
     }
 
-    public String readPassword() {
-        return readPassword("Please enter your password: ");
-    }
 }

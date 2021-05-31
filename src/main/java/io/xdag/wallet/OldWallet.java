@@ -27,6 +27,7 @@ import io.xdag.config.Config;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FileUtils;
 import io.xdag.utils.Numeric;
 import org.apache.commons.io.IOUtils;
@@ -194,6 +195,7 @@ public class OldWallet {
             byte[] priv32Encrypted = new byte[32];
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
+                BytesUtils.arrayReverse(priv32);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
                 // 奇偶
                 boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);

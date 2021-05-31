@@ -25,7 +25,7 @@ package io.xdag.net.message;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.xdag.net.XdagChannel;
+import io.xdag.net.Channel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,9 +53,9 @@ public class MessageQueue {
     private final Queue<Message> respondQueue = new ConcurrentLinkedQueue<>();
     private ChannelHandlerContext ctx = null;
     private ScheduledFuture<?> timerTask;
-    private final XdagChannel channel;
+    private final Channel channel;
 
-    public MessageQueue(XdagChannel channel) {
+    public MessageQueue(Channel channel) {
         this.channel = channel;
     }
 

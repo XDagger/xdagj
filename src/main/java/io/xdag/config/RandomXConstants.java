@@ -32,7 +32,7 @@ public class RandomXConstants {
     public static long SEEDHASH_EPOCH_TESTNET_LAG = 64;
 
     public static final long RANDOMX_FORK_HEIGHT = 1540096;
-    public static long RANDOMX_TESTNET_FORK_HEIGHT = 40960000000L;// 196288
+    public static long RANDOMX_TESTNET_FORK_HEIGHT = 409600000;// 196288
 
     public static final int XDAG_RANDOMX = 2;
 

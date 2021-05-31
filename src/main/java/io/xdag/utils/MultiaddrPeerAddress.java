@@ -27,9 +27,9 @@ package io.xdag.utils;
 import io.libp2p.core.PeerId;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.core.multiformats.Protocol;
-import io.xdag.libp2p.peer.LibP2PNodeId;
-import io.xdag.libp2p.peer.NodeId;
-import io.xdag.libp2p.peer.PeerAddress;
+import io.xdag.net.libp2p.peer.LibP2PNodeId;
+import io.xdag.net.libp2p.peer.NodeId;
+import io.xdag.net.libp2p.peer.PeerAddress;
 
 import java.util.Objects;
 

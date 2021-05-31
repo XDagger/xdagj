@@ -89,9 +89,6 @@ public class Launcher {
      * Parses options from the given arguments.
      */
     protected CommandLine parseOptions(String[] args) throws ParseException {
-        if (args == null || args.length == 0 ) {
-            return null;
-        }
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(getOptions(), args);
 

@@ -14,4 +14,4 @@ JAVA_HOME="/usr/local/java/"
 JAVA_OPTS="--enable-preview -server -Xms1g -Xmx1g"
 
 # start kernel
-java ${JAVA_OPTS} -cp ${XDAG_JARNAME} io.xdag.Bootstrap "$@"
+java ${JAVA_OPTS} -cp .:${XDAG_JARNAME} io.xdag.Bootstrap "$@"

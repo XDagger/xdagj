@@ -29,7 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
-import io.xdag.net.XdagChannel;
+import io.xdag.net.Channel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
@@ -46,7 +46,7 @@ public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> i
     protected Kernel kernel;
     protected Blockchain blockchain;
     protected XdagVersion version = XdagVersion.V03;
-    protected XdagChannel channel;
+    protected Channel channel;
     protected MessageQueue msgQueue;
     protected Block bestKnownBlock;
     protected BigInteger totalDifficulty;
