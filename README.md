@@ -63,7 +63,7 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
 
-- [ ] Implement the RPC function: access to Web3j, realize the standardization of the interface
+- [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
 - [ ] Improve the mining protocol: introduce the more mature Stratum protocol
 
