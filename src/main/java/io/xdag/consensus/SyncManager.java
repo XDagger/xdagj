@@ -147,10 +147,10 @@ public class SyncManager {
     //todo:修改共识
     public ImportResult importBlock(BlockWrapper blockWrapper) {
         log.debug("importBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
-        ImportResult importResult = blockchain.tryToConnect(blockWrapper.getBlock());
+        ImportResult importResult = blockchain.tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData())));
 
         if (importResult == EXIST) {
-            log.error("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+            log.debug("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
         }
 
         Config config = kernel.getConfig();

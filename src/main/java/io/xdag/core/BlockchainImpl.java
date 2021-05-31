@@ -539,8 +539,8 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue()) >= amount2xdag(
-                    block.getInfo().getAmount())) {
+            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
+                    block.getInfo().getAmount()) {
                 acceptAmount(block, ret);
             }
         }
@@ -549,18 +549,18 @@ public class BlockchainImpl implements Blockchain {
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
-                if (amount2xdag(ref.getInfo().getAmount()) < amount2xdag(link.getAmount().longValue())) {
+                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",Hex.toHexString(ref.getInfo().getHashlow()),ref.getInfo().getAmount(),
                             link.getAmount().longValue());
                     return UnsignedLong.ZERO;
                 }
-                if (amount2xdag(sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue()) < amount2xdag(sumIn.longValue())) {
+                if (sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumIn.longValue()) {
                     log.debug("This input ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
                 sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
             } else {
-                if (amount2xdag(sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue()) < amount2xdag(sumOut.longValue())) {
+                if (sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumOut.longValue()) {
                     log.debug("This output ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
@@ -568,8 +568,8 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        if (amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumOut.longValue())
-                || amount2xdag(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue()) < amount2xdag(sumIn.longValue())) {
+        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
+                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {
             log.debug("exec fail!");
             return UnsignedLong.ZERO;
         }
@@ -1138,21 +1138,12 @@ public class BlockchainImpl implements Blockchain {
                 byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
 //                log.debug("verify encoded:{}", Hex.toHexString(digest));
                 byte[] hash = Hash.hashTwice(digest);
-                if (ECKeyPair.verify(hash, sig, publicKeyBytes)) {
+                if (ECKeyPair.verify(hash, sig.toCanonicalised(), publicKeyBytes)) {
                     canUse = true;
                 }
             }
 
             if (!canUse) {
-                //TODO this maybe some old issue( input and output was same )
-                List<ECKeyPair> keys = block.getPubKeys();
-                for (ECKeyPair ecKey : keys) {
-                    byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
-                    byte[] hash = Hash.hashTwice(BytesUtils.merge(subdata, publicKeyBytes));
-                    if (ECKeyPair.verify(hash, sig, publicKeyBytes)) {
-                        return true;
-                    }
-                }
                 return false;
             }
         }

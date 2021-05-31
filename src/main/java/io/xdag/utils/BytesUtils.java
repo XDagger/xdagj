@@ -33,6 +33,9 @@ import java.nio.ByteOrder;
 
 public class BytesUtils {
 
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    private static final byte[] ZERO_BYTE_ARRAY = new byte[]{0};
+
     public static byte[] intToBytes(int value, boolean littleEndian) {
         ByteBuffer buffer = ByteBuffer.allocate(4);
         if (littleEndian) {
@@ -304,5 +307,39 @@ public class BytesUtils {
 
     public String byteToBinaryString(byte b) {
         return Integer.toBinaryString(b & 0xFF);
+    }
+
+    public static byte[] stripLeadingZeroes(byte[] data) {
+        return stripLeadingZeroes(data, ZERO_BYTE_ARRAY);
+    }
+
+    public static byte[] stripLeadingZeroes(byte[] data, byte[] valueForZero) {
+        if (data == null) {
+            return null;
+        }
+
+        final int firstNonZero = firstNonZeroByte(data);
+        switch (firstNonZero) {
+            case -1:
+                return valueForZero;
+
+            case 0:
+                return data;
+
+            default:
+                byte[] result = new byte[data.length - firstNonZero];
+                System.arraycopy(data, firstNonZero, result, 0, data.length - firstNonZero);
+
+                return result;
+        }
+    }
+
+    public static int firstNonZeroByte(byte[] data) {
+        for (int i = 0; i < data.length; ++i) {
+            if (data[i] != 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

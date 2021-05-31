@@ -97,7 +97,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
         ImportResult importResult = syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
-        if (importResult.isIllegal()) {
+        if (importResult.isNormal()) {
             log.info("XDAG:receive tansaction. A Transaction from wallet/miner, block hash:{}", Hex.toHexString(block.getHash()));
         }
     }

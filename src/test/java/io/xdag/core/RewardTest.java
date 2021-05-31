@@ -68,6 +68,10 @@ public class RewardTest {
     Kernel kernel;
     DatabaseFactory dbFactory;
 
+    String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
+    BigInteger privateKey = new BigInteger(privString, 16);
+
+
     class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {
@@ -121,8 +125,6 @@ public class RewardTest {
 
     @Test
     public void testReward() throws ParseException {
-        String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
-        BigInteger privateKey = new BigInteger(privString, 16);
 
         RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 16000;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;

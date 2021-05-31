@@ -58,12 +58,26 @@ import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.randomx.RandomX;
+import io.xdag.rpc.Web3;
+import io.xdag.rpc.Web3Impl;
+import io.xdag.rpc.cors.CorsConfiguration;
+import io.xdag.rpc.modules.web3.Web3XdagModule;
+import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
+import io.xdag.rpc.modules.xdag.XdagModule;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionDisabled;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
+import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
+import io.xdag.rpc.netty.*;
+import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
+import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -112,6 +126,14 @@ public class Kernel {
     @Getter
     protected long startEpoch;
 
+
+    // rpc
+    protected JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
+    protected Web3 web3;
+    protected Web3WebSocketServer web3WebSocketServer;
+    protected Web3HttpServer web3HttpServer;
+    protected JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
+    protected JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
 
     public Kernel(Config config, Wallet wallet) {
         this.config = config;
@@ -279,6 +301,14 @@ public class Kernel {
         }
 
         // ====================================
+        // rpc start
+        // ====================================
+        if (config.getRPCSpec().isRPCEnabled()) {
+            getWeb3HttpServer().start();
+            getWeb3WebSocketServer().start();
+        }
+
+        // ====================================
         // telnet server
         // ====================================
         telnetServer.start();
@@ -286,6 +316,80 @@ public class Kernel {
         Launcher.registerShutdownHook("kernel", this::testStop);
     }
 
+    private Web3 getWeb3() {
+        if (web3 == null) {
+            web3 = buildWeb3();
+        }
+
+        return web3;
+    }
+
+    private Web3 buildWeb3() {
+        Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionEnabled(this.getBlockchain())),this);
+        return new Web3Impl(web3XdagModule);
+    }
+
+    private JsonRpcWeb3ServerHandler getJsonRpcWeb3ServerHandler() {
+        if (jsonRpcWeb3ServerHandler == null) {
+            jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
+                    getWeb3(),
+                    config.getRPCSpec().getRpcModules()
+            );
+        }
+
+        return jsonRpcWeb3ServerHandler;
+    }
+
+    private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
+        if (web3WebSocketServer == null) {
+            JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
+            XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
+            web3WebSocketServer = new Web3WebSocketServer(
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    config.getRPCSpec().getRPCPortByWebSocket(),
+                    jsonRpcHandler,
+                    getJsonRpcWeb3ServerHandler()
+            );
+        }
+
+        return web3WebSocketServer;
+    }
+
+    private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
+        if (web3HttpServer == null) {
+            web3HttpServer = new Web3HttpServer(
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    config.getRPCSpec().getRPCPortByHttp(),
+                    123,
+                    true,
+                    new CorsConfiguration("*"),
+                    getJsonRpcWeb3FilterHandler(),
+                    getJsonRpcWeb3ServerHandler()
+            );
+        }
+
+        return web3HttpServer;
+    }
+
+    private JsonRpcWeb3FilterHandler getJsonRpcWeb3FilterHandler() throws UnknownHostException {
+        if (jsonRpcWeb3FilterHandler == null) {
+            jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
+                    "*",
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    null
+            );
+        }
+
+        return jsonRpcWeb3FilterHandler;
+    }
+
+    private JsonRpcSerializer getJsonRpcSerializer() {
+        if (jacksonBasedRpcSerializer == null) {
+            jacksonBasedRpcSerializer = new JacksonBasedRpcSerializer();
+        }
+
+        return jacksonBasedRpcSerializer;
+    }
     /** Stops the kernel. */
     public synchronized void testStop() {
 
@@ -294,6 +398,14 @@ public class Kernel {
         }
 
         isRunning.set(false);
+
+        //
+        if (web3HttpServer != null) {
+            web3HttpServer.stop();
+        }
+        if (web3WebSocketServer != null) {
+            web3WebSocketServer.stop();
+        }
 
         // 1. 工作层关闭
         // stop consensus
