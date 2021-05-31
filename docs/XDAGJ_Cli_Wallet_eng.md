@@ -35,7 +35,7 @@ total 95464
 drwxr-xr-x   4 xdager  wheel       128  5 24 14:22 .
 drwxr-xr-x  16 xdager  wheel       512  5 24 14:21 ..
 -rwxr-xr-x   1 xdager  wheel       275  5 24 14:21 xdag.sh
--rw-r--r--   1 xdager  wheel  48869970  5 24 14:21 xdagj-0.4.2-shaded.jar
+-rw-r--r--   1 xdager  wheel  48869970  5 24 14:21 xdagj-0.4.3-shaded.jar
 ```
 
 ## Usage

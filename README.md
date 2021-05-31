@@ -63,13 +63,13 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
 
-- [ ] Implement the RPC function: access to Web3j, realize the standardization of the interface
+- [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
 - [ ] Improve the mining protocol: introduce the more mature Stratum protocol
 
 - [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
 
-- [ ] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
+- [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
 #### Expansion phase: XDAGJ & EVM 
 
