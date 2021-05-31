@@ -45,7 +45,7 @@ import java.util.List;
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec {
+public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec {
     protected String configName;
 
     // =========================
@@ -135,7 +135,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected List<ModuleDescription> moduleDescriptions;
     protected boolean rpcEnabled = false;
-
+    protected String rpcHost;
+    protected int rpcPortHttp;
+    protected int rpcPortWs;
 
     public void setDir() {
         storeDir = getRootDir() + "/rocksdb/xdagdb";
@@ -175,6 +177,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                 throw new Exception("dnet crypt init failed");
             }
         }
+    }
+
+    @Override
+    public RPCSpec getRPCSpec() {
+        return this;
     }
 
     @Override
@@ -236,7 +243,13 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         if (bootnodelist != null) {
             bootnodes.addAll(Arrays.asList(bootnodelist));
         }
+        // rpc
         rpcEnabled = setting.getBool("isRPCEnabled") != null && setting.getBool("isRPCEnabled");
+        if (rpcEnabled) {
+            rpcHost = setting.getStr("rpcHost");
+            rpcPortHttp = setting.getInt("rpcPort_http");
+            rpcPortWs = setting.getInt("rpcPort_ws");
+        }
     }
 
     @Override
@@ -375,5 +388,20 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public boolean isRPCEnabled() {
         return rpcEnabled;
+    }
+
+    @Override
+    public String getRPCHost() {
+        return rpcHost;
+    }
+
+    @Override
+    public int getRPCPortByHttp() {
+        return rpcPortHttp;
+    }
+
+    @Override
+    public int getRPCPortByWebSocket() {
+        return rpcPortWs;
     }
 }

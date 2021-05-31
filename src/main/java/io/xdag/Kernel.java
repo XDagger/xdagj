@@ -303,7 +303,7 @@ public class Kernel {
         // ====================================
         // rpc start
         // ====================================
-        if (config.isRPCEnabled()) {
+        if (config.getRPCSpec().isRPCEnabled()) {
             getWeb3HttpServer().start();
             getWeb3WebSocketServer().start();
         }
@@ -333,7 +333,7 @@ public class Kernel {
         if (jsonRpcWeb3ServerHandler == null) {
             jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
                     getWeb3(),
-                    config.getRpcModules()
+                    config.getRPCSpec().getRpcModules()
             );
         }
 
@@ -345,8 +345,8 @@ public class Kernel {
             JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
             XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
             web3WebSocketServer = new Web3WebSocketServer(
-                    InetAddress.getByName("127.0.0.1"),
-                    4444,
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    config.getRPCSpec().getRPCPortByWebSocket(),
                     jsonRpcHandler,
                     getJsonRpcWeb3ServerHandler()
             );
@@ -358,8 +358,8 @@ public class Kernel {
     private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
         if (web3HttpServer == null) {
             web3HttpServer = new Web3HttpServer(
-                    InetAddress.getByName("127.0.0.1"),
-                    4445,
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
+                    config.getRPCSpec().getRPCPortByHttp(),
                     123,
                     true,
                     new CorsConfiguration("*"),
@@ -375,7 +375,7 @@ public class Kernel {
         if (jsonRpcWeb3FilterHandler == null) {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
                     "*",
-                    InetAddress.getByName("127.0.0.1"),
+                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
                     null
             );
         }
