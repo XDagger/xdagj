@@ -28,6 +28,7 @@ import io.xdag.core.Block;
 import lombok.Data;
 
 @Data
+//TODO: Return xdagblock info
 public class BlockResultDTO {
 
     // blockInfo
@@ -37,7 +38,7 @@ public class BlockResultDTO {
 
     public BlockResultDTO(long height) {
         this.height = Long.toHexString(height);
-        this.data = "hello";
+        this.data = "0x";
     }
 
 

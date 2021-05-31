@@ -71,7 +71,7 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction{
         Block block = new Block(new XdagBlock(Hex.decode(rawData)));
         ImportResult result = blockchain.tryToConnect(block);
         System.out.println(result);
-        if (!result.isLegal()) {
+        if (!result.isNormal()) {
             return "0x";
         } else {
             return result.toString();

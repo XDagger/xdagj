@@ -23,6 +23,7 @@
  */
 package io.xdag.rpc.dto;
 
+// TODO: return transaction receipt
 public class TransactionReceiptDTO {
 
 

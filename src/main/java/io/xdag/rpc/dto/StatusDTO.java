@@ -30,6 +30,7 @@ import java.math.BigInteger;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 
 @Data
+//TODO: return xdag status
 public class StatusDTO {
     // status 状态信息
     private final String nblocks;
