@@ -358,7 +358,7 @@ public class Kernel {
     private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
         if (web3HttpServer == null) {
             web3HttpServer = new Web3HttpServer(
-                    InetAddress.getByName("192.168.3.229"),
+                    InetAddress.getByName("127.0.0.1"),
                     4445,
                     123,
                     true,
@@ -375,7 +375,7 @@ public class Kernel {
         if (jsonRpcWeb3FilterHandler == null) {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
                     "*",
-                    InetAddress.getByName("192.168.3.229"),
+                    InetAddress.getByName("127.0.0.1"),
                     null
             );
         }
