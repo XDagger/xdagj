@@ -213,7 +213,7 @@ public class NodeManager {
         List<DiscoveryPeer> discoveryPeerList =
                 discoveryController.getDiscV5Service().streamKnownPeers().collect(Collectors.toList());
         for (DiscoveryPeer p :discoveryPeerList){
-            Node node = new Node(p.nodeAddress().getHostName(),p.nodeAddress().getPort());
+            Node node = new Node(p.getNodeAddress().getHostName(),p.getNodeAddress().getPort());
             if(!myself.equals(node)&&!activeAddress.contains(p.getNodeAddress())&&!hadConnected.contains(node)){
                 kernel.getLibp2pNetwork().dail(discoveryPeerToDailId(p));
                 hadConnected.add(node);
