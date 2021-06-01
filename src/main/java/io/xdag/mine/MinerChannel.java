@@ -23,22 +23,10 @@
  */
 package io.xdag.mine;
 
-import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
-
-import java.net.InetSocketAddress;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-
-import io.xdag.config.Config;
-import io.xdag.mine.miner.MinerStates;
-import org.apache.commons.codec.binary.Hex;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
+import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.store.BlockStore;
@@ -49,6 +37,7 @@ import io.xdag.mine.handler.MinerMessageHandler;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.MinerMessageFactory;
 import io.xdag.mine.miner.Miner;
+import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.ByteArrayWrapper;
@@ -56,6 +45,15 @@ import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
+
+import java.net.InetSocketAddress;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
 @Slf4j
 @Getter
@@ -149,7 +147,7 @@ public class MinerChannel {
     private boolean isMill = false;
 
     /** 初始化 同时需要判断是服务器端还是客户端 */
-    public MinerChannel(Kernel kernel, NioSocketChannel socket, boolean isServer) {
+    public MinerChannel(Kernel kernel, boolean isServer) {
         this.kernel = kernel;
         this.config = kernel.getConfig();
         this.inBound = new StatHandle();
@@ -200,13 +198,10 @@ public class MinerChannel {
      * @return 工厂
      */
     private MessageFactory createMinerMessageFactory(XdagVersion version) {
-        switch (version) {
-        case V03:
-            return new MinerMessageFactory();
-
-        default:
-            throw new IllegalArgumentException("Xdag" + version + " is not supported");
-        }
+        return switch (version) {
+            case V03 -> new MinerMessageFactory();
+            default -> throw new IllegalArgumentException("Xdag" + version + " is not supported");
+        };
     }
 
     /**

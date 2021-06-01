@@ -1,6 +1,7 @@
 package io.xdag.net.discovery;
 
 import com.google.common.base.MoreObjects;
+import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 
 import java.net.InetSocketAddress;
@@ -9,14 +10,14 @@ import java.util.Objects;
 /**
  * @author wawa
  */
-public record DiscoveryPeer(Bytes publicKey, InetSocketAddress nodeAddress) {
+@Getter
+public class DiscoveryPeer {
+    private final Bytes publicKey;
+    private final InetSocketAddress nodeAddress;
 
-    public Bytes getPublicKey() {
-        return publicKey;
-    }
-
-    public InetSocketAddress getNodeAddress() {
-        return nodeAddress;
+    public DiscoveryPeer(Bytes publicKey, InetSocketAddress nodeAddress) {
+        this.publicKey = publicKey;
+        this.nodeAddress = nodeAddress;
     }
 
     @Override
@@ -27,9 +28,8 @@ public record DiscoveryPeer(Bytes publicKey, InetSocketAddress nodeAddress) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final DiscoveryPeer that = (DiscoveryPeer) o;
-        return Objects.equals(publicKey, that.publicKey)
-                && Objects.equals(nodeAddress, that.nodeAddress);
+        DiscoveryPeer that = (DiscoveryPeer) o;
+        return Objects.equals(publicKey, that.publicKey) && Objects.equals(nodeAddress, that.nodeAddress);
     }
 
     @Override

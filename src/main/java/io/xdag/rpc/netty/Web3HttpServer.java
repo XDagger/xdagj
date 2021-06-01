@@ -32,7 +32,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.codec.http.cors.CorsConfig;
+import io.netty.handler.codec.http.cors.CorsConfigBuilder;
 import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
@@ -84,7 +84,7 @@ public class Web3HttpServer {
             .handler(new LoggingHandler(LogLevel.INFO))
             .childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
-                protected void initChannel(SocketChannel ch) throws Exception {
+                protected void initChannel(SocketChannel ch) {
                     ChannelPipeline p = ch.pipeline();
                     p.addLast(new HttpRequestDecoder());
                     p.addLast(new HttpResponseEncoder());
@@ -92,9 +92,8 @@ public class Web3HttpServer {
                     p.addLast(new HttpContentCompressor());
                     if (corsConfiguration.hasHeader()) {
                         p.addLast(new CorsHandler(
-                            CorsConfig
-                                .withOrigin(corsConfiguration.getHeader())
-                                .allowedRequestHeaders(HttpHeaders.Names.CONTENT_TYPE)
+                                CorsConfigBuilder.forOrigin(corsConfiguration.getHeader())
+                                .allowedRequestHeaders(HttpHeaderNames.CONTENT_TYPE)
                                 .allowedRequestMethods(HttpMethod.POST)
                             .build())
                         );

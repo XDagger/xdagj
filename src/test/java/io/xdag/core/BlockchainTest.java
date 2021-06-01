@@ -28,7 +28,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.ECKeyPair;
-import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -37,12 +36,10 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,12 +48,16 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.*;
-import static io.xdag.core.XdagField.FieldType.*;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.*;
@@ -122,7 +123,7 @@ public class BlockchainTest {
     }
 
 
-    class MockBlockchain extends BlockchainImpl {
+    static class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {
             super(kernel);
@@ -140,7 +141,7 @@ public class BlockchainTest {
         Block addressBlock = generateAddressBlock(config, key, new Date().getTime());
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
         assertArrayEquals(addressBlock.getHashLow(), stats.getTop());
@@ -150,7 +151,7 @@ public class BlockchainTest {
     }
 
     @Test
-    public void testExtraBlock() throws ParseException {
+    public void testExtraBlock() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         ECKeyPair key = ECKeyPair.create(private_1);
@@ -159,14 +160,14 @@ public class BlockchainTest {
         assertNotNull(stats);
         List<Address> pending = Lists.newArrayList();
 
-        ImportResult result = INVALID_BLOCK;
+        ImportResult result;
         log.debug("1. create 1 address block");
         Block addressBlock = generateAddressBlock(config, key, generateTime);
 
         // 1. add address block
         result = blockchain.tryToConnect(addressBlock);
         assertChainStatus(1, 0, 0,1, blockchain);
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         assertArrayEquals(addressBlock.getHashLow(), stats.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
@@ -180,7 +181,7 @@ public class BlockchainTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             assertChainStatus(i+1, i>1?i-1:0, 1, i<2?1:0, blockchain);
             assertArrayEquals(extraBlock.getHashLow(), stats.getTop());
             Block storedExtraBlock = blockchain.getBlockByHash(stats.getTop(), false);
@@ -198,7 +199,7 @@ public class BlockchainTest {
     }
 
     @Test
-    public void testTransactionBlock() throws ParseException {
+    public void testTransactionBlock() {
         ECKeyPair addrKey = ECKeyPair.create(private_1);
         ECKeyPair poolKey = ECKeyPair.create(private_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
@@ -208,7 +209,7 @@ public class BlockchainTest {
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
@@ -222,7 +223,7 @@ public class BlockchainTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             assertChainStatus(i+1, i-1, 1, i<2?1:0, blockchain);
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
@@ -277,7 +278,7 @@ public class BlockchainTest {
         xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
 
 
-        List refs = Lists.newArrayList();
+        List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, xdag2amount(50.00))); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, xdag2amount(50.00)));
         List<ECKeyPair> keys = new ArrayList<>();
@@ -323,7 +324,7 @@ public class BlockchainTest {
     }
 
     @Test
-    public void testCanUseInput() throws ParseException {
+    public void testCanUseInput() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         ECKeyPair fromKey = ECKeyPair.create(private_1);
@@ -347,65 +348,13 @@ public class BlockchainTest {
         assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
     }
 
-    public List<String> getFileName(long time) {
-        List<String> file = new ArrayList<>();
-        file.add("");
-        StringBuffer stringBuffer = new StringBuffer(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        stringBuffer.append(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        stringBuffer.append(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        return file;
-    }
-
     @Test
     public void testXdagAmount() {
         assertEquals(47201690584L, xdag2amount(10.99));
         assertEquals(4398046511104L, xdag2amount(1024));
-        assertEquals((double)10.99, amount2xdag(xdag2amount(10.99)), 0);
-        assertEquals((double)1024.0, amount2xdag(xdag2amount(1024)), 0);
-        assertEquals((double)0.93, amount2xdag(xdag2amount(0.93)), 0);
-
-        // this maybe issue
-//        System.out.println(amount2xdag(4000000001L));
-
-//        System.out.println(xdag2amount(500.2));
-//        System.out.println(xdag2amount(1024 - 500.2));
-//        System.out.println(amount2xdag(xdag2amount(1024 - 500.2) + xdag2amount(500.2)));
-//        System.out.println(
-//                xdag2amount(1024 - 500.2 - 234.4 - 312.2)
-//                        + xdag2amount(500.2)
-//                        + xdag2amount(234.4)
-//                        + xdag2amount(312.2));
-//        System.out.println(xdag2amount(1024));
-//
-//        System.out.println(
-//                amount2xdag(
-//                        xdag2amount(
-//                                1024 - 500.2 - 234.4 - 312.2 - 10.3 - 1.1 - 2.2 - 3.3 - 2.2 - 4.4 - 10.3 - 1.1
-//                                        - 2.2 - 3.3 - 2.2 - 4.4)
-//                                + xdag2amount(500.2)
-//                                + xdag2amount(234.4)
-//                                + xdag2amount(312.2)
-//                                + xdag2amount(10.3)
-//                                + xdag2amount(1.1)
-//                                + xdag2amount(2.2)
-//                                + xdag2amount(3.3)
-//                                + xdag2amount(2.2)
-//                                + xdag2amount(4.4)
-//                                + xdag2amount(10.3)
-//                                + xdag2amount(1.1)
-//                                + xdag2amount(2.2)
-//                                + xdag2amount(3.3)
-//                                + xdag2amount(2.2)
-//                                + xdag2amount(4.4)));
+        assertEquals(10.99, amount2xdag(xdag2amount(10.99)), 0);
+        assertEquals(1024.0, amount2xdag(xdag2amount(1024)), 0);
+        assertEquals(0.93, amount2xdag(xdag2amount(0.93)), 0);
     }
 
     @Test
@@ -426,11 +375,7 @@ public class BlockchainTest {
     }
 
     @Test
-    public void testOriginFork() throws ParseException {
-        String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
-        BigInteger privateKey = new BigInteger(privString, 16);
-
-
+    public void testOriginFork() {
         String firstDiff = "60b6a7744b";
         String secondDiff = "b20217d6e2";
 
@@ -442,9 +387,8 @@ public class BlockchainTest {
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
-        List<Block> extraBlockList = Lists.newLinkedList();
         byte[] ref = addressBlock.getHashLow();
 
         byte[] unwindRef = null;
@@ -458,17 +402,14 @@ public class BlockchainTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             assertChainStatus(i+1, i-1, 1, i<2?1:0, blockchain);
             ref = extraBlock.getHashLow();
             if (i == 16) {
                 unwindRef = ref.clone();
                 unwindDate = generateTime;
             }
-            extraBlockList.add(extraBlock);
         }
-
-
 
         assertEquals(firstDiff,blockchain.getXdagTopStatus().getTopDiff().toString(16));
 
@@ -486,7 +427,6 @@ public class BlockchainTest {
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending,"3456");
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
-            extraBlockList.add(extraBlock);
         }
 
         assertEquals(secondDiff, blockchain.getXdagTopStatus().getTopDiff().toString(16));

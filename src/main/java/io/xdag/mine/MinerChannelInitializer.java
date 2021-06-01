@@ -58,7 +58,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
                 ? ch.remoteAddress()
                 : new InetSocketAddress(
                         kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
-        MinerChannel minerChannel = new MinerChannel(kernel, ch, isServer);
+        MinerChannel minerChannel = new MinerChannel(kernel, isServer);
         minerChannel.init(ch.pipeline(), channelAddress);
         ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(256 * 1024));
         ch.config().setOption(ChannelOption.TCP_NODELAY, true);

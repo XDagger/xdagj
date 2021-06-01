@@ -65,7 +65,7 @@ public class BlockBuilder {
     }
 
     public static Block generateTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to, long amount) {
-        List refs = Lists.newArrayList();
+        List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
         List<ECKeyPair> keys = new ArrayList<>();

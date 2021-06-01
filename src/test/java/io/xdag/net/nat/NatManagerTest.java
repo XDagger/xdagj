@@ -78,7 +78,7 @@ public class NatManagerTest {
 
         verify(upnpClient).startup();
 
-        Assertions.assertThat(natManager.start()).hasFailed();
+        Assertions.assertThat(natManager.start()).isCompletedExceptionally() .isNotCancelled();
 
         verifyNoMoreInteractions(upnpClient);
     }
@@ -86,9 +86,7 @@ public class NatManagerTest {
     @Test
     public void requestPortForwardThrowsWhenCalledBeforeStart() {
         assertThatThrownBy(
-                () -> {
-                    natManager.requestPortForward(80, NetworkProtocol.TCP, NatServiceType.XDAG_DISCOVERY);
-                })
+                () -> natManager.requestPortForward(80, NetworkProtocol.TCP, NatServiceType.XDAG_DISCOVERY))
                 .isInstanceOf(IllegalStateException.class);
     }
 

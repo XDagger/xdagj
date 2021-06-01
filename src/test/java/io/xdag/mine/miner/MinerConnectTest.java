@@ -111,7 +111,7 @@ public class MinerConnectTest {
 
         blockchain = new BlockchainImpl(kernel);
 
-        channel = new MinerChannel(kernel,null,false);
+        channel = new MinerChannel(kernel, false);
     }
 
     @After
