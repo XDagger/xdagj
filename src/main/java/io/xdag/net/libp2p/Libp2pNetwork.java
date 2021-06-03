@@ -31,6 +31,7 @@ import io.libp2p.core.dsl.Builder;
 import io.libp2p.core.dsl.BuilderJKt;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.core.multistream.ProtocolBinding;
+import io.libp2p.core.mux.StreamMuxerProtocol;
 import io.libp2p.mux.mplex.MplexStreamMuxer;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
@@ -98,14 +99,14 @@ public class Libp2pNetwork implements P2PNetwork {
                     b.getIdentity().setFactory(()-> privKey);
                     b.getTransports().add(TcpTransport::new);
                     b.getSecureChannels().add(NoiseXXSecureChannel::new);
-//                    b.getMuxers().add(StreamMuxerProtocol.getMplex());
-                    b.getMuxers().add(MplexStreamMuxer::new);
+                    b.getMuxers().add(StreamMuxerProtocol.getMplex());
+//                    b.getMuxers().add(MplexStreamMuxer::new);
                     b.getNetwork().listen(advertisedAddr.toString());
                     b.getProtocols().add(rpcHandler);
-                    b.getDebug().getBeforeSecureHandler().setLogger(LogLevel.DEBUG, "wire.ciphered");
+//                    b.getDebug().getBeforeSecureHandler().setLogger(LogLevel.DEBUG, "wire.ciphered");
                     Firewall firewall = new Firewall(Duration.ofSeconds(100));
-                    b.getDebug().getBeforeSecureHandler().setHandler(firewall);
-                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
+                    b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
+//                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
                     b.getConnectionHandlers().add(peerManager);
                 });
     }

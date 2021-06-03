@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
-import javax.persistence.criteria.CriteriaBuilder;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -45,7 +44,6 @@ import io.xdag.config.Config;
 import io.xdag.net.Channel;
 import io.xdag.net.discovery.DiscoveryController;
 import io.xdag.net.discovery.DiscoveryPeer;
-import io.xdag.net.libp2p.Libp2pNetwork;
 
 import io.xdag.net.XdagClient;
 import io.xdag.net.handler.XdagChannelInitializer;
@@ -118,6 +116,7 @@ public class NodeManager {
             hadConnected = new HashSet<>();
             isRunning = true;
             log.debug("Node manager started");
+            initWhiteIPs();
         }
     }
 

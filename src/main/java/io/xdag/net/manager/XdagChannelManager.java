@@ -155,11 +155,11 @@ public class XdagChannelManager {
         //TODO res = netDBManager.canAccept(address);
 
         // 默认空为允许所有连接
-        if (addressSet.size() != 0) {
-            if (!addressSet.contains(address)) {
-                return false;
-            }
-        }
+//        if (addressSet.size() != 0) {
+//            if (!addressSet.contains(address)) {
+//                return false;
+//            }
+//        }
 
         // 不连接自己
         return !isSelfAddress(address);
