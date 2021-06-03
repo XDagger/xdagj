@@ -82,6 +82,7 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         p2PChannel.pushHandler(blockHandler);
         p2PChannel.pushHandler(messageCodes);
         p2PChannel.pushHandler(controller);
+
         return controller.activeFuture;
     }
     public static class Controller extends Xdag03 {
@@ -102,6 +103,13 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         public void updateXdagStats(AbstractMessage message){
             XdagStats remoteXdagStats = message.getXdagStats();
             kernel.getBlockchain().getXdagStats().update(remoteXdagStats);
+        }
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+            log.debug("channelInactive:[{}] ", ctx.toString());
+            killTimers();
+            disconnect();
+            channelManager.remove(channel);
         }
     }
 
