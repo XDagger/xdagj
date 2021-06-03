@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.persistence.criteria.CriteriaBuilder;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -86,8 +87,8 @@ public class NodeManager {
     private ScheduledFuture<?> connectlibp2PFuture;
     private final DiscoveryController discoveryController;
     private Set<Node> hadConnected;
-    Libp2pNetwork libp2pNetwork;
     private Node myself;
+    private Set<InetSocketAddress> whilelist;
 
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
@@ -98,8 +99,8 @@ public class NodeManager {
         this.config = kernel.getConfig();
         this.netDBManager = kernel.getNetDBMgr();
         this.discoveryController = kernel.getDiscoveryController();
-        libp2pNetwork = kernel.getLibp2pNetwork();
         myself = new Node(kernel.getConfig().getNodeSpec().getNodeIp(),kernel.getConfig().getNodeSpec().getLibp2pPort());
+        whilelist =new HashSet<>();
     }
 
     /** start the node manager */
@@ -191,6 +192,9 @@ public class NodeManager {
                             && node.getPort() == client.getNode().getPort())
                     && !activeAddress.contains(node.getAddress())
                     && (lastCon == null || lastCon + RECONNECT_WAIT < now )) {
+                if(!isAcceptable(new InetSocketAddress(node.getHost(), node.getPort()))){
+                    return ;
+                }
                 XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, node);
                 client.connect(node.getHost(), node.getPort(), initializer);
                 lastConnect.put(node, now);
@@ -203,6 +207,9 @@ public class NodeManager {
     public void doConnect(String ip, int port) {
         Node remotenode = new Node(ip, port);
         if (!client.getNode().equals(remotenode) && !channelMgr.containsNode(remotenode)) {
+            if(!isAcceptable(new InetSocketAddress(ip, port))){
+                return ;
+            }
             XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, remotenode);
             client.connect(ip, port, initializer);
         }
@@ -234,6 +241,27 @@ public class NodeManager {
             nodes.put(node, time);
         }
         return nodes;
+    }
+
+    public boolean isAcceptable(InetSocketAddress address) {
+        //TODO res = netDBManager.canAccept(address);
+
+        // 默认空为允许所有连接
+        if (whilelist.size() != 0) {
+            if (!whilelist.contains(address)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void initWhiteIPs() {
+        List<String> ipList = kernel.getConfig().getNodeSpec().getWhiteIPList();
+        for(String ip : ipList){
+            String [] ips = ip.split(":");
+            whilelist.add(new InetSocketAddress(ips[0],Integer.parseInt(ips[1])));
+        }
     }
 
 }
