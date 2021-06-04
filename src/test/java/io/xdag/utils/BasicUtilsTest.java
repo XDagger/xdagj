@@ -30,10 +30,12 @@ import java.math.BigDecimal;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
+import io.xdag.utils.exception.XdagOverFlowException;
+
 public class BasicUtilsTest {
 
     @Test
-    public void xdag2amount() {
+    public void TestXdag2amount() {
 
         BigDecimal a = BigDecimal.valueOf(972.8);
         assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()));
@@ -45,9 +47,14 @@ public class BasicUtilsTest {
         assertEquals(429496729600L,BasicUtils.xdag2amount(c.doubleValue()));
     }
 
-    @Test
-    public void amount2xdag() {
+    @Test(expected = XdagOverFlowException.class)
+    public void TestXdag2amountOverflow() {
+        double d = -1.3;
+        BasicUtils.xdag2amount(d);
+    }
 
+    @Test
+    public void TestAmount2xdag() {
         long a = 4178144185548L;
         // 3CC CCCC CCCD?
         assertEquals(972.8, BasicUtils.amount2xdag(a), 0.0);
@@ -68,6 +75,12 @@ public class BasicUtilsTest {
 
         // Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
         assertEquals(1024.0, BasicUtils.amount2xdag(4398046511104L), 0.0);
+    }
+
+    @Test(expected = XdagOverFlowException.class)
+    public void TestAmount2xdagOverflow() {
+        long a = -1;
+        BasicUtils.amount2xdag(a);
     }
 
     @Test

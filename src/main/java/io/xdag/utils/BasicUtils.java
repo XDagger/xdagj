@@ -24,6 +24,8 @@
 package io.xdag.utils;
 
 import cn.hutool.core.codec.Base64;
+import io.xdag.utils.exception.XdagOverFlowException;
+
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -125,6 +127,7 @@ public class BasicUtils {
 
     // convert xdag to cheato
     public static long xdag2amount(double input) {
+        if(input < 0) throw new XdagOverFlowException();
         double amount = Math.floor(input);
         long res = (long) amount << 32;
         input -= amount; // 小数部分
@@ -146,6 +149,7 @@ public class BasicUtils {
      * Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
      */
     public static double amount2xdag(long xdag) {
+        if(xdag < 0) throw new XdagOverFlowException();
         long first = xdag >> 32;
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
