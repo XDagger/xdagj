@@ -35,7 +35,6 @@ import io.xdag.net.handler.MessageCodes;
 import io.xdag.net.handler.Xdag03;
 import io.xdag.net.handler.XdagBlockHandler;
 import io.xdag.net.libp2p.Libp2pChannel;
-import io.xdag.net.libp2p.manager.PeerManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
@@ -51,10 +50,8 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     Libp2pChannel libp2pChannel;
     XdagBlockHandler blockHandler;
     XdagChannelManager channelManager;
-    PeerManager peerManager;
-    public RPCHandler(Kernel kernel, PeerManager peerManager) {
+    public RPCHandler(Kernel kernel) {
         this.kernel = kernel;
-        this.peerManager = peerManager;
         this.channelManager = kernel.getChannelMgr();
     }
 
@@ -68,7 +65,6 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
-        peerManager.handleConnection(connection);
         libp2pChannel = new Libp2pChannel(connection,this);
         libp2pChannel.init(kernel);
         channelManager.add(libp2pChannel);

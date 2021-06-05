@@ -39,8 +39,6 @@ public class Libp2pNetworkTest {
     }
     @Test
     public void testlibp2pconnect() throws InterruptedException {
-        assert node0.peerManager.getPeerCount() == 0;
-        assert node1.peerManager.getPeerCount() == 0;
         // Alternative connection format
         String peer0 = advertisedAddr.toString();
         peer0 = peer0.replaceAll("p2p","ipfs");

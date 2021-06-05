@@ -34,7 +34,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
-import io.xdag.net.libp2p.manager.PeerManager;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 
@@ -43,9 +42,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.CompletableFuture;
 
 public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
-    PeerManager peerManager;
-    public NonHandler(PeerManager peerManager) {
-        this.peerManager = peerManager;
+    public NonHandler() {
     }
 
     @NotNull
@@ -58,7 +55,6 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
         final Connection connection = ((Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
-        peerManager.handleConnection(connection);
         Controller controller = new Controller(nodeId, p2PChannel);
         p2PChannel.pushHandler(controller);
         return controller.activeFuture;

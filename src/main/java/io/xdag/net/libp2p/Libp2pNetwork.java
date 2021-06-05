@@ -40,7 +40,6 @@ import io.xdag.Kernel;
 import io.xdag.net.libp2p.RPCHandler.Firewall;
 import io.xdag.net.libp2p.RPCHandler.NonHandler;
 import io.xdag.net.libp2p.RPCHandler.RPCHandler;
-import io.xdag.net.libp2p.manager.PeerManager;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.IpUtil;
@@ -63,19 +62,17 @@ public class Libp2pNetwork implements P2PNetwork {
     private final PrivKey privKey;
     private NodeId nodeId;
     private InetAddress privateAddress;
-    protected PeerManager peerManager = new PeerManager();
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
     public Libp2pNetwork(PrivKey privKey, Multiaddr listenAddr) {
-        rpcHandler = new NonHandler(peerManager);
+        rpcHandler = new NonHandler();
         this.privKey = privKey;
         this.advertisedAddr = listenAddr;
     }
     public Libp2pNetwork(Kernel kernel){
         port = kernel.getConfig().getNodeSpec().getLibp2pPort();
-        rpcHandler = new RPCHandler(kernel,peerManager);
+        rpcHandler = new RPCHandler(kernel);
         privateAddress = IpUtil.getLocalAddress();
-        peerManager = new PeerManager();
         //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
         //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
         if(kernel.getConfig().getNodeSpec().isBootnode()){
@@ -107,7 +104,6 @@ public class Libp2pNetwork implements P2PNetwork {
                     Firewall firewall = new Firewall(Duration.ofSeconds(100));
                     b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
 //                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
-                    b.getConnectionHandlers().add(peerManager);
                 });
     }
 
