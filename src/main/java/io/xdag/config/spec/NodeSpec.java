@@ -46,7 +46,6 @@ public interface NodeSpec {
     // libp2p
     boolean isBootnode() ;
     List<String> getBootnodes();
-    int getDiscoveryPort();
     int getLibp2pPort();
     String getLibp2pPrivkey();
     String getDnetKeyFile();
