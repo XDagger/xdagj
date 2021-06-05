@@ -50,7 +50,6 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
-import io.xdag.net.discovery.DiscoveryController;
 import io.xdag.net.libp2p.Libp2pNetwork;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
@@ -112,7 +111,7 @@ public class Kernel {
     protected MinerServer minerServer;
     protected XdagState xdagState;
     protected Libp2pNetwork libp2pNetwork;
-    protected DiscoveryController discoveryController;
+//    protected DiscoveryController discoveryController;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
@@ -244,8 +243,8 @@ public class Kernel {
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
 
-        discoveryController = new DiscoveryController(this);
-        discoveryController.start();
+//        discoveryController = new DiscoveryController(this);
+//        discoveryController.start();
 
         // ====================================
         // start node manager
@@ -424,7 +423,7 @@ public class Kernel {
         log.info("Node manager stop.");
 
         log.info("ChannelManager stop.");
-        discoveryController.stop();
+//        discoveryController.stop();
         libp2pNetwork.stop();
         // close timer
         MessageQueue.timer.shutdown();
