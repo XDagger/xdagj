@@ -58,8 +58,6 @@ public class DiscoveryPeerTest {
     public void ShouldFindTheSeedNode() throws InterruptedException {
         Thread.sleep(1000);
         assert discV5Service2.streamKnownPeers().findFirst().isEmpty() || discoveryPeer.equals(discV5Service2.streamKnownPeers().findFirst().get());
-        System.out.println(discV5Service2.streamKnownPeers().count());
-        System.out.println(discV5Service1.streamKnownPeers().count());
     }
     @Test
     public void exitnetwork() throws InterruptedException {
