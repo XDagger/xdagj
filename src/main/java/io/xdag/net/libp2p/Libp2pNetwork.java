@@ -25,6 +25,7 @@ package io.xdag.net.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
+import io.libp2p.core.StreamPromise;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.Builder;
@@ -51,13 +52,14 @@ import org.apache.tuweni.bytes.Bytes;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 
 @Slf4j
 public class Libp2pNetwork implements P2PNetwork {
-    private ProtocolBinding<?> rpcHandler;
+    public ProtocolBinding<?> rpcHandler;
     private int port;
     private Host host;
     private final PrivKey privKey;
@@ -73,6 +75,7 @@ public class Libp2pNetwork implements P2PNetwork {
         rpcHandler = new NonHandler();
         this.privKey = privKey;
         this.advertisedAddr = listenAddr;
+        this.bootnodes = new ArrayList<>();
     }
     public Libp2pNetwork(Kernel kernel){
         port = kernel.getConfig().getNodeSpec().getLibp2pPort();

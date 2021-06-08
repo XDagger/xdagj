@@ -27,22 +27,22 @@ public class FirewallTest {
                             }
                         });
         channel.writeOneOutbound("a");
-        executeAllScheduledTasks(channel, 5);
+        executeAllScheduledTasks(channel);
         Assertions.assertThatCode(channel::checkException).doesNotThrowAnyException();
         Assertions.assertThat(channel.isOpen()).isFalse();
     }
 
-    private void executeAllScheduledTasks(EmbeddedChannel channel, long maxWaitSeconds)
+    private void executeAllScheduledTasks(EmbeddedChannel channel)
             throws TimeoutException, InterruptedException {
         long waitTime = 0;
-        while (waitTime < maxWaitSeconds * 1000) {
+        while (waitTime < (long) 5 * 1000) {
             long l = channel.runScheduledPendingTasks();
             if (l < 0) break;
             long ms = l / 1_000_000;
             waitTime += ms;
             Thread.sleep(ms);
         }
-        if (waitTime >= maxWaitSeconds * 1000) {
+        if (waitTime >= (long) 5 * 1000) {
             throw new TimeoutException();
         }
     }

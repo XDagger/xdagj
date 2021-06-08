@@ -42,6 +42,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.CompletableFuture;
 
 public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
+    public Connection connection;
     public NonHandler() {
     }
 
@@ -53,7 +54,7 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-        final Connection connection = ((Stream) p2PChannel).getConnection();
+        this.connection = ((Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         Controller controller = new Controller(nodeId, p2PChannel);
         p2PChannel.pushHandler(controller);
@@ -68,7 +69,7 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
     static class Controller extends SimpleChannelInboundHandler<ByteBuf> {
 
         final NodeId nodeid;
-        final P2PChannel p2pChannel;
+        public P2PChannel p2pChannel;
         protected final CompletableFuture<Controller> activeFuture = new CompletableFuture<>();
 
         public Controller(NodeId nodeid, P2PChannel p2pChannel) {
@@ -93,5 +94,6 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
             String s = buf.toString(CharsetUtil.UTF_8);
 //            System.out.println(s);
         }
+
     }
 }
