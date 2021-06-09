@@ -36,6 +36,8 @@ public class SampleKeys {
     public static final String PUBLIC_KEY_STRING =
             "0x506bc1dc099358e5137292f4efdd57e400f29ba5132aa5d12b18dac1c1f6aab"
                     + "a645c0b7b58158babbfa6c6cd5a48aa7340a8749176b120e8516216787a13dc76";
+
+    public static final String PUBLIC_KEY_COMPRESS_STRING = "02506bc1dc099358e5137292f4efdd57e400f29ba5132aa5d12b18dac1c1f6aaba";
     public static final String ADDRESS = "0xb731bf10ed204f4ebc3d32ac88b7aa61b993fd59";
     public static final String ADDRESS_NO_PREFIX = Numeric.cleanHexPrefix(ADDRESS);
 

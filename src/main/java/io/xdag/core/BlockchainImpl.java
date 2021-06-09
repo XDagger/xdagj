@@ -35,7 +35,6 @@ import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
 import static io.xdag.utils.MapUtils.getHead;
@@ -1134,7 +1133,7 @@ public class BlockchainImpl implements Blockchain {
             ECDSASignature sig = inBlock.getOutsig();
 
             for (ECKeyPair ecKey : ecKeys) {
-                byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
+                byte[] publicKeyBytes = ecKey.getCompressPubKeyBytes();
                 byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
 //                log.debug("verify encoded:{}", Hex.toHexString(digest));
                 byte[] hash = Hash.hashTwice(digest);

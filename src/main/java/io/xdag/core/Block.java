@@ -364,7 +364,7 @@ public class Block implements Cloneable {
         for (ECDSASignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 1);
             for (ECKeyPair ecKey : keys) {
-                byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
+                byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
                 hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
                 if (ECKeyPair.verify(hash, sig.toCanonicalised(), pubkeyBytes)) {
                     res.add(ecKey);
@@ -373,7 +373,7 @@ public class Block implements Cloneable {
         }
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKeyPair ecKey : keys) {
-            byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
+            byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
             hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
 
             if (ECKeyPair.verify(hash, this.getOutsig().toCanonicalised(),pubkeyBytes)) {
