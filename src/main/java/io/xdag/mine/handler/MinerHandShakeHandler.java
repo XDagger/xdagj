@@ -46,9 +46,7 @@ import io.xdag.core.XdagBlock;
 import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -111,15 +109,15 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // 如果是新增的地址块
                 if (importResult != ImportResult.EXIST) {
-                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), XdagTime.format(new Date()));
                 } else {
-                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), XdagTime.format(new Date()));
                 }
 
                 channel.getInBound().add(16L);
                 minerManager.addActivateChannel(channel);
                 channel.setIsActivate(true);
-                channel.setConnectTime(FormatDateUtils.getCurrentTime());
+                channel.setConnectTime(new Date(System.currentTimeMillis()));
                 channel.setAccountAddressHash(addressBlock.getHash());
                 ctx.pipeline().remove(this);
                 channel.activateHadnler(ctx, V03);

@@ -36,7 +36,6 @@ import io.xdag.net.message.Message;
 import io.xdag.randomx.RandomX;
 import io.xdag.randomx.RandomXMemory;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FastByteComparisons;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static io.xdag.utils.FastByteComparisons.compareTo;
+import static io.xdag.utils.BytesUtils.compareTo;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {
@@ -249,7 +249,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         if (!this.isRunning) {
             return;
         }
-        if (!FastByteComparisons.equalBytes(pretop,globalPretop)) {
+        if (!equalBytes(pretop,globalPretop)) {
             globalPretop = blockchain.getXdagTopStatus().getPreTop();
             events.add(new Event(Event.Type.NEW_PRETOP, pretop));
         }

@@ -35,7 +35,6 @@ import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FastByteComparisons;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -49,6 +48,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 public class BlockStore {
@@ -199,7 +200,6 @@ public class BlockStore {
             int keyIndex = pair.getKey();
             if (keyIndex == index) {
                 if (pair.getValue() != null && pair.getValue().getHashLow()!=null) {
-                    assert blockHashLow != null;
                     blockHashLow.set(pair.getValue().getHashLow());
                     return Boolean.TRUE;
                 }else {
@@ -215,7 +215,7 @@ public class BlockStore {
         AtomicInteger keyIndex = new AtomicInteger(-1);
         fetchOurBlocks(pair -> {
             Block block = pair.getValue();
-            if(FastByteComparisons.equalBytes(hashlow, block.getHashLow())) {
+            if(equalBytes(hashlow, block.getHashLow())) {
                 int index = pair.getKey();
                 keyIndex.set(index);
                 return Boolean.TRUE;
@@ -228,7 +228,7 @@ public class BlockStore {
     public void removeOurBlock(byte[] hashlow) {
         fetchOurBlocks(pair -> {
             Block block = pair.getValue();
-            if(FastByteComparisons.equalBytes(hashlow, block.getHashLow())) {
+            if(equalBytes(hashlow, block.getHashLow())) {
                 int index = pair.getKey();
                 indexSource.delete(getOurKey(index,hashlow));
                 return Boolean.TRUE;

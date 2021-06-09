@@ -27,7 +27,6 @@ import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
-import io.xdag.utils.FastByteComparisons;
 import io.xdag.utils.XdagTime;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +38,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static io.xdag.config.RandomXConstants.*;
 import static io.xdag.crypto.jni.RandomX.*;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 
 @Slf4j
@@ -100,7 +100,7 @@ public class RandomX {
                 log.debug("Set switch time to {}", Long.toHexString(nextMemory.switchTime));
 
                 hashlow = blockchain.getBlockByHeight(block.getInfo().getHeight() - randomXForkLag).getInfo().getHashlow().clone();
-                if (nextMemory.seed == null || !FastByteComparisons.equalBytes(nextMemory.seed,hashlow)) {
+                if (nextMemory.seed == null || !equalBytes(nextMemory.seed,hashlow)) {
                     nextMemory.seed = Arrays.reverse(hashlow);
                     log.debug("Next Memory Seed:{}",Hex.toHexString(hashlow));
                     randomXPoolUpdateSeed(nextMemIndex);

@@ -55,7 +55,6 @@ import static io.xdag.BlockBuilder.*;
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.MapUtils.getHead;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -121,7 +120,7 @@ public class ExtraBlockTest {
         @Override
         public void processExtraBlock() {
             if (this.getMemOrphanPool().size() > expectedExtraBlocks) {
-                Block reuse = getHead(this.getMemOrphanPool()).getValue();
+                Block reuse = getMemOrphanPool().entrySet().iterator().next().getValue();
                 removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
                 this.getXdagStats().nblocks--;
                 this.getXdagStats().totalnblocks = Math.max(this.getXdagStats().nblocks,this.getXdagStats().totalnblocks);

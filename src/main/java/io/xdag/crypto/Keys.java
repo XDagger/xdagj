@@ -23,13 +23,9 @@
  */
 package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
-import io.xdag.utils.Strings;
-
-import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
-import java.util.Arrays;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import static io.xdag.crypto.SecureRandomUtils.secureRandom;

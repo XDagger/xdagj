@@ -23,6 +23,9 @@
  */
 package io.xdag.utils;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class XdagTime {
 
     /** 获取当前的xdag时间戳 */
@@ -73,4 +76,10 @@ public class XdagTime {
     public static boolean isStartOfEpoch(long timestamp) {
         return (timestamp & 0xff) == 0x00;
     }
+
+    public static String format(Date date) {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        return simpleDateFormat.format(date);
+    }
+
 }

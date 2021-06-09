@@ -48,6 +48,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
+import static io.xdag.utils.BytesUtils.compareTo;
+
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
     /** 每一轮的确认数是16 */
@@ -65,7 +67,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     // 定义每一个部分的收益占比
     protected Miner poolMiner;
     /** 存放的是过去十六个区块的hash */
-    protected List<ByteArrayWrapper> blockHashs = new CopyOnWriteArrayList<ByteArrayWrapper>();
+    protected List<ByteArrayWrapper> blockHashs = new CopyOnWriteArrayList<>();
     protected List<ByteArrayWrapper> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected long currentTaskTime;
     protected long currentTaskIndex;
@@ -254,7 +256,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         PayData payData = new PayData();
 
         // 每一个区块最多可以放多少交易 这个要由密钥的位置来决定
-        int payminersPerBlock = 0;
+        int payminersPerBlock;
         miners = new ArrayList<>();
         // 统计矿工的数量
         if(minerManager != null) {
@@ -376,7 +378,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             payData.prevDiffSums += prev_diff.get(i);
 
             if (payData.rewardMiner == null
-                    && (FastByteComparisons.compareTo(nonce, 8, 24, miner.getAddressHash(), 8, 24) == 0)) {
+                    && (compareTo(nonce, 8, 24, miner.getAddressHash(), 8, 24) == 0)) {
                 payData.rewardMiner = new byte[32];
                 payData.rewardMiner = miner.getAddressHash();
                 // 有可以出块的矿工 分配矿工的奖励
@@ -508,7 +510,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 paymentSum += BigDecimalUtils.mul(payData.directIncome, per);
             }
             if (payData.rewardMiner != null
-                    && FastByteComparisons.compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash(), 8, 24) == 0) {
+                    && compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash(), 8, 24) == 0) {
                 paymentSum += payData.minerReward;
             }
             if (paymentSum < 0.000000001) {

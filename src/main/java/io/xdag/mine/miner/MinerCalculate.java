@@ -30,14 +30,14 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
 
-import static io.xdag.utils.FastByteComparisons.compareTo;
+import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
 @Slf4j
@@ -104,7 +104,7 @@ public class MinerCalculate {
         StringBuilder res = new StringBuilder();
         String address = BasicUtils.hash2Address(miner.getAddressHash());
         double unpaid = calculateUnpaidShares(miner);
-        String minerRegTime = FormatDateUtils.format(miner.getRegTime());
+        String minerRegTime = XdagTime.format(miner.getRegTime());
         res.append("miner: ")
                 .append(address)
                 .append("   regTime: ")
@@ -119,7 +119,7 @@ public class MinerCalculate {
         // todo 给每一个channels 加上一个单独的语句
         for (MinerChannel channel : channels.values()) {
             StringBuilder channelStr = new StringBuilder();
-            String connTime = FormatDateUtils.format(channel.getConnectTime());
+            String connTime = XdagTime.format(channel.getConnectTime());
             String ip = channel.getInetAddress().toString();
             double unpaidChannel = calculateUnpaidShares(channel);
 

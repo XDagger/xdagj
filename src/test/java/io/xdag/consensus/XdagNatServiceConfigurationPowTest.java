@@ -31,11 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
-import org.junit.Test;
 
 import java.io.IOException;
 
-import static io.xdag.utils.FastByteComparisons.compareTo;
+import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class XdagNatServiceConfigurationPowTest {

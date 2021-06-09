@@ -28,13 +28,14 @@ import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FileUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.rocksdb.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -371,7 +372,11 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     @Override
     public void reset() {
         close();
-        FileUtils.recursiveDelete(getPath().toString());
+        try {
+            FileUtils.deleteDirectory(new File(getPath().toString()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         init();
     }
 

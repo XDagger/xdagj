@@ -54,6 +54,7 @@ public class Libp2pChannel extends Channel {
         this.connection = connection;
         this.protocol = protocol;
     }
+
     public void init(Kernel kernel) {
         String[] ipString = connection.remoteAddress().toString().split("/");
         ip = ipString[2];

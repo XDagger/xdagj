@@ -37,7 +37,6 @@ import io.libp2p.transport.tcp.TcpTransport;
 import io.xdag.Kernel;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.net.libp2p.discovery.DiscV5Service;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.SafeFuture;
 import lombok.Getter;
@@ -71,21 +70,20 @@ public class Libp2pNetwork {
     private List<String> bootnodes ;
 
     public Libp2pNetwork(PrivKey privKey, Multiaddr listenAddr) {
-        protocol = new NonProtocol();
+        this.protocol = new NonProtocol();
         this.privKey = privKey;
         this.advertisedAddr = listenAddr;
         this.bootnodes = new ArrayList<>();
     }
 
     public Libp2pNetwork(Kernel kernel){
-        port = kernel.getConfig().getNodeSpec().getLibp2pPort();
-        protocol = new Libp2pXdagProtocol(kernel);
+        this.port = kernel.getConfig().getNodeSpec().getLibp2pPort();
+        this.protocol = new Libp2pXdagProtocol(kernel);
         // libp2p use wallet default key
         ECKeyPair key = kernel.getWallet().getDefKey();
         privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(key.getPrivateKey().toByteArray());
-        PeerId peerId = PeerId.fromPubKey(privKey.publicKey());
         ip = kernel.getConfig().getNodeSpec().getNodeIp();
-        nodeId = new LibP2PNodeId(peerId);
+        nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKey.publicKey()));
         advertisedAddr = Libp2pUtils.fromInetSocketAddress(
                         new InetSocketAddress(kernel.getConfig().getNodeSpec().getNodeIp(), port),nodeId);
         bootnodes = kernel.getConfig().getNodeSpec().getBootnodes();

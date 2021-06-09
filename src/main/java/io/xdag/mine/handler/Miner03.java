@@ -41,13 +41,14 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FastByteComparisons;
-import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.util.Date;
+
+import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
@@ -85,7 +86,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
-            log.debug("Close miner at time:{}", FormatDateUtils.format(new Date()));
+            log.debug("Close miner at time:{}", XdagTime.format(new Date()));
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();
@@ -116,7 +117,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         log.debug("Pool Receive Share");
 
         //share地址不一致，修改对应的miner地址
-        if (FastByteComparisons.compareTo( msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) != 0) {
+        if (compareTo( msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) != 0) {
             byte[] zero = new byte[8];
             byte[] blockHash;
             BytesUtils.isFullZero(zero);

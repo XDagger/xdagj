@@ -36,8 +36,7 @@ import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
-import static io.xdag.utils.MapUtils.getHead;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -431,7 +430,7 @@ public class BlockchainImpl implements Blockchain {
 
     public void processExtraBlock() {
         if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
-            Block reuse = getHead(memOrphanPool).getValue();
+            Block reuse = memOrphanPool.entrySet().iterator().next().getValue();
             log.debug("Remove when extra too big");
             removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
             xdagStats.nblocks--;

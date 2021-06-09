@@ -27,8 +27,8 @@ import io.xdag.config.Config;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FileUtils;
 import io.xdag.utils.Numeric;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -71,7 +71,7 @@ public class OldWallet {
             fileOutputStream.close();
         } else {
             // 文件存在 进行校验
-            byte[] dnetKeyBytes = FileUtils.readDnetDat(dnetDatFile);
+            byte[] dnetKeyBytes = BasicUtils.readDnetDat(dnetDatFile);
             int res = Native.verify_dnet_key(pair.getLeft(), dnetKeyBytes);
 
             if (res < 0) {

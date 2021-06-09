@@ -5,7 +5,6 @@ import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.Before;
 import org.junit.Test;

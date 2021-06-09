@@ -5,7 +5,6 @@ import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.multiformats.Multiaddr;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 import org.junit.Before;
 import org.junit.Test;

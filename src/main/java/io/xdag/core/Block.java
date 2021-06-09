@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 @Getter

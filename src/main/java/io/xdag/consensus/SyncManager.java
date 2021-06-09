@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.xdag.core.ImportResult.*;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 @Getter

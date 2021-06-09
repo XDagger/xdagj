@@ -25,9 +25,10 @@ package io.xdag.cli;
 
 import io.xdag.Kernel;
 import io.xdag.crypto.jni.Native;
-import io.xdag.utils.StringUtils;
+import io.xdag.utils.BasicUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
@@ -159,7 +160,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                     hash = address2Hash(address);
                 } else {
                     // as hash
-                    hash = StringUtils.getHash(address);
+                    hash = BasicUtils.getHash(address);
                 }
                 if (hash == null) {
                     println("No param");
@@ -288,7 +289,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             byte[] hash;
-            double amount = StringUtils.getDouble(argv.get(0));
+            double amount = BasicUtils.getDouble(argv.get(0));
 
             String remark = argv.size()==3 ? argv.get(2):null;
 
@@ -300,7 +301,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (argv.get(1).length() == 32) {
                 hash = address2Hash(argv.get(1));
             } else {
-                hash = StringUtils.getHash(argv.get(1));
+                hash = BasicUtils.getHash(argv.get(1));
             }
             if (hash == null) {
                 println("No Address");
@@ -471,7 +472,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         String line;
         do {
             line = reader.readLine(prompt, mask);
-        } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
+        } while (StringUtils.isEmpty(line));
 
         if(isTelnet) {
             if (line.equals(kernel.getConfig().getAdminSpec().getPassword())) {
@@ -516,7 +517,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             try {
                 systemRegistry.cleanUp();
                 String line = reader.readLine(prompt);
-                if(org.apache.commons.lang3.StringUtils.startsWith(line,"exit")) {
+                if(StringUtils.startsWith(line,"exit")) {
                     break;
                 }
                 systemRegistry.execute(line);

@@ -34,12 +34,11 @@ import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.FormatDateUtils;
-import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -121,14 +120,14 @@ public class Commands {
      * @return balance of give address
      */
     public String balance(String address) {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(address)) {
+        if (StringUtils.isEmpty(address)) {
             return "Balance:"+String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance())) + " XDAG";
         } else {
             byte[] hash;
-            if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
+            if (StringUtils.length(address) == 32) {
                 hash = address2Hash(address);
             } else {
-                hash = StringUtils.getHash(address);
+                hash = BasicUtils.getHash(address);
             }
             byte[] key = new byte[32];
             System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
@@ -511,7 +510,7 @@ public class Commands {
             stringBuilder
                     .append(node.getAddress())
                     .append(" ")
-                    .append(map.get(node) == null ? null : FormatDateUtils.format(new Date(map.get(node))))
+                    .append(map.get(node) == null ? null : XdagTime.format(new Date(map.get(node))))
                     .append(" ")
                     .append(node.getStat().Inbound.get())
                     .append(" in/")

@@ -4,7 +4,6 @@ import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.PubKey;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.beacon.discovery.schema.EnrField;
