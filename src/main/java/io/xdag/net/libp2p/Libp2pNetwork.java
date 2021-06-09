@@ -40,6 +40,7 @@ import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.SafeFuture;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -50,23 +51,24 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 @Slf4j
+@Getter
 public class Libp2pNetwork {
     enum State {
         IDLE,
         RUNNING,
         STOPPED
     }
-    public ProtocolBinding<?> protocol;
+    private ProtocolBinding<?> protocol;
     private int port;
     private Host host;
     private final PrivKey privKey;
     private NodeId nodeId;
-    protected String ip;
+    private String ip;
 
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
-    protected DiscV5Service discV5Service;
-    protected List<String> bootnodes ;
+    private DiscV5Service discV5Service;
+    private List<String> bootnodes ;
 
     public Libp2pNetwork(PrivKey privKey, Multiaddr listenAddr) {
         protocol = new NonProtocol();
@@ -74,6 +76,7 @@ public class Libp2pNetwork {
         this.advertisedAddr = listenAddr;
         this.bootnodes = new ArrayList<>();
     }
+
     public Libp2pNetwork(Kernel kernel){
         port = kernel.getConfig().getNodeSpec().getLibp2pPort();
         protocol = new Libp2pXdagProtocol(kernel);
@@ -134,10 +137,6 @@ public class Libp2pNetwork {
 
     public String getNodeAddress() {
         return advertisedAddr.toString();
-    }
-
-    public NodeId getNodeId() {
-        return nodeId;
     }
 
     public DiscV5Service getDiscV5Service() {

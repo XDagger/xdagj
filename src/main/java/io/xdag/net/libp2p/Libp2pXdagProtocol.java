@@ -37,18 +37,23 @@ import io.xdag.net.handler.XdagBlockHandler;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
+@Getter
+@Setter
 public class Libp2pXdagProtocol implements ProtocolBinding<Libp2pXdagProtocol.Libp2pXdagController> {
-    public Libp2pXdagController libp2PXdagController;
-    Kernel kernel;
-    Libp2pChannel libp2pChannel;
-    XdagBlockHandler blockHandler;
-    XdagChannelManager channelManager;
+    private Kernel kernel;
+    private Libp2pChannel libp2pChannel;
+    private Libp2pXdagController libp2PXdagController;
+    private XdagBlockHandler blockHandler;
+    private XdagChannelManager channelManager;
+
     public Libp2pXdagProtocol(Kernel kernel) {
         this.kernel = kernel;
         this.channelManager = kernel.getChannelMgr();

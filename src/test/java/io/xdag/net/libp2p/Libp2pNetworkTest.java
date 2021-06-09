@@ -46,7 +46,7 @@ public class Libp2pNetworkTest {
         // wait connect success
         Thread.sleep(1000);
 //        assert node1.peerManager.getPeerCount() == 1;
-        NonProtocol rpc = (NonProtocol) node1.protocol;
-        assert rpc.connection.remoteAddress().toString().equals(advertisedAddr.toString().substring(0, 24));
+        NonProtocol rpc = (NonProtocol) node1.getProtocol();
+        assert rpc.getConnection().remoteAddress().toString().equals(advertisedAddr.toString().substring(0, 24));
     }
 }

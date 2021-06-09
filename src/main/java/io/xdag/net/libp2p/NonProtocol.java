@@ -36,12 +36,16 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
+@Getter
+@Setter
 public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
-    public Connection connection;
+    private Connection connection;
 
     public NonProtocol() {
     }
