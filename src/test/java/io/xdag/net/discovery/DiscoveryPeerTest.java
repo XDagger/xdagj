@@ -21,7 +21,6 @@ import java.util.List;
 public class DiscoveryPeerTest {
     DiscoveryService discV5Service1;
     DiscoveryService discV5Service2;
-    DiscoveryService discV5Service3;
     DiscoveryPeer discoveryPeer;
 
     @Before
@@ -32,11 +31,11 @@ public class DiscoveryPeerTest {
         PrivKey privKey = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
         PrivKey privKey1 = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
         String s = Hex.toHexString(privKey1.bytes());
-        System.out.println(Arrays.toString(Hex.decode(s)));
+//        System.out.println(Arrays.toString(Hex.decode(s)));
         discoveryPeer = new DiscoveryPeer(
                 Bytes.wrap(privKey.publicKey().raw()),
                 new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 10001));
-        System.out.println(discoveryPeer.getNodeAddress().toString());
+//        System.out.println(discoveryPeer.getNodeAddress().toString());
         List<String> boot = new ArrayList<>();
         Bytes bytes = Bytes.wrap(privKey.raw());
         discV5Service1 = DiscV5ServiceImpl.create((bytes),
@@ -45,7 +44,6 @@ public class DiscoveryPeerTest {
                 Collections.emptyList());
         if(discV5Service1.getEnr().isPresent()){
             boot.add(discV5Service1.getEnr().get());
-            System.out.println(discV5Service1.getEnr().get());
         }
         discV5Service2 = DiscV5ServiceImpl.create(Bytes.wrap(KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1().raw()),
                 "127.0.0.1",11111, boot);
@@ -57,10 +55,15 @@ public class DiscoveryPeerTest {
     }
 
     @Test
-    public void ShouldFindTheSeedNode() {
-        if(discV5Service2.streamKnownPeers().findFirst().isPresent()){
-            assert discoveryPeer.equals(discV5Service2.streamKnownPeers().findFirst().get());
-        }
+    public void ShouldFindTheSeedNode() throws InterruptedException {
+        Thread.sleep(1000);
+        assert discV5Service2.streamKnownPeers().findFirst().isEmpty() || discoveryPeer.equals(discV5Service2.streamKnownPeers().findFirst().get());
+    }
+    @Test
+    public void exitnetwork() throws InterruptedException {
+        discV5Service2.stop();
+        Thread.sleep(1000);
+        assert discV5Service1.streamKnownPeers().count() == 0;
     }
 
 }

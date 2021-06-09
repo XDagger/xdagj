@@ -5,6 +5,7 @@ import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.multiformats.Multiaddr;
+import io.xdag.net.libp2p.RPCHandler.NonHandler;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.MultiaddrUtil;
@@ -31,7 +32,7 @@ public class Libp2pNetworkTest {
     Multiaddr advertisedAddr1 =
             MultiaddrUtil.fromInetSocketAddress(
                     new InetSocketAddress("127.0.0.1", 12121),nodeId1);
-    Libp2pNetwork node1 = new Libp2pNetwork( privKey1,advertisedAddr1);
+    Libp2pNetwork node1 = new Libp2pNetwork(privKey1,advertisedAddr1);
     @Before
     public void startup(){
         node0.start();
@@ -39,8 +40,6 @@ public class Libp2pNetworkTest {
     }
     @Test
     public void testlibp2pconnect() throws InterruptedException {
-        assert node0.peerManager.getPeerCount() == 0;
-        assert node1.peerManager.getPeerCount() == 0;
         // Alternative connection format
         String peer0 = advertisedAddr.toString();
         peer0 = peer0.replaceAll("p2p","ipfs");
@@ -49,7 +48,7 @@ public class Libp2pNetworkTest {
         // wait connect success
         Thread.sleep(1000);
 //        assert node1.peerManager.getPeerCount() == 1;
-
-
+        NonHandler rpc = (NonHandler) node1.rpcHandler;
+        assert rpc.connection.remoteAddress().toString().equals(advertisedAddr.toString().substring(0, 24));
     }
 }

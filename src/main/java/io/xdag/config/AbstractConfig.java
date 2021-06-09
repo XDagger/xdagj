@@ -111,7 +111,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected int libp2pPort;
     protected boolean isBootnode;
-    protected int discoveryPort;
     protected String libp2pPrivkey;
     protected List<String> bootnodes = new ArrayList<>();
 
@@ -231,7 +230,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         libp2pPort = setting.getInt("libp2pPort");
         libp2pPrivkey = setting.getStr("libp2pPrivkey");
         isBootnode = setting.getBool("isbootnode");
-        discoveryPort = setting.getInt("discoveryPort");
         password = setting.getStr("password");
 
         String[] list = setting.getStrings("whiteIPs");

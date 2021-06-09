@@ -42,12 +42,11 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.net.Channel;
-import io.xdag.net.discovery.DiscoveryController;
 import io.xdag.net.discovery.DiscoveryPeer;
-import io.xdag.net.libp2p.Libp2pNetwork;
 
 import io.xdag.net.XdagClient;
 import io.xdag.net.handler.XdagChannelInitializer;
+import io.xdag.net.libp2p.Libp2pNetwork;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
@@ -84,9 +83,8 @@ public class NodeManager {
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
     private ScheduledFuture<?> connectlibp2PFuture;
-    private final DiscoveryController discoveryController;
+    private final Libp2pNetwork libp2pNetwork;
     private Set<Node> hadConnected;
-    Libp2pNetwork libp2pNetwork;
     private Node myself;
 
     public NodeManager(Kernel kernel) {
@@ -97,7 +95,6 @@ public class NodeManager {
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
         this.config = kernel.getConfig();
         this.netDBManager = kernel.getNetDBMgr();
-        this.discoveryController = kernel.getDiscoveryController();
         libp2pNetwork = kernel.getLibp2pNetwork();
         myself = new Node(kernel.getConfig().getNodeSpec().getNodeIp(),kernel.getConfig().getNodeSpec().getLibp2pPort());
     }
@@ -211,7 +208,7 @@ public class NodeManager {
     public void doConnectlibp2p(){
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
         List<DiscoveryPeer> discoveryPeerList =
-                discoveryController.getDiscV5Service().streamKnownPeers().collect(Collectors.toList());
+                libp2pNetwork.getDiscV5Service().streamKnownPeers().collect(Collectors.toList());
         for (DiscoveryPeer p :discoveryPeerList){
             Node node = new Node(p.getNodeAddress().getHostName(),p.getNodeAddress().getPort());
             if(!myself.equals(node)&&!activeAddress.contains(p.getNodeAddress())&&!hadConnected.contains(node)){
@@ -220,6 +217,7 @@ public class NodeManager {
             }
         }
     }
+
 
     public Set<Node> getNewNode() {
         return netDB.getIPList();

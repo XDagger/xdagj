@@ -77,7 +77,7 @@ public class Libp2pChannel extends Channel {
 
     @Override
     public int getPort() {
-        return 0;
+        return port;
     }
 
     @Override
@@ -95,10 +95,6 @@ public class Libp2pChannel extends Channel {
         return kernel;
     }
 
-
-    public RPCHandler getHandler(){
-        return handler;
-    }
 
     @Override
     public InetSocketAddress getInetSocketAddress() {

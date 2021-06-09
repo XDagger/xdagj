@@ -154,12 +154,13 @@ public class XdagChannelManager {
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
 
+        //对于进来的连接，端口不固定，不能从白名单中判断,或者只判断ip，不判断port
         // 默认空为允许所有连接
-        if (addressSet.size() != 0) {
-            if (!addressSet.contains(address)) {
-                return false;
-            }
-        }
+//        if (addressSet.size() != 0) {
+//            if (!addressSet.contains(address)) {
+//                return false;
+//            }
+//        }
 
         // 不连接自己
         return !isSelfAddress(address);

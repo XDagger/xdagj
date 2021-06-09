@@ -24,6 +24,10 @@
 package io.xdag.net;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -58,12 +62,15 @@ public class XdagClient {
     private ChannelFuture f;
     private final String ip;
     private Node node;
+    private Set<InetSocketAddress> whilelist;
 
     public XdagClient(Config config) {
         this.config = config;
         this.ip = config.getNodeSpec().getNodeIp();
         this.port = config.getNodeSpec().getNodePort();
         this.workerGroup = new NioEventLoopGroup(0, factory);
+        this.whilelist =new HashSet<>();
+        initWhiteIPs();
 //        log.debug("XdagClient nodeId {}", getNode().getHexId());
     }
 
@@ -83,6 +90,9 @@ public class XdagClient {
 
     public ChannelFuture connectAsync(
             String host, int port, XdagChannelInitializer xdagChannelInitializer) {
+        if(!isAcceptable(new InetSocketAddress(host,port))){
+            return null;
+        }
         Bootstrap b = new Bootstrap();
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
@@ -105,4 +115,28 @@ public class XdagClient {
         }
         return node;
     }
+
+    public boolean isAcceptable(InetSocketAddress address) {
+        //TODO res = netDBManager.canAccept(address);
+
+        // 默认空为允许所有连接
+        if (whilelist.size() != 0) {
+            return whilelist.contains(address);
+        }
+
+        return true;
+    }
+
+    private void initWhiteIPs() {
+        List<String> ipList = config.getNodeSpec().getWhiteIPList();
+        for(String ip : ipList){
+            String [] ips = ip.split(":");
+            whilelist.add(new InetSocketAddress(ips[0],Integer.parseInt(ips[1])));
+        }
+    }
+
+    public void addWhilteIP(String host,int port){
+        whilelist.add(new InetSocketAddress(host,port));
+    }
+
 }
