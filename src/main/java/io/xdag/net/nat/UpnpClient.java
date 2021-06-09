@@ -38,8 +38,6 @@ import org.jupnp.support.model.PortMapping;
 
 import java.util.Optional;
 
-import static io.xdag.utils.FutureUtil.ignoreFuture;
-
 @Slf4j
 public class UpnpClient {
 
@@ -99,7 +97,7 @@ public class UpnpClient {
     XdagPortMappingDelete callback =
         new XdagPortMappingDelete(service, toJupnpPortMapping(portMapping));
 
-    ignoreFuture(upnpService.getControlPoint().execute(callback));
+//    ignoreFuture(upnpService.getControlPoint().execute(callback));
 
     return callback.getFuture();
   }
@@ -155,7 +153,7 @@ public class UpnpClient {
                   portMapping.getInternalPort(),
                   portMapping.getExternalPort());
 
-              ignoreFuture(upnpService.getControlPoint().execute(callback));
+//              ignoreFuture(upnpService.getControlPoint().execute(callback));
               return callback.getFuture();
             });
   }
@@ -166,7 +164,7 @@ public class UpnpClient {
         .thenAccept(
             service -> {
               XdagGetExternalIP callback = new XdagGetExternalIP(service);
-              ignoreFuture(upnpService.getControlPoint().execute(callback));
+//              ignoreFuture(upnpService.getControlPoint().execute(callback));
               callback
                   .getFuture()
                   .thenAccept(

@@ -1,6 +1,6 @@
-package io.xdag.net.discovery.discv5;
+package io.xdag.net.libp2p;
 
-import io.xdag.net.discovery.DiscoveryPeer;
+import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.ethereum.beacon.discovery.schema.EnrField;
@@ -15,10 +15,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static io.xdag.net.discovery.discv5.NodeRecordConverter.convertToDiscoveryPeer;
+import static io.xdag.net.libp2p.Libp2pUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class NodeRecordConverterTest {
+public class Libp2pUtilsTest {
 
     private static final Bytes PUB_KEY =
             Bytes.fromHexString("0x0295A5A50F083697FF8557F3C6FE0CDF8E8EC2141D15F19A5A45571ED9C38CE181");

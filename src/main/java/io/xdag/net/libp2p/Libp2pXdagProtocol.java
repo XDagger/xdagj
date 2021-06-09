@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.net.libp2p.RPCHandler;
+package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
@@ -34,7 +34,6 @@ import io.xdag.net.Channel;
 import io.xdag.net.handler.MessageCodes;
 import io.xdag.net.handler.Xdag03;
 import io.xdag.net.handler.XdagBlockHandler;
-import io.xdag.net.libp2p.Libp2pChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
@@ -44,13 +43,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
-public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
-    public Controller controller;
+public class Libp2pXdagProtocol implements ProtocolBinding<Libp2pXdagProtocol.Libp2pXdagController> {
+    public Libp2pXdagController libp2PXdagController;
     Kernel kernel;
     Libp2pChannel libp2pChannel;
     XdagBlockHandler blockHandler;
     XdagChannelManager channelManager;
-    public RPCHandler(Kernel kernel) {
+    public Libp2pXdagProtocol(Kernel kernel) {
         this.kernel = kernel;
         this.channelManager = kernel.getChannelMgr();
     }
@@ -58,12 +57,12 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
     @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
-        return  new ProtocolDescriptor("xdagj");
+        return  new ProtocolDescriptor("xdagj-libp2p-protocol");
     }
 
     @NotNull
     @Override
-    public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
+    public CompletableFuture<Libp2pXdagController> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
         libp2pChannel = new Libp2pChannel(connection,this);
         libp2pChannel.init(kernel);
@@ -72,20 +71,19 @@ public class RPCHandler implements ProtocolBinding<RPCHandler.Controller> {
         blockHandler.setMessageFactory(new Xdag03MessageFactory());
         channelManager.onChannelActive(libp2pChannel,libp2pChannel.getNode());
         MessageCodes messageCodes = new MessageCodes();
-        controller = new Controller(kernel,libp2pChannel);
+        libp2PXdagController = new Libp2pXdagController(kernel,libp2pChannel);
 
         //  add handler
         p2PChannel.pushHandler(blockHandler);
         p2PChannel.pushHandler(messageCodes);
-        p2PChannel.pushHandler(controller);
+        p2PChannel.pushHandler(libp2PXdagController);
 
-        return controller.activeFuture;
+        return libp2PXdagController.activeFuture;
     }
-    public static class Controller extends Xdag03 {
-
-        public CompletableFuture<Controller> activeFuture = new CompletableFuture<>();
+    public static class Libp2pXdagController extends Xdag03 {
+        public CompletableFuture<Libp2pXdagController> activeFuture = new CompletableFuture<>();
         public XdagChannelManager channelManager;
-        public Controller(Kernel kernel, Channel channel) {
+        public Libp2pXdagController(Kernel kernel, Channel channel) {
             super(kernel, channel);
             channelManager = kernel.getChannelMgr();
             msgQueue = channel.getmessageQueue();

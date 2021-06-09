@@ -1,6 +1,6 @@
-package io.xdag.net.discovery;
+package io.xdag.net.libp2p.discovery;
 
-import io.xdag.net.discovery.discv5.DiscV5ServiceImpl;
+import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.utils.SafeFuture;
 import org.junit.Test;
 
@@ -8,7 +8,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 public class DiscoveryNetworkTest {
-    private final DiscV5ServiceImpl discoveryService = mock(DiscV5ServiceImpl.class);
+    private final DiscV5Service discoveryService = mock(DiscV5Service.class);
 
     @Test
     public void DiscoveryStart() {

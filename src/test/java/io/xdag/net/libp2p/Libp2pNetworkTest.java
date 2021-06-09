@@ -5,10 +5,8 @@ import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.multiformats.Multiaddr;
-import io.xdag.net.libp2p.RPCHandler.NonHandler;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
-import io.xdag.utils.MultiaddrUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,7 +19,7 @@ public class Libp2pNetworkTest {
     PeerId peerId0 = PeerId.fromPubKey(privKey0.publicKey());
     NodeId nodeId0 = new LibP2PNodeId(peerId0);
     Multiaddr advertisedAddr =
-            MultiaddrUtil.fromInetSocketAddress(
+            Libp2pUtils.fromInetSocketAddress(
                     new InetSocketAddress("127.0.0.1", 11111),nodeId0);
     Libp2pNetwork node0 = new Libp2pNetwork( privKey0,advertisedAddr);
 
@@ -30,7 +28,7 @@ public class Libp2pNetworkTest {
     PeerId peerId1 = PeerId.fromPubKey(privKey1.publicKey());
     NodeId nodeId1 = new LibP2PNodeId(peerId1);
     Multiaddr advertisedAddr1 =
-            MultiaddrUtil.fromInetSocketAddress(
+            Libp2pUtils.fromInetSocketAddress(
                     new InetSocketAddress("127.0.0.1", 12121),nodeId1);
     Libp2pNetwork node1 = new Libp2pNetwork(privKey1,advertisedAddr1);
     @Before
@@ -48,7 +46,7 @@ public class Libp2pNetworkTest {
         // wait connect success
         Thread.sleep(1000);
 //        assert node1.peerManager.getPeerCount() == 1;
-        NonHandler rpc = (NonHandler) node1.rpcHandler;
+        NonProtocol rpc = (NonProtocol) node1.protocol;
         assert rpc.connection.remoteAddress().toString().equals(advertisedAddr.toString().substring(0, 24));
     }
 }

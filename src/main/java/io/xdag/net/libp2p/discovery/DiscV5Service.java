@@ -1,7 +1,6 @@
-package io.xdag.net.discovery.discv5;
+package io.xdag.net.libp2p.discovery;
 
-import io.xdag.net.discovery.DiscoveryPeer;
-import io.xdag.net.discovery.DiscoveryService;
+import io.xdag.net.libp2p.Libp2pUtils;
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
 import org.apache.tuweni.bytes.Bytes;
@@ -19,15 +18,15 @@ import java.util.stream.Stream;
 /**
  * @author wawa
  */
-public class DiscV5ServiceImpl extends Service implements DiscoveryService {
+public class DiscV5Service extends Service {
 
     private final DiscoverySystem discoverySystem;
 
-    public DiscV5ServiceImpl(final DiscoverySystem discoverySystem) {
+    public DiscV5Service(final DiscoverySystem discoverySystem) {
         this.discoverySystem = discoverySystem;
     }
 
-    public static DiscoveryService create(
+    public static DiscV5Service create(
             final Bytes privateKey, final String address, final int port, final List<String> bootnodes) {
         final DiscoverySystem discoveryManager =
                 new DiscoverySystemBuilder()
@@ -37,7 +36,7 @@ public class DiscV5ServiceImpl extends Service implements DiscoveryService {
                                 new NodeRecordBuilder().privateKey(privateKey).address(address, port).build())
                         .build();
 
-        return new DiscV5ServiceImpl(discoveryManager);
+        return new DiscV5Service(discoveryManager);
     }
 
     @Override
@@ -51,21 +50,17 @@ public class DiscV5ServiceImpl extends Service implements DiscoveryService {
         return SafeFuture.completedFuture(null);
     }
 
-    @Override
     public Stream<DiscoveryPeer> streamKnownPeers() {
-        return activeNodes().map(NodeRecordConverter::convertToDiscoveryPeer).flatMap(Optional::stream);
+        return activeNodes().map(Libp2pUtils::convertToDiscoveryPeer).flatMap(Optional::stream);
     }
 
-    @Override
     public SafeFuture<Void> searchForPeers() {
         return SafeFuture.of(discoverySystem.searchForNewPeers());
     }
 
-    @Override
     public Optional<String> getEnr() {
         return Optional.of(discoverySystem.getLocalNodeRecord().asEnr());
     }
-
 
     private Stream<NodeRecord> activeNodes() {
         return discoverySystem

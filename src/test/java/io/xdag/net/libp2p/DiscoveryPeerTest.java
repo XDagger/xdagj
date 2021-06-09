@@ -1,11 +1,10 @@
-package io.xdag.net.discovery.discv5;
+package io.xdag.net.libp2p;
 
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
-import io.xdag.net.discovery.DiscoveryPeer;
-import io.xdag.net.libp2p.peer.DiscoveryPeerConverter;
+import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.Before;
@@ -31,6 +30,6 @@ public class DiscoveryPeerTest {
     }
     @Test
     public void TestDiscoveryPeerToDailNodeId(){
-        assertEquals(expectStirng, DiscoveryPeerConverter.discoveryPeerToDailId(peer));
+        assertEquals(expectStirng, Libp2pUtils.discoveryPeerToDailId(peer));
     }
 }

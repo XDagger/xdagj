@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.net.libp2p.RPCHandler;
+package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
@@ -36,20 +36,20 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
-public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
+public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
     public Connection connection;
-    public NonHandler() {
+
+    public NonProtocol() {
     }
 
     @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
-        return  new ProtocolDescriptor("xdagj");
+        return  new ProtocolDescriptor("xdagj-non-protocol");
     }
     @NotNull
     @Override

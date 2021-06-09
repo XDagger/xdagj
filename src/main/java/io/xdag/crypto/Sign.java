@@ -37,8 +37,6 @@ import java.math.BigInteger;
 import java.security.SignatureException;
 import java.util.Arrays;
 
-import static io.xdag.utils.Assertions.*;
-
 /**
  * Transaction signing logic.
  *
@@ -334,6 +332,18 @@ public class Sign {
             result = 31 * result + Arrays.hashCode(r);
             result = 31 * result + Arrays.hashCode(s);
             return result;
+        }
+    }
+
+    /**
+     * Verify that the provided precondition holds true.
+     *
+     * @param assertionResult assertion value
+     * @param errorMessage error message if precondition failure
+     */
+    public static void verifyPrecondition(boolean assertionResult, String errorMessage) {
+        if (!assertionResult) {
+            throw new RuntimeException(errorMessage);
         }
     }
 }

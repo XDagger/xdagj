@@ -1,4 +1,4 @@
-package io.xdag.net.discovery;
+package io.xdag.net.libp2p.discovery;
 
 import com.google.common.base.MoreObjects;
 import lombok.Getter;

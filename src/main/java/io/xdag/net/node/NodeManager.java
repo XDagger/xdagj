@@ -42,7 +42,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.net.Channel;
-import io.xdag.net.discovery.DiscoveryPeer;
+import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 
 import io.xdag.net.XdagClient;
 import io.xdag.net.handler.XdagChannelInitializer;
@@ -52,7 +52,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
 import lombok.extern.slf4j.Slf4j;
 
-import static io.xdag.net.libp2p.peer.DiscoveryPeerConverter.discoveryPeerToDailId;
+import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
 
 
 @Slf4j

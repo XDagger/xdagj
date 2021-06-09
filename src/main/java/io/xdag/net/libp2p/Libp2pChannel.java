@@ -25,12 +25,10 @@ package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.xdag.Bootstrap;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.Channel;
 import io.xdag.net.handler.Xdag;
-import io.xdag.net.libp2p.RPCHandler.RPCHandler;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
@@ -46,14 +44,15 @@ public class Libp2pChannel extends Channel {
     protected boolean isActive;
     protected boolean isDisconnected = false;
     private final Connection connection;
-    private final RPCHandler handler;
+    private final Libp2pXdagProtocol protocol;
     protected MessageQueue messageQueue;
     public int port;
     public String ip;
     protected Kernel kernel;
-    public Libp2pChannel(Connection connection, RPCHandler handler) {
+
+    public Libp2pChannel(Connection connection, Libp2pXdagProtocol protocol) {
         this.connection = connection;
-        this.handler = handler;
+        this.protocol = protocol;
     }
     public void init(Kernel kernel) {
         String[] ipString = connection.remoteAddress().toString().split("/");
@@ -67,7 +66,7 @@ public class Libp2pChannel extends Channel {
     }
     @Override
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        handler.controller.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
+        protocol.libp2PXdagController.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }
 
     @Override
@@ -128,6 +127,6 @@ public class Libp2pChannel extends Channel {
 
     @Override
     public Xdag getXdag() {
-        return handler.controller;
+        return protocol.libp2PXdagController;
     }
 }
