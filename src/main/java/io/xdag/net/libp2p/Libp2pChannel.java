@@ -24,6 +24,8 @@
 package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
+import io.libp2p.core.multiformats.Multiaddr;
+import io.libp2p.core.multiformats.Protocol;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.Channel;
@@ -41,30 +43,23 @@ import java.net.InetSocketAddress;
 @Slf4j
 @Getter
 public class Libp2pChannel extends Channel {
-    private boolean isActive;
-    private boolean isDisconnected = false;
     private final Connection connection;
     private final Libp2pXdagProtocol protocol;
-    protected MessageQueue messageQueue;
-    private int port;
-    private String ip;
-    private Kernel kernel;
 
-    public Libp2pChannel(Connection connection, Libp2pXdagProtocol protocol) {
+    public Libp2pChannel(Connection connection, Libp2pXdagProtocol protocol, Kernel kernel) {
         this.connection = connection;
         this.protocol = protocol;
-    }
+        this.kernel = kernel;
 
-    public void init(Kernel kernel) {
-        String[] ipString = connection.remoteAddress().toString().split("/");
-        ip = ipString[2];
-        port = Integer.parseInt(ipString[4]);
-        inetSocketAddress = new InetSocketAddress(ip,port);
-        node = new Node(connection.secureSession().getRemoteId().getBytes(),ip,port);
+        Multiaddr multiaddr = connection.remoteAddress();
+        String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
+        String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
+        this.inetSocketAddress = new InetSocketAddress(ip, Integer.valueOf(port));
+        this.node = new Node(connection.secureSession().getRemoteId().getBytes(),ip, Integer.valueOf(port));
         this.messageQueue = new MessageQueue(this);
         log.debug("Initwith Node host:" + ip + " port:" + port + " node:" + node.getHexId());
-        this.kernel = kernel;
     }
+
     @Override
     public void sendNewBlock(BlockWrapper blockWrapper) {
         protocol.getLibp2PXdagController().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
@@ -76,17 +71,12 @@ public class Libp2pChannel extends Channel {
     }
 
     @Override
-    public int getPort() {
-        return port;
-    }
-
-    @Override
     public boolean isDisconnected() {
         return isDisconnected;
     }
 
     @Override
-    public MessageQueue getmessageQueue() {
+    public MessageQueue getMessageQueue() {
         return messageQueue;
     }
 
@@ -94,7 +84,6 @@ public class Libp2pChannel extends Channel {
     public Kernel getKernel() {
         return kernel;
     }
-
 
     @Override
     public InetSocketAddress getInetSocketAddress() {
@@ -114,11 +103,6 @@ public class Libp2pChannel extends Channel {
     @Override
     public Node getNode() {
         return node;
-    }
-
-    @Override
-    public String getIp() {
-        return node.getHexId();
     }
 
     @Override

@@ -29,6 +29,8 @@ import io.xdag.net.message.Message;
 
 public interface Xdag {
 
+    XdagVersion getVersion();
+
     void sendNewBlock(Block newBlock, int ttl);
 
     long sendGetBlocks(long startTime, long endTime);
@@ -42,8 +44,6 @@ public interface Xdag {
     boolean isIdle();
 
     void activate();
-
-    XdagVersion getVersion();
 
     /** Disables pending block processing */
     void disableBlocks();

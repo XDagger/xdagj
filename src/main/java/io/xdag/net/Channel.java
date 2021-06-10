@@ -6,17 +6,24 @@ import io.xdag.core.BlockWrapper;
 import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.net.InetSocketAddress;
 
 /**
  * @author wawa
  */
+@Getter
+@Setter
 public abstract class Channel {
     protected NioSocketChannel socket;
     protected InetSocketAddress inetSocketAddress;
-    /** 该channel对应的节点 */
     protected Node node;
+    protected MessageQueue messageQueue;
+    protected Kernel kernel;
+    protected boolean isActive;
+    protected boolean isDisconnected = false;
 
     public abstract InetSocketAddress getInetSocketAddress();
 
@@ -26,13 +33,9 @@ public abstract class Channel {
 
     public abstract Node getNode();
 
-    public abstract String getIp();
-
     public abstract void sendNewBlock(BlockWrapper blockWrapper);
 
     public abstract void onDisconnect();
-
-    public abstract int getPort();
 
     public abstract void dropConnection();
 
@@ -40,7 +43,7 @@ public abstract class Channel {
 
     public abstract boolean isDisconnected();
 
-    public abstract MessageQueue getmessageQueue();
+    public abstract MessageQueue getMessageQueue();
 
     public abstract Kernel getKernel();
 }

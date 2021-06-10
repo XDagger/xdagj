@@ -23,48 +23,44 @@
  */
 package io.xdag.net.handler;
 
+import java.util.List;
+
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import com.google.common.util.concurrent.SettableFuture;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.XdagStats;
 import io.xdag.net.Channel;
-import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.*;
+import io.xdag.net.message.impl.BlockExtRequestMessage;
+import io.xdag.net.message.impl.BlockRequestMessage;
+import io.xdag.net.message.impl.BlocksReplyMessage;
+import io.xdag.net.message.impl.BlocksRequestMessage;
+import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.net.message.impl.SumReplyMessage;
+import io.xdag.net.message.impl.SumRequestMessage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
 public class Xdag03 extends XdagHandler {
-    private static final ThreadFactory factory = new ThreadFactory() {
-        private final AtomicInteger cnt = new AtomicInteger(0);
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "sendThread-" + cnt.getAndIncrement());
-        }
-    };
-
-    private XdagVersion version = XdagVersion.V03;
 
     public Xdag03(Kernel kernel, Channel channel) {
         this.kernel = kernel;
         this.channel = channel;
         this.blockchain = kernel.getBlockchain();
         this.syncMgr = kernel.getSyncMgr();
+        this.version = XdagVersion.V03;
     }
 
     @Override

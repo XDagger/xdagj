@@ -69,8 +69,7 @@ public class Libp2pXdagProtocol implements ProtocolBinding<Libp2pXdagProtocol.Li
     @Override
     public CompletableFuture<Libp2pXdagController> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
-        libp2pChannel = new Libp2pChannel(connection,this);
-        libp2pChannel.init(kernel);
+        libp2pChannel = new Libp2pChannel(connection,this, kernel);
         channelManager.add(libp2pChannel);
         blockHandler = new XdagBlockHandler(libp2pChannel);
         blockHandler.setMessageFactory(new Xdag03MessageFactory());
@@ -85,24 +84,30 @@ public class Libp2pXdagProtocol implements ProtocolBinding<Libp2pXdagProtocol.Li
 
         return libp2PXdagController.activeFuture;
     }
+
     public static class Libp2pXdagController extends Xdag03 {
-        public CompletableFuture<Libp2pXdagController> activeFuture = new CompletableFuture<>();
-        public XdagChannelManager channelManager;
+        CompletableFuture<Libp2pXdagController> activeFuture;
+        XdagChannelManager channelManager;
+
         public Libp2pXdagController(Kernel kernel, Channel channel) {
             super(kernel, channel);
             channelManager = kernel.getChannelMgr();
-            msgQueue = channel.getmessageQueue();
+            msgQueue = channel.getMessageQueue();
+            activeFuture = new CompletableFuture<>();
         }
+
         @Override
         public void channelActive(ChannelHandlerContext ctx){
             activeFuture.complete(this);
         }
+
         //libp2p节点不自动连接dnet
         @Override
         public void updateXdagStats(AbstractMessage message){
             XdagStats remoteXdagStats = message.getXdagStats();
             kernel.getBlockchain().getXdagStats().update(remoteXdagStats);
         }
+
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             log.debug("channelInactive:[{}] ", ctx.toString());

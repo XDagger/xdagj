@@ -59,8 +59,7 @@ public class XdagChannelManager {
     }
 
     public void add(Channel ch) {
-        log.debug(
-                "xdag channel manager->Channel added: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
+        log.debug("xdag channel manager->Channel added: remoteAddress = {}", ch.getInetSocketAddress());
         channels.put(ch.getInetSocketAddress(), ch);
     }
 
