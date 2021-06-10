@@ -200,7 +200,6 @@ public class MinerChannel {
     private MessageFactory createMinerMessageFactory(XdagVersion version) {
         return switch (version) {
             case V03 -> new MinerMessageFactory();
-            default -> throw new IllegalArgumentException("Xdag" + version + " is not supported");
         };
     }
 
@@ -246,11 +245,6 @@ public class MinerChannel {
             this.miner.setMinerStates(MINER_ACTIVE);
             return true;
         }
-    }
-
-    /** 通知断开连接 */
-    public void notifyDisconnect() {
-        log.debug("Notify to disconnect" + this);
     }
 
     public void onDisconnect() {

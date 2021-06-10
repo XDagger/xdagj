@@ -38,12 +38,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -151,70 +146,6 @@ public class BlockchainImpl implements Blockchain {
     @Override
     public void registerListener(Listener listener) {
         this.listeners.add(listener);
-    }
-
-    //读取C版本区块
-    public long loadBlockchain(
-            String srcFilePath) {
-        //todo：文件夹的时间
-        long starttime = 1583368095744L;
-        long endtime = 1583389441664L;
-        ByteBuffer buffer = ByteBuffer.allocate(512);
-        StringBuilder file = new StringBuilder(srcFilePath);
-        FileInputStream inputStream = null;
-        FileChannel channel = null;
-        starttime |= 0x00000;
-        endtime |= 0xffff;
-        File fileImpl;
-        long res = 0;
-        System.out.println("开始读取区块");
-        while (starttime < endtime) {
-            List<String> filename = getFileName(starttime);
-            String blockfile = Hex.toHexString(BytesUtils.byteToBytes((byte) ((starttime >> 16) & 0xff), true));
-            file.append(filename.get(filename.size() - 1)).append(blockfile).append(".dat");
-            fileImpl = new File(file.toString());
-            if (!fileImpl.exists()) {
-                starttime += 0x10000;
-                file = new StringBuilder(srcFilePath);
-                continue;
-            }
-            System.out.println("Block from:" + file);
-            try {
-
-                inputStream = new FileInputStream(fileImpl);
-                channel = inputStream.getChannel();
-                while (true) {
-                    int eof = channel.read(buffer);
-                    if (eof == -1) {
-                        break;
-                    }
-                    buffer.flip();
-                    res++;
-                    Block block = new Block(new XdagBlock(buffer.array().clone()));
-                    this.tryToConnect(block);
-                    buffer.clear();
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (channel != null) {
-                        channel.close();
-                    }
-                    if (inputStream != null) {
-                        inputStream.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            starttime += 0x10000;
-            file = new StringBuilder(srcFilePath);
-        }
-        System.out.println("读取结束");
-        return res;
     }
 
     public List<String> getFileName(long time) {

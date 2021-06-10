@@ -149,7 +149,7 @@ public class Numeric {
 
     public static String toHexString(byte[] input, int offset, int length, boolean withPrefix) {
         final String output = new String(toHexCharArray(input, offset, length, withPrefix));
-        return withPrefix ? new StringBuilder(HEX_PREFIX).append(output).toString() : output;
+        return withPrefix ? HEX_PREFIX + output : output;
     }
 
     private static char[] toHexCharArray(byte[] input, int offset, int length, boolean withPrefix) {

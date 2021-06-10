@@ -23,26 +23,34 @@
  */
 package io.xdag.consensus;
 
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.config.Constants.REQUEST_WAIT;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.lang3.RandomUtils;
+
 import com.google.common.util.concurrent.SettableFuture;
+
 import io.xdag.Kernel;
 import io.xdag.db.store.BlockStore;
 import io.xdag.net.Channel;
-import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
-import org.bouncycastle.util.encoders.Hex;
-
-import javax.annotation.Nonnull;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-import static io.xdag.config.Constants.REQUEST_WAIT;
 
 @Slf4j
 public class XdagSync {

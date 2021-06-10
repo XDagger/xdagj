@@ -46,18 +46,6 @@ public class NatService extends Service {
         this.maybeNatManager = maybeNatManager;
     }
 
-    public NatService(
-            final NatConfiguration natConfiguration,
-            final int p2pPort,
-            final boolean isDiscoveryEnabled) {
-        this(
-                p2pPort,
-                isDiscoveryEnabled,
-                natConfiguration.getNatMethod().equals(NatMethod.UPNP)
-                        ? Optional.of(new NatManager())
-                        : Optional.empty());
-    }
-
     @Override
     public SafeFuture<Void> doStart() {
         if (maybeNatManager.isEmpty()) {

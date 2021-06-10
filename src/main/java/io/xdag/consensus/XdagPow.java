@@ -194,8 +194,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
 
-//        MinerCalculate.calculateNopaidShares(
-//                awardManager.getPoolMiner(), minHash, block.getTimestamp());
         return block;
     }
 
@@ -218,8 +216,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
 
-//        MinerCalculate.calculateNopaidShares(
-//                awardManager.getPoolMiner(), minHash, block.getTimestamp());
         return block;
     }
 
@@ -317,9 +313,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     /**
      * 创建RandomX的任务
-     * @param block
-     * @param sendTime
-     * @return
      */
     private Task createTaskByRandomXBlock(Block block, long sendTime) {
         Task newTask = new Task();
@@ -343,9 +336,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     /**
      * 创建原始任务
-     * @param block
-     * @param sendTime
-     * @return
      */
     private Task createTaskByNewBlock(Block block, long sendTime) {
         Task newTask = new Task();

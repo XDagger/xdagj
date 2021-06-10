@@ -80,13 +80,11 @@ public class XdagSha256Digest {
 
     public byte[] getDigest(byte[] in) throws IOException {
         outputStream.write(in);
-        byte[] data = outputStream.getDigest();
-        return data;
+        return outputStream.getDigest();
     }
 
     public byte[] getDigest() {
-        byte[] data = outputStream.getDigest();
-        return data;
+        return outputStream.getDigest();
     }
 
     public byte[] getSha256d(byte[] in) throws IOException {

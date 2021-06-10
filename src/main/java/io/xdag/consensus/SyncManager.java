@@ -302,41 +302,6 @@ public class SyncManager {
                 }
             });
         }
-//        syncMap.computeIfPresent(key, (k, v)->{
-//            syncMap.remove(k);
-//            blockchain.getXdagStats().nwaitsync--;
-//            v.forEach(bw -> {
-//                ImportResult importResult = importBlock(bw);
-//                switch (importResult) {
-//                    case EXIST:
-//                    case IMPORTED_BEST:
-//                    case IMPORTED_NOT_BEST:
-//                        // TODO import成功后都需要移除
-//                        syncPopBlock(bw);
-//                        v.remove(bw);
-//                        break;
-//                    case NO_PARENT:
-//                        if (syncPushBlock(bw, importResult.getHashlow())) {
-//                            log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
-//                                    Hex.toHexString(importResult.getHashlow()));
-//                            List<XdagChannel> channels = channelMgr.getActiveChannels();
-//                            for (XdagChannel channel : channels) {
-//                                if (channel.getNode().equals(bw.getRemoteNode())) {
-//                                    channel.getXdag().sendGetBlock(importResult.getHashlow());
-//                                }
-//                            }
-//                        }
-//                        break;
-//                    default:
-//                        break;
-//                }
-//            });
-////            if(v.size() == 0) {
-////                syncMap.remove(k);
-////                return null;
-////            }
-//            return null;
-//        });
     }
 
     public void makeSyncDone() {
@@ -369,8 +334,6 @@ public class SyncManager {
         // 检查主块链
         kernel.getMinerServer().start();
         kernel.getPow().start();
-//        kernel.getBlockchain().registerListener(kernel.getPow());
-//        kernel.getLibp2pNetwork().start();
 
     }
 

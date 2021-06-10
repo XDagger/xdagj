@@ -95,20 +95,6 @@ public class XdagChannel extends Channel {
         log.debug("Initwith Node host:" + host + " port:" + port + " node:" + node.getHexId());
     }
 
-    public void notifyDisconnect(Channel channel) {
-        log.debug("Node {}: notifies about disconnect", channel);
-        channel.onDisconnect();
-    }
-
-    public void onSyncDone(boolean done) {
-        if (done) {
-            xdag.enableBlocks();
-        } else {
-            xdag.disableBlocks();
-        }
-        xdag.onSyncDone(done);
-    }
-
     @Override
     public InetSocketAddress getInetSocketAddress() {
         return this.inetSocketAddress;

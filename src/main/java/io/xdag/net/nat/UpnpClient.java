@@ -85,7 +85,6 @@ public class UpnpClient {
     upnpService.shutdown();
   }
 
-  @SuppressWarnings("unchecked")
   public SafeFuture<Void> releasePortForward(final NatPortMapping portMapping) {
     log.debug(
         "Releasing port forward for {} {} -> {}",
@@ -129,7 +128,6 @@ public class UpnpClient {
     return localIpAddress;
   }
 
-  @SuppressWarnings("unchecked")
   private SafeFuture<NatPortMapping> requestPortForward(final PortMapping portMapping) {
     return getExternalIpFuture()
         .thenCompose(
@@ -158,7 +156,6 @@ public class UpnpClient {
             });
   }
 
-  @SuppressWarnings("unchecked")
   private void initiateExternalIpQuery() {
     wanIpFuture
         .thenAccept(

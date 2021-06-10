@@ -50,7 +50,7 @@ public class Base58 {
         char[] encoded = new char[input.length * 2]; // upper bound
         int outputStart = encoded.length;
         for (int inputStart = zeros; inputStart < input.length; ) {
-            encoded[--outputStart] = ALPHABET[divmod(input, inputStart, 256, 58)];
+            encoded[--outputStart] = ALPHABET[divmod(input, inputStart)];
             if (input[inputStart] == 0) {
                 ++inputStart; // optimization - skip leading zeros
             }
@@ -67,14 +67,14 @@ public class Base58 {
         return new String(encoded, outputStart, encoded.length - outputStart);
     }
 
-    private static byte divmod(byte[] number, int firstDigit, int base, int divisor) {
+    private static byte divmod(byte[] number, int firstDigit) {
         // this is just long division which accounts for the base of the input digits
         int remainder = 0;
         for (int i = firstDigit; i < number.length; i++) {
             int digit = (int) number[i] & 0xFF;
-            int temp = remainder * base + digit;
-            number[i] = (byte) (temp / divisor);
-            remainder = temp % divisor;
+            int temp = remainder * 256 + digit;
+            number[i] = (byte) (temp / 58);
+            remainder = temp % 58;
         }
         return (byte) remainder;
     }

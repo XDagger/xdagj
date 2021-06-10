@@ -37,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 
+import org.apache.commons.lang3.math.NumberUtils;
+
 /**
  * @author wawa
  */
@@ -54,8 +56,8 @@ public class Libp2pChannel extends Channel {
         Multiaddr multiaddr = connection.remoteAddress();
         String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
         String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
-        this.inetSocketAddress = new InetSocketAddress(ip, Integer.valueOf(port));
-        this.node = new Node(connection.secureSession().getRemoteId().getBytes(),ip, Integer.valueOf(port));
+        this.inetSocketAddress = new InetSocketAddress(ip, NumberUtils.toInt(port));
+        this.node = new Node(connection.secureSession().getRemoteId().getBytes(),ip, NumberUtils.toInt(port));
         this.messageQueue = new MessageQueue(this);
         log.debug("Initwith Node host:" + ip + " port:" + port + " node:" + node.getHexId());
     }

@@ -41,8 +41,6 @@ public interface Xdag {
 
     void dropConnection() ;
 
-    boolean isIdle();
-
     void activate();
 
     /** Disables pending block processing */

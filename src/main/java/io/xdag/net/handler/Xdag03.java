@@ -208,11 +208,6 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public boolean isIdle() {
-        return false;
-    }
-
-    @Override
     public long sendGetBlock(byte[] hash) {
 //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());

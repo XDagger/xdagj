@@ -23,16 +23,19 @@
  */
 package io.xdag.net.manager;
 
-import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
-import io.xdag.net.Channel;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import io.xdag.Kernel;
+import io.xdag.core.BlockWrapper;
+import io.xdag.net.Channel;
+import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

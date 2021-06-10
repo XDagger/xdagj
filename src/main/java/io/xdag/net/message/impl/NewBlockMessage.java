@@ -75,7 +75,7 @@ public class NewBlockMessage extends Message {
 
     private void encode() {
         this.encoded = this.block.getXdagBlock().getData().clone();
-        long transportheader = (ttl << 8) | DNET_PKT_XDAG | (512 << 16);
+        long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16);
         System.arraycopy(BytesUtils.longToBytes(transportheader, true), 0, this.encoded, 0, 8);
         updateCrc();
     }

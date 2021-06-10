@@ -23,8 +23,6 @@
  */
 package io.xdag.utils;
 
-import io.xdag.utils.SafeFuture;
-
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class Service {

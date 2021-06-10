@@ -23,13 +23,13 @@
  */
 package io.xdag.utils;
 
-import com.google.common.io.BaseEncoding;
-import io.xdag.crypto.jni.Native;
-import org.bouncycastle.util.Arrays;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import org.bouncycastle.util.Arrays;
+
+import com.google.common.io.BaseEncoding;
 
 public class BytesUtils {
 
@@ -213,7 +213,7 @@ public class BytesUtils {
 
     /** 数组逆序 */
     public static void arrayReverse(byte[] origin) {
-        byte temp = 0;
+        byte temp;
         for (int i = 0; i < origin.length / 2; i++) {
             temp = origin[i];
             origin[i] = origin[origin.length - i - 1];
@@ -238,9 +238,6 @@ public class BytesUtils {
             if (key[i] != part[i]) {
                 return false;
             }
-        }
-        if (part.length == key.length) {
-            return true;
         }
         return true;
     }
@@ -268,8 +265,7 @@ public class BytesUtils {
     public static byte[] fixBytes(byte[] bytes, int index, int length) {
         byte[] temp = new byte[index];
         Arrays.fill(temp, (byte) 0x0);
-        byte[] result = merge(temp, subArray(bytes, index, length));
-        return result;
+        return merge(temp, subArray(bytes, index, length));
     }
 
     /**
@@ -289,10 +285,6 @@ public class BytesUtils {
             data = Arrays.reverse(data);
         }
         return Numeric.toBigInt(data).doubleValue();
-    }
-
-    public String byteToBinaryString(byte b) {
-        return Integer.toBinaryString(b & 0xFF);
     }
 
     public static byte[] stripLeadingZeroes(byte[] data) {

@@ -23,7 +23,6 @@
  */
 package io.xdag.net;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.List;
@@ -59,10 +58,9 @@ public class XdagClient {
     private final EventLoopGroup workerGroup;
     private final int port;
     private final Config config;
-    private ChannelFuture f;
     private final String ip;
     private Node node;
-    private Set<InetSocketAddress> whilelist;
+    private final Set<InetSocketAddress> whilelist;
 
     public XdagClient(Config config) {
         this.config = config;
@@ -77,14 +75,10 @@ public class XdagClient {
     /** Connects to the node and returns only upon connection close */
     public void connect(String host, int port, XdagChannelInitializer xdagChannelInitializer) {
         try {
-            f = connectAsync(host, port, xdagChannelInitializer);
+            ChannelFuture f = connectAsync(host, port, xdagChannelInitializer);
             f.sync();
         } catch (Exception e) {
-            if (e instanceof IOException) {
-                log.debug("XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-            } else {
-                log.error("message:" + e.getMessage(), e);
-            }
+            log.error("message:" + e.getMessage(), e);
         }
     }
 

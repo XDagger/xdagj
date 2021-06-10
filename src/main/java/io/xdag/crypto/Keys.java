@@ -75,7 +75,7 @@ public class Keys {
     }
 
     public static ECKeyPair createEcKeyPair(SecureRandom random) {
-        KeyPair keyPair = null;
+        KeyPair keyPair;
         try {
             keyPair = createSecp256k1KeyPair(random);
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException  | NoSuchProviderException e) {

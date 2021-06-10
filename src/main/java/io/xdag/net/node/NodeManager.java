@@ -77,7 +77,6 @@ public class NodeManager {
     private final XdagClient client;
     private final XdagChannelManager channelMgr;
     private final NetDBManager netDBManager;
-    private final NetDB netDB;
     private final Config config;
     private volatile boolean isRunning;
     private ScheduledFuture<?> connectFuture;
@@ -85,13 +84,12 @@ public class NodeManager {
     private ScheduledFuture<?> connectlibp2PFuture;
     private final Libp2pNetwork libp2pNetwork;
     private Set<Node> hadConnected;
-    private Node myself;
+    private final Node myself;
 
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
         this.client = kernel.getClient();
         this.channelMgr = kernel.getChannelMgr();
-        this.netDB = kernel.getNetDB();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
         this.config = kernel.getConfig();
         this.netDBManager = kernel.getNetDBMgr();
@@ -216,11 +214,6 @@ public class NodeManager {
                 hadConnected.add(node);
             }
         }
-    }
-
-
-    public Set<Node> getNewNode() {
-        return netDB.getIPList();
     }
 
     public Map<Node, Long> getActiveNode() {

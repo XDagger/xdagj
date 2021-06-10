@@ -62,20 +62,12 @@ public class Node {
         this.port = port;
     }
 
-    public static String getNodeIdShort(String nodeId) {
-        return nodeId == null ? "<null>" : nodeId.substring(0, 8);
-    }
-
     public String getHexId() {
         return Hex.encodeHexString(id);
     }
 
     public InetSocketAddress getAddress() {
         return new InetSocketAddress(this.getHost(), this.getPort());
-    }
-
-    public String getHexIdShort() {
-        return getNodeIdShort(getHexId());
     }
 
     @Override

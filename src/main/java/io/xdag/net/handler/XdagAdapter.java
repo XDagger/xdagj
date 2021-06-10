@@ -57,12 +57,6 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public boolean isIdle() {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
     public void activate() {
         // TODO Auto-generated method stub
     }

@@ -57,7 +57,7 @@ public class Libp2pNetwork {
         RUNNING,
         STOPPED
     }
-    private ProtocolBinding<?> protocol;
+    private final ProtocolBinding<?> protocol;
     private int port;
     private Host host;
     private final PrivKey privKey;
@@ -67,7 +67,7 @@ public class Libp2pNetwork {
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
     private DiscV5Service discV5Service;
-    private List<String> bootnodes ;
+    private final List<String> bootnodes ;
 
     public Libp2pNetwork(PrivKey privKey, Multiaddr listenAddr) {
         this.protocol = new NonProtocol();

@@ -80,12 +80,6 @@ public class Hash {
         return sha256(sha256(input));
     }
 
-    public static byte[] hashTwice(byte[] input, int offset, int length) {
-        MessageDigest digest = newDigest();
-        digest.update(input, offset, length);
-        return digest.digest(digest.digest());
-    }
-
     /** MessageDigest not thread safe */
     public static MessageDigest newDigest() {
         try {

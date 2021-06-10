@@ -56,24 +56,6 @@ public class MinerCalculate {
         return result;
     }
 
-//    /** 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值 */
-//    public static double processOutdatedMiner(Miner miner) {
-//        double sum = 0.0;
-//        int diffcount = 0;
-//        double temp;
-//        for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
-//            if ((temp = miner.getMaxDiffs(i)) > 0) {
-//                sum = BigDecimalUtils.add(sum, temp);
-//                miner.setMaxDiffs(i, 0.0);
-//                ++diffcount;
-//            }
-//        }
-//        if (diffcount > 0) {
-//            sum /= diffcount;
-//        }
-//        return sum;
-//    }
-
     /** 用于打印矿工但钱未支付的难度总和 */
     public static double calculateUnpaidShares(Miner miner) {
         double sum = miner.getPrevDiff();
@@ -153,7 +135,7 @@ public class MinerCalculate {
     public static void calculateNopaidShares(
             Config config, MinerChannel channel, byte[] hash, long currentTaskTime) {
         Miner miner = channel.getMiner();
-        double diff = 0.0;
+        double diff;
         // 不可能出现大于的情况 防止对老的任务重复计算
         long minerTaskTime = miner.getTaskTime();
         long channelTaskTime = channel.getTaskTime();

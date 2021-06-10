@@ -128,10 +128,6 @@ public class MessageQueue {
         return isRunning;
     }
 
-    public boolean isIdle() {
-        return size() == 0;
-    }
-
     public int size() {
         return requestQueue.size() + respondQueue.size();
     }

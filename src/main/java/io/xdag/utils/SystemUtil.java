@@ -52,7 +52,6 @@ public class SystemUtil {
     /**
      * Returns whether the JVM is in 32-bit data model
      *
-     * @return
      */
     public static boolean is32bitJvm() {
         String model = System.getProperty("sun.arch.data.model");
@@ -62,7 +61,6 @@ public class SystemUtil {
     /**
      * Returns the operating system name.
      *
-     * @return
      */
     public static OsName getOsName() {
         String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
@@ -81,7 +79,6 @@ public class SystemUtil {
     /**
      * Returns the operating system architecture
      *
-     * @return
      */
     public static String getOsArch() {
         return System.getProperty("os.arch");
