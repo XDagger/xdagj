@@ -288,6 +288,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             byte[] hash;
+            // TODO : xfer 时是否需要仅保留两位小数
             double amount = StringUtils.getDouble(argv.get(0));
 
             String remark = argv.size()==3 ? argv.get(2):null;
