@@ -111,7 +111,8 @@ public class SumReplyMessage extends AbstractMessage {
 //        byte[] netdb = new byte[length * 32 - 80];
         MutableBytes netdb = MutableBytes.create(length * 32 - 80);
 //        System.arraycopy(encoded.toArray(), 144, netdb, 0, length * 32 - 80);
-        netdb.set(0, encoded);
+//        netdb.set(0, encoded);
+        netdb.set(0, encoded.slice(144,length*32-80));
         netDB = new NetDB(netdb.toArray());
 
 //        sums = new byte[256];
