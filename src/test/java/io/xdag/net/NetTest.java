@@ -26,6 +26,8 @@ package io.xdag.net;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.message.impl.SumRequestMessage;
 import io.xdag.utils.BytesUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
@@ -187,7 +189,8 @@ public class NetTest {
                 + "0000000000000000000000000000000000000000000000000000000000000000"
                 + "0000000000000000000000000000000000000000000000000000000000000000";
 
-        SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
+    //        SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
+        SumRequestMessage sumRequestMessage = new SumRequestMessage(Bytes.fromHexString(sumsRequest).mutableCopy());
         NetDB netDB = sumRequestMessage.getNetDB();
         assertEquals(4,netDB.getSize());
     }

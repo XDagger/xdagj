@@ -74,6 +74,7 @@ import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -212,13 +213,13 @@ public class Kernel {
             firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
             firstAccount.signOut(wallet.getDefKey());
             poolMiner = new Miner(firstAccount.getHash());
-            xdagStats.setOurLastBlockHash(firstAccount.getHashLow());
+            xdagStats.setOurLastBlockHash(firstAccount.getHashLow().toArray());
             if(xdagStats.getGlobalMiner() == null) {
-                xdagStats.setGlobalMiner(firstAccount.getHash());
+                xdagStats.setGlobalMiner(firstAccount.getHash().toArray());
             }
             blockchain.tryToConnect(firstAccount);
         } else {
-            poolMiner = new Miner(xdagStats.getGlobalMiner());
+            poolMiner = new Miner(Bytes32.wrap(xdagStats.getGlobalMiner()));
         }
         log.info("Blockchain init");
 

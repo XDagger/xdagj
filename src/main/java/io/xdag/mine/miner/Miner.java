@@ -37,15 +37,17 @@ import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class Miner {
     protected int boundedTaskCounter;
     /** 保存这个矿工的地址 */
-    private final byte[] addressHash;
+    private final Bytes32 addressHash;
     /** 这个保存的是前8位为0 的地址 主要用于查询 */
-    private final byte[] addressHashLow;
+    private final Bytes32 addressHashLow;
     /** 相同账户地址的channel数量 */
     private final AtomicInteger connChannelCounts = new AtomicInteger(0);
     /* 保存的时该矿工每一次进行任务计算的nonce + 低192bites的hash */
@@ -68,9 +70,9 @@ public class Miner {
     /** 类似于id 也是保存的nonce +hasholow的值 */
     @Getter
     @Setter
-    private byte[] nonce = new byte[32];
+    private Bytes32 nonce;
     /** 记录上一轮任务中最小的hash */
-    private byte[] lastMinHash = new byte[32];
+    private Bytes32 lastMinHash;
     /** 将hash转换后的难度 可以认为是算力 */
     private double meanLogDiff;
     private Date registeredTime;
@@ -82,10 +84,13 @@ public class Miner {
 
     private final Map<Long, Double> prevDiffSum = new ConcurrentHashMap<>();
 
-    public Miner(byte[] addressHash) {
-        log.debug("init a new miner {}", Hex.toHexString(addressHash));
+    public Miner(Bytes32 addressHash) {
+        log.debug("init a new miner {}", addressHash.toHexString());
         this.addressHash = addressHash;
-        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
+//        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
+        addressHash.mutableCopy();
+        this.addressHashLow = addressHash.mutableCopy();
+        ((MutableBytes32)this.addressHashLow).setLong(0, 0);
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
         this.meanLogDiff = 0.0;
@@ -97,7 +102,7 @@ public class Miner {
         }
     }
 
-    public byte[] getAddressHash() {
+    public Bytes32 getAddressHash() {
         return this.addressHash;
     }
 
@@ -215,7 +220,7 @@ public class Miner {
         return prevDiffSum.get(key);
     }
 
-    public byte[] getAddressHaashLow() {
+    public Bytes32 getAddressHaashLow() {
         return this.addressHashLow;
     }
 
@@ -231,11 +236,11 @@ public class Miner {
         this.meanLogDiff = meanLogDiff;
     }
 
-    public byte[] getLastMinHash() {
+    public Bytes32 getLastMinHash() {
         return lastMinHash;
     }
 
-    public void setLastMinHash(byte[] lastMinHash) {
+    public void setLastMinHash(Bytes32 lastMinHash) {
         this.lastMinHash = lastMinHash;
     }
 

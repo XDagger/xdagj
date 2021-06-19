@@ -57,7 +57,7 @@ public class ETHTransactionReceiptDTO {
 
         status = toQuantityJsonHex(SUCCESS_STATUS);
 
-        blockHash = toUnformattedJsonHex(block.getHash());
+        blockHash = toUnformattedJsonHex(block.getHash().toArray());
         blockNumber = toQuantityJsonHex(19);
 
 

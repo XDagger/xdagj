@@ -26,8 +26,6 @@ package io.xdag.utils;
 import static org.junit.Assert.assertEquals;
 
 import java.math.BigDecimal;
-
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import io.xdag.utils.exception.XdagOverFlowException;
@@ -85,10 +83,8 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_diff2logTest() {
-        double res = BasicUtils.xdag_diff2log(
-                BasicUtils.getDiffByHash(
-                        Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8")));
-
+//        double res = BasicUtils.xdag_diff2log(
+//                BasicUtils.getDiffByHash(Bytes32.fromHexString("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
 //        System.out.println(res);
 
     }
@@ -101,7 +97,7 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_log_difficulty2hashrateTest() {
-        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
+//        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
         //System.out.println("this is res :" + res);
     }
 }

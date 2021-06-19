@@ -45,7 +45,9 @@ import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Hex;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 import java.net.InetSocketAddress;
 import java.util.Date;
@@ -93,7 +95,7 @@ public class MinerChannel {
     /** 发起连接的账户的地址块 */
     @Getter
     @Setter
-    private byte[] accountAddressHash;
+    private Bytes32 accountAddressHash;
     /** 保存上一轮的share */
     @Getter
     @Setter
@@ -133,7 +135,7 @@ public class MinerChannel {
     /** 保存这个channel 最后的计算的hash */
     @Getter
     @Setter
-    private byte[] minHash;
+    private Bytes32 minHash;
     /** 记录的是出入站的消息 */
     private final StatHandle inBound;
     private final StatHandle outBound;
@@ -219,16 +221,16 @@ public class MinerChannel {
         ctx.pipeline().addLast("Miner03Handler", miner03);
     }
 
-    public boolean initMiner(byte[] accountAddressHash) {
+    public boolean initMiner(Bytes32 accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        log.debug("init a Miner:" + Hex.encodeHexString(accountAddressHash));
+        log.debug("init a Miner:" + accountAddressHash.toHexString());
         // 判断这个矿工是否已经存在了
-        if (minerManager.getActivateMiners().containsKey(new ByteArrayWrapper(accountAddressHash))) {
+        if (minerManager.getActivateMiners().containsKey(new ByteArrayWrapper(accountAddressHash.toArray()))) {
             // 存在 但是会不会超过限制数
             log.debug("已经存在一个对应的矿工了");
-            this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash));
+            this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash.toArray()));
             if (miner.getConnChannelCounts() < config.getPoolSpec().getMaxMinerPerAccount()) {
-                this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash));
+                this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash.toArray()));
                 this.miner.addChannelCounts(1);
                 this.miner.putChannel(this.inetAddress, this);
                 this.miner.setMinerStates(MINER_ACTIVE);
@@ -239,7 +241,7 @@ public class MinerChannel {
             }
         } else {
             this.miner = new Miner(accountAddressHash);
-            minerManager.getActivateMiners().put(new ByteArrayWrapper(accountAddressHash), miner);
+            minerManager.getActivateMiners().put(new ByteArrayWrapper(accountAddressHash.toArray()), miner);
             miner.addChannelCounts(1);
             this.miner.putChannel(this.inetAddress, this);
             this.miner.setMinerStates(MINER_ACTIVE);
@@ -277,23 +279,30 @@ public class MinerChannel {
 
     /** 矿池发送给矿工的任务 */
     public void sendTaskToMiner(XdagField[] fields) {
-        byte[] bytes = BytesUtils.merge(fields[0].getData(), fields[1].getData());
-        miner03.sendMessage(bytes);
+//        byte[] bytes = BytesUtils.merge(fields[0].getData(), fields[1].getData());
+//        Bytes.wrap(fields[0].getData(), fields[1].getData())
+        miner03.sendMessage(Bytes.wrap(fields[0].getData(), fields[1].getData()));
     }
 
     /** 矿池发送余额给矿工 */
     public void sendBalance() {
-        byte[] hashlow = new byte[32];
-        System.arraycopy(accountAddressHash,8,hashlow,8,24);
+//        byte[] hashlow = new byte[32];
+        MutableBytes32 hashlow = MutableBytes32.create();
+//        Bytes32 hashlow = Bytes32.wrap(accountAddressHash.slice(8, 24));
+        hashlow.set(8, accountAddressHash.slice(8, 24));
+//        System.arraycopy(accountAddressHash,8,hashlow,8,24);
         Block block = blockStore.getBlockByHash(hashlow, false);
         if (block == null) {
-            log.debug("Can't found block,{}",Hex.encodeHex(hashlow));
+            log.debug("Can't found block,{}", hashlow.toHexString());
             return;
         }
         long amount = block.getInfo().getAmount();
-        byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false),
-                BytesUtils.subArray(accountAddressHash, 8, 24));
-        log.debug("update miner balance {}", Hex.encodeHexString(data));
+//        byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false), BytesUtils.subArray(accountAddressHash.toArray(), 8, 24));
+        MutableBytes32 data = MutableBytes32.create();
+//        Bytes data = Bytes.wrap(Bytes.ofUnsignedLong(amount), accountAddressHash.slice(8, 24));
+        data.setLong(0, amount);
+        data.set(8, accountAddressHash.slice(8, 24));
+        log.debug("update miner balance {}", data.toHexString());
         miner03.sendMessage(data);
     }
 

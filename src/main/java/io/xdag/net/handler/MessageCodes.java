@@ -42,7 +42,7 @@ public class MessageCodes extends MessageToMessageCodec<Message, Message> {
     }
 
     public static XdagBlock convertMessage(Message message) {
-        return new XdagBlock(message.getEncoded());
+        return new XdagBlock(message.getEncoded().toArray());
     }
 
     /**出去的第二道*/

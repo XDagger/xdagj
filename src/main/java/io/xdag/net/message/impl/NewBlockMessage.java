@@ -30,6 +30,8 @@ import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.util.zip.CRC32;
@@ -41,7 +43,7 @@ public class NewBlockMessage extends Message {
     private int ttl;
 
     /** 不处理crc */
-    public NewBlockMessage(byte[] bytes) {
+    public NewBlockMessage(MutableBytes bytes) {
         super(bytes);
     }
 
@@ -55,7 +57,7 @@ public class NewBlockMessage extends Message {
 
     /** 不处理crc */
     public NewBlockMessage(XdagBlock xdagBlock, int ttl) {
-        super(xdagBlock.getData());
+        super(xdagBlock.getData().mutableCopy());
         this.xdagBlock = xdagBlock;
         this.ttl = ttl;
     }
@@ -74,16 +76,18 @@ public class NewBlockMessage extends Message {
     }
 
     private void encode() {
-        this.encoded = this.block.getXdagBlock().getData().clone();
+        this.encoded = this.block.getXdagBlock().getData().mutableCopy();
         long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16);
-        System.arraycopy(BytesUtils.longToBytes(transportheader, true), 0, this.encoded, 0, 8);
+//        System.arraycopy(BytesUtils.longToBytes(transportheader, true), 0, this.encoded, 0, 8);
+        this.encoded.set(0, Bytes.wrap(BytesUtils.longToBytes(transportheader, true)));
         updateCrc();
     }
 
     public void updateCrc() {
         CRC32 crc32 = new CRC32();
-        crc32.update(encoded, 0, 512);
-        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
+        crc32.update(encoded.toArray(), 0, 512);
+//        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
+        this.encoded.set(4, Bytes.wrap(BytesUtils.intToBytes((int) crc32.getValue(), true)));
     }
 
     public int getTtl() {
@@ -95,7 +99,7 @@ public class NewBlockMessage extends Message {
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return encoded;
     }
 
@@ -111,6 +115,6 @@ public class NewBlockMessage extends Message {
 
     @Override
     public String toString() {
-        return "NewBlock Message:" + Hex.toHexString(encoded);
+        return "NewBlock Message:" + encoded.toHexString();
     }
 }

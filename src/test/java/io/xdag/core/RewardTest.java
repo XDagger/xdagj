@@ -40,6 +40,8 @@ import io.xdag.randomx.RandomX;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -134,7 +136,7 @@ public class RewardTest {
         randomXUtils.init();
         kernel.setRandomXUtils(randomXUtils);
 
-        byte[] targetBlock = new byte[0];
+        Bytes32 targetBlock = Bytes32.ZERO;
 
         ECKeyPair addrKey = ECKeyPair.create(privateKey);
         ECKeyPair poolKey = ECKeyPair.create(privateKey);
@@ -148,9 +150,9 @@ public class RewardTest {
         assertTrue(result == IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
-        byte[] ref = addressBlock.getHashLow();
+        Bytes32 ref = addressBlock.getHashLow();
 
-        byte[] unwindRef = null;
+        Bytes32 unwindRef = Bytes32.ZERO;
         long unwindDate = 0;
         // 2. create 20 mainblocks
         for(int i = 1; i <= 20; i++) {
@@ -164,11 +166,11 @@ public class RewardTest {
             assertTrue(result == IMPORTED_BEST);
             ref = extraBlock.getHashLow();
             if (i == 10) {
-                unwindRef = ref.clone();
+                unwindRef = ref;
                 unwindDate = generateTime;
             }
             if (i == 15) {
-                targetBlock = ref.clone();
+                targetBlock = ref;
             }
 
             extraBlockList.add(extraBlock);
@@ -190,10 +192,7 @@ public class RewardTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-
-
         assertEquals(0,blockchain.getBlockByHash(targetBlock,false).getInfo().getAmount());
-
     }
 
 

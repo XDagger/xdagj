@@ -29,13 +29,14 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class MinerMessageFactory implements MessageFactory {
 
     @Override
-    public Message create(byte code, byte[] encoded) {
+    public Message create(byte code, MutableBytes encoded) {
         // 从当前版本中获取到有用的信息
         XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, XdagVersion.V03);
         switch (receivedCommand) {
@@ -46,7 +47,7 @@ public class MinerMessageFactory implements MessageFactory {
         case NEW_BALANCE:
             return new NewBalanceMessage(encoded);
         default:
-            log.debug(Hex.toHexString(encoded));
+            log.debug(encoded.toHexString());
             throw new IllegalArgumentException("No such message code" + receivedCommand);
         }
     }

@@ -30,26 +30,32 @@ import io.xdag.net.message.NetDB;
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
+
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 
 public class SumReplyMessage extends AbstractMessage {
 
-    byte[] sums;
+    MutableBytes sums;
 
-    public SumReplyMessage(long endtime, long random, XdagStats xdagStats, byte[] sums) {
+    public SumReplyMessage(long endtime, long random, XdagStats xdagStats, MutableBytes sums) {
         super(SUMS_REPLY, 1, endtime, random, xdagStats);
         this.sums = sums;
-        System.arraycopy(BytesUtils.longToBytes(random, true), 0, encoded, 32, 8);
-        System.arraycopy(sums, 0, encoded, 256, 256);
+//        System.arraycopy(BytesUtils.longToBytes(random, true), 0, encoded, 32, 8);
+        encoded.set(32, Bytes.wrap(BytesUtils.longToBytes(random, true)));
+//        System.arraycopy(sums, 0, encoded, 256, 256);
+        encoded.set(256, Bytes.wrap(sums));
         updateCrc();
     }
 
-    public SumReplyMessage(byte[] encoded) {
+    public SumReplyMessage(MutableBytes encoded) {
         super(encoded);
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return encoded;
     }
 
@@ -78,7 +84,7 @@ public class SumReplyMessage extends AbstractMessage {
                 + xdagStats;
     }
 
-    public byte[] getSum() {
+    public Bytes getSum() {
         parse();
         return sums;
     }
@@ -88,25 +94,30 @@ public class SumReplyMessage extends AbstractMessage {
         if (parsed) {
             return;
         }
-        starttime = BytesUtils.bytesToLong(encoded, 16, true);
-        endtime = BytesUtils.bytesToLong(encoded, 24, true);
-        random = BytesUtils.bytesToLong(encoded, 32, true);
-        BigInteger maxdifficulty = BytesUtils.bytesToBigInteger(encoded, 80, true);
-        long totalnblocks = BytesUtils.bytesToLong(encoded, 104, true);
-        long totalnmains = BytesUtils.bytesToLong(encoded, 120, true);
-        int totalnhosts = BytesUtils.bytesToInt(encoded, 132, true);
-        long maintime = BytesUtils.bytesToLong(encoded, 136, true);
+
+        this.starttime = encoded.getLong(16, ByteOrder.LITTLE_ENDIAN);
+        this.endtime = encoded.getLong(24, ByteOrder.LITTLE_ENDIAN);
+        this.random = encoded.getLong(32,ByteOrder.LITTLE_ENDIAN);
+        BigInteger maxdifficulty = encoded.slice(80, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
+        long totalnblocks = encoded.getLong(104, ByteOrder.LITTLE_ENDIAN);
+        long totalnmains = encoded.getLong(120, ByteOrder.LITTLE_ENDIAN);
+        int totalnhosts = encoded.getInt(132,ByteOrder.LITTLE_ENDIAN);
+        long maintime = encoded.getLong(136, ByteOrder.LITTLE_ENDIAN);
         xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
 
         // test netdb
         int length = 6;
         // 80 是sizeof(xdag_stats)
-        byte[] netdb = new byte[length * 32 - 80];
-        System.arraycopy(encoded, 144, netdb, 0, length * 32 - 80);
-        netDB = new NetDB(netdb);
+//        byte[] netdb = new byte[length * 32 - 80];
+        MutableBytes netdb = MutableBytes.create(length * 32 - 80);
+//        System.arraycopy(encoded.toArray(), 144, netdb, 0, length * 32 - 80);
+        netdb.set(0, encoded);
+        netDB = new NetDB(netdb.toArray());
 
-        sums = new byte[256];
-        System.arraycopy(encoded, 256, sums, 0, 256);
+//        sums = new byte[256];
+        sums = MutableBytes.create(256);
+//        System.arraycopy(encoded.toArray(), 256, sums, 0, 256);
+        sums.set(0, encoded.slice(256, 256));
         parsed = true;
     }
 }

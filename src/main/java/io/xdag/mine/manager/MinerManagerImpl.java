@@ -174,12 +174,12 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (!channel.isActive()) {
             log.debug("remove a channel");
             activateMinerChannels.remove(channel.getInetAddress(), channel);
-            Miner miner = activateMiners.get(new ByteArrayWrapper(channel.getAccountAddressHash()));
+            Miner miner = activateMiners.get(new ByteArrayWrapper(channel.getAccountAddressHash().toArray()));
             miner.removeChannel(channel.getInetAddress());
             miner.subChannelCounts();
             kernel.getChannelsAccount().getAndDecrement();
             if (miner.getConnChannelCounts() == 0) {
-                log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ",Hex.toHexString(miner.getAddressHash()));
+                log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ", miner.getAddressHash().toHexString());
                 miner.setMinerStates(MinerStates.MINER_ARCHIVE);
             }
         }
@@ -196,8 +196,8 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void cleanUnactivateMiner() {
         for (Miner miner : activateMiners.values()) {
             if (miner.canRemove()) {
-                log.debug("remove a miner,miner address=[{}]", Hex.toHexString(miner.getAddressHash()));
-                activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash()));
+                log.debug("remove a miner,miner address=[{}]", miner.getAddressHash().toHexString());
+                activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash().toArray()));
             }
         }
     }
@@ -213,7 +213,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
 
     @Override
     public void addActiveMiner(Miner miner) {
-        activateMiners.put(new ByteArrayWrapper(miner.getAddressHash()), miner);
+        activateMiners.put(new ByteArrayWrapper(miner.getAddressHash().toArray()), miner);
     }
 
     /** 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况 */

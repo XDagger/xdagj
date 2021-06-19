@@ -50,8 +50,8 @@ public class DiscoveryPeerTest {
         String priString = "0x0802122074ca7d1380b2c407be6878669ebb5c7a2ee751bb18198f1a0f214bcb93b894b5";
         Bytes privkeybytes = Bytes.fromHexString(priString);
         PrivKey privKey = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
-        PrivKey privKey1 = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
-        String s = Hex.toHexString(privKey1.bytes());
+//        PrivKey privKey1 = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
+//        String s = Hex.toHexString(privKey1.bytes());
 //        System.out.println(Arrays.toString(Hex.decode(s)));
         discoveryPeer = new DiscoveryPeer(
                 Bytes.wrap(privKey.publicKey().raw()),

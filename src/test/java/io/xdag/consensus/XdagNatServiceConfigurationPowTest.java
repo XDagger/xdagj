@@ -23,18 +23,9 @@
  */
 package io.xdag.consensus;
 
-import io.xdag.core.Block;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
 import io.xdag.utils.XdagSha256Digest;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
-
-import java.io.IOException;
-
-import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class XdagNatServiceConfigurationPowTest {
@@ -43,31 +34,5 @@ public class XdagNatServiceConfigurationPowTest {
     @Before
     public void init() {
         currentTaskDigest = new XdagSha256Digest();
-    }
-
-    public void onNewShareTest(XdagField[] shareInfo) {
-        Block generateBlock = new Block(new XdagBlock());
-        XdagField share = shareInfo[0];
-        byte[] minHash = new byte[32];
-        Arrays.fill(minHash, (byte) 0);
-        byte[] hash = null;
-        try {
-            XdagSha256Digest digest = new XdagSha256Digest(currentTaskDigest);
-            byte[] data = share.getData();
-            data = Arrays.reverse(data);
-            hash = digest.sha256Final(data);
-            if (compareTo(hash, 0, 32, minHash, 0, 32) < 0) {
-                minHash = hash;
-                // minShare = share.getData();
-                byte[] hashlow = new byte[32];
-                System.arraycopy(minHash, 8, hashlow, 8, 24);
-                // generateBlock.setNonce(minShare);
-                generateBlock.getInfo().setHash(minHash);
-                generateBlock.getInfo().setHashlow(hashlow);
-                log.debug("New MinHash :" + Hex.toHexString(minHash));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }

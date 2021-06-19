@@ -25,6 +25,7 @@ package io.xdag.net.handler;
 
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
+import java.nio.ByteOrder;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
@@ -42,6 +43,7 @@ import io.xdag.utils.BytesUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 
 @EqualsAndHashCode(callSuper = false)
 @Slf4j
@@ -55,16 +57,16 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
     }
 
     public static byte getMsgCode(XdagBlock xdagblock, int n) {
-        byte[] data = xdagblock.getData();
-        long type = BytesUtils.bytesToLong(data, 8, true);
-
+        Bytes data = xdagblock.getData();
+//        long type = BytesUtils.bytesToLong(data, 8, true);
+        long type = data.getLong(8, ByteOrder.LITTLE_ENDIAN);
         return (byte) (type >> (n << 2) & 0xf);
     }
 
     @Override
     protected void encode(
             ChannelHandlerContext channelHandlerContext, XdagBlock xdagblock, ByteBuf out) {
-        byte[] unCryptData = xdagblock.getData();
+        byte[] unCryptData = xdagblock.getData().toArray();
         byte[] encryptData ;
         // libp2p没有三次握手
         if(channel.getClass().equals(XdagChannel.class)){

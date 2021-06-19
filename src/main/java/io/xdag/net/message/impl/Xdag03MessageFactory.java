@@ -28,11 +28,12 @@ import static io.xdag.net.XdagVersion.V03;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class Xdag03MessageFactory implements MessageFactory {
     
     @Override
-    public Message create(byte code, byte[] encoded) {
+    public Message create(byte code, MutableBytes encoded) {
         XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, V03);
 
         return switch (receivedCommand) {
