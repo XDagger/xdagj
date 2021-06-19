@@ -174,7 +174,8 @@ public abstract class AbstractMessage extends Message {
     public void updateCrc() {
         CRC32 crc32 = new CRC32();
         crc32.update(encoded.toArray(), 0, 512);
-        System.arraycopy(BytesUtils.longToBytes(crc32.getValue(), true), 0, encoded, 4, 4);
+        //System.arraycopy(BytesUtils.longToBytes(crc32.getValue(), true), 0, encoded, 4, 4);
+        encoded.set(4,Bytes.wrap(BytesUtils.intToBytes((int) crc32.getValue(), true)));
     }
 
 }
