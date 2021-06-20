@@ -99,11 +99,8 @@ public class Web3XdagModuleTest {
 
     @Test
     public void syncingTest() {
-
-        XdagModule xdagModule = new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionEnabled(kernel.getBlockchain()));
-        Web3XdagModule web3XdagModule = createWeb3XdagModule(kernel,xdagModule);
-
-
+//        XdagModule xdagModule = new XdagModule((byte) 0x1,new XdagModuleWalletDisabled(),new XdagModuleTransactionEnabled(kernel.getBlockchain()));
+//        Web3XdagModule web3XdagModule = createWeb3XdagModule(kernel,xdagModule);
     }
 
     private Web3XdagModule createWeb3XdagModule(Kernel kernel,XdagModule module) {

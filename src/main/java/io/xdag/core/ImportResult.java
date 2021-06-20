@@ -23,6 +23,8 @@
  */
 package io.xdag.core;
 
+import org.apache.tuweni.bytes.MutableBytes32;
+
 public enum ImportResult {
     ERROR,
     EXIST,
@@ -31,15 +33,15 @@ public enum ImportResult {
     IMPORTED_NOT_BEST,
     IMPORTED_BEST;
 
-    byte[] hashLow;
+    MutableBytes32 hashLow;
 
     String errorInfo;
 
-    public byte[] getHashlow() {
+    public MutableBytes32 getHashlow() {
         return hashLow;
     }
 
-    public void setHashlow(byte[] hashLow) {
+    public void setHashlow(MutableBytes32 hashLow) {
         this.hashLow = hashLow;
     }
 

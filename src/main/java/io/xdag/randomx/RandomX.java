@@ -30,6 +30,8 @@ import io.xdag.core.Blockchain;
 import io.xdag.utils.XdagTime;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -99,10 +101,10 @@ public class RandomX {
                 nextMemory.seedHeight = block.getInfo().getHeight();
                 log.debug("Set switch time to {}", Long.toHexString(nextMemory.switchTime));
 
-                hashlow = blockchain.getBlockByHeight(block.getInfo().getHeight() - randomXForkLag).getInfo().getHashlow().clone();
+                hashlow = blockchain.getBlockByHeight(block.getInfo().getHeight() - randomXForkLag).getInfo().getHashlow();
                 if (nextMemory.seed == null || !equalBytes(nextMemory.seed,hashlow)) {
                     nextMemory.seed = Arrays.reverse(hashlow);
-                    log.debug("Next Memory Seed:{}",Hex.toHexString(hashlow));
+                    log.debug("Next Memory Seed:{}", Hex.toHexString(hashlow));
                     randomXPoolUpdateSeed(nextMemIndex);
                 }
                 randomXHashEpochIndex = nextMemIndex;
@@ -163,8 +165,8 @@ public class RandomX {
 
 
     // 计算出hash
-    public byte[] randomXPoolCalcHash(byte[] data, int dataSize, long taskTime) {
-        byte[] hash;
+    public Bytes32 randomXPoolCalcHash(Bytes data, int dataSize, long taskTime) {
+        Bytes32 hash;
         RandomXMemory memory = globalMemory[(int) (randomXPoolMemIndex)&1];
         ReadWriteLock readWriteLock;
         if (taskTime < memory.switchTime) {
@@ -176,7 +178,7 @@ public class RandomX {
 
         readWriteLock.writeLock().lock();
         try {
-            hash = calculateHash(memory.poolVm, data, dataSize);
+            hash = Bytes32.wrap(calculateHash(memory.poolVm, data.toArray(), dataSize));
         } finally {
             readWriteLock.writeLock().unlock();
         }
@@ -325,7 +327,7 @@ public class RandomX {
                 block = blockchain.getBlockByHeight(preSeedHeight);
                 long memoryIndex = randomXHashEpochIndex + 1;
                 RandomXMemory memory = globalMemory[(int) (memoryIndex) & 1];
-                memory.seed = Arrays.reverse(blockchain.getBlockByHeight(preSeedHeight - randomXForkLag).getInfo().getHashlow().clone());
+                memory.seed = Arrays.reverse(blockchain.getBlockByHeight(preSeedHeight - randomXForkLag).getInfo().getHashlow());
                 memory.switchTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag + 1;
                 memory.seedTime = block.getTimestamp();
                 memory.seedHeight = block.getInfo().getHeight();
@@ -339,7 +341,7 @@ public class RandomX {
                 block = blockchain.getBlockByHeight(seedHeight);
                 long memoryIndex = randomXHashEpochIndex + 1;
                 RandomXMemory memory = globalMemory[(int) (memoryIndex) & 1];
-                memory.seed = Arrays.reverse(blockchain.getBlockByHeight(seedHeight - randomXForkLag).getInfo().getHashlow().clone());
+                memory.seed = Arrays.reverse(blockchain.getBlockByHeight(seedHeight - randomXForkLag).getInfo().getHashlow());
                 memory.switchTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag + 1;
                 memory.seedTime =block.getTimestamp();
                 memory.seedHeight = block.getInfo().getHeight();

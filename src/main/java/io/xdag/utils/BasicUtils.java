@@ -23,9 +23,12 @@
  */
 package io.xdag.utils;
 
-import cn.hutool.core.codec.Base64;
 import io.xdag.utils.exception.XdagOverFlowException;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -43,20 +46,24 @@ import java.util.zip.CRC32;
 
 public class BasicUtils {
 
-    public static BigInteger getDiffByHash(byte[] hash) {
-        byte[] data = new byte[16];
+    public static BigInteger getDiffByHash(Bytes32 hash) {
+//        byte[] data = new byte[16];
+        MutableBytes data = MutableBytes.create(16);
         // 实现了右移32位 4个字节
-        System.arraycopy(hash, 0, data, 4, 12);
-        BigInteger res = new BigInteger(Hex.toHexString(data), 16);
+//        System.arraycopy(hash, 0, data, 4, 12);
+        data.set(4, hash.slice(0,12));
+        BigInteger res = new BigInteger(data.toUnprefixedHexString(), 16);
+//        BigInteger res = data.toUnsignedBigInteger();
         // max是2的128次方减1 这样效率高吗
         BigInteger max = new BigInteger("ffffffffffffffffffffffffffffffff", 16);
         return max.divide(res);
     }
 
-    public static byte[] getHash(String address) {
-        byte[] hash = null;
+    public static Bytes32 getHash(String address) {
+        Bytes32 hash = null;
         if (address != null) {
-            hash = Hex.decode(address);
+//            hash = Hex.decode(address);
+            hash = Bytes32.fromHexString(address);
         }
         return hash;
     }
@@ -67,16 +74,17 @@ public class BasicUtils {
         return bigDecimal.setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
-    public static String hash2Address(byte[] hash) {
-        hash = Arrays.reverse(hash);
-        byte[] addr = new byte[24];
-        System.arraycopy(hash,0,addr,0,24);
-        return Base64.encode(addr);
+    public static String hash2Address(Bytes32 hash) {
+        return hash.reverse().slice(0, 24).toBase64String();
     }
-    public static byte[] address2Hash(String address) {
-        byte[] ret = Base64.decode(address);
-        byte[] res = new byte[32];
-        System.arraycopy(Arrays.reverse(ret),0,res,8,24);
+
+    public static Bytes32 address2Hash(String address) {
+//        byte[] ret = Base64.decode(address);
+        Bytes ret = Bytes.fromBase64String(address);
+//        byte[] res = new byte[32];
+        MutableBytes32 res = MutableBytes32.create();
+//        System.arraycopy(Arrays.reverse(ret),0,res,8,24);
+        res.set(8, ret.reverse().slice(0, 24));
         return res;
     }
 

@@ -151,7 +151,7 @@ public class XdagChannel extends Channel {
 
     @Override
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        log.debug("send a block hash is {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+        log.debug("send a block hash is {}", blockWrapper.getBlock().getHashLow().toHexString());
         log.debug("ttl:" + blockWrapper.getTtl());
         xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }

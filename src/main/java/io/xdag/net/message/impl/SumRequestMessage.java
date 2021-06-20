@@ -31,6 +31,8 @@ import io.xdag.net.message.AbstractMessage;
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 @EqualsAndHashCode(callSuper = false)
 public class SumRequestMessage extends AbstractMessage {
@@ -39,12 +41,12 @@ public class SumRequestMessage extends AbstractMessage {
         updateCrc();
     }
 
-    public SumRequestMessage(byte[] bytes) {
+    public SumRequestMessage(MutableBytes bytes) {
         super(bytes);
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return encoded;
     }
 

@@ -29,6 +29,8 @@ import io.xdag.net.message.AbstractMessage;
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlocksReplyMessage extends AbstractMessage {
@@ -37,12 +39,12 @@ public class BlocksReplyMessage extends AbstractMessage {
         updateCrc();
     }
 
-    public BlocksReplyMessage(byte[] encoded) {
+    public BlocksReplyMessage(MutableBytes encoded) {
         super(encoded);
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return encoded;
     }
 

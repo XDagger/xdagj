@@ -23,9 +23,25 @@
  */
 package io.xdag.mine.manager;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static java.lang.Math.E;
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.consensus.Task;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.Blockchain;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.mine.MinerChannel;
+import io.xdag.mine.miner.Miner;
+import io.xdag.mine.miner.MinerStates;
+import io.xdag.utils.BigDecimalUtils;
+import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.wallet.Wallet;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -33,22 +49,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import io.xdag.config.Config;
-import io.xdag.core.*;
-import io.xdag.crypto.ECKeyPair;
-import io.xdag.mine.MinerChannel;
-import io.xdag.utils.*;
-
-import io.xdag.Kernel;
-import io.xdag.consensus.Task;
-import io.xdag.mine.miner.Miner;
-import io.xdag.mine.miner.MinerStates;
-import io.xdag.wallet.Wallet;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
-
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BytesUtils.compareTo;
+import static java.lang.Math.E;
 
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
@@ -67,8 +71,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     // 定义每一个部分的收益占比
     protected Miner poolMiner;
     /** 存放的是过去十六个区块的hash */
-    protected List<ByteArrayWrapper> blockHashs = new CopyOnWriteArrayList<>();
-    protected List<ByteArrayWrapper> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
+    protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>();
+    protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected long currentTaskTime;
     protected long currentTaskIndex;
     protected Config config;
@@ -135,7 +139,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
 
     @Override
-    public void addAwardBlock(byte[] share, byte[] hash, long generateTime){
+    public void addAwardBlock(Bytes32 share, Bytes32 hash, long generateTime){
         AwardBlock awardBlock = new AwardBlock();
         awardBlock.share = share;
         awardBlock.hash = hash;
@@ -221,8 +225,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("Pay miner");
         payMiners(awardBlock.generateTime);
         log.debug("set index:" + (int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()));
-        blockHashs.set((int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()), new ByteArrayWrapper(awardBlock.hash));
-        minShares.set((int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()), new ByteArrayWrapper(awardBlock.share));
+        blockHashs.set((int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()), awardBlock.hash);
+        minShares.set((int) ((awardBlock.generateTime >> 16) & config.getPoolSpec().getAwardEpoch()), awardBlock.share);
     }
 
     @Override
@@ -231,7 +235,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
     @Override
-    public void setPoolMiner(byte[] hash) {
+    public void setPoolMiner(Bytes32 hash) {
         this.poolMiner = new Miner(hash);
     }
 
@@ -275,8 +279,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         // 获取到要计算的hash 和对应的nocne
-        byte[] hash = blockHashs.get(index) == null ? null : blockHashs.get(index).getData();
-        byte[] nonce = minShares.get(index) == null ? null : minShares.get(index).getData();
+        Bytes32 hash = blockHashs.get(index) == null ? null : blockHashs.get(index);
+        Bytes32 nonce = minShares.get(index) == null ? null : minShares.get(index);
 
         if (hash == null || nonce == null) {
             log.debug("can not find  the hash or nonce ,hash is null？[{}],nonce is null ?[{}]", hash == null, nonce == null);
@@ -284,15 +288,17 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         // 获取到这个区块 查询时要把前面的置0
-        byte[] hashlow = BytesUtils.fixBytes(hash, 8, 24);
+        MutableBytes32 hashlow = MutableBytes32.create();
+//        Bytes32.wrap(BytesUtils.fixBytes(hash, 8, 24));
+        hashlow.set(8, Bytes.wrap(hash).slice(8, 24));
         Block block = blockchain.getBlockByHash(hashlow, false);
         //TODO
-        log.debug("Hash low : "+Hex.toHexString(hashlow));
+        log.debug("Hash low : " + hashlow.toHexString());
         if (keyPos < 0) {
-            if (kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow)) == null) {
+            if (kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray())) == null) {
                 keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
             } else {
-                keyPos = kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow));
+                keyPos = kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray()));
             }
             log.debug("keypos : "+keyPos);
             if (keyPos < 0){
@@ -363,7 +369,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         return 0;
     }
 
-    private double precalculatePayments(byte[] nonce, int index, PayData payData) {
+    private double precalculatePayments(Bytes32 nonce, int index, PayData payData) {
         log.debug("precalculatePayments........");
         //这里缺少对矿池的计算
         //现对矿池进行计算
@@ -378,9 +384,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             payData.prevDiffSums += prev_diff.get(i);
 
             if (payData.rewardMiner == null
-                    && (compareTo(nonce, 8, 24, miner.getAddressHash(), 8, 24) == 0)) {
+                    && (compareTo(nonce.toArray(), 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0)) {
                 payData.rewardMiner = new byte[32];
-                payData.rewardMiner = miner.getAddressHash();
+                payData.rewardMiner = miner.getAddressHash().toArray();
                 // 有可以出块的矿工 分配矿工的奖励
                 payData.minerReward = BigDecimalUtils.mul(payData.balance, minerRewardRation);
                 payData.unusedBalance -= payData.minerReward;
@@ -467,10 +473,10 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     }
 
-    public void doPayments(byte[] hash, int paymentsPerBlock, PayData payData, int keyPos) {
+    public void doPayments(Bytes32 hash, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-        Map<Address, ECKeyPair> inputMap = new HashMap<>();
+        HashMap<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
         ECKeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
@@ -494,7 +500,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         //// TODO: 2021/4/19  打印矿工的数据
         for (int i = 0; i < miners.size(); i++) {
             Miner miner = miners.get(i);
-            log.debug("Do payments for every miner,miner address = [{}]",Hex.toHexString(miner.getAddressHash()));
+            log.debug("Do payments for every miner,miner address = [{}]", miner.getAddressHash().toHexString());
             // 保存的是一个矿工所有的收入
             long paymentSum = 0L;
             // 根据历史记录分发奖励
@@ -510,7 +516,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 paymentSum += BigDecimalUtils.mul(payData.directIncome, per);
             }
             if (payData.rewardMiner != null
-                    && compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash(), 8, 24) == 0) {
+                    && compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0) {
                 paymentSum += payData.minerReward;
             }
             if (paymentSum < 0.000000001) {
@@ -528,16 +534,15 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         if (receipt.size() > 0) {
             transaction(hash, receipt, payAmount, keyPos);
-            payAmount = 0L;
             receipt.clear();
         }
     }
 
-    public void transaction(byte[] hashLow, ArrayList<Address> receipt, long payAmount, int keypos) {
+    public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, long payAmount, int keypos) {
         log.debug("All Payment: {}", payAmount);
         log.debug("unlock keypos =[{}]",keypos);
         for (Address address : receipt) {
-            log.debug("pay data: {}", Hex.toHexString(address.getData()));
+            log.debug("pay data: {}", address.getData().toHexString());
         }
         Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
@@ -550,7 +555,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             block.signIn(inputKey);
             block.signOut(wallet.getDefKey());
         }
-        log.debug("pay block hash【{}】", Hex.toHexString(block.getHash()));
+        log.debug("pay block hash【{}】", block.getHash().toHexString());
 
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
@@ -582,9 +587,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     /** 用于记录奖励主块的信息 */
     public static class AwardBlock {
-        byte[] share;
-        byte[] hash;
+        Bytes32 share;
+        Bytes32 hash;
         long generateTime;
-
     }
 }

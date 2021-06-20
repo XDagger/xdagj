@@ -23,6 +23,7 @@
  */
 package io.xdag.utils;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.io.DigestOutputStream;
 import org.bouncycastle.util.Arrays;
@@ -51,13 +52,13 @@ public class XdagSha256Digest {
         outputStream.write(in);
     }
 
-    public void sha256Update(byte[] in) throws IOException {
-        outputStream.write(in);
+    public void sha256Update(Bytes in) throws IOException {
+        outputStream.write(in.toArray());
     }
 
     /** double sha256* */
-    public byte[] sha256Final(byte[] in) throws IOException {
-        outputStream.write(in);
+    public byte[] sha256Final(Bytes in) throws IOException {
+        outputStream.write(in.toArray());
         byte[] hash = outputStream.getDigest();
         sha256Digest.reset();
         outputStream.write(hash);
@@ -87,7 +88,7 @@ public class XdagSha256Digest {
         return outputStream.getDigest();
     }
 
-    public byte[] getSha256d(byte[] in) throws IOException {
+    public byte[] getSha256d(Bytes in) throws IOException {
         return sha256Final(in);
     }
 }

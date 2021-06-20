@@ -96,10 +96,11 @@ public class Launcher {
     }
 
     protected Config buildConfig(String[] args) throws Exception {
-        Config config = new MainnetConfig();
+        Config config = null;
         for (String arg : args) {
             switch (arg) {
                 case "-t" -> config = new TestnetConfig();
+                default -> config = new MainnetConfig();
             }
         }
         config.changePara(args);

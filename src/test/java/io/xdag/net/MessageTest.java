@@ -283,13 +283,13 @@ public class MessageTest {
         System.out.println("status:" + message.getXdagStats());
         System.out.println("netdb:" + message.getNetDB());
         if (message.getCommand() == XdagMessageCodes.BLOCK_REQUEST) {
-            System.out.println("request hash:" + Hex.toHexString(message.getHash()));
+            System.out.println("request hash:" + message.getHash().toHexString());
         } else {
             System.out.println("random:" + message.getRandom());
         }
         if (message.getCommand() == XdagMessageCodes.SUMS_REPLY) {
             SumReplyMessage sumReplyMessage = (SumReplyMessage) message;
-            System.out.println("sum:" + Hex.toHexString(sumReplyMessage.getSum()));
+            System.out.println("sum:" + sumReplyMessage.getSum().toHexString());
         }
     }
 

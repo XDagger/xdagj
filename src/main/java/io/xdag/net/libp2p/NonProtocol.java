@@ -94,7 +94,7 @@ public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
         //ByteBuf 是接受的对象
         @Override
         protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) {
-            String s = buf.toString(CharsetUtil.UTF_8);
+//            String s = buf.toString(CharsetUtil.UTF_8);
 //            System.out.println(s);
         }
 

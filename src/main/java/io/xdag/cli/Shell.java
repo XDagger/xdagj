@@ -30,6 +30,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.tuweni.bytes.Bytes32;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;
@@ -154,7 +155,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
             String address = argv.get(0);
             try {
-                byte[] hash;
+                Bytes32 hash;
                 if (address.length() == 32) {
                     // as address
                     hash = address2Hash(address);
@@ -166,7 +167,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                     println("No param");
                     return;
                 }
-                println(commands.block(hash));
+                println(commands.block(Bytes32.wrap(hash)));
             } catch (Exception e) {
                 println("Argument is incorrect.");
             }
@@ -288,7 +289,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            byte[] hash;
+            Bytes32 hash;
             double amount = BasicUtils.getDouble(argv.get(0));
 
             String remark = argv.size()==3 ? argv.get(2):null;
@@ -299,16 +300,16 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             if (argv.get(1).length() == 32) {
-                hash = address2Hash(argv.get(1));
+                hash = Bytes32.wrap(address2Hash(argv.get(1)));
             } else {
-                hash = BasicUtils.getHash(argv.get(1));
+                hash = Bytes32.wrap(BasicUtils.getHash(argv.get(1)));
             }
             if (hash == null) {
                 println("No Address");
                 return;
             }
 
-            if (kernel.getBlockchain().getBlockByHash(hash, false) == null) {
+            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
 //            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("Incorrect address");
                 return;

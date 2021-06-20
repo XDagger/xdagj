@@ -24,13 +24,14 @@
 package io.xdag.listener;
 
 import lombok.Data;
+import org.apache.tuweni.bytes.Bytes;
 
 @Data
 public class Message {
 
-    byte[] data;
+    Bytes data;
 
-    public Message(byte[] data) {
+    public Message(Bytes data) {
         this.data = data;
     }
 }

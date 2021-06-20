@@ -23,20 +23,23 @@
  */
 package io.xdag.net.message;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
+
 public abstract class Message {
     protected boolean parsed;
-    protected byte[] encoded;
+    protected MutableBytes encoded;
     protected byte code;
 
     public Message() {
     }
 
-    public Message(byte[] encoded) {
+    public Message(MutableBytes encoded) {
         this.encoded = encoded;
         parsed = false;
     }
 
-    public abstract byte[] getEncoded();
+    public abstract Bytes getEncoded();
 
     public abstract Class<?> getAnswerMessage();
 

@@ -30,7 +30,7 @@ public class MinerCalculateTest {
 
     @Test
     public void movingAverageDouble() {
-        double res = MinerCalculate.movingAverageDouble(100, 200, 300);
+//        double res = MinerCalculate.movingAverageDouble(100, 200, 300);
 //        System.out.println(res);
     }
 
