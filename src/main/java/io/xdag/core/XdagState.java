@@ -78,7 +78,7 @@ public enum XdagState {
         this.temp = -1;
     }
 
-    public XdagState fromByte(byte i) {
+    public static XdagState fromByte(byte i) {
         return switch (i) {
             case 0x00 -> INIT;
             case 0x01 -> KEYS;

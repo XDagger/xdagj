@@ -154,7 +154,8 @@ public class BasicUtils {
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
         BigDecimal bigDecimal = new BigDecimal(first + tem);
-        return bigDecimal.setScale(2, RoundingMode.HALF_UP).doubleValue();
+//        return bigDecimal.setScale(9, RoundingMode.HALF_UP).doubleValue();
+        return bigDecimal.doubleValue();
     }
 
     public static boolean crc32Verify(byte[] src, int crc) {

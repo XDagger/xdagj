@@ -1,5 +1,7 @@
 package io.xdag.snapshot;
 
+import static io.xdag.snapshot.config.SnapShotKeys.*;
+import static io.xdag.utils.BasicUtils.amount2xdag;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -12,16 +14,32 @@ import static org.lmdbjava.ByteBufferProxy.PROXY_OPTIMAL;
 import static org.lmdbjava.DbiFlags.*;
 import static org.lmdbjava.DirectBufferProxy.PROXY_DB;
 import static org.lmdbjava.Env.create;
+import static org.lmdbjava.EnvFlags.MDB_FIXEDMAP;
+import static org.lmdbjava.EnvFlags.MDB_NOSYNC;
 import static org.lmdbjava.GetOp.MDB_SET;
 import static org.lmdbjava.SeekOp.*;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
+import cn.hutool.core.io.resource.Resource;
+import com.google.common.io.Resources;
+import io.xdag.core.XdagState;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.snapshot.core.BalanceData;
+import io.xdag.snapshot.core.ExtStatsData;
+import io.xdag.snapshot.core.StatsData;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -455,6 +473,236 @@ public class LMDBTest {
             txn.commit();
         }
 
+        env.close();
+    }
+
+    @Test
+    @SuppressWarnings("ConvertToTryWithResources")
+    public void tutorial8() throws IOException {
+        final Env<ByteBuffer> env = createSimpleEnv(tmp.newFolder());
+        final Dbi<ByteBuffer> db = env.openDbi(DB_NAME, MDB_CREATE);
+        final ByteBuffer key = allocateDirect(env.getMaxKeySize());
+        final ByteBuffer val = allocateDirect(700);
+
+        try (Txn<ByteBuffer> txn = env.txnWrite()) {
+            // A cursor always belongs to a particular Dbi.
+            final Cursor<ByteBuffer> c = db.openCursor(txn);
+
+            // We can put via a Cursor. Note we're adding keys in a strange order,
+            // as we want to show you that LMDB returns them in sorted order.
+            Bytes bytes32 = Bytes.wrap(Hex.decode("aabb"));
+            System.out.println(bytes32.toHexString());
+            key.put(bytes32.toArray()).flip();
+            val.put("lmdb".getBytes(UTF_8)).flip();
+            c.put(key, val);
+            key.clear();
+            bytes32 = Bytes.wrap(Hex.decode("bbcc"));
+            key.put(bytes32.toArray()).flip();
+            c.put(key, val);
+            key.clear();
+            bytes32 = Bytes.wrap(Hex.decode("ccdd"));
+
+            key.put(bytes32.toArray()).flip();
+            c.put(key, val);
+
+            // We can read from the Cursor by key.
+            c.get(key, MDB_SET);
+            assertEquals(Bytes.wrap(Bytes.wrapByteBuffer(c.key())).toHexString(), ("0xccdd"));
+
+            // Let's see that LMDB provides the keys in appropriate order....
+            c.seek(MDB_FIRST);
+            assertEquals(Bytes.wrap(Bytes.wrapByteBuffer(c.key())).toHexString(), ("0xaabb"));
+
+            c.seek(MDB_LAST);
+            assertEquals(Bytes.wrap(Bytes.wrapByteBuffer(c.key())).toHexString(), ("0xccdd"));
+
+            c.seek(MDB_PREV);
+            assertEquals(Bytes.wrap(Bytes.wrapByteBuffer(c.key())).toHexString(), ("0xbbcc"));
+
+            // Cursors can also delete the current key.
+            c.delete();
+
+            c.close();
+            txn.commit();
+        }
+
+        // A read-only Cursor can survive its original Txn being closed. This is
+        // useful if you want to close the original Txn (eg maybe you created the
+        // Cursor during the constructor of a singleton with a throw-away Txn). Of
+        // course, you cannot use the Cursor if its Txn is closed or currently reset.
+        final Txn<ByteBuffer> tx1 = env.txnRead();
+        final Cursor<ByteBuffer> c = db.openCursor(tx1);
+        tx1.close();
+
+        // The Cursor becomes usable again by "renewing" it with an active read Txn.
+        final Txn<ByteBuffer> tx2 = env.txnRead();
+        c.renew(tx2);
+        c.seek(MDB_FIRST);
+
+        // As usual with read Txns, we can reset and renew them. The Cursor does
+        // not need any special handling if we do this.
+        tx2.reset();
+        // ... potentially long operation here ...
+        tx2.renew();
+        c.seek(MDB_LAST);
+
+        tx2.close();
+        env.close();
+    }
+
+
+    @Test
+    public void testBalance() throws IOException {
+        File file = new File("/Users/punk/Documents/code/java_project/xdagJ_net/hotfix_restart/xdagj/src/test/resources/5000");
+        Env<ByteBuffer> env = create()
+                .setMaxReaders(4)
+                .setMapSize(268435456)
+                .setMaxDbs(4)
+                .open(file,MDB_FIXEDMAP,MDB_NOSYNC);
+
+        final Dbi<ByteBuffer> db = env.openDbi("balance", MDB_CREATE,MDB_INTEGERKEY);
+
+        Txn<ByteBuffer> txn = env.txnRead();
+        int i = 0;
+        double totalBalance = 0;
+        try (CursorIterable<ByteBuffer> ci = db.iterate(txn, KeyRange.all())) {
+
+            for (final KeyVal<ByteBuffer> kv : ci) {
+                assertThat(kv.key(), notNullValue());
+                assertThat(kv.val(), notNullValue());
+//                System.out.println("key:"+"key size:"+Bytes.wrapByteBuffer(kv.key()).size()+" "+Bytes.wrap(Bytes.wrapByteBuffer(kv.key())).toHexString());
+//                System.out.println("value:"+"value size:"+Bytes.wrapByteBuffer(kv.val()).size()+" "+Bytes.wrap(Bytes.wrapByteBuffer(kv.val())).toHexString());
+
+                BalanceData data = BalanceData.parse(Bytes.wrapByteBuffer(kv.key()),Bytes.wrapByteBuffer(kv.val()));
+                assert data != null;
+
+                totalBalance += amount2xdag(data.getAmount().longValue());
+                System.out.println(data);
+                i ++;
+            }
+            ci.close();
+        }
+
+        System.out.println("total address:"+i);
+        System.out.println("totalbalance:"+totalBalance);
+
+        txn.close();
+        env.close();
+
+    }
+    @Test
+    public void testStats() throws IOException {
+        File file = new File("/Users/punk/Documents/code/java_project/xdagJ_net/hotfix_restart/xdagj/src/test/resources/5000");
+        Env<ByteBuffer> env = create()
+                .setMaxReaders(4)
+                .setMapSize(268435456)
+                .setMaxDbs(4)
+                .open(file,MDB_FIXEDMAP,MDB_NOSYNC);
+
+        Dbi<ByteBuffer> db = env.openDbi("stats", MDB_CREATE);
+        ByteBuffer timeKey = allocateDirect(getMutableBytesByKey(SNAPTSHOT_KEY_TIME).size());
+        timeKey.put(getMutableBytesByKey(SNAPTSHOT_KEY_TIME).toArray()).flip();
+//        final ByteBuffer val = allocateDirect(700);
+        Txn<ByteBuffer> txn = env.txnRead();
+
+        ByteBuffer timeValue = db.get(txn, timeKey);
+        System.out.println("time:"+Bytes.wrapByteBuffer(timeValue).toLong(ByteOrder.LITTLE_ENDIAN));
+
+        ByteBuffer statsKey = allocateDirect(getMutableBytesByKey(SNAPTSHOT_KEY_STATS).size());
+        statsKey.put(getMutableBytesByKey(SNAPTSHOT_KEY_STATS).toArray()).flip();
+//        final ByteBuffer val = allocateDirect(700);
+        ByteBuffer statsValue = db.get(txn, statsKey);
+        System.out.println("stats:"+ StatsData.parse(Bytes.wrapByteBuffer(statsValue)));
+
+        ByteBuffer extstatsKey = allocateDirect(getMutableBytesByKey(SNAPTSHOT_KEY_EXTSTATS).size());
+        extstatsKey.put(getMutableBytesByKey(SNAPTSHOT_KEY_EXTSTATS).toArray()).flip();
+
+        ByteBuffer extstatsValue = db.get(txn, extstatsKey);
+        System.out.println("extstats:"+ ExtStatsData.parse(Bytes.wrapByteBuffer(extstatsValue)));
+
+        ByteBuffer stateKey = allocateDirect(getMutableBytesByKey(SNAPTSHOT_KEY_STATE).size());
+        stateKey.put(getMutableBytesByKey(SNAPTSHOT_KEY_STATE).toArray()).flip();
+
+        ByteBuffer stateValue = db.get(txn, stateKey);
+        System.out.println("state:"+ XdagState.fromByte((byte) Bytes.wrapByteBuffer(stateValue).getInt(0)));
+
+//        try (CursorIterable<ByteBuffer> ci = db.iterate(txn, KeyRange.all())) {
+//
+//            for (final KeyVal<ByteBuffer> kv : ci) {
+//                assertThat(kv.key(), notNullValue());
+//                assertThat(kv.val(), notNullValue());
+//                System.out.println("key:"+"key size:"+Bytes.wrapByteBuffer(kv.key()).size()+" "+Bytes.wrap(Bytes.wrapByteBuffer(kv.key())).toHexString());
+//                System.out.println("value:"+"value size:"+Bytes.wrapByteBuffer(kv.val()).size()+" "+Bytes.wrap(Bytes.wrapByteBuffer(kv.val())).toHexString());
+//
+//            }
+//            ci.close();
+//        }
+
+        txn.close();
+        env.close();
+
+    }
+
+
+
+    // 0x675f736e617073686f745f74696d6500
+    // 0x675f786461675f657874737461747300
+    // 0x675f786461675f737461746500
+    // 0x675f786461675f737461747300
+    @Test
+    public void test() throws UnsupportedEncodingException {
+        byte[] key1 = SNAPTSHOT_KEY_TIME.getBytes("utf-8");
+        byte[] key2 = SNAPTSHOT_KEY_STATS.getBytes("utf-8");
+        byte[] key3 = SNAPTSHOT_KEY_STATE.getBytes("utf-8");
+        byte[] key4 = SNAPTSHOT_KEY_TIME.getBytes("utf-8");
+        System.out.println(key1.length+":"+Hex.toHexString(key1));
+        System.out.println(key2.length+":"+Hex.toHexString(key2));
+        System.out.println(key3.length+":"+Hex.toHexString(key3));
+        System.out.println(key4.length+":"+Hex.toHexString(key4));
+
+        System.out.println(getMutableBytesByKey(SNAPTSHOT_KEY_TIME).size());
+    }
+
+    @Test
+    public void byteTest() throws UnsupportedEncodingException {
+        MutableBytes bytes = MutableBytes.create(16);
+        bytes.set(0,Bytes.wrap(SNAPTSHOT_KEY_TIME.getBytes("utf-8")));
+        System.out.println(bytes.size());
+        System.out.println(bytes.toHexString());
+    }
+
+    @Test
+    public void testPubkey() throws IOException {
+        File file = new File("/Users/punk/Documents/code/java_project/xdagJ_net/hotfix_restart/xdagj/src/test/resources/pubkey");
+        Env<ByteBuffer> env = create()
+                .setMaxReaders(1)
+                .setMapSize(268435456)
+                .setMaxDbs(4)
+                .open(file, MDB_NOSYNC);
+
+        final Dbi<ByteBuffer> db = env.openDbi("pubkey", MDB_CREATE);
+
+        Txn<ByteBuffer> txn = env.txnRead();
+
+
+        try (CursorIterable<ByteBuffer> ci = db.iterate(txn, KeyRange.all())) {
+
+            for (final KeyVal<ByteBuffer> kv : ci) {
+                assertThat(kv.key(), notNullValue());
+                assertThat(kv.val(), notNullValue());
+                System.out.println("key:"+"key size:"+Bytes.wrapByteBuffer(kv.key()).size()+" "+Bytes.wrap(Bytes.wrapByteBuffer(kv.key())).toHexString());
+                System.out.println("value:"+"value size:"+Bytes.wrapByteBuffer(kv.val()).size()+" "+Bytes.wrap(Bytes.wrapByteBuffer(kv.val())).toHexString());
+
+                ECKeyPair ecKeyPair = new ECKeyPair(null,
+                        new BigInteger(1, java.util.Arrays.copyOfRange(Bytes.wrapByteBuffer(kv.val()).toArray(), 1, Bytes.wrapByteBuffer(kv.val()).size())));
+                System.out.println("key:"+ecKeyPair.getPublicKey().toString(16));
+
+            }
+            ci.close();
+        }
+
+
+        txn.close();
         env.close();
     }
 
