@@ -37,6 +37,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Objects;
@@ -190,4 +191,14 @@ public class ECKeyPair {
         return BytesUtils.merge(pubKeyYPrefix,BytesUtils.subArray(Numeric.toBytesPadded(publicKey,64),0,32));
     }
 
+    /**
+     * This is the generic Signature exception.
+     */
+    public static class SignatureException extends GeneralSecurityException {
+        private static final long serialVersionUID = 1L;
+
+        public SignatureException(String msg) {
+            super(msg);
+        }
+    }
 }

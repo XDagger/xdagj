@@ -182,4 +182,38 @@ public class Numeric {
         System.arraycopy(src, srcPos, dest, destPos, length);
         return dest;
     }
+
+    /**
+     * Returns a result of safe addition of two {@code int} values
+     * {@code Integer.MAX_VALUE} is returned if overflow occurs
+     */
+    public static int addSafely(int a, int b) {
+        long res = (long) a + (long) b;
+        return res > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) res;
+    }
+
+    public static boolean isZero(BigInteger value) {
+        return value.compareTo(BigInteger.ZERO) == 0;
+    }
+
+    public static boolean isLessThan(BigInteger valueA, BigInteger valueB) {
+        return valueA.compareTo(valueB) < 0;
+    }
+
+    public static boolean isCovers(BigInteger covers, BigInteger value) {
+        return !isNotCovers(covers, value);
+    }
+
+    public static boolean isNotCovers(BigInteger covers, BigInteger value) {
+        return covers.compareTo(value) < 0;
+    }
+
+    public static BigInteger toBI(byte[] data) {
+        return new BigInteger(1, data);
+    }
+
+    public static BigInteger toBI(long data) {
+        return BigInteger.valueOf(data);
+    }
+
 }

@@ -32,7 +32,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 
+import static io.xdag.utils.Numeric.isLessThan;
+
 public class ECDSASignature {
+    public static final BigInteger SECP256K1N = new BigInteger(
+            "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+
     public final BigInteger r;
     public final BigInteger s;
     public byte v;
@@ -40,6 +45,21 @@ public class ECDSASignature {
     public ECDSASignature(BigInteger r, BigInteger s) {
         this.r = r;
         this.s = s;
+    }
+
+    public boolean validateComponents() {
+        if (v != 27 && v != 28)
+            return false;
+
+        if (isLessThan(r, BigInteger.ONE) || !isLessThan(r, SECP256K1N)) {
+            return false;
+        }
+
+        if (isLessThan(s, BigInteger.ONE) || !isLessThan(s, SECP256K1N)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

@@ -23,6 +23,8 @@
  */
 package io.xdag.utils;
 
+import org.bouncycastle.util.encoders.Hex;
+
 import java.util.Arrays;
 
 public final class ByteArrayWrapper {
@@ -44,15 +46,23 @@ public final class ByteArrayWrapper {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (!(other instanceof ByteArrayWrapper)) {
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        return Arrays.equals(data, ((ByteArrayWrapper) other).data);
+        return Arrays.equals(data, ((ByteArrayWrapper) o).data);
     }
 
     @Override
     public int hashCode() {
         return Arrays.hashCode(data);
+    }
+
+    @Override
+    public String toString() {
+        return Hex.toHexString(data);
     }
 }

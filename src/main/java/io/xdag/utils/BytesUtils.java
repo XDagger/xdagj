@@ -27,9 +27,12 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.Arrays;
 
 import com.google.common.io.BaseEncoding;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BytesUtils {
 
@@ -101,6 +104,11 @@ public class BytesUtils {
         return data == null ? "" : BaseEncoding.base16().lowerCase().encode(data);
     }
 
+
+    public static BigInteger bytesToBigInteger(byte[] bytes) {
+        return (bytes == null || bytes.length == 0) ? BigInteger.ZERO : new BigInteger(1, bytes);
+    }
+
     public static byte[] bigIntegerToBytes(BigInteger b, int numBytes) {
         if (b == null) {
             return null;
@@ -136,19 +144,19 @@ public class BytesUtils {
      * @return - merged array
      */
     public static byte[] merge(byte[]... arrays) {
-        int count = 0;
-        for (byte[] array : arrays) {
-            count += array.length;
+        int length = 0;
+        for (byte[] a : arrays) {
+            length += a.length;
         }
 
-        // Create new array and copy all array contents
-        byte[] mergedArray = new byte[count];
+        byte[] result = new byte[length];
         int start = 0;
-        for (byte[] array : arrays) {
-            System.arraycopy(array, 0, mergedArray, start, array.length);
-            start += array.length;
+        for (byte[] a : arrays) {
+            System.arraycopy(a, 0, result, start, a.length);
+            start += a.length;
         }
-        return mergedArray;
+
+        return result;
     }
 
     /** Merge byte and byte array. */
@@ -200,6 +208,18 @@ public class BytesUtils {
             d[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));
         }
         return d;
+    }
+
+    public static byte[] fromHexString(String hex) {
+        return Hex.decode(hex.startsWith("0x") ? hex.substring(2) : hex);
+    }
+
+    public static String toHexString(byte b) {
+        return toHexString(new byte[] { b });
+    }
+
+    public static String toHexStringWith0x(byte[] data) {
+        return "0x" + toHexString(data);
     }
 
     private static byte charToByte(char c) {
@@ -288,18 +308,14 @@ public class BytesUtils {
     }
 
     public static byte[] stripLeadingZeroes(byte[] data) {
-        return stripLeadingZeroes(data, ZERO_BYTE_ARRAY);
-    }
 
-    public static byte[] stripLeadingZeroes(byte[] data, byte[] valueForZero) {
-        if (data == null) {
+        if (data == null)
             return null;
-        }
 
         final int firstNonZero = firstNonZeroByte(data);
         switch (firstNonZero) {
             case -1:
-                return valueForZero;
+                return EMPTY_BYTE_ARRAY;
 
             case 0:
                 return data;
@@ -319,6 +335,72 @@ public class BytesUtils {
             }
         }
         return -1;
+    }
+
+    /**
+     * Returns a number of zero bits preceding the highest-order ("leftmost")
+     * one-bit interpreting input array as a big-endian integer value
+     */
+    public static int numberOfLeadingZeros(byte[] bytes) {
+
+        int i = firstNonZeroByte(bytes);
+
+        if (i == -1) {
+            return bytes.length * 8;
+        } else {
+            int byteLeadingZeros = Integer.numberOfLeadingZeros((int) bytes[i] & 0xff) - 24;
+            return i * 8 + byteLeadingZeros;
+        }
+    }
+
+    public static byte[] nullToEmpty(byte[] bytes) {
+        return bytes == null ? EMPTY_BYTE_ARRAY : bytes;
+    }
+
+    public static Bytes nullToEmpty(Bytes bytes) {
+        return bytes == null ? Bytes.EMPTY : bytes;
+    }
+
+    /**
+     * Parses fixed number of bytes starting from {@code offset} in {@code input}
+     * array. If {@code input} has not enough bytes return array will be right
+     * padded with zero bytes. I.e. if {@code offset} is higher than
+     * {@code input.length} then zero byte array of length {@code len} will be
+     * returned
+     */
+    public static byte[] parseBytes(byte[] input, int offset, int len) {
+        if (offset >= input.length || len == 0)
+            return EMPTY_BYTE_ARRAY;
+
+        byte[] bytes = new byte[len];
+        System.arraycopy(input, offset, bytes, 0, Math.min(input.length - offset, len));
+        return bytes;
+    }
+
+    /**
+     * Parses 32-bytes word from given input. Uses
+     * {@link #parseBytes(byte[], int, int)} method, thus, result will be
+     * right-padded with zero bytes if there is not enough bytes in {@code input}
+     *
+     * @param idx
+     *            an index of the word starting from {@code 0}
+     */
+    public static byte[] parseWord(byte[] input, int idx) {
+        return parseBytes(input, 32 * idx, 32);
+    }
+
+    /**
+     * Parses 32-bytes word from given input. Uses
+     * {@link #parseBytes(byte[], int, int)} method, thus, result will be
+     * right-padded with zero bytes if there is not enough bytes in {@code input}
+     *
+     * @param idx
+     *            an index of the word starting from {@code 0}
+     * @param offset
+     *            an offset in {@code input} array to start parsing from
+     */
+    public static byte[] parseWord(byte[] input, int offset, int idx) {
+        return parseBytes(input, offset + 32 * idx, 32);
     }
 
     public static boolean equalBytes(byte[] b1, byte[] b2) {

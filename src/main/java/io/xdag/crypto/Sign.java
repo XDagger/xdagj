@@ -76,7 +76,7 @@ public class Sign {
      * @param message Hash of the data that was signed.
      * @return An ECKey containing only the public part, or null if recovery wasn't possible.
      */
-    public static BigInteger recoverFromSignature(int recId, ECDSASignature sig, Bytes message) {
+    public static byte[] recoverFromSignature(int recId, ECDSASignature sig, Bytes message) {
         verifyPrecondition(recId >= 0, "recId must be positive");
         verifyPrecondition(sig.r.signum() >= 0, "r must be positive");
         verifyPrecondition(sig.s.signum() >= 0, "s must be positive");
@@ -129,9 +129,10 @@ public class Sign {
         BigInteger eInvrInv = rInv.multiply(eInv).mod(n);
         ECPoint q = ECAlgorithms.sumOfTwoMultiplies(CURVE.getG(), eInvrInv, R, srInv);
 
-        byte[] qBytes = q.getEncoded(false);
+//        byte[] qBytes = q.getEncoded(false);
         // We remove the prefix
-        return new BigInteger(1, Arrays.copyOfRange(qBytes, 1, qBytes.length));
+//        return new BigInteger(1, Arrays.copyOfRange(qBytes, 1, qBytes.length));
+        return q.getEncoded(false);
     }
 
     /** Decompress a compressed public key (x co-ord and low-bit of y-coord). */
@@ -188,8 +189,9 @@ public class Sign {
                         new BigInteger(1, signatureData.getS()));
 
         int recId = header - 27;
-        BigInteger key = recoverFromSignature(recId, sig, messageHash);
-        if (key == null) {
+        byte[] qBytes = recoverFromSignature(recId, sig, messageHash);
+//        BigInteger key = new BigInteger(1, Arrays.copyOfRange(qBytes, 1, qBytes.length));
+        if (qBytes == null) {
             throw new SignatureException("Could not recover public key from signature");
         }
     }
@@ -305,4 +307,27 @@ public class Sign {
             throw new RuntimeException(errorMessage);
         }
     }
+
+    public static byte[] signatureToAddress(byte[] messageHash, ECDSASignature sig) throws ECKeyPair.SignatureException {
+        verifyPrecondition(messageHash.length == 32, "messageHash argument has length " + messageHash.length);
+
+        int header = sig.v;
+        // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
+        // 0x1D = second key with even y, 0x1E = second key with odd y
+        if (header < 27 || header > 34) {
+            throw new ECKeyPair.SignatureException("Header byte out of range: " + header);
+        }
+        if (header >= 31) {
+            header -= 4;
+        }
+        int recId = header - 27;
+
+        byte[] pubBytes = recoverFromSignature(recId, sig, Bytes.wrap(messageHash));
+        if (pubBytes == null) {
+            throw new ECKeyPair.SignatureException("Could not recover public key from signature");
+        }
+
+        return Hash.sha3omit12(Arrays.copyOfRange(pubBytes, 1, pubBytes.length));
+    }
+
 }
