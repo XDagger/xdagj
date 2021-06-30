@@ -31,6 +31,7 @@ import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.net.message.impl.*;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.OldWallet;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
@@ -282,13 +283,13 @@ public class MessageTest {
         System.out.println("status:" + message.getXdagStats());
         System.out.println("netdb:" + message.getNetDB());
         if (message.getCommand() == XdagMessageCodes.BLOCK_REQUEST) {
-            System.out.println("request hash:" + Hex.toHexString(message.getHash()));
+            System.out.println("request hash:" + message.getHash().toHexString());
         } else {
             System.out.println("random:" + message.getRandom());
         }
         if (message.getCommand() == XdagMessageCodes.SUMS_REPLY) {
             SumReplyMessage sumReplyMessage = (SumReplyMessage) message;
-            System.out.println("sum:" + Hex.toHexString(sumReplyMessage.getSum()));
+            System.out.println("sum:" + sumReplyMessage.getSum().toHexString());
         }
     }
 
@@ -306,6 +307,7 @@ public class MessageTest {
 
         String port = "b822";
         byte[] portbyte = Hex.decode(port);
+
         assertEquals(8888,BytesUtils.bytesToShort(portbyte, 0, true));
 
         byte[] res = BytesUtils.merge(inetAddress.getAddress(), BytesUtils.shortToBytes((short) 4444, true));

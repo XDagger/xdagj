@@ -1,7 +1,29 @@
-package io.xdag.net.discovery.discv5;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package io.xdag.net.libp2p.discovery;
 
-import io.xdag.net.discovery.DiscoveryPeer;
-import io.xdag.net.discovery.DiscoveryService;
+import io.xdag.net.libp2p.Libp2pUtils;
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
 import org.apache.tuweni.bytes.Bytes;
@@ -19,15 +41,15 @@ import java.util.stream.Stream;
 /**
  * @author wawa
  */
-public class DiscV5ServiceImpl extends Service implements DiscoveryService {
+public class DiscV5Service extends Service {
 
     private final DiscoverySystem discoverySystem;
 
-    public DiscV5ServiceImpl(final DiscoverySystem discoverySystem) {
+    public DiscV5Service(final DiscoverySystem discoverySystem) {
         this.discoverySystem = discoverySystem;
     }
 
-    public static DiscoveryService create(
+    public static DiscV5Service create(
             final Bytes privateKey, final String address, final int port, final List<String> bootnodes) {
         final DiscoverySystem discoveryManager =
                 new DiscoverySystemBuilder()
@@ -37,7 +59,7 @@ public class DiscV5ServiceImpl extends Service implements DiscoveryService {
                                 new NodeRecordBuilder().privateKey(privateKey).address(address, port).build())
                         .build();
 
-        return new DiscV5ServiceImpl(discoveryManager);
+        return new DiscV5Service(discoveryManager);
     }
 
     @Override
@@ -51,21 +73,17 @@ public class DiscV5ServiceImpl extends Service implements DiscoveryService {
         return SafeFuture.completedFuture(null);
     }
 
-    @Override
     public Stream<DiscoveryPeer> streamKnownPeers() {
-        return activeNodes().map(NodeRecordConverter::convertToDiscoveryPeer).flatMap(Optional::stream);
+        return activeNodes().map(Libp2pUtils::convertToDiscoveryPeer).flatMap(Optional::stream);
     }
 
-    @Override
     public SafeFuture<Void> searchForPeers() {
         return SafeFuture.of(discoverySystem.searchForNewPeers());
     }
 
-    @Override
     public Optional<String> getEnr() {
         return Optional.of(discoverySystem.getLocalNodeRecord().asEnr());
     }
-
 
     private Stream<NodeRecord> activeNodes() {
         return discoverySystem

@@ -24,6 +24,7 @@
 package io.xdag.cli;
 
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
@@ -36,6 +37,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
+import org.junit.contrib.java.lang.system.SystemErrRule;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -45,6 +48,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
@@ -52,14 +56,23 @@ import static org.mockito.Mockito.spy;
 import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 public class XdagCliTest {
+
     private Config config;
 
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
+    @Rule
+    public final SystemOutRule outRule = new SystemOutRule();
+
+    @Rule
+    public final SystemErrRule errRule = new SystemErrRule();
+
     @Before
     public void setUp() throws Exception {
         config = new DevnetConfig();
+        outRule.mute();
+        errRule.mute();
     }
 
     @Test
@@ -74,14 +87,29 @@ public class XdagCliTest {
     public void testHelp() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.start(new String[] { "--help" });
-        verify(xdagCLI).printHelp();
+        outRule.enableLog();
+        xdagCLI.printHelp();
+        String helpStr = """
+        usage: ./xdag.sh [options]
+            --account <action>              init|create|list
+            --changepassword                change wallet password
+            --convertoldwallet <filename>   convert xdag old wallet.dat to private key hex
+            --dumpprivatekey <address>      print hex key
+            --help                          print help
+            --importmnemonic <mnemonic>     import HDWallet mnemonic
+            --importprivatekey <key>        import hex key
+            --version                       show version
+        """;
+        assertEquals(helpStr, outRule.getLog());
     }
 
     @Test
     public void testVersion() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.start(new String[] { "--version" });
-        verify(xdagCLI).printVersion();
+        outRule.enableLog();
+        xdagCLI.printVersion();
+        assertEquals(Constants.CLIENT_VERSION+"\n", outRule.getLog());
     }
 
     @Test

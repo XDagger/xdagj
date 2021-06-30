@@ -45,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> implements Xdag {
     protected Kernel kernel;
     protected Blockchain blockchain;
-    protected XdagVersion version = XdagVersion.V03;
+    protected XdagVersion version;
     protected Channel channel;
     protected MessageQueue msgQueue;
     protected Block bestKnownBlock;

@@ -23,7 +23,8 @@
  */
 package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.macs.HMac;
@@ -60,9 +61,8 @@ public class Hash {
      * @return hash value as hex encoded string
      */
     public static String sha256(String hexInput) {
-        byte[] bytes = Numeric.hexStringToByteArray(hexInput);
-        byte[] result = sha256(bytes);
-        return Numeric.toHexString(result);
+        Bytes32 result = sha256(Bytes.fromHexString(hexInput));
+        return result.toHexString();
     }
 
     /**
@@ -72,18 +72,12 @@ public class Hash {
      * @return The hash value for the given input
      * @throws RuntimeException If we couldn't find any SHA-256 provider
      */
-    public static byte[] sha256(byte[] input) {
-        return newDigest().digest(input);
+    public static Bytes32 sha256(Bytes input) {
+        return Bytes32.wrap(newDigest().digest(input.toArray()));
     }
 
-    public static byte[] hashTwice(byte[] input) {
+    public static Bytes32 hashTwice(Bytes input) {
         return sha256(sha256(input));
-    }
-
-    public static byte[] hashTwice(byte[] input, int offset, int length) {
-        MessageDigest digest = newDigest();
-        digest.update(input, offset, length);
-        return digest.digest(digest.digest());
     }
 
     /** MessageDigest not thread safe */
@@ -105,10 +99,10 @@ public class Hash {
         return out;
     }
 
-    public static byte[] sha256hash160(byte[] input) {
-        byte[] sha256 = sha256(input);
+    public static byte[] sha256hash160(Bytes input) {
+        Bytes32 sha256 = sha256(input);
         RIPEMD160Digest digest = new RIPEMD160Digest();
-        digest.update(sha256, 0, sha256.length);
+        digest.update(sha256.toArray(), 0, sha256.size());
         byte[] out = new byte[20];
         digest.doFinal(out, 0);
         return out;

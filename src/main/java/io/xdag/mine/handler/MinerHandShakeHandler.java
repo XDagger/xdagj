@@ -46,10 +46,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
@@ -111,15 +110,15 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // 如果是新增的地址块
                 if (importResult != ImportResult.EXIST) {
-                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", addressBlock.getHash().toHexString(), channel.getInetAddress().toString(), XdagTime.format(new Date()));
                 } else {
-                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", addressBlock.getHash().toHexString(),channel.getInetAddress().toString(), XdagTime.format(new Date()));
                 }
 
                 channel.getInBound().add(16L);
                 minerManager.addActivateChannel(channel);
                 channel.setIsActivate(true);
-                channel.setConnectTime(FormatDateUtils.getCurrentTime());
+                channel.setConnectTime(new Date(System.currentTimeMillis()));
                 channel.setAccountAddressHash(addressBlock.getHash());
                 ctx.pipeline().remove(this);
                 channel.activateHadnler(ctx, V03);
@@ -140,7 +139,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     }
 
-    public boolean initMiner(byte[] hash) {
+    public boolean initMiner(Bytes32 hash) {
         return channel.initMiner(hash);
     }
 
@@ -164,7 +163,8 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         try {
             Channel nettyChannel = ctx.channel();
-            if (evt instanceof IdleStateEvent e) {
+            if (evt instanceof IdleStateEvent) {
+                IdleStateEvent e = (IdleStateEvent)evt;
                 if (e.state() == IdleState.READER_IDLE) {
                     nettyChannel.closeFuture();
                     if (log.isDebugEnabled()) {

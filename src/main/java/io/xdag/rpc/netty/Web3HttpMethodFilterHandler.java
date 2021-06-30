@@ -31,7 +31,7 @@ import io.netty.handler.codec.http.*;
 public class Web3HttpMethodFilterHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
-        HttpMethod httpMethod = request.getMethod();
+        HttpMethod httpMethod = request.method();
         if (HttpMethod.POST.equals(httpMethod)) {
             // retain the request so it isn't released automatically by SimpleChannelInboundHandler
             ctx.fireChannelRead(request.retain());

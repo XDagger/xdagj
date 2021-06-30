@@ -25,10 +25,12 @@ package io.xdag.net.message.impl;
 
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class BlockExtRequestMessage extends Message {
 
-    public BlockExtRequestMessage(byte[] bytes) {
+    public BlockExtRequestMessage(MutableBytes bytes) {
         super(bytes);
         // TODO Auto-generated constructor stub
     }
@@ -40,7 +42,7 @@ public class BlockExtRequestMessage extends Message {
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         // TODO Auto-generated method stub
         return null;
     }

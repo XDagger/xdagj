@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.net.libp2p.RPCHandler;
+package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
@@ -34,31 +34,31 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
-import io.xdag.net.libp2p.manager.PeerManager;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
 import io.xdag.net.libp2p.peer.NodeId;
-
+import lombok.Getter;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
-public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
-    PeerManager peerManager;
-    public NonHandler(PeerManager peerManager) {
-        this.peerManager = peerManager;
+@Getter
+@Setter
+public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
+    private Connection connection;
+
+    public NonProtocol() {
     }
 
     @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
-        return  new ProtocolDescriptor("xdagj");
+        return  new ProtocolDescriptor("xdagj-non-protocol");
     }
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
-        final Connection connection = ((Stream) p2PChannel).getConnection();
+        this.connection = ((Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
-        peerManager.handleConnection(connection);
         Controller controller = new Controller(nodeId, p2PChannel);
         p2PChannel.pushHandler(controller);
         return controller.activeFuture;
@@ -72,7 +72,7 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
     static class Controller extends SimpleChannelInboundHandler<ByteBuf> {
 
         final NodeId nodeid;
-        final P2PChannel p2pChannel;
+        public P2PChannel p2pChannel;
         protected final CompletableFuture<Controller> activeFuture = new CompletableFuture<>();
 
         public Controller(NodeId nodeid, P2PChannel p2pChannel) {
@@ -94,8 +94,9 @@ public class NonHandler implements ProtocolBinding<NonHandler.Controller> {
         //ByteBuf 是接受的对象
         @Override
         protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf buf) {
-            String s = buf.toString(CharsetUtil.UTF_8);
+//            String s = buf.toString(CharsetUtil.UTF_8);
 //            System.out.println(s);
         }
+
     }
 }

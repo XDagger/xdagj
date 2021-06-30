@@ -34,13 +34,14 @@ import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.FormatDateUtils;
-import io.xdag.utils.StringUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
@@ -121,18 +122,20 @@ public class Commands {
      * @return balance of give address
      */
     public String balance(String address) {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(address)) {
+        if (StringUtils.isEmpty(address)) {
             return "Balance:"+String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance())) + " XDAG";
         } else {
-            byte[] hash;
-            if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
+//            byte[] key = new byte[32];
+            Bytes32 hash;
+            MutableBytes32 key = MutableBytes32.create();
+            if (StringUtils.length(address) == 32) {
                 hash = address2Hash(address);
             } else {
-                hash = StringUtils.getHash(address);
+                hash = BasicUtils.getHash(address);
             }
-            byte[] key = new byte[32];
-            System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
-            Block block = kernel.getBlockStore().getBlockInfoByHash(key);
+//            System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
+            key.set(8, Objects.requireNonNull(hash).slice(8,24));
+            Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
             return "Balance:"+String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
         }
     }
@@ -144,15 +147,16 @@ public class Commands {
      * @param address    receiver address
      * @return Transaction hash
      */
-    public String xfer(double sendAmount, byte[] address, String remark) {
+    public String xfer(double sendAmount, Bytes32 address, String remark) {
 
         StringBuilder str = new StringBuilder();
         str.append("Transaction :{ ").append("\n");
 
 
         long amount = xdag2amount(sendAmount);
-        byte[] to = new byte[32];
-        System.arraycopy(address, 8, to, 8, 24);
+        MutableBytes32 to = MutableBytes32.create();
+//        System.arraycopy(address, 8, to, 8, 24);
+        to.set(8,address.slice(8,24));
 
         // 待转账余额
         AtomicLong remain = new AtomicLong(amount);
@@ -198,7 +202,7 @@ public class Commands {
 
 
 
-    private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, byte[] to, String remark) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark) {
         // 判断是否有remark
         int hasRemark = remark==null ? 0:1;
 
@@ -252,7 +256,7 @@ public class Commands {
     }
 
 
-    private BlockWrapper createTransaction(byte[] to, long amount, Map<Address, ECKeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, ECKeyPair> keys, String remark) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
 
@@ -338,10 +342,12 @@ public class Commands {
      * @param blockhash blockhash
      * @return block info
      */
-    public String block(byte[] blockhash) {
+    public String block(Bytes32 blockhash) {
         try {
-            byte[] hashLow = new byte[32];
-            System.arraycopy(blockhash, 8, hashLow, 8, 24);
+//            byte[] hashLow = new byte[32];
+            MutableBytes32 hashLow = MutableBytes32.create();
+//            System.arraycopy(blockhash, 8, hashLow, 8, 24);
+            hashLow.set(8, blockhash.slice(8, 24));
             Block block = kernel.getBlockStore().getRawBlockByHash(hashLow);
             return printBlockInfo(block);
         } catch (Exception e) {
@@ -351,7 +357,7 @@ public class Commands {
     }
 
     public String block(String address) {
-        byte[] hashlow = address2Hash(address);
+        Bytes32 hashlow = address2Hash(address);
         if (hashlow != null) {
             return block(hashlow);
         } else {
@@ -390,7 +396,7 @@ public class Commands {
             inputs = new StringBuilder();
             for (int i = 0; i < block.getInputs().size(); i++) {
                 inputs.append(String.format("     input: %s           %.9f\n",
-                        hash2Address(kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false).getInfo().getHash()), amount2xdag(block.getInputs().get(i).getAmount().longValue())
+                        hash2Address(Bytes32.wrap(kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false).getInfo().getHash())), amount2xdag(block.getInputs().get(i).getAmount().longValue())
                 ));
             }
         }
@@ -399,7 +405,7 @@ public class Commands {
             outputs = new StringBuilder();
             for (int i = 0; i < block.getOutputs().size(); i++) {
                 outputs.append(String.format("    output: %s           %.9f\n",
-                        hash2Address(kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false).getInfo().getHash()), amount2xdag(block.getOutputs().get(i).getAmount().longValue())
+                        hash2Address(Bytes32.wrap(kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false).getInfo().getHash())), amount2xdag(block.getOutputs().get(i).getAmount().longValue())
                 ));
             }
         }
@@ -414,7 +420,7 @@ public class Commands {
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
                 //fee目前为0
-                block.getInfo().getRef()==null?"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":hash2Address(block.getInfo().getRef()),0.0
+                block.getInfo().getRef()==null?"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":hash2Address(Bytes32.wrap(block.getInfo().getRef())),0.0
                 )
                 +"\n"
                 +(inputs==null?"":inputs.toString())+(outputs==null?"":outputs.toString())
@@ -511,7 +517,7 @@ public class Commands {
             stringBuilder
                     .append(node.getAddress())
                     .append(" ")
-                    .append(map.get(node) == null ? null : FormatDateUtils.format(new Date(map.get(node))))
+                    .append(map.get(node) == null ? null : XdagTime.format(new Date(map.get(node))))
                     .append(" ")
                     .append(node.getStat().Inbound.get())
                     .append(" in/")

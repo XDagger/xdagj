@@ -26,24 +26,23 @@ package io.xdag.net.handler;
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 public interface Xdag {
+
+    XdagVersion getVersion();
 
     void sendNewBlock(Block newBlock, int ttl);
 
     long sendGetBlocks(long startTime, long endTime);
 
-    long sendGetBlock(byte[] hash);
+    long sendGetBlock(MutableBytes32 hash);
 
     long sendGetSums(long startTime, long endTime);
 
     void dropConnection() ;
 
-    boolean isIdle();
-
     void activate();
-
-    XdagVersion getVersion();
 
     /** Disables pending block processing */
     void disableBlocks();

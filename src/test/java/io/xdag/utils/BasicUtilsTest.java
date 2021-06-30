@@ -26,14 +26,14 @@ package io.xdag.utils;
 import static org.junit.Assert.assertEquals;
 
 import java.math.BigDecimal;
-
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
+
+import io.xdag.utils.exception.XdagOverFlowException;
 
 public class BasicUtilsTest {
 
     @Test
-    public void xdag2amount() {
+    public void TestXdag2amount() {
 
         BigDecimal a = BigDecimal.valueOf(972.8);
         assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()));
@@ -45,9 +45,14 @@ public class BasicUtilsTest {
         assertEquals(429496729600L,BasicUtils.xdag2amount(c.doubleValue()));
     }
 
-    @Test
-    public void amount2xdag() {
+    @Test(expected = XdagOverFlowException.class)
+    public void TestXdag2amountOverflow() {
+        double d = -1.3;
+        BasicUtils.xdag2amount(d);
+    }
 
+    @Test
+    public void TestAmount2xdag() {
         long a = 4178144185548L;
         // 3CC CCCC CCCD?
         assertEquals(972.8, BasicUtils.amount2xdag(a), 0.0);
@@ -70,12 +75,16 @@ public class BasicUtilsTest {
         assertEquals(1024.0, BasicUtils.amount2xdag(4398046511104L), 0.0);
     }
 
+    @Test(expected = XdagOverFlowException.class)
+    public void TestAmount2xdagOverflow() {
+        long a = -1;
+        BasicUtils.amount2xdag(a);
+    }
+
     @Test
     public void xdag_diff2logTest() {
-        double res = BasicUtils.xdag_diff2log(
-                BasicUtils.getDiffByHash(
-                        Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8")));
-
+//        double res = BasicUtils.xdag_diff2log(
+//                BasicUtils.getDiffByHash(Bytes32.fromHexString("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
 //        System.out.println(res);
 
     }
@@ -88,7 +97,7 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_log_difficulty2hashrateTest() {
-        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
+//        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
         //System.out.println("this is res :" + res);
     }
 }

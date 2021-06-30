@@ -48,17 +48,12 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction{
 
     @Override
     public synchronized String sendTransaction(Web3.CallArguments args) {
-
         // 1. process args
-        byte[] from = Hex.decode(args.from);
-        byte[] to = Hex.decode(args.to);
-        BigInteger value = args.value != null ? TypeConverter.stringNumberAsBigInt(args.value) : BigInteger.ZERO;
-
+//        byte[] from = Hex.decode(args.from);
+//        byte[] to = Hex.decode(args.to);
+//        BigInteger value = args.value != null ? TypeConverter.stringNumberAsBigInt(args.value) : BigInteger.ZERO;
         // 2. create a transaction
-
         // 3. try to add blockchain
-
-
         return null;
     }
 

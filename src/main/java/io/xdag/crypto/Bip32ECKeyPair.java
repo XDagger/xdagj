@@ -24,6 +24,7 @@
 package io.xdag.crypto;
 
 import io.xdag.utils.Numeric;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.math.ec.ECPoint;
 
 import java.math.BigInteger;
@@ -159,7 +160,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
     }
 
     private byte[] getIdentifier() {
-        return sha256hash160(getPublicKeyPoint().getEncoded(true));
+        return sha256hash160(Bytes.wrap(getPublicKeyPoint().getEncoded(true)));
     }
 
     public ECPoint getPublicKeyPoint() {

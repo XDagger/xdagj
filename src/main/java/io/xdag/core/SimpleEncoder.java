@@ -133,7 +133,6 @@ public class SimpleEncoder {
     /**
      * Writes a size into the output byte array.
      *
-     * @param size
      * @throws IllegalArgumentException
      *             when the input size is negative
      */

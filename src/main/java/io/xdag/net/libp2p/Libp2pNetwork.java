@@ -25,70 +25,68 @@ package io.xdag.net.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
-import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.Builder;
 import io.libp2p.core.dsl.BuilderJKt;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.core.multistream.ProtocolBinding;
-import io.libp2p.mux.mplex.MplexStreamMuxer;
+import io.libp2p.core.mux.StreamMuxerProtocol;
+import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
-import io.netty.handler.logging.LogLevel;
 import io.xdag.Kernel;
-import io.xdag.net.libp2p.RPCHandler.Firewall;
-import io.xdag.net.libp2p.RPCHandler.NonHandler;
-import io.xdag.net.libp2p.RPCHandler.RPCHandler;
-import io.xdag.net.libp2p.manager.PeerManager;
-import io.xdag.net.libp2p.peer.LibP2PNodeId;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.net.libp2p.peer.NodeId;
-import io.xdag.utils.IpUtil;
-import io.xdag.utils.MultiaddrUtil;
 import io.xdag.utils.SafeFuture;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 
 @Slf4j
-public class Libp2pNetwork implements P2PNetwork {
-    private ProtocolBinding<?> rpcHandler;
+@Getter
+public class Libp2pNetwork {
+    enum State {
+        IDLE,
+        RUNNING,
+        STOPPED
+    }
+    private final ProtocolBinding<?> protocol;
     private int port;
     private Host host;
     private final PrivKey privKey;
     private NodeId nodeId;
-    private InetAddress privateAddress;
-    protected PeerManager peerManager = new PeerManager();
+    private String ip;
+
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
+    private DiscV5Service discV5Service;
+    private final List<String> bootnodes ;
+
     public Libp2pNetwork(PrivKey privKey, Multiaddr listenAddr) {
-        rpcHandler = new NonHandler(peerManager);
+        this.protocol = new NonProtocol();
         this.privKey = privKey;
         this.advertisedAddr = listenAddr;
+        this.bootnodes = new ArrayList<>();
     }
+
     public Libp2pNetwork(Kernel kernel){
-        port = kernel.getConfig().getNodeSpec().getLibp2pPort();
-        rpcHandler = new RPCHandler(kernel,peerManager);
-        privateAddress = IpUtil.getLocalAddress();
-        peerManager = new PeerManager();
-        //种子节点 Privkey从配置文件读取 非种子节点随机生成一个
-        //PrivKey privKey= KeyKt.generateKeyPair(KEY_TYPE.SECP256K1,0).getFirst();
-        if(kernel.getConfig().getNodeSpec().isBootnode()){
-            String Privkey = kernel.getConfig().getNodeSpec().getLibp2pPrivkey();
-            Bytes privkeybytes = Bytes.fromHexString(Privkey);
-            this.privKey = KeyKt.unmarshalPrivateKey(privkeybytes.toArrayUnsafe());
-        }else{
-            this.privKey = kernel.getPrivKey();
-        }
-        PeerId peerId = PeerId.fromPubKey(privKey.publicKey());
-        this.nodeId = new LibP2PNodeId(peerId);
-        this.advertisedAddr =
-                MultiaddrUtil.fromInetSocketAddress(
+        this.port = kernel.getConfig().getNodeSpec().getLibp2pPort();
+        this.protocol = new Libp2pXdagProtocol(kernel);
+        // libp2p use wallet default key
+        ECKeyPair key = kernel.getWallet().getDefKey();
+        privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(key.getPrivateKey().toByteArray());
+        ip = kernel.getConfig().getNodeSpec().getNodeIp();
+        nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKey.publicKey()));
+        advertisedAddr = Libp2pUtils.fromInetSocketAddress(
                         new InetSocketAddress(kernel.getConfig().getNodeSpec().getNodeIp(), port),nodeId);
+        bootnodes = kernel.getConfig().getNodeSpec().getBootnodes();
 
     }
 
@@ -98,19 +96,17 @@ public class Libp2pNetwork implements P2PNetwork {
                     b.getIdentity().setFactory(()-> privKey);
                     b.getTransports().add(TcpTransport::new);
                     b.getSecureChannels().add(NoiseXXSecureChannel::new);
-//                    b.getMuxers().add(StreamMuxerProtocol.getMplex());
-                    b.getMuxers().add(MplexStreamMuxer::new);
+                    b.getMuxers().add(StreamMuxerProtocol.getMplex());
                     b.getNetwork().listen(advertisedAddr.toString());
-                    b.getProtocols().add(rpcHandler);
-                    b.getDebug().getBeforeSecureHandler().setLogger(LogLevel.DEBUG, "wire.ciphered");
-                    Firewall firewall = new Firewall(Duration.ofSeconds(100));
-                    b.getDebug().getBeforeSecureHandler().setHandler(firewall);
-                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
-                    b.getConnectionHandlers().add(peerManager);
+                    b.getProtocols().add(protocol);
+//                    b.getDebug().getBeforeSecureHandler().setLogger(LogLevel.DEBUG, "wire.ciphered");
+//                    Firewall firewall = new Firewall(Duration.ofSeconds(100));
+//                    b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
+//                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
                 });
+        discV5Service = DiscV5Service.create(Bytes.wrap(privKey.raw()),ip,port,bootnodes);
     }
 
-    @Override
     public SafeFuture<?> start() {
         if (!state.compareAndSet(State.IDLE, State.RUNNING)) {
             return SafeFuture.failedFuture(new IllegalStateException("Network already started"));
@@ -119,6 +115,10 @@ public class Libp2pNetwork implements P2PNetwork {
         //16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj
         log.info("id ={}", host.getPeerId());
         log.info("Starting libp2p network...");
+        if(discV5Service!=null){
+            discV5Service.start();
+            discV5Service.searchForPeers();
+        }
         return SafeFuture.of(host.start())
                 .thenApply(
                         i -> {
@@ -128,36 +128,26 @@ public class Libp2pNetwork implements P2PNetwork {
     }
 
 
-    @Override
     public void dail(String peer) {
         Multiaddr address = Multiaddr.fromString(peer);
-        rpcHandler.dial(host,address);
+        protocol.dial(host,address);
     }
 
-
-    @Override
     public String getNodeAddress() {
         return advertisedAddr.toString();
     }
 
-    @Override
-    public NodeId getNodeId() {
-        return nodeId;
+    public DiscV5Service getDiscV5Service() {
+        return discV5Service;
     }
 
-
-    @Override
     public SafeFuture<?> stop() {
         if (!state.compareAndSet(State.RUNNING, State.STOPPED)) {
             return SafeFuture.COMPLETE;
         }
         log.debug("LibP2PNetwork.stop()");
+        SafeFuture.of(discV5Service.stop());
         return SafeFuture.of(host.stop());
     }
 
-
-    public String getAddress(){
-        return "/ip4/"+privateAddress.getHostAddress()+
-                "/tcp/"+port;
-    }
 }

@@ -24,50 +24,47 @@
 package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.xdag.Bootstrap;
+import io.libp2p.core.multiformats.Multiaddr;
+import io.libp2p.core.multiformats.Protocol;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.Channel;
 import io.xdag.net.handler.Xdag;
-import io.xdag.net.libp2p.RPCHandler.RPCHandler;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+
+import org.apache.commons.lang3.math.NumberUtils;
 
 /**
  * @author wawa
  */
 @Slf4j
+@Getter
 public class Libp2pChannel extends Channel {
-    protected NioSocketChannel socket;
-    protected boolean isActive;
-    protected boolean isDisconnected = false;
     private final Connection connection;
-    private final RPCHandler handler;
-    protected MessageQueue messageQueue;
-    public int port;
-    public String ip;
-    protected Kernel kernel;
-    public Libp2pChannel(Connection connection, RPCHandler handler) {
+    private final Libp2pXdagProtocol protocol;
+
+    public Libp2pChannel(Connection connection, Libp2pXdagProtocol protocol, Kernel kernel) {
         this.connection = connection;
-        this.handler = handler;
-    }
-    public void init(Kernel kernel) {
-        String[] ipString = connection.remoteAddress().toString().split("/");
-        ip = ipString[2];
-        port = Integer.parseInt(ipString[4]);
-        inetSocketAddress = new InetSocketAddress(ip,port);
-        node = new Node(connection.secureSession().getRemoteId().getBytes(),ip,port);
+        this.protocol = protocol;
+        this.kernel = kernel;
+
+        Multiaddr multiaddr = connection.remoteAddress();
+        String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
+        String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
+        this.inetSocketAddress = new InetSocketAddress(ip, NumberUtils.toInt(port));
+        this.node = new Node(connection.secureSession().getRemoteId().getBytes(),ip, NumberUtils.toInt(port));
         this.messageQueue = new MessageQueue(this);
         log.debug("Initwith Node host:" + ip + " port:" + port + " node:" + node.getHexId());
-        this.kernel = kernel;
     }
+
     @Override
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        handler.controller.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
+        protocol.getLibp2PXdagController().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }
 
     @Override
@@ -76,28 +73,18 @@ public class Libp2pChannel extends Channel {
     }
 
     @Override
-    public int getPort() {
-        return 0;
-    }
-
-    @Override
     public boolean isDisconnected() {
         return isDisconnected;
     }
 
     @Override
-    public MessageQueue getmessageQueue() {
+    public MessageQueue getMessageQueue() {
         return messageQueue;
     }
 
     @Override
     public Kernel getKernel() {
         return kernel;
-    }
-
-
-    public RPCHandler getHandler(){
-        return handler;
     }
 
     @Override
@@ -121,17 +108,12 @@ public class Libp2pChannel extends Channel {
     }
 
     @Override
-    public String getIp() {
-        return node.getHexId();
-    }
-
-    @Override
     public void dropConnection() {
         connection.close();
     }
 
     @Override
     public Xdag getXdag() {
-        return handler.controller;
+        return protocol.getLibp2PXdagController();
     }
 }

@@ -23,16 +23,19 @@
  */
 package io.xdag.net.manager;
 
-import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
-import io.xdag.net.Channel;
-import io.xdag.net.XdagChannel;
-import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import io.xdag.Kernel;
+import io.xdag.core.BlockWrapper;
+import io.xdag.net.Channel;
+import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -59,8 +62,7 @@ public class XdagChannelManager {
     }
 
     public void add(Channel ch) {
-        log.debug(
-                "xdag channel manager->Channel added: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
+        log.debug("xdag channel manager->Channel added: remoteAddress = {}", ch.getInetSocketAddress());
         channels.put(ch.getInetSocketAddress(), ch);
     }
 
@@ -154,12 +156,13 @@ public class XdagChannelManager {
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
 
+        //对于进来的连接，端口不固定，不能从白名单中判断,或者只判断ip，不判断port
         // 默认空为允许所有连接
-        if (addressSet.size() != 0) {
-            if (!addressSet.contains(address)) {
-                return false;
-            }
-        }
+//        if (addressSet.size() != 0) {
+//            if (!addressSet.contains(address)) {
+//                return false;
+//            }
+//        }
 
         // 不连接自己
         return !isSelfAddress(address);

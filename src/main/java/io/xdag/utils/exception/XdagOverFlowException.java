@@ -21,14 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.net.libp2p.peer;
+package io.xdag.utils.exception;
 
+public class XdagOverFlowException extends RuntimeException {
 
-public interface Peer {
-    default NodeId getId() {
-        return getAddress().getId();
+    private static final long serialVersionUID = 1L;
+
+    public XdagOverFlowException() {
+        super("amount overflow!");
     }
 
-    PeerAddress getAddress();
+    public XdagOverFlowException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
+
+    public XdagOverFlowException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public XdagOverFlowException(String message) {
+        super(message);
+    }
+
+    public XdagOverFlowException(Throwable cause) {
+        super(cause);
+    }
 
 }

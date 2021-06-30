@@ -178,19 +178,16 @@ public class ECKeyPair {
      * ECKey 存储公钥类型为 非压缩+去前缀（0x04）
      * 验证签名的时候需要获得压缩公钥
      * 添加compressPubKey方法，将非压缩公钥解析成压缩公钥
-     *
-     * @param pubKey
-     * @return
      */
-    public static byte[] compressPubKey(BigInteger pubKey) {
+    public byte[] getCompressPubKeyBytes() {
         byte pubKeyYPrefix;
         // pubkey 是奇数公钥
-        if (pubKey.testBit(0)) {
+        if (publicKey.testBit(0)) {
             pubKeyYPrefix = 0x03;
         } else {
             pubKeyYPrefix = 0x02;
         }
-        return BytesUtils.merge(pubKeyYPrefix,BytesUtils.subArray(Numeric.toBytesPadded(pubKey,64),0,32));
+        return BytesUtils.merge(pubKeyYPrefix,BytesUtils.subArray(Numeric.toBytesPadded(publicKey,64),0,32));
     }
 
 }

@@ -21,36 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils;
+package io.xdag.net.libp2p;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import io.libp2p.core.PeerId;
+import io.libp2p.core.crypto.KEY_TYPE;
+import io.libp2p.core.crypto.KeyKt;
+import io.libp2p.core.crypto.PrivKey;
+import io.xdag.net.libp2p.discovery.DiscoveryPeer;
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.Before;
+import org.junit.Test;
 
-public class FormatDateUtils {
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
-    public static Date getCurrentTime() {
-        Calendar calendar = Calendar.getInstance();
-        return calendar.getTime();
+import static org.junit.Assert.assertEquals;
+
+public class DiscoveryPeerTest {
+    DiscoveryPeer peer;
+    String expectStirng;
+    @Before
+    public void start() throws UnknownHostException {
+        PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
+        peer = new DiscoveryPeer(
+                Bytes.wrap(privKey.publicKey().raw()),
+                new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 10000));
+        expectStirng = "/ip4/127.0.0.1/tcp/10000/ipfs/"+ new LibP2PNodeId(PeerId.fromPubKey(privKey.publicKey())).toString();
+
     }
-
-    public static String format(Date date) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-        return simpleDateFormat.format(date);
+    @Test
+    public void TestDiscoveryPeerToDailNodeId(){
+        assertEquals(expectStirng, Libp2pUtils.discoveryPeerToDailId(peer));
     }
-
-    /**
-     * Returns the current time in milliseconds since the epoch, or a mocked out equivalent.
-     */
-    public static long currentTimeMillis() {
-        return System.currentTimeMillis();
-    }
-
-    /**
-     * Returns the current time in seconds since the epoch, or a mocked out equivalent.
-     */
-    public static long currentTimeSeconds() {
-        return currentTimeMillis() / 1000;
-    }
-
 }

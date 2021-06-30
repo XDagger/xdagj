@@ -48,6 +48,8 @@ import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
@@ -111,7 +113,7 @@ public class MinerConnectTest {
 
         blockchain = new BlockchainImpl(kernel);
 
-        channel = new MinerChannel(kernel,null,false);
+        channel = new MinerChannel(kernel, false);
     }
 
     @After
@@ -137,7 +139,7 @@ public class MinerConnectTest {
         }
 
         @Override
-        public boolean initMiner(byte[] hash) {
+        public boolean initMiner(Bytes32 hash) {
             return true;
         }
 
@@ -171,7 +173,6 @@ public class MinerConnectTest {
                     byteBuf.writeInt(1);
                     out.add(byteBuf.retain());
                 }
-            } else {
             }
         }
     }
@@ -182,8 +183,8 @@ public class MinerConnectTest {
 
         ECKeyPair key = Keys.createEcKeyPair();
         Block address = generateAddressBlock(config, key, new Date().getTime());
-        byte[] encoded = address.getXdagBlock().getData();
-        byte[] data = Native.dfslib_encrypt_array(encoded,16,0);
+        MutableBytes encoded = address.getXdagBlock().getData();
+        byte[] data = Native.dfslib_encrypt_array(encoded.toArray(),16,0);
 
         ByteBuf buf = Unpooled.buffer();
         buf.writeBytes(data);
@@ -206,7 +207,7 @@ public class MinerConnectTest {
         String fake = "0000000000000000510500000000000011100b07790100000000000000000000913c141ee4175a018a3412ba52f827d2fd67da7c0c581641e9f48a81e9dbd8f2486fac9f54560465e53a20f21940a335414f3949fc807f187fb57f51a48611220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         address = new Block(new XdagBlock(Hex.decode(fake)));
         encoded = address.getXdagBlock().getData();
-        data = Native.dfslib_encrypt_array(encoded,16,0);
+        data = Native.dfslib_encrypt_array(encoded.toArray(),16,0);
 
         buf.clear();
         buf.writeBytes(data);

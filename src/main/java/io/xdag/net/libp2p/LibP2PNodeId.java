@@ -21,12 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils;
+package io.xdag.net.libp2p;
 
-import java.util.Iterator;
+import io.libp2p.core.PeerId;
+import io.xdag.net.libp2p.peer.NodeId;
+import org.apache.tuweni.bytes.Bytes;
 
-public interface ClosableIterator<T> extends Iterator<T> {
+public class  LibP2PNodeId extends NodeId {
+    private final PeerId peerId;
 
-    void close();
-    
+    public LibP2PNodeId(final PeerId peerId) {
+        this.peerId = peerId;
+    }
+
+    @Override
+    public Bytes toBytes() {
+        return Bytes.wrap(peerId.getBytes());
+    }
+
+    @Override
+    public String toBase58() {
+        return peerId.toBase58();
+    }
 }

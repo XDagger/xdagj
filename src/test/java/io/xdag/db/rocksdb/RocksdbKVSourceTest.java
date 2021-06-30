@@ -30,6 +30,8 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.store.BlockStore;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;
@@ -80,8 +82,8 @@ public class RocksdbKVSourceTest {
         KVSource<byte[], byte[]> indexSource = factory.getDB(DatabaseName.TIME);
         indexSource.reset();
 
-        byte[] hashlow1 = Hash.hashTwice("1".getBytes());
-        byte[] hashlow2 = Hash.hashTwice("2".getBytes());
+        Bytes32 hashlow1 = Hash.hashTwice(Bytes.wrap("1".getBytes()));
+        Bytes32 hashlow2 = Hash.hashTwice(Bytes.wrap("2".getBytes()));
 
         long time1 = 1602226304712L;
         byte[] value1 = Hex.decode("1234");

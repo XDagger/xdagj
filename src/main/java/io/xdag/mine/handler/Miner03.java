@@ -41,13 +41,16 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FastByteComparisons;
-import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.util.Date;
+
+import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
@@ -85,7 +88,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
-            log.debug("Close miner at time:{}", FormatDateUtils.format(new Date()));
+            log.debug("Close miner at time:{}", XdagTime.format(new Date()));
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();
@@ -98,37 +101,36 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         Block block = msg.getBlock();
         ImportResult importResult = syncManager.validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         if (importResult.isNormal()) {
-            log.info("XDAG:receive tansaction. A Transaction from wallet/miner, block hash:{}", Hex.toHexString(block.getHash()));
+            log.info("XDAG:receive tansaction. A Transaction from wallet/miner, block hash:{}", block.getHash().toHexString());
         }
     }
 
     protected void processNewBalance(NewBalanceMessage msg) {
         // TODO: 2020/5/9 处理矿工接受到的余额信息 矿工功能
-        log.debug("Receive New Balance [{}]", Hex.toHexString(msg.getEncoded()));
+        log.debug("Receive New Balance [{}]", msg.getEncoded().toHexString());
     }
 
     protected void processNewTask(NewTaskMessage msg) {
         // TODO: 2020/5/9 处理矿工收到的新任务 矿工功能
-        log.debug("Miner Receive New Task [{}]", Hex.toHexString(msg.getEncoded()));
+        log.debug("Miner Receive New Task [{}]", msg.getEncoded().toHexString());
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
         log.debug("Pool Receive Share");
 
         //share地址不一致，修改对应的miner地址
-        if (FastByteComparisons.compareTo( msg.getEncoded(), 8, 24, channel.getAccountAddressHash(), 8, 24) != 0) {
+        if (compareTo( msg.getEncoded().toArray(), 8, 24, channel.getAccountAddressHash().toArray(), 8, 24) != 0) {
             byte[] zero = new byte[8];
-            byte[] blockHash;
+            Bytes32 blockHash;
             BytesUtils.isFullZero(zero);
 
-            byte[] hashLow = BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded(),8 ,24));
+            Bytes32 hashLow = Bytes32.wrap(BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded().toArray(),8 ,24)));
             Block block = kernel.getBlockchain().getBlockByHash(hashLow,false);
             Miner oldMiner = channel.getMiner();
             //不为空，表示可以找到对应的区块，地址存在
             if (block != null) {
-
                 blockHash = block.getHash();
-                Miner miner = kernel.getMinerManager().getActivateMiners().get(new ByteArrayWrapper(blockHash));
+                Miner miner = kernel.getMinerManager().getActivateMiners().get(new ByteArrayWrapper(blockHash.toArray()));
                 if (miner == null) {
                     log.debug("creat a new miner");
                     miner = new Miner(blockHash);
@@ -136,15 +138,15 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 }
                 //改变channel对应的地址，并替换新的miner连接
                 channel.updateMiner(miner);
-                log.info("XDAG:randomXminer. channel {} with wallet-address {} is randomXminer",channel.getInetAddress().toString(),Hex.toHexString(blockHash));
+                log.info("XDAG:randomXminer. channel {} with wallet-address {} is randomXminer",channel.getInetAddress().toString(), blockHash.toHexString());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash()));
+                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
             }else {
                 //to do nothing
                 log.debug("can not receive the share, No such address exists.");
                 ctx.close();
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash()));
+                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
             }
         }
 
@@ -158,8 +160,8 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     }
 
     /** 发送任务消息 */
-    public void sendMessage(byte[] bytes) {
-        ctx.channel().writeAndFlush(bytes);
+    public void sendMessage(Bytes bytes) {
+        ctx.channel().writeAndFlush(bytes.toArray());
     }
 
     public void dropConnection() {
@@ -171,6 +173,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         this.channel.setActive(false);
         kernel.getChannelsAccount().getAndDecrement();
         minerManager.removeUnactivateChannel(this.channel);
-        log.info("XDAG:channel close. channel {} with wallet-address {} close", this.channel.getInetAddress().toString(), Hex.toHexString(this.channel.getMiner().getAddressHash()));
+        log.info("XDAG:channel close. channel {} with wallet-address {} close", this.channel.getInetAddress().toString(), this.channel.getMiner().getAddressHash().toHexString());
     }
 }

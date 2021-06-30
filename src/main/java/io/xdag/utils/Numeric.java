@@ -23,7 +23,7 @@
  */
 package io.xdag.utils;
 
-import java.math.BigDecimal;
+import org.apache.commons.lang3.StringUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
 
@@ -33,60 +33,6 @@ public class Numeric {
 
     private Numeric() {}
 
-    public static String encodeQuantity(BigInteger value) {
-        if (value.signum() != -1) {
-            return HEX_PREFIX + value.toString(16);
-        } else {
-            throw new IllegalArgumentException("Negative values are not supported");
-        }
-    }
-
-    public static BigInteger decodeQuantity(String value) {
-        if (isLongValue(value)) {
-            return BigInteger.valueOf(Long.parseLong(value));
-        }
-
-        if (!isValidHexQuantity(value)) {
-            throw new IllegalArgumentException("Value must be in format 0x[1-9]+[0-9]* or 0x0");
-        }
-        try {
-            return new BigInteger(value.substring(2), 16);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Negative ", e);
-        }
-    }
-
-    private static boolean isLongValue(String value) {
-        try {
-            Long.parseLong(value);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    private static boolean isValidHexQuantity(String value) {
-        if (value == null) {
-            return false;
-        }
-
-        if (value.length() < 3) {
-            return false;
-        }
-
-        if (!value.startsWith(HEX_PREFIX)) {
-            return false;
-        }
-
-        // If TestRpc resolves the following issue, we can reinstate this code
-        // https://github.com/ethereumjs/testrpc/issues/220
-        // if (value.length() > 3 && value.charAt(2) == '0') {
-        //    return false;
-        // }
-
-        return true;
-    }
-
     public static String cleanHexPrefix(String input) {
         if (containsHexPrefix(input)) {
             return input.substring(2);
@@ -95,16 +41,8 @@ public class Numeric {
         }
     }
 
-    public static String prependHexPrefix(String input) {
-        if (!containsHexPrefix(input)) {
-            return HEX_PREFIX + input;
-        } else {
-            return input;
-        }
-    }
-
     public static boolean containsHexPrefix(String input) {
-        return !Strings.isEmpty(input)
+        return !StringUtils.isEmpty(input)
                 && input.length() > 1
                 && input.charAt(0) == '0'
                 && input.charAt(1) == 'x';
@@ -127,28 +65,8 @@ public class Numeric {
         return new BigInteger(hexValue, 16);
     }
 
-    public static String toHexStringWithPrefix(BigInteger value) {
-        return HEX_PREFIX + value.toString(16);
-    }
-
     public static String toHexStringNoPrefix(BigInteger value) {
         return value.toString(16);
-    }
-
-    public static String toHexStringNoPrefix(byte[] input) {
-        return toHexString(input, 0, input.length, false);
-    }
-
-    public static String toHexStringWithPrefixZeroPadded(BigInteger value, int size) {
-        return toHexStringZeroPadded(value, size, true);
-    }
-
-    public static String toHexStringWithPrefixSafe(BigInteger value) {
-        String result = toHexStringNoPrefix(value);
-        if (result.length() < 2) {
-            result = Strings.zeros(1) + result;
-        }
-        return HEX_PREFIX + result;
     }
 
     public static String toHexStringNoPrefixZeroPadded(BigInteger value, int size) {
@@ -167,7 +85,7 @@ public class Numeric {
         }
 
         if (length < size) {
-            result = Strings.zeros(size - length) + result;
+            result = StringUtils.repeat('0', size - length) + result;
         }
 
         if (withPrefix) {
@@ -231,7 +149,7 @@ public class Numeric {
 
     public static String toHexString(byte[] input, int offset, int length, boolean withPrefix) {
         final String output = new String(toHexCharArray(input, offset, length, withPrefix));
-        return withPrefix ? new StringBuilder(HEX_PREFIX).append(output).toString() : output;
+        return withPrefix ? HEX_PREFIX + output : output;
     }
 
     private static char[] toHexCharArray(byte[] input, int offset, int length, boolean withPrefix) {
@@ -250,10 +168,6 @@ public class Numeric {
 
     public static byte asByte(int m, int n) {
         return (byte) ((m << 4) | n);
-    }
-
-    public static boolean isIntegerValue(BigDecimal value) {
-        return value.signum() == 0 || value.scale() <= 0 || value.stripTrailingZeros().scale() <= 0;
     }
 
     public static byte[] bigIntegerToBytes32(BigInteger b) {

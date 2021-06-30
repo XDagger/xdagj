@@ -23,14 +23,12 @@
  */
 package io.xdag.crypto;
 
-import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
 
 import io.xdag.utils.Numeric;
-import io.xdag.utils.Strings;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;

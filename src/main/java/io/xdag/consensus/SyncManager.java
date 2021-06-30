@@ -29,16 +29,13 @@ import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.*;
 import io.xdag.net.Channel;
-import io.xdag.net.discovery.DiscoveryPeer;
-import io.xdag.net.XdagChannel;
+import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
+import org.apache.tuweni.bytes.Bytes32;
 
 import javax.annotation.Nonnull;
 import java.math.BigInteger;
@@ -50,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.xdag.core.ImportResult.*;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 @Slf4j
 @Getter
@@ -94,7 +90,7 @@ public class SyncManager {
     private Queue<BlockWrapper> blockQueue = new ConcurrentLinkedQueue<>();
 
     /** Queue for the link block don't exist */
-    private ConcurrentHashMap<ByteArrayWrapper, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Bytes32, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
 
     public void start() {
         log.debug("Download receiveBlock run...");
@@ -146,11 +142,11 @@ public class SyncManager {
     /** Processing the queue adding blocks to the chain. */
     //todo:修改共识
     public ImportResult importBlock(BlockWrapper blockWrapper) {
-        log.debug("importBlock:{}", BytesUtils.toHexString(blockWrapper.getBlock().getHash()));
-        ImportResult importResult = blockchain.tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData())));
+        log.debug("importBlock:{}", blockWrapper.getBlock().getHash().toHexString());
+        ImportResult importResult = blockchain.tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData().toArray())));
 
         if (importResult == EXIST) {
-            log.debug("Block have exist:" + Hex.toHexString(blockWrapper.getBlock().getHash()));
+            log.debug("Block have exist:" + blockWrapper.getBlock().getHash().toHexString());
         }
 
         Config config = kernel.getConfig();
@@ -193,7 +189,7 @@ public class SyncManager {
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
-        log.debug("validateAndAddNewBlock:{}, {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()), result);
+        log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow().toHexString(), result);
         switch (result) {
             case EXIST:
             case IMPORTED_BEST:
@@ -202,8 +198,8 @@ public class SyncManager {
                 break;
             case NO_PARENT: {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
-                    log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()),
-                            Hex.toHexString(result.getHashlow()));
+                    log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow().toHexString(),
+                            result.getHashlow().toHexString());
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
                         if(channel.getNode().equals(blockWrapper.getRemoteNode())) {
@@ -233,19 +229,19 @@ public class SyncManager {
      * @param hashLow
      *            缺失的parent哈希
      */
-    public boolean syncPushBlock(BlockWrapper blockWrapper, byte[] hashLow) {
+    public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
         AtomicBoolean r = new AtomicBoolean(true);
         long now = System.currentTimeMillis();
-        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
+//        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
         Queue<BlockWrapper> newQueue = Queues.newConcurrentLinkedQueue();
         blockWrapper.setTime(now);
         newQueue.add(blockWrapper);
         blockchain.getXdagStats().nwaitsync++;
-        syncMap.merge(refKey, newQueue,
+        syncMap.merge(hashLow, newQueue,
                 (oldQ, newQ) -> {
                     blockchain.getXdagStats().nwaitsync--;
                     for(BlockWrapper b : oldQ) {
-                        if (equalBytes(b.getBlock().getHashLow(), blockWrapper.getBlock().getHashLow())) {
+                        if (b.getBlock().getHashLow().equals(blockWrapper.getBlock().getHashLow())) {
                             // after 64 sec must resend block request
                             if(now - b.getTime() > 64 * 1000) {
                                 b.setTime(now);
@@ -271,10 +267,10 @@ public class SyncManager {
      */
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
-        ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow());
-        Queue<BlockWrapper> queue = syncMap.getOrDefault(key,null);
+//        ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow().toArray());
+        Queue<BlockWrapper> queue = syncMap.getOrDefault(block.getHashLow(),null);
         if (queue!=null) {
-            syncMap.remove(key);
+            syncMap.remove(block.getHashLow());
             blockchain.getXdagStats().nwaitsync--;
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
@@ -288,8 +284,8 @@ public class SyncManager {
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashlow())) {
-                            log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
-                                    Hex.toHexString(importResult.getHashlow()));
+                            log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow().toHexString(),
+                                    importResult.getHashlow().toHexString());
                             List<Channel> channels = channelMgr.getActiveChannels();
                             for (Channel channel : channels) {
                                 if (channel.getNode().equals(bw.getRemoteNode())) {
@@ -303,41 +299,6 @@ public class SyncManager {
                 }
             });
         }
-//        syncMap.computeIfPresent(key, (k, v)->{
-//            syncMap.remove(k);
-//            blockchain.getXdagStats().nwaitsync--;
-//            v.forEach(bw -> {
-//                ImportResult importResult = importBlock(bw);
-//                switch (importResult) {
-//                    case EXIST:
-//                    case IMPORTED_BEST:
-//                    case IMPORTED_NOT_BEST:
-//                        // TODO import成功后都需要移除
-//                        syncPopBlock(bw);
-//                        v.remove(bw);
-//                        break;
-//                    case NO_PARENT:
-//                        if (syncPushBlock(bw, importResult.getHashlow())) {
-//                            log.debug("push block:{}, NO_PARENT {}", Hex.toHexString(bw.getBlock().getHashLow()),
-//                                    Hex.toHexString(importResult.getHashlow()));
-//                            List<XdagChannel> channels = channelMgr.getActiveChannels();
-//                            for (XdagChannel channel : channels) {
-//                                if (channel.getNode().equals(bw.getRemoteNode())) {
-//                                    channel.getXdag().sendGetBlock(importResult.getHashlow());
-//                                }
-//                            }
-//                        }
-//                        break;
-//                    default:
-//                        break;
-//                }
-//            });
-////            if(v.size() == 0) {
-////                syncMap.remove(k);
-////                return null;
-////            }
-//            return null;
-//        });
     }
 
     public void makeSyncDone() {
@@ -370,8 +331,6 @@ public class SyncManager {
         // 检查主块链
         kernel.getMinerServer().start();
         kernel.getPow().start();
-//        kernel.getBlockchain().registerListener(kernel.getPow());
-//        kernel.getLibp2pNetwork().start();
 
     }
 

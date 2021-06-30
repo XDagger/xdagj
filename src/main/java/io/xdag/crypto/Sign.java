@@ -23,7 +23,7 @@
  */
 package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -36,8 +36,6 @@ import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 import java.math.BigInteger;
 import java.security.SignatureException;
 import java.util.Arrays;
-
-import static io.xdag.utils.Assertions.*;
 
 /**
  * Transaction signing logic.
@@ -56,44 +54,6 @@ public class Sign {
                     CURVE_PARAMS.getN(),
                     CURVE_PARAMS.getH());
     static final BigInteger HALF_CURVE_ORDER = CURVE_PARAMS.getN().shiftRight(1);
-
-    public static SignatureData signMessage(byte[] message, ECKeyPair keyPair) {
-        return signMessage(message, keyPair, true);
-    }
-
-    public static SignatureData signMessage(byte[] message, ECKeyPair keyPair, boolean needToHash) {
-        BigInteger publicKey = keyPair.getPublicKey();
-        byte[] messageHash;
-        if (needToHash) {
-            messageHash = Hash.sha256(message);
-        } else {
-            messageHash = message;
-        }
-
-        ECDSASignature sig = keyPair.sign(messageHash);
-        // Now we have to work backwards to figure out the recId needed to recover the signature.
-        int recId = -1;
-        for (int i = 0; i < 4; i++) {
-            BigInteger k = recoverFromSignature(i, sig, messageHash);
-            if (k != null && k.equals(publicKey)) {
-                recId = i;
-                break;
-            }
-        }
-        if (recId == -1) {
-            throw new RuntimeException(
-                    "Could not construct a recoverable key. Are your credentials valid?");
-        }
-
-        int headerByte = recId + 27;
-
-        // 1 header + 32 bytes for R + 32 bytes for S
-        byte[] v = new byte[] {(byte) headerByte};
-        byte[] r = Numeric.toBytesPadded(sig.r, 32);
-        byte[] s = Numeric.toBytesPadded(sig.s, 32);
-
-        return new SignatureData(v, r, s);
-    }
 
     /**
      * Given the components of a signature and a selector value, recover and return the public key
@@ -116,7 +76,7 @@ public class Sign {
      * @param message Hash of the data that was signed.
      * @return An ECKey containing only the public part, or null if recovery wasn't possible.
      */
-    public static BigInteger recoverFromSignature(int recId, ECDSASignature sig, byte[] message) {
+    public static BigInteger recoverFromSignature(int recId, ECDSASignature sig, Bytes message) {
         verifyPrecondition(recId >= 0, "recId must be positive");
         verifyPrecondition(sig.r.signum() >= 0, "r must be positive");
         verifyPrecondition(sig.s.signum() >= 0, "s must be positive");
@@ -148,7 +108,7 @@ public class Sign {
             return null;
         }
         //   1.5. Compute e from M using Steps 2 and 3 of ECDSA signature verification.
-        BigInteger e = new BigInteger(1, message);
+        BigInteger e = new BigInteger(1, message.toArray());
         //   1.6. For k from 1 to 2 do the following.   (loop is outside this function via
         //        iterating recId)
         //   1.6.1. Compute a candidate public key as:
@@ -189,13 +149,12 @@ public class Sign {
      *
      * @param message encoded message.
      * @param signatureData The message signature components
-     * @return the public key used to sign the message
      * @throws SignatureException If the public key could not be recovered or if there was a
      *     signature format error.
      */
-    public static BigInteger signedMessageToKey(byte[] message, SignatureData signatureData)
+    public static void signedMessageToKey(byte[] message, SignatureData signatureData)
             throws SignatureException {
-        return signedMessageHashToKey(Hash.sha256(message), signatureData);
+        signedMessageHashToKey(Hash.sha256(Bytes.wrap(message)), signatureData);
     }
 
     /**
@@ -205,11 +164,10 @@ public class Sign {
      *
      * @param messageHash The message hash.
      * @param signatureData The message signature components
-     * @return the public key used to sign the message
      * @throws SignatureException If the public key could not be recovered or if there was a
      *     signature format error.
      */
-    public static BigInteger signedMessageHashToKey(byte[] messageHash, SignatureData signatureData)
+    public static void signedMessageHashToKey(Bytes messageHash, SignatureData signatureData)
             throws SignatureException {
 
         byte[] r = signatureData.getR();
@@ -234,7 +192,6 @@ public class Sign {
         if (key == null) {
             throw new SignatureException("Could not recover public key from signature");
         }
-        return key;
     }
 
     /**
@@ -334,6 +291,18 @@ public class Sign {
             result = 31 * result + Arrays.hashCode(r);
             result = 31 * result + Arrays.hashCode(s);
             return result;
+        }
+    }
+
+    /**
+     * Verify that the provided precondition holds true.
+     *
+     * @param assertionResult assertion value
+     * @param errorMessage error message if precondition failure
+     */
+    public static void verifyPrecondition(boolean assertionResult, String errorMessage) {
+        if (!assertionResult) {
+            throw new RuntimeException(errorMessage);
         }
     }
 }

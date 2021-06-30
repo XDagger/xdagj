@@ -50,7 +50,6 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
-import io.xdag.net.discovery.DiscoveryController;
 import io.xdag.net.libp2p.Libp2pNetwork;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
@@ -75,6 +74,7 @@ import io.xdag.wallet.Wallet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -112,7 +112,7 @@ public class Kernel {
     protected MinerServer minerServer;
     protected XdagState xdagState;
     protected Libp2pNetwork libp2pNetwork;
-    protected DiscoveryController discoveryController;
+//    protected DiscoveryController discoveryController;
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
     protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
@@ -213,13 +213,13 @@ public class Kernel {
             firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null,null, -1);
             firstAccount.signOut(wallet.getDefKey());
             poolMiner = new Miner(firstAccount.getHash());
-            xdagStats.setOurLastBlockHash(firstAccount.getHashLow());
+            xdagStats.setOurLastBlockHash(firstAccount.getHashLow().toArray());
             if(xdagStats.getGlobalMiner() == null) {
-                xdagStats.setGlobalMiner(firstAccount.getHash());
+                xdagStats.setGlobalMiner(firstAccount.getHash().toArray());
             }
             blockchain.tryToConnect(firstAccount);
         } else {
-            poolMiner = new Miner(xdagStats.getGlobalMiner());
+            poolMiner = new Miner(Bytes32.wrap(xdagStats.getGlobalMiner()));
         }
         log.info("Blockchain init");
 
@@ -244,8 +244,8 @@ public class Kernel {
         libp2pNetwork = new Libp2pNetwork(this);
         libp2pNetwork.start();
 
-        discoveryController = new DiscoveryController(this);
-        discoveryController.start();
+//        discoveryController = new DiscoveryController(this);
+//        discoveryController.start();
 
         // ====================================
         // start node manager
@@ -424,7 +424,7 @@ public class Kernel {
         log.info("Node manager stop.");
 
         log.info("ChannelManager stop.");
-        discoveryController.stop();
+//        discoveryController.stop();
         libp2pNetwork.stop();
         // close timer
         MessageQueue.timer.shutdown();

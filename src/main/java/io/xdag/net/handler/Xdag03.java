@@ -30,7 +30,6 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.XdagStats;
 import io.xdag.net.Channel;
-import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
@@ -38,33 +37,24 @@ import io.xdag.net.message.impl.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 
-import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
 public class Xdag03 extends XdagHandler {
-    private static final ThreadFactory factory = new ThreadFactory() {
-        private final AtomicInteger cnt = new AtomicInteger(0);
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "sendThread-" + cnt.getAndIncrement());
-        }
-    };
-
-    private XdagVersion version = XdagVersion.V03;
 
     public Xdag03(Kernel kernel, Channel channel) {
         this.kernel = kernel;
         this.channel = channel;
         this.blockchain = kernel.getBlockchain();
         this.syncMgr = kernel.getSyncMgr();
+        this.version = XdagVersion.V03;
     }
 
     @Override
@@ -130,7 +120,7 @@ public class Xdag03 extends XdagHandler {
     /** *********************** Message Processing * *********************** */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.debug("processNewBlock:{}", Hex.toHexString(block.getHashLow()));
+        log.debug("processNewBlock:{}", block.getHashLow().toHexString());
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
     }
@@ -155,16 +145,17 @@ public class Xdag03 extends XdagHandler {
     protected void processBlocksReply(BlocksReplyMessage msg) {
         updateXdagStats(msg);
         long randomSeq = msg.getRandom();
-        SettableFuture<byte[]> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
+        SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
         if(sf != null) {
-            sf.set(new byte[]{0});
+            sf.set(Bytes.wrap(new byte[]{0}));
         }
     }
 
     /** 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
     protected void processSumsRequest(SumRequestMessage msg) {
         updateXdagStats(msg);
-        byte[] sums = new byte[256];
+//        byte[] sums = new byte[256];
+        MutableBytes sums = MutableBytes.create(256);
         kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getBlockchain().getXdagStats(), sums);
         sendMessage(reply);
@@ -173,7 +164,7 @@ public class Xdag03 extends XdagHandler {
     protected void processSumsReply(SumReplyMessage msg) {
         updateXdagStats(msg);
         long randomSeq = msg.getRandom();
-        SettableFuture<byte[]> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
+        SettableFuture<Bytes> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
         if(sf != null) {
             sf.set(msg.getSum());
         }
@@ -184,10 +175,12 @@ public class Xdag03 extends XdagHandler {
 
     protected void processBlockRequest(BlockRequestMessage msg) {
 //        log.debug("processBlockRequest: hash:{}" + Hex.toHexString(msg.getHash()));
-        byte[] find = new byte[32];
-        byte[] hash = msg.getHash();
-        hash = Arrays.reverse(hash);
-        System.arraycopy(hash, 8, find, 8, 24);
+//        Bytes32 find = new byte[32];
+        Bytes32 hash = msg.getHash();
+//        hash = Arrays.reverse(hash);
+//        System.arraycopy(hash, 8, find, 8, 24);
+        MutableBytes32 find = MutableBytes32.create();
+        find.set(8, hash.reverse().slice(8, 24));
         Block block = blockchain.getBlockByHash(find, true);
         if (block != null) {
 //            log.debug("processBlockRequest: findBlock" + Hex.toHexString(block.getHashLow()));
@@ -212,12 +205,7 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public boolean isIdle() {
-        return false;
-    }
-
-    @Override
-    public long sendGetBlock(byte[] hash) {
+    public long sendGetBlock(MutableBytes32 hash) {
 //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
         sendMessage(msg);

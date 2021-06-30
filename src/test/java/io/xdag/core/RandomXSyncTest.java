@@ -42,6 +42,7 @@ import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -178,12 +179,12 @@ public class RandomXSyncTest {
         // 1. add address block
         result = kernel.getBlockchain().tryToConnect(addressBlock);
         assertSame(result, IMPORTED_BEST);
-        assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
+        assertArrayEquals(addressBlock.getHashLow().toArray(), xdagTopStatus.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
-        byte[] ref = addressBlock.getHashLow();
+        Bytes32 ref = addressBlock.getHashLow();
         long endTime = 0;
 
-        byte[] forkHash = new byte[0];
+        Bytes32 forkHash = Bytes32.ZERO;
         long forkDate = 0;
 
         for(int i = 1; i <= number; i++) {
@@ -196,12 +197,12 @@ public class RandomXSyncTest {
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             result = kernel.getBlockchain().tryToConnect(extraBlock);
             assertSame(result, IMPORTED_BEST);
-            assertArrayEquals(extraBlock.getHashLow(), xdagTopStatus.getTop());
-            Block storedExtraBlock = kernel.getBlockchain().getBlockByHash(xdagTopStatus.getTop(), false);
-            assertArrayEquals(extraBlock.getHashLow(), storedExtraBlock.getHashLow());
+            assertArrayEquals(extraBlock.getHashLow().toArray(), xdagTopStatus.getTop());
+            Block storedExtraBlock = kernel.getBlockchain().getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
+            assertArrayEquals(extraBlock.getHashLow().toArray(), storedExtraBlock.getHashLow().toArray());
             ref = extraBlock.getHashLow();
             if (i == number-forkHeight) {
-                forkHash = ref.clone();
+                forkHash = ref;
                 forkDate = generateTime;
             }
             extraBlockList.add(extraBlock);

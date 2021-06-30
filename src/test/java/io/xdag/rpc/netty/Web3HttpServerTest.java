@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.rpc.netty;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -8,7 +31,6 @@ import io.xdag.rpc.Web3;
 import io.xdag.rpc.cors.CorsConfiguration;
 import io.xdag.rpc.modules.ModuleDescription;
 import okhttp3.*;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -16,7 +38,6 @@ import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -24,23 +45,13 @@ import static org.junit.Assert.assertEquals;
 
 public class Web3HttpServerTest {
     public static final String APPLICATION_JSON = "application/json";
-    private static JsonNodeFactory JSON_NODE_FACTORY = JsonNodeFactory.instance;
-    private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final JsonNodeFactory JSON_NODE_FACTORY = JsonNodeFactory.instance;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
     public void smokeTestUsingJsonContentType() throws Exception {
         smokeTest(APPLICATION_JSON);
     }
-
-//    @Test @Ignore("fix okhttp problem with charset/gzip")
-//    public void smokeTestUsingJsonWithCharsetContentType() throws Exception {
-//        smokeTest("application/json; charset: utf-8");
-//    }
-//
-//    @Test @Ignore("fix okhttp problem with charset/gzip")
-//    public void smokeTestUsingJsonRpcWithCharsetContentType() throws Exception {
-//        smokeTest("application/json-rpc; charset: utf-8");
-//    }
 
     @Test
     public void smokeTestUsingJsonRpcContentType() throws Exception {
@@ -70,7 +81,7 @@ public class Web3HttpServerTest {
         smokeTest(APPLICATION_JSON, domain, InetAddress.getByName(domain), rpcHost);
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void smokeTestUsingInvalidHostAndHostName() throws Exception {
         InetAddress google = InetAddress.getByName("www.google.com");
         smokeTest(APPLICATION_JSON, google.getHostAddress(), google, new ArrayList<>());
@@ -98,7 +109,7 @@ public class Web3HttpServerTest {
         server.start();
         try {
             Response response = sendJsonRpcMessage(randomPort, contentType, host);
-            JsonNode jsonRpcResponse = OBJECT_MAPPER.readTree(response.body().string());
+            JsonNode jsonRpcResponse = OBJECT_MAPPER.readTree(Objects.requireNonNull(response.body()).string());
 
             assertEquals(response.code(), HttpResponseStatus.OK.code());
             assertEquals(jsonRpcResponse.at("/result").asText(), mockResult);
@@ -118,8 +129,8 @@ public class Web3HttpServerTest {
         jsonRpcRequestProperties.put("method", JSON_NODE_FACTORY.textNode("web3_sha3"));
         jsonRpcRequestProperties.put("params", JSON_NODE_FACTORY.arrayNode().add("value"));
 
-        RequestBody requestBody = RequestBody.create(MediaType.parse(contentType), JSON_NODE_FACTORY.objectNode()
-                .setAll(jsonRpcRequestProperties).toString());
+        RequestBody requestBody = RequestBody.Companion.create(JSON_NODE_FACTORY.objectNode()
+                .setAll(jsonRpcRequestProperties).toString(),MediaType.parse(contentType));
         URL url = new URL("http", "localhost", port, "/");
         Request request = new Request.Builder().url(url)
                 .addHeader("Host", host)
@@ -135,12 +146,12 @@ public class Web3HttpServerTest {
                     new X509TrustManager() {
                         @Override
                         public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
-                                                       String authType) throws CertificateException {
+                                                       String authType) {
                         }
 
                         @Override
                         public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
-                                                       String authType) throws CertificateException {
+                                                       String authType) {
                         }
 
                         @Override
@@ -158,12 +169,7 @@ public class Web3HttpServerTest {
 
             return new OkHttpClient.Builder()
                     .sslSocketFactory(sslSocketFactory,(X509TrustManager)trustAllCerts[0])
-                    .hostnameVerifier(new HostnameVerifier() {
-                        @Override
-                        public boolean verify(String hostname, SSLSession session) {
-                            return true;
-                        }
-                    })
+                    .hostnameVerifier((hostname, session) -> true)
                     .build();
         } catch (Exception e) {
             throw new RuntimeException(e);

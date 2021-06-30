@@ -23,8 +23,10 @@
  */
 package io.xdag.net.message;
 
+import org.apache.tuweni.bytes.MutableBytes;
+
 public interface MessageFactory {
 
-    Message create(byte code, byte[] encoded);
+    Message create(byte code, MutableBytes encoded);
     
 }

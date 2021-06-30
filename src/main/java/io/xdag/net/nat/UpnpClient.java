@@ -38,8 +38,6 @@ import org.jupnp.support.model.PortMapping;
 
 import java.util.Optional;
 
-import static io.xdag.utils.FutureUtil.ignoreFuture;
-
 @Slf4j
 public class UpnpClient {
 
@@ -87,7 +85,6 @@ public class UpnpClient {
     upnpService.shutdown();
   }
 
-  @SuppressWarnings("unchecked")
   public SafeFuture<Void> releasePortForward(final NatPortMapping portMapping) {
     log.debug(
         "Releasing port forward for {} {} -> {}",
@@ -99,7 +96,7 @@ public class UpnpClient {
     XdagPortMappingDelete callback =
         new XdagPortMappingDelete(service, toJupnpPortMapping(portMapping));
 
-    ignoreFuture(upnpService.getControlPoint().execute(callback));
+//    ignoreFuture(upnpService.getControlPoint().execute(callback));
 
     return callback.getFuture();
   }
@@ -131,7 +128,6 @@ public class UpnpClient {
     return localIpAddress;
   }
 
-  @SuppressWarnings("unchecked")
   private SafeFuture<NatPortMapping> requestPortForward(final PortMapping portMapping) {
     return getExternalIpFuture()
         .thenCompose(
@@ -155,18 +151,17 @@ public class UpnpClient {
                   portMapping.getInternalPort(),
                   portMapping.getExternalPort());
 
-              ignoreFuture(upnpService.getControlPoint().execute(callback));
+//              ignoreFuture(upnpService.getControlPoint().execute(callback));
               return callback.getFuture();
             });
   }
 
-  @SuppressWarnings("unchecked")
   private void initiateExternalIpQuery() {
     wanIpFuture
         .thenAccept(
             service -> {
               XdagGetExternalIP callback = new XdagGetExternalIP(service);
-              ignoreFuture(upnpService.getControlPoint().execute(callback));
+//              ignoreFuture(upnpService.getControlPoint().execute(callback));
               callback
                   .getFuture()
                   .thenAccept(

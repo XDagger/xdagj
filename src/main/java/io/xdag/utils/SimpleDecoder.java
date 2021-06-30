@@ -114,7 +114,6 @@ public class SimpleDecoder {
     /**
      * Reads size from the input.
      *
-     * @return
      */
     protected int readSize() {
         int size = 0;
@@ -133,7 +132,6 @@ public class SimpleDecoder {
     /**
      * Checks if the required bytes is satisfied.
      *
-     * @param n
      */
     protected void require(int n) {
         if (to - index < n) {

@@ -23,7 +23,6 @@
  */
 package io.xdag.mine;
 
-import java.io.IOException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,13 +62,7 @@ public class MinerClient {
             channelFuture = connectAsync(host, port, minerChannelInitializer);
             channelFuture.sync();
         } catch (Exception e) {
-            if (e instanceof IOException) {
-                log.warn(
-                        "MinerClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-                log.warn("MinerClient.connect(" + host + ":" + port + ") exception:", e);
-            } else {
-                log.warn("Exception:", e);
-            }
+            log.warn("Exception:", e);
         }
     }
 

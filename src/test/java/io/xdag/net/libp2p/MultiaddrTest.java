@@ -21,28 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils.exception;
+package io.xdag.net.libp2p;
 
-public class BytesException extends RuntimeException {
+import static org.junit.Assert.*;
+import org.junit.Test;
 
-    private static final long serialVersionUID = 1L;
+import io.libp2p.core.multiformats.Multiaddr;
+import io.libp2p.core.multiformats.Protocol;
 
-    public BytesException() {
+public class MultiaddrTest {
+
+    @Test
+    public void testGetIpAndPort() {
+        Multiaddr multiaddr = Multiaddr.fromString("/ip4/127.0.0.1/tcp/40002");
+        String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
+        String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
+        assertEquals("127.0.0.1", ip);
+        assertEquals("40002", port);
     }
 
-    public BytesException(String s) {
-        super(s);
-    }
-
-    public BytesException(String s, Throwable throwable) {
-        super(s, throwable);
-    }
-
-    public BytesException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public BytesException(String s, Throwable throwable, boolean b, boolean b1) {
-        super(s, throwable, b, b1);
-    }
 }

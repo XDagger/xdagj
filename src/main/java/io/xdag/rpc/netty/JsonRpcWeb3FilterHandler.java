@@ -46,7 +46,7 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
     private final InetAddress rpcAddress;
     private final List<String> acceptedHosts;
 
-    private OriginValidator originValidator;
+    private final OriginValidator originValidator;
 
     public JsonRpcWeb3FilterHandler(String corsDomains, InetAddress rpcAddress, List<String> rpcHost) {
         this.originValidator = new OriginValidator(corsDomains);
@@ -81,13 +81,13 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         HttpResponse response;
-        HttpMethod httpMethod = request.getMethod();
+        HttpMethod httpMethod = request.method();
         HttpHeaders headers = request.headers();
 
         // when a request has multiple host fields declared it would be equivalent to a comma separated list
         // the request will be inmediately rejected since it won't be parsed as a valid URI
         // and won't work to match an item on rpc.host
-        String hostHeader = headers.get(HttpHeaders.Names.HOST);
+        String hostHeader = headers.get(HttpHeaderNames.HOST);
         String parsedHeader = parseHostHeader(hostHeader);
 
         if (!acceptedHosts.contains(parsedHeader)) {
@@ -99,9 +99,9 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
 
         if (HttpMethod.POST.equals(httpMethod)) {
 
-            String mimeType = HttpUtils.getMimeType(headers.get(HttpHeaders.Names.CONTENT_TYPE));
-            String origin = headers.get(HttpHeaders.Names.ORIGIN);
-            String referer = headers.get(HttpHeaders.Names.REFERER);
+            String mimeType = HttpUtils.getMimeType(headers.get(HttpHeaderNames.CONTENT_TYPE));
+            String origin = headers.get(HttpHeaderNames.ORIGIN);
+            String referer = headers.get(HttpHeaderNames.REFERER);
 
             if (!"application/json".equals(mimeType) && !"application/json-rpc".equals(mimeType)) {
                 logger.debug("Unsupported content type");

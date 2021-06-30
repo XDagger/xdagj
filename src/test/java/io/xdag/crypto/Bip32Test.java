@@ -24,6 +24,8 @@
 package io.xdag.crypto;
 
 import io.xdag.utils.Numeric;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -162,8 +164,8 @@ public class Bip32Test {
         int inputLength = input.length;
         byte[] checksummed = new byte[inputLength + 4];
         System.arraycopy(input, 0, checksummed, 0, inputLength);
-        byte[] checksum = hashTwice(input);
-        System.arraycopy(checksum, 0, checksummed, inputLength, 4);
+        Bytes32 checksum = hashTwice(Bytes.wrap(input));
+        System.arraycopy(checksum.toArray(), 0, checksummed, inputLength, 4);
         return checksummed;
     }
 
@@ -175,7 +177,7 @@ public class Bip32Test {
         return serialize(pair, 0x0488ADE4, false);
     }
 
-    private static byte[] hashTwice(byte[] input) {
+    private static Bytes32 hashTwice(Bytes input) {
         return sha256(sha256(input));
     }
 

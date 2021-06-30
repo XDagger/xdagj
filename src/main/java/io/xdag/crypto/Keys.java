@@ -23,13 +23,10 @@
  */
 package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
-import io.xdag.utils.Strings;
-
-import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
-import java.util.Arrays;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import static io.xdag.crypto.SecureRandomUtils.secureRandom;
@@ -79,7 +76,7 @@ public class Keys {
     }
 
     public static ECKeyPair createEcKeyPair(SecureRandom random) {
-        KeyPair keyPair = null;
+        KeyPair keyPair;
         try {
             keyPair = createSecp256k1KeyPair(random);
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException  | NoSuchProviderException e) {
@@ -89,7 +86,7 @@ public class Keys {
     }
 
     public static byte[] toBytesAddress(ECKeyPair key) {
-        return Hash.sha256hash160(key.getPublicKey().toByteArray());
+        return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().toByteArray()));
     }
 
     public static String toBase58Address(ECKeyPair key) {

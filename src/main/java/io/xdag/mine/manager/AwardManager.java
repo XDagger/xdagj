@@ -25,6 +25,8 @@ package io.xdag.mine.manager;
 
 import io.xdag.consensus.Task;
 import io.xdag.mine.miner.Miner;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 
 public interface AwardManager {
 
@@ -37,7 +39,7 @@ public interface AwardManager {
      * @param hash
      *            地址块hash
      */
-    void setPoolMiner(byte[] hash);
+    void setPoolMiner(Bytes32 hash);
 
     /** 接受到一个新的任务 */
     void onNewTask(Task task);
@@ -49,5 +51,5 @@ public interface AwardManager {
 
     void stop();
 
-    void addAwardBlock(byte[] share, byte[] hash, long generateTime);
+    void addAwardBlock(Bytes32 share, Bytes32 hash, long generateTime);
 }

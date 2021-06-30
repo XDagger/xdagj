@@ -27,15 +27,17 @@ import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
-import io.xdag.core.XdagField;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Hash;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 public class BlockBuilder {
@@ -50,7 +52,7 @@ public class BlockBuilder {
     public static Block generateExtraBlock(Config config, ECKeyPair key, long xdagTime, List<Address> pendings) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
         b.signOut(key);
-        byte[] random = Hash.sha256(Hex.decode("1234"));
+        Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode("1234")));
         b.setNonce(random);
         return b;
     }
@@ -59,14 +61,14 @@ public class BlockBuilder {
     public static Block generateExtraBlockGivenRandom(Config config, ECKeyPair key, long xdagTime, List<Address> pendings, String randomS) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
         b.signOut(key);
-        byte[] random = Hash.sha256(Hex.decode(randomS));
+        Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode(randomS)));
         b.setNonce(random);
         return b;
     }
 
     public static Block generateTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to, long amount) {
-        List refs = Lists.newArrayList();
-        refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, amount)); // key1
+        List<Address> refs = Lists.newArrayList();
+        refs.add(new Address(from.getHashLow(), XDAG_FIELD_IN, amount)); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
         List<ECKeyPair> keys = new ArrayList<>();
         keys.add(key);
