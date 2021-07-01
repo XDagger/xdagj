@@ -24,6 +24,7 @@
 package io.xdag.crypto;
 
 import io.xdag.utils.Numeric;
+import org.apache.tuweni.crypto.SECP256K1;
 
 import java.math.BigInteger;
 
@@ -49,7 +50,9 @@ public class SampleKeys {
     public static final BigInteger PRIVATE_KEY = Numeric.toBigInt(PRIVATE_KEY_STRING);
     public static final BigInteger PUBLIC_KEY = Numeric.toBigInt(PUBLIC_KEY_STRING);
 
-    public static final ECKeyPair KEY_PAIR = new ECKeyPair(PRIVATE_KEY, PUBLIC_KEY);
+    public static final SECP256K1.SecretKey priv = SECP256K1.SecretKey.fromInteger(PRIVATE_KEY);
+
+    public static final SECP256K1.KeyPair KEY_PAIR = SECP256K1.KeyPair.fromSecretKey(priv);
 
     private SampleKeys() {}
 }

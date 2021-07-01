@@ -23,24 +23,18 @@
  */
 package io.xdag.evm.chainspec;
 
-import static io.xdag.utils.Numeric.addSafely;
-import static io.xdag.utils.Numeric.isLessThan;
-import static io.xdag.utils.Numeric.isZero;
-import static io.xdag.utils.BytesUtils.EMPTY_BYTE_ARRAY;
-import static io.xdag.utils.BytesUtils.bytesToBigInteger;
-import static io.xdag.utils.BytesUtils.numberOfLeadingZeros;
-import static io.xdag.utils.BytesUtils.parseBytes;
-import static io.xdag.utils.BytesUtils.stripLeadingZeroes;
-import static io.xdag.utils.EVMUtils.getSizeInWords;
-
-import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
+import io.xdag.utils.HashUtils;
+import io.xdag.crypto.Keys;
 import io.xdag.evm.DataWord;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 
 import java.math.BigInteger;
+
+import static io.xdag.utils.BytesUtils.*;
+import static io.xdag.utils.EVMUtils.getSizeInWords;
+import static io.xdag.utils.Numeric.*;
 
 public class BasePrecompiledContracts implements PrecompiledContracts {
 
@@ -121,7 +115,7 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
         @Override
         public Pair<Boolean, Bytes> execute(PrecompiledContractContext context) {
             Bytes data = context.getInternalTransaction().getData();
-            return Pair.of(true, Hash.sha256(data == null ? Bytes.EMPTY : data));
+            return Pair.of(true, Hash.sha2_256(data == null ? Bytes.EMPTY : data));
         }
     }
 
@@ -142,12 +136,45 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
             Bytes data = context.getInternalTransaction().getData();
             Bytes result;
             if (data == null) {
-                result = Bytes.wrap(Hash.ripemd160(EMPTY_BYTE_ARRAY));
+                result = Bytes.wrap(HashUtils.ripemd160(EMPTY_BYTE_ARRAY));
             } else {
-                result = Bytes.wrap(Hash.ripemd160(data.toArray()));
+                result = Bytes.wrap(HashUtils.ripemd160(data.toArray()));
             }
 
             return Pair.of(true, DataWord.of(result).getData());
+        }
+    }
+
+    public static class ContractSign {
+        public static final BigInteger SECP256K1N = new BigInteger(
+                "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+        public byte v;
+        public BigInteger r;
+        public BigInteger s;
+
+        public ContractSign(BigInteger r, BigInteger s) {
+            this.r = r;
+            this.s = s;
+        }
+
+        public static ContractSign fromComponents(byte[] r, byte[] s, byte v) {
+            ContractSign sig = new ContractSign(new BigInteger(1, r), new BigInteger(1, s));
+            sig.v = v;
+            return sig;
+        }
+
+        public boolean validateComponents() {
+            if (v != 27 && v != 28)
+                return false;
+
+            if (isLessThan(r, BigInteger.ONE) || !isLessThan(r, SECP256K1N)) {
+                return false;
+            }
+
+            if (isLessThan(s, BigInteger.ONE) || !isLessThan(s, SECP256K1N)) {
+                return false;
+            }
+            return true;
         }
     }
 
@@ -177,11 +204,13 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
                 int sLength = data.size() < 128 ? data.size() - 96 : 32;
                 System.arraycopy(data.toArray(), 96, s, 0, sLength);
 
-                ECDSASignature signature = ECDSASignature.fromComponents(r, s, v[31]);
-                if (validateV(v) && signature.validateComponents()) {
-                    out = DataWord.of(Bytes.wrap(Sign.signatureToAddress(h, signature)));
+                //v[31]
+                ContractSign sig = ContractSign.fromComponents(r, s, v[31]);
+                if (validateV(v) && sig.validateComponents() ) {
+                    out = DataWord.of(Bytes.wrap(Keys.signatureToAddress(h, sig)));
                 }
             } catch (Throwable any) {
+                any.printStackTrace();
             }
 
             return Pair.of(true, Bytes.wrap(out == null ? EMPTY_BYTE_ARRAY : out.getData().toArray()));

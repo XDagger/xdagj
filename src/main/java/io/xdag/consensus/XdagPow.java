@@ -25,7 +25,6 @@ package io.xdag.consensus;
 
 import io.xdag.Kernel;
 import io.xdag.core.*;
-import io.xdag.crypto.Hash;
 import io.xdag.listener.Listener;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
@@ -42,6 +41,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.crypto.Hash;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -324,7 +324,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
 
 //        Bytes32 rxHash = Hash.sha256(Bytes.wrap(BytesUtils.subArray(block.getXdagBlock().getData(),0,480)));
-        Bytes32 rxHash = Hash.sha256(block.getXdagBlock().getData().slice(0,480));
+        Bytes32 rxHash = Hash.sha2_256(block.getXdagBlock().getData().slice(0,480));
 
         // todo
         task[0] = new XdagField(rxHash.mutableCopy());

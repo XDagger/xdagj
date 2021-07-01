@@ -26,7 +26,7 @@ package io.xdag.evm;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import io.xdag.crypto.Hash;
+import io.xdag.utils.HashUtils;
 import io.xdag.evm.client.*;
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -60,7 +60,7 @@ public class TestTransactionBase extends TestBase {
     }
 
     protected Bytes deploy(String code, Bytes arguments) {
-        Bytes contractAddress = Bytes.wrap(Hash.calcNewAddress(caller.toArray(), repository.getNonce(caller)));
+        Bytes contractAddress = Bytes.wrap(HashUtils.calcNewAddress(caller.toArray(), repository.getNonce(caller)));
 
         Transaction tx = spy(transaction);
         when(tx.isCreate()).thenReturn(true);
@@ -86,7 +86,7 @@ public class TestTransactionBase extends TestBase {
 
     protected Bytes createContract(Bytes code, Bytes args, Bytes address, long nonce, long gas) throws IOException {
         Bytes data = Bytes.wrap(BytesUtils.merge(code.toArray(), args.toArray()));
-        Bytes contractAddress = Bytes.wrap(Hash.calcNewAddress(address.toArray(), nonce));
+        Bytes contractAddress = Bytes.wrap(HashUtils.calcNewAddress(address.toArray(), nonce));
 
         Transaction transaction = new TransactionMock(true, address, address, nonce, value, data, gas, gasPrice);
         TransactionExecutor executor = new TransactionExecutor(transaction, block, repository, blockStore);

@@ -34,6 +34,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.crypto.generators.BCrypt;
 
 import java.io.File;
@@ -61,7 +64,7 @@ public class Wallet {
     private final File file;
     private final Config config;
 
-    private final Map<ByteArrayWrapper, ECKeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<String, SECP256K1.KeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
     private String password;
 
     // hd wallet key
@@ -105,8 +108,8 @@ public class Wallet {
         accounts.clear();
     }
 
-    public ECKeyPair getDefKey() {
-        List<ECKeyPair> accountList = getAccounts();
+    public SECP256K1.KeyPair getDefKey() {
+        List<SECP256K1.KeyPair> accountList = getAccounts();
         if(CollectionUtils.isNotEmpty(accountList)) {
             return accountList.get(0);
         }
@@ -130,7 +133,7 @@ public class Wallet {
                 SimpleDecoder dec = new SimpleDecoder(FileUtils.readFileToByteArray(file));
                 int version = dec.readInt(); // version
 
-                Set<ECKeyPair> newAccounts = null;
+                Set<SECP256K1.KeyPair> newAccounts = null;
                 switch (version) {
                     // only version 4
                     case 4 -> {
@@ -149,9 +152,9 @@ public class Wallet {
 
                 synchronized (accounts) {
                     accounts.clear();
-                    for (ECKeyPair account : newAccounts) {
-                        ByteArrayWrapper baw = ByteArrayWrapper.of(Keys.toBytesAddress(account));
-                        accounts.put(baw, account);
+                    for (SECP256K1.KeyPair account : newAccounts) {
+                        String address = Keys.getAddress(account);
+                        accounts.put(address, account);
                     }
                 }
             }
@@ -166,14 +169,15 @@ public class Wallet {
     /**
      * Reads the account keys.
      */
-    protected LinkedHashSet<ECKeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version) {
-        LinkedHashSet<ECKeyPair> keys = new LinkedHashSet<>();
+    protected LinkedHashSet<SECP256K1.KeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version) {
+        LinkedHashSet<SECP256K1.KeyPair> keys = new LinkedHashSet<>();
         int total = dec.readInt(); // size
 
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
             byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
-            keys.add(ECKeyPair.create(privateKey));
+            SECP256K1.SecretKey privkey = SECP256K1.SecretKey.fromBytes(Bytes32.wrap(privateKey));
+            keys.add(SECP256K1.KeyPair.fromSecretKey(privkey));
         }
         return keys;
     }
@@ -184,11 +188,11 @@ public class Wallet {
     protected void writeAccounts(byte[] key, SimpleEncoder enc) {
         synchronized (accounts) {
             enc.writeInt(accounts.size());
-            for (ECKeyPair a : accounts.values()) {
+            for (SECP256K1.KeyPair a : accounts.values()) {
                 byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
 
                 enc.writeBytes(iv);
-                enc.writeBytes(Aes.encrypt(a.getPrivateKey().toByteArray(), key, iv));
+                enc.writeBytes(Aes.encrypt(a.secretKey().bytesArray(), key, iv));
             }
         }
     }
@@ -239,10 +243,10 @@ public class Wallet {
     /**
      * Sets the accounts inside this wallet.
      */
-    public void setAccounts(List<ECKeyPair> list) {
+    public void setAccounts(List<SECP256K1.KeyPair> list) {
         requireUnlocked();
         accounts.clear();
-        for (ECKeyPair key : list) {
+        for (SECP256K1.KeyPair key : list) {
             addAccount(key);
         }
     }
@@ -250,7 +254,7 @@ public class Wallet {
     /**
      * Returns a copy of the accounts inside this wallet.
      */
-    public List<ECKeyPair> getAccounts(){
+    public List<SECP256K1.KeyPair> getAccounts(){
         requireUnlocked();
         synchronized (accounts) {
             return new ArrayList<>(accounts.values());
@@ -260,7 +264,7 @@ public class Wallet {
     /**
      * Returns account by index.
      */
-    public ECKeyPair getAccount(int idx) {
+    public SECP256K1.KeyPair getAccount(int idx) {
         requireUnlocked();
         synchronized (accounts) {
             return getAccounts().get(idx);
@@ -270,11 +274,11 @@ public class Wallet {
     /**
      * Returns account by address.
      */
-    public ECKeyPair getAccount(byte[] address) {
+    public SECP256K1.KeyPair getAccount(String address) {
         requireUnlocked();
 
         synchronized (accounts) {
-            return accounts.get(ByteArrayWrapper.of(address));
+            return accounts.get(address);
         }
     }
 
@@ -325,11 +329,11 @@ public class Wallet {
     /**
      * Adds a new account to the wallet.
      */
-    public boolean addAccount(ECKeyPair newKey) {
+    public boolean addAccount(SECP256K1.KeyPair newKey) {
         requireUnlocked();
 
         synchronized (accounts) {
-            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(newKey));
+            String address = Keys.getAddress(newKey);
             if (accounts.containsKey(address)) {
                 return false;
             }
@@ -342,8 +346,8 @@ public class Wallet {
     /**
      * Add an account with randomly generated key.
      */
-    public ECKeyPair addAccountRandom() {
-        ECKeyPair key = Keys.createEcKeyPair();
+    public SECP256K1.KeyPair addAccountRandom() {
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
         addAccount(key);
         return key;
     }
@@ -351,11 +355,11 @@ public class Wallet {
     /**
      * Adds a list of accounts to the wallet.
      */
-    public int addAccounts(List<ECKeyPair> accounts) {
+    public int addAccounts(List<SECP256K1.KeyPair> accounts) {
         requireUnlocked();
 
         int n = 0;
-        for (ECKeyPair acc : accounts) {
+        for (SECP256K1.KeyPair acc : accounts) {
             n += addAccount(acc) ? 1 : 0;
         }
         return n;
@@ -364,17 +368,17 @@ public class Wallet {
     /**
      * Deletes an account in the wallet.
      */
-    public boolean removeAccount(ECKeyPair key) {
-        return removeAccount(Keys.toBytesAddress(key));
+    public boolean removeAccount(SECP256K1.KeyPair key) {
+        return removeAccount(Keys.getAddress(key));
     }
 
     /**
      * Deletes an account in the wallet.
      */
-    public boolean removeAccount(byte[] address) {
+    public boolean removeAccount(String address) {
         requireUnlocked();
         synchronized (accounts) {
-            return accounts.remove(ByteArrayWrapper.of(address)) != null;
+            return accounts.remove(address) != null;
         }
     }
 
@@ -427,7 +431,7 @@ public class Wallet {
      * Derives a key based on the current HD account index, and put it into the
      * wallet.
      */
-    public ECKeyPair addAccountWithNextHdKey() {
+    public SECP256K1.KeyPair addAccountWithNextHdKey() {
         requireUnlocked();
         requireHdWalletInitialized();
 
@@ -435,9 +439,9 @@ public class Wallet {
             byte[] seed = getSeed();
             Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
             Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, nextAccountIndex++);
-            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(bip44Keypair));
-            accounts.put(address, bip44Keypair);
-            return bip44Keypair;
+            String address = Keys.getAddress(bip44Keypair.getKeyPair());
+            accounts.put(address, bip44Keypair.getKeyPair());
+            return bip44Keypair.getKeyPair();
         }
     }
 

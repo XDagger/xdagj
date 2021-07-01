@@ -28,7 +28,6 @@ import io.xdag.Launcher;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.TestnetConfig;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
@@ -40,6 +39,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -192,11 +193,11 @@ public class XdagCli extends Launcher {
         }
 
         // create a new account if the wallet is empty
-        List<ECKeyPair> accounts = wallet.getAccounts();
+        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
         if (accounts.isEmpty()) {
-            ECKeyPair key = wallet.addAccountWithNextHdKey();
+            SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            System.out.println("New Address:" + Keys.getAddress(key));
         }
 
         // start kernel
@@ -242,22 +243,22 @@ public class XdagCli extends Launcher {
             System.out.println("Please init HD Wallet account first!");
             return;
         }
-        ECKeyPair key = wallet.addAccountWithNextHdKey();
+        SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
         if (wallet.flush()) {
-            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            System.out.println("PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
+            System.out.println("New Address:" + Keys.getAddress(key));
+            System.out.println("PublicKey:" + key.publicKey().toHexString());
         }
     }
 
     protected void listAccounts() {
         Wallet wallet = loadAndUnlockWallet();
-        List<ECKeyPair> accounts = wallet.getAccounts();
+        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
 
         if (accounts.isEmpty()) {
             System.out.println("Account Missing");
         } else {
             for (int i = 0; i < accounts.size(); i++) {
-                System.out.println("Address:" + i + " " + BytesUtils.toHexString(Keys.toBytesAddress(accounts.get(i))));
+                System.out.println("Address:" + i + " " + Keys.getAddress(accounts.get(i)));
             }
         }
     }
@@ -285,20 +286,19 @@ public class XdagCli extends Launcher {
 
     protected void dumpPrivateKey(String address) {
         Wallet wallet = loadAndUnlockWallet();
-        byte[] addressBytes = BytesUtils.hexStringToBytes(address);
-        ECKeyPair account = wallet.getAccount(addressBytes);
+        SECP256K1.KeyPair account = wallet.getAccount(address);
         if (account == null) {
             System.out.println("Address Not In Wallet");
         } else {
-            System.out.println("Private:" + BytesUtils.toHexString(account.getPrivateKey().toByteArray()));
+            System.out.println("Private:" + account.secretKey().bytes().toHexString());
         }
         System.out.println("Private Dump Successfully!");
     }
 
     protected boolean importPrivateKey(String key) {
         Wallet wallet = loadAndUnlockWallet();
-        byte[] keyBytes = BytesUtils.hexStringToBytes(key);
-        ECKeyPair account = ECKeyPair.create(keyBytes);
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(key));
+        SECP256K1.KeyPair account = SECP256K1.KeyPair.fromSecretKey(secretKey);
 
         boolean accountAdded = wallet.addAccount(account);
         if (!accountAdded) {
@@ -312,8 +312,8 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        System.out.println("Address:" + BytesUtils.toHexString(Keys.toBytesAddress(account)));
-        System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().toByteArray()));
+        System.out.println("Address:" + Keys.getAddress(account));
+        System.out.println("PublicKey:" + account.publicKey().toHexString());
         System.out.println("Private Key Imported Successfully!");
         return true;
     }
@@ -351,27 +351,28 @@ public class XdagCli extends Launcher {
         }
         String password = readPassword("Old wallet password:");
         String random = readPassword("Old wallet random:");
-        List<ECKeyPair> keyList = readOldWallet(password, random, file);
-        for(ECKeyPair key : keyList) {
-            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
-            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
-            System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+        List<SECP256K1.KeyPair> keyList = readOldWallet(password, random, file);
+        for(SECP256K1.KeyPair key : keyList) {
+            System.out.println("PrivateKey:" + key.secretKey().bytes().toHexString());
+            System.out.println(" PublicKey:" + key.publicKey().toHexString());
+            System.out.println("   Address:" + Keys.getAddress(key));
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
     }
 
-    public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {
+    public List<SECP256K1.KeyPair> readOldWallet(String password, String random, File walletDatFile) {
         byte[] priv32Encrypted = new byte[32];
         int keysNum = 0;
-        List<ECKeyPair> keyList = new ArrayList<>();
+        List<SECP256K1.KeyPair> keyList = new ArrayList<>();
         Native.general_dnet_key(password, random);
         try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 BytesUtils.arrayReverse(priv32);
-                ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
-                keyList.add(ecKey);
+                SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromBytes(Bytes32.wrap(priv32));
+                SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
+                keyList.add(key);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();

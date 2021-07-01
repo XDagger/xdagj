@@ -23,10 +23,10 @@
  */
 package io.xdag.core;
 
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.listener.Listener;
 import io.xdag.utils.ByteArrayWrapper;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark);
+    Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark);
 
     Block getBlockByHash(Bytes32 hash, boolean isRaw);
 

@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.crypto;
+package io.xdag.utils;
 
+import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;
 import org.bouncycastle.crypto.digests.SHA512Digest;
@@ -34,75 +34,11 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-/** Cryptographic hash functions. */
-public class Hash {
-    private Hash() {}
+import static org.apache.tuweni.crypto.Hash.*;
 
-    /**
-     * Generates a digest for the given {@code input}.
-     *
-     * @param input The input to digest
-     * @param algorithm The hash algorithm to use
-     * @return The hash value for the given input
-     * @throws RuntimeException If we couldn't find any provider for the given algorithm
-     */
-    public static byte[] hash(byte[] input, String algorithm) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance(algorithm.toUpperCase());
-            return digest.digest(input);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Couldn't find a " + algorithm + " provider", e);
-        }
-    }
-
-    /**
-     * Sha-256 hash function.
-     *
-     * @param hexInput hex encoded input data with optional 0x prefix
-     * @return hash value as hex encoded string
-     */
-    public static String sha256(String hexInput) {
-        Bytes32 result = sha256(Bytes.fromHexString(hexInput));
-        return result.toHexString();
-    }
-
-    /**
-     * Generates SHA-256 digest for the given {@code input}.
-     *
-     * @param input The input to digest
-     * @return The hash value for the given input
-     * @throws RuntimeException If we couldn't find any SHA-256 provider
-     */
-    public static Bytes32 sha256(Bytes input) {
-        return Bytes32.wrap(newDigest().digest(input.toArray()));
-    }
-
-    public static byte[] sha256(byte[] input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest(input);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static Bytes32 hashTwice(Bytes input) {
-        return sha256(sha256(input));
-    }
-
-    /** MessageDigest not thread safe */
-    public static MessageDigest newDigest() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            // Can't happen.
-            throw new RuntimeException(e);
-        }
-    }
+public final class HashUtils {
 
     public static byte[] hmacSha512(byte[] key, byte[] input) {
         HMac hMac = new HMac(new SHA512Digest());
@@ -113,8 +49,12 @@ public class Hash {
         return out;
     }
 
+    public static Bytes32 hashTwice(Bytes input) {
+        return sha2_256(sha2_256(input));
+    }
+
     public static byte[] sha256hash160(Bytes input) {
-        Bytes32 sha256 = sha256(input);
+        Bytes32 sha256 = sha2_256(input);
         return ripemd160(sha256.toArray());
     }
 
@@ -127,16 +67,29 @@ public class Hash {
     }
 
     /**
-     * Computes the Keccak-256 hash digest.
+     * Keccak-256 hash function.
      *
-     * @param input
-     *            the input data
-     * @return a 32 bytes digest
+     * @param hexInput hex encoded input data with optional 0x prefix
+     * @return hash value as hex encoded string
      */
-    public static byte[] keccak256(byte[] input) {
-        Keccak.Digest256 digest = new Keccak.Digest256();
-        digest.update(input);
-        return digest.digest();
+    public static String sha3(String hexInput) {
+        byte[] bytes = Numeric.hexStringToByteArray(hexInput);
+        byte[] result = sha3_256(bytes);
+        return Numeric.toHexString(result);
+    }
+
+    /**
+     * Keccak-256 hash function.
+     *
+     * @param input binary encoded input data
+     * @param offset of start of data
+     * @param length of data
+     * @return hash value
+     */
+    public static byte[] sha3(byte[] input, int offset, int length) {
+        Keccak.DigestKeccak kecc = new Keccak.Digest256();
+        kecc.update(input, offset, length);
+        return kecc.digest();
     }
 
     /**

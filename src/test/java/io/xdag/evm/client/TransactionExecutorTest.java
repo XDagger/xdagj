@@ -26,7 +26,6 @@ package io.xdag.evm.client;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import io.xdag.crypto.Hash;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.FeeSchedule;
 import io.xdag.evm.OpCode;
@@ -35,6 +34,7 @@ import io.xdag.evm.chainspec.Spec;
 import io.xdag.evm.program.InternalTransaction;
 import io.xdag.evm.BytecodeCompiler;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -79,7 +79,6 @@ public class TransactionExecutorTest extends TestTransactionBase {
         repository.saveCode(address, code);
 
         Bytes method = Bytes.wrap(Hash.keccak256("f(uint256)".getBytes(StandardCharsets.UTF_8)));
-//        Bytes data = BytesUtils.merge(Arrays.copyOf(method, 4), DataWord.of(1000).getData());
         Bytes data = Bytes.concatenate(method.slice(0, 4).copy(), DataWord.of(1000).getData());
         Transaction tx = spy(transaction);
         when(tx.getData()).thenReturn(data);

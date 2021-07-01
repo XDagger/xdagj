@@ -26,14 +26,16 @@ package io.xdag.evm.client;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import io.xdag.crypto.Hash;
+import io.xdag.utils.HashUtils;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.TestTransactionBase;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class PrecompiledContractCallTest extends TestTransactionBase {
 
@@ -53,9 +55,7 @@ public class PrecompiledContractCallTest extends TestTransactionBase {
         String code = "608060405234801561001057600080fd5b5061024c806100206000396000f300608060405260043610610041576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063f1835db714610046575b600080fd5b34801561005257600080fd5b5061009e6004803603810190808035600019169060200190929190803560ff169060200190929190803560001916906020019092919080356000191690602001909291905050506100e0565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6000606060006040805190810160405280601c81526020017f19457468657265756d205369676e6564204d6573736167653a0a333200000000815250915081876040518083805190602001908083835b6020831015156101555780518252602082019150602081019050602083039250610130565b6001836020036101000a03801982511681845116808217855250505050505090500182600019166000191681526020019250505060405180910390209050600181878787604051600081526020016040526040518085600019166000191681526020018460ff1660ff1681526020018360001916600019168152602001826000191660001916815260200194505050505060206040516020810390808403906000865af115801561020a573d6000803e3d6000fd5b50505060206040510351925050509493505050505600a165627a7a72305820c28038a95a2d8c5fee2fb4c1ba7b20c6ee5405e3528f5d6883bae1108a17987a0029";
         Bytes contractAddress = deploy(code, DataWord.ONE.getData());
 
-//        Bytes method = Arrays.copyOf(Hash.keccak256("verify(bytes32,uint8,bytes32,bytes32)".getBytes(StandardCharsets.UTF_8)),
-//                        4);
-        Bytes method = Bytes.wrap(Hash.keccak256("verify(bytes32,uint8,bytes32,bytes32)".getBytes(StandardCharsets.UTF_8))).slice(0, 4).copy();
+        Bytes method = Bytes.wrap(Arrays.copyOf(Hash.keccak256("verify(bytes32,uint8,bytes32,bytes32)".getBytes(StandardCharsets.UTF_8)), 4));
         Bytes hash = Bytes.wrap(Hash.keccak256("hello".getBytes(StandardCharsets.UTF_8)));
         System.out.println(hash.toHexString());
         Bytes v = DataWord.of(28).getData();

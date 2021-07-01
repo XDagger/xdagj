@@ -29,7 +29,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 public class TestnetConfig extends AbstractConfig {
 
     public TestnetConfig() {
-        super("testnet","xdag-testnet.config");
+        super("testnet", (byte)2, "xdag-testnet.config");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
 
         // testnet wait 1 epoch

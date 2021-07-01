@@ -31,7 +31,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 public class DevnetConfig extends AbstractConfig {
 
     public DevnetConfig() {
-        super("devnet", "xdag-devnet.config");
+        super("devnet", (byte)1, "xdag-devnet.config");
         this.whitelistUrl = StringUtils.EMPTY;
 
         this.xdagEra = 0x16900000000L;

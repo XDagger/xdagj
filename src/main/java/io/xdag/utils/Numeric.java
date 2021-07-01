@@ -95,6 +95,10 @@ public class Numeric {
         }
     }
 
+    public static String toHexStringWithPrefixZeroPadded(BigInteger value, int size) {
+        return toHexStringZeroPadded(value, size, true);
+    }
+
     public static byte[] toBytesPadded(BigInteger value, int length) {
         byte[] result = new byte[length];
         byte[] bytes = value.toByteArray();

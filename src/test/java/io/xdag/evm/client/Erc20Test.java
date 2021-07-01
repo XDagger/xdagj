@@ -25,10 +25,10 @@ package io.xdag.evm.client;
 
 import static org.junit.Assert.*;
 
-import io.xdag.crypto.Hash;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.TestTransactionBase;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 

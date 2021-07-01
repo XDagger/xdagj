@@ -28,7 +28,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -37,11 +36,11 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.randomx.RandomX;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,6 +49,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.Security;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
@@ -57,10 +57,16 @@ import java.util.List;
 import static io.xdag.BlockBuilder.*;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class RewardTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
+
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
@@ -74,7 +80,7 @@ public class RewardTest {
     BigInteger privateKey = new BigInteger(privString, 16);
 
 
-    class MockBlockchain extends BlockchainImpl {
+    static class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {
             super(kernel);
@@ -99,7 +105,9 @@ public class RewardTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(SampleKeys.PRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
+
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -138,8 +146,9 @@ public class RewardTest {
 
         Bytes32 targetBlock = Bytes32.ZERO;
 
-        ECKeyPair addrKey = ECKeyPair.create(privateKey);
-        ECKeyPair poolKey = ECKeyPair.create(privateKey);
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(privateKey);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretKey);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(secretKey);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -147,7 +156,7 @@ public class RewardTest {
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
@@ -163,7 +172,7 @@ public class RewardTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             ref = extraBlock.getHashLow();
             if (i == 10) {
                 unwindRef = ref;

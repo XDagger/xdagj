@@ -25,10 +25,10 @@ package io.xdag.evm.client;
 
 import static org.junit.Assert.*;
 
-import io.xdag.crypto.Hash;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.TestTransactionBase;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -90,8 +90,6 @@ public class MultisigTest extends TestTransactionBase {
 
     private boolean isConfirmed(Bytes contractAddress, Bytes txid, Bytes user, long nonce) {
         Bytes method = Bytes.wrap(Hash.keccak256("isConfirmed(uint256)".getBytes(StandardCharsets.UTF_8)));
-//        Bytes methodData = BytesUtils.merge(Arrays.copyOf(method, 4),
-//                DataWord.of(txid).getData());
         Bytes methodData = Bytes.concatenate(method.slice(0,4).copy(),
                 DataWord.of(txid).getData());
 
@@ -137,8 +135,6 @@ public class MultisigTest extends TestTransactionBase {
 
     private Bytes submitTransaction(Bytes contractAddress, Bytes to, BigInteger amount, Bytes user, long nonce) {
         Bytes method = Bytes.wrap(Hash.keccak256("submitTransaction(address,uint256)".getBytes(StandardCharsets.UTF_8)));
-//        byte[] methodData = BytesUtils.merge(Arrays.copyOf(method, 4),
-//                DataWord.of(to).getData(), DataWord.of(amount).getData());
         Bytes methodData = Bytes.concatenate(method.slice(0,4).copy(),
                 DataWord.of(to).getData(), DataWord.of(amount).getData());
 

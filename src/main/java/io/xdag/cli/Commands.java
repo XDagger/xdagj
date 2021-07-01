@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.*;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -42,6 +41,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
@@ -161,7 +161,7 @@ public class Commands {
         // 待转账余额
         AtomicLong remain = new AtomicLong(amount);
         // 转账输入
-        Map<Address, ECKeyPair> ourBlocks = Maps.newHashMap();
+        Map<Address, SECP256K1.KeyPair> ourBlocks = Maps.newHashMap();
 
         // our block select
         kernel.getBlockStore().fetchOurBlocks(pair -> {
@@ -202,7 +202,7 @@ public class Commands {
 
 
 
-    private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, SECP256K1.KeyPair> ourKeys, Bytes32 to, String remark) {
         // 判断是否有remark
         int hasRemark = remark==null ? 0:1;
 
@@ -210,12 +210,12 @@ public class Commands {
 
         // 遍历ourKeys 计算每个区块最多能放多少个
         // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
-        LinkedList<Map.Entry<Address, ECKeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
+        LinkedList<Map.Entry<Address, SECP256K1.KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
 
         // 每次创建区块用到的keys
-        Map<Address, ECKeyPair> keys = new HashMap<>();
+        Map<Address, SECP256K1.KeyPair> keys = new HashMap<>();
         // 保证key的唯一性
-        Set<ECKeyPair> keysPerBlock = new HashSet<>();
+        Set<SECP256K1.KeyPair> keysPerBlock = new HashSet<>();
         // 放入defkey
         keysPerBlock.add(kernel.getWallet().getDefKey());
 
@@ -224,7 +224,7 @@ public class Commands {
         long amount = 0;
 
         while (stack.size() > 0){
-            Map.Entry<Address,ECKeyPair> key = stack.peek();
+            Map.Entry<Address, SECP256K1.KeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
@@ -256,7 +256,7 @@ public class Commands {
     }
 
 
-    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, ECKeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, SECP256K1.KeyPair> keys, String remark) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
 
@@ -266,16 +266,16 @@ public class Commands {
             return null;
         }
 
-        ECKeyPair defaultKey = kernel.getWallet().getDefKey();
+        SECP256K1.KeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isdefaultKey = false;
         // 签名
-        for (ECKeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
-            if (ecKey.equals(defaultKey)) {
+        for (SECP256K1.KeyPair key : Set.copyOf(new HashMap<>(keys).values())) {
+            if (key.equals(defaultKey)) {
                 isdefaultKey = true;
-                block.signOut(ecKey);
+                block.signOut(key);
             } else {
-                block.signIn(ecKey);
+                block.signIn(key);
             }
         }
         // 如果默认密钥被更改，需要重新对输出签名签属

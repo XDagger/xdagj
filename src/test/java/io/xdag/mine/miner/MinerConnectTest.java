@@ -34,7 +34,6 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockchainImpl;
 import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
@@ -46,10 +45,11 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
@@ -58,6 +58,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.security.Security;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -67,6 +68,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MinerConnectTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
@@ -91,7 +98,8 @@ public class MinerConnectTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(SampleKeys.PRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -181,7 +189,7 @@ public class MinerConnectTest {
     public void testMinerConnect() {
         Native.crypt_start();
 
-        ECKeyPair key = Keys.createEcKeyPair();
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
         Block address = generateAddressBlock(config, key, new Date().getTime());
         MutableBytes encoded = address.getXdagBlock().getData();
         byte[] data = Native.dfslib_encrypt_array(encoded.toArray(),16,0);

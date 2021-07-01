@@ -25,6 +25,7 @@ package io.xdag.crypto;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.Hash;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -36,7 +37,6 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.xdag.crypto.Hash.sha256;
 
 /**
  * Provides utility methods to generate random mnemonics and also generate seeds from mnemonics.
@@ -259,7 +259,7 @@ public class MnemonicUtils {
     public static byte calculateChecksum(byte[] initialEntropy) {
         int ent = initialEntropy.length * 8;
         byte mask = (byte) (0xff << 8 - ent / 32);
-        Bytes32 bytes = sha256(Bytes.wrap(initialEntropy));
+        Bytes32 bytes = Hash.sha2_256(Bytes.wrap(initialEntropy));
 
         return (byte) (bytes.get(0) & mask);
     }

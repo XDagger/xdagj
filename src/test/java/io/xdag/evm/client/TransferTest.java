@@ -29,10 +29,10 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
-import io.xdag.crypto.Hash;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.TestTransactionBase;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 import org.junit.Test;
 
 public class TransferTest extends TestTransactionBase {

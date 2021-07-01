@@ -25,7 +25,6 @@ package io.xdag.evm.compliance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.xdag.crypto.Hash;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.EVM;
 import io.xdag.evm.LogInfo;
@@ -47,6 +46,7 @@ import io.xdag.evm.program.invoke.ProgramInvokeImpl;
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.Hash;
 import org.junit.Test;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;

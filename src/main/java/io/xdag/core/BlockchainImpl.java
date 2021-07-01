@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -61,6 +60,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.crypto.Hash;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -69,10 +70,7 @@ import com.google.common.primitives.UnsignedLong;
 
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.ECKeyPair;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
+import io.xdag.utils.HashUtils;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.listener.Listener;
@@ -653,7 +651,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark) {
+    public Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark) {
 
         int hasRemark = remark==null?0:1;
 
@@ -666,7 +664,7 @@ public class BlockchainImpl implements Blockchain {
 
         // 遍历所有key 判断是否有defKey
         assert pairs != null;
-        List<ECKeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
+        List<SECP256K1.KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey())) {
                 defKeyIndex = i;
@@ -903,7 +901,7 @@ public class BlockchainImpl implements Blockchain {
 //        byte[] data = new byte[64];
         MutableBytes data = MutableBytes.create(64);
 //        Bytes32 rxHash = Hash.sha256(Bytes.wrap(BytesUtils.subArray(block.getXdagBlock().getData(),0,512-32)));
-        Bytes32 rxHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 512-32));
+        Bytes32 rxHash = Hash.sha2_256(block.getXdagBlock().getData().slice(0, 512-32));
 //        System.arraycopy(rxHash.toArray(),0,data,0,32);
         data.set(0, rxHash);
 //        System.arraycopy(block.getXdagBlock().getField(15).getData().toArray(),0,data,32,32);
@@ -1059,7 +1057,7 @@ public class BlockchainImpl implements Blockchain {
 
     public boolean canUseInput(Block block) {
         boolean canUse = false;
-        List<ECKeyPair> ecKeys = block.verifiedKeys();
+        List<SECP256K1.PublicKey> pubKeys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
         if (inputs == null || inputs.size() == 0) {
             return true;
@@ -1068,15 +1066,15 @@ public class BlockchainImpl implements Blockchain {
             Block inBlock = getBlockByHash(in.getHashLow(), true);
             MutableBytes subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 //            log.debug("verify encoded:{}", Hex.toHexString(subdata));
-            ECDSASignature sig = inBlock.getOutsig();
+            SECP256K1.Signature sig = inBlock.getOutsig();
 
-            for (ECKeyPair ecKey : ecKeys) {
-                byte[] publicKeyBytes = ecKey.getCompressPubKeyBytes();
-//                byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
-                Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));
+            for (SECP256K1.PublicKey pub : pubKeys) {
+                byte[] pubkeyBytes = pub.asEcPoint().getEncoded(true);
+                byte[] noPrefixPubkey = Bytes.wrap(pubkeyBytes).slice(1, 32).toArray();
+                Bytes digest = Bytes.concatenate(subdata, Bytes.wrap(noPrefixPubkey));
 //                log.debug("verify encoded:{}", Hex.toHexString(digest));
-                Bytes32 hash = Hash.hashTwice(digest);
-                if (ECKeyPair.verify(hash.toArray(), sig.toCanonicalised(), publicKeyBytes)) {
+                Bytes32 hash = HashUtils.hashTwice(digest);
+                if (SECP256K1.verify(hash, sig, pub)) {
                     canUse = true;
                 }
             }
@@ -1090,17 +1088,15 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<ECKeyPair> ourkeys = wallet.getAccounts();
+        List<SECP256K1.KeyPair> ourkeys = wallet.getAccounts();
         // 输出签名只有一个
-        ECDSASignature signature = block.getOutsig();
+        SECP256K1.Signature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            ECKeyPair ecKey = ourkeys.get(i);
-            byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
-//            byte[] digest = BytesUtils.merge(block.getSubRawData(block.getOutsigIndex() - 2), publicKeyBytes);
-            Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
-            Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-            if (ecKey.verify(hash.toArray(), signature)) {
+            SECP256K1.KeyPair key = ourkeys.get(i);
+            Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), key.publicKey().bytes());
+            Bytes32 hash = HashUtils.hashTwice(Bytes.wrap(digest));
+            if (SECP256K1.verify(hash, signature, key.publicKey())) {
                 log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;

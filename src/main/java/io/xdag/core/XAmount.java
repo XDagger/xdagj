@@ -26,6 +26,7 @@ package io.xdag.core;
 import io.xdag.utils.BasicUtils;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import static java.math.RoundingMode.FLOOR;
 import static java.math.RoundingMode.HALF_UP;
@@ -63,12 +64,20 @@ public class XAmount implements Comparable<XAmount> {
         return nano.movePointLeft(unit.exp).setScale(scale, FLOOR);
     }
 
+    public BigInteger toBigInteger() {
+        return BigInteger.valueOf(nano);
+    }
+
     /**
      * Of Xdag Amount from C
      */
     public static XAmount ofXAmount(long n) {
         BigDecimal d = BasicUtils.amount2xdagNew(n) ;
         return new XAmount(d.movePointRight(9).setScale(0, HALF_UP).longValueExact());
+    }
+
+    public long toLong() {
+        return nano;
     }
 
     /**

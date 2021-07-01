@@ -25,7 +25,7 @@ package io.xdag.db.rocksdb;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Hash;
+import io.xdag.utils.HashUtils;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
@@ -82,8 +82,8 @@ public class RocksdbKVSourceTest {
         KVSource<byte[], byte[]> indexSource = factory.getDB(DatabaseName.TIME);
         indexSource.reset();
 
-        Bytes32 hashlow1 = Hash.hashTwice(Bytes.wrap("1".getBytes()));
-        Bytes32 hashlow2 = Hash.hashTwice(Bytes.wrap("2".getBytes()));
+        Bytes32 hashlow1 = HashUtils.hashTwice(Bytes.wrap("1".getBytes()));
+        Bytes32 hashlow2 = HashUtils.hashTwice(Bytes.wrap("2".getBytes()));
 
         long time1 = 1602226304712L;
         byte[] value1 = Hex.decode("1234");

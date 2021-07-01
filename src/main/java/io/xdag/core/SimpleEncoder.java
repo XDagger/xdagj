@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 import io.xdag.utils.exception.SimpleCodecException;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -120,6 +121,14 @@ public class SimpleEncoder {
 
     public void writeBytes(byte[] bytes) {
         writeBytes(bytes, true);
+    }
+
+    public void writeBytes(Bytes bytes) {
+        writeBytes(bytes.toArray(), true);
+    }
+
+    public void writeXAmount(XAmount a) {
+        writeLong(a.toLong());
     }
 
     public byte[] toBytes() {

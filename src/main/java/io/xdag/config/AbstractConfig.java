@@ -47,6 +47,7 @@ import java.util.List;
 @Setter
 public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec {
     protected String configName;
+    protected byte id;
 
     // =========================
     // Admin spec
@@ -146,8 +147,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
 
-    protected AbstractConfig(String rootDir, String configName) {
+    protected AbstractConfig(String rootDir, byte id, String configName) {
         this.rootDir = rootDir;
+        this.id = id;
         this.configName = configName;
 
         getSetting();

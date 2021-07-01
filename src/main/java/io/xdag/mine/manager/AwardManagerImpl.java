@@ -30,7 +30,6 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
@@ -42,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -476,9 +476,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void doPayments(Bytes32 hash, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-        HashMap<Address, ECKeyPair> inputMap = new HashMap<>();
+        HashMap<Address, SECP256K1.KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
-        ECKeyPair inputKey = wallet.getAccount(keyPos);
+        SECP256K1.KeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         long payAmount = 0L;
         /**
@@ -544,9 +544,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         for (Address address : receipt) {
             log.debug("pay data: {}", address.getData().toHexString());
         }
-        Map<Address, ECKeyPair> inputMap = new HashMap<>();
+        Map<Address, SECP256K1.KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
-        ECKeyPair inputKey = wallet.getAccount(keypos);
+        SECP256K1.KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
         if (inputKey.equals(wallet.getDefKey())) {

@@ -31,7 +31,7 @@ import static io.xdag.utils.BytesUtils.nullToEmpty;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import io.xdag.crypto.Hash;
+import io.xdag.utils.HashUtils;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.EVM;
 import io.xdag.evm.MessageCall;
@@ -325,7 +325,7 @@ public class Program {
         }
 
         long nonce = getRepository().getNonce(senderAddress);
-        Bytes contractAddress = Bytes.wrap(Hash.calcNewAddress(senderAddress.toArray(), nonce));
+        Bytes contractAddress = Bytes.wrap(HashUtils.calcNewAddress(senderAddress.toArray(), nonce));
         Bytes programCode = Bytes.wrap(memoryChunk(memStart.intValue(), memSize.intValue()));
 
         ProgramResult callResult = createContractImpl(value, programCode, contractAddress, gas);
@@ -349,7 +349,7 @@ public class Program {
         }
 
         Bytes programCode = Bytes.wrap(memoryChunk(memStart.intValue(), memSize.intValue()));
-        Bytes contractAddress = Bytes.wrap(Hash.calcSaltAddress(senderAddress.toArray(), programCode.toArray(), salt.getData().toArray()));
+        Bytes contractAddress = Bytes.wrap(HashUtils.calcSaltAddress(senderAddress.toArray(), programCode.toArray(), salt.getData().toArray()));
 
         ProgramResult callResult = createContractImpl(value, programCode, contractAddress, gas);
         setReturnDataBuffer(callResult.getReturnData().toArray());

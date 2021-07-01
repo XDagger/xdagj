@@ -23,14 +23,13 @@
  */
 package io.xdag.evm.chainspec;
 
-import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.ECKeyPair;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.Keys;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.client.Repository;
 import io.xdag.evm.program.InternalTransaction;
 import io.xdag.evm.program.ProgramResult;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -135,12 +134,14 @@ public class ByzantiumPrecompiledContractsTest {
     }
 
     @Test
-    public void ecRecoverTest1() throws ECKeyPair.SignatureException {
-        Bytes messageHash = Bytes.fromHexString("14431339128bd25f2c7f93baa611e367472048757f4ad67f6d71a5ca0da550f5");
+    public void ecRecoverTest1() throws Keys.SignatureException {
+        Bytes32 messageHash = Bytes32.fromHexString("14431339128bd25f2c7f93baa611e367472048757f4ad67f6d71a5ca0da550f5");
         byte v = 28;
         Bytes r = Bytes.fromHexString("51e4dbbbcebade695a3f0fdf10beb8b5f83fda161e1a3105a14c41168bf3dce0");
         Bytes s = Bytes.fromHexString("46eabf35680328e26ef4579caf8aeb2cf9ece05dbf67a4f3d1f28c7b1d0e3546");
-        Bytes address = Bytes.wrap(Sign.signatureToAddress(messageHash.toArray(), ECDSASignature.fromComponents(r.toArray(), s.toArray(), v)));
+        BasePrecompiledContracts.ContractSign sig = BasePrecompiledContracts.ContractSign.fromComponents(r.toArray(), s.toArray(), v);
+
+        Bytes address = Bytes.wrap(Keys.signatureToAddress(messageHash.toArray(), sig));
 
         String expected = "7f8b3b04bf34618f4a1723fba96b5db211279a2b";
         assertEquals(expected, address.toUnprefixedHexString());

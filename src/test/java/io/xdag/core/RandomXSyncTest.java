@@ -28,7 +28,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -37,18 +36,20 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.randomx.RandomX;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.math.BigInteger;
+import java.security.Security;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +62,12 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class RandomXSyncTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();
@@ -166,8 +173,8 @@ public class RandomXSyncTest {
 
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-//        ECKeyPair key = ECKeyPair.create(privateKey);
-        ECKeyPair key = ECKeyPair.create(privateKey);
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(privateKey);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
 //        System.out.println(key.getPrivateKey().toString(16));
         List<Address> pending = Lists.newArrayList();
 
@@ -239,7 +246,8 @@ public class RandomXSyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(SampleKeys.PRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
         wallet.setAccounts(Collections.singletonList(key));
 
 

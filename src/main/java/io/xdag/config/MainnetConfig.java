@@ -29,7 +29,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 public class MainnetConfig extends AbstractConfig {
 
     public MainnetConfig() {
-        super("mainnet", "xdag-mainnet.config");
+        super("mainnet", (byte)3, "xdag-mainnet.config");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
 

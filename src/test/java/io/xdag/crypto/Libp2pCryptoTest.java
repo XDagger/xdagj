@@ -27,12 +27,22 @@ import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.crypto.PubKey;
 import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.xdag.utils.Numeric;
+import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.security.Security;
 
 import static org.junit.Assert.assertArrayEquals;
 
 public class Libp2pCryptoTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     private PrivKey libp2pPrivKey;
     private PubKey libp2pPubKey;
@@ -45,11 +55,12 @@ public class Libp2pCryptoTest {
 
     @Test
     public void testUnmarshalSecp256k1PrivateKey() {
-        assertArrayEquals(libp2pPrivKey.raw(), SampleKeys.KEY_PAIR.getPrivateKey().toByteArray());
+        // skip 1 byte prefix
+        assertArrayEquals(Bytes.wrap(libp2pPrivKey.raw()).slice(1, 32).toArray(), SampleKeys.KEY_PAIR.secretKey().bytesArray());
     }
 
     @Test
     public void testUnmarshalSecp256k1PublicKey() {
-        assertArrayEquals(libp2pPubKey.raw(), SampleKeys.KEY_PAIR.getCompressPubKeyBytes());
+        assertArrayEquals(libp2pPubKey.raw(), SampleKeys.KEY_PAIR.publicKey().asEcPoint().getEncoded(true));
     }
 }

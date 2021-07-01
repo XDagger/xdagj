@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -35,11 +34,12 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,6 +48,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.Security;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
@@ -60,6 +61,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ExtraBlockTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
@@ -90,7 +97,8 @@ public class ExtraBlockTest {
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(SampleKeys.PRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -135,8 +143,11 @@ public class ExtraBlockTest {
 
     @Test
     public void testExtraBlockReUse() throws ParseException {
-        ECKeyPair addrKey = ECKeyPair.create(private_1);
-        ECKeyPair poolKey = ECKeyPair.create(private_2);
+        SECP256K1.SecretKey addrSecretKey = SECP256K1.SecretKey.fromInteger(private_1);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(addrSecretKey);
+
+        SECP256K1.SecretKey poolSecretKey = SECP256K1.SecretKey.fromInteger(private_2);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(poolSecretKey);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block

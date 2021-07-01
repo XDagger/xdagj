@@ -27,7 +27,9 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.*;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.apache.tuweni.io.Base58;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,14 +37,19 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.security.Security;
 import java.util.Collections;
 
+import static io.xdag.crypto.Bip32Test.*;
 import static org.junit.Assert.assertEquals;
-import static io.xdag.crypto.Bip32Test.addChecksum;
-import static io.xdag.crypto.Bip32Test.serializePrivate;
-import static io.xdag.crypto.Bip32Test.serializePublic;
 
 public class WalletUtilsTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     private String pwd;
     private Wallet wallet;
@@ -56,7 +63,8 @@ public class WalletUtilsTest {
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(SampleKeys.PRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
         wallet.lock();
@@ -75,20 +83,20 @@ public class WalletUtilsTest {
         Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
         assertEquals(
                 "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
-                Base58.encode(addChecksum(serializePrivate(masterKeypair))));
+                Base58.encodeBytes(addChecksum(serializePrivate(masterKeypair))));
 
         Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair,0);
 
         assertEquals(
                 "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
-                Base58.encode(addChecksum(serializePrivate(bip44Keypair))));
+                Base58.encodeBytes(addChecksum(serializePrivate(bip44Keypair))));
         assertEquals(
                 "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
-                Base58.encode(addChecksum(serializePublic(bip44Keypair))));
+                Base58.encodeBytes(addChecksum(serializePublic(bip44Keypair))));
 
         // Verify address according to https://iancoleman.io/bip39/
         Bip32ECKeyPair key = WalletUtils.importMnemonic(wallet, pwd, mnemonic, 0);
-        assertEquals("d85a4d67fcb69b14b12a15ad60e5dc65852f9907", BytesUtils.toHexString(Keys.toBytesAddress(key)));
+        assertEquals("2e25c950bdf91a9977b54fa2a4689e0f25a2614c", Keys.getAddress(key.getKeyPair()));
     }
 
     @Test
@@ -104,16 +112,16 @@ public class WalletUtilsTest {
         Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
         assertEquals(
                 "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
-                Base58.encode(addChecksum(serializePrivate(masterKeypair))));
+                Base58.encodeBytes(addChecksum(serializePrivate(masterKeypair))));
 
         Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair,0);
 
         assertEquals(
                 "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
-                Base58.encode(addChecksum(serializePrivate(bip44Keypair))));
+                Base58.encodeBytes(addChecksum(serializePrivate(bip44Keypair))));
         assertEquals(
                 "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
-                Base58.encode(addChecksum(serializePublic(bip44Keypair))));
+                Base58.encodeBytes(addChecksum(serializePublic(bip44Keypair))));
     }
 
     @After

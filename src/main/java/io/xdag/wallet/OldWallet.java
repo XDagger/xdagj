@@ -24,14 +24,14 @@
 package io.xdag.wallet;
 
 import io.xdag.config.Config;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -94,8 +94,8 @@ public class OldWallet {
     }
 
 //    @Override
-    public ECKeyPair getKeyByIndex(int index) {
-        return keyLists.get(index).ecKey;
+    public SECP256K1.KeyPair getKeyByIndex(int index) {
+        return keyLists.get(index).key;
     }
 
 //    @Override
@@ -106,12 +106,12 @@ public class OldWallet {
     private void addKey(BigInteger priv)  {
         if (priv == null) {
             File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
-            ECKeyPair ecKey = Keys.createEcKeyPair();
+            SECP256K1.KeyPair key = Keys.createEcKeyPair();
 
             // 奇偶 true为偶 false为奇
-            boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
+            boolean pubKeyParity = !key.publicKey().bytes().toUnsignedBigInteger().testBit(0);
             KeyInternalItem newKey = new KeyInternalItem();
-            newKey.ecKey = ecKey;
+            newKey.key = key;
             newKey.pubKeyParity = pubKeyParity;
             defKey = newKey;
             keyLists.add(newKey);
@@ -125,7 +125,7 @@ public class OldWallet {
                     }
                 }
                 // encrypted the priv byte with user's password
-                byte[] priv32 = Numeric.toBytesPadded(ecKey.getPrivateKey(), 32);
+                byte[] priv32 = key.secretKey().bytes().toArray();
                 byte[] priv32Encrypted = Native.encrypt_wallet_key(priv32, keysNum++);
                 IOUtils.write(priv32Encrypted, fileOutputStream);
             } catch (Exception e) {
@@ -169,11 +169,11 @@ public class OldWallet {
         File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
         if (!walletDatFile.exists() || walletDatFile.length() == 0) {
             // if wallet.dat not exist create it
-            ECKeyPair ecKey = Keys.createEcKeyPair();
+            SECP256K1.KeyPair key = Keys.createEcKeyPair();
             // 奇偶
-            boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
+            boolean pubKeyParity = !key.publicKey().bytes().toUnsignedBigInteger().testBit(0);
             KeyInternalItem newKey = new KeyInternalItem();
-            newKey.ecKey = ecKey;
+            newKey.key = key;
             newKey.pubKeyParity = pubKeyParity;
             defKey = newKey;
             keyLists.add(newKey);
@@ -185,7 +185,7 @@ public class OldWallet {
             }
             // encrypted the priv byte with user's password
             FileOutputStream fileOutputStream = new FileOutputStream(walletDatFile);
-            byte[] priv32 = Numeric.toBytesPadded(ecKey.getPrivateKey(), 32);
+            byte[] priv32 = key.secretKey().bytes().toArray();
             byte[] priv32Encrypted = Native.encrypt_wallet_key(priv32, keysNum++);
             IOUtils.write(priv32Encrypted, fileOutputStream);
             fileOutputStream.close();
@@ -196,11 +196,12 @@ public class OldWallet {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 BytesUtils.arrayReverse(priv32);
-                ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
+                SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromBytes(Bytes32.wrap(priv32));
+                SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
                 // 奇偶
-                boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
+                boolean pubKeyParity = !key.publicKey().bytes().toUnsignedBigInteger().testBit(0);
                 KeyInternalItem newKey = new KeyInternalItem();
-                newKey.ecKey = ecKey;
+                newKey.key = key;
                 newKey.pubKeyParity = pubKeyParity;
                 keyLists.add(newKey);
             }

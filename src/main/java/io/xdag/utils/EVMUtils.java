@@ -23,12 +23,17 @@
  */
 package io.xdag.utils;
 
+import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
 import io.xdag.evm.client.Repository;
 import org.apache.tuweni.bytes.Bytes;
 
 import java.math.BigInteger;
 
 public class EVMUtils {
+
+    private static final BigInteger TEN_POW_NINE = BigInteger.TEN.pow(9);
+
     /**
      * Returns number of VM words required to hold data of size {@code size}
      */
@@ -40,4 +45,18 @@ public class EVMUtils {
         repository.addBalance(fromAddr, value.negate());
         repository.addBalance(toAddr, value);
     }
+
+    public static XAmount weiToXAmount(BigInteger value) {
+        BigInteger nanoXDAG = value.divide(TEN_POW_NINE);
+        return XAmount.of(nanoXDAG.longValue(), XUnit.NANO_XDAG);
+    }
+
+    public static BigInteger xAmountToWei(XAmount value) {
+        return value.toBigInteger().multiply(TEN_POW_NINE);
+    }
+
+    public static BigInteger xAmountToWei(long nanoXDAG) {
+        return BigInteger.valueOf(nanoXDAG).multiply(TEN_POW_NINE);
+    }
+
 }

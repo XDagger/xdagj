@@ -23,19 +23,13 @@
  */
 package io.xdag.crypto;
 
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.Arrays;
-
 import io.xdag.utils.Numeric;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-
 
 public class KeysTest {
 
@@ -49,23 +43,20 @@ public class KeysTest {
     }
 
     @Test
-    public void testCreateSecp256k1KeyPair() throws Exception {
-        KeyPair keyPair = Keys.createSecp256k1KeyPair();
-        PrivateKey privateKey = keyPair.getPrivate();
-        PublicKey publicKey = keyPair.getPublic();
+    public void testCreateSecp256k1KeyPair() {
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        SECP256K1.SecretKey secretKey = key.secretKey();
+        SECP256K1.PublicKey publicKey = key.publicKey();
 
-        assertNotNull(privateKey);
+        assertNotNull(secretKey);
         assertNotNull(publicKey);
-
-        assertEquals(privateKey.getEncoded().length, (144));
-        assertEquals(publicKey.getEncoded().length, (88));
     }
 
     @Test
-    public void testCreateEcKeyPair() throws Exception {
-        ECKeyPair ecKeyPair = Keys.createEcKeyPair();
-        assertEquals(ecKeyPair.getPublicKey().signum(), (1));
-        assertEquals(ecKeyPair.getPrivateKey().signum(), (1));
+    public void testCreateEcKeyPair() {
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        assertEquals(key.secretKey().bytes().toUnsignedBigInteger().signum(), (1));
+        assertEquals(key.publicKey().bytes().toUnsignedBigInteger().signum(), (1));
     }
 
 }

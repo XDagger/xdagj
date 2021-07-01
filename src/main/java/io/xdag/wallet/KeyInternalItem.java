@@ -23,10 +23,10 @@
  */
 package io.xdag.wallet;
 
-import io.xdag.crypto.ECKeyPair;
+import org.apache.tuweni.crypto.SECP256K1;
 
 public class KeyInternalItem {
-    public ECKeyPair ecKey;
+    public SECP256K1.KeyPair key;
     /** 0:even 1:odd */
     public boolean pubKeyParity;
 }

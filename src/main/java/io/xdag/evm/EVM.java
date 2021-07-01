@@ -28,7 +28,6 @@ import static io.xdag.evm.OpCode.PUSH1;
 import static io.xdag.evm.OpCode.REVERT;
 import static io.xdag.utils.EVMUtils.getSizeInWords;
 
-import io.xdag.crypto.Hash;
 import io.xdag.evm.chainspec.Spec;
 import io.xdag.evm.program.Program;
 import io.xdag.evm.program.Stack;
@@ -38,6 +37,7 @@ import io.xdag.evm.program.exception.StaticCallModificationException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.crypto.Hash;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -563,7 +563,6 @@ public class EVM {
                     DataWord memOffsetData = program.stackPop();
                     DataWord lengthData = program.stackPop();
                     byte[] buffer = program.memoryChunk(memOffsetData.intValueSafe(), lengthData.intValueSafe());
-//                    byte[] encoded = Hash.keccak256(buffer);
                     Bytes encoded = Bytes.wrap(Hash.keccak256(buffer));
                     DataWord word = DataWord.of(encoded);
 
