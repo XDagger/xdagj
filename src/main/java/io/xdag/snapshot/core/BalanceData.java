@@ -15,17 +15,21 @@ import static io.xdag.utils.BasicUtils.*;
 
 @Data
 public class BalanceData {
-    UnsignedLong amount;
-    UnsignedLong time;
+    long amount;
+    long time;
     // we dont need storage_pos
-    UnsignedLong storage_pos;
-    Bytes32 hash;
+    long storage_pos;
+    byte[] hash;
+
+    public BalanceData(){
+
+    }
 
     public BalanceData(UnsignedLong amount, UnsignedLong time, UnsignedLong storage_pos, Bytes32 hash) {
-        this.amount = amount;
-        this.time = time;
-        this.storage_pos = storage_pos;
-        this.hash = hash;
+        this.amount = amount.longValue();
+        this.time = time.longValue();
+        this.storage_pos = storage_pos.longValue();
+        this.hash = hash.toArray();
     }
 
     public static BalanceData parse(Bytes key, Bytes value) {
@@ -42,10 +46,10 @@ public class BalanceData {
     @Override
     public String toString() {
         return "BalanceData{" +
-                "amount=" + amount2xdag(amount.longValue()) +
-                ", time=" + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(time.longValue())) +
+                "amount=" + amount2xdag(amount) +
+                ", time=" + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(time)) +
                 ", storage_pos=" + storage_pos +
-                ", hash=" + hash2Address(hash.toArray()) +
+                ", hash=" + (hash!=null?hash2Address(hash):"") +
                 '}';
     }
 }

@@ -35,5 +35,7 @@ public enum DatabaseName {
     TIME,
 
     /** Orphan block index */
-    ORPHANIND
+    ORPHANIND,
+
+    SNAPSHOT
 }

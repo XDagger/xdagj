@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 @Getter
 @Setter
@@ -43,4 +44,22 @@ public class BlockInfo {
     private long fee;
     private long timestamp;
     private byte[] remark;
+
+    @Override
+    public String toString() {
+        return "BlockInfo{" +
+                "height=" + height +
+                ", hash=" + Arrays.toString(hash) +
+                ", hashlow=" + Arrays.toString(hashlow) +
+                ", amount=" + amount +
+                ", type=" + type +
+                ", difficulty=" + difficulty +
+                ", ref=" + Arrays.toString(ref) +
+                ", maxDiffLink=" + Arrays.toString(maxDiffLink) +
+                ", flags=" + flags +
+                ", fee=" + fee +
+                ", timestamp=" + timestamp +
+                ", remark=" + Arrays.toString(remark) +
+                '}';
+    }
 }

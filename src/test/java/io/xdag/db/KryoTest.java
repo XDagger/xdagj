@@ -26,14 +26,19 @@ package io.xdag.db;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.primitives.UnsignedLong;
+import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.db.execption.DeserializationException;
+import io.xdag.db.execption.SerializationException;
+import io.xdag.snapshot.core.BalanceData;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -47,6 +52,9 @@ public class KryoTest {
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
+        kryo.register(long.class);
+        kryo.register(int.class);
+        kryo.register(BalanceData.class);
     }
 
     @Test
@@ -60,10 +68,52 @@ public class KryoTest {
         } catch (DeserializationException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void serialize() {
+        BlockInfo blockInfo = new BlockInfo();
+        blockInfo.setHeight(100);
+        System.out.println(blockInfo);
+        try {
+            byte[] data = serialize(blockInfo);
+            System.out.println(Hex.toHexString(data));
+
+            BlockInfo blockInfo1 = (BlockInfo) deserialize(data, BlockInfo.class);
+            System.out.println(blockInfo1);
+        } catch (SerializationException e) {
+        } catch (DeserializationException e) {
+            e.printStackTrace();
+        }
+
+        BalanceData b = new BalanceData();
+        System.out.println(b);
+        try {
+            byte[] data = serialize(b);
+            System.out.println(Hex.toHexString(data));
+
+            BalanceData b2 = (BalanceData) deserialize(data, BalanceData.class);
+            System.out.println(b2);
+        } catch (SerializationException e) {
+        } catch (DeserializationException e) {
+            e.printStackTrace();
+        }
 
 
     }
 
+    private byte[] serialize(final Object obj) throws SerializationException {
+        try {
+            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            final Output output = new Output(outputStream);
+            kryo.writeObject(output, obj);
+            output.flush();
+            output.close();
+            return outputStream.toByteArray();
+        } catch (final IllegalArgumentException | KryoException exception) {
+            throw new SerializationException(exception.getMessage(), exception);
+        }
+    }
     private Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         try {
             final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);

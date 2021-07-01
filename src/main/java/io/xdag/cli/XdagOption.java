@@ -41,7 +41,10 @@ public enum XdagOption {
 
     IMPORT_MNEMONIC("importmnemonic"),
 
-    CONVERT_OLD_WALLET("convertoldwallet");
+    CONVERT_OLD_WALLET("convertoldwallet"),
+
+    // Snapshot load
+    SNAPSHOT("snapshot");
 
     private final String name;
 

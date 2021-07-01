@@ -29,6 +29,9 @@ public class ExtStatsData {
     double cacheHitRate;
     int useOrphanHashTable;
 
+    public ExtStatsData() {
+    }
+
     public ExtStatsData(List<BigInteger> totalHashrate, List<BigInteger> ourHashrate, long hashrateLastTime, long nnoref, long nextra, long nhashes, double hashrateS, int nwaitSync, int cacheSize, int cacheUsage, double cacheHitRate, int useOrphanHashTable) {
         this.totalHashrate = totalHashrate;
         this.ourHashrate = ourHashrate;

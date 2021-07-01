@@ -17,6 +17,9 @@ public class StatsData {
     public int totalnhosts; //4
     public long reverse; //8
 
+    public StatsData() {
+    }
+
     public StatsData(BigInteger difficulty, BigInteger maxdifficulty, long nblocks, long totalnblocks,
                      long nmain, long totalnmain, int nhosts, int totalnhosts, long reverse) {
         this.difficulty = difficulty;

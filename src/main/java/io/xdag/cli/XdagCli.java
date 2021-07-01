@@ -33,6 +33,11 @@ import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.jni.Native;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.net.libp2p.RPCHandler.Firewall;
+import io.xdag.snapshot.db.SnapshotStore;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
@@ -165,7 +170,11 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.CONVERT_OLD_WALLET.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
             convertOldWallet(file);
-        } else {
+        } else if (cmd.hasOption(XdagOption.SNAPSHOT.toString())) {
+            File file = new File(cmd.getOptionValue(XdagOption.SNAPSHOT.toString()).trim());
+            loadSnapshot(file);
+        }
+        else {
             start();
         }
     }
@@ -359,6 +368,32 @@ public class XdagCli extends Launcher {
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
+    }
+
+    // snapshot load
+    protected boolean loadSnapshot(File file) {
+        Config config = getConfig();
+        DatabaseFactory dbFactory = new RocksdbFactory(config);
+        SnapshotStore snapshotStore = new SnapshotStore(dbFactory.getDB(DatabaseName.SNAPSHOT));
+        // load balance
+        loadBalanceData(file, snapshotStore);
+        // load pubkey
+        loadPubkey(file, snapshotStore);
+        // load signature
+        loadSignature(file, snapshotStore);
+        return true;
+    }
+
+    private void loadBalanceData(File file, SnapshotStore snapshotStore) {
+
+    }
+
+    private void loadPubkey(File file, SnapshotStore snapshotStore) {
+
+    }
+
+    private void loadSignature(File file, SnapshotStore snapshotStore) {
+
     }
 
     public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {
