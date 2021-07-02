@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 import io.xdag.utils.BasicUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -88,7 +89,7 @@ public class XAmount implements Comparable<XAmount> {
     }
 
     @Override
-    public int compareTo(XAmount other) {
+    public int compareTo(@NotNull XAmount other) {
         return this.lessThan(other) ? -1 : (this.greaterThan(other) ? 1 : 0);
     }
 

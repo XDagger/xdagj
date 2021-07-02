@@ -63,7 +63,6 @@ import io.xdag.rpc.cors.CorsConfiguration;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
-import io.xdag.rpc.modules.xdag.XdagModuleTransactionDisabled;
 import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
 import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
 import io.xdag.rpc.netty.*;

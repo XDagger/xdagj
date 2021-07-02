@@ -168,13 +168,15 @@ public class Commands {
             int index = pair.getKey();
             Block block = pair.getValue();
             if (remain.get() <= block.getInfo().getAmount()) {
-                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getAccounts().get(index));
+                SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(kernel.getWallet().getAccounts().get(index));
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), key);
                 remain.set(0);
                 return true;
             } else {
                 if (block.getInfo().getAmount() > 0) {
                     remain.set(remain.get() - block.getInfo().getAmount());
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getAccounts().get(index));
+                    SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(kernel.getWallet().getAccounts().get(index));
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), key);
                     return false;
                 }
                 return false;

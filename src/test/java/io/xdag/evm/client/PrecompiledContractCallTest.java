@@ -57,7 +57,6 @@ public class PrecompiledContractCallTest extends TestTransactionBase {
 
         Bytes method = Bytes.wrap(Arrays.copyOf(Hash.keccak256("verify(bytes32,uint8,bytes32,bytes32)".getBytes(StandardCharsets.UTF_8)), 4));
         Bytes hash = Bytes.wrap(Hash.keccak256("hello".getBytes(StandardCharsets.UTF_8)));
-        System.out.println(hash.toHexString());
         Bytes v = DataWord.of(28).getData();
         Bytes r = Bytes.fromHexString("9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac8038825608");
         Bytes s = Bytes.fromHexString("4f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada");

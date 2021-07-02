@@ -48,6 +48,7 @@ public class XdagChannelManager {
     // 广播区块
     private final Thread blockDistributeThread;
 
+    // White list ip set
     private final Set<InetSocketAddress> addressSet  = new HashSet<>();
 
     public XdagChannelManager(Kernel kernel) {

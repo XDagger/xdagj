@@ -23,8 +23,6 @@
  */
 package io.xdag.net.message.impl;
 
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
-
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
@@ -32,9 +30,10 @@ import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.util.zip.CRC32;
+
+import static io.xdag.config.Constants.DNET_PKT_XDAG;
 
 public class NewBlockMessage extends Message {
 

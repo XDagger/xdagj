@@ -45,7 +45,6 @@ import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.util.Date;
@@ -141,13 +140,12 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 log.info("XDAG:randomXminer. channel {} with wallet-address {} is randomXminer",channel.getInetAddress().toString(), blockHash.toHexString());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
             }else {
                 //to do nothing
                 log.debug("can not receive the share, No such address exists.");
                 ctx.close();
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
             }
+            minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
         }
 
         if (channel.getSharesCounts() <= kernel.getConfig().getPoolSpec().getMaxShareCountPerChannel()) {

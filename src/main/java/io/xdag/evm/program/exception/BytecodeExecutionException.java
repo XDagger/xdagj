@@ -28,7 +28,6 @@ package io.xdag.evm.program.exception;
  * perspective this is quite normal situation and doesn't mean exceptional
  * situation in terms of the program execution
  */
-@SuppressWarnings("serial")
 public class BytecodeExecutionException extends RuntimeException {
 
     public BytecodeExecutionException(String message) {

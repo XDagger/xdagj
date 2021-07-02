@@ -23,7 +23,6 @@
  */
 package io.xdag.evm.client;
 
-import io.xdag.core.Block;
 import io.xdag.core.TransactionType;
 import io.xdag.core.XdagTransaction;
 import io.xdag.utils.EVMUtils;

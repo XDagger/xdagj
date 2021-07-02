@@ -23,7 +23,6 @@
  */
 package io.xdag.utils;
 
-import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.Digest;

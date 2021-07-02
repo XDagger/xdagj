@@ -30,7 +30,7 @@ import io.xdag.evm.DataWord;
  */
 public class Stack {
 
-    private java.util.Stack<DataWord> stack = new java.util.Stack<>();
+    private final java.util.Stack<DataWord> stack = new java.util.Stack<>();
 
     public synchronized DataWord pop() {
         return stack.pop();

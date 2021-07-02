@@ -31,54 +31,42 @@ public interface AccountState {
     /**
      * Returns an account if exists.
      *
-     * @param address
-     * @return
      */
     Account getAccount(Bytes address);
 
     /**
      * Increases the nonce of an account.
      *
-     * @param address
      */
     long increaseNonce(Bytes address);
 
     /**
      * Adjusts the available balance of an account.
      *
-     * @param address
-     * @param delta
      */
     void adjustAvailable(Bytes address, XAmount delta);
 
     /**
      * Adjusts the locked balance of an account.
      *
-     * @param address
-     * @param delta
      */
     void adjustLocked(Bytes address, XAmount delta);
 
     /**
      * Returns the code of an account.
      *
-     * @param address
      */
     Bytes getCode(Bytes address);
 
     /**
      * Sets the code of an account.
      *
-     * @param address
-     * @param code
      */
     void setCode(Bytes address, Bytes code);
 
     /**
      * Returns the value that is mapped to the key.
      *
-     * @param address
-     * @param key
      * @return the value if exists, otherwise null.
      */
     Bytes getStorage(Bytes address, Bytes key);
@@ -86,17 +74,12 @@ public interface AccountState {
     /**
      * Associates the specified value with the specified key.
      *
-     * @param address
-     * @param key
-     * @param value
      */
     void putStorage(Bytes address, Bytes key, Bytes value);
 
     /**
      * Remove a key value pair from the storage if exists.
      *
-     * @param address
-     * @param key
      */
     void removeStorage(byte[] address, byte[] key);
 

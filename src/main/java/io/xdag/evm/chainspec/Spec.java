@@ -38,14 +38,12 @@ public interface Spec {
     /**
      * Returns the fee schedule.
      *
-     * @return
      */
     FeeSchedule getFeeSchedule();
 
     /**
      * Returns the precompiled contracts
      *
-     * @return
      */
     PrecompiledContracts getPrecompiledContracts();
 
@@ -58,8 +56,6 @@ public interface Spec {
      *            the requested gas
      * @param availableGas
      *            the available gas
-     * @return
-     * @throws OutOfGasException
      */
     long getCallGas(OpCode op, long requestedGas, long availableGas) throws OutOfGasException;
 
@@ -68,7 +64,6 @@ public interface Spec {
      *
      * @param availableGas
      *            the available gas
-     * @return
      */
     long getCreateGas(long availableGas);
 
@@ -77,21 +72,18 @@ public interface Spec {
      *
      * @param tx
      *            a transaction
-     * @return
      */
     long getTransactionCost(Transaction tx);
 
     /**
      * Returns the max size of a contract.
      *
-     * @return
      */
     int maxContractSize();
 
     /**
      * Whether to create an empty contract or not when running out of gas.
      *
-     * @return
      */
     boolean createEmptyContractOnOOG();
 

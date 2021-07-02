@@ -28,7 +28,6 @@ import org.apache.tuweni.bytes.MutableBytes;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -123,7 +122,6 @@ public class DataWord implements Comparable<DataWord> {
     /**
      * Returns the last 20 bytes.
      *
-     * @return
      */
     public Bytes getLast20Bytes() {
         MutableBytes last20Bytes = MutableBytes.create(20);
@@ -134,8 +132,6 @@ public class DataWord implements Comparable<DataWord> {
     /**
      * Returns the n-th byte.
      *
-     * @param index
-     * @return
      */
     public byte getByte(int index) {
         return this.data.get(index);
@@ -361,7 +357,6 @@ public class DataWord implements Comparable<DataWord> {
     /**
      * Shift left, both this and input arg are treated as unsigned
      *
-     * @param arg
      * @return this << arg
      */
     public DataWord shiftLeft(DataWord arg) {
@@ -375,7 +370,6 @@ public class DataWord implements Comparable<DataWord> {
     /**
      * Shift right, both this and input arg are treated as unsigned
      *
-     * @param arg
      * @return this >>> arg
      */
     public DataWord shiftRight(DataWord arg) {
@@ -389,7 +383,6 @@ public class DataWord implements Comparable<DataWord> {
     /**
      * Shift right, this is signed, while input arg is treated as unsigned
      *
-     * @param arg
      * @return this >> arg
      */
     public DataWord shiftRightSigned(DataWord arg) {

@@ -23,7 +23,6 @@
  */
 package io.xdag.evm.program.exception;
 
-@SuppressWarnings("serial")
 public class PrecompiledFailureException extends BytecodeExecutionException {
 
     public PrecompiledFailureException() {

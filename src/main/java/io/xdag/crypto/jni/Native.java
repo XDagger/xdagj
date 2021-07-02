@@ -112,49 +112,6 @@ public class Native {
         }
     }
 
-//    public static String loadlib(String root, String fileName, String sourcePath) throws Exception {
-//        InputStream in = Native.class.getResourceAsStream(sourcePath);
-//        byte[] buffer = new byte[1024];
-//        File temp = new File(root);
-//        if (!temp.exists()) {
-//            if (!temp.mkdirs()) {
-//                log.debug("Create Dir Failed..");
-//                throw new Exception();
-//            }
-//        }
-//        temp = new File(root + fileName);
-//        if (!temp.exists()) {
-//            if (!temp.createNewFile()) {
-//                log.debug("Create File Failed..");
-//                throw new Exception();
-//            }
-//        }
-//        FileOutputStream fos = new FileOutputStream(temp);
-//        int read = -1;
-//        while ((read = in.read(buffer)) != -1) {
-//            fos.write(buffer, 0, read);
-//        }
-//        fos.close();
-//        in.close();
-//        String abPath = temp.getAbsolutePath();
-//        return abPath;
-//    }
-//
-//    public static String loadlib(String fileName, String sourcePath) throws IOException {
-//        InputStream in = Native.class.getResourceAsStream(sourcePath);
-//        byte[] buffer = new byte[1024];
-//        File temp = new File(fileName);
-//        FileOutputStream fos = new FileOutputStream(temp);
-//        int read = -1;
-//        while ((read = in.read(buffer)) != -1) {
-//            fos.write(buffer, 0, read);
-//        }
-//        fos.close();
-//        in.close();
-//        String abPath = temp.getAbsolutePath();
-//        return abPath;
-//    }
-
     public static native int crypt_start();
 
     public static native int dnet_crypt_init();

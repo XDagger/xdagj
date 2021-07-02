@@ -23,24 +23,23 @@
  */
 package io.xdag.net.message.impl;
 
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
-import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
-
-import io.xdag.net.message.AbstractMessage;
 import io.xdag.core.XdagStats;
+import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-
 import lombok.EqualsAndHashCode;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
+
+import java.math.BigInteger;
+import java.nio.ByteOrder;
+
+import static io.xdag.config.Constants.DNET_PKT_XDAG;
+import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlockRequestMessage extends AbstractMessage {

@@ -25,7 +25,6 @@ package io.xdag.evm.program.exception;
 
 import static java.lang.String.format;
 
-@SuppressWarnings("serial")
 public class BadJumpDestinationException extends BytecodeExecutionException {
 
     public BadJumpDestinationException(String message, Object... args) {

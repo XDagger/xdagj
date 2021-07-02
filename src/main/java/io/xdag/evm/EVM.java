@@ -304,7 +304,7 @@ public class EVM {
                     }
 
                     gasCost = feeSchedule.getLOG_GAS() +
-                            feeSchedule.getLOG_TOPIC_GAS() * nTopics +
+                            (long) feeSchedule.getLOG_TOPIC_GAS() * nTopics +
                             feeSchedule.getLOG_DATA_GAS() * stack.get(stack.size() - 2).longValue() +
                             calcMemGas(feeSchedule, oldMemSize, memNeeded(stack.peek(), stack.get(stack.size() - 2)), 0);
                     break;
@@ -312,7 +312,7 @@ public class EVM {
 
                     DataWord exp = stack.get(stack.size() - 2);
                     int bytesOccupied = exp.bytesOccupied();
-                    gasCost = feeSchedule.getEXP_GAS() + feeSchedule.getEXP_BYTE_GAS() * bytesOccupied;
+                    gasCost = feeSchedule.getEXP_GAS() + (long) feeSchedule.getEXP_BYTE_GAS() * bytesOccupied;
                     break;
                 default:
                     break;

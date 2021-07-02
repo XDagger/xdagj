@@ -23,8 +23,6 @@
  */
 package io.xdag.config.spec;
 
-import lombok.Getter;
-
 /**
  * The Admin Specifications
  */

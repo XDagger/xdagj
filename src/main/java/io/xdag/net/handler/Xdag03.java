@@ -175,10 +175,7 @@ public class Xdag03 extends XdagHandler {
 
     protected void processBlockRequest(BlockRequestMessage msg) {
 //        log.debug("processBlockRequest: hash:{}" + Hex.toHexString(msg.getHash()));
-//        Bytes32 find = new byte[32];
         Bytes32 hash = msg.getHash();
-//        hash = Arrays.reverse(hash);
-//        System.arraycopy(hash, 8, find, 8, 24);
         MutableBytes32 find = MutableBytes32.create();
         find.set(8, hash.reverse().slice(8, 24));
         Block block = blockchain.getBlockByHash(find, true);

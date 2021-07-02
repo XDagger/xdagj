@@ -24,7 +24,6 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.dto.BlockResultDTO;
-import io.xdag.rpc.modules.xdag.XdagModuleChain;
 
 public class XdagModuleChainBase implements XdagModuleChain {
 

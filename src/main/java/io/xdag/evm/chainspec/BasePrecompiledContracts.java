@@ -171,10 +171,7 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
                 return false;
             }
 
-            if (isLessThan(s, BigInteger.ONE) || !isLessThan(s, SECP256K1N)) {
-                return false;
-            }
-            return true;
+            return !isLessThan(s, BigInteger.ONE) && isLessThan(s, SECP256K1N);
         }
     }
 

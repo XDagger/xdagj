@@ -23,7 +23,6 @@
  */
 package io.xdag.evm.program.exception;
 
-@SuppressWarnings("serial")
 public class StaticCallModificationException extends BytecodeExecutionException {
     public StaticCallModificationException() {
         super("Attempt to call a state modifying opcode inside STATICCALL");

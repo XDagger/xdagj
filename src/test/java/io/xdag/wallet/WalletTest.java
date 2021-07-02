@@ -99,11 +99,11 @@ public class WalletTest {
         SECP256K1.KeyPair key1 = Keys.createEcKeyPair();
         SECP256K1.KeyPair key2 = Keys.createEcKeyPair();
         wallet.addAccounts(Arrays.asList(key1, key2));
-        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
-        SECP256K1.KeyPair k1 = accounts.get(0);
-        SECP256K1.KeyPair k2 = accounts.get(1);
-        assertEquals(k1, key1);
-        assertEquals(k2, key2);
+        List<SECP256K1.SecretKey> accounts = wallet.getAccounts();
+        SECP256K1.SecretKey k1 = accounts.get(0);
+        SECP256K1.SecretKey k2 = accounts.get(1);
+        assertEquals(k1, key1.secretKey());
+        assertEquals(k2, key2.secretKey());
     }
 
     @Test
@@ -146,13 +146,13 @@ public class WalletTest {
         wallet.unlock(pwd);
         int oldAccountSize = wallet.getAccounts().size();
         SECP256K1.KeyPair key = Keys.createEcKeyPair();
-        wallet.addAccount(key);
+        wallet.addAccount(key.secretKey());
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
         wallet.removeAccount(key);
         assertEquals(oldAccountSize, wallet.getAccounts().size());
-        wallet.addAccount(key);
+        wallet.addAccount(key.secretKey());
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
-        wallet.removeAccount(Keys.getAddress(key));
+        wallet.removeAccount(Keys.getAddress(key.publicKey()));
         assertEquals(oldAccountSize, wallet.getAccounts().size());
     }
 
@@ -178,10 +178,10 @@ public class WalletTest {
     public void testHDKeyRecover() {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<SECP256K1.KeyPair> keyPairList1 = new ArrayList<>();
+        List<SECP256K1.SecretKey> keyPairList1 = new ArrayList<>();
         int hdkeyCount = 5;
         for(int i = 0; i < hdkeyCount; i++) {
-            SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
+            SECP256K1.SecretKey key = wallet.addAccountWithNextHdKey();
             keyPairList1.add(key);
         }
 
@@ -190,9 +190,9 @@ public class WalletTest {
         // use different password and same mnemonic
         wallet2.unlock(pwd + pwd);
         wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<SECP256K1.KeyPair> keyPairList2 = new ArrayList<>();
+        List<SECP256K1.SecretKey> keyPairList2 = new ArrayList<>();
         for(int i = 0; i < hdkeyCount; i++) {
-            SECP256K1.KeyPair key = wallet2.addAccountWithNextHdKey();
+            SECP256K1.SecretKey key = wallet2.addAccountWithNextHdKey();
             keyPairList2.add(key);
         }
         assertTrue(CollectionUtils.isEqualCollection(keyPairList1, keyPairList2));

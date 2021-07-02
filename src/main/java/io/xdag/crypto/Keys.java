@@ -23,6 +23,7 @@
  */
 package io.xdag.crypto;
 
+import java.io.Serial;
 import java.math.BigInteger;
 
 import java.security.GeneralSecurityException;
@@ -66,8 +67,12 @@ public class Keys {
         return SECP256K1.KeyPair.random();
     }
 
-    public static String getAddress(SECP256K1.KeyPair keyPair) {
-        return getAddress(keyPair.publicKey().toHexString());
+    public static String getAddress(SECP256K1.PublicKey publicKey) {
+        return getAddress(publicKey.toHexString());
+    }
+
+    public static String getAddress(SECP256K1.SecretKey secretKey) {
+        return getAddress(SECP256K1.PublicKey.fromSecretKey(secretKey).toHexString());
     }
 
     public static String getAddress(BigInteger publicKey) {
@@ -264,6 +269,7 @@ public class Keys {
      * This is the generic Signature exception.
      */
     public static class SignatureException extends GeneralSecurityException {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         public SignatureException(String msg) {

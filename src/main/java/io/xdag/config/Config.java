@@ -25,9 +25,6 @@ package io.xdag.config;
 
 import io.xdag.config.spec.*;
 import io.xdag.core.XdagField;
-import io.xdag.rpc.modules.ModuleDescription;
-
-import java.util.List;
 
 /**
  * The Xdag blockchain configurations.

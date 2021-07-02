@@ -86,7 +86,7 @@ public class ByzantiumSpec extends BaseSpec {
     @Override
     public long getCallGas(OpCode op, long requestedGas, long availableGas) throws OutOfGasException {
         long maxAllowed = maxAllowed(availableGas);
-        return requestedGas > maxAllowed ? maxAllowed : requestedGas;
+        return Math.min(requestedGas, maxAllowed);
     }
 
     @Override

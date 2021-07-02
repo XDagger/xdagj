@@ -447,7 +447,7 @@ public class Program {
         // [7] SAVE THE CONTRACT CODE
         if (result.getException() == null && !result.isRevert()) {
             Bytes code = result.getReturnData();
-            long storageCost = code.size() * spec.getFeeSchedule().getCREATE_DATA();
+            long storageCost = (long) code.size() * spec.getFeeSchedule().getCREATE_DATA();
 
             if (result.getGasLeft() < storageCost) {
                 if (!spec.createEmptyContractOnOOG()) {

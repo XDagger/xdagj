@@ -23,24 +23,13 @@
  */
 package io.xdag.net;
 
-import java.net.InetSocketAddress;
-
-import org.bouncycastle.util.encoders.Hex;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
-import io.xdag.net.handler.MessageCodes;
-import io.xdag.net.handler.Xdag;
-import io.xdag.net.handler.XdagAdapter;
-import io.xdag.net.handler.XdagBlockHandler;
-import io.xdag.net.handler.XdagHandler;
-import io.xdag.net.handler.XdagHandlerFactory;
-import io.xdag.net.handler.XdagHandlerFactoryImpl;
-import io.xdag.net.handler.XdagHandshakeHandler;
+import io.xdag.net.handler.*;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
@@ -49,6 +38,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.InetSocketAddress;
 
 @EqualsAndHashCode(callSuper = true)
 @Slf4j

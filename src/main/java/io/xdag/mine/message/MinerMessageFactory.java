@@ -30,7 +30,6 @@ import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class MinerMessageFactory implements MessageFactory {

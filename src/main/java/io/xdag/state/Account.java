@@ -28,7 +28,7 @@ import io.xdag.core.XAmount;
 import io.xdag.utils.SimpleDecoder;
 import org.bouncycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
+import java.util.Arrays;
 
 public class Account {
 
@@ -40,10 +40,6 @@ public class Account {
     /**
      * Creates an account instance.
      *
-     * @param address
-     * @param available
-     * @param locked
-     * @param nonce
      */
     public Account(byte[] address, XAmount available, XAmount locked, long nonce) {
         this.address = address;
@@ -55,7 +51,6 @@ public class Account {
     /**
      * Serializes this account into byte array.
      *
-     * @return
      */
     public byte[] toBytes() {
         SimpleEncoder enc = new SimpleEncoder();
@@ -69,9 +64,6 @@ public class Account {
     /**
      * Parses an account from byte array.
      *
-     * @param address
-     * @param bytes
-     * @return
      */
     public static Account fromBytes(byte[] address, byte[] bytes) {
         SimpleDecoder dec = new SimpleDecoder(bytes);
@@ -85,7 +77,6 @@ public class Account {
     /**
      * Returns the address of this account.
      *
-     * @return
      */
     public byte[] getAddress() {
         return address;
@@ -94,7 +85,6 @@ public class Account {
     /**
      * Returns the available balance of this account.
      *
-     * @return
      */
     public XAmount getAvailable() {
         return available;
@@ -103,7 +93,6 @@ public class Account {
     /**
      * Sets the available balance of this account.
      *
-     * @param available
      */
     void setAvailable(XAmount available) {
         this.available = available;
@@ -112,7 +101,6 @@ public class Account {
     /**
      * Returns the locked balance of this account.
      *
-     * @return
      */
     public XAmount getLocked() {
         return locked;
@@ -121,7 +109,6 @@ public class Account {
     /**
      * Sets the locked balance of this account.
      *
-     * @param locked
      */
     void setLocked(XAmount locked) {
         this.locked = locked;
@@ -130,7 +117,6 @@ public class Account {
     /**
      * Gets the nonce of this account.
      *
-     * @return
      */
     public long getNonce() {
         return nonce;
@@ -139,7 +125,6 @@ public class Account {
     /**
      * Sets the nonce of this account.
      *
-     * @param nonce
      */
     void setNonce(long nonce) {
         this.nonce = nonce;
@@ -147,7 +132,7 @@ public class Account {
 
     @Override
     public String toString() {
-        return "Account [address=" + Hex.encode(address) + ", available=" + available + ", locked=" + locked
+        return "Account [address=" + Arrays.toString(Hex.encode(address)) + ", available=" + available + ", locked=" + locked
                 + ", nonce=" + nonce + "]";
     }
 

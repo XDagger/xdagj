@@ -43,7 +43,7 @@ import java.util.ArrayList;
 public class TransactionExecutor {
     private final Transaction tx;
     private final Block block;
-    private long basicTxCost;
+    private final long basicTxCost;
 
     private final Repository repo;
     private final BlockStore blockStore;
@@ -164,7 +164,7 @@ public class TransactionExecutor {
 
             // handle future refund
             long gasUsed = program.getGasUsed();
-            long suicideRefund = invokeResult.getDeleteAccounts().size() * spec.getFeeSchedule().getSUICIDE_REFUND();
+            long suicideRefund = (long) invokeResult.getDeleteAccounts().size() * spec.getFeeSchedule().getSUICIDE_REFUND();
             long qualifiedRefund = Math.min(invokeResult.getFutureRefund() + suicideRefund, gasUsed / 2);
             program.refundGas(qualifiedRefund, "Future refund");
             program.resetFutureRefund();

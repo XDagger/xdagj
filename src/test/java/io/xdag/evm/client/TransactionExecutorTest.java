@@ -52,7 +52,6 @@ public class TransactionExecutorTest extends TestTransactionBase {
 
         TransactionExecutor executor = new TransactionExecutor(transaction, block, repository, blockStore);
         TransactionReceipt receipt = executor.run();
-        System.out.println(receipt);
 
         assertTrue(receipt.isSuccess());
         assertEquals(21_000L, receipt.getGasUsed());
@@ -211,7 +210,6 @@ public class TransactionExecutorTest extends TestTransactionBase {
 
         TransactionExecutor executor = new TransactionExecutor(transaction, block, repository, blockStore);
         TransactionReceipt receipt = executor.run();
-        System.out.println(receipt);
 
         assertTrue(receipt.isSuccess());
         assertEquals(1, receipt.getInternalTransactions().size());

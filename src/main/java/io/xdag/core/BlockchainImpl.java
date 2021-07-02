@@ -1088,15 +1088,16 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<SECP256K1.KeyPair> ourkeys = wallet.getAccounts();
+        List<SECP256K1.SecretKey> ourkeys = wallet.getAccounts();
         // 输出签名只有一个
         SECP256K1.Signature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            SECP256K1.KeyPair key = ourkeys.get(i);
-            Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), key.publicKey().bytes());
+            SECP256K1.SecretKey secretKey = ourkeys.get(i);
+            SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.fromSecretKey(secretKey);
+            Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), publicKey.bytes());
             Bytes32 hash = HashUtils.hashTwice(Bytes.wrap(digest));
-            if (SECP256K1.verify(hash, signature, key.publicKey())) {
+            if (SECP256K1.verify(hash, signature, publicKey)) {
                 log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;

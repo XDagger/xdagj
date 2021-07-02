@@ -25,7 +25,6 @@ package io.xdag.evm.program.exception;
 
 import io.xdag.evm.DataWord;
 
-@SuppressWarnings("serial")
 public class ReturnDataCopyIllegalBoundsException extends BytecodeExecutionException {
 
     public ReturnDataCopyIllegalBoundsException(DataWord off, DataWord size, long returnDataSize) {

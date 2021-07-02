@@ -56,7 +56,7 @@ public enum TransactionType {
         return map[0xff & code];
     }
 
-    private int code;
+    private final int code;
 
     TransactionType(int code) {
         this.code = code;

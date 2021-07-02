@@ -25,7 +25,6 @@ package io.xdag.mine.manager;
 
 import io.xdag.consensus.Task;
 import io.xdag.mine.miner.Miner;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
 public interface AwardManager {

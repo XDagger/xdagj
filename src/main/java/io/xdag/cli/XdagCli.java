@@ -33,7 +33,6 @@ import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -193,11 +192,11 @@ public class XdagCli extends Launcher {
         }
 
         // create a new account if the wallet is empty
-        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
+        List<SECP256K1.SecretKey> accounts = wallet.getAccounts();
         if (accounts.isEmpty()) {
-            SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
+            SECP256K1.SecretKey secretKey = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            System.out.println("New Address:" + Keys.getAddress(key));
+            System.out.println("New Address:" + Keys.getAddress(secretKey));
         }
 
         // start kernel
@@ -243,16 +242,16 @@ public class XdagCli extends Launcher {
             System.out.println("Please init HD Wallet account first!");
             return;
         }
-        SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
+        SECP256K1.SecretKey secretKey = wallet.addAccountWithNextHdKey();
         if (wallet.flush()) {
-            System.out.println("New Address:" + Keys.getAddress(key));
-            System.out.println("PublicKey:" + key.publicKey().toHexString());
+            System.out.println("New Address:" + Keys.getAddress(secretKey));
+            System.out.println("PublicKey:" + SECP256K1.PublicKey.fromSecretKey(secretKey).toHexString());
         }
     }
 
     protected void listAccounts() {
         Wallet wallet = loadAndUnlockWallet();
-        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
+        List<SECP256K1.SecretKey> accounts = wallet.getAccounts();
 
         if (accounts.isEmpty()) {
             System.out.println("Account Missing");
@@ -299,8 +298,7 @@ public class XdagCli extends Launcher {
         Wallet wallet = loadAndUnlockWallet();
         SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(key));
         SECP256K1.KeyPair account = SECP256K1.KeyPair.fromSecretKey(secretKey);
-
-        boolean accountAdded = wallet.addAccount(account);
+        boolean accountAdded = wallet.addAccount(account.secretKey());
         if (!accountAdded) {
             System.out.println("Private Key Already In Wallet");
             return false;
@@ -312,7 +310,7 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        System.out.println("Address:" + Keys.getAddress(account));
+        System.out.println("Address:" + Keys.getAddress(secretKey));
         System.out.println("PublicKey:" + account.publicKey().toHexString());
         System.out.println("Private Key Imported Successfully!");
         return true;
@@ -355,7 +353,7 @@ public class XdagCli extends Launcher {
         for(SECP256K1.KeyPair key : keyList) {
             System.out.println("PrivateKey:" + key.secretKey().bytes().toHexString());
             System.out.println(" PublicKey:" + key.publicKey().toHexString());
-            System.out.println("   Address:" + Keys.getAddress(key));
+            System.out.println("   Address:" + Keys.getAddress(key.publicKey()));
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
@@ -374,8 +372,6 @@ public class XdagCli extends Launcher {
                 SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
                 keyList.add(key);
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

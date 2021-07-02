@@ -25,7 +25,6 @@ package io.xdag.evm.program.exception;
 
 import static java.lang.String.format;
 
-@SuppressWarnings("serial")
 public class OutOfGasException extends BytecodeExecutionException {
 
     public OutOfGasException(String message, Object... args) {

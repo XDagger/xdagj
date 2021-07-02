@@ -29,7 +29,6 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.crypto.Keys;
-import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.Wallet;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.SECP256K1;
@@ -127,9 +126,9 @@ public class XdagCliTest {
         xdagCLI.setConfig(new MainnetConfig());
 
         // mock accounts
-        List<SECP256K1.KeyPair> accounts = new ArrayList<>();
+        List<SECP256K1.SecretKey> accounts = new ArrayList<>();
         SECP256K1.KeyPair account = Keys.createEcKeyPair();
-        accounts.add(account);
+        accounts.add(account.secretKey());
 
         // mock wallet
         Wallet wallet = mock(Wallet.class);
@@ -152,9 +151,9 @@ public class XdagCliTest {
         xdagCLI.setConfig(new TestnetConfig());
 
         // mock accounts
-        List<SECP256K1.KeyPair> accounts = new ArrayList<>();
+        List<SECP256K1.SecretKey> accounts = new ArrayList<>();
         SECP256K1.KeyPair account = Keys.createEcKeyPair();
-        accounts.add(account);
+        accounts.add(account.secretKey());
 
         // mock wallet
         Wallet wallet = mock(Wallet.class);
@@ -196,7 +195,7 @@ public class XdagCliTest {
         doReturn(new ArrayList<SECP256K1.KeyPair>(), // returns empty wallet
                 Collections.singletonList(Keys.createEcKeyPair()) // returns wallet with a newly created account
         ).when(wallet).getAccounts();
-        when(wallet.addAccount(any(SECP256K1.KeyPair.class))).thenReturn(true);
+        when(wallet.addAccount(any(SECP256K1.SecretKey.class))).thenReturn(true);
         when(wallet.flush()).thenReturn(true);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
 
@@ -207,7 +206,7 @@ public class XdagCliTest {
         // mock new account
         SECP256K1.KeyPair newAccount = Keys.createEcKeyPair();
         when(wallet.addAccountRandom()).thenReturn(newAccount);
-        when(wallet.addAccountWithNextHdKey()).thenReturn(newAccount);
+        when(wallet.addAccountWithNextHdKey()).thenReturn(newAccount.secretKey());
 
         // mock passwords
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
@@ -286,14 +285,14 @@ public class XdagCliTest {
         Wallet wallet = mock(Wallet.class);
         when(wallet.unlock("oldpassword")).thenReturn(true);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
-        when(wallet.addAccount(any(SECP256K1.KeyPair.class))).thenReturn(true);
+        when(wallet.addAccount(any(SECP256K1.SecretKey.class))).thenReturn(true);
         when(wallet.flush()).thenReturn(true);
         when(xdagCLI.loadWallet()).thenReturn(wallet);
 
         // mock account
         SECP256K1.KeyPair newAccount = Keys.createEcKeyPair();
         when(wallet.addAccountRandom()).thenReturn(newAccount);
-        when(wallet.addAccountWithNextHdKey()).thenReturn(newAccount);
+        when(wallet.addAccountWithNextHdKey()).thenReturn(newAccount.secretKey());
 
         // mock passwords
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
@@ -313,9 +312,9 @@ public class XdagCliTest {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         // mock accounts
-        List<SECP256K1.KeyPair> accounts = new ArrayList<>();
+        List<SECP256K1.SecretKey> accounts = new ArrayList<>();
         SECP256K1.KeyPair account = Keys.createEcKeyPair();
-        accounts.add(account);
+        accounts.add(account.secretKey());
 
         // mock wallet
         Wallet wallet = mock(Wallet.class);
@@ -362,8 +361,7 @@ public class XdagCliTest {
 
         // mock account
         SECP256K1.KeyPair account = spy(Keys.createEcKeyPair());
-        String address = Keys.getAddress(account);
-//        byte[] addressBytes = Keys.getAddress(account.publicKey().bytesArray());
+        String address = Keys.getAddress(account.publicKey());
 
         // mock wallet
         Wallet wallet = mock(Wallet.class);
@@ -413,13 +411,13 @@ public class XdagCliTest {
 
         // mock private key
         SECP256K1.KeyPair keypair = Keys.createEcKeyPair();
-        String key = Keys.getAddress(keypair);
+        String key = Keys.getAddress(keypair.secretKey());
 
         // mock wallet
         Wallet wallet = mock(Wallet.class);
         when(wallet.unlock("oldpassword")).thenReturn(true);
         when(xdagCLI.loadWallet()).thenReturn(wallet);
-        when(wallet.addAccount(any(SECP256K1.KeyPair .class))).thenReturn(false);
+        when(wallet.addAccount(any(SECP256K1.SecretKey .class))).thenReturn(false);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
 
         // mock passwords
@@ -437,13 +435,13 @@ public class XdagCliTest {
 
         // mock private key
         SECP256K1.KeyPair keypair = Keys.createEcKeyPair();
-        String address = Keys.getAddress(keypair);
+        String address = Keys.getAddress(keypair.secretKey());
 
         // mock wallet
         Wallet wallet = mock(Wallet.class);
         when(wallet.unlock("oldpassword")).thenReturn(true);
         when(xdagCLI.loadWallet()).thenReturn(wallet);
-        when(wallet.addAccount(any(SECP256K1.KeyPair.class))).thenReturn(true);
+        when(wallet.addAccount(any(SECP256K1.SecretKey.class))).thenReturn(true);
         when(wallet.flush()).thenReturn(false);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
 
@@ -467,7 +465,7 @@ public class XdagCliTest {
         Wallet wallet = mock(Wallet.class);
         when(wallet.unlock("oldpassword")).thenReturn(true);
         when(xdagCLI.loadWallet()).thenReturn(wallet);
-        when(wallet.addAccount(any(SECP256K1.KeyPair.class))).thenReturn(true);
+        when(wallet.addAccount(any(SECP256K1.SecretKey.class))).thenReturn(true);
         when(wallet.flush()).thenReturn(true);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
 

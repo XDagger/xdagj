@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.Objects;
 
 public class RandomX {
     private static final Logger logger = LoggerFactory.getLogger(RandomX.class);
@@ -81,7 +82,7 @@ public class RandomX {
             if (!file.exists()) {
                 InputStream in = Native.class.getResourceAsStream(resource); // null pointer exception
                 OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                for (int c; (c = in.read()) != -1;) {
+                for (int c; (c = Objects.requireNonNull(in).read()) != -1;) {
                     out.write(c);
                 }
                 out.close();

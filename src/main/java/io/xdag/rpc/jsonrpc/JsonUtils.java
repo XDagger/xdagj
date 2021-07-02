@@ -23,7 +23,6 @@
  */
 package io.xdag.rpc.jsonrpc;
 
-import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.math.BigInteger;

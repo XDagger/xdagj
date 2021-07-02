@@ -32,9 +32,9 @@ import java.util.List;
  */
 public class LogInfo {
 
-    private Bytes address;
-    private List<DataWord> topics;
-    private Bytes data;
+    private final Bytes address;
+    private final List<DataWord> topics;
+    private final Bytes data;
 
     public LogInfo(Bytes address, List<DataWord> topics, Bytes data) {
         this.address = address;

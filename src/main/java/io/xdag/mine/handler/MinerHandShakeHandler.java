@@ -23,14 +23,6 @@
  */
 package io.xdag.mine.handler;
 
-import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
-import static io.xdag.net.XdagVersion.V03;
-import static io.xdag.utils.BasicUtils.crc32Verify;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -46,10 +38,19 @@ import io.xdag.core.XdagBlock;
 import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
-import io.xdag.utils.*;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.encoders.Hex;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+
+import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
+import static io.xdag.net.XdagVersion.V03;
+import static io.xdag.utils.BasicUtils.crc32Verify;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
@@ -163,8 +164,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         try {
             Channel nettyChannel = ctx.channel();
-            if (evt instanceof IdleStateEvent) {
-                IdleStateEvent e = (IdleStateEvent)evt;
+            if (evt instanceof IdleStateEvent e) {
                 if (e.state() == IdleState.READER_IDLE) {
                     nettyChannel.closeFuture();
                     if (log.isDebugEnabled()) {

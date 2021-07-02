@@ -29,7 +29,6 @@ import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.crypto.Hash;
 import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.math.ec.ECPoint;
 
@@ -37,7 +36,9 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static io.xdag.utils.HashUtils.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static io.xdag.utils.HashUtils.hmacSha512;
+import static io.xdag.utils.HashUtils.sha256hash160;
 
 /**
  * BIP-32 key pair.
@@ -55,7 +56,8 @@ public class Bip32ECKeyPair {
     private final byte[] chainCode;
     private final int parentFingerprint;
 
-    private final SECP256K1.KeyPair keyPair;
+    private SECP256K1.SecretKey secretKey;
+    private SECP256K1.PublicKey publicKey;
 
     public Bip32ECKeyPair(
             BigInteger privateKey,
@@ -64,7 +66,14 @@ public class Bip32ECKeyPair {
             byte[] chainCode,
             Bip32ECKeyPair parent) {
 
-        this.keyPair = SECP256K1.KeyPair.create(SECP256K1.SecretKey.fromInteger(privateKey), SECP256K1.PublicKey.fromInteger(publicKey));
+        checkArgument(((privateKey != null) || (publicKey != null)), "privateKey and  publicKey all null.");
+        if( privateKey != null ) {
+            this.secretKey = SECP256K1.SecretKey.fromInteger(privateKey);
+        }
+
+        if( publicKey != null) {
+            this.publicKey = SECP256K1.PublicKey.fromInteger(publicKey);
+        }
 
         this.parentHasPrivate = parent != null && parent.hasPrivateKey();
         this.childNumber = childNumber;
@@ -137,7 +146,7 @@ public class Bip32ECKeyPair {
             BigInteger ilInt = new BigInteger(1, il);
             Arrays.fill(il, (byte) 0);
 
-            BigInteger privateKey = keyPair.secretKey().bytes().toUnsignedBigInteger().add(ilInt).mod(SECP256K1.Parameters.CURVE.getN());
+            BigInteger privateKey = this.secretKey.bytes().toUnsignedBigInteger().add(ilInt).mod(SECP256K1.Parameters.CURVE.getN());
             SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.fromInteger(privateKey);
 
             return new Bip32ECKeyPair(
@@ -175,19 +184,19 @@ public class Bip32ECKeyPair {
     }
 
     public ECPoint getPublicKeyPoint() {
-        return Keys.publicPointFromPrivate(keyPair.secretKey().bytes().toUnsignedBigInteger());
+        return Keys.publicPointFromPrivate(this.secretKey.bytes().toUnsignedBigInteger());
     }
 
     public byte[] getPrivateKeyBytes33() {
         final int numBytes = 33;
         MutableBytes bytes33  = MutableBytes.create(numBytes);
-        Bytes32 priv = keyPair.secretKey().bytes();
+        Bytes32 priv = this.secretKey.bytes();
         bytes33.set(numBytes - priv.size(), priv);
         return bytes33.toArray();
     }
 
     private boolean hasPrivateKey() {
-        return keyPair.secretKey() != null || parentHasPrivate;
+        return secretKey != null || parentHasPrivate;
     }
 
     private static boolean isHardened(int a) {

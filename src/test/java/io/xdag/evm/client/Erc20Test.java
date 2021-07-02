@@ -53,7 +53,6 @@ public class Erc20Test extends TestTransactionBase {
 
         // check balance
         Bytes method = Bytes.wrap(Hash.keccak256("balanceOf(address)".getBytes(StandardCharsets.UTF_8)));
-//        Bytes methodData = BytesUtils.merge(Arrays.copyOf(method, 4), DataWord.of(erc20owner).getData());
         Bytes methodData = Bytes.concatenate(method.slice(0, 4), DataWord.of(erc20owner).getData());
 
         transaction = new TransactionMock(false, erc20owner, contractAddress, 1L, value, methodData, gas,
@@ -76,7 +75,6 @@ public class Erc20Test extends TestTransactionBase {
         // check balance of target
         method = Bytes.wrap(Hash.keccak256("balanceOf(address)".getBytes(StandardCharsets.UTF_8)));
 
-//        methodData = BytesUtils.merge(Arrays.copyOf(method, 4), DataWord.of(address).getData());
         methodData = Bytes.concatenate(method.slice(0, 4), DataWord.of(address).getData());
 
         transaction = new TransactionMock(false, erc20owner, contractAddress, 3L, value, methodData, gas,

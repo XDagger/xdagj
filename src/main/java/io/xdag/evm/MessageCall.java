@@ -61,12 +61,12 @@ public class MessageCall {
     /**
      * start of memory to be output of the call
      */
-    private DataWord outDataOffs;
+    private final DataWord outDataOffs;
 
     /**
      * size of memory to be output data to the call
      */
-    private DataWord outDataSize;
+    private final DataWord outDataSize;
 
     public MessageCall(OpCode type, long gas, DataWord codeAddress,
                        DataWord endowment, DataWord inDataOffs, DataWord inDataSize,

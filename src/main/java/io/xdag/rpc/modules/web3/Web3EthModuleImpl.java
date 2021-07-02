@@ -34,7 +34,7 @@ import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 public class Web3EthModuleImpl implements Web3EthModule{
     private static final Logger logger = LoggerFactory.getLogger(Web3XdagModuleImpl.class);
 
-    class SyncingResult {
+    static class SyncingResult {
         public String currentBlock;
         public String highestBlock;
     }
@@ -66,27 +66,27 @@ public class Web3EthModuleImpl implements Web3EthModule{
     }
 
     @Override
-    public String eth_getBalance(String address, String block) throws Exception {
+    public String eth_getBalance(String address, String block) {
         return toQuantityJsonHex(1000);
     }
 
     @Override
-    public String eth_getBalance(String address) throws Exception {
+    public String eth_getBalance(String address) {
         return toQuantityJsonHex(2000);
     }
 
     @Override
-    public String eth_getStorageAt(String address, String storageIdx, String blockId) throws Exception {
+    public String eth_getStorageAt(String address, String storageIdx, String blockId) {
         return "0x0";
     }
 
     @Override
-    public ETHBlockResultDTO eth_getBlockByNumber(String bnOrId, Boolean fullTransactionObjects) throws Exception {
+    public ETHBlockResultDTO eth_getBlockByNumber(String bnOrId, Boolean fullTransactionObjects) {
         return null;
     }
 
     @Override
-    public ETHTransactionReceiptDTO eth_getTransactionReceipt(String transactionHash) throws Exception {
+    public ETHTransactionReceiptDTO eth_getTransactionReceipt(String transactionHash) {
         return null;
     }
 }

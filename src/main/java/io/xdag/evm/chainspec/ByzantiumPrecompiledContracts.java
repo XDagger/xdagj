@@ -23,14 +23,13 @@
  */
 package io.xdag.evm.chainspec;
 
-import static io.xdag.utils.Numeric.toBI;
-import static io.xdag.utils.BytesUtils.parseWord;
-import static io.xdag.utils.BytesUtils.EMPTY_BYTE_ARRAY;
-
 import io.xdag.evm.DataWord;
 import io.xdag.evm.crypto.zksnark.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+
+import static io.xdag.utils.BytesUtils.parseWord;
+import static io.xdag.utils.Numeric.toBI;
 
 public class ByzantiumPrecompiledContracts extends BasePrecompiledContracts {
 
@@ -184,7 +183,7 @@ public class ByzantiumPrecompiledContracts extends BasePrecompiledContracts {
                 return 100000;
             }
 
-            return 80000 * (data.size() / PAIR_SIZE) + 100000;
+            return 80000L * (data.size() / PAIR_SIZE) + 100000;
         }
 
         @Override

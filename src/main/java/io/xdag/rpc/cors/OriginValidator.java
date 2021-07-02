@@ -108,10 +108,10 @@ public class OriginValidator {
 
         int refererPort = refererUrl.getPort();
 
-        for (int k = 0; k < origins.length; k++) {
-            if (refererProtocol.equals(origins[k].getScheme()) &&
-                    refererHost.equals(origins[k].getHost()) &&
-                    refererPort == origins[k].getPort()) {
+        for (URI origin : origins) {
+            if (refererProtocol.equals(origin.getScheme()) &&
+                    refererHost.equals(origin.getHost()) &&
+                    refererPort == origin.getPort()) {
                 return true;
             }
         }

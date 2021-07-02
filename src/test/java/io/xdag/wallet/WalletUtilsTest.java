@@ -96,7 +96,7 @@ public class WalletUtilsTest {
 
         // Verify address according to https://iancoleman.io/bip39/
         Bip32ECKeyPair key = WalletUtils.importMnemonic(wallet, pwd, mnemonic, 0);
-        assertEquals("2e25c950bdf91a9977b54fa2a4689e0f25a2614c", Keys.getAddress(key.getKeyPair()));
+        assertEquals("2e25c950bdf91a9977b54fa2a4689e0f25a2614c", Keys.getAddress(key.getPublicKey()));
     }
 
     @Test

@@ -47,6 +47,7 @@ import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.crypto.Hash;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
@@ -56,6 +57,7 @@ import org.web3j.rlp.RlpType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,6 +68,12 @@ import static org.junit.Assert.assertEquals;
 
 @Slf4j
 public class EthereumComplianceTest {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
