@@ -81,7 +81,7 @@ public interface AccountState {
      * Remove a key value pair from the storage if exists.
      *
      */
-    void removeStorage(byte[] address, byte[] key);
+    void removeStorage(Bytes address, Bytes key);
 
     /**
      * Makes a snapshot and starts tracking further updates.

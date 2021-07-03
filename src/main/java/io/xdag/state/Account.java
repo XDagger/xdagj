@@ -23,16 +23,15 @@
  */
 package io.xdag.state;
 
+import org.apache.tuweni.bytes.Bytes;
+
 import io.xdag.core.SimpleEncoder;
 import io.xdag.core.XAmount;
 import io.xdag.utils.SimpleDecoder;
-import org.bouncycastle.util.encoders.Hex;
-
-import java.util.Arrays;
 
 public class Account {
 
-    private final byte[] address;
+    private final Bytes address;
     private XAmount available;
     private XAmount locked;
     private long nonce;
@@ -41,7 +40,7 @@ public class Account {
      * Creates an account instance.
      *
      */
-    public Account(byte[] address, XAmount available, XAmount locked, long nonce) {
+    public Account(Bytes address, XAmount available, XAmount locked, long nonce) {
         this.address = address;
         this.available = available;
         this.locked = locked;
@@ -52,33 +51,32 @@ public class Account {
      * Serializes this account into byte array.
      *
      */
-    public byte[] toBytes() {
+    public Bytes toBytes() {
         SimpleEncoder enc = new SimpleEncoder();
         enc.writeXAmount(available);
         enc.writeXAmount(locked);
         enc.writeLong(nonce);
-
-        return enc.toBytes();
+        return Bytes.wrap(enc.toBytes());
     }
 
     /**
      * Parses an account from byte array.
      *
      */
-    public static Account fromBytes(byte[] address, byte[] bytes) {
-        SimpleDecoder dec = new SimpleDecoder(bytes);
+    public static Account fromBytes(Bytes address, Bytes bytes) {
+        SimpleDecoder dec = new SimpleDecoder(bytes.toArray());
         XAmount available = dec.readXAmount();
         XAmount locked = dec.readXAmount();
         long nonce = dec.readLong();
 
-        return new Account(address, available, locked, nonce);
+        return new Account(Bytes.wrap(address), available, locked, nonce);
     }
 
     /**
      * Returns the address of this account.
      *
      */
-    public byte[] getAddress() {
+    public Bytes getAddress() {
         return address;
     }
 
@@ -132,7 +130,7 @@ public class Account {
 
     @Override
     public String toString() {
-        return "Account [address=" + Arrays.toString(Hex.encode(address)) + ", available=" + available + ", locked=" + locked
+        return "Account [address=" + address.toHexString() + ", available=" + available + ", locked=" + locked
                 + ", nonce=" + nonce + "]";
     }
 
