@@ -23,6 +23,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +52,11 @@ import net.bytebuddy.implementation.bytecode.StackSize;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.PrefixFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -308,6 +314,16 @@ public class LMDBTest {
                 .setMaxDbs(1)
                 .setMaxReaders(1)
                 .open(path);
+    }
+
+    @Test
+    public void testRead() {
+        File file = new File("/Users/punk/Documents/code/java_project/xdagJ_net/snapshot/xdagj/src/test/resources/");
+        PrefixFileFilter extFilter = new PrefixFileFilter("pubkey");
+        SuffixFileFilter filter = new SuffixFileFilter("html");
+        Collection filesListUtil = FileUtils.listFiles(file, FileFilterUtils.and(extFilter,filter),null);
+        System.out.println(filesListUtil.size());
+        System.out.println(FileUtils.listFiles(file, FileFilterUtils.and(extFilter,filter),null).size());
     }
 
 

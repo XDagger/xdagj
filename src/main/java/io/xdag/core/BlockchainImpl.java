@@ -124,6 +124,7 @@ public class BlockchainImpl implements Blockchain {
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
+        // init
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
         XdagStats storedStats = blockStore.getXdagStatus();
@@ -134,9 +135,11 @@ public class BlockchainImpl implements Blockchain {
         } else {
             this.xdagStats = new XdagStats();
         }
-
         XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
         this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
+
+
+        // TODO:snapshot init, init snapshot from rocksdb
 
         // add randomx utils
         randomXUtils = kernel.getRandomXUtils();
@@ -240,6 +243,10 @@ public class BlockchainImpl implements Blockchain {
     /** 尝试去连接这个块 */
     @Override
     public synchronized ImportResult tryToConnect(Block block) {
+
+        // TODO: if current height is snapshot height, we need change logic to process new block
+
+
         try {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
 
@@ -387,7 +394,7 @@ public class BlockchainImpl implements Blockchain {
                 long currentHeight = xdagStats.nmain;
                 unWindMain(blockRef);
                 // 发生回退
-                if (xdagStats.nmain - currentHeight > 0) {
+                if (currentHeight - xdagStats.nmain > 0) {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}", currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
@@ -639,6 +646,7 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    // TODO: unapply block which in snapshot
     public UnsignedLong unApplyBlock(Block block) {
         List<Address> links = block.getLinks();
         if ((block.getInfo().flags & BI_APPLIED) != 0) {
@@ -1016,6 +1024,12 @@ public class BlockchainImpl implements Blockchain {
         return b;
     }
 
+    // 从snapshot获取区块
+    protected Block getBlockByHashFromSnapshot(byte[] hashlow) {
+        // 需要时间
+        return null;
+    }
+
     public Block getMaxDiffLink(Block block, boolean isRaw) {
         if (block.getInfo().getMaxDiffLink() != null) {
             return getBlockByHash(block.getInfo().getMaxDiffLink(), isRaw);
@@ -1264,6 +1278,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     /** 为区块block添加amount金额 * */
+    // TODO : accept amount to block which in snapshot
     private void acceptAmount(Block block, UnsignedLong amount) {
         block.getInfo().setAmount(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(amount).longValue());
         if (block.isSaved) {
@@ -1278,6 +1293,13 @@ public class BlockchainImpl implements Blockchain {
     public boolean isExist(byte[] hashlow) {
         return memOrphanPool.containsKey(new ByteArrayWrapper(hashlow)) ||
                 blockStore.hasBlock(hashlow);
+    }
+
+    // 判断是否存在于snapshot
+    public boolean isExitInSnapshot(byte[] hashlow) {
+        // 从公钥快照与签名快照中查询该块
+
+        return false;
     }
 
     @Override

@@ -385,7 +385,6 @@ public class XdagCli extends Launcher {
     }
 
     private void loadBalanceData(File file, SnapshotStore snapshotStore) {
-
     }
 
     private void loadPubkey(File file, SnapshotStore snapshotStore) {
