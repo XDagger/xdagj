@@ -82,4 +82,7 @@ public interface Config {
 //    List<ModuleDescription> getRpcModules();
 //    boolean isRPCEnabled();
     RPCSpec getRPCSpec();
+
+    // snapshot
+    SnapshotSpec getSnapshotSpec();
 }

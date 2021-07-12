@@ -422,7 +422,7 @@ public class BlockStore {
     public List<Block> getBlocksByTime(long startTime) {
         List<Block> blocks = Lists.newArrayList();
         byte[] keyPrefix = getTimeKey(startTime, null);
-        List<byte[]> keys = timeSource.prefixValueLookup(keyPrefix);
+        List<byte[]> keys = timeSource.prefixKeyLookup(keyPrefix);
         for (byte[] bytes : keys) {
             // 1 + 8 : prefix + time
             byte[] hash = BytesUtils.subArray(bytes, 1+8, 32);

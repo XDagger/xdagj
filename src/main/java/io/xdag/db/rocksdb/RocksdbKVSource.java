@@ -309,7 +309,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     public List<byte[]> prefixValueLookup(byte[] key) {
         List<byte[]> retList = Lists.newLinkedList();
         fetchPrefix(key, pair -> {
-            retList.add(pair.getKey());
+            retList.add(pair.getValue());
             return Boolean.FALSE;
         });
         return retList;

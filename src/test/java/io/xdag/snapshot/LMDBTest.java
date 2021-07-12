@@ -152,7 +152,7 @@ public class LMDBTest {
                 if (i == 0) {
                     // Bytes32 use ref
                     tempkey = Bytes32.wrap(Bytes.wrapByteBuffer(kv.key())).copy();
-                    snapshotStore.saveBalanceData(data, Bytes32.wrap(Bytes.wrapByteBuffer(kv.key())));
+                    snapshotStore.saveBalanceData(data, Bytes32.wrap(Bytes.wrapByteBuffer(kv.key())).toArray());
                     System.out.println("tempkey:"+tempkey);
                     System.out.println(data);
                 }
@@ -169,7 +169,7 @@ public class LMDBTest {
 
         assert tempkey != null;
         System.out.println("tempkey:"+tempkey);
-        System.out.println(snapshotStore.getBalanceData(tempkey));
+        System.out.println(snapshotStore.getBalanceData(tempkey.toArray()));
 
         txn.close();
         env.close();
@@ -289,7 +289,7 @@ public class LMDBTest {
                     i++;
                     System.out.println("key:"+ecKeyPair.getPublicKey().toString(16));
                     keyhash = Bytes32.wrap(Bytes.wrapByteBuffer(kv.key())).copy();
-                    snapshotStore.savePubKey(Bytes32.wrap(Bytes.wrapByteBuffer(kv.key())),ecKeyPair.getPublicKey().toByteArray());
+                    snapshotStore.savePubKey(Bytes32.wrap(Bytes.wrapByteBuffer(kv.key())).toArray(),ecKeyPair.getPublicKey().toByteArray());
                 }
 
             }
@@ -298,7 +298,7 @@ public class LMDBTest {
 
         System.out.println("key hash:"+keyhash);
         assert keyhash != null;
-        System.out.println("key pubkey:"+snapshotStore.getPubKey(keyhash).getPublicKey().toString(16));
+        System.out.println("key pubkey:"+snapshotStore.getPubKey(keyhash.toArray()).getPublicKey().toString(16));
 
         txn.close();
         env.close();

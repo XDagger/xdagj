@@ -91,6 +91,11 @@ public class BasicUtils {
         return res;
     }
 
+    public static byte[] getHashlowByHash(byte[] hash) {
+        byte[] hashLow = new byte[32];
+        System.arraycopy(hash, 8, hashLow, 8, 24);
+        return hashLow;
+    }
 //    /**
 //     * 返回低192bit的hash hashlow
 //     *

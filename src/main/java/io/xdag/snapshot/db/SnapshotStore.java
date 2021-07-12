@@ -13,13 +13,15 @@ import io.xdag.snapshot.core.ExtStatsData;
 import io.xdag.snapshot.core.StatsData;
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
+
+import static io.xdag.utils.BasicUtils.getHashlowByHash;
 
 @Slf4j
 public class SnapshotStore {
@@ -90,19 +92,19 @@ public class SnapshotStore {
 
 
     // BalanceData
-    public void saveBalanceData(BalanceData data, Bytes32 hash) {
+    public void saveBalanceData(BalanceData data, byte[] hashOrHashlow) {
         byte[] value = null;
         try {
             value = serialize(data);
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        snapshotSource.put(BytesUtils.merge(BALANCE_DATA,hash.toArray()), value);
+        snapshotSource.put(BytesUtils.merge(BALANCE_DATA,getHashlowByHash(hashOrHashlow)), value);
     }
 
-    public BalanceData getBalanceData(Bytes32 hash) {
+    public BalanceData getBalanceData(byte[] hashOrHashlow) {
         BalanceData balanceData = null;
-        byte[] data = snapshotSource.get(BytesUtils.merge(BALANCE_DATA, hash.toArray()));
+        byte[] data = snapshotSource.get(BytesUtils.merge(BALANCE_DATA, getHashlowByHash(hashOrHashlow)));
         if (data == null) {
             return null;
         }
@@ -162,13 +164,13 @@ public class SnapshotStore {
         return extStatsData;
     }
 
-    public void savePubKey(Bytes32 hash, byte[] ecKeyPair) {
-        snapshotSource.put(BytesUtils.merge(PUBKEY,hash.toArray()), ecKeyPair);
+    public void savePubKey(byte[] hashOrHashlow, byte[] ecKeyPair) {
+        snapshotSource.put(BytesUtils.merge(PUBKEY,getHashlowByHash(hashOrHashlow)), ecKeyPair);
     }
 
-    public ECKeyPair getPubKey(Bytes32 hash) {
+    public ECKeyPair getPubKey(byte[] hashOrHashlow) {
         ECKeyPair ecKeyPair = null;
-        byte[] data = snapshotSource.get(BytesUtils.merge(PUBKEY,hash.toArray()));
+        byte[] data = snapshotSource.get(BytesUtils.merge(PUBKEY,getHashlowByHash(hashOrHashlow)));
         if (data == null) {
             return null;
         }
@@ -176,17 +178,51 @@ public class SnapshotStore {
         return ecKeyPair;
     }
 
-    public void saveSignature(Bytes32 hash, byte[] sig) {
-        snapshotSource.put(BytesUtils.merge(SIGNATURE,hash.toArray()), sig);
+    public void saveSignature(byte[] hashOrHashlow, byte[] sig) {
+        snapshotSource.put(BytesUtils.merge(SIGNATURE,getHashlowByHash(hashOrHashlow)), sig);
     }
 
-    public byte[] getSignature(Bytes32 hash) {
-        byte[] data = snapshotSource.get(BytesUtils.merge(SIGNATURE,hash.toArray()));
+    public byte[] getSignature(byte[] hashOrHashlow) {
+        byte[] data = snapshotSource.get(BytesUtils.merge(SIGNATURE,getHashlowByHash(hashOrHashlow)));
         if (data == null) {
             return null;
         }
         return data;
     }
 
+    public boolean hasBlock(byte[] hashOrHashlow) {
+        return getPubKey(hashOrHashlow) != null || getSignature(hashOrHashlow) != null;
+    }
+
+    public List<BalanceData> getBalanceDatas() {
+        List<BalanceData> balanceDatas = new ArrayList<>();
+        List<byte[]> datas = snapshotSource.prefixValueLookup(new byte[]{BALANCE_DATA});
+        for (byte[] data : datas) {
+            BalanceData balanceData = null;
+            try {
+                balanceData = (BalanceData) deserialize(data,BalanceData.class);
+                balanceDatas.add(balanceData);
+            }   catch (DeserializationException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+        return balanceDatas;
+    }
+
+    public byte[] getSubData(byte[] hashOrHashlow) {
+        return null;
+    }
+
+
+    public List<byte[]> getHashlowListFromPubkey() {
+        List<byte[]> hashlowList = new ArrayList<>();
+        List<byte[]> datas = snapshotSource.prefixKeyLookup(new byte[]{PUBKEY});
+        for (byte[] data : datas) {
+            byte[] hash = BytesUtils.subArray(data, 1, 32);
+            hashlowList.add(hash);
+        }
+        return hashlowList;
+
+    }
 
 }

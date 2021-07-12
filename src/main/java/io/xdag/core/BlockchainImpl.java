@@ -64,6 +64,10 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
+import io.xdag.db.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.snapshot.core.BalanceData;
+import io.xdag.snapshot.db.SnapshotStore;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
@@ -121,6 +125,8 @@ public class BlockchainImpl implements Blockchain {
 
     private final List<Listener> listeners = new ArrayList<>();
 
+    private SnapshotStore snapshotStore;
+
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
@@ -140,7 +146,9 @@ public class BlockchainImpl implements Blockchain {
 
 
         // TODO:snapshot init, init snapshot from rocksdb
-
+        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()) {
+            initSnapshotStore();
+        }
         // add randomx utils
         randomXUtils = kernel.getRandomXUtils();
         if (randomXUtils != null) {
@@ -157,6 +165,35 @@ public class BlockchainImpl implements Blockchain {
     public void registerListener(Listener listener) {
         this.listeners.add(listener);
     }
+
+
+    protected void initSnapshotStore() {
+        this.snapshotStore = new SnapshotStore(new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
+        log.info("Snapshot Store init.");
+        snapshotStore.init();
+        saveBlockInfoFromSnapshot(snapshotStore, blockStore);
+    }
+
+    // TODO: 循环snapshotStore 把 balanceData 转为blockinfo
+    private void saveBlockInfoFromSnapshot(SnapshotStore snapshotStore, BlockStore blockStore) {
+        // TODO: 判断是否已经都存过了
+
+
+        List<BalanceData> balanceDataList = snapshotStore.getBalanceDatas();
+        for (BalanceData balanceData: balanceDataList) {
+            blockStore.saveBlockInfo(BalanceData.transferToBlockInfo(balanceData));
+        }
+
+        // TODO: 公钥快照对应的hash转为余额时间都为0的blockinfo
+        List<byte[]> hashlowList = snapshotStore.getHashlowListFromPubkey();
+        for (byte[] hashlow : hashlowList) {
+            BlockInfo blockInfo = new BlockInfo();
+            blockInfo.setHashlow(hashlow);
+            blockInfo.setSnapshot(true);
+            blockStore.saveBlockInfo(blockInfo);
+        }
+    }
+
 
     //读取C版本区块
     public long loadBlockchain(
@@ -463,6 +500,9 @@ public class BlockchainImpl implements Blockchain {
         Block p = null;
         int i = 0;
         if (xdagTopStatus.getTop() != null) {
+            // TODO: 如果是快照点主块可以直接返回，因为快照点前的数据都已经确定好
+
+
             for (Block block = getBlockByHash(xdagTopStatus.getTop(), true); block != null
                     && ((block.getInfo().flags & BI_MAIN) == 0); block = getMaxDiffLink(block, true)) {
 
@@ -994,6 +1034,9 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public Block getBlockByHeight(long height) {
+
+        // TODO: if snapshto enabled, need height > snapshotHeight
+
         if (height > xdagStats.nmain) {
             return null;
         }
@@ -1039,6 +1082,10 @@ public class BlockchainImpl implements Blockchain {
 
     public void removeOrphan(byte[] hashlow, OrphanRemoveActions action) {
         Block b = getBlockByHash(hashlow, false);
+        // TODO: snapshot
+        if (b.getInfo().isSnapshot()) {
+            return;
+        }
         if (b != null && ((b.getInfo().flags & BI_REF) == 0) && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA || (b.getInfo().flags & BI_EXTRA) != 0)) {
             // 如果removeBlock是BI_EXTRA
             if ((b.getInfo().flags & BI_EXTRA) != 0) {
@@ -1135,34 +1182,74 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean canUseInput(Block block) {
-        boolean canUse = false;
+//        boolean canUse = false;
         List<ECKeyPair> ecKeys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
         if (inputs == null || inputs.size() == 0) {
             return true;
         }
         for (Address in : inputs) {
-            Block inBlock = getBlockByHash(in.getHashLow(), true);
-            byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
-//            log.debug("verify encoded:{}", Hex.toHexString(subdata));
-            ECDSASignature sig = inBlock.getOutsig();
-
-            for (ECKeyPair ecKey : ecKeys) {
-                byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
-                byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
-//                log.debug("verify encoded:{}", Hex.toHexString(digest));
-                byte[] hash = Hash.hashTwice(digest);
-                if (ECKeyPair.verify(hash, sig.toCanonicalised(), publicKeyBytes)) {
-                    canUse = true;
-                }
-            }
-
-            if (!canUse) {
+//            Block inBlock = getBlockByHash(in.getHashLow(), true);
+//            byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
+////            log.debug("verify encoded:{}", Hex.toHexString(subdata));
+//            ECDSASignature sig = inBlock.getOutsig();
+//
+//            for (ECKeyPair ecKey : ecKeys) {
+//                byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
+//                byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
+////                log.debug("verify encoded:{}", Hex.toHexString(digest));
+//                byte[] hash = Hash.hashTwice(digest);
+//                if (ECKeyPair.verify(hash, sig.toCanonicalised(), publicKeyBytes)) {
+//                    canUse = true;
+//                }
+//            }
+//
+//            if (!canUse) {
+//                return false;
+//            }
+            if(!verifySignature(in, ecKeys)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private boolean verifySignature(Address in, List<ECKeyPair> ecKeys) {
+        Block inBlock = getBlockByHash(in.getHashLow(), true);
+        byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
+        ECDSASignature sig = inBlock.getOutsig();
+        return verifySignature(subdata,sig,ecKeys);
+    }
+
+
+    // TODO: 当输入是snapshot中的区块时，需要验证snapshot的公钥或签名数据
+    private boolean verifySignatureFromSnapshot(Address in, List<ECKeyPair> ecKeyPairs) {
+        ECKeyPair targetECKey = snapshotStore.getPubKey(in.getHashLow());
+        if (snapshotStore.getPubKey(in.getHashLow())!=null) {
+            for (ECKeyPair ecKeyPair : ecKeyPairs) {
+                if(ecKeyPair.getPublicKey().compareTo(targetECKey.getPublicKey()) == 0) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (snapshotStore.getSignature(in.getHashLow()) != null && snapshotStore.getSubData(in.getHashLow()) != null){
+            return verifySignature(snapshotStore.getSubData(in.getHashLow()), ECDSASignature.decodeFromDER(snapshotStore.getSignature(in.getHashLow())), ecKeyPairs);
+        } else {
+            return false;
+        }
+    }
+
+    private boolean verifySignature(byte[] subdata, ECDSASignature sig, List<ECKeyPair> ecKeys) {
+        for (ECKeyPair ecKey : ecKeys) {
+            byte[] publicKeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
+            byte[] digest = BytesUtils.merge(subdata, publicKeyBytes);
+            byte[] hash = Hash.hashTwice(digest);
+            if (ECKeyPair.verify(hash, sig.toCanonicalised(), publicKeyBytes)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean checkMineAndAdd(Block block) {
@@ -1284,6 +1371,9 @@ public class BlockchainImpl implements Blockchain {
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
+//        if (block.isSnapshot) {
+//            snapshotStore.updateBalanceData()
+//        }
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.plus(UnsignedLong.valueOf(xdagStats.getBalance())).longValue());
         }
@@ -1292,14 +1382,17 @@ public class BlockchainImpl implements Blockchain {
     /** 判断是否已经接收过区块 * */
     public boolean isExist(byte[] hashlow) {
         return memOrphanPool.containsKey(new ByteArrayWrapper(hashlow)) ||
-                blockStore.hasBlock(hashlow);
+                blockStore.hasBlock(hashlow) || isExitInSnapshot(hashlow);
     }
 
-    // 判断是否存在于snapshot
+    /** 判断是否存在于snapshot **/
     public boolean isExitInSnapshot(byte[] hashlow) {
-        // 从公钥快照与签名快照中查询该块
-
-        return false;
+        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()) {
+            // 从公钥快照与签名快照中查询该块
+            return snapshotStore.hasBlock(hashlow);
+        } else {
+            return false;
+        }
     }
 
     @Override

@@ -33,17 +33,20 @@ import java.util.Arrays;
 @Setter
 public class BlockInfo {
     private long height;
-    private byte[] hash;
-    private byte[] hashlow;
-    private long amount;
     public long type;
     private BigInteger difficulty;
     private byte[] ref;
     private byte[] maxDiffLink;
     public int flags;
     private long fee;
-    private long timestamp;
+
     private byte[] remark;
+
+    private byte[] hash;
+    private byte[] hashlow;
+    private long amount;
+    private long timestamp;
+    private boolean isSnapshot = false;
 
     @Override
     public String toString() {

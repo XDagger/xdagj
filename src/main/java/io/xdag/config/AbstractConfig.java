@@ -45,7 +45,7 @@ import java.util.List;
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec {
+public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec {
     protected String configName;
 
     // =========================
@@ -139,6 +139,13 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int rpcPortHttp;
     protected int rpcPortWs;
 
+
+    // =========================
+    // Xdag Snapshot
+    // =========================
+    protected boolean snapshotEnabled = false;
+    protected long snapshotHeight;
+
     public void setDir() {
         storeDir = getRootDir() + "/rocksdb/xdagdb";
         storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
@@ -181,6 +188,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     @Override
     public RPCSpec getRPCSpec() {
+        return this;
+    }
+
+    @Override
+    public SnapshotSpec getSnapshotSpec() {
         return this;
     }
 
@@ -403,5 +415,15 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public int getRPCPortByWebSocket() {
         return rpcPortWs;
+    }
+
+    @Override
+    public boolean isSnapshotEnabled() {
+        return snapshotEnabled;
+    }
+
+    @Override
+    public long getSnapshotHeight() {
+        return snapshotHeight;
     }
 }

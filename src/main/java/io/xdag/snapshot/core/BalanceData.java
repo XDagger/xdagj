@@ -1,6 +1,7 @@
 package io.xdag.snapshot.core;
 
 import com.google.common.primitives.UnsignedLong;
+import io.xdag.core.BlockInfo;
 import io.xdag.net.handler.Xdag;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -41,6 +42,18 @@ public class BalanceData {
             return new BalanceData(amount, time, storage_pos, hash);
         }
         return null;
+    }
+
+    public static BlockInfo transferToBlockInfo(BalanceData balanceData) {
+        BlockInfo blockInfo = new BlockInfo();
+        blockInfo.setTimestamp(balanceData.getTime());
+        blockInfo.setAmount(balanceData.getAmount());
+        blockInfo.setHash(balanceData.getHash());
+        byte[] hashLow = new byte[32];
+        System.arraycopy(balanceData.getHash(), 8, hashLow, 8, 24);
+        blockInfo.setHashlow(hashLow);
+        blockInfo.setSnapshot(true);
+        return blockInfo;
     }
 
     @Override
