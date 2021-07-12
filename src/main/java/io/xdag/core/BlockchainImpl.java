@@ -67,6 +67,7 @@ import javax.annotation.Nonnull;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.snapshot.core.BalanceData;
+import io.xdag.snapshot.core.StatsData;
 import io.xdag.snapshot.db.SnapshotStore;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bouncycastle.util.Arrays;
@@ -126,13 +127,25 @@ public class BlockchainImpl implements Blockchain {
     private final List<Listener> listeners = new ArrayList<>();
 
     private SnapshotStore snapshotStore;
+    private long snapshotHeight;
 
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
-        // init
+
+        // init chain state from rocksdb
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
+
+
+        // TODO:snapshot init, init snapshot from rocksdb
+        // init chain state from snapshot
+        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && kernel.getConfig().getSnapshotSpec().getSnapshotHeight() > 0) {
+            initSnapshotStore();
+            snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
+        }
+
+
         XdagStats storedStats = blockStore.getXdagStatus();
         if(storedStats != null) {
             storedStats.setNwaitsync(0);
@@ -145,10 +158,7 @@ public class BlockchainImpl implements Blockchain {
         this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
 
 
-        // TODO:snapshot init, init snapshot from rocksdb
-        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()) {
-            initSnapshotStore();
-        }
+
         // add randomx utils
         randomXUtils = kernel.getRandomXUtils();
         if (randomXUtils != null) {
@@ -171,7 +181,11 @@ public class BlockchainImpl implements Blockchain {
         this.snapshotStore = new SnapshotStore(new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
         log.info("Snapshot Store init.");
         snapshotStore.init();
+        // block 相关
         saveBlockInfoFromSnapshot(snapshotStore, blockStore);
+        // 统计信息相关
+        saveStatsFromSnapshot(snapshotStore,blockStore);
+
     }
 
     // TODO: 循环snapshotStore 把 balanceData 转为blockinfo
@@ -194,8 +208,23 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    // TODO: 从快照中的统计信息恢复到blockstore
+    public void saveStatsFromSnapshot(SnapshotStore snapshotStore, BlockStore blockStore) {
+        // TODO: 获取 topmainchain, difficulty, nmain
+        StatsData statsData = snapshotStore.getStats();
+        XdagStats xdagStats = new XdagStats();
+        xdagStats.setDifficulty(statsData.difficulty);
+        xdagStats.setMaxdifficulty(statsData.maxdifficulty);
+        xdagStats.setNmain(statsData.nmain);
+        xdagStats.setNblocks(statsData.nblocks);
+        xdagStats.setTotalnblocks(statsData.totalnblocks);
+        xdagStats.setTotalnmain(statsData.totalnmain);
 
-    //读取C版本区块
+        blockStore.saveXdagStatus(xdagStats);
+    }
+
+
+    // TODO：loadblock启动
     public long loadBlockchain(
             String srcFilePath) {
         //todo：文件夹的时间
@@ -1216,17 +1245,24 @@ public class BlockchainImpl implements Blockchain {
     }
 
     private boolean verifySignature(Address in, List<ECKeyPair> ecKeys) {
-        Block inBlock = getBlockByHash(in.getHashLow(), true);
-        byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
-        ECDSASignature sig = inBlock.getOutsig();
-        return verifySignature(subdata,sig,ecKeys);
+        // TODO: 判断in是不是snapshot中的块, 使用isRaw为false的方式获取blockinfo
+        Block block = getBlockByHash(in.getHashLow(),false);
+        boolean isSnapshotBlock = block.getInfo().isSnapshot();
+        if (isSnapshotBlock) {
+            return verifySignatureFromSnapshot(in, ecKeys);
+        } else {
+            Block inBlock = getBlockByHash(in.getHashLow(), true);
+            byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
+            ECDSASignature sig = inBlock.getOutsig();
+            return verifySignature(subdata, sig, ecKeys);
+        }
     }
 
 
     // TODO: 当输入是snapshot中的区块时，需要验证snapshot的公钥或签名数据
     private boolean verifySignatureFromSnapshot(Address in, List<ECKeyPair> ecKeyPairs) {
         ECKeyPair targetECKey = snapshotStore.getPubKey(in.getHashLow());
-        if (snapshotStore.getPubKey(in.getHashLow())!=null) {
+        if (targetECKey!=null) {
             for (ECKeyPair ecKeyPair : ecKeyPairs) {
                 if(ecKeyPair.getPublicKey().compareTo(targetECKey.getPublicKey()) == 0) {
                     return true;
