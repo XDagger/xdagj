@@ -1,28 +1,29 @@
 package io.xdag.snapshot.core;
 
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.hash2Address;
+
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.core.BlockInfo;
-import io.xdag.net.handler.Xdag;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
+import java.nio.ByteOrder;
 import lombok.Data;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
-import java.nio.ByteOrder;
-
-import static io.xdag.utils.BasicUtils.*;
-
 @Data
 public class BalanceData {
-    long amount;
-    long time;
-    // we dont need storage_pos
-    long storage_pos;
-    byte[] hash;
 
-    public BalanceData(){
+    protected long amount;
+    protected long time;
+    // we dont need storage_pos
+    protected long storage_pos;
+    protected byte[] hash;
+
+    protected int flags;
+
+    public BalanceData() {
 
     }
 
@@ -60,9 +61,10 @@ public class BalanceData {
     public String toString() {
         return "BalanceData{" +
                 "amount=" + amount2xdag(amount) +
-                ", time=" + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(time)) +
+                ", time=" + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                .format(XdagTime.xdagTimestampToMs(time)) +
                 ", storage_pos=" + storage_pos +
-                ", hash=" + (hash!=null?hash2Address(hash):"") +
+                ", hash=" + (hash != null ? hash2Address(hash) : "") +
                 '}';
     }
 }

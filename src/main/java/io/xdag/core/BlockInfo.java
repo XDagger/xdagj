@@ -21,32 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import io.xdag.snapshot.core.SnapshotInfo;
 import java.math.BigInteger;
 import java.util.Arrays;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
 public class BlockInfo {
-    private long height;
+
     public long type;
+    public int flags;
+    private long height;
     private BigInteger difficulty;
     private byte[] ref;
     private byte[] maxDiffLink;
-    public int flags;
     private long fee;
-
     private byte[] remark;
-
     private byte[] hash;
     private byte[] hashlow;
     private long amount;
     private long timestamp;
+
+    // snapshot
     private boolean isSnapshot = false;
+    private SnapshotInfo snapshotInfo = null;
 
     @Override
     public String toString() {

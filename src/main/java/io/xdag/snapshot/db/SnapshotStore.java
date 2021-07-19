@@ -1,5 +1,7 @@
 package io.xdag.snapshot.db;
 
+import static io.xdag.utils.BasicUtils.getHashlowByHash;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -12,29 +14,29 @@ import io.xdag.snapshot.core.BalanceData;
 import io.xdag.snapshot.core.ExtStatsData;
 import io.xdag.snapshot.core.StatsData;
 import io.xdag.utils.BytesUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
+import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class SnapshotStore {
-    public static final byte STATS                                 =  0x10;
-    public static final byte BALANCE_DATA                          =  0x20;
-    public static final byte PUBKEY                                =  0x30;
-    public static final byte SIGNATURE                             =  0x40;
-    public static final byte EXTSTATS                              =  0x50;
-    public static final byte SNAPSHOT_TIME                         =  0x60;
+
+    public static final byte STATS = 0x10;
+    public static final byte BALANCE_DATA = 0x20;
+    public static final byte PUBKEY = 0x30;
+    public static final byte SIGNATURE = 0x40;
+    public static final byte EXTSTATS = 0x50;
+    public static final byte SNAPSHOT_TIME = 0x60;
 
     private final Kryo kryo;
 
-    /** <prefix-key,value> */
+    /**
+     * <prefix-key,value>
+     */
     private final KVSource<byte[], byte[]> snapshotSource;
 
     public SnapshotStore(KVSource<byte[], byte[]> snapshotSource) {
@@ -91,6 +93,11 @@ public class SnapshotStore {
     }
 
 
+    // main block
+    public void saveStatsData() {
+
+    }
+
     // BalanceData
     public void saveBalanceData(BalanceData data, byte[] hashOrHashlow) {
         byte[] value = null;
@@ -99,7 +106,7 @@ public class SnapshotStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        snapshotSource.put(BytesUtils.merge(BALANCE_DATA,getHashlowByHash(hashOrHashlow)), value);
+        snapshotSource.put(BytesUtils.merge(BALANCE_DATA, getHashlowByHash(hashOrHashlow)), value);
     }
 
     public BalanceData getBalanceData(byte[] hashOrHashlow) {
@@ -109,8 +116,8 @@ public class SnapshotStore {
             return null;
         }
         try {
-            balanceData = (BalanceData) deserialize(data,BalanceData.class);
-        }   catch (DeserializationException e) {
+            balanceData = (BalanceData) deserialize(data, BalanceData.class);
+        } catch (DeserializationException e) {
             log.error(e.getMessage(), e);
         }
         return balanceData;
@@ -123,18 +130,18 @@ public class SnapshotStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        snapshotSource.put(new byte[] {STATS}, value);
+        snapshotSource.put(new byte[]{STATS}, value);
     }
 
     public StatsData getStats() {
         StatsData statsData = null;
-        byte[] data = snapshotSource.get(new byte[] {STATS});
+        byte[] data = snapshotSource.get(new byte[]{STATS});
         if (data == null) {
             return null;
         }
         try {
-            statsData = (StatsData) deserialize(data,StatsData.class);
-        }   catch (DeserializationException e) {
+            statsData = (StatsData) deserialize(data, StatsData.class);
+        } catch (DeserializationException e) {
             log.error(e.getMessage(), e);
         }
         return statsData;
@@ -147,43 +154,43 @@ public class SnapshotStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        snapshotSource.put(new byte[] {EXTSTATS}, value);
+        snapshotSource.put(new byte[]{EXTSTATS}, value);
     }
 
     public ExtStatsData getExtStats() {
         ExtStatsData extStatsData = null;
-        byte[] data = snapshotSource.get(new byte[] {EXTSTATS});
+        byte[] data = snapshotSource.get(new byte[]{EXTSTATS});
         if (data == null) {
             return null;
         }
         try {
-            extStatsData = (ExtStatsData) deserialize(data,ExtStatsData.class);
-        }   catch (DeserializationException e) {
+            extStatsData = (ExtStatsData) deserialize(data, ExtStatsData.class);
+        } catch (DeserializationException e) {
             log.error(e.getMessage(), e);
         }
         return extStatsData;
     }
 
     public void savePubKey(byte[] hashOrHashlow, byte[] ecKeyPair) {
-        snapshotSource.put(BytesUtils.merge(PUBKEY,getHashlowByHash(hashOrHashlow)), ecKeyPair);
+        snapshotSource.put(BytesUtils.merge(PUBKEY, getHashlowByHash(hashOrHashlow)), ecKeyPair);
     }
 
     public ECKeyPair getPubKey(byte[] hashOrHashlow) {
         ECKeyPair ecKeyPair = null;
-        byte[] data = snapshotSource.get(BytesUtils.merge(PUBKEY,getHashlowByHash(hashOrHashlow)));
+        byte[] data = snapshotSource.get(BytesUtils.merge(PUBKEY, getHashlowByHash(hashOrHashlow)));
         if (data == null) {
             return null;
         }
-        ecKeyPair = new ECKeyPair(null,new BigInteger(1, java.util.Arrays.copyOfRange(data, 1, data.length)));
+        ecKeyPair = new ECKeyPair(null, new BigInteger(1, java.util.Arrays.copyOfRange(data, 1, data.length)));
         return ecKeyPair;
     }
 
     public void saveSignature(byte[] hashOrHashlow, byte[] sig) {
-        snapshotSource.put(BytesUtils.merge(SIGNATURE,getHashlowByHash(hashOrHashlow)), sig);
+        snapshotSource.put(BytesUtils.merge(SIGNATURE, getHashlowByHash(hashOrHashlow)), sig);
     }
 
     public byte[] getSignature(byte[] hashOrHashlow) {
-        byte[] data = snapshotSource.get(BytesUtils.merge(SIGNATURE,getHashlowByHash(hashOrHashlow)));
+        byte[] data = snapshotSource.get(BytesUtils.merge(SIGNATURE, getHashlowByHash(hashOrHashlow)));
         if (data == null) {
             return null;
         }
@@ -200,9 +207,9 @@ public class SnapshotStore {
         for (byte[] data : datas) {
             BalanceData balanceData = null;
             try {
-                balanceData = (BalanceData) deserialize(data,BalanceData.class);
+                balanceData = (BalanceData) deserialize(data, BalanceData.class);
                 balanceDatas.add(balanceData);
-            }   catch (DeserializationException e) {
+            } catch (DeserializationException e) {
                 log.error(e.getMessage(), e);
             }
         }
