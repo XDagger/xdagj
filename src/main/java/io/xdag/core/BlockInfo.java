@@ -24,6 +24,8 @@
 
 package io.xdag.core;
 
+import static io.xdag.utils.BasicUtils.amount2xdag;
+
 import io.xdag.snapshot.core.SnapshotInfo;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -57,12 +59,12 @@ public class BlockInfo {
                 "height=" + height +
                 ", hash=" + Arrays.toString(hash) +
                 ", hashlow=" + Arrays.toString(hashlow) +
-                ", amount=" + amount +
+                ", amount=" + amount2xdag(amount) +
                 ", type=" + type +
                 ", difficulty=" + difficulty +
                 ", ref=" + Arrays.toString(ref) +
                 ", maxDiffLink=" + Arrays.toString(maxDiffLink) +
-                ", flags=" + flags +
+                ", flags=" + Integer.toHexString(flags) +
                 ", fee=" + fee +
                 ", timestamp=" + timestamp +
                 ", remark=" + Arrays.toString(remark) +

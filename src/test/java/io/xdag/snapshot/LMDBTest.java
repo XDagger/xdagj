@@ -181,7 +181,7 @@ public class LMDBTest {
                 ECDSASignature tmp = new ECDSASignature(r, s);
 
                 System.out
-                        .println("account:" + hash2Address(Bytes.wrapByteBuffer(kv.key()).toArray()));
+                        .println("account:" + hash2Address(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())));
                 System.out.println("signature:" + Hex.toHexString(tmp.toByteArray()));
             }
         }
@@ -209,7 +209,7 @@ public class LMDBTest {
             for (final KeyVal<ByteBuffer> kv : ci) {
                 assertThat(kv.key(), notNullValue());
                 assertThat(kv.val(), notNullValue());
-                Bytes bytes = Bytes.wrap(Bytes.wrapByteBuffer(kv.val()));
+                Bytes bytes = Bytes.wrapByteBuffer(kv.val());
                 byte[] uncompress = Snappy.uncompress(bytes.toArray());
                 Block block = new Block(new XdagBlock(uncompress));
                 System.out.println("account:" + hash2Address(block.getHash()));

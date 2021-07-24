@@ -47,11 +47,11 @@ public class BalanceData {
             // 1. 解压缩
             try {
                 Bytes uncompressed = Bytes.wrap(Snappy.uncompress(value.toArray()));
-                long flags = uncompressed.getLong(0, ByteOrder.LITTLE_ENDIAN);
+                int flags = uncompressed.getInt(0, ByteOrder.LITTLE_ENDIAN);
                 long amount = uncompressed.getLong(8, ByteOrder.LITTLE_ENDIAN);
                 long time = uncompressed.getLong(16, ByteOrder.LITTLE_ENDIAN);
                 Bytes32 hash = Bytes32.wrap(uncompressed.slice(24));
-                return new BalanceData(amount, time, hash.toArray(), (int) flags);
+                return new BalanceData(amount, time, hash.toArray(), flags);
             } catch (IOException e) {
                 e.printStackTrace();
             }

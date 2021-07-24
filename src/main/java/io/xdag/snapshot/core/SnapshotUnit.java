@@ -1,9 +1,12 @@
 package io.xdag.snapshot.core;
 
+import static io.xdag.utils.BasicUtils.hash2Address;
+
 import io.xdag.core.BlockInfo;
 import java.math.BigInteger;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 
 @Data
 @Slf4j
@@ -68,5 +71,12 @@ public class SnapshotUnit {
         return data != null;
     }
 
-
+    @Override
+    public String toString() {
+        return "SnapshotUnit{" +
+                "pubkey=" + (pubkey == null ? null : Bytes.wrap(pubkey)) +
+                ", balanceData=" + balanceData +
+                ", hash=" + hash2Address(hash) +
+                '}';
+    }
 }
