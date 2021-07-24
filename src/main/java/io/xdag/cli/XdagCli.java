@@ -39,7 +39,8 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.snapshot.db.SnapshotStore;
+import io.xdag.snapshot.db.SnapshotChainStore;
+import io.xdag.snapshot.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
@@ -378,23 +379,23 @@ public class XdagCli extends Launcher {
     protected void loadSnapshot(File file) {
         Config config = getConfig();
         DatabaseFactory dbFactory = new RocksdbFactory(config);
-        SnapshotStore snapshotStore = new SnapshotStore(dbFactory.getDB(DatabaseName.SNAPSHOT));
+        SnapshotChainStore snapshotChainStore = new SnapshotChainStoreImpl(dbFactory.getDB(DatabaseName.SNAPSHOT));
         // load balance
-        loadBalanceData(file, snapshotStore);
+        loadBalanceData(file, snapshotChainStore);
         // load pubkey
-        loadPubkey(file, snapshotStore);
+        loadPubkey(file, snapshotChainStore);
         // load signature
-        loadSignature(file, snapshotStore);
+        loadSignature(file, snapshotChainStore);
     }
 
-    private void loadBalanceData(File file, SnapshotStore snapshotStore) {
+    private void loadBalanceData(File file, SnapshotChainStore snapshotStore) {
     }
 
-    private void loadPubkey(File file, SnapshotStore snapshotStore) {
+    private void loadPubkey(File file, SnapshotChainStore snapshotStore) {
 
     }
 
-    private void loadSignature(File file, SnapshotStore snapshotStore) {
+    private void loadSignature(File file, SnapshotChainStore snapshotStore) {
 
     }
 
