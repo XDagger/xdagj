@@ -9,11 +9,13 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
+import io.xdag.snapshot.core.BalanceData;
 import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +42,10 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
 
     private void kryoRegister() {
         kryo.register(SnapshotUnit.class);
+        kryo.register(BalanceData.class);
         kryo.register(StatsBlock.class);
+        kryo.register(byte[].class);
+        kryo.register(BigInteger.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -125,6 +130,16 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
 
     public List<StatsBlock> getSnapshotStatsBlock() {
         List<StatsBlock> statsBlocks = new ArrayList<>();
+        List<byte[]> datas = snapshotSource.prefixValueLookup(new byte[]{SNAPTSHOT_STATS});
+        for (byte[] data : datas) {
+            StatsBlock statsBlock;
+            try {
+                statsBlock = (StatsBlock) deserialize(data, StatsBlock.class);
+                statsBlocks.add(statsBlock);
+            } catch (DeserializationException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
         return statsBlocks;
     }
 

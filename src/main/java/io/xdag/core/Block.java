@@ -21,7 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
+
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
+import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import io.xdag.config.Config;
 import io.xdag.crypto.ECDSASignature;
@@ -31,6 +40,13 @@ import io.xdag.crypto.Sign;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,43 +56,41 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
-
 @Slf4j
 @Getter
 @Setter
 public class Block implements Cloneable {
+
     public static final int MAX_LINKS = 15;
+    /**
+     * 区块是否存在于本地*
+     */
+    public boolean isSaved;
     private BlockInfo info;
     private long transportHeader;
-
-    /** 区块的links 列表 输入输出* */
+    /**
+     * 区块的links 列表 输入输出*
+     */
     private List<Address> inputs = new CopyOnWriteArrayList<>();
-
-    /** ouput包含pretop */
+    /**
+     * ouput包含pretop
+     */
     private List<Address> outputs = new CopyOnWriteArrayList<>();
-
-    /** 记录公钥 前缀+压缩公钥* */
+    /**
+     * 记录公钥 前缀+压缩公钥*
+     */
     private List<ECKeyPair> pubKeys = new CopyOnWriteArrayList<>();
     private Map<ECDSASignature, Integer> insigs = new LinkedHashMap<>();
     private ECDSASignature outsig;
-
-    /** 主块的nonce记录矿工地址跟nonce* */
+    /**
+     * 主块的nonce记录矿工地址跟nonce*
+     */
     private byte[] nonce;
     private XdagBlock xdagBlock;
     private boolean parsed;
     private boolean isOurs;
     private byte[] encoded;
     private int tempLength;
-
-    /** 区块是否存在于本地* */
-    public boolean isSaved;
-
     @Getter
     @Setter
     private boolean pretopCandidate;
@@ -120,11 +134,11 @@ public class Block implements Cloneable {
             }
         }
 
-        if(StringUtils.isAsciiPrintable(remark)) {
+        if (StringUtils.isAsciiPrintable(remark)) {
             setType(XDAG_FIELD_REMARK, lenghth++);
             byte[] data = remark.getBytes();
             byte[] safeRemark = new byte[32];
-            Arrays.fill(safeRemark, (byte)0);
+            Arrays.fill(safeRemark, (byte) 0);
             System.arraycopy(data, 0, safeRemark, 0, Math.min(data.length, 32));
             this.info.setRemark(safeRemark);
         }
@@ -158,15 +172,18 @@ public class Block implements Cloneable {
         }
     }
 
-    /** main block */
-    public Block(Config config,long timestamp,
-                 List<Address> pendings,
-                 boolean mining)
-    {
+    /**
+     * main block
+     */
+    public Block(Config config, long timestamp,
+            List<Address> pendings,
+            boolean mining) {
         this(config, timestamp, null, pendings, mining, null, null, -1);
     }
 
-    /** 从512字节读取* */
+    /**
+     * 从512字节读取*
+     */
     public Block(XdagBlock xdagBlock) {
         this.xdagBlock = xdagBlock;
         this.info = new BlockInfo();
@@ -180,7 +197,9 @@ public class Block implements Cloneable {
 
     }
 
-    /** 计算区块hash* */
+    /**
+     * 计算区块hash*
+     */
     private byte[] calcHash() {
         if (xdagBlock == null) {
             xdagBlock = getXdagBlock();
@@ -188,18 +207,22 @@ public class Block implements Cloneable {
         return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
     }
 
-    /** 重计算 避免矿工挖矿发送share时直接更新 hash **/
+    /**
+     * 重计算 避免矿工挖矿发送share时直接更新 hash
+     **/
     public byte[] recalcHash() {
         xdagBlock = new XdagBlock(toBytes());
         return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
     }
 
-    /** 解析512字节数据* */
+    /**
+     * 解析512字节数据*
+     */
     public void parse() {
         if (this.parsed) {
             return;
         }
-        if(this.info == null) {
+        if (this.info == null) {
             this.info = new BlockInfo();
         }
         this.info.setHash(calcHash());
@@ -210,7 +233,7 @@ public class Block implements Cloneable {
         this.info.setFee(BytesUtils.bytesToLong(BytesUtils.subArray(header, 24, 8), 0, true));
         for (int i = 1; i < XdagBlock.XDAG_BLOCK_FIELDS; i++) {
             XdagField field = xdagBlock.getField(i);
-            if(field == null) {
+            if (field == null) {
                 throw new IllegalArgumentException("xdagBlock field:" + i + " is null");
             }
             switch (field.getType()) {
@@ -229,10 +252,12 @@ public class Block implements Cloneable {
                     BigInteger s;
                     int j, signo_s = -1;
                     XdagField ixf;
-                    for(j = i; j < XdagBlock.XDAG_BLOCK_FIELDS; ++j) {
+                    for (j = i; j < XdagBlock.XDAG_BLOCK_FIELDS; ++j) {
                         ixf = xdagBlock.getField(j);
-                        if(ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal() || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
-                            if(j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType().ordinal()) {
+                        if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()
+                                || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
+                            if (j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType()
+                                    .ordinal()) {
                                 signo_s = j;
                                 r = Numeric.toBigInt(xdagBlock.getField(i).getData());
                                 s = Numeric.toBigInt(xdagBlock.getField(signo_s).getData());
@@ -293,7 +318,9 @@ public class Block implements Cloneable {
         return encoder.toBytes();
     }
 
-    /** without signature */
+    /**
+     * without signature
+     */
     private byte[] getEncodedBody() {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.writeField(getEncodedHeader());
@@ -303,7 +330,7 @@ public class Block implements Cloneable {
         for (Address link : all) {
             encoder.writeField(Arrays.reverse(link.getData()));
         }
-        if(info.getRemark() != null) {
+        if (info.getRemark() != null) {
             encoder.write(info.getRemark());
         }
         for (ECKeyPair eckey : pubKeys) {
@@ -355,7 +382,9 @@ public class Block implements Cloneable {
         }
     }
 
-    /** 只匹配输入签名 并返回有用的key */
+    /**
+     * 只匹配输入签名 并返回有用的key
+     */
     public List<ECKeyPair> verifiedKeys() {
         List<ECKeyPair> keys = getPubKeys();
         List<ECKeyPair> res = new ArrayList<>();
@@ -376,14 +405,16 @@ public class Block implements Cloneable {
             byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
             hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
 
-            if (ECKeyPair.verify(hash, this.getOutsig().toCanonicalised(),pubkeyBytes)) {
+            if (ECKeyPair.verify(hash, this.getOutsig().toCanonicalised(), pubkeyBytes)) {
                 res.add(ecKey);
             }
         }
         return res;
     }
 
-    /** 取输出签名在字段的索引 */
+    /**
+     * 取输出签名在字段的索引
+     */
     public int getOutsigIndex() {
         int i = 1;
         long temp = this.info.type;
@@ -436,7 +467,9 @@ public class Block implements Cloneable {
 
     @Override
     public String toString() {
-        return String.format("Block info:[Hash:{}][Time:{}]", Hex.toHexString(getHashLow()), Long.toHexString(getTimestamp()));
+        return String
+                .format("Block info:[Hash:%s][Time:%s]", Hex.toHexString(getHashLow()),
+                        Long.toHexString(getTimestamp()));
     }
 
     @Override
@@ -465,12 +498,14 @@ public class Block implements Cloneable {
         return this.info.getFee();
     }
 
-    /** 根据length获取前length个字段的数据 主要用于签名* */
+    /**
+     * 根据length获取前length个字段的数据 主要用于签名*
+     */
     public byte[] getSubRawData(int length) {
         byte[] data = getXdagBlock().getData();
         byte[] res = new byte[512];
         System.arraycopy(data, 0, res, 0, (length + 1) * 32);
-        for (int i = length+1; i < 16; i++) {
+        for (int i = length + 1; i < 16; i++) {
             long type = BytesUtils.bytesToLong(data, 8, true);
             byte typeB = (byte) (type >> (i << 2) & 0xf);
             if (XDAG_FIELD_SIGN_IN.asByte() == typeB || XDAG_FIELD_SIGN_OUT.asByte() == typeB) {

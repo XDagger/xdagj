@@ -39,6 +39,7 @@ import io.xdag.core.XdagTopStatus;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
+import io.xdag.snapshot.core.SnapshotInfo;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FastByteComparisons;
 import java.io.ByteArrayInputStream;
@@ -143,6 +144,7 @@ public class BlockStore {
         kryo.register(BlockInfo.class);
         kryo.register(XdagStats.class);
         kryo.register(XdagTopStatus.class);
+        kryo.register(SnapshotInfo.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -504,8 +506,12 @@ public class BlockStore {
 
     public boolean isSnapshotBoot() {
         byte[] data = indexSource.get(new byte[]{SNAPSHOT_BOOT});
-        int res = BytesUtils.bytesToInt(data, 0, false);
-        return res == 1;
+        if (data == null) {
+            return false;
+        } else {
+            int res = BytesUtils.bytesToInt(data, 0, false);
+            return res == 1;
+        }
     }
 
     public void setSnapshotBoot() {

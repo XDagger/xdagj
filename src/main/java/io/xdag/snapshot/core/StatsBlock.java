@@ -1,10 +1,13 @@
 package io.xdag.snapshot.core;
 
-import com.google.common.primitives.UnsignedLong;
+import static io.xdag.utils.BasicUtils.hash2Address;
+
 import java.math.BigInteger;
-import java.util.Arrays;
+import java.nio.ByteOrder;
 import lombok.Data;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.Arrays;
 
 @Data
 public class StatsBlock {
@@ -18,20 +21,30 @@ public class StatsBlock {
 
     }
 
-    public StatsBlock(long height, UnsignedLong time, Bytes32 hash, BigInteger difficulty) {
+    public StatsBlock(long height, long time, byte[] hash, BigInteger difficulty) {
         this.height = height;
-        this.time = time.longValue();
-        this.hash = hash.toArray();
+        this.time = time;
+        this.hash = Arrays.reverse(hash);
         this.difficulty = difficulty;
     }
+
+    public static StatsBlock parse(Bytes key, Bytes value) {
+        Bytes uncompressed = value;
+        long height = uncompressed.getLong(0, ByteOrder.LITTLE_ENDIAN);
+        long time = uncompressed.getLong(8, ByteOrder.LITTLE_ENDIAN);
+        Bytes32 hash = Bytes32.wrap(uncompressed.slice(16, 32));
+        BigInteger diff = uncompressed.slice(48, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
+        return new StatsBlock(height, time, hash.toArray(), diff);
+    }
+
 
     @Override
     public String toString() {
         return "StatsBlock{" +
                 "height=" + height +
                 ", time=" + time +
-                ", hash=" + Arrays.toString(hash) +
-                ", difficulty=" + difficulty +
+                ", hash=" + hash2Address(hash) +
+                ", difficulty=" + difficulty.toString(16) +
                 '}';
     }
 }

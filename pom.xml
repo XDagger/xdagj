@@ -1,269 +1,292 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns="http://maven.apache.org/POM/4.0.0"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<groupId>io.xdag</groupId>
-	<artifactId>xdagj</artifactId>
-	<version>0.4.3</version>
+    <groupId>io.xdag</groupId>
+    <artifactId>xdagj</artifactId>
+    <version>0.4.3</version>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-		<java.version>15</java.version>
-		<kotlin.version>1.4.20</kotlin.version>
-		<maven.compiler.source>15</maven.compiler.source>
-		<maven.compiler.target>15</maven.compiler.target>
-		<dist.phase>package</dist.phase>
-		<dist.base>${project.basedir}/dist</dist.base>
-		<!-- netty -->
-		<netty.version>4.1.60.Final</netty.version>
-	</properties>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+        <java.version>15</java.version>
+        <kotlin.version>1.4.20</kotlin.version>
+        <maven.compiler.source>15</maven.compiler.source>
+        <maven.compiler.target>15</maven.compiler.target>
+        <dist.phase>package</dist.phase>
+        <dist.base>${project.basedir}/dist</dist.base>
+        <!-- netty -->
+        <netty.version>4.1.60.Final</netty.version>
+    </properties>
 
-	<organization>
-		<name>Xdag Foundation</name>
-		<url>https://xdag.io</url>
-	</organization>
+    <organization>
+        <name>Xdag Foundation</name>
+        <url>https://xdag.io</url>
+    </organization>
 
-	<licenses>
-		<license>
-			<name>MIT License</name>
-			<url>https://opensource.org/licenses/MIT</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-	<repositories>
-		<repository>
-			<id>bintray</id>
-			<url>https://jcenter.bintray.com</url>
-		</repository>
-		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
-		</repository>
-		<repository>
-			<id>consensys-maven</id>
-			<url>https://artifacts.consensys.net/public/maven/maven/</url>
-			<releases>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>always</updatePolicy>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>jvm-libp2p</id>
-			<url>https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>bintray</id>
+            <url>https://jcenter.bintray.com</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>consensys-maven</id>
+            <url>https://artifacts.consensys.net/public/maven/maven/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>jvm-libp2p</id>
+            <url>https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/</url>
+        </repository>
+    </repositories>
 
-	<pluginRepositories>
-		<pluginRepository>
-			<id>bintray</id>
-			<url>https://jcenter.bintray.com</url>
-		</pluginRepository>
-	</pluginRepositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>bintray</id>
+            <url>https://jcenter.bintray.com</url>
+        </pluginRepository>
+    </pluginRepositories>
 
-	<build>
-		<plugins>
-			<!-- compile -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.1</version>
-				<configuration>
-					<source>${maven.compiler.source}</source>
-					<target>${maven.compiler.target}</target>
-					<skip>false</skip>
+    <build>
+        <plugins>
+            <!-- compile -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <skip>false</skip>
                     <compilerArgs>
-						<arg>--enable-preview</arg>
-					</compilerArgs>
-				</configuration>
-			</plugin>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
 
-			<!-- testing -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.2</version>
-				<configuration>
-					<argLine>--enable-preview -Xmx1024m</argLine>
-				</configuration>
-			</plugin>
+            <!-- testing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <argLine>--enable-preview -Xmx1024m</argLine>
+                </configuration>
+            </plugin>
 
-			<!-- build fat jar -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.0</version>
-				<configuration>
-					<archive>
-						<index>true</index>
-						<manifestEntries>
-							<Main-Class>io.xdag.Bootstrap</Main-Class>
-							<X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
-							<X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
-						</manifestEntries>
-					</archive>
-				</configuration>
-			</plugin>
+            <!-- build fat jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <index>true</index>
+                        <manifestEntries>
+                            <Main-Class>io.xdag.Bootstrap</Main-Class>
+                            <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+                            <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
 
-			<!-- license header check -->
-			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>4.0.rc1</version>
-				<configuration>
-					<licenseSets>
-						<licenseSet>
-							<header>LICENSE</header>
-							<includes>
-								<include>src/main/**/*.java</include>
-								<include>src/test/**/*.java</include>
-							</includes>
-						</licenseSet>
-					</licenseSets>
-					<properties>
-						<owner>Mycila</owner>
-						<email>mathieu.carbou@gmail.com</email>
-					</properties>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.2.3</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<filters>
-								<filter>
-									<artifact>*:*</artifact>
-									<excludes>
-										<exclude>junit:junit</exclude>
-										<exclude>netdb-testnet.txt</exclude>
-										<exclude>netdb-white-testnet.txt</exclude>
-										<exclude>*.config</exclude>
-										<exclude>module-info.class</exclude>
-										<exclude>META-INF/versions/9/*.class</exclude>
-										<exclude>META-INF/DISCLAIMER</exclude>
-										<exclude>META-INF/NOTICE</exclude>
-										<exclude>META-INF/NOTICE.txt</exclude>
-										<exclude>META-INF/NOTICE.md</exclude>
-										<exclude>META-INF/LICENSE</exclude>
-										<exclude>META-INF/LICENSE.txt</exclude>
-										<exclude>META-INF/LICENSE.md</exclude>
-										<exclude>META-INF/DEPENDENCIES</exclude>
-										<exclude>META-INF/AL2.0</exclude>
-										<exclude>META-INF/LGPL2.1</exclude>
-										<exclude>META-INF/*.MF</exclude>
-										<exclude>META-INF/*.SF</exclude>
-										<exclude>META-INF/*.SF</exclude>
-										<exclude>META-INF/*.DSA</exclude>
-										<exclude>META-INF/*.RSA</exclude>
-									</excludes>
-								</filter>
-							</filters>
-							<shadedArtifactAttached>true</shadedArtifactAttached>
-                    		<shadedClassifierName>shaded</shadedClassifierName>
-							<transformers>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
-		                            <resource>.SF</resource>
-		                            <resource>NOTICE</resource>
-		                            <resource>AL2.0</resource>
-		                            <resource>LGPL2.1</resource>
-		                            <resource>LICENSE.txt</resource>
-		                            <resource>NOTICE.txt</resource>
-		                        </transformer>
-		                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-		                            <resource>LICENSE</resource>
-									<resource>en-mnemonic-word-list.txt</resource>
-		                        </transformer>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<manifestEntries>
-										<Main-Class>io.xdag.Bootstrap</Main-Class>
-		                                <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
-		                                <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
-		                                <Multi-Release>true</Multi-Release>
-									</manifestEntries>
-								</transformer>
-							</transformers>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+            <!-- license header check -->
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>4.0.rc1</version>
+                <configuration>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>LICENSE</header>
+                            <includes>
+                                <include>src/main/**/*.java</include>
+                                <include>src/test/**/*.java</include>
+                            </includes>
+                        </licenseSet>
+                    </licenseSets>
+                    <properties>
+                        <owner>Mycila</owner>
+                        <email>mathieu.carbou@gmail.com</email>
+                    </properties>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.3</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>junit:junit</exclude>
+                                        <exclude>netdb-testnet.txt</exclude>
+                                        <exclude>netdb-white-testnet.txt</exclude>
+                                        <exclude>*.config</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/9/*.class</exclude>
+                                        <exclude>META-INF/DISCLAIMER</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
+                                        <exclude>META-INF/NOTICE.md</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/LICENSE.md</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/AL2.0</exclude>
+                                        <exclude>META-INF/LGPL2.1</exclude>
+                                        <exclude>META-INF/*.MF</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
+                                    <resource>.SF</resource>
+                                    <resource>NOTICE</resource>
+                                    <resource>AL2.0</resource>
+                                    <resource>LGPL2.1</resource>
+                                    <resource>LICENSE.txt</resource>
+                                    <resource>NOTICE.txt</resource>
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>LICENSE</resource>
+                                    <resource>en-mnemonic-word-list.txt</resource>
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>io.xdag.Bootstrap</Main-Class>
+                                        <X-Compile-Source-JDK>${maven.compiler.source}
+                                        </X-Compile-Source-JDK>
+                                        <X-Compile-Target-JDK>${maven.compiler.target}
+                                        </X-Compile-Target-JDK>
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-			<!-- prepare distribution -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.8</version>
-				<executions>
-					<execution>
-						<id>package</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>dist</id>
-						<phase>${dist.phase}</phase>
-						<configuration>
-							<target>
-								<!-- windows build -->
-								<copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar" tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar" />
-								<copy file="src/main/resources/log4j2.xml" tofile="${dist.base}/windows/log4j2.xml" />
-								<copy file="src/main/resources/xdag-mainnet.config" tofile="${dist.base}/windows/xdag-mainnet.config" />
-								<copy file="src/main/resources/xdag-testnet.config" tofile="${dist.base}/windows/xdag-testnet.config" />
-								<copy file="${project.basedir}/script/xdag.bat" tofile="${dist.base}/windows/xdag.bat" />
-								<zip basedir="${dist.base}/windows/" destfile="${dist.base}/xdagj-windows.zip" />
-								<delete dir="${dist.base}/windows/" includeemptydirs="true"/>
+            <!-- prepare distribution -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>dist</id>
+                        <phase>${dist.phase}</phase>
+                        <configuration>
+                            <target>
+                                <!-- windows build -->
+                                <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
+                                        tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar"/>
+                                <copy file="src/main/resources/log4j2.xml"
+                                        tofile="${dist.base}/windows/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.config"
+                                        tofile="${dist.base}/windows/xdag-mainnet.config"/>
+                                <copy file="src/main/resources/xdag-testnet.config"
+                                        tofile="${dist.base}/windows/xdag-testnet.config"/>
+                                <copy file="${project.basedir}/script/xdag.bat"
+                                        tofile="${dist.base}/windows/xdag.bat"/>
+                                <zip basedir="${dist.base}/windows/"
+                                        destfile="${dist.base}/xdagj-windows.zip"/>
+                                <delete dir="${dist.base}/windows/" includeemptydirs="true"/>
 
-								<!-- linux build (executable jar) -->
-								<copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar" tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar" />
-								<copy file="src/main/resources/log4j2.xml" tofile="${dist.base}/linux/log4j2.xml" />
-								<copy file="src/main/resources/xdag-mainnet.config" tofile="${dist.base}/linux/xdag-mainnet.config" />
-								<copy file="src/main/resources/xdag-testnet.config" tofile="${dist.base}/linux/xdag-testnet.config" />
-								<copy file="${project.basedir}/script/xdag.sh" tofile="${dist.base}/linux/xdag.sh" />
-								<chmod file="${dist.base}/linux/xdag.sh" perm="755" />
-								<zip basedir="${dist.base}/linux/" destfile="${dist.base}/xdagj-linux.zip" />
-								<delete dir="${dist.base}/linux/" includeemptydirs="true"/>
+                                <!-- linux build (executable jar) -->
+                                <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
+                                        tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar"/>
+                                <copy file="src/main/resources/log4j2.xml"
+                                        tofile="${dist.base}/linux/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.config"
+                                        tofile="${dist.base}/linux/xdag-mainnet.config"/>
+                                <copy file="src/main/resources/xdag-testnet.config"
+                                        tofile="${dist.base}/linux/xdag-testnet.config"/>
+                                <copy file="${project.basedir}/script/xdag.sh"
+                                        tofile="${dist.base}/linux/xdag.sh"/>
+                                <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
+                                <zip basedir="${dist.base}/linux/"
+                                        destfile="${dist.base}/xdagj-linux.zip"/>
+                                <delete dir="${dist.base}/linux/" includeemptydirs="true"/>
 
-								<!-- macos build -->
-								<copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar" tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar" />
-								<copy file="src/main/resources/log4j2.xml" tofile="${dist.base}/macos/log4j2.xml" />
-								<copy file="src/main/resources/xdag-mainnet.config" tofile="${dist.base}/macos/xdag-mainnet.config" />
-								<copy file="src/main/resources/xdag-testnet.config" tofile="${dist.base}/macos/xdag-testnet.config" />
-								<copy file="${project.basedir}/script/xdag.sh" tofile="${dist.base}/macos/xdag.sh" />
-								<chmod file="${dist.base}/macos/xdag.sh" perm="755" />
-								<zip basedir="${dist.base}/macos/" destfile="${dist.base}/xdagj-macos.zip" />
-								<delete dir="${dist.base}/macos/" includeemptydirs="true"/>
-							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+                                <!-- macos build -->
+                                <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
+                                        tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar"/>
+                                <copy file="src/main/resources/log4j2.xml"
+                                        tofile="${dist.base}/macos/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.config"
+                                        tofile="${dist.base}/macos/xdag-mainnet.config"/>
+                                <copy file="src/main/resources/xdag-testnet.config"
+                                        tofile="${dist.base}/macos/xdag-testnet.config"/>
+                                <copy file="${project.basedir}/script/xdag.sh"
+                                        tofile="${dist.base}/macos/xdag.sh"/>
+                                <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
+                                <zip basedir="${dist.base}/macos/"
+                                        destfile="${dist.base}/xdagj-macos.zip"/>
+                                <delete dir="${dist.base}/macos/" includeemptydirs="true"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-			<!-- clean -->
+            <!-- clean -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
@@ -276,527 +299,534 @@
                     </filesets>
                 </configuration>
             </plugin>
-		</plugins>
-	</build>
+        </plugins>
+    </build>
 
-	<dependencies>
-		<dependency>
-			<groupId>fr.acinq.bitcoin</groupId>
-			<artifactId>secp256k1-jni</artifactId>
-			<version>1.3</version>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>fr.acinq.bitcoin</groupId>
+            <artifactId>secp256k1-jni</artifactId>
+            <version>1.3</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jetbrains</groupId>
-			<artifactId>annotations</artifactId>
-			<version>16.0.1</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>16.0.1</version>
+        </dependency>
 
-		<!-- Logging framework -->
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-api</artifactId>
-			<version>2.13.3</version>
-		</dependency>
+        <!-- Logging framework -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.13.3</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-core</artifactId>
-			<version>2.13.3</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.13.3</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-slf4j-impl</artifactId>
-			<version>2.13.3</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.13.3</version>
+        </dependency>
 
-		<!-- Apache Commons -->
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.11</version>
-		</dependency>
+        <!-- Apache Commons -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.11</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-collections4</artifactId>
-			<version>4.4</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.4</version>
+        </dependency>
 
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.15</version>
-		</dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
 
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.8.0</version>
-		</dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.8.0</version>
+        </dependency>
 
-		<dependency>
-			<groupId>commons-cli</groupId>
-			<artifactId>commons-cli</artifactId>
-			<version>1.4</version>
-		</dependency>
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+            <version>1.4</version>
+        </dependency>
 
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>29.0-jre</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.google.errorprone</groupId>
-					<artifactId>error_prone_annotations</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.checkerframework</groupId>
-					<artifactId>checker-qual</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.google.guava</groupId>
-					<artifactId>listenablefuture</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>29.0-jre</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.errorprone</groupId>
+                    <artifactId>error_prone_annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>listenablefuture</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>com.esotericsoftware</groupId>
-			<artifactId>kryo</artifactId>
-			<version>5.1.1</version>
-		</dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>5.1.1</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>1.18.16</version>
-			<scope>provided</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.16</version>
+            <scope>provided</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-all</artifactId>
-			<version>${netty.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>com.data-artisans</groupId>
-			<artifactId>frocksdbjni</artifactId>
-			<version>5.17.2-artisans-2.0</version>
-		</dependency>
+        <dependency>
+            <groupId>com.data-artisans</groupId>
+            <artifactId>frocksdbjni</artifactId>
+            <version>5.17.2-artisans-2.0</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jetbrains.kotlin</groupId>
-			<artifactId>kotlin-stdlib</artifactId>
-			<version>${kotlin.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>annotations</artifactId>
-					<groupId>org.jetbrains</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>${kotlin.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>annotations</artifactId>
+                    <groupId>org.jetbrains</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>io.libp2p</groupId>
-			<artifactId>jvm-libp2p-minimal</artifactId>
-			<version>0.8.2-RELEASE</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.jetbrains</groupId>
-					<artifactId>annotations</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-all</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcpkix-jdk15on</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcprov-jdk15on</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.google.guava</groupId>
-					<artifactId>guava</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.apache.logging.log4j</groupId>
-					<artifactId>log4j-core</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>commons-codec</groupId>
-					<artifactId>commons-codec</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.apache.logging.log4j</groupId>
-					<artifactId>log4j-api</artifactId>
-				</exclusion>
-				<exclusion>
-					<artifactId>kotlin-stdlib</artifactId>
-					<groupId>org.jetbrains.kotlin</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>kotlin-stdlib-common</artifactId>
-					<groupId>org.jetbrains.kotlin</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>io.libp2p</groupId>
+            <artifactId>jvm-libp2p-minimal</artifactId>
+            <version>0.8.2-RELEASE</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jetbrains</groupId>
+                    <artifactId>annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcpkix-jdk15on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib-common</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>com.github.ben-manes.caffeine</groupId>
-			<artifactId>caffeine</artifactId>
-			<version>2.8.6</version>
-		</dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>2.8.6</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jline</groupId>
-			<artifactId>jline</artifactId>
-			<version>3.16.0</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>3.16.0</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jupnp</groupId>
-			<artifactId>org.jupnp.support</artifactId>
-			<version>2.5.2</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jupnp</groupId>
+            <artifactId>org.jupnp.support</artifactId>
+            <version>2.5.2</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jupnp</groupId>
-			<artifactId>org.jupnp</artifactId>
-			<version>2.5.2</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jupnp</groupId>
+            <artifactId>org.jupnp</artifactId>
+            <version>2.5.2</version>
+        </dependency>
 
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.13.2</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-			<version>4.8.1</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>annotations</artifactId>
-					<groupId>org.jetbrains</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>kotlin-stdlib</artifactId>
-					<groupId>org.jetbrains.kotlin</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>kotlin-stdlib-common</artifactId>
-					<groupId>org.jetbrains.kotlin</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.8.1</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>annotations</artifactId>
+                    <groupId>org.jetbrains</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib-common</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-core</artifactId>
-			<version>3.3.3</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.objenesis</groupId>
-					<artifactId>objenesis</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.3.3</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>com.github.stefanbirkner</groupId>
-			<artifactId>system-rules</artifactId>
-			<version>1.19.0</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>junit</groupId>
-					<artifactId>junit-dep</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>com.github.stefanbirkner</groupId>
+            <artifactId>system-rules</artifactId>
+            <version>1.19.0</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit-dep</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>org.assertj</groupId>
-			<artifactId>assertj-core</artifactId>
-			<version>3.19.0</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.19.0</version>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>cn.hutool</groupId>
-			<artifactId>hutool-all</artifactId>
-			<version>5.4.4</version>
-		</dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.4.4</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.tuweni</groupId>
-			<artifactId>bytes</artifactId>
-			<version>1.3.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.google.guava</groupId>
-					<artifactId>guava</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>bytes</artifactId>
+            <version>1.3.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>org.apache.tuweni</groupId>
-			<artifactId>units</artifactId>
-			<version>1.3.0</version>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>units</artifactId>
+            <version>1.3.0</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.68</version>
-		</dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.68</version>
-		</dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
 
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-core</artifactId>
-			<version>3.8.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-common</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-buffer</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-transport</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-handler</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-handler-proxy</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-codec-http</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-codec-http2</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-resolver</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-resolver-dns</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-codec-haproxy</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-codec-haproxy</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-transport-native-epoll</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>io.netty</groupId>
-					<artifactId>netty-transport-native-kqueue</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.fasterxml.jackson.core</groupId>
-					<artifactId>jackson-core</artifactId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jackson-databind</artifactId>
-					<groupId>com.fasterxml.jackson.core</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+            <version>3.8.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-buffer</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler-proxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-haproxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-haproxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-kqueue</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-databind</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>2.12.2</version>
-		</dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.12.2</version>
+        </dependency>
 
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>2.12.2</version>
-		</dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.12.2</version>
+        </dependency>
 
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-			<version>2.12.2</version>
-		</dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.12.2</version>
+        </dependency>
 
-		<dependency>
-			<groupId>tech.pegasys.discovery</groupId>
-			<artifactId>discovery</artifactId>
-			<version>0.4.6</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>log4j-api</artifactId>
-					<groupId>org.apache.logging.log4j</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>log4j-core</artifactId>
-					<groupId>org.apache.logging.log4j</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>netty-all</artifactId>
-					<groupId>io.netty</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>guava</artifactId>
-					<groupId>com.google.guava</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>bcprov-jdk15on</artifactId>
-					<groupId>org.bouncycastle</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jackson-databind</artifactId>
-					<groupId>com.fasterxml.jackson.core</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>logging-interceptor</artifactId>
-					<groupId>com.squareup.okhttp3</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>okhttp</artifactId>
-					<groupId>com.squareup.okhttp3</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jackson-core</artifactId>
-					<groupId>com.fasterxml.jackson.core</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jffi</artifactId>
-					<groupId>com.github.jnr</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jnr-constants</artifactId>
-					<groupId>com.github.jnr</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jnr-ffi</artifactId>
-					<groupId>com.github.jnr</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>tech.pegasys.discovery</groupId>
+            <artifactId>discovery</artifactId>
+            <version>0.4.6</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>log4j-api</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-core</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>netty-all</artifactId>
+                    <groupId>io.netty</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                    <groupId>org.bouncycastle</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-databind</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>logging-interceptor</artifactId>
+                    <groupId>com.squareup.okhttp3</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>okhttp</artifactId>
+                    <groupId>com.squareup.okhttp3</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-core</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jffi</artifactId>
+                    <groupId>com.github.jnr</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jnr-constants</artifactId>
+                    <groupId>com.github.jnr</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jnr-ffi</artifactId>
+                    <groupId>com.github.jnr</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
-		<dependency>
-			<groupId>com.github.briandilley.jsonrpc4j</groupId>
-			<artifactId>jsonrpc4j</artifactId>
-			<version>1.6</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>slf4j-api</artifactId>
-					<groupId>org.slf4j</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>commons-codec</artifactId>
-					<groupId>commons-codec</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jackson-databind</artifactId>
-					<groupId>com.fasterxml.jackson.core</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jackson-core</artifactId>
-					<groupId>com.fasterxml.jackson.core</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jackson-annotations</artifactId>
-					<groupId>com.fasterxml.jackson.core</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.xml.ws</groupId>
-			<artifactId>jaxws-ri</artifactId>
-			<version>2.3.0</version>
-			<type>pom</type>
-			<exclusions>
-				<exclusion>
-					<artifactId>stax-ex</artifactId>
-					<groupId>org.jvnet.staxex</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jaxb-api</artifactId>
-					<groupId>javax.xml.bind</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jaxws-eclipselink-plugin</artifactId>
-					<groupId>com.sun.xml.ws</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>sdo-eclipselink-plugin</artifactId>
-					<groupId>com.sun.xml.ws</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
+        <dependency>
+            <groupId>com.github.briandilley.jsonrpc4j</groupId>
+            <artifactId>jsonrpc4j</artifactId>
+            <version>1.6</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>commons-codec</artifactId>
+                    <groupId>commons-codec</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-databind</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-core</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-annotations</artifactId>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>jaxws-ri</artifactId>
+            <version>2.3.0</version>
+            <type>pom</type>
+            <exclusions>
+                <exclusion>
+                    <artifactId>stax-ex</artifactId>
+                    <groupId>org.jvnet.staxex</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jaxb-api</artifactId>
+                    <groupId>javax.xml.bind</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jaxws-eclipselink-plugin</artifactId>
+                    <groupId>com.sun.xml.ws</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>sdo-eclipselink-plugin</artifactId>
+                    <groupId>com.sun.xml.ws</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<!--config-->
-		<!-- https://mvnrepository.com/artifact/com.typesafe/config -->
-		<dependency>
-			<groupId>com.typesafe</groupId>
-			<artifactId>config</artifactId>
-			<version>1.4.1</version>
-		</dependency>
+        <!--config-->
+        <!-- https://mvnrepository.com/artifact/com.typesafe/config -->
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.4.1</version>
+        </dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.lmdbjava/lmdbjava -->
-		<dependency>
-			<groupId>org.lmdbjava</groupId>
-			<artifactId>lmdbjava</artifactId>
-			<version>0.8.1</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.agrona/agrona -->
-		<dependency>
-			<groupId>org.agrona</groupId>
-			<artifactId>agrona</artifactId>
-			<version>1.10.0</version>
-		</dependency>
+        <!-- https://mvnrepository.com/artifact/org.lmdbjava/lmdbjava -->
+        <dependency>
+            <groupId>org.lmdbjava</groupId>
+            <artifactId>lmdbjava</artifactId>
+            <version>0.8.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.agrona/agrona -->
+        <dependency>
+            <groupId>org.agrona</groupId>
+            <artifactId>agrona</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>1.1.8.4</version>
+        </dependency>
 
 
-	</dependencies>
+    </dependencies>
 
-	<profiles>
-		<profile>
-			<id>src-build</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<properties>
-				<skip.git.info>true</skip.git.info>
-				<git.commit.id.abbrev>local</git.commit.id.abbrev>
-			</properties>
-		</profile>
-	</profiles>
+    <profiles>
+        <profile>
+            <id>src-build</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <skip.git.info>true</skip.git.info>
+                <git.commit.id.abbrev>local</git.commit.id.abbrev>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

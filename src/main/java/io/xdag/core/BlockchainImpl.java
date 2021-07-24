@@ -36,7 +36,6 @@ import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.snapshot.core.SnapshotInfo.Type.PUBKEY;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static io.xdag.utils.FastByteComparisons.equalBytes;
@@ -88,6 +87,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bouncycastle.util.Arrays;
@@ -121,6 +121,7 @@ public class BlockchainImpl implements Blockchain {
     private final RandomX randomXUtils;
     private final List<Listener> listeners = new ArrayList<>();
     private ScheduledFuture<?> checkLoopFuture;
+    @Setter
     private SnapshotChainStore snapshotChainStore;
     private long snapshotHeight;
 
@@ -128,11 +129,11 @@ public class BlockchainImpl implements Blockchain {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
 
-        // init chain state from rocksdb
+        // 1. init chain state from rocksdb
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
 
-        // TODO:snapshot init, init snapshot from rocksdb
+        // 2. if enable snapshot, init snapshot from rocksdb
         if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()
                 && kernel.getConfig().getSnapshotSpec().getSnapshotHeight() > 0
                 // 没有快照启动过
@@ -140,8 +141,9 @@ public class BlockchainImpl implements Blockchain {
             this.xdagStats = new XdagStats();
             this.xdagTopStatus = new XdagTopStatus();
             snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
-            initSnapshotChain();
-            initStats();
+            this.snapshotChainStore = new SnapshotChainStoreImpl(
+                    new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
+            initSnapshot();
         } else {
             XdagStats storedStats = blockStore.getXdagStatus();
             if (storedStats != null) {
@@ -166,12 +168,18 @@ public class BlockchainImpl implements Blockchain {
         this.startCheckMain();
     }
 
+    public void initSnapshot() {
+        initSnapshotChain();
+        initStats();
+    }
+
+
     @Override
     public void registerListener(Listener listener) {
         this.listeners.add(listener);
     }
 
-    protected void initStats() {
+    public void initStats() {
         this.xdagStats.setTotalnmain(snapshotHeight);
         this.xdagStats.setNmain(snapshotHeight);
         this.xdagStats.setMaxdifficulty(snapshotChainStore.getLatestStatsBlock().getDifficulty());
@@ -192,16 +200,13 @@ public class BlockchainImpl implements Blockchain {
         this.xdagTopStatus.setTopDiff(snapshotChainStore.getLatestStatsBlock().getDifficulty());
     }
 
-    protected void initSnapshotChain() {
-        this.snapshotChainStore = new SnapshotChainStoreImpl(
-                new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
+    public void initSnapshotChain() {
         log.info("Snapshot Store init.");
         snapshotChainStore.init();
         getBlockFromSnapshot(snapshotChainStore, blockStore);
     }
 
     protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStore blockStore) {
-        // TODO: 只保存blockinfo
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         for (SnapshotUnit snapshotUnit : snapshotUnits) {
             blockStore.saveBlockInfo(SnapshotUnit.trasferToBlockInfo(snapshotUnit));
@@ -209,10 +214,8 @@ public class BlockchainImpl implements Blockchain {
 
         List<StatsBlock> statsBlocks = snapshotChainStore.getSnapshotStatsBlock();
         for (StatsBlock statsBlock : statsBlocks) {
-            byte[] hashLow = new byte[32];
-            System.arraycopy(statsBlock.getHash(), 8, hashLow, 8, 24);
-            if (blockStore.hasBlockInfo(hashLow)) {
-                BlockInfo blockInfo = blockStore.getBlockInfoByHash(hashLow).getInfo();
+            if (blockStore.hasBlockInfo(getHashlowByHash(statsBlock.getHash()))) {
+                BlockInfo blockInfo = blockStore.getBlockInfoByHash(getHashlowByHash(statsBlock.getHash())).getInfo();
                 blockInfo.setDifficulty(statsBlock.getDifficulty());
                 blockInfo.setHeight(statsBlock.getHeight());
                 blockStore.saveBlockInfo(blockInfo);
@@ -1131,7 +1134,7 @@ public class BlockchainImpl implements Blockchain {
     private boolean verifySignatureFromSnapshot(Address in, List<ECKeyPair> ecKeyPairs) {
         BlockInfo blockInfo = blockStore.getBlockInfoByHash(in.getHashLow()).getInfo();
         SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
-        if (snapshotInfo.getType() == PUBKEY) {
+        if (snapshotInfo.getType()) {
             ECKeyPair targetECKey = new ECKeyPair(null,
                     new BigInteger(1,
                             java.util.Arrays.copyOfRange(snapshotInfo.getData(), 1, snapshotInfo.getData().length)));
