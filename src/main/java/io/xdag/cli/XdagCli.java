@@ -30,6 +30,7 @@ import io.xdag.Kernel;
 import io.xdag.Launcher;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
+import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
@@ -119,6 +120,12 @@ public class XdagCli extends Launcher {
                 .hasArg(true).optionalArg(false).argName("filename").type(String.class)
                 .build();
         addOption(convertOldWalletOption);
+
+        Option loadSnapshotOption = Option.builder()
+                .longOpt(XdagOption.LOAD_SNAPSHOT.toString()).desc("load snapshot")
+                .hasArg(true).optionalArg(false).argName("filename").type(String.class)
+                .build();
+        addOption(loadSnapshotOption);
     }
 
     public static void main(String[] args, XdagCli cli) throws Exception {
@@ -176,8 +183,8 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.CONVERT_OLD_WALLET.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
             convertOldWallet(file);
-        } else if (cmd.hasOption(XdagOption.SNAPSHOT.toString())) {
-            File file = new File(cmd.getOptionValue(XdagOption.SNAPSHOT.toString()).trim());
+        } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
+            File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
         } else {
             start();
@@ -380,23 +387,13 @@ public class XdagCli extends Launcher {
         Config config = getConfig();
         DatabaseFactory dbFactory = new RocksdbFactory(config);
         SnapshotChainStore snapshotChainStore = new SnapshotChainStoreImpl(dbFactory.getDB(DatabaseName.SNAPSHOT));
-        // load balance
-        loadBalanceData(file, snapshotChainStore);
-        // load pubkey
-        loadPubkey(file, snapshotChainStore);
-        // load signature
-        loadSignature(file, snapshotChainStore);
-    }
-
-    private void loadBalanceData(File file, SnapshotChainStore snapshotStore) {
-    }
-
-    private void loadPubkey(File file, SnapshotChainStore snapshotStore) {
-
-    }
-
-    private void loadSignature(File file, SnapshotChainStore snapshotStore) {
-
+        snapshotChainStore.reset();
+        boolean mainLag = false;
+        if (config instanceof MainnetConfig) {
+            mainLag = true;
+        }
+        boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag);
+        System.out.println("load res:" + res);
     }
 
     public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {

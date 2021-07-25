@@ -1,6 +1,5 @@
 package io.xdag.snapshot.config;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -15,14 +14,14 @@ public class SnapShotKeys {
     public final static String SNAPSHOT_KEY_STATS_MAIN = "g_snapshot_main";
 
 
-    public static MutableBytes getMutableBytesByKey(String key) throws UnsupportedEncodingException {
+    public static MutableBytes getMutableBytesByKey(String key) {
         byte[] bytes = key.getBytes(StandardCharsets.UTF_8);
         MutableBytes resKey = MutableBytes.create(bytes.length + 1);
         resKey.set(0, Bytes.wrap(bytes));
         return resKey;
     }
 
-    public static MutableBytes getMutableBytesByKey_(String key) throws UnsupportedEncodingException {
+    public static MutableBytes getMutableBytesByKey_(String key) {
         byte[] bytes = key.getBytes(StandardCharsets.UTF_8);
         MutableBytes resKey = MutableBytes.create(bytes.length);
         resKey.set(0, Bytes.wrap(bytes));

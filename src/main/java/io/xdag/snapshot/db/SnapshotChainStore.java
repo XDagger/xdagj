@@ -24,4 +24,6 @@ public interface SnapshotChainStore {
 
     StatsBlock getStatsBlockByIndex(int i);
 
+    boolean loadFromSnapshotData(String filepath, boolean mainLag);
+
 }

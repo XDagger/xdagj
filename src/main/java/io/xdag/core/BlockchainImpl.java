@@ -171,6 +171,7 @@ public class BlockchainImpl implements Blockchain {
     public void initSnapshot() {
         initSnapshotChain();
         initStats();
+        cleanSnapshotChain();
     }
 
 
@@ -204,6 +205,10 @@ public class BlockchainImpl implements Blockchain {
         log.info("Snapshot Store init.");
         snapshotChainStore.init();
         getBlockFromSnapshot(snapshotChainStore, blockStore);
+    }
+
+    public void cleanSnapshotChain() {
+        snapshotChainStore.reset();
     }
 
     protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStore blockStore) {
@@ -964,7 +969,7 @@ public class BlockchainImpl implements Blockchain {
     public Block getBlockByHeight(long height) {
 
         // TODO: if snapshto enabled, need height > snapshotHeight - 128
-        if (height > xdagStats.nmain - 128) {
+        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
             return null;
         }
 
