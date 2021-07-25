@@ -21,28 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils.exception;
 
-public class BytesException extends RuntimeException {
+package io.xdag.net.libp2p;
 
-    private static final long serialVersionUID = 1L;
+import io.libp2p.core.PeerId;
+import io.xdag.net.libp2p.peer.NodeId;
+import org.apache.tuweni.bytes.Bytes;
 
-    public BytesException() {
+public class LibP2PNodeId extends NodeId {
+
+    private final PeerId peerId;
+
+    public LibP2PNodeId(final PeerId peerId) {
+        this.peerId = peerId;
     }
 
-    public BytesException(String s) {
-        super(s);
+    @Override
+    public Bytes toBytes() {
+        return Bytes.wrap(peerId.getBytes());
     }
 
-    public BytesException(String s, Throwable throwable) {
-        super(s, throwable);
-    }
-
-    public BytesException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public BytesException(String s, Throwable throwable, boolean b, boolean b1) {
-        super(s, throwable, b, b1);
+    @Override
+    public String toBase58() {
+        return peerId.toBase58();
     }
 }

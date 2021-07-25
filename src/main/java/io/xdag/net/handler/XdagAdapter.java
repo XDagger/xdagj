@@ -21,13 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 public class XdagAdapter implements Xdag {
+
     @Override
     public void sendNewBlock(Block newBlock, int ttl) {
         // TODO Auto-generated method stub
@@ -40,7 +43,7 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public long sendGetBlock(byte[] hash) {
+    public long sendGetBlock(MutableBytes32 hash) {
         // TODO Auto-generated method stub
         return 0;
     }
@@ -54,12 +57,6 @@ public class XdagAdapter implements Xdag {
     @Override
     public void dropConnection() {
         // TODO Auto-generated method stub
-    }
-
-    @Override
-    public boolean isIdle() {
-        // TODO Auto-generated method stub
-        return false;
     }
 
     @Override

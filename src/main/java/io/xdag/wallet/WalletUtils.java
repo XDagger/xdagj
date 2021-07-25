@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.wallet;
+
+import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
 
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.MnemonicUtils;
 import lombok.extern.slf4j.Slf4j;
-
-import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
 
 @Slf4j
 public class WalletUtils {

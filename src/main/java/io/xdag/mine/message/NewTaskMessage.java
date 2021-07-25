@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.message;
 
 import static io.xdag.net.message.XdagMessageCodes.NEW_TASK;
@@ -28,25 +29,28 @@ import static io.xdag.net.message.XdagMessageCodes.NEW_TASK;
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
-import io.xdag.utils.BytesUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class NewTaskMessage extends Message {
 
     private final XdagField[] xdagFields = new XdagField[2];
 
-    public NewTaskMessage(byte[] bytes) {
+    public NewTaskMessage(MutableBytes bytes) {
         super(bytes);
-        xdagFields[0] = new XdagField(BytesUtils.subArray(bytes, 0, 32));
-        xdagFields[1] = new XdagField(BytesUtils.subArray(bytes, 32, 32));
+//        xdagFields[0] = new XdagField(BytesUtils.subArray(bytes, 0, 32));
+        xdagFields[0] = new XdagField(bytes.mutableSlice(0, 32));
+//        xdagFields[1] = new XdagField(BytesUtils.subArray(bytes, 32, 32));
+        xdagFields[1] = new XdagField(bytes.mutableSlice(32, 32));
     }
 
     @Override
-    public byte[] getEncoded() {
-
-        byte[] data = new byte[64];
-        System.arraycopy(xdagFields[0].getData(), 0, data, 0, 32);
-        System.arraycopy(xdagFields[1].getData(), 0, data, 32, 32);
-
+    public Bytes getEncoded() {
+        MutableBytes data = MutableBytes.create(64);
+//        xdagFields[0].getData().copyTo(data,0);
+        data.set(0, xdagFields[0].getData());
+//        xdagFields[1].getData().copyTo(data,32);
+        data.set(32, xdagFields[1].getData());
         return data;
     }
 

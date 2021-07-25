@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.message;
 
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
@@ -28,18 +29,20 @@ import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class TaskShareMessage extends Message {
 
     private final XdagField xdagField;
 
-    public TaskShareMessage(byte[] encoded) {
+    public TaskShareMessage(MutableBytes encoded) {
         super(encoded);
         this.xdagField = new XdagField(encoded);
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return xdagField.getData();
     }
 

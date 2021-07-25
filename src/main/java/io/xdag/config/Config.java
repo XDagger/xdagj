@@ -21,13 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config;
 
-import io.xdag.config.spec.*;
+import io.xdag.config.spec.AdminSpec;
+import io.xdag.config.spec.NodeSpec;
+import io.xdag.config.spec.PoolSpec;
+import io.xdag.config.spec.RPCSpec;
+import io.xdag.config.spec.SnapshotSpec;
+import io.xdag.config.spec.WalletSpec;
 import io.xdag.core.XdagField;
-import io.xdag.rpc.modules.ModuleDescription;
-
-import java.util.List;
 
 /**
  * The Xdag blockchain configurations.
@@ -75,7 +78,9 @@ public interface Config {
     XdagField.FieldType getXdagFieldHeader();
 
     void changePara(String[] args);
+
     void setDir();
+
     void initKeys() throws Exception;
 
     // rpc

@@ -21,9 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.web3;
 
-import com.sun.jdi.LongValue;
+import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
@@ -34,37 +38,25 @@ import io.xdag.core.XdagStats;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
-import io.xdag.utils.StringUtils;
-import org.bouncycastle.util.encoders.Hex;
+import io.xdag.utils.BasicUtils;
+import java.math.BigInteger;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
-import java.util.Objects;
-
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-
-public class Web3XdagModuleImpl implements Web3XdagModule{
+public class Web3XdagModuleImpl implements Web3XdagModule {
 
     private static final Logger logger = LoggerFactory.getLogger(Web3XdagModuleImpl.class);
-
-    class SyncingResult {
-        public String currentBlock;
-        public String highestBlock;
-    }
-
     private final Blockchain blockchain;
     private final XdagModule xdagModule;
     private final Kernel kernel;
-
     public Web3XdagModuleImpl(XdagModule xdagModule, Kernel kernel) {
         this.blockchain = kernel.getBlockchain();
         this.xdagModule = xdagModule;
         this.kernel = kernel;
     }
-
 
     @Override
     public XdagModule getXdagModule() {
@@ -83,7 +75,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
 
         Config config = kernel.getConfig();
         if (config instanceof MainnetConfig) {
-            if (kernel.getXdagState() != XdagState.SYNC){
+            if (kernel.getXdagState() != XdagState.SYNC) {
                 return false;
             }
         } else {
@@ -91,7 +83,6 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
                 return false;
             }
         }
-
 
         SyncingResult s = new SyncingResult();
         try {
@@ -106,7 +97,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
 
     @Override
     public String xdag_coinbase() {
-        return Hex.toHexString(kernel.getPoolMiner().getAddressHash());
+        return kernel.getPoolMiner().getAddressHash().toHexString();
     }
 
     @Override
@@ -118,50 +109,57 @@ public class Web3XdagModuleImpl implements Web3XdagModule{
     }
 
     @Override
-    public String xdag_getBalance(String address) throws Exception {
-        byte[] hash;
-        if (org.apache.commons.lang3.StringUtils.length(address) == 32) {
+    public String xdag_getBalance(String address) {
+        Bytes32 hash;
+        if (StringUtils.length(address) == 32) {
             hash = address2Hash(address);
         } else {
-            hash = StringUtils.getHash(address);
+            hash = BasicUtils.getHash(address);
         }
-        byte[] key = new byte[32];
-        System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
-        Block block = kernel.getBlockStore().getBlockInfoByHash(key);
+//        byte[] key = new byte[32];
+        MutableBytes32 key = MutableBytes32.create();
+//        System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
+        key.set(8, hash.slice(8, 24));
+        Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
         double balance = amount2xdag(block.getInfo().getAmount());
         return toQuantityJsonHex(balance);
     }
 
     @Override
-    public String xdag_getTotalBalance() throws Exception {
+    public String xdag_getTotalBalance() {
         double balance = amount2xdag(kernel.getBlockchain().getXdagStats().getBalance());
         return toQuantityJsonHex(balance);
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception {
+    public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) {
         System.out.println(bnOrId);
         System.out.println(full);
         if (full) {
             System.out.println("hello");
         }
-        BlockResultDTO blockResultDTO = new BlockResultDTO(Integer.parseInt(bnOrId));
 
-        return blockResultDTO;
+        return new BlockResultDTO(Integer.parseInt(bnOrId));
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception {
+    public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) {
         return null;
     }
 
     @Override
-    public StatusDTO xdag_getStatus() throws Exception {
+    public StatusDTO xdag_getStatus() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
-        long nblocks = Math.max(xdagStats.getTotalnblocks(),xdagStats.getNblocks());
-        long nmain = Math.max(xdagStats.getTotalnblocks(),xdagStats.getNmain());
+        long nblocks = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks());
+        long nmain = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNmain());
         BigInteger diff = xdagStats.getDifficulty();
-        double supply = amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain,xdagStats.totalnmain)));
-        return new StatusDTO(nblocks,nmain,diff,supply);
+        double supply = amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)));
+        return new StatusDTO(nblocks, nmain, diff, supply);
+    }
+
+    static class SyncingResult {
+
+        public String currentBlock;
+        public String highestBlock;
     }
 }

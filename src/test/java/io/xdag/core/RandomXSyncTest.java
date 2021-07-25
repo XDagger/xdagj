@@ -21,7 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
+
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
@@ -40,38 +50,30 @@ import io.xdag.randomx.RandomX;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-
-import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.*;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 @Slf4j
 public class RandomXSyncTest {
 
+    public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+    private final String privString = "10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046";
+    private final BigInteger privateKey = new BigInteger(privString, 16);
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();
     @Rule
     public TemporaryFolder root2 = new TemporaryFolder();
-
     Config config = new DevnetConfig();
-
-    public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
-    private final String privString = "10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046";
-    private final BigInteger privateKey = new BigInteger(privString, 16);
-
     private long forkHeight;
 
     @Before
@@ -83,18 +85,6 @@ public class RandomXSyncTest {
 
     }
 
-    class MockBlockchain extends BlockchainImpl {
-
-        public MockBlockchain(Kernel kernel) {
-            super(kernel);
-        }
-
-        @Override
-        public void startCheckMain() {
-
-        }
-    }
-
     @Test
     public void syncTest() throws Exception {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
@@ -104,58 +94,32 @@ public class RandomXSyncTest {
         Kernel kernel2 = createKernel(root2);
 
         // 第一个kernel新增区块数据
-        long end = addBlocks(kernel1,130);
+        long end = addBlocks(kernel1, 130);
         log.debug("Add block done");
         long nmain = kernel1.getBlockchain().getXdagStats().nmain;
-        String expected = kernel1.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
+        String expected = kernel1.getBlockchain().getBlockByHeight(nmain - 1).getInfo().getDifficulty().toString(16);
 
         // 第二个跟第三个同步第一个的数据
         CountDownLatch latch = new CountDownLatch(1);
-        Thread thread1 = new SyncThread(latch,kernel1,kernel2,generateTime,end,"1");
+        Thread thread1 = new SyncThread(latch, kernel1, kernel2, generateTime, end, "1");
         thread1.start();
 
         latch.await();
 
-        String kernel2Diff = kernel2.getBlockchain().getBlockByHeight(nmain-1).getInfo().getDifficulty().toString(16);
+        String kernel2Diff = kernel2.getBlockchain().getBlockByHeight(nmain - 1).getInfo().getDifficulty().toString(16);
 //        System.out.println("第二次同步");
-        assertEquals(expected,kernel2Diff);
+        assertEquals(expected, kernel2Diff);
 
         kernel1.getRandomXUtils().randomXPoolReleaseMem();
         kernel2.getRandomXUtils().randomXPoolReleaseMem();
     }
 
-    public class SyncThread extends Thread {
-        private CountDownLatch latch;
-        private Kernel kernel1;
-        private Kernel kernel2;
-        private long startTime;
-        private long endTime;
-        private String syncName;
-
-        public SyncThread(CountDownLatch latch, Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
-            this.latch = latch;
-            this.kernel1 = kernel1;
-            this.kernel2 = kernel2;
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.syncName = syncName;
-        }
-
-        @Override
-        public void run() {
-            synchronized (SyncThread.class) {
-                sync(kernel1,kernel2,startTime,endTime,syncName);
-                latch.countDown();
-            }
-        }
-
-    }
-
-    public void sync(Kernel kernel1,Kernel kernel2, long startTime, long endTime, String syncName) {
+    public void sync(Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
 
         List<Block> blocks = kernel1.getBlockchain().getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
-            ImportResult result = kernel2.getBlockchain().tryToConnect(new Block(new XdagBlock(block.getXdagBlock().getData())));
+            ImportResult result = kernel2.getBlockchain()
+                    .tryToConnect(new Block(new XdagBlock(block.getXdagBlock().getData())));
         }
     }
 
@@ -178,15 +142,15 @@ public class RandomXSyncTest {
         // 1. add address block
         result = kernel.getBlockchain().tryToConnect(addressBlock);
         assertSame(result, IMPORTED_BEST);
-        assertArrayEquals(addressBlock.getHashLow(), xdagTopStatus.getTop());
+        assertArrayEquals(addressBlock.getHashLow().toArray(), xdagTopStatus.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
-        byte[] ref = addressBlock.getHashLow();
+        Bytes32 ref = addressBlock.getHashLow();
         long endTime = 0;
 
-        byte[] forkHash = new byte[0];
+        Bytes32 forkHash = Bytes32.ZERO;
         long forkDate = 0;
 
-        for(int i = 1; i <= number; i++) {
+        for (int i = 1; i <= number; i++) {
             log.debug("create No." + i + " extra block");
             generateTime += 64000L;
             pending.clear();
@@ -196,12 +160,12 @@ public class RandomXSyncTest {
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             result = kernel.getBlockchain().tryToConnect(extraBlock);
             assertSame(result, IMPORTED_BEST);
-            assertArrayEquals(extraBlock.getHashLow(), xdagTopStatus.getTop());
-            Block storedExtraBlock = kernel.getBlockchain().getBlockByHash(xdagTopStatus.getTop(), false);
-            assertArrayEquals(extraBlock.getHashLow(), storedExtraBlock.getHashLow());
+            assertArrayEquals(extraBlock.getHashLow().toArray(), xdagTopStatus.getTop());
+            Block storedExtraBlock = kernel.getBlockchain().getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
+            assertArrayEquals(extraBlock.getHashLow().toArray(), storedExtraBlock.getHashLow().toArray());
             ref = extraBlock.getHashLow();
-            if (i == number-forkHeight) {
-                forkHash = ref.clone();
+            if (i == number - forkHeight) {
+                forkHash = ref;
                 forkDate = generateTime;
             }
             extraBlockList.add(extraBlock);
@@ -211,7 +175,7 @@ public class RandomXSyncTest {
         ref = forkHash;
 
         // 3. create number fork blocks
-        for (int i = 0; i < forkHeight + 10; i++ ) {
+        for (int i = 0; i < forkHeight + 10; i++) {
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
@@ -241,7 +205,6 @@ public class RandomXSyncTest {
         ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
         wallet.setAccounts(Collections.singletonList(key));
 
-
         Kernel kernel = new Kernel(config);
         DatabaseFactory dbFactory = new RocksdbFactory(config);
 
@@ -266,5 +229,46 @@ public class RandomXSyncTest {
         randomX.init();
 
         return kernel;
+    }
+
+    class MockBlockchain extends BlockchainImpl {
+
+        public MockBlockchain(Kernel kernel) {
+            super(kernel);
+        }
+
+        @Override
+        public void startCheckMain() {
+
+        }
+    }
+
+    public class SyncThread extends Thread {
+
+        private CountDownLatch latch;
+        private Kernel kernel1;
+        private Kernel kernel2;
+        private long startTime;
+        private long endTime;
+        private String syncName;
+
+        public SyncThread(CountDownLatch latch, Kernel kernel1, Kernel kernel2, long startTime, long endTime,
+                String syncName) {
+            this.latch = latch;
+            this.kernel1 = kernel1;
+            this.kernel2 = kernel2;
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.syncName = syncName;
+        }
+
+        @Override
+        public void run() {
+            synchronized (SyncThread.class) {
+                sync(kernel1, kernel2, startTime, endTime, syncName);
+                latch.countDown();
+            }
+        }
+
     }
 }

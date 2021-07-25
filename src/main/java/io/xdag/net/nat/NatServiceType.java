@@ -21,9 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 public enum NatServiceType {
+
     XDAG_DISCOVERY("xdag_discovery"),
     XDAG_P2P("xdag_p2p");
     private final String value;

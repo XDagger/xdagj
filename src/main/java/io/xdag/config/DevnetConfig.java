@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config;
+
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
 import com.google.common.primitives.UnsignedLong;
 import org.apache.commons.lang3.StringUtils;
-
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
 public class DevnetConfig extends AbstractConfig {
 
@@ -41,8 +42,8 @@ public class DevnetConfig extends AbstractConfig {
         this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
 
-        this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
-        this.walletKeyFile = this.rootDir+"/wallet-testnet.dat";
+        this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";
+        this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
 
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }

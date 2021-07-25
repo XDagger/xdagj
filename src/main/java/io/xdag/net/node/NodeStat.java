@@ -21,15 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.node;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 public class NodeStat {
+
     public final StatHandler Inbound = new StatHandler();
     public final StatHandler Outbound = new StatHandler();
 
     public static class StatHandler {
+
         AtomicLong count = new AtomicLong(0);
 
         public void add() {

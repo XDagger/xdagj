@@ -21,15 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import com.google.common.io.BaseEncoding;
-import io.xdag.crypto.jni.Native;
-import org.bouncycastle.util.Arrays;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.bouncycastle.util.Arrays;
 
 public class BytesUtils {
 
@@ -45,7 +44,9 @@ public class BytesUtils {
         return buffer.array();
     }
 
-    /** 改为了4字节 原先为length 8 */
+    /**
+     * 改为了4字节 原先为length 8
+     */
     public static int bytesToInt(byte[] input, int offset, boolean littleEndian) {
         ByteBuffer buffer = ByteBuffer.wrap(input, offset, 4);
         if (littleEndian) {
@@ -131,8 +132,7 @@ public class BytesUtils {
     }
 
     /**
-     * @param arrays
-     *            - arrays to merge
+     * @param arrays - arrays to merge
      * @return - merged array
      */
     public static byte[] merge(byte[]... arrays) {
@@ -151,7 +151,9 @@ public class BytesUtils {
         return mergedArray;
     }
 
-    /** Merge byte and byte array. */
+    /**
+     * Merge byte and byte array.
+     */
     public static byte[] merge(byte b1, byte[] b2) {
         byte[] res = new byte[1 + b2.length];
         res[0] = b1;
@@ -160,12 +162,9 @@ public class BytesUtils {
     }
 
     /**
-     * @param arrays
-     *            - 字节数组
-     * @param index
-     *            - 起始索引
-     * @param length
-     *            - 长度
+     * @param arrays - 字节数组
+     * @param index - 起始索引
+     * @param length - 长度
      * @return - 子数组
      */
     public static byte[] subArray(byte[] arrays, int index, int length) {
@@ -183,8 +182,7 @@ public class BytesUtils {
     /**
      * Hex字符串转byte
      *
-     * @param hexString
-     *            待转换的Hex字符串
+     * @param hexString 待转换的Hex字符串
      * @return 转换后的byte[]
      */
     public static byte[] hexStringToBytes(String hexString) {
@@ -211,9 +209,11 @@ public class BytesUtils {
         return 0;
     }
 
-    /** 数组逆序 */
+    /**
+     * 数组逆序
+     */
     public static void arrayReverse(byte[] origin) {
-        byte temp = 0;
+        byte temp;
         for (int i = 0; i < origin.length / 2; i++) {
             temp = origin[i];
             origin[i] = origin[origin.length - i - 1];
@@ -221,23 +221,11 @@ public class BytesUtils {
         }
     }
 
-    /** 生成随机32字节数组 */
-    public static byte[] generateRandomArray() {
-        byte[] array = new byte[32];
-        byte[] random = Native.generate_random_array(array, 32);
-        return random;
-    }
-
-    /** 生成随机8字节数组 */
-    public static byte[] generateRandomBytes() {
-        byte[] array = new byte[8];
-        byte[] random = Native.generate_random_bytes(array, 8);
-        return random;
-    }
-
-    /** Convert a byte into an byte array. */
+    /**
+     * Convert a byte into an byte array.
+     */
     public static byte[] of(byte b) {
-        return new byte[] { b };
+        return new byte[]{b};
     }
 
     public static byte toByte(byte[] bytes) {
@@ -252,9 +240,6 @@ public class BytesUtils {
             if (key[i] != part[i]) {
                 return false;
             }
-        }
-        if (part.length == key.length) {
-            return true;
         }
         return true;
     }
@@ -271,30 +256,23 @@ public class BytesUtils {
     /**
      * 输入长度 然后根据长度来把前面的字段填充为0
      *
-     * @param bytes
-     *            要分割的字符串
-     * @param index
-     *            分割的起点
-     * @param length
-     *            起点往后的字符串
+     * @param bytes 要分割的字符串
+     * @param index 分割的起点
+     * @param length 起点往后的字符串
      * @return 填充0 后的字符串
      */
     public static byte[] fixBytes(byte[] bytes, int index, int length) {
         byte[] temp = new byte[index];
         Arrays.fill(temp, (byte) 0x0);
-        byte[] result = merge(temp, subArray(bytes, index, length));
-        return result;
+        return merge(temp, subArray(bytes, index, length));
     }
 
     /**
      * 直接将十六进制的byte[]数组转换为都变了的数据
      *
-     * @param input
-     *            byte[]类型的hash 这里的hash 是正向排序了的
-     * @param offset
-     *            偏移位置
-     * @param littleEndian
-     *            是否为大小端
+     * @param input byte[]类型的hash 这里的hash 是正向排序了的
+     * @param offset 偏移位置
+     * @param littleEndian 是否为大小端
      */
     public static double hexBytesToDouble(byte[] input, int offset, boolean littleEndian) {
         byte[] data = new byte[8];
@@ -303,10 +281,6 @@ public class BytesUtils {
             data = Arrays.reverse(data);
         }
         return Numeric.toBigInt(data).doubleValue();
-    }
-
-    public String byteToBinaryString(byte b) {
-        return Integer.toBinaryString(b & 0xFF);
     }
 
     public static byte[] stripLeadingZeroes(byte[] data) {
@@ -350,18 +324,12 @@ public class BytesUtils {
     /**
      * Lexicographically compare two byte arrays.
      *
-     * @param b1
-     *            buffer1
-     * @param s1
-     *            offset1
-     * @param l1
-     *            length1
-     * @param b2
-     *            buffer2
-     * @param s2
-     *            offset2
-     * @param l2
-     *            length2
+     * @param b1 buffer1
+     * @param s1 offset1
+     * @param l1 length1
+     * @param b2 buffer2
+     * @param s2 offset2
+     * @param l2 length2
      * @return int
      */
     public static int compareTo(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
@@ -373,6 +341,7 @@ public class BytesUtils {
     }
 
     private interface Comparer<T> {
+
         int compareTo(T buffer1, int offset1, int length1, T buffer2, int offset2, int length2);
     }
 
@@ -381,6 +350,7 @@ public class BytesUtils {
      * {@code Unsafe} isn't available.
      */
     private static class LexicographicalComparerHolder {
+
         static final String UNSAFE_COMPARER_NAME = LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
 
         static final Comparer<byte[]> BEST_COMPARER = getBestComparer();

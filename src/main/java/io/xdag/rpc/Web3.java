@@ -21,24 +21,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc;
 
 import io.xdag.rpc.modules.web3.Web3XdagModule;
-
 import java.util.Arrays;
 import java.util.Map;
 
 public interface Web3 extends Web3XdagModule {
+
+    String web3_clientVersion();
+
+    String web3_sha3(String data) throws Exception;
+
+    String net_version();
+
+    String net_peerCount();
+
+    boolean net_listening();
+
+    String[] net_peerList();
+
+    // methods required by dev environments
+    Map<String, String> rpc_modules();
+
+    void db_putString();
+
+    void db_getString();
+
+    void db_putHex();
+
+    void db_getHex();
+
+    String personal_newAccount(String passphrase);
+
+    String[] personal_listAccounts();
+
+    String personal_importRawKey(String key, String passphrase);
+
+    String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
+
+    boolean personal_unlockAccount(String key, String passphrase, String duration);
+
+    boolean personal_lockAccount(String key);
+
+    String personal_dumpRawKey(String address) throws Exception;
+
     class CallArguments {
+
         public String from;
         public String to;
-//        public String gas;
+        //        public String gas;
 //        public String gasPrice;
         public String value;
-//        public String data; // compiledCode
+        //        public String data; // compiledCode
         public String remark;
         public String netType;
-//        public String nonce;
+        //        public String nonce;
         public String chainId; //NOSONAR
 
         @Override
@@ -59,12 +98,14 @@ public interface Web3 extends Web3XdagModule {
     }
 
     class BlockInformationResult {
+
         public String hash;
         public String totalDifficulty;
         public boolean inMainChain;
     }
 
     class FilterRequest {
+
         public String fromBlock;
         public String toBlock;
         public Object address;
@@ -80,30 +121,6 @@ public interface Web3 extends Web3XdagModule {
                     '}';
         }
     }
-
-    String web3_clientVersion();
-    String web3_sha3(String data) throws Exception;
-    String net_version();
-    String net_peerCount();
-    boolean net_listening();
-    String[] net_peerList();
-
-    // methods required by dev environments
-    Map<String, String> rpc_modules();
-
-    void db_putString();
-    void db_getString();
-
-    void db_putHex();
-    void db_getHex();
-
-    String personal_newAccount(String passphrase);
-    String[] personal_listAccounts();
-    String personal_importRawKey(String key, String passphrase);
-    String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
-    boolean personal_unlockAccount(String key, String passphrase, String duration);
-    boolean personal_lockAccount(String key);
-    String personal_dumpRawKey(String address) throws Exception;
 
 //    void sco_banAddress(String address);
 //    void sco_unbanAddress(String address);

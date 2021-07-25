@@ -66,7 +66,7 @@ public class BalanceData {
                 ", time=" + FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                 .format(XdagTime.xdagTimestampToMs(time)) +
                 ", storage_pos=" + storage_pos +
-                ", hash=" + (hash != null ? hash2Address(hash) : "") +
+                ", hash=" + (hash != null ? hash2Address(Bytes32.wrap(hash)) : "") +
                 '}';
     }
 }

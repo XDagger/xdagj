@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.config.Constants.DNET_PKT_XDAG;
@@ -30,9 +31,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import org.bouncycastle.util.encoders.Hex;
-
 import java.util.zip.CRC32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class NewBlockMessage extends Message {
 
@@ -40,12 +41,16 @@ public class NewBlockMessage extends Message {
     private Block block;
     private int ttl;
 
-    /** 不处理crc */
-    public NewBlockMessage(byte[] bytes) {
+    /**
+     * 不处理crc
+     */
+    public NewBlockMessage(MutableBytes bytes) {
         super(bytes);
     }
 
-    /** 处理crc 创建新的用于发送Block的message */
+    /**
+     * 处理crc 创建新的用于发送Block的message
+     */
     public NewBlockMessage(Block block, int ttl) {
         this.block = block;
         this.ttl = ttl;
@@ -53,9 +58,11 @@ public class NewBlockMessage extends Message {
         encode();
     }
 
-    /** 不处理crc */
+    /**
+     * 不处理crc
+     */
     public NewBlockMessage(XdagBlock xdagBlock, int ttl) {
-        super(xdagBlock.getData());
+        super(xdagBlock.getData().mutableCopy());
         this.xdagBlock = xdagBlock;
         this.ttl = ttl;
     }
@@ -74,16 +81,18 @@ public class NewBlockMessage extends Message {
     }
 
     private void encode() {
-        this.encoded = this.block.getXdagBlock().getData().clone();
-        long transportheader = (ttl << 8) | DNET_PKT_XDAG | (512 << 16);
-        System.arraycopy(BytesUtils.longToBytes(transportheader, true), 0, this.encoded, 0, 8);
+        this.encoded = this.block.getXdagBlock().getData().mutableCopy();
+        long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16);
+//        System.arraycopy(BytesUtils.longToBytes(transportheader, true), 0, this.encoded, 0, 8);
+        this.encoded.set(0, Bytes.wrap(BytesUtils.longToBytes(transportheader, true)));
         updateCrc();
     }
 
     public void updateCrc() {
         CRC32 crc32 = new CRC32();
-        crc32.update(encoded, 0, 512);
-        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
+        crc32.update(encoded.toArray(), 0, 512);
+//        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
+        this.encoded.set(4, Bytes.wrap(BytesUtils.intToBytes((int) crc32.getValue(), true)));
     }
 
     public int getTtl() {
@@ -95,7 +104,7 @@ public class NewBlockMessage extends Message {
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return encoded;
     }
 
@@ -111,6 +120,6 @@ public class NewBlockMessage extends Message {
 
     @Override
     public String toString() {
-        return "NewBlock Message:" + Hex.toHexString(encoded);
+        return "NewBlock Message:" + encoded.toHexString();
     }
 }

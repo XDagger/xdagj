@@ -21,12 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config.spec;
 
 /**
  * The Wallet Specifications
  */
 public interface WalletSpec {
+
     String getWalletKeyFile();
+
     String getWalletFilePath();
 }

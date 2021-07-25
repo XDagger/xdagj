@@ -21,20 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils;
 
-/** Assertion utility functions. */
-public class Assertions {
+package io.xdag.net.libp2p.discovery;
 
-    /**
-     * Verify that the provided precondition holds true.
-     *
-     * @param assertionResult assertion value
-     * @param errorMessage error message if precondition failure
-     */
-    public static void verifyPrecondition(boolean assertionResult, String errorMessage) {
-        if (!assertionResult) {
-            throw new RuntimeException(errorMessage);
-        }
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+
+import io.xdag.utils.SafeFuture;
+import org.junit.Test;
+
+public class DiscoveryNetworkTest {
+
+    private final DiscV5Service discoveryService = mock(DiscV5Service.class);
+
+    @Test
+    public void DiscoveryStart() {
+        final SafeFuture<Void> discoveryStart = new SafeFuture<>();
+        doReturn(discoveryStart).when(discoveryService).start();
     }
+
+    @Test
+    @SuppressWarnings({"FutureReturnValueIgnored"})
+    public void shouldStopNetworkAndDiscoveryWhenConnectionManagerStopFails() {
+        doReturn(new SafeFuture<Void>()).when(discoveryService).stop();
+    }
+
 }

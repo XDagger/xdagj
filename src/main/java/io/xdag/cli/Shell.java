@@ -21,14 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.cli;
+
+import static io.xdag.utils.BasicUtils.address2Hash;
 
 import io.xdag.Kernel;
 import io.xdag.crypto.jni.Native;
-import io.xdag.utils.StringUtils;
+import io.xdag.utils.BasicUtils;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.tuweni.bytes.Bytes32;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;
@@ -43,25 +53,16 @@ import org.jline.reader.Parser;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static io.xdag.utils.BasicUtils.address2Hash;
-
 @Slf4j
 public class Shell extends JlineCommandRegistry implements CommandRegistry, Telnet.ShellProvider {
+
     public static final int DEFAULT_LIST_NUM = 20;
     public static final String prompt = "xdag> ";
-
+    public Map<String, CommandMethods> commandExecute = new HashMap<>();
     @Setter
     private Kernel kernel;
     private Commands commands;
     private LineReader reader;
-
-    public Map<String, CommandMethods> commandExecute = new HashMap<>();
 
     public Shell() {
         super();
@@ -127,7 +128,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             List<String> argv = opt.args();
-            println(commands.balance(argv.size()>0?argv.get(0):null));
+            println(commands.balance(argv.size() > 0 ? argv.get(0) : null));
         } catch (Exception e) {
             saveException(e);
         }
@@ -153,19 +154,19 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
             String address = argv.get(0);
             try {
-                byte[] hash;
+                Bytes32 hash;
                 if (address.length() == 32) {
                     // as address
                     hash = address2Hash(address);
                 } else {
                     // as hash
-                    hash = StringUtils.getHash(address);
+                    hash = BasicUtils.getHash(address);
                 }
                 if (hash == null) {
                     println("No param");
                     return;
                 }
-                println(commands.block(hash));
+                println(commands.block(Bytes32.wrap(hash)));
             } catch (Exception e) {
                 println("Argument is incorrect.");
             }
@@ -287,11 +288,10 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            byte[] hash;
-            // TODO : xfer 时是否需要仅保留两位小数
-            double amount = StringUtils.getDouble(argv.get(0));
+            Bytes32 hash;
+            double amount = BasicUtils.getDouble(argv.get(0));
 
-            String remark = argv.size()==3 ? argv.get(2):null;
+            String remark = argv.size() == 3 ? argv.get(2) : null;
 
             if (amount < 0) {
                 println("The transfer amount must be greater than 0");
@@ -299,23 +299,23 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             if (argv.get(1).length() == 32) {
-                hash = address2Hash(argv.get(1));
+                hash = Bytes32.wrap(address2Hash(argv.get(1)));
             } else {
-                hash = StringUtils.getHash(argv.get(1));
+                hash = Bytes32.wrap(BasicUtils.getHash(argv.get(1)));
             }
             if (hash == null) {
                 println("No Address");
                 return;
             }
 
-            if (kernel.getBlockchain().getBlockByHash(hash, false) == null) {
+            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
 //            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("Incorrect address");
                 return;
             }
 
             // xfer must check dnet password
-            if(!readPassword("Enter Dnet password> ",false)) {
+            if (!readPassword("Enter Dnet password> ", false)) {
                 return;
             }
             println(commands.xfer(amount, hash, remark));
@@ -375,11 +375,11 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-            if(opt.isSet("list")) {
+            if (opt.isSet("list")) {
                 println(commands.listConnect());
                 return;
             }
-            if(opt.isSet("connect")) {
+            if (opt.isSet("connect")) {
                 println("connect to :" + opt.get("connect"));
                 Matcher m = p.matcher(opt.get("connect"));
                 if (m.matches()) {
@@ -390,14 +390,14 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                     println("Node ip:port Error");
                 }
             }
-            if(opt.isSet("plibp2p")){
+            if (opt.isSet("plibp2p")) {
                 println("connect to :" + opt.get("plibp2p"));
                 Matcher m = p.matcher(opt.get("plibp2p"));
                 if (m.matches()) {
                     String host = m.group(1);
                     int port = Integer.parseInt(m.group(2));
                     String ip = m.group(3);
-                    commands.connectbylibp2p(host, port,ip);
+                    commands.connectbylibp2p(host, port, ip);
                 } else {
                     println("Node ip:port Error");
                 }
@@ -421,15 +421,15 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-            if(opt.isSet("all")) {
+            if (opt.isSet("all")) {
                 println(commands.disConnectMinerChannel("all"));
                 return;
             }
-            if(opt.isSet("address")) {
+            if (opt.isSet("address")) {
                 println(commands.disConnectMinerChannel(opt.get("address")));
                 return;
             }
-            if(opt.isSet("ip")) {
+            if (opt.isSet("ip")) {
                 println(commands.disConnectMinerChannel(opt.get("ip")));
             }
         } catch (Exception e) {
@@ -457,7 +457,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             // before terminate must verify admin password(config at AdminSpec)
-            if(!readPassword("Enter Admin password> ",true)) {
+            if (!readPassword("Enter Admin password> ", true)) {
                 return;
             }
             commands.stop();
@@ -472,9 +472,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         String line;
         do {
             line = reader.readLine(prompt, mask);
-        } while (org.apache.commons.lang3.StringUtils.isEmpty(line));
+        } while (StringUtils.isEmpty(line));
 
-        if(isTelnet) {
+        if (isTelnet) {
             if (line.equals(kernel.getConfig().getAdminSpec().getPassword())) {
                 return true;
             } else {
@@ -492,7 +492,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
     @Override
     public void shell(Terminal terminal, Map<String, String> environment) {
-        if(commands == null) {
+        if (commands == null) {
             commands = new Commands(kernel);
         }
         Parser parser = new DefaultParser();
@@ -509,7 +509,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
         this.setReader(reader);
 
-        if(!readPassword("Enter Admin password>",true)) {
+        if (!readPassword("Enter Admin password>", true)) {
             return;
         }
 
@@ -517,7 +517,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             try {
                 systemRegistry.cleanUp();
                 String line = reader.readLine(prompt);
-                if(org.apache.commons.lang3.StringUtils.startsWith(line,"exit")) {
+                if (StringUtils.startsWith(line, "exit")) {
                     break;
                 }
                 systemRegistry.execute(line);

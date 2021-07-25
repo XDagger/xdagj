@@ -21,35 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.manager;
 
 import io.xdag.config.Config;
 import io.xdag.net.message.NetDB;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
 @Slf4j
 public class NetDBManager {
+
     @Getter
     private final String database;
-
     @Getter
     private final String databaseWhite;
-
     @Getter
     private final String whiteUrl;
-
-    @Getter
-    private NetDB whiteDB;
-
     @Getter
     private final NetDB netDB;
+    @Getter
+    private NetDB whiteDB;
 
     public NetDBManager(Config config) {
         database = config.getNodeSpec().getNetDBDir();

@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc;
 
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModule;
-
 import java.util.Map;
 
-public class Web3Impl implements Web3{
+public class Web3Impl implements Web3 {
 
     Web3XdagModule web3XdagModule;
 
@@ -165,12 +165,12 @@ public class Web3Impl implements Web3{
 
     @Override
     public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception {
-        return web3XdagModule.xdag_getBlockByNumber(bnOrId,full);
+        return web3XdagModule.xdag_getBlockByNumber(bnOrId, full);
     }
 
     @Override
     public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception {
-        return web3XdagModule.xdag_getBlockByHash(blockHash,full);
+        return web3XdagModule.xdag_getBlockByHash(blockHash, full);
     }
 
     @Override

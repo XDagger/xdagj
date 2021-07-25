@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.util.Objects;
 
 public abstract class JsonRpcRequest<T extends Enum<T>> extends JsonRpcIdentifiableMessage {
+
     private final T method;
 
     public JsonRpcRequest(

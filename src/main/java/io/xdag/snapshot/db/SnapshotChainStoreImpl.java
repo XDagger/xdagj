@@ -340,7 +340,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             if (block == null && signature != null) {
                 data = createXdagBlock(signature, balanceData);
             } else if (block != null) {
-                data = block.getXdagBlock().getData();
+                data = block.getXdagBlock().getData().toArray();
             }
             // 4.1 保存snapshot单元用于生成blockinfo
             saveSnapshotUnit(bytes32.toArray(), new SnapshotUnit(

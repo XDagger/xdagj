@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.message;
 
 import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
@@ -28,18 +29,20 @@ import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class NewBalanceMessage extends Message {
 
     private final XdagField xdagField;
 
-    public NewBalanceMessage(byte[] encoded) {
+    public NewBalanceMessage(MutableBytes encoded) {
         super(encoded);
         this.xdagField = new XdagField(encoded);
     }
 
     @Override
-    public byte[] getEncoded() {
+    public Bytes getEncoded() {
         return xdagField.getData();
     }
 

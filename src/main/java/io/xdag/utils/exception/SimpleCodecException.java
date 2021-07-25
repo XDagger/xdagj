@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils.exception;
 
 public class SimpleCodecException extends RuntimeException {
-    
+
     private static final long serialVersionUID = 1L;
 
     public SimpleCodecException() {

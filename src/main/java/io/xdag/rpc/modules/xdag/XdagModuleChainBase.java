@@ -21,14 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.dto.BlockResultDTO;
-import io.xdag.rpc.modules.xdag.XdagModuleChain;
 
 public class XdagModuleChainBase implements XdagModuleChain {
-
-
 
     @Override
     public String getCoinBase() {

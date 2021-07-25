@@ -21,13 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
-
-import java.io.IOException;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nonnull;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -39,10 +34,18 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagClient {
+
     private static final ThreadFactory factory = new ThreadFactory() {
         final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -55,8 +58,8 @@ public class XdagClient {
     private final EventLoopGroup workerGroup;
     private final int port;
     private final Config config;
-    private ChannelFuture f;
     private final String ip;
+    private final Set<InetSocketAddress> whilelist;
     private Node node;
 
     public XdagClient(Config config) {
@@ -64,25 +67,28 @@ public class XdagClient {
         this.ip = config.getNodeSpec().getNodeIp();
         this.port = config.getNodeSpec().getNodePort();
         this.workerGroup = new NioEventLoopGroup(0, factory);
+        this.whilelist = new HashSet<>();
+        initWhiteIPs();
 //        log.debug("XdagClient nodeId {}", getNode().getHexId());
     }
 
-    /** Connects to the node and returns only upon connection close */
+    /**
+     * Connects to the node and returns only upon connection close
+     */
     public void connect(String host, int port, XdagChannelInitializer xdagChannelInitializer) {
         try {
-            f = connectAsync(host, port, xdagChannelInitializer);
+            ChannelFuture f = connectAsync(host, port, xdagChannelInitializer);
             f.sync();
         } catch (Exception e) {
-            if (e instanceof IOException) {
-                log.debug("XdagClient: Can't connect to " + host + ":" + port + " (" + e.getMessage() + ")");
-            } else {
-                log.error("message:" + e.getMessage(), e);
-            }
+            log.error("message:" + e.getMessage(), e);
         }
     }
 
     public ChannelFuture connectAsync(
             String host, int port, XdagChannelInitializer xdagChannelInitializer) {
+        if (!isAcceptable(new InetSocketAddress(host, port))) {
+            return null;
+        }
         Bootstrap b = new Bootstrap();
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
@@ -105,4 +111,28 @@ public class XdagClient {
         }
         return node;
     }
+
+    public boolean isAcceptable(InetSocketAddress address) {
+        //TODO res = netDBManager.canAccept(address);
+
+        // 默认空为允许所有连接
+        if (whilelist.size() != 0) {
+            return whilelist.contains(address);
+        }
+
+        return true;
+    }
+
+    private void initWhiteIPs() {
+        List<String> ipList = config.getNodeSpec().getWhiteIPList();
+        for (String ip : ipList) {
+            String[] ips = ip.split(":");
+            whilelist.add(new InetSocketAddress(ips[0], Integer.parseInt(ips[1])));
+        }
+    }
+
+    public void addWhilteIP(String host, int port) {
+        whilelist.add(new InetSocketAddress(host, port));
+    }
+
 }

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
 
 import io.xdag.config.Config;
@@ -29,6 +30,7 @@ import io.xdag.crypto.jni.Native;
 import org.junit.Before;
 
 public class NetDBManagerTest {
+
     Config config = new DevnetConfig();
 
     @Before

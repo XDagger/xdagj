@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.consensus;
 
 import io.xdag.core.XdagField;
@@ -29,6 +30,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class Task {
+
     @Getter
     @Setter
     private XdagField[] task;

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 import org.jupnp.model.meta.LocalDevice;
@@ -30,6 +31,7 @@ import org.jupnp.registry.Registry;
 import org.jupnp.registry.RegistryListener;
 
 public class XdagRegistryListener implements RegistryListener {
+
     /**
      * Called as soon as possible after a device has been discovered.
      * <p>
@@ -46,7 +48,7 @@ public class XdagRegistryListener implements RegistryListener {
      * </p>
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   A validated and hydrated device metadata graph, with anemic service metadata.
+     * @param device A validated and hydrated device metadata graph, with anemic service metadata.
      */
     @Override
     public void remoteDeviceDiscoveryStarted(Registry registry, RemoteDevice device) {
@@ -61,8 +63,8 @@ public class XdagRegistryListener implements RegistryListener {
      * </p>
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   A validated and hydrated device metadata graph, with anemic service metadata.
-     * @param ex       The reason why service metadata could not be initialized, or <code>null</code> if service
+     * @param device A validated and hydrated device metadata graph, with anemic service metadata.
+     * @param ex The reason why service metadata could not be initialized, or <code>null</code> if service
      */
     @Override
     public void remoteDeviceDiscoveryFailed(Registry registry, RemoteDevice device, Exception ex) {
@@ -73,7 +75,7 @@ public class XdagRegistryListener implements RegistryListener {
      * Called when complete metadata of a newly discovered device is available.
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   A validated and hydrated device metadata graph, with complete service metadata.
+     * @param device A validated and hydrated device metadata graph, with complete service metadata.
      */
     @Override
     public void remoteDeviceAdded(Registry registry, RemoteDevice device) {
@@ -88,7 +90,7 @@ public class XdagRegistryListener implements RegistryListener {
      * </p>
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   A validated and hydrated device metadata graph, with complete service metadata.
+     * @param device A validated and hydrated device metadata graph, with complete service metadata.
      */
     @Override
     public void remoteDeviceUpdated(Registry registry, RemoteDevice device) {
@@ -104,7 +106,7 @@ public class XdagRegistryListener implements RegistryListener {
      * </p>
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   A validated and hydrated device metadata graph, with complete service metadata.
+     * @param device A validated and hydrated device metadata graph, with complete service metadata.
      */
     @Override
     public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
@@ -115,7 +117,7 @@ public class XdagRegistryListener implements RegistryListener {
      * Called after you add your own device to the {@link Registry}.
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   The local device added to the {@link Registry}.
+     * @param device The local device added to the {@link Registry}.
      */
     @Override
     public void localDeviceAdded(Registry registry, LocalDevice device) {
@@ -129,7 +131,7 @@ public class XdagRegistryListener implements RegistryListener {
      * </p>
      *
      * @param registry The jUPnP registry of all devices and services know to the local UPnP stack.
-     * @param device   The local device removed from the {@link Registry}.
+     * @param device The local device removed from the {@link Registry}.
      */
     @Override
     public void localDeviceRemoved(Registry registry, LocalDevice device) {

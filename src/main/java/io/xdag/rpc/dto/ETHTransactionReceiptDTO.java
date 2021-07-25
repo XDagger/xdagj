@@ -21,23 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.rpc.dto;
 
-import io.xdag.core.Block;
+package io.xdag.rpc.dto;
 
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.rpc.utils.TypeConverter.toUnformattedJsonHex;
 import static io.xdag.utils.BytesUtils.EMPTY_BYTE_ARRAY;
 
+import io.xdag.core.Block;
+
 public class ETHTransactionReceiptDTO {
 
     public static final int BLOOM_BYTES = 256;
-    private byte[] data = new byte[BLOOM_BYTES];
     protected static final byte[] FAILED_STATUS = EMPTY_BYTE_ARRAY;
     protected static final byte[] PENDING_STATUS = new byte[]{0x02};
     protected static final byte[] SUCCESS_STATUS = new byte[]{0x01};
-
-
+    private byte[] data = new byte[BLOOM_BYTES];
     private String transactionHash;      // hash of the transaction.
     private String transactionIndex;     // integer of the transactions index position in the block.
     private String blockHash;            // hash of the block where this transaction was in.
@@ -57,9 +56,8 @@ public class ETHTransactionReceiptDTO {
 
         status = toQuantityJsonHex(SUCCESS_STATUS);
 
-        blockHash = toUnformattedJsonHex(block.getHash());
+        blockHash = toUnformattedJsonHex(block.getHash().toArray());
         blockNumber = toQuantityJsonHex(19);
-
 
         cumulativeGasUsed = toQuantityJsonHex(123);
         from = "0x88b221a282a64df608a820bae740425e5f439d1c";

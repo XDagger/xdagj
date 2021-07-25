@@ -21,23 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.db.store;
 
-import java.util.ArrayList;
-import java.util.List;
+package io.xdag.db.store;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class OrphanPool {
+
     public static final byte ORPHAN_PREFEX = 0x00;
-    /** size key */
+    /**
+     * size key
+     */
     private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
     // <hash,nexthash>
     private final KVSource<byte[], byte[]> orphanSource;
@@ -72,13 +76,13 @@ public class OrphanPool {
                     break;
                 }
                 // TODO:判断时间，这里出现过orphanSource获取key时为空的情况
-                if (orphanSource.get(an)==null){
+                if (orphanSource.get(an) == null) {
                     continue;
                 }
-                long time = BytesUtils.bytesToLong(orphanSource.get(an),0,true);
+                long time = BytesUtils.bytesToLong(orphanSource.get(an), 0, true);
                 if (time <= sendtime) {
                     addNum--;
-                    res.add(new Address(BytesUtils.subArray(an, 1, 32), XdagField.FieldType.XDAG_FIELD_OUT));
+                    res.add(new Address(Bytes32.wrap(an, 1), XdagField.FieldType.XDAG_FIELD_OUT));
                 }
             }
             return res;
@@ -93,7 +97,8 @@ public class OrphanPool {
     }
 
     public void addOrphan(Block block) {
-        orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow()), BytesUtils.longToBytes(block.getTimestamp(),true));
+        orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow().toArray()),
+                BytesUtils.longToBytes(block.getTimestamp(), true));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
         log.debug("orphan current size:" + currentsize);
 //        log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));

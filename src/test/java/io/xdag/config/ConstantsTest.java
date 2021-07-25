@@ -21,12 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config;
+
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.utils.BasicUtils;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
 public class ConstantsTest {
 

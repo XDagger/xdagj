@@ -43,7 +43,7 @@ public class StatsBlock {
         return "StatsBlock{" +
                 "height=" + height +
                 ", time=" + time +
-                ", hash=" + hash2Address(hash) +
+                ", hash=" + hash2Address(Bytes32.wrap(hash)) +
                 ", difficulty=" + difficulty.toString(16) +
                 '}';
     }

@@ -21,8 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jupnp.DefaultUpnpServiceConfiguration;
 import org.jupnp.UpnpServiceConfiguration;
@@ -35,14 +41,27 @@ import org.jupnp.model.message.UpnpHeaders;
 import org.jupnp.model.meta.RemoteDeviceIdentity;
 import org.jupnp.model.meta.RemoteService;
 import org.jupnp.model.types.ServiceType;
-import org.jupnp.transport.impl.*;
+import org.jupnp.transport.impl.DatagramIOConfigurationImpl;
+import org.jupnp.transport.impl.DatagramIOImpl;
+import org.jupnp.transport.impl.DatagramProcessorImpl;
+import org.jupnp.transport.impl.GENAEventProcessorImpl;
+import org.jupnp.transport.impl.MulticastReceiverConfigurationImpl;
+import org.jupnp.transport.impl.MulticastReceiverImpl;
+import org.jupnp.transport.impl.NetworkAddressFactoryImpl;
+import org.jupnp.transport.impl.SOAPActionProcessorImpl;
 import org.jupnp.transport.impl.jetty.StreamClientConfigurationImpl;
-import org.jupnp.transport.spi.*;
-
-import java.util.concurrent.*;
+import org.jupnp.transport.spi.DatagramIO;
+import org.jupnp.transport.spi.DatagramProcessor;
+import org.jupnp.transport.spi.GENAEventProcessor;
+import org.jupnp.transport.spi.MulticastReceiver;
+import org.jupnp.transport.spi.NetworkAddressFactory;
+import org.jupnp.transport.spi.SOAPActionProcessor;
+import org.jupnp.transport.spi.StreamClient;
+import org.jupnp.transport.spi.StreamServer;
 
 @Slf4j
 public class XdagNatServiceConfiguration implements UpnpServiceConfiguration {
+
     private final ThreadPoolExecutor executorService;
     private final Namespace namespace;
 
@@ -86,6 +105,7 @@ public class XdagNatServiceConfiguration implements UpnpServiceConfiguration {
         this.streamListenPort = streamListenPort;
         this.multicastResponsePort = multicastResponsePort;
     }
+
     /**
      * @return A new instance of the {@link NetworkAddressFactory} interface.
      */
@@ -94,6 +114,7 @@ public class XdagNatServiceConfiguration implements UpnpServiceConfiguration {
     public NetworkAddressFactory createNetworkAddressFactory() {
         return new NetworkAddressFactoryImpl(streamListenPort, multicastResponsePort);
     }
+
     /**
      * @return The shared implementation of {@link DatagramProcessor}.
      */

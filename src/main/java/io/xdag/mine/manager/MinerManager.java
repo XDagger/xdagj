@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.manager;
 
 import io.xdag.consensus.PoW;
@@ -36,7 +37,9 @@ public interface MinerManager {
 
     Map<ByteArrayWrapper, Miner> getActivateMiners();
 
-    /** 接收到share */
+    /**
+     * 接收到share
+     */
     void onNewShare(MinerChannel channel, Message msg);
 
     void setPoW(PoW pow);

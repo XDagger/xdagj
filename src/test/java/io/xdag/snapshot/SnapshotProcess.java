@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;
@@ -148,9 +149,9 @@ public class SnapshotProcess {
         // 1. add address block
         result = blockchain.tryToConnect(addressBlock);
         assertSame(result, IMPORTED_BEST);
-        assertArrayEquals(addressBlock.getHashLow(), stats.getTop());
+        assertArrayEquals(addressBlock.getHashLow().toArray(), stats.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
-        byte[] ref = addressBlock.getHashLow();
+        Bytes32 ref = addressBlock.getHashLow();
 
         // 2. create 99 mainblocks + 1 extrablock
         for (int i = 1; i <= 100; i++) {
@@ -163,9 +164,9 @@ public class SnapshotProcess {
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
             assertSame(result, IMPORTED_BEST);
-            assertArrayEquals(extraBlock.getHashLow(), stats.getTop());
-            Block storedExtraBlock = blockchain.getBlockByHash(stats.getTop(), false);
-            assertArrayEquals(extraBlock.getHashLow(), storedExtraBlock.getHashLow());
+            assertArrayEquals(extraBlock.getHashLow().toArray(), stats.getTop());
+            Block storedExtraBlock = blockchain.getBlockByHash(Bytes32.wrap(stats.getTop()), false);
+            assertArrayEquals(extraBlock.getHashLow().toArray(), storedExtraBlock.getHashLow().toArray());
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
@@ -187,7 +188,8 @@ public class SnapshotProcess {
     public void saveStatsBlock(List<Block> mains) {
         for (int i = 0; i < mains.size(); i++) {
             Block block = mains.get(i);
-            StatsBlock statsBlock = new StatsBlock(block.getInfo().getHeight(), block.getTimestamp(), block.getHash(),
+            StatsBlock statsBlock = new StatsBlock(block.getInfo().getHeight(), block.getTimestamp(),
+                    block.getHash().toArray(),
                     block.getInfo().getDifficulty());
             snapshotChainStore.saveSnaptshotStatsBlock(i, statsBlock);
         }
@@ -198,15 +200,16 @@ public class SnapshotProcess {
         for (Block block : blocks) {
 
             BalanceData balanceData = new BalanceData(block.getInfo().getAmount(), block.getTimestamp(),
-                    block.getHash(), block.getInfo().getFlags());
+                    block.getHash().toArray(), block.getInfo().getFlags());
             if (i < 30) {
                 snapshotChainStore
-                        .saveSnapshotUnit(block.getHash(),
-                                new SnapshotUnit(null, balanceData, block.getXdagBlock().getData(), block.getHash()));
+                        .saveSnapshotUnit(block.getHash().toArray(),
+                                new SnapshotUnit(null, balanceData, block.getXdagBlock().getData().toArray(),
+                                        block.getHash().toArray()));
                 // TODO: 部分区块用pubkey存储，部分用整个data存储，交易相关的要涉及输入pubkey跟输入data两种
             } else {
-                snapshotChainStore.saveSnapshotUnit(block.getHash(),
-                        new SnapshotUnit(pubkey.toByteArray(), balanceData, null, block.getHash()));
+                snapshotChainStore.saveSnapshotUnit(block.getHash().toArray(),
+                        new SnapshotUnit(pubkey.toByteArray(), balanceData, null, block.getHash().toArray()));
             }
             i++;
         }
@@ -231,7 +234,7 @@ public class SnapshotProcess {
         assertEquals(blockchain.getXdagTopStatus().getTopDiff(), endDiff);
     }
 
-    @Test
+    //    @Test
     public void getBlocksFromSnapshot() throws Exception {
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         System.out.println(snapshotUnits.size());
@@ -243,7 +246,8 @@ public class SnapshotProcess {
         // init snapshot
         blockchain.initSnapshotChain();
         blockchain.initStats();
-        System.out.println(blockchain.getBlockByHash(blockchain.getXdagTopStatus().getTop(), false).getInfo());
+        System.out.println(
+                blockchain.getBlockByHash(Bytes32.wrap(blockchain.getXdagTopStatus().getTop()), false).getInfo());
         System.out.println(Hex.toHexString(blockchain.getXdagTopStatus().getTop()));
         System.out.println(blockchain.getXdagTopStatus().getTopDiff().toString(16));
         // add new block

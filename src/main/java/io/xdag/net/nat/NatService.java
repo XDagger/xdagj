@@ -21,17 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NatService extends Service {
-
 
     private final Optional<NatManager> maybeNatManager;
     private final boolean isDiscoveryEnabled;
@@ -44,18 +43,6 @@ public class NatService extends Service {
         this.p2pPort = p2pPort;
         this.isDiscoveryEnabled = isDiscoveryEnabled;
         this.maybeNatManager = maybeNatManager;
-    }
-
-    public NatService(
-            final NatConfiguration natConfiguration,
-            final int p2pPort,
-            final boolean isDiscoveryEnabled) {
-        this(
-                p2pPort,
-                isDiscoveryEnabled,
-                natConfiguration.getNatMethod().equals(NatMethod.UPNP)
-                        ? Optional.of(new NatManager())
-                        : Optional.empty());
     }
 
     @Override

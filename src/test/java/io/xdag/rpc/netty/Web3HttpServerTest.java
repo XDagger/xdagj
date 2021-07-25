@@ -1,4 +1,30 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package io.xdag.rpc.netty;
+
+import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,23 +33,69 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.cors.CorsConfiguration;
 import io.xdag.rpc.modules.ModuleDescription;
-import okhttp3.*;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.security.cert.X509Certificate;
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class Web3HttpServerTest {
+
     public static final String APPLICATION_JSON = "application/json";
     private static final JsonNodeFactory JSON_NODE_FACTORY = JsonNodeFactory.instance;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private static OkHttpClient getUnsafeOkHttpClient() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
+                                String authType) {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
+                                String authType) {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0];
+                        }
+                    }
+            };
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            // Create an ssl socket factory with our all-trusting manager
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            return new OkHttpClient.Builder()
+                    .sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0])
+                    .hostnameVerifier((hostname, session) -> true)
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Test
     public void smokeTestUsingJsonContentType() throws Exception {
@@ -69,7 +141,8 @@ public class Web3HttpServerTest {
         smokeTest(contentType, host, InetAddress.getLoopbackAddress(), new ArrayList<>());
     }
 
-    private void smokeTest(String contentType, String host, InetAddress rpcAddress, List<String> rpcHost) throws Exception {
+    private void smokeTest(String contentType, String host, InetAddress rpcAddress, List<String> rpcHost)
+            throws Exception {
         Web3 web3Mock = Mockito.mock(Web3.class);
         String mockResult = "output";
         Mockito.when(web3Mock.web3_sha3(Mockito.anyString())).thenReturn(mockResult);
@@ -79,10 +152,12 @@ public class Web3HttpServerTest {
 
         int randomPort = 9999;//new ServerSocket(0).getLocalPort();
 
-        List<ModuleDescription> filteredModules = Collections.singletonList(new ModuleDescription("web3", "1.0", true, Collections.emptyList(), Collections.emptyList()));
+        List<ModuleDescription> filteredModules = Collections.singletonList(
+                new ModuleDescription("web3", "1.0", true, Collections.emptyList(), Collections.emptyList()));
         JsonRpcWeb3FilterHandler filterHandler = new JsonRpcWeb3FilterHandler("*", rpcAddress, rpcHost);
         JsonRpcWeb3ServerHandler serverHandler = new JsonRpcWeb3ServerHandler(web3Mock, filteredModules);
-        Web3HttpServer server = new Web3HttpServer(InetAddress.getLoopbackAddress(), randomPort, 0, Boolean.TRUE, mockCorsConfiguration, filterHandler, serverHandler);
+        Web3HttpServer server = new Web3HttpServer(InetAddress.getLoopbackAddress(), randomPort, 0, Boolean.TRUE,
+                mockCorsConfiguration, filterHandler, serverHandler);
         server.start();
         try {
             Response response = sendJsonRpcMessage(randomPort, contentType, host);
@@ -107,49 +182,12 @@ public class Web3HttpServerTest {
         jsonRpcRequestProperties.put("params", JSON_NODE_FACTORY.arrayNode().add("value"));
 
         RequestBody requestBody = RequestBody.Companion.create(JSON_NODE_FACTORY.objectNode()
-                .setAll(jsonRpcRequestProperties).toString(),MediaType.parse(contentType));
+                .setAll(jsonRpcRequestProperties).toString(), MediaType.parse(contentType));
         URL url = new URL("http", "localhost", port, "/");
         Request request = new Request.Builder().url(url)
                 .addHeader("Host", host)
 //                .addHeader("Accept-Encoding", "identity")
                 .post(requestBody).build();
         return getUnsafeOkHttpClient().newCall(request).execute();
-    }
-
-    private static OkHttpClient getUnsafeOkHttpClient() {
-        try {
-            // Create a trust manager that does not validate certificate chains
-            final TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        @Override
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain,
-                                                       String authType) {
-                        }
-
-                        @Override
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain,
-                                                       String authType) {
-                        }
-
-                        @Override
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                            return new X509Certificate[0];
-                        }
-                    }
-            };
-            // Install the all-trusting trust manager
-            final SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            // Create an ssl socket factory with our all-trusting manager
-            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-
-            return new OkHttpClient.Builder()
-                    .sslSocketFactory(sslSocketFactory,(X509TrustManager)trustAllCerts[0])
-                    .hostnameVerifier((hostname, session) -> true)
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.xdag.Kernel;
-import io.xdag.config.Config;
 import io.xdag.crypto.jni.Native;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
@@ -39,6 +39,7 @@ import org.apache.commons.codec.binary.Hex;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
+
     private final XdagChannel channel;
     private final Kernel kernel;
     private boolean isServer;

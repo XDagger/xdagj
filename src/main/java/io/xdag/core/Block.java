@@ -30,7 +30,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
-import static io.xdag.utils.FastByteComparisons.equalBytes;
 
 import io.xdag.config.Config;
 import io.xdag.crypto.ECDSASignature;
@@ -39,8 +38,8 @@ import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,9 +51,12 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 @Getter
@@ -85,7 +87,7 @@ public class Block implements Cloneable {
     /**
      * 主块的nonce记录矿工地址跟nonce*
      */
-    private byte[] nonce;
+    private Bytes32 nonce;
     private XdagBlock xdagBlock;
     private boolean parsed;
     private boolean isOurs;
@@ -204,15 +206,15 @@ public class Block implements Cloneable {
         if (xdagBlock == null) {
             xdagBlock = getXdagBlock();
         }
-        return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
+        return Arrays.reverse(Hash.hashTwice(Bytes.wrap(xdagBlock.getData())).toArray());
     }
 
     /**
      * 重计算 避免矿工挖矿发送share时直接更新 hash
      **/
-    public byte[] recalcHash() {
+    public Bytes32 recalcHash() {
         xdagBlock = new XdagBlock(toBytes());
-        return Arrays.reverse(Hash.hashTwice(xdagBlock.getData()));
+        return Bytes32.wrap(Hash.hashTwice(Bytes.wrap(xdagBlock.getData())).reverse());
     }
 
     /**
@@ -226,11 +228,15 @@ public class Block implements Cloneable {
             this.info = new BlockInfo();
         }
         this.info.setHash(calcHash());
-        byte[] header = xdagBlock.getField(0).getData();
-        this.transportHeader = BytesUtils.bytesToLong(header, 0, true);
-        this.info.type = BytesUtils.bytesToLong(header, 8, true);
-        this.info.setTimestamp(BytesUtils.bytesToLong(header, 16, true));
-        this.info.setFee(BytesUtils.bytesToLong(BytesUtils.subArray(header, 24, 8), 0, true));
+        Bytes32 header = Bytes32.wrap(xdagBlock.getField(0).getData());
+//        this.transportHeader = BytesUtils.bytesToLong(header, 0, true);
+        this.transportHeader = header.getLong(0, ByteOrder.LITTLE_ENDIAN);
+//        this.info.type = BytesUtils.bytesToLong(header, 8, true);
+        this.info.type = header.getLong(8, ByteOrder.LITTLE_ENDIAN);
+//        this.info.setTimestamp(BytesUtils.bytesToLong(header, 16, true));
+        this.info.setTimestamp(header.getLong(16, ByteOrder.LITTLE_ENDIAN));
+//        this.info.setFee(BytesUtils.bytesToLong(BytesUtils.subArray(header, 24, 8), 0, true));
+        this.info.setFee(header.getLong(24, ByteOrder.LITTLE_ENDIAN));
         for (int i = 1; i < XdagBlock.XDAG_BLOCK_FIELDS; i++) {
             XdagField field = xdagBlock.getField(i);
             if (field == null) {
@@ -244,7 +250,7 @@ public class Block implements Cloneable {
                     outputs.add(new Address(field));
                     break;
                 case XDAG_FIELD_REMARK:
-                    this.info.setRemark(field.getData());
+                    this.info.setRemark(field.getData().toArray());
                     break;
                 case XDAG_FIELD_SIGN_IN:
                 case XDAG_FIELD_SIGN_OUT:
@@ -259,8 +265,8 @@ public class Block implements Cloneable {
                             if (j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType()
                                     .ordinal()) {
                                 signo_s = j;
-                                r = Numeric.toBigInt(xdagBlock.getField(i).getData());
-                                s = Numeric.toBigInt(xdagBlock.getField(signo_s).getData());
+                                r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
+                                s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
                                 ECDSASignature tmp = new ECDSASignature(r, s);
                                 if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
                                     insigs.put(tmp, i);
@@ -271,16 +277,16 @@ public class Block implements Cloneable {
                         }
                     }
                     if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                        this.nonce = xdagBlock.getField(i).getData();
+                        this.nonce = Bytes32.wrap(xdagBlock.getField(i).getData());
                         continue;
                     }
                     break;
                 case XDAG_FIELD_PUBLIC_KEY_0:
                 case XDAG_FIELD_PUBLIC_KEY_1:
-                    byte[] key = xdagBlock.getField(i).getData();
+                    Bytes key = xdagBlock.getField(i).getData();
                     boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
-                    //ECPoint point = Sign.decompressKey(bytesToBigInteger(key), yBit);
-                    ECPoint point = Sign.decompressKey(Numeric.toBigInt(key), yBit);
+//                    ECPoint point = Sign.decompressKey(bytesToBigInteger(key), yBit);
+                    ECPoint point = Sign.decompressKey(key.toUnsignedBigInteger(), yBit);
                     // 解析成非压缩去前缀 公钥
                     byte[] encodePub = point.getEncoded(false);
                     ECKeyPair ecKeyPair = new ECKeyPair(null,
@@ -314,7 +320,8 @@ public class Block implements Cloneable {
         for (int i = 0; i < res; i++) {
             encoder.writeField(new byte[32]);
         }
-        encoder.writeField(Objects.requireNonNullElseGet(nonce, () -> new byte[32]));
+        Bytes32 nonceNotNull = Objects.requireNonNullElse(nonce, Bytes32.ZERO);
+        encoder.writeField(nonceNotNull.toArray());
         return encoder.toBytes();
     }
 
@@ -328,7 +335,7 @@ public class Block implements Cloneable {
         all.addAll(inputs);
         all.addAll(outputs);
         for (Address link : all) {
-            encoder.writeField(Arrays.reverse(link.getData()));
+            encoder.writeField(link.getData().reverse().toArray());
         }
         if (info.getRemark() != null) {
             encoder.write(info.getRemark());
@@ -372,9 +379,9 @@ public class Block implements Cloneable {
         byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
 //        log.debug("sign digest:{}", Hex.toHexString(digest));
-        byte[] hash = Hash.hashTwice(digest);
+        Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
 //        log.debug("sign hash:{}", Hex.toHexString(hash));
-        ECDSASignature signature = ecKey.sign(hash);
+        ECDSASignature signature = ecKey.sign(hash.toArray());
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
         } else {
@@ -388,24 +395,26 @@ public class Block implements Cloneable {
     public List<ECKeyPair> verifiedKeys() {
         List<ECKeyPair> keys = getPubKeys();
         List<ECKeyPair> res = new ArrayList<>();
-        byte[] digest;
-        byte[] hash;
+        Bytes digest;
+        Bytes32 hash;
         for (ECDSASignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 1);
             for (ECKeyPair ecKey : keys) {
-                byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
-                hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
-                if (ECKeyPair.verify(hash, sig.toCanonicalised(), pubkeyBytes)) {
+                byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
+//                hash = Hash.hashTwice(Bytes.wrap(BytesUtils.merge(digest, pubkeyBytes)));
+                hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
+                if (ECKeyPair.verify(hash.toArray(), sig.toCanonicalised(), pubkeyBytes)) {
                     res.add(ecKey);
                 }
             }
         }
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKeyPair ecKey : keys) {
-            byte[] pubkeyBytes = ECKeyPair.compressPubKey(ecKey.getPublicKey());
-            hash = Hash.hashTwice(BytesUtils.merge(digest, pubkeyBytes));
+            byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
+//            hash = Hash.hashTwice(Bytes.wrap(BytesUtils.merge(digest, pubkeyBytes)));
+            hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
 
-            if (ECKeyPair.verify(hash, this.getOutsig().toCanonicalised(), pubkeyBytes)) {
+            if (ECKeyPair.verify(hash.toArray(), this.getOutsig().toCanonicalised(), pubkeyBytes)) {
                 res.add(ecKey);
             }
         }
@@ -425,20 +434,21 @@ public class Block implements Cloneable {
         return i;
     }
 
-    public byte[] getHash() {
+    public Bytes32 getHash() {
         if (this.info.getHash() == null) {
             this.info.setHash(calcHash());
         }
-        return this.info.getHash();
+        return Bytes32.wrap(this.info.getHash());
     }
 
-    public byte[] getHashLow() {
+    public MutableBytes32 getHashLow() {
         if (info.getHashlow() == null) {
-            byte[] hashLow = new byte[32];
-            System.arraycopy(getHash(), 8, hashLow, 8, 24);
-            info.setHashlow(hashLow);
+            MutableBytes32 hashLow = MutableBytes32.create();
+//            System.arraycopy(getHash(), 8, hashLow, 8, 24);
+            hashLow.set(8, getHash().slice(8, 24));
+            info.setHashlow(hashLow.toArray());
         }
-        return info.getHashlow();
+        return MutableBytes32.wrap(info.getHashlow());
     }
 
     public List<Address> getOutputs() {
@@ -453,12 +463,12 @@ public class Block implements Cloneable {
         return pubKeys;
     }
 
-    public byte[] getNonce() {
+    public Bytes32 getNonce() {
         return nonce;
     }
 
     public ECDSASignature getOutsig() {
-        return outsig.toCanonicalised();
+        return outsig == null ? null : outsig.toCanonicalised();
     }
 
     public Map<ECDSASignature, Integer> getInsigs() {
@@ -467,23 +477,26 @@ public class Block implements Cloneable {
 
     @Override
     public String toString() {
-        return String
-                .format("Block info:[Hash:%s][Time:%s]", Hex.toHexString(getHashLow()),
-                        Long.toHexString(getTimestamp()));
+        return String.format("Block info:[Hash:{%s}][Time:{%s}]", getHashLow().toHexString(),
+                Long.toHexString(getTimestamp()));
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == null) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Block otherB = (Block) o;
-        return equalBytes(this.getHashLow(), otherB.getHashLow());
+
+        Block block = (Block) o;
+        return Objects.equals(getHashLow(), block.getHashLow());
     }
 
     @Override
     public int hashCode() {
-        return new ByteArrayWrapper(this.getHashLow()).hashCode();
+        return new ByteArrayWrapper(this.getHashLow().toArray()).hashCode();
     }
 
     public long getTimestamp() {
@@ -501,17 +514,21 @@ public class Block implements Cloneable {
     /**
      * 根据length获取前length个字段的数据 主要用于签名*
      */
-    public byte[] getSubRawData(int length) {
-        byte[] data = getXdagBlock().getData();
-        byte[] res = new byte[512];
-        System.arraycopy(data, 0, res, 0, (length + 1) * 32);
+    public MutableBytes getSubRawData(int length) {
+        Bytes data = getXdagBlock().getData();
+//        byte[] res = new byte[512];
+        MutableBytes res = MutableBytes.create(512);
+//        System.arraycopy(data, 0, res, 0, (length + 1) * 32);
+        res.set(0, data.slice(0, (length + 1) * 32));
         for (int i = length + 1; i < 16; i++) {
-            long type = BytesUtils.bytesToLong(data, 8, true);
+//            long type = BytesUtils.bytesToLong(data, 8, true);
+            long type = data.getLong(8, ByteOrder.LITTLE_ENDIAN);
             byte typeB = (byte) (type >> (i << 2) & 0xf);
             if (XDAG_FIELD_SIGN_IN.asByte() == typeB || XDAG_FIELD_SIGN_OUT.asByte() == typeB) {
                 continue;
             }
-            System.arraycopy(data, (i) * 32, res, (i) * 32, 32);
+//            System.arraycopy(data, (i) * 32, res, (i) * 32, 32);
+            res.set((i) * 32, data.slice((i) * 32, 32));
         }
         return res;
     }

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 import io.xdag.crypto.ECKeyPair;
@@ -28,6 +29,7 @@ import io.xdag.listener.Listener;
 import io.xdag.utils.ByteArrayWrapper;
 import java.util.List;
 import java.util.Map;
+import org.apache.tuweni.bytes.Bytes32;
 
 public interface Blockchain {
 
@@ -35,13 +37,11 @@ public interface Blockchain {
 
     Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark);
 
-    Block getBlockByHash(byte[] hash, boolean isRaw);
+    Block getBlockByHash(Bytes32 hash, boolean isRaw);
 
     Block getBlockByHeight(long height);
 
     void checkNewMain();
-
-    long loadBlockchain(String srcFilePath);
 
     List<Block> listMainBlocks(int count);
 
@@ -50,6 +50,7 @@ public interface Blockchain {
     Map<ByteArrayWrapper, Integer> getMemOurBlocks();
 
     XdagStats getXdagStats();
+
     XdagTopStatus getXdagTopStatus();
 
     long getSupply(long nmain);

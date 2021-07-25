@@ -21,17 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.dto;
-
-import lombok.Data;
-
-import java.util.Collections;
-import java.util.List;
 
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 
+import java.util.Collections;
+import java.util.List;
+import lombok.Data;
+
 @Data
 public class ETHBlockResultDTO {
+
     private final String number; // QUANTITY - the block number. null when its pending block.
     private final String hash; // DATA, 32 Bytes - hash of the block. null when its pending block.
     private final String parentHash; // DATA, 32 Bytes - hash of the parent block.
@@ -57,16 +58,16 @@ public class ETHBlockResultDTO {
             long timestamp,
             List<Object> transactions,
             List<String> uncles
-            ) {
-        this.number = toQuantityJsonHex(12) ;
+    ) {
+        this.number = toQuantityJsonHex(12);
         this.hash = "0x88b221a282a64df608a820bae740425e5f439d1c";
         this.parentHash = "0x88b221a282a64df608a820bae740425e5f439d1c";
         this.sha3Uncles = "0x88b221a282a64df608a820bae740425e5f439d1c";
-        this.logsBloom =  null;
+        this.logsBloom = null;
         this.transactionsRoot = "0x88b221a282a64df608a820bae740425e5f439d1c";
         this.stateRoot = "0x88b221a282a64df608a820bae740425e5f439d1c";
         this.receiptsRoot = "0x88b221a282a64df608a820bae740425e5f439d1c";
-        this.miner =  null;
+        this.miner = null;
 
         this.difficulty = "0x0";
         this.totalDifficulty = "0x0";

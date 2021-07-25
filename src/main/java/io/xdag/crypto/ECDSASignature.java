@@ -21,18 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
-import org.bouncycastle.asn1.*;
-import org.bouncycastle.util.Properties;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.DERSequenceGenerator;
+import org.bouncycastle.asn1.DLSequence;
+import org.bouncycastle.util.Properties;
 
 public class ECDSASignature {
+
     public final BigInteger r;
     public final BigInteger s;
     public byte v;
@@ -40,6 +45,54 @@ public class ECDSASignature {
     public ECDSASignature(BigInteger r, BigInteger s) {
         this.r = r;
         this.s = s;
+    }
+
+    public static ECDSASignature decodeFromDER(byte[] bytes) {
+        ASN1InputStream decoder = null;
+        try {
+            // BouncyCastle by default is strict about parsing ASN.1 integers. We relax this check, because some
+            // Bitcoin signatures would not parse.
+            Properties.setThreadOverride("org.bouncycastle.asn1.allow_unsafe_integer", true);
+            decoder = new ASN1InputStream(bytes);
+            final ASN1Primitive seqObj = decoder.readObject();
+            if (seqObj == null) {
+                throw new IllegalArgumentException("Reached past end of ASN.1 stream.");
+            }
+            if (!(seqObj instanceof DLSequence)) {
+                throw new IllegalArgumentException("Read unexpected class: " + seqObj.getClass().getName());
+            }
+            final DLSequence seq = (DLSequence) seqObj;
+            ASN1Integer r, s;
+            try {
+                r = (ASN1Integer) seq.getObjectAt(0);
+                s = (ASN1Integer) seq.getObjectAt(1);
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException(e);
+            }
+            // OpenSSL deviates from the DER spec by interpreting these values as unsigned, though they should not be
+            // Thus, we always use the positive versions. See: http://r6.ca/blog/20111119T211504Z.html
+            return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        } finally {
+            if (decoder != null) {
+                try {
+                    decoder.close();
+                } catch (IOException x) {
+                }
+            }
+            Properties.removeThreadOverride("org.bouncycastle.asn1.allow_unsafe_integer");
+        }
+    }
+
+    private static ECDSASignature fromComponents(byte[] r, byte[] s) {
+        return new ECDSASignature(new BigInteger(1, r), new BigInteger(1, s));
+    }
+
+    public static ECDSASignature fromComponents(byte[] r, byte[] s, byte v) {
+        ECDSASignature signature = fromComponents(r, s);
+        signature.v = v;
+        return signature;
     }
 
     /**
@@ -55,38 +108,6 @@ public class ECDSASignature {
         }
     }
 
-    public static ECDSASignature decodeFromDER(byte[] bytes)  {
-        ASN1InputStream decoder = null;
-        try {
-            // BouncyCastle by default is strict about parsing ASN.1 integers. We relax this check, because some
-            // Bitcoin signatures would not parse.
-            Properties.setThreadOverride("org.bouncycastle.asn1.allow_unsafe_integer", true);
-            decoder = new ASN1InputStream(bytes);
-            final ASN1Primitive seqObj = decoder.readObject();
-            if (seqObj == null)
-                throw new IllegalArgumentException("Reached past end of ASN.1 stream.");
-            if (!(seqObj instanceof DLSequence))
-                throw new IllegalArgumentException("Read unexpected class: " + seqObj.getClass().getName());
-            final DLSequence seq = (DLSequence) seqObj;
-            ASN1Integer r, s;
-            try {
-                r = (ASN1Integer) seq.getObjectAt(0);
-                s = (ASN1Integer) seq.getObjectAt(1);
-            } catch (ClassCastException e) {
-                throw new IllegalArgumentException(e);
-            }
-            // OpenSSL deviates from the DER spec by interpreting these values as unsigned, though they should not be
-            // Thus, we always use the positive versions. See: http://r6.ca/blog/20111119T211504Z.html
-            return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        } finally {
-            if (decoder != null)
-                try { decoder.close(); } catch (IOException x) {}
-            Properties.removeThreadOverride("org.bouncycastle.asn1.allow_unsafe_integer");
-        }
-    }
-
     protected ByteArrayOutputStream derByteStream() throws IOException {
         // Usually 70-72 bytes.
         ByteArrayOutputStream bos = new ByteArrayOutputStream(72);
@@ -97,30 +118,20 @@ public class ECDSASignature {
         return bos;
     }
 
-    private static ECDSASignature fromComponents(byte[] r, byte[] s) {
-        return new ECDSASignature(new BigInteger(1, r), new BigInteger(1, s));
-    }
-
-    public static ECDSASignature fromComponents(byte[] r, byte[] s, byte v) {
-        ECDSASignature signature = fromComponents(r, s);
-        signature.v = v;
-        return signature;
-    }
-
     public byte[] toByteArray() {
         final byte fixedV = this.v >= 27 ? (byte) (this.v - 27) : this.v;
 
         return BytesUtils.merge(
                 Numeric.toBytesPadded(this.r, 32),
                 Numeric.toBytesPadded(this.s, 32),
-                new byte[] { fixedV });
+                new byte[]{fixedV});
     }
 
     /**
      * @return true if the S component is "low", that means it is below {@link
-     *     Sign#HALF_CURVE_ORDER}. See <a
-     *     href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">
-     *     BIP62</a>.
+     *         Sign#HALF_CURVE_ORDER}. See <a
+     *         href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">
+     *         BIP62</a>.
      */
     public boolean isCanonical() {
         return s.compareTo(Sign.HALF_CURVE_ORDER) <= 0;

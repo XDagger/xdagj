@@ -21,12 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import java.nio.file.FileSystems;
 import java.util.Locale;
 
 public class SystemUtil {
+
+    /**
+     * Returns whether the JVM is in 32-bit data model
+     */
+    public static boolean is32bitJvm() {
+        String model = System.getProperty("sun.arch.data.model");
+        return model != null && model.contains("32");
+    }
+
+    /**
+     * Returns the operating system name.
+     */
+    public static OsName getOsName() {
+        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+
+        if (os.contains("win")) {
+            return OsName.WINDOWS;
+        } else if (os.contains("linux")) {
+            return OsName.LINUX;
+        } else if (os.contains("mac")) {
+            return OsName.MACOS;
+        } else {
+            return OsName.UNKNOWN;
+        }
+    }
+
+    /**
+     * Returns the operating system architecture
+     */
+    public static String getOsArch() {
+        return System.getProperty("os.arch");
+    }
+
+    /**
+     * Check if current OS is POSIX compliant.
+     *
+     * @return whether current OS is POSIX compliant
+     */
+    public static boolean isPosix() {
+        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
+    }
 
     public enum OsName {
         WINDOWS("Windows"),
@@ -47,53 +89,6 @@ public class SystemUtil {
         public String toString() {
             return name;
         }
-    }
-
-    /**
-     * Returns whether the JVM is in 32-bit data model
-     *
-     * @return
-     */
-    public static boolean is32bitJvm() {
-        String model = System.getProperty("sun.arch.data.model");
-        return model != null && model.contains("32");
-    }
-
-    /**
-     * Returns the operating system name.
-     *
-     * @return
-     */
-    public static OsName getOsName() {
-        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-
-        if (os.contains("win")) {
-            return OsName.WINDOWS;
-        } else if (os.contains("linux")) {
-            return OsName.LINUX;
-        } else if (os.contains("mac")) {
-            return OsName.MACOS;
-        } else {
-            return OsName.UNKNOWN;
-        }
-    }
-
-    /**
-     * Returns the operating system architecture
-     *
-     * @return
-     */
-    public static String getOsArch() {
-        return System.getProperty("os.arch");
-    }
-
-    /**
-     * Check if current OS is POSIX compliant.
-     *
-     * @return whether current OS is POSIX compliant
-     */
-    public static boolean isPosix() {
-        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
     }
 
 }

@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message;
+
+import static io.xdag.config.Constants.SEND_PERIOD;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,8 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import static io.xdag.config.Constants.SEND_PERIOD;
-
 @Slf4j
 public class MessageQueue {
 
@@ -48,12 +49,12 @@ public class MessageQueue {
                     .namingPattern("MessageQueueTimer-" + cnt.getAndIncrement())
                     .daemon(true)
                     .build());
-    boolean isRunning = false;
     private final Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();
     private final Queue<Message> respondQueue = new ConcurrentLinkedQueue<>();
+    private final Channel channel;
+    boolean isRunning = false;
     private ChannelHandlerContext ctx = null;
     private ScheduledFuture<?> timerTask;
-    private final Channel channel;
 
     public MessageQueue(Channel channel) {
         this.channel = channel;
@@ -77,7 +78,9 @@ public class MessageQueue {
                 TimeUnit.MILLISECONDS);
     }
 
-    /** 每2毫秒执行一次 */
+    /**
+     * 每2毫秒执行一次
+     */
     private void nudgeQueue() {
         int n = Math.min(5, size());
         if (n == 0) {
@@ -89,10 +92,10 @@ public class MessageQueue {
             // log.debug("Sent to Wire with the message,msg:"+msg.getCommand());
             Message respondMsg = respondQueue.poll();
             Message requestMsg = requestQueue.poll();
-            if(respondMsg != null) {
+            if (respondMsg != null) {
                 ctx.write(respondMsg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             }
-            if(requestMsg != null) {
+            if (requestMsg != null) {
                 ctx.write(requestMsg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             }
 
@@ -126,10 +129,6 @@ public class MessageQueue {
 
     public boolean isRunning() {
         return isRunning;
-    }
-
-    public boolean isIdle() {
-        return size() == 0;
     }
 
     public int size() {

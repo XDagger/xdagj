@@ -21,16 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.miner;
 
 public enum MinerStates {
-    /** 未知 表示当前矿工还为注册 */
+
+    /**
+     * 未知 表示当前矿工还为注册
+     */
     MINER_UNKNOWN(0x00),
-    /** 活跃 矿工已经注册 且持续工作 */
+    /**
+     * 活跃 矿工已经注册 且持续工作
+     */
     MINER_ACTIVE(0x01),
-    /** 矿工已经注册，但是没有在挖矿 仅仅是因为还有未支付的余额所以保留档案 */
+    /**
+     * 矿工已经注册，但是没有在挖矿 仅仅是因为还有未支付的余额所以保留档案
+     */
     MINER_ARCHIVE(0x02),
-    /** 服务端 表示这个矿工对象是一个矿池 */
+    /**
+     * 服务端 表示这个矿工对象是一个矿池
+     */
     MINER_SERVICE(0x03);
 
     private final int cmd;

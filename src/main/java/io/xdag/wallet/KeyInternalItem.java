@@ -21,12 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.wallet;
 
 import io.xdag.crypto.ECKeyPair;
 
 public class KeyInternalItem {
+
     public ECKeyPair ecKey;
-    /** 0:even 1:odd */
+    /**
+     * 0:even 1:odd
+     */
     public boolean pubKeyParity;
 }

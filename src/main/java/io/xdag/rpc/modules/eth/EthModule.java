@@ -21,14 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.eth;
 
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.utils.TypeConverter;
 
-public class EthModule implements EthModuleTransaction, EthModuleWallet{
-
-
+public class EthModule implements EthModuleTransaction, EthModuleWallet {
 
     private final byte chainId;
 
@@ -59,7 +58,7 @@ public class EthModule implements EthModuleTransaction, EthModuleWallet{
 
 
     public String chainId() {
-        return TypeConverter.toJsonHex(new byte[] { chainId });
+        return TypeConverter.toJsonHex(new byte[]{chainId});
     }
 
     public String getCode(String address, String blockId) {

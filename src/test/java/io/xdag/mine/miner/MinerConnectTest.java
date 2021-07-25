@@ -21,7 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.miner;
+
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -48,21 +53,18 @@ import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class MinerConnectTest {
 
@@ -119,7 +121,57 @@ public class MinerConnectTest {
         wallet.delete();
     }
 
-    class MockMinerHandshakeHandler extends MinerHandShakeHandler{
+    @Test
+    public void testMinerConnect() {
+        Native.crypt_start();
+
+        ECKeyPair key = Keys.createEcKeyPair();
+        Block address = generateAddressBlock(config, key, new Date().getTime());
+        MutableBytes encoded = address.getXdagBlock().getData();
+        byte[] data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
+
+        ByteBuf buf = Unpooled.buffer();
+        buf.writeBytes(data);
+        ByteBuf buf1 = buf.duplicate();
+        //2、创建EmbeddedChannel，并添加一个MinerHandshakeHandler
+        EmbeddedChannel embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
+
+        //3、将数据写入 EmbeddedChannel
+        boolean writeInbound = embeddedChannel.writeInbound(buf1.retain());
+        assertTrue(writeInbound);
+        //4、标记 Channel 为已完成状态
+        boolean finish = embeddedChannel.finish();
+        assertTrue(finish);
+
+        //5、读取数据
+        ByteBuf readInbound = embeddedChannel.readInbound();
+        assertEquals(1, readInbound.readInt());
+
+        String fake = "0000000000000000510500000000000011100b07790100000000000000000000913c141ee4175a018a3412ba52f827d2fd67da7c0c581641e9f48a81e9dbd8f2486fac9f54560465e53a20f21940a335414f3949fc807f187fb57f51a48611220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        address = new Block(new XdagBlock(Hex.decode(fake)));
+        encoded = address.getXdagBlock().getData();
+        data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
+
+        buf.clear();
+        buf.writeBytes(data);
+        buf1 = buf.duplicate();
+        embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
+        //3、将数据写入 EmbeddedChannel
+        writeInbound = embeddedChannel.writeInbound(buf1.retain());
+        assertTrue(writeInbound);
+        //4、标记 Channel 为已完成状态
+        finish = embeddedChannel.finish();
+        assertTrue(finish);
+
+        //5、读取数据
+        readInbound = embeddedChannel.readInbound();
+        assertEquals(0, readInbound.readInt());
+
+        //释放资源
+        buf.release();
+    }
+
+    class MockMinerHandshakeHandler extends MinerHandShakeHandler {
 
         public MockMinerHandshakeHandler(MinerChannel channel, Kernel kernel) {
             super(channel, kernel);
@@ -137,7 +189,7 @@ public class MinerConnectTest {
         }
 
         @Override
-        public boolean initMiner(byte[] hash) {
+        public boolean initMiner(Bytes32 hash) {
             return true;
         }
 
@@ -160,7 +212,7 @@ public class MinerConnectTest {
                     System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
                     Block addressBlock = new Block(new XdagBlock(uncryptData));
                     ImportResult importResult = tryToConnect(addressBlock);
-                    if (importResult.getErrorInfo()!=null) {
+                    if (importResult.getErrorInfo() != null) {
                         byteBuf = Unpooled.buffer();
                         byteBuf.writeInt(0);
                         out.add(byteBuf.retain());
@@ -171,59 +223,7 @@ public class MinerConnectTest {
                     byteBuf.writeInt(1);
                     out.add(byteBuf.retain());
                 }
-            } else {
             }
         }
-    }
-
-    @Test
-    public void testMinerConnect() {
-        Native.crypt_start();
-
-        ECKeyPair key = Keys.createEcKeyPair();
-        Block address = generateAddressBlock(config, key, new Date().getTime());
-        byte[] encoded = address.getXdagBlock().getData();
-        byte[] data = Native.dfslib_encrypt_array(encoded,16,0);
-
-        ByteBuf buf = Unpooled.buffer();
-        buf.writeBytes(data);
-        ByteBuf buf1 = buf.duplicate();
-        //2、创建EmbeddedChannel，并添加一个MinerHandshakeHandler
-        EmbeddedChannel embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
-
-        //3、将数据写入 EmbeddedChannel
-        boolean writeInbound = embeddedChannel.writeInbound(buf1.retain());
-        assertTrue(writeInbound);
-        //4、标记 Channel 为已完成状态
-        boolean finish = embeddedChannel.finish();
-        assertTrue(finish);
-
-        //5、读取数据
-        ByteBuf readInbound =  embeddedChannel.readInbound();
-        assertEquals(1, readInbound.readInt());
-
-
-        String fake = "0000000000000000510500000000000011100b07790100000000000000000000913c141ee4175a018a3412ba52f827d2fd67da7c0c581641e9f48a81e9dbd8f2486fac9f54560465e53a20f21940a335414f3949fc807f187fb57f51a48611220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        address = new Block(new XdagBlock(Hex.decode(fake)));
-        encoded = address.getXdagBlock().getData();
-        data = Native.dfslib_encrypt_array(encoded,16,0);
-
-        buf.clear();
-        buf.writeBytes(data);
-        buf1 = buf.duplicate();
-        embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
-        //3、将数据写入 EmbeddedChannel
-        writeInbound = embeddedChannel.writeInbound(buf1.retain());
-        assertTrue(writeInbound);
-        //4、标记 Channel 为已完成状态
-        finish = embeddedChannel.finish();
-        assertTrue(finish);
-
-        //5、读取数据
-        readInbound =  embeddedChannel.readInbound();
-        assertEquals(0, readInbound.readInt());
-
-        //释放资源
-        buf.release();
     }
 }

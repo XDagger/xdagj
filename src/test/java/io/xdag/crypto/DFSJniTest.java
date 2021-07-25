@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
 import io.xdag.config.Config;
@@ -34,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class DFSJniTest {
+
     Config config;
 
     @Before

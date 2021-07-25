@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 
 @Data
 @Slf4j
@@ -76,7 +77,7 @@ public class SnapshotUnit {
         return "SnapshotUnit{" +
                 "pubkey=" + (pubkey == null ? null : Bytes.wrap(pubkey)) +
                 ", balanceData=" + balanceData +
-                ", hash=" + hash2Address(hash) +
+                ", hash=" + hash2Address(Bytes32.wrap(hash)) +
                 '}';
     }
 }

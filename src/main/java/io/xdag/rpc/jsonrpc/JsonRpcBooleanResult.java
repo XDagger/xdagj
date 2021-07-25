@@ -21,11 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public class JsonRpcBooleanResult extends JsonRpcResult {
+
     private final boolean result;
 
     public JsonRpcBooleanResult(boolean result) {

@@ -21,9 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
 
 public class JsonRpcInternalError extends JsonRpcError {
+
     public JsonRpcInternalError() {
         super(-32603, "Internal error.");
     }

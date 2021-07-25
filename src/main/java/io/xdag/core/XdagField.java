@@ -21,43 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
-import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
-
-import io.xdag.utils.BytesUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class XdagField {
+
     @Getter
     @Setter
     private FieldType type;
-    
+
     @Getter
     @Setter
-    private byte[] data;
+    private MutableBytes data;
 
     @Setter
     private long sum;
 
-    public XdagField(byte[] data) {
-        ByteBuffer buffer = ByteBuffer.allocate(32);
-        buffer.position(32 - data.length);
-        buffer.put(data);
-        this.data = buffer.array();
+//    public XdagField(byte[] data) {
+//        this.data = Bytes32.wrap(data);
+//    }
+
+    public XdagField(MutableBytes data) {
+        this.data = data;
     }
 
-    public XdagField() {
-        this.data = new byte[32];
-    }
+//    public XdagField() {
+//        this.data = MutableBytes.ZERO.copy();
+//    }
 
     public long getSum() {
         if (sum == 0) {
             for (int i = 0; i < 4; i++) {
-                sum += BytesUtils.bytesToLong(getData(), i * 8, true);
+//                sum += BytesUtils.bytesToLong(getData(), i * 8, true);
+                sum += getData().getLong(i * 8, ByteOrder.LITTLE_ENDIAN);
             }
         }
         return sum;
@@ -103,10 +106,6 @@ public class XdagField {
 
         public static FieldType fromByte(byte i) {
             return intToTypeMap.get((int) i);
-        }
-
-        public static boolean inRange(byte code) {
-            return code >= XDAG_FIELD_NONCE.asByte() && code <= XDAG_FIELD_RESERVE6.asByte();
         }
 
         public byte asByte() {

@@ -21,16 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import static org.junit.Assert.assertEquals;
 
-import java.math.BigDecimal;
-
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Test;
-
 import io.xdag.utils.exception.XdagOverFlowException;
+import java.math.BigDecimal;
+import org.junit.Test;
 
 public class BasicUtilsTest {
 
@@ -44,7 +42,7 @@ public class BasicUtilsTest {
         assertEquals(219902325556L, BasicUtils.xdag2amount(b.doubleValue()));
 
         BigDecimal c = BigDecimal.valueOf(100);
-        assertEquals(429496729600L,BasicUtils.xdag2amount(c.doubleValue()));
+        assertEquals(429496729600L, BasicUtils.xdag2amount(c.doubleValue()));
     }
 
     @Test(expected = XdagOverFlowException.class)
@@ -85,10 +83,8 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_diff2logTest() {
-        double res = BasicUtils.xdag_diff2log(
-                BasicUtils.getDiffByHash(
-                        Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8")));
-
+//        double res = BasicUtils.xdag_diff2log(
+//                BasicUtils.getDiffByHash(Bytes32.fromHexString("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
 //        System.out.println(res);
 
     }
@@ -101,7 +97,7 @@ public class BasicUtilsTest {
 
     @Test
     public void xdag_log_difficulty2hashrateTest() {
-        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
+//        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
         //System.out.println("this is res :" + res);
     }
 }

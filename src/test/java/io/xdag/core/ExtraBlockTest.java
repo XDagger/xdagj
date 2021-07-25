@@ -21,7 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
+
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
@@ -38,34 +48,24 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.text.ParseException;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.math.BigInteger;
-import java.text.ParseException;
-import java.util.Collections;
-import java.util.List;
-
-import static io.xdag.BlockBuilder.*;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.MapUtils.getHead;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class ExtraBlockTest {
 
+    public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
-
-    public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
-
     Config config = new DevnetConfig();
     Wallet wallet;
     String pwd;
@@ -111,33 +111,8 @@ public class ExtraBlockTest {
         kernel.setWallet(wallet);
     }
 
-
-    class MockBlockchain extends BlockchainImpl {
-
-        public MockBlockchain(Kernel kernel) {
-            super(kernel);
-        }
-
-        @Override
-        public void processExtraBlock() {
-            if (this.getMemOrphanPool().size() > expectedExtraBlocks) {
-                Block reuse = getHead(this.getMemOrphanPool()).getValue();
-                removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
-                this.getXdagStats().nblocks--;
-                this.getXdagStats().totalnblocks = Math.max(this.getXdagStats().nblocks,this.getXdagStats().totalnblocks);
-
-                if ((reuse.getInfo().flags & BI_OURS) != 0) {
-                    removeOurBlock(reuse);
-                }
-            }
-        }
-    }
-
     @Test
     public void testExtraBlockReUse() throws ParseException {
-        String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
-        BigInteger privateKey = new BigInteger(privString, 16);
-
         ECKeyPair addrKey = ECKeyPair.create(private_1);
         ECKeyPair poolKey = ECKeyPair.create(private_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
@@ -150,10 +125,10 @@ public class ExtraBlockTest {
         assertTrue(result == IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
-        byte[] ref = addressBlock.getHashLow();
+        Bytes32 ref = addressBlock.getHashLow();
 
         // 2. create 20 mainblocks and 6 extra block
-        for(int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
@@ -168,22 +143,44 @@ public class ExtraBlockTest {
         generateTime += 64000L;
 
         // 3. create 9 extra block
-        for (int i = 1; i<= 9; i++) {
+        for (int i = 1; i <= 9; i++) {
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending,"1"+i);
+            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "1" + i);
             blockchain.tryToConnect(extraBlock);
             extraBlockList.add(extraBlock);
         }
 
-        assertEquals(expectedExtraBlocks+1,blockchain.getXdagStats().nextra);
+        assertEquals(expectedExtraBlocks + 1, blockchain.getXdagStats().nextra);
 
     }
 
     @After
     public void tearDown() throws IOException {
         wallet.delete();
+    }
+
+    class MockBlockchain extends BlockchainImpl {
+
+        public MockBlockchain(Kernel kernel) {
+            super(kernel);
+        }
+
+        @Override
+        public void processExtraBlock() {
+            if (this.getMemOrphanPool().size() > expectedExtraBlocks) {
+                Block reuse = getMemOrphanPool().entrySet().iterator().next().getValue();
+                removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
+                this.getXdagStats().nblocks--;
+                this.getXdagStats().totalnblocks = Math
+                        .max(this.getXdagStats().nblocks, this.getXdagStats().totalnblocks);
+
+                if ((reuse.getInfo().flags & BI_OURS) != 0) {
+                    removeOurBlock(reuse);
+                }
+            }
+        }
     }
 }

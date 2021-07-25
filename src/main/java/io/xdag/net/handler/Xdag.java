@@ -21,42 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 public interface Xdag {
+
+    XdagVersion getVersion();
 
     void sendNewBlock(Block newBlock, int ttl);
 
     long sendGetBlocks(long startTime, long endTime);
 
-    long sendGetBlock(byte[] hash);
+    long sendGetBlock(MutableBytes32 hash);
 
     long sendGetSums(long startTime, long endTime);
 
-    void dropConnection() ;
-
-    boolean isIdle();
+    void dropConnection();
 
     void activate();
 
-    XdagVersion getVersion();
-
-    /** Disables pending block processing */
+    /**
+     * Disables pending block processing
+     */
     void disableBlocks();
 
-    /** Enables pending block processing */
+    /**
+     * Enables pending block processing
+     */
     void enableBlocks();
 
     /**
      * Fires inner logic related to long sync done or undone event
      *
-     * @param done
-     *            true notifies that long sync is finished, false notifies that it's
-     *            enabled again
+     * @param done true notifies that long sync is finished, false notifies that it's
+     *         enabled again
      */
     void onSyncDone(boolean done);
 

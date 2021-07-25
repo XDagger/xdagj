@@ -21,14 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.crypto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.*;
+package io.xdag.crypto;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.Provider;
 import java.security.SecureRandomSpi;
 import java.security.Security;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation from <a
@@ -42,18 +47,8 @@ import java.security.Security;
  * all from the same source.
  */
 public class LinuxSecureRandom extends SecureRandomSpi {
+
     private static final FileInputStream urandom;
-
-    private static class LinuxSecureRandomProvider extends Provider {
-        public LinuxSecureRandomProvider() {
-            super(
-                    "LinuxSecureRandom",
-                    "1.0",
-                    "A Linux specific random number provider that uses /dev/urandom");
-            put("SecureRandom.LinuxSecureRandom", LinuxSecureRandom.class.getName());
-        }
-    }
-
     private static final Logger log = LoggerFactory.getLogger(LinuxSecureRandom.class);
 
     static {
@@ -108,5 +103,16 @@ public class LinuxSecureRandom extends SecureRandomSpi {
         byte[] bits = new byte[i];
         engineNextBytes(bits);
         return bits;
+    }
+
+    private static class LinuxSecureRandomProvider extends Provider {
+
+        public LinuxSecureRandomProvider() {
+            super(
+                    "LinuxSecureRandom",
+                    "1.0",
+                    "A Linux specific random number provider that uses /dev/urandom");
+            put("SecureRandom.LinuxSecureRandom", LinuxSecureRandom.class.getName());
+        }
     }
 }

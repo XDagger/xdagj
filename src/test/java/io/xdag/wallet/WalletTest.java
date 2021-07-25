@@ -21,7 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.wallet;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -29,20 +34,16 @@ import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.utils.Numeric;
-
-import org.apache.commons.collections4.CollectionUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static org.junit.Assert.*;
+import org.apache.commons.collections4.CollectionUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class WalletTest {
 
@@ -153,7 +154,7 @@ public class WalletTest {
     public void testInitializeHdWallet() {
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
         assertEquals(0, wallet.getNextAccountIndex());
-        assertEquals(SampleKeys.MNEMONIC,wallet.getMnemonicPhrase());
+        assertEquals(SampleKeys.MNEMONIC, wallet.getMnemonicPhrase());
     }
 
     @Test
@@ -161,7 +162,7 @@ public class WalletTest {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
         int hdkeyCount = 5;
-        for(int i = 0; i < hdkeyCount; i++) {
+        for (int i = 0; i < hdkeyCount; i++) {
             wallet.addAccountWithNextHdKey();
         }
         assertEquals(hdkeyCount, wallet.getNextAccountIndex());
@@ -173,7 +174,7 @@ public class WalletTest {
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
         List<ECKeyPair> keyPairList1 = new ArrayList<>();
         int hdkeyCount = 5;
-        for(int i = 0; i < hdkeyCount; i++) {
+        for (int i = 0; i < hdkeyCount; i++) {
             ECKeyPair key = wallet.addAccountWithNextHdKey();
             keyPairList1.add(key);
         }
@@ -184,7 +185,7 @@ public class WalletTest {
         wallet2.unlock(pwd + pwd);
         wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
         List<ECKeyPair> keyPairList2 = new ArrayList<>();
-        for(int i = 0; i < hdkeyCount; i++) {
+        for (int i = 0; i < hdkeyCount; i++) {
             ECKeyPair key = wallet2.addAccountWithNextHdKey();
             keyPairList2.add(key);
         }

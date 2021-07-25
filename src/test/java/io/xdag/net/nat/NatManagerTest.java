@@ -21,7 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.xdag.utils.SafeFuture;
 import org.assertj.core.api.Assertions;
@@ -29,10 +36,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.jupnp.model.meta.RemoteService;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
-
 public class NatManagerTest {
+
     private UpnpClient upnpClient;
     private NatManager natManager;
 
@@ -78,7 +83,7 @@ public class NatManagerTest {
 
         verify(upnpClient).startup();
 
-        Assertions.assertThat(natManager.start()).isCompletedExceptionally() .isNotCancelled();
+        Assertions.assertThat(natManager.start()).isCompletedExceptionally().isNotCancelled();
 
         verifyNoMoreInteractions(upnpClient);
     }

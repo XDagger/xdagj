@@ -21,15 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.handler;
 
 import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
 import static io.xdag.net.XdagVersion.V03;
 import static io.xdag.utils.BasicUtils.crc32Verify;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -48,12 +45,16 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FormatDateUtils;
+import io.xdag.utils.XdagTime;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
+import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
+
     private final MinerChannel channel;
     private final Kernel kernel;
     private final MinerManager minerManager;
@@ -98,7 +99,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 ImportResult importResult = tryToConnect(addressBlock);
 
                 if (importResult == ImportResult.ERROR) {
-                    log.debug("ErrorInfo:{}",importResult.getErrorInfo());
+                    log.debug("ErrorInfo:{}", importResult.getErrorInfo());
                     ctx.close();
                     return;
                 }
@@ -111,15 +112,19 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // 如果是新增的地址块
                 if (importResult != ImportResult.EXIST) {
-                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()), channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}",
+                            addressBlock.getHash().toHexString(), channel.getInetAddress().toString(),
+                            XdagTime.format(new Date()));
                 } else {
-                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}", Hex.toHexString(addressBlock.getHash()),channel.getInetAddress().toString(), FormatDateUtils.format(new Date()));
+                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}",
+                            addressBlock.getHash().toHexString(), channel.getInetAddress().toString(),
+                            XdagTime.format(new Date()));
                 }
 
                 channel.getInBound().add(16L);
                 minerManager.addActivateChannel(channel);
                 channel.setIsActivate(true);
-                channel.setConnectTime(FormatDateUtils.getCurrentTime());
+                channel.setConnectTime(new Date(System.currentTimeMillis()));
                 channel.setAccountAddressHash(addressBlock.getHash());
                 ctx.pipeline().remove(this);
                 channel.activateHadnler(ctx, V03);
@@ -136,16 +141,17 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         int head = BytesUtils.bytesToInt(uncryptData, 0, true);
         // 清除transportheader
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-        return  (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc));
+        return (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc));
 
     }
 
-    public boolean initMiner(byte[] hash) {
+    public boolean initMiner(Bytes32 hash) {
         return channel.initMiner(hash);
     }
 
     public ImportResult tryToConnect(Block addressBlock) {
-        return syncManager.validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getNodeSpec().getTTL()));
+        return syncManager
+                .validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getNodeSpec().getTTL()));
     }
 
     @Override
@@ -159,13 +165,15 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         channel.onDisconnect();
     }
 
-    /** 远程主机强制关闭连接 */
+    /**
+     * 远程主机强制关闭连接
+     */
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         try {
             Channel nettyChannel = ctx.channel();
             if (evt instanceof IdleStateEvent) {
-                IdleStateEvent e = (IdleStateEvent)evt;
+                IdleStateEvent e = (IdleStateEvent) evt;
                 if (e.state() == IdleState.READER_IDLE) {
                     nettyChannel.closeFuture();
                     if (log.isDebugEnabled()) {

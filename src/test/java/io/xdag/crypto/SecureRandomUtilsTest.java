@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
 import static io.xdag.crypto.SecureRandomUtils.isAndroidRuntime;
 import static io.xdag.crypto.SecureRandomUtils.secureRandom;
+import static org.junit.Assert.assertFalse;
+
+import org.junit.Test;
 
 public class SecureRandomUtilsTest {
 

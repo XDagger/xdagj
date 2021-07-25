@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.db.rocksdb;
+
+import static org.junit.Assert.assertEquals;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -30,20 +33,17 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.store.BlockStore;
-import io.xdag.utils.BytesUtils;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.ArrayList;
-import java.util.List;
-import static org.junit.Assert.*;
-
 public class RocksdbKVSourceTest {
+
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
@@ -80,25 +80,19 @@ public class RocksdbKVSourceTest {
 
     @Test
     public void testPrefixKeyLookup() {
-        List<Bytes> expectedKeyList = new ArrayList<>();
-        List<Bytes> expectedValueList = new ArrayList<>();
         DatabaseFactory factory = new RocksdbFactory(config);
         KVSource<byte[], byte[]> indexSource = factory.getDB(DatabaseName.TIME);
         indexSource.reset();
 
-        byte[] hashlow1 = Hash.hashTwice("1".getBytes());
-        byte[] hashlow2 = Hash.hashTwice("2".getBytes());
+        Bytes32 hashlow1 = Hash.hashTwice(Bytes.wrap("1".getBytes()));
+        Bytes32 hashlow2 = Hash.hashTwice(Bytes.wrap("2".getBytes()));
 
         long time1 = 1602226304712L;
         byte[] value1 = Hex.decode("1234");
         byte[] value2 = Hex.decode("2345");
-        expectedValueList.add(Bytes.wrap(value1));
-        expectedValueList.add(Bytes.wrap(value2));
 
         byte[] key1 = BlockStore.getTimeKey(time1, hashlow1);
         byte[] key2 = BlockStore.getTimeKey(time1, hashlow2);
-        expectedKeyList.add(Bytes.wrap(key1));
-        expectedKeyList.add(Bytes.wrap(key2));
 
         indexSource.put(key1, value1);
         indexSource.put(key2, value2);
@@ -107,21 +101,7 @@ public class RocksdbKVSourceTest {
         byte[] key = BlockStore.getTimeKey(searchTime, null);
         List<byte[]> keys = indexSource.prefixKeyLookup(key);
         assertEquals(2, keys.size());
-        assertTrue(listEquals(expectedKeyList,keys));
         List<byte[]> values = indexSource.prefixValueLookup(key);
         assertEquals(2, values.size());
-        assertTrue(listEquals(expectedValueList,values));
-    }
-
-    private boolean listEquals(List<Bytes> a, List<byte[]> b) {
-        if(a.size() != b.size()) {
-            return false;
-        }
-        for (Bytes bytes:a) {
-            if(!a.contains(bytes)) {
-                return false;
-            }
-        }
-        return true;
     }
 }

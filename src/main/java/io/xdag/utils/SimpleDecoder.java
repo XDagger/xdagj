@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import io.xdag.utils.exception.SimpleCodecException;
-
 import java.io.UnsupportedEncodingException;
 
 public class SimpleDecoder {
+
     private static final String ENCODING = "UTF-8";
 
     private final byte[] in;
@@ -81,8 +82,7 @@ public class SimpleDecoder {
     /**
      * Decode a byte array.
      *
-     * @param vlq
-     *            should always be true unless we're providing pre-mainnet support.
+     * @param vlq should always be true unless we're providing pre-mainnet support.
      */
     public byte[] readBytes(boolean vlq) {
         int len = vlq ? readSize() : readInt();
@@ -113,8 +113,6 @@ public class SimpleDecoder {
 
     /**
      * Reads size from the input.
-     *
-     * @return
      */
     protected int readSize() {
         int size = 0;
@@ -132,8 +130,6 @@ public class SimpleDecoder {
 
     /**
      * Checks if the required bytes is satisfied.
-     *
-     * @param n
      */
     protected void require(int n) {
         if (to - index < n) {
@@ -145,8 +141,7 @@ public class SimpleDecoder {
     /**
      * Re-interprets an integer as unsigned integer.
      *
-     * @param i
-     *            an integer
+     * @param i an integer
      * @return the unsigned value, represented in long
      */
     protected long unsignedInt(int i) {

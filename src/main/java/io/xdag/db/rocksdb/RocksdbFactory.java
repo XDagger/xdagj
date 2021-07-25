@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.db.rocksdb;
 
 import io.xdag.config.Config;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
-
 import java.util.EnumMap;
 import org.apache.commons.lang3.StringUtils;
 
@@ -47,7 +47,7 @@ public class RocksdbFactory implements DatabaseFactory {
                 name, k -> {
                     RocksdbKVSource dataSource;
                     // time data source must set fixed prefix length
-                    if(StringUtils.equals(DatabaseName.TIME.toString(), name.toString())) {
+                    if (StringUtils.equals(DatabaseName.TIME.toString(), name.toString())) {
                         dataSource = new RocksdbKVSource(name.toString(), 8);
                     } else {
                         dataSource = new RocksdbKVSource(name.toString());

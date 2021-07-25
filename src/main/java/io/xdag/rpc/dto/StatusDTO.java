@@ -21,17 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.dto;
 
-import lombok.Data;
+import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 
 import java.math.BigInteger;
-
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
+import lombok.Data;
 
 @Data
 //TODO: return xdag status
 public class StatusDTO {
+
     // status 状态信息
     private final String nblocks;
     private final String nmain;

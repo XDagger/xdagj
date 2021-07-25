@@ -21,12 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleDescription {
+
     private String name;
     private String version;
     private boolean enabled;
@@ -34,7 +36,8 @@ public class ModuleDescription {
     private List<String> enabledMethods;
     private List<String> disabledMethods;
 
-    public ModuleDescription(String name, String version, boolean enabled, List<String> enabledMethods, List<String> disabledMethods) {
+    public ModuleDescription(String name, String version, boolean enabled, List<String> enabledMethods,
+            List<String> disabledMethods) {
         this.name = name;
         this.version = version;
         this.enabled = enabled;

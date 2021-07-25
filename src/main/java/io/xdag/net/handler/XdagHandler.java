@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -43,9 +44,10 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> implements Xdag {
+
     protected Kernel kernel;
     protected Blockchain blockchain;
-    protected XdagVersion version = XdagVersion.V03;
+    protected XdagVersion version;
     protected Channel channel;
     protected MessageQueue msgQueue;
     protected Block bestKnownBlock;

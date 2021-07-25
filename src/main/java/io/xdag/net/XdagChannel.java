@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
 
 import io.netty.buffer.ByteBuf;
@@ -28,7 +29,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
-import io.xdag.config.Config;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.handler.MessageCodes;
 import io.xdag.net.handler.Xdag;
@@ -43,38 +43,37 @@ import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = true)
-@Data
 @Slf4j
+@Getter
+@Setter
 public class XdagChannel extends Channel {
-    private final NioSocketChannel socket;
-    private InetSocketAddress inetSocketAddress;
-    private boolean isActive;
-    private boolean isDisconnected = false;
-    protected Kernel kernel;
 
-    /** 握手 密钥 */
+    /**
+     * 握手 密钥
+     */
     private XdagHandshakeHandler handshakeHandler;
-    /** 信息编码处理 */
+    /**
+     * 信息编码处理
+     */
     private MessageCodes messageCodec;
-    /** 处理区块 */
+    /**
+     * 处理区块
+     */
     private XdagBlockHandler blockHandler;
-    /** 获取xdag03handler */
+    /**
+     * 获取xdag03handler
+     */
     private Xdag xdag = new XdagAdapter();
-    /** 用来创建xdag03handler处理message 实际的逻辑操作 */
+    /**
+     * 用来创建xdag03handler处理message 实际的逻辑操作
+     */
     private XdagHandlerFactory xdagHandlerFactory;
-
-    /** 发送message的线程 针对每个channel */
-    private MessageQueue msgQueue;
-
-    /** 该channel对应的节点 */
-    private Node node;
-
 
     // TODO：记录该连接发送错误消息的次数，一旦超过某个值将断开连接
     private int failTimes;
@@ -94,7 +93,7 @@ public class XdagChannel extends Channel {
         this.handshakeHandler = new XdagHandshakeHandler(kernel, this);
         handshakeHandler.setServer(isServer);
         pipeline.addLast("handshakeHandler", handshakeHandler);
-        this.msgQueue = new MessageQueue(this);
+        this.messageQueue = new MessageQueue(this);
         this.messageCodec = new MessageCodes();
         this.blockHandler = new XdagBlockHandler(this);
         this.xdagHandlerFactory = new XdagHandlerFactoryImpl(kernel, this);
@@ -105,28 +104,24 @@ public class XdagChannel extends Channel {
         log.debug("Initwith Node host:" + host + " port:" + port + " node:" + node.getHexId());
     }
 
-    public void notifyDisconnect(Channel channel) {
-        log.debug("Node {}: notifies about disconnect", channel);
-        channel.onDisconnect();
-    }
-
-    public void onSyncDone(boolean done) {
-        if (done) {
-            xdag.enableBlocks();
-        } else {
-            xdag.disableBlocks();
-        }
-        xdag.onSyncDone(done);
+    @Override
+    public InetSocketAddress getInetSocketAddress() {
+        return this.inetSocketAddress;
     }
 
     @Override
-    public String getIp() {
-        return inetSocketAddress.getAddress().getHostAddress();
+    public boolean isActive() {
+        return this.isActive;
     }
 
     @Override
-    public int getPort() {
-        return inetSocketAddress.getPort();
+    public void setActive(boolean b) {
+        this.isActive = b;
+    }
+
+    @Override
+    public Node getNode() {
+        return this.node;
     }
 
     @Override
@@ -140,8 +135,13 @@ public class XdagChannel extends Channel {
     }
 
     @Override
-    public MessageQueue getmessageQueue() {
-        return msgQueue;
+    public MessageQueue getMessageQueue() {
+        return this.messageQueue;
+    }
+
+    @Override
+    public Kernel getKernel() {
+        return this.kernel;
     }
 
     public void sendPubkey(ChannelHandlerContext ctx) throws Exception {
@@ -160,12 +160,14 @@ public class XdagChannel extends Channel {
 
     @Override
     public void sendNewBlock(BlockWrapper blockWrapper) {
-        log.debug("send a block hash is {}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
+        log.debug("send a block hash is {}", blockWrapper.getBlock().getHashLow().toHexString());
         log.debug("ttl:" + blockWrapper.getTtl());
         xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }
 
-    /** 激活xdaghandler */
+    /**
+     * 激活xdaghandler
+     */
     public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
         XdagHandler handler = xdagHandlerFactory.create(version);
         MessageFactory messageFactory = createXdagMessageFactory(version);
@@ -173,7 +175,7 @@ public class XdagChannel extends Channel {
         ctx.pipeline().addLast("blockHandler", blockHandler);
         ctx.pipeline().addLast("messageCodec", messageCodec);
         // 注册进消息队列 用来收发消息
-        handler.setMsgQueue(msgQueue);
+        handler.setMsgQueue(messageQueue);
         ctx.pipeline().addLast("xdag", handler);
         handler.setChannel(this);
         xdag = handler;

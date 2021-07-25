@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -30,11 +31,11 @@ import io.xdag.rpc.jsonrpc.JsonRpcRequest;
 import io.xdag.rpc.jsonrpc.JsonRpcResultOrError;
 import io.xdag.rpc.jsonrpc.JsonRpcVersion;
 
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "method", visible = true)
 @JsonSubTypes({
 })
 public abstract class XdagJsonRpcRequest extends JsonRpcRequest<XdagJsonRpcMethod> {
+
     public XdagJsonRpcRequest(
             JsonRpcVersion version,
             XdagJsonRpcMethod method,

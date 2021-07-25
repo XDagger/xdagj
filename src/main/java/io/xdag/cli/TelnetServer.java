@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.cli;
 
 import io.xdag.Kernel;
@@ -31,6 +32,7 @@ import org.jline.terminal.TerminalBuilder;
 
 @Slf4j
 public class TelnetServer {
+
     private final Kernel kernel;
     private final String ip;
     private final int port;
@@ -47,7 +49,7 @@ public class TelnetServer {
             Shell xShell = new Shell();
             xShell.setKernel(kernel);
             Telnet telnetServer = new Telnet(terminal, xShell);
-            telnetServer.telnetd(new String[]{"-i" + ip,"-p" + port, "start"});
+            telnetServer.telnetd(new String[]{"-i" + ip, "-p" + port, "start"});
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

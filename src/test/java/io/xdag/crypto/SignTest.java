@@ -21,18 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
-
-import java.math.BigInteger;
-import java.security.SignatureException;
-
-import io.xdag.utils.Numeric;
-import org.bouncycastle.math.ec.ECPoint;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+
+import org.bouncycastle.math.ec.ECPoint;
+import org.junit.Test;
 
 public class SignTest {
 
@@ -51,7 +47,7 @@ public class SignTest {
                 () ->
                         Sign.signedMessageToKey(
                                 TEST_MESSAGE,
-                                new Sign.SignatureData((byte) 27, new byte[] {1}, new byte[] {0})));
+                                new Sign.SignatureData((byte) 27, new byte[]{1}, new byte[]{0})));
     }
 
     @Test

@@ -21,26 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
-import org.bouncycastle.crypto.digests.SHA512Digest;
-import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.bouncycastle.crypto.params.KeyParameter;
+import static io.xdag.crypto.Hash.sha256;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.xdag.crypto.Hash.sha256;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.List;
+import java.util.StringTokenizer;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.crypto.digests.SHA512Digest;
+import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 /**
  * Provides utility methods to generate random mnemonics and also generate seeds from mnemonics.
  *
  * @see <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">Mnemonic code for
- *     generating deterministic keys</a>
+ *         generating deterministic keys</a>
  */
 public class MnemonicUtils {
 
@@ -95,7 +102,7 @@ public class MnemonicUtils {
      * Create entropy from the mnemonic.
      *
      * @param mnemonic The input mnemonic which should be 128-160 bits in length containing only
-     *     valid words
+     *         valid words
      * @return Byte array representation of the entropy
      */
     public static byte[] generateEntropy(String mnemonic) {
@@ -138,7 +145,7 @@ public class MnemonicUtils {
      * as the pseudo-random function. The length of the derived key is 512 bits (= 64 bytes).
      *
      * @param mnemonic The input mnemonic which should be 128-160 bits in length containing only
-     *     valid words
+     *         valid words
      * @param passphrase The passphrase which will be used as part of salt for PBKDF2 function
      * @return Byte array representation of the generated seed
      */
@@ -257,9 +264,9 @@ public class MnemonicUtils {
     public static byte calculateChecksum(byte[] initialEntropy) {
         int ent = initialEntropy.length * 8;
         byte mask = (byte) (0xff << 8 - ent / 32);
-        byte[] bytes = sha256(initialEntropy);
+        Bytes32 bytes = sha256(Bytes.wrap(initialEntropy));
 
-        return (byte) (bytes[0] & mask);
+        return (byte) (bytes.get(0) & mask);
     }
 
     private static List<String> populateWordList() {

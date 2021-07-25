@@ -21,15 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
+import java.io.IOException;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.io.DigestOutputStream;
 import org.bouncycastle.util.Arrays;
 
-import java.io.IOException;
-
 public class XdagSha256Digest {
+
     private SHA256Digest sha256Digest;
     private DigestOutputStream outputStream;
 
@@ -51,13 +53,15 @@ public class XdagSha256Digest {
         outputStream.write(in);
     }
 
-    public void sha256Update(byte[] in) throws IOException {
-        outputStream.write(in);
+    public void sha256Update(Bytes in) throws IOException {
+        outputStream.write(in.toArray());
     }
 
-    /** double sha256* */
-    public byte[] sha256Final(byte[] in) throws IOException {
-        outputStream.write(in);
+    /**
+     * double sha256*
+     */
+    public byte[] sha256Final(Bytes in) throws IOException {
+        outputStream.write(in.toArray());
         byte[] hash = outputStream.getDigest();
         sha256Digest.reset();
         outputStream.write(hash);
@@ -66,7 +70,9 @@ public class XdagSha256Digest {
         return origin;
     }
 
-    /** 获取可以发送给C的state */
+    /**
+     * 获取可以发送给C的state
+     */
     public byte[] getState() {
         byte[] encodedState = sha256Digest.getEncodedState();
         byte[] state = new byte[32];
@@ -80,16 +86,14 @@ public class XdagSha256Digest {
 
     public byte[] getDigest(byte[] in) throws IOException {
         outputStream.write(in);
-        byte[] data = outputStream.getDigest();
-        return data;
+        return outputStream.getDigest();
     }
 
     public byte[] getDigest() {
-        byte[] data = outputStream.getDigest();
-        return data;
+        return outputStream.getDigest();
     }
 
-    public byte[] getSha256d(byte[] in) throws IOException {
+    public byte[] getSha256d(Bytes in) throws IOException {
         return sha256Final(in);
     }
 }

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagServer {
+
     protected Kernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;

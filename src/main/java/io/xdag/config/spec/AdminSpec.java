@@ -21,15 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.config.spec;
 
-import lombok.Getter;
+package io.xdag.config.spec;
 
 /**
  * The Admin Specifications
  */
 public interface AdminSpec {
+
     String getTelnetIp();
+
     int getTelnetPort();
+
     String getPassword();
 }
