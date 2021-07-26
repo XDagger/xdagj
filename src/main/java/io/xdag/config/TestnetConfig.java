@@ -49,8 +49,9 @@ public class TestnetConfig extends AbstractConfig {
 
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
 
-        this.snapshotEnabled = true;
-        this.snapshotHeight = 1000;
+        // TODO: snapshot
+//        this.snapshotEnabled = true;
+//        this.snapshotHeight = 1000;
     }
 
 }
