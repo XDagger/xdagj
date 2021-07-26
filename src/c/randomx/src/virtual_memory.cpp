@@ -99,27 +99,27 @@ void* allocMemoryPages(std::size_t bytes) {
 	if (mem == nullptr)
 		throw std::runtime_error(getErrorMessage("allocMemoryPages - VirtualAlloc"));
 #else
-		#if defined(__NetBSD__)
-    		#define RESERVED_FLAGS PROT_MPROTECT(PROT_EXEC)
-    	#else
-    		#define RESERVED_FLAGS 0
-    	#endif
-    	#ifdef __APPLE__
-    		#include <TargetConditionals.h>
-    		#ifdef TARGET_OS_OSX
-    			#define MEXTRA MAP_JIT
-    		#else
-    			#define MEXTRA 0
-    		#endif
-    	#else
-    		#define MEXTRA 0
-    	#endif
-    	#ifdef USE_PTHREAD_JIT_WP
-    		#define PEXTRA	PROT_EXEC
-    	#else
-    		#define PEXTRA	0
-    	#endif
-    	mem = mmap(nullptr, bytes, PAGE_READWRITE | RESERVED_FLAGS | PEXTRA, MAP_ANONYMOUS | MAP_PRIVATE | MEXTRA, -1, 0);
+	#if defined(__NetBSD__)
+		#define RESERVED_FLAGS PROT_MPROTECT(PROT_EXEC)
+	#else
+		#define RESERVED_FLAGS 0
+	#endif
+	#ifdef __APPLE__
+		#include <TargetConditionals.h>
+		#ifdef TARGET_OS_OSX
+			#define MEXTRA MAP_JIT
+		#else
+			#define MEXTRA 0
+		#endif
+	#else
+		#define MEXTRA 0
+	#endif
+	#ifdef USE_PTHREAD_JIT_WP
+		#define PEXTRA	PROT_EXEC
+	#else
+		#define PEXTRA	0
+	#endif
+	mem = mmap(nullptr, bytes, PAGE_READWRITE | RESERVED_FLAGS | PEXTRA, MAP_ANONYMOUS | MAP_PRIVATE | MEXTRA, -1, 0);
 	if (mem == MAP_FAILED)
 		throw std::runtime_error("allocMemoryPages - mmap failed");
 #ifdef USE_PTHREAD_JIT_WP
@@ -177,7 +177,7 @@ void* allocLargePagesMemory(std::size_t bytes) {
 	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
 #elif defined(__FreeBSD__)
 	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_ALIGNED_SUPER, -1, 0);
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
 	mem = MAP_FAILED; // OpenBSD does not support huge pages
 #else
 	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_POPULATE, -1, 0);

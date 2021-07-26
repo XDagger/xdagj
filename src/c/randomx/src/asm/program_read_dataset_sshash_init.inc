@@ -9,7 +9,7 @@
 	mov qword ptr [rsp+8], r14
 	mov qword ptr [rsp+0], r15
 	ror rbp, 32                        ;# swap "ma" and "mx"
-  xor rbp, rax                       ;# modify "mx"
+	xor rbp, rax                       ;# modify "mx"
 	mov rbx, rbp                       ;# ebx = ma
 	shr rbx, 38
 	and ebx, RANDOMX_DATASET_BASE_MASK / 64 ;# ebx = Dataset block number

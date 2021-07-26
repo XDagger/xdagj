@@ -74,7 +74,6 @@ randomx_program_prologue PROC
 	movapd xmm13, xmmword ptr [mantissaMask]
 	movapd xmm14, xmmword ptr [exp240]
 	movapd xmm15, xmmword ptr [scaleMask]
-
 	mov rdx, rax
 	and eax, RANDOMX_SCRATCHPAD_MASK
 	ror rdx, 32

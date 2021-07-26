@@ -87,7 +87,6 @@ DECL(randomx_program_prologue):
 	movapd xmm13, xmmword ptr [mantissaMask+rip]
 	movapd xmm14, xmmword ptr [exp240+rip]
 	movapd xmm15, xmmword ptr [scaleMask+rip]
-
 	mov rdx, rax
 	and eax, RANDOMX_SCRATCHPAD_MASK
 	ror rdx, 32

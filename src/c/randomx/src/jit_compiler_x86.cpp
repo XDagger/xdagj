@@ -295,13 +295,9 @@ namespace randomx {
 
 	void JitCompilerX86::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
 		instructionOffsets.clear();
-		for (unsigned i = 0; i < 8; ++i) {
+		for (unsigned i = 0; i < RegistersCount; ++i) {
 			registerUsage[i] = -1;
 		}
-
-//		codePos = ((uint8_t*)randomx_program_prologue_first_load) - ((uint8_t*)randomx_program_prologue);
-//		code[codePos + sizeof(REX_XOR_RAX_R64)] = 0xc0 + pcfg.readReg0;
-//		code[codePos + sizeof(REX_XOR_RAX_R64) * 2 + 1] = 0xc0 + pcfg.readReg1;
 
 		codePos = prologueSize;
 		memcpy(code + codePos - 48, &pcfg.eMask, sizeof(pcfg.eMask));
