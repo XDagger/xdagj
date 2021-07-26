@@ -171,6 +171,7 @@ endif()
 
 set(RANDOMX_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/" CACHE STRING "RandomX Include path")
 set(RANDOMX_LIBRARY "randomx" CACHE STRING "RandomX Library")
+
 add_library(randomx SHARED ${randomx_sources})
 
 if(TARGET generate-asm)
@@ -182,11 +183,13 @@ target_link_libraries(randomx
 set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx PROPERTY CXX_STANDARD 11)
 set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET randomx PROPERTY PUBLIC_HEADER src/randomx.h)
 
 include(GNUInstallDirs)
 install(TARGETS randomx
-  LIBRARY DESTINATION lib}
-  ARCHIVE DESTINATION lib})
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  PUBLIC_HEADER DESTINATION include)
 
 
 #copy library to target directory
