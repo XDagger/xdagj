@@ -80,6 +80,7 @@ randomx_program_prologue PROC
 	ror rdx, 32
 	and edx, RANDOMX_SCRATCHPAD_MASK
 	jmp randomx_program_loop_begin
+randomx_program_prologue ENDP
 
 ALIGN 64
 	include asm/program_xmm_constants.inc

@@ -320,7 +320,7 @@ randomx_program_aarch64_cacheline_align_mask1:
 	ror	x9, x9, 32
 
 	# Calculate dataset pointer for dataset read
-	#mov	w10, w9
+
 randomx_program_aarch64_cacheline_align_mask2:
 	# Actual mask will be inserted by JIT compiler
 	and	x10, x10, 1
