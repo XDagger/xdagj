@@ -35,6 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 #ifdef __APPLE__
 #include <mach/vm_statistics.h>
+#include <TargetConditionals.h>
+# if defined(__aarch64__) && TARGET_OS_OSX
+# define USE_PTHREAD_JIT_WP	1
+# include <pthread.h>
+# endif
 #endif
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -94,9 +99,32 @@ void* allocMemoryPages(std::size_t bytes) {
 	if (mem == nullptr)
 		throw std::runtime_error(getErrorMessage("allocMemoryPages - VirtualAlloc"));
 #else
-	mem = mmap(nullptr, bytes, PAGE_READWRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+		#if defined(__NetBSD__)
+    		#define RESERVED_FLAGS PROT_MPROTECT(PROT_EXEC)
+    	#else
+    		#define RESERVED_FLAGS 0
+    	#endif
+    	#ifdef __APPLE__
+    		#include <TargetConditionals.h>
+    		#ifdef TARGET_OS_OSX
+    			#define MEXTRA MAP_JIT
+    		#else
+    			#define MEXTRA 0
+    		#endif
+    	#else
+    		#define MEXTRA 0
+    	#endif
+    	#ifdef USE_PTHREAD_JIT_WP
+    		#define PEXTRA	PROT_EXEC
+    	#else
+    		#define PEXTRA	0
+    	#endif
+    	mem = mmap(nullptr, bytes, PAGE_READWRITE | RESERVED_FLAGS | PEXTRA, MAP_ANONYMOUS | MAP_PRIVATE | MEXTRA, -1, 0);
 	if (mem == MAP_FAILED)
 		throw std::runtime_error("allocMemoryPages - mmap failed");
+#ifdef USE_PTHREAD_JIT_WP
+	pthread_jit_write_protect_np(false);
+#endif
 #endif
 	return mem;
 }
@@ -114,11 +142,19 @@ static inline void pageProtect(void* ptr, std::size_t bytes, int rules) {
 }
 
 void setPagesRW(void* ptr, std::size_t bytes) {
+#ifdef USE_PTHREAD_JIT_WP
+	pthread_jit_write_protect_np(false);
+#else
 	pageProtect(ptr, bytes, PAGE_READWRITE);
+#endif
 }
 
 void setPagesRX(void* ptr, std::size_t bytes) {
+#ifdef USE_PTHREAD_JIT_WP
+	pthread_jit_write_protect_np(true);
+#else
 	pageProtect(ptr, bytes, PAGE_EXECUTE_READ);
+#endif
 }
 
 void setPagesRWX(void* ptr, std::size_t bytes) {

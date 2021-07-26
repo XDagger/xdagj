@@ -301,6 +301,7 @@ literal_v14: .fill 2,8,0
 literal_v15: .fill 2,8,0
 
 randomx_program_aarch64_vm_instructions_end:
+	lsr	x10, x9, 32
 
 	# mx ^= r[readReg2] ^ r[readReg3];
 	eor	x9, x9, x18
@@ -319,7 +320,7 @@ randomx_program_aarch64_cacheline_align_mask1:
 	ror	x9, x9, 32
 
 	# Calculate dataset pointer for dataset read
-	mov	w10, w9
+	#mov	w10, w9
 randomx_program_aarch64_cacheline_align_mask2:
 	# Actual mask will be inserted by JIT compiler
 	and	x10, x10, 1
