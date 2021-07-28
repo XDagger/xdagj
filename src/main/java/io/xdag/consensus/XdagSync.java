@@ -73,6 +73,8 @@ public class XdagSync {
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
 
+    // TODO: paulochen 开始同步的时间点/快照时间点
+    private long startSyncTime;
 
     public XdagSync(Kernel kernel) {
         this.channelMgr = kernel.getChannelMgr();
@@ -89,6 +91,8 @@ public class XdagSync {
         if (status != Status.SYNCING) {
             isRunning = true;
             status = Status.SYNCING;
+            // TODO: paulochen 开始同步的时间点/快照时间点
+            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
             sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 64, 64, TimeUnit.SECONDS);
         }
     }
@@ -96,7 +100,8 @@ public class XdagSync {
     private void syncLoop() {
         log.debug("SyncLoop...");
         try {
-            requestBlocks(0, 1L << 48);
+            // TODO: paulochen 开始同步的时间点/快照时间点
+            requestBlocks(startSyncTime, 1L << 48);
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
         }

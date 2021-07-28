@@ -1,11 +1,13 @@
 package io.xdag.snapshot.db;
 
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.snapshot.config.SnapShotKeys.SNAPSHOT_KEY_STATS_MAIN;
 import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey;
 import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey_;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static java.nio.ByteBuffer.allocateDirect;
-import static java.util.Arrays.copyOfRange;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 import static org.lmdbjava.Env.create;
@@ -19,7 +21,6 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
@@ -221,7 +222,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         // 1. 初始保存
         Set<Bytes32> set = new HashSet<>();
         Map<Bytes32, BalanceData> balanceDataMap = new HashMap<>();
-        Map<Bytes32, ECKeyPair> ecKeyPairHashMap = new HashMap<>();
+        Map<Bytes32, byte[]> ecKeyPairHashMap = new HashMap<>();
         Map<Bytes32, ECDSASignature> signatureHashMap = new HashMap<>();
         Map<Bytes32, Block> blockHashMap = new HashMap<>();
 
@@ -248,6 +249,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         final Dbi<ByteBuffer> balance_db = env.openDbi(BALACNE_KEY, MDB_CREATE, MDB_INTEGERKEY);
         Txn<ByteBuffer> balance_txn = env.txnRead();
 
+        // balance
         try (CursorIterable<ByteBuffer> ci = balance_db.iterate(balance_txn, KeyRange.all())) {
             for (final KeyVal<ByteBuffer> kv : ci) {
                 BalanceData data = BalanceData.parse(Bytes.wrapByteBuffer(kv.key()), Bytes.wrapByteBuffer(kv.val()));
@@ -263,17 +265,16 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             balance_txn.close();
         }
 
+        // pub
         final Dbi<ByteBuffer> pub_db = env_pub.openDbi(PUB_KEY, MDB_CREATE);
         Txn<ByteBuffer> pub_txn = env_pub.txnRead();
         try (CursorIterable<ByteBuffer> ci = pub_db.iterate(pub_txn, KeyRange.all())) {
 
             for (final KeyVal<ByteBuffer> kv : ci) {
-                ECKeyPair ecKeyPair = new ECKeyPair(null,
-                        new BigInteger(1, copyOfRange(Bytes.wrapByteBuffer(kv.val()).toArray(), 1,
-                                Bytes.wrapByteBuffer(kv.val()).size())));
-                //
+                Bytes ecKeyPair = Bytes.wrapByteBuffer(kv.val());
                 set.add(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())));
-                ecKeyPairHashMap.put(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())), ecKeyPair);
+                ecKeyPairHashMap.put(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())),
+                        ecKeyPair.toArray());
             }
         } catch (Exception e) {
             env.close();
@@ -327,11 +328,13 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         // 4. 组装
         for (Bytes32 bytes32 : set) {
             BalanceData balanceData = balanceDataMap.get(bytes32);
-            ECKeyPair ecKeyPair = ecKeyPairHashMap.get(bytes32);
+            byte[] ecKeyPair = ecKeyPairHashMap.get(bytes32);
             ECDSASignature signature = signatureHashMap.get(bytes32);
             Block block = blockHashMap.get(bytes32);
             if (balanceData == null) {
                 balanceData = new BalanceData();
+                // 没钱有交易的区块认为已经被accepted
+                balanceData.setFlags(BI_REF | BI_MAIN_REF | BI_APPLIED);
                 if (ecKeyPair != null) {
                     balanceData.setHash(bytes32.toArray());
                 }
@@ -344,7 +347,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             }
             // 4.1 保存snapshot单元用于生成blockinfo
             saveSnapshotUnit(bytes32.toArray(), new SnapshotUnit(
-                    ecKeyPair == null ? null : ecKeyPair.getPublicKey().toByteArray(), balanceData, data,
+                    ecKeyPair, balanceData, data,
                     bytes32.toArray()));
         }
 

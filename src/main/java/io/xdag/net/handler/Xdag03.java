@@ -41,7 +41,6 @@ import io.xdag.net.message.impl.BlocksRequestMessage;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.net.message.impl.SumRequestMessage;
-import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -144,12 +143,16 @@ public class Xdag03 extends XdagHandler {
         long endTime = msg.getEndtime();
         long random = msg.getRandom();
 
-        // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
-        List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
-        for (Block block : blocks) {
-            sendNewBlock(block, 1);
-        }
-        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+        // TODO: paulochen 处理多区块请求
+//        // 如果大于快照点的话 我可以发送
+//        if (startTime > 1658318225407L) {
+//            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
+//            List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
+//            for (Block block : blocks) {
+//                sendNewBlock(block, 1);
+//            }
+//            sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+//        }
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
@@ -168,10 +171,18 @@ public class Xdag03 extends XdagHandler {
         updateXdagStats(msg);
 //        byte[] sums = new byte[256];
         MutableBytes sums = MutableBytes.create(256);
-        kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
-        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
-                kernel.getBlockchain().getXdagStats(), sums);
-        sendMessage(reply);
+        // TODO: paulochen 处理sum请求
+////        if (msg.getEndtime() < 1658318225407L) {
+////            sums =
+////        } else {
+//        if (msg.getStarttime() > 1658318225407L) {
+//            kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
+////        }
+//            SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
+//                    kernel.getBlockchain().getXdagStats(), sums);
+//
+//            sendMessage(reply);
+//        }
     }
 
     protected void processSumsReply(SumReplyMessage msg) {

@@ -123,13 +123,13 @@ public class SyncManager {
         if (config instanceof MainnetConfig) {
             if (kernel.getXdagState() != XdagState.CONN && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
                     .getPoolSpec().getWaitEpoch())) {
-                makeSyncDone();
+//                makeSyncDone();
                 res = true;
             }
         } else {
             if (kernel.getXdagState() != XdagState.CTST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
                     .getPoolSpec().getWaitEpoch())) {
-                makeSyncDone();
+//                makeSyncDone();
                 res = true;
             }
         }
@@ -166,7 +166,7 @@ public class SyncManager {
                     && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)
             )
             ) {
-                makeSyncDone();
+//                makeSyncDone();
             }
         }
 

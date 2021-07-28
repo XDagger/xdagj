@@ -136,7 +136,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         long sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
 
-        if (randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
+        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
             if (randomXUtils.getRandomXPoolMemIndex() == 0) {
                 randomXUtils.setRandomXPoolMemIndex((randomXUtils.getRandomXHashEpochIndex() - 1) & 1);
             }

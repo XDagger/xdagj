@@ -180,7 +180,7 @@ public class SnapshotProcess {
         List<Block> blocks = blockchain.getBlocksByTime(starttime, endTime);
         List<Block> mains = blockchain.listMainBlocks(10);
 
-        saveBlocks(snapshotChainStore, blocks, key.getPublicKey());
+        saveBlocks(snapshotChainStore, blocks, key.getCompressPubKeyBytes());
 
         saveStatsBlock(mains);
     }
@@ -195,7 +195,7 @@ public class SnapshotProcess {
         }
     }
 
-    public void saveBlocks(SnapshotChainStore snapshotChainStore, List<Block> blocks, BigInteger pubkey) {
+    public void saveBlocks(SnapshotChainStore snapshotChainStore, List<Block> blocks, byte[] pubkey) {
         int i = 0;
         for (Block block : blocks) {
 
@@ -209,7 +209,7 @@ public class SnapshotProcess {
                 // TODO: 部分区块用pubkey存储，部分用整个data存储，交易相关的要涉及输入pubkey跟输入data两种
             } else {
                 snapshotChainStore.saveSnapshotUnit(block.getHash().toArray(),
-                        new SnapshotUnit(pubkey.toByteArray(), balanceData, null, block.getHash().toArray()));
+                        new SnapshotUnit(pubkey, balanceData, null, block.getHash().toArray()));
             }
             i++;
         }

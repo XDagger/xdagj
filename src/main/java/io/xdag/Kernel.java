@@ -210,8 +210,9 @@ public class Kernel {
         // ====================================
         // randomX init
         // ====================================
-        randomXUtils = new RandomX(config);
-        randomXUtils.init();
+        // TODO: paulochen randomx 需要恢复
+//        randomXUtils = new RandomX(config);
+//        randomXUtils.init();
         log.info("RandomX init");
 
         // ====================================
@@ -235,7 +236,8 @@ public class Kernel {
         log.info("Blockchain init");
 
         // randomX loading
-        randomXUtils.randomXLoadingForkTime();
+        // TODO: paulochen randomx 需要恢复
+//        randomXUtils.randomXLoadingForkTime();
         log.info("RandomX reload");
 
         // log.debug("Net Status:"+netStatus);
@@ -464,7 +466,8 @@ public class Kernel {
         }
 
         // release
-        randomXUtils.randomXPoolReleaseMem();
+        // TODO: paulochen randomx 需要恢复
+//        randomXUtils.randomXPoolReleaseMem();
         log.info("Release randomx");
 
     }

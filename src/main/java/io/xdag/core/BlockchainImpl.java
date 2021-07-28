@@ -87,6 +87,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -380,34 +381,13 @@ public class BlockchainImpl implements Blockchain {
             // 判断难度是否是比当前最大，并以此更新topMainChain
             if (block.getInfo().getDifficulty().compareTo(xdagTopStatus.getTopDiff()) > 0) {
                 // 切换主链 fork
-                Block blockRef;
-                Block blockRef0 = null;
-                // 把当前区块根据最大难度链接块递归查询到不是主链块为止 将这段的区块更新为主链块
-                for (blockRef = block;
-                        blockRef != null && ((blockRef.getInfo().flags & BI_MAIN_CHAIN) == 0);
-                        blockRef = getMaxDiffLink(blockRef, false)) {
-                    Block tmpRef = getMaxDiffLink(blockRef, false);
-                    if (
-                            (tmpRef == null
-                                    || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
-                                    (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
-                                            .getEpoch(blockRef.getTimestamp()))
-                    ) {
-//                        log.debug("update BI_MAIN_CHAIN block:{}", Hex.toHexString(blockRef.getHashLow()));
-                        updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
-                        blockRef0 = blockRef;
-                    }
-                }
-                // 分叉点
-                if (blockRef != null
-                        && blockRef0 != null
-                        && !blockRef.equals(blockRef0)
-                        && XdagTime.getEpoch(blockRef.getTimestamp()) == XdagTime.getEpoch(blockRef0.getTimestamp())) {
-                    blockRef = getMaxDiffLink(blockRef, false);
-                }
-                // 将主链回退到blockRef
                 long currentHeight = xdagStats.nmain;
+                // 找到共同祖先blockref
+                Block blockRef = findAncestor(block, isSyncFixFork(xdagStats.nmain));
+                // 将主链回退到blockRef
                 unWindMain(blockRef);
+                // 更新新的链
+                updateNewChain(block, isSyncFixFork(xdagStats.nmain));
                 // 发生回退
                 if (currentHeight - xdagStats.nmain > 0) {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
@@ -450,6 +430,73 @@ public class BlockchainImpl implements Blockchain {
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
             return ImportResult.ERROR;
+        }
+    }
+
+
+    /**
+     * 用于判断是否切换到修复同步问题的分支
+     *
+     * @return
+     */
+    // TODO: 目前syncFixHeight 写死 后续需要修改
+    // TODO: paulochen 同步问题改进，切换高度未定
+    public boolean isSyncFixFork(long currentHeight) {
+        long syncFixHeight = 0;
+        return currentHeight >= syncFixHeight;
+    }
+
+    public Block findAncestor(Block block, boolean isFork) {
+        // 切换主链 fork
+        Block blockRef;
+        Block blockRef0 = null;
+        // 把当前区块根据最大难度链接块递归查询到不是主链块为止 将这段的区块更新为主链块
+        for (blockRef = block;
+                blockRef != null && ((blockRef.getInfo().flags & BI_MAIN_CHAIN) == 0);
+                blockRef = getMaxDiffLink(blockRef, false)) {
+            Block tmpRef = getMaxDiffLink(blockRef, false);
+            if (
+                    (tmpRef == null
+                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                            (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
+                                    .getEpoch(blockRef.getTimestamp()))
+            ) {
+                if (!isFork) {
+                    updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
+                }
+                blockRef0 = blockRef;
+            }
+        }
+        // 分叉点
+        if (blockRef != null
+                && blockRef0 != null
+                && !blockRef.equals(blockRef0)
+                && XdagTime.getEpoch(blockRef.getTimestamp()) == XdagTime.getEpoch(blockRef0.getTimestamp())) {
+            blockRef = getMaxDiffLink(blockRef, false);
+        }
+        return blockRef;
+    }
+
+    public void updateNewChain(Block block, boolean isFork) {
+        if (!isFork) {
+            return;
+        }
+        Block blockRef;
+        Block blockRef0 = null;
+        // 把当前区块根据最大难度链接块递归查询到不是主链块为止 将这段的区块更新为主链块
+        for (blockRef = block;
+                blockRef != null && ((blockRef.getInfo().flags & BI_MAIN_CHAIN) == 0);
+                blockRef = getMaxDiffLink(blockRef, false)) {
+            Block tmpRef = getMaxDiffLink(blockRef, false);
+            if (
+                    (tmpRef == null
+                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                            (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
+                                    .getEpoch(blockRef.getTimestamp()))
+            ) {
+                updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
+                blockRef0 = blockRef;
+            }
         }
     }
 
@@ -1113,9 +1160,13 @@ public class BlockchainImpl implements Blockchain {
         BlockInfo blockInfo = blockStore.getBlockInfoByHash(in.getHashLow()).getInfo();
         SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
         if (snapshotInfo.getType()) {
+            BigInteger xBn = Bytes.wrap(snapshotInfo.getData()).slice(1, 32).toUnsignedBigInteger();
+            boolean yBit = snapshotInfo.getData()[0] == 0x03;
+            ECPoint point = Sign.decompressKey(xBn, yBit);
+            // 解析成非压缩去前缀 公钥
+            byte[] encodePub = point.getEncoded(false);
             ECKeyPair targetECKey = new ECKeyPair(null,
-                    new BigInteger(1,
-                            java.util.Arrays.copyOfRange(snapshotInfo.getData(), 1, snapshotInfo.getData().length)));
+                    new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
             for (ECKeyPair ecKeyPair : ecKeyPairs) {
                 if (ecKeyPair.getPublicKey().compareTo(targetECKey.getPublicKey()) == 0) {
                     return true;
