@@ -26,38 +26,17 @@ package io.xdag.net;
 
 import static org.junit.Assert.assertEquals;
 
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.jni.Native;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.utils.BytesUtils;
-import io.xdag.wallet.OldWallet;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.Before;
 import org.junit.Test;
 
 public class MessageTest {
 
-    Config config = new DevnetConfig();
-    OldWallet xdagWallet;
-
-    //
-    @Before
-    public void setUp() throws Exception {
-        config.getNodeSpec().setStoreDir("/Users/punk/testRocksdb/XdagDB");
-        config.getNodeSpec().setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
-
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
-        xdagWallet = new OldWallet();
-        xdagWallet.init(config);
-    }
     // blocksrequest
     // 8b010002f91eb6eb 0000000000000000 0000000000000000 0000000000100000
     // 修改starttime

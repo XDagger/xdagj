@@ -53,7 +53,6 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.After;
 import org.junit.Before;
@@ -63,7 +62,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class ExtraBlockTest {
 
-    public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
     Config config = new DevnetConfig();
@@ -87,7 +85,6 @@ public class ExtraBlockTest {
             throw new Exception("dnet crypt init failed");
         }
         pwd = "password";
-        Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
         ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));

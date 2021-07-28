@@ -40,8 +40,10 @@ import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -103,5 +105,10 @@ public class Web3XdagModuleTest {
     private Web3XdagModule createWeb3XdagModule(Kernel kernel, XdagModule module) {
 
         return new Web3XdagModuleImpl(module, kernel);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        wallet.delete();
     }
 }

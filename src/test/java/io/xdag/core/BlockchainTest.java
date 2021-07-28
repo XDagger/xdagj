@@ -331,13 +331,14 @@ public class BlockchainTest {
 //        MockBlockchain blockchain = new MockBlockchain(kernel);
         BlockchainImpl blockchain = spy(new BlockchainImpl(kernel));
 
-        blockchain.tryToConnect(fromAddrBlock);
-        blockchain.tryToConnect(toAddrBlock);
+//        blockchain.tryToConnect(fromAddrBlock);
+//        blockchain.tryToConnect(toAddrBlock);
 
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateTransactionBlock(config, fromKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
-        when(blockchain.getBlockByHash(from.getHashLow(), true)).thenReturn(txBlock);
+        when(blockchain.getBlockByHash(from.getHashLow(), false)).thenReturn(fromAddrBlock);
+        when(blockchain.getBlockByHash(from.getHashLow(), true)).thenReturn(fromAddrBlock);
 
         // 1. local check
         assertTrue(blockchain.canUseInput(txBlock));

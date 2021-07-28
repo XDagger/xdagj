@@ -136,7 +136,6 @@ public class Web3HttpServerTest {
         smokeTest(APPLICATION_JSON, google.getHostAddress(), google, new ArrayList<>());
     }
 
-
     private void smokeTest(String contentType, String host) throws Exception {
         smokeTest(contentType, host, InetAddress.getLoopbackAddress(), new ArrayList<>());
     }
