@@ -377,6 +377,7 @@ public class XdagCli extends Launcher {
             System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
             System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
             System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            importPrivateKey(key.getPrivateKey().toString(16));
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
@@ -404,7 +405,8 @@ public class XdagCli extends Launcher {
         try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
-                BytesUtils.arrayReverse(priv32);
+                // TODO: paulochen java跟c 两边的钱包字节序不一样 一个需要reverse一个不需要
+//                BytesUtils.arrayReverse(priv32);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
                 keyList.add(ecKey);
             }

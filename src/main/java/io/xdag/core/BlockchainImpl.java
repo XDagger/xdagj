@@ -565,8 +565,8 @@ public class BlockchainImpl implements Blockchain {
                 // 更新对应的flag信息
                 if ((tmp.getInfo().flags & BI_MAIN) != 0) {
                     unSetMain(tmp);
-                    // TODO: 稳定分支：这里为应该可以不需要重新存储区块info
-//                    blockStore.saveBlockInfo(tmp.getInfo());
+                    // Fix: paulochen 这里需要更新你区块在数据库中的信息 比如height 210729
+                    blockStore.saveBlockInfo(tmp.getInfo());
                 }
             }
         }
@@ -966,10 +966,17 @@ public class BlockchainImpl implements Blockchain {
 //        System.arraycopy(block.getXdagBlock().getField(15).getData().toArray(),0,data,32,32);
         data.set(32, block.getXdagBlock().getField(15).getData());
 //        byte[] hash = Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch));
-        Bytes32 hash = Bytes32.wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
-        if (hash != null) {
+        // Fix: paulochen 调整 210729
+        if (randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch) != null) {
+            Bytes32 hash = Bytes32
+                    .wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
             return getDiffByRawHash(hash);
+
         }
+//        Bytes32 hash = Bytes32.wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
+//        if (hash != null) {
+//            return getDiffByRawHash(hash);
+//        }
         return getDiffByRawHash(block.getHash());
     }
 
@@ -977,9 +984,20 @@ public class BlockchainImpl implements Blockchain {
         return getDiffByHash(hash);
     }
 
-    @Override
-    public Block getBlockByHeight(long height) {
+    // ADD: 新版本-通过高度获取区块
+    public Block getBlockByHeightNew(long height) {
+        // TODO: if snapshto enabled, need height > snapshotHeight - 128
+        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
+            return null;
+        }
+        if (height > xdagStats.nmain) {
+            return null;
+        }
+        return blockStore.getBlockByHeight(height);
+    }
 
+    // REMOVE: 旧版本-通过高度获取区块
+    public Block getBlockByHeightOrigin(long height) {
         // TODO: if snapshto enabled, need height > snapshotHeight - 128
         if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
             return null;
@@ -1002,6 +1020,13 @@ public class BlockchainImpl implements Blockchain {
             }
         }
         return block;
+    }
+
+    @Override
+    public Block getBlockByHeight(long height) {
+        // ADD: 使用新版本获取
+        return getBlockByHeightNew(height);
+//        return getBlockByHeightOrigin(height);
     }
 
     @Override
@@ -1345,8 +1370,22 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    @Override
-    public List<Block> listMainBlocks(int count) {
+
+    // ADD: 使用新版本方法获取主块
+    public List<Block> listMainBlocksByHeight(int count) {
+        List<Block> res = new ArrayList<>();
+        long currentHeight = xdagStats.nmain;
+        for (int i = 0; i < count; i++) {
+            Block block = getBlockByHeightNew(currentHeight - i);
+            if (block != null) {
+                res.add(block);
+            }
+        }
+        return res;
+    }
+
+
+    public List<Block> listMainBlocksByOrigin(int count) {
         Block temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
         if (temp == null) {
             temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
@@ -1360,12 +1399,19 @@ public class BlockchainImpl implements Blockchain {
                 count--;
                 res.add((Block) temp.clone());
             }
+            // 获取maxdifflink
             if (temp.getInfo().getMaxDiffLink() == null) {
                 break;
             }
             temp = getBlockByHash(Bytes32.wrap(temp.getInfo().getMaxDiffLink()), false);
         }
         return res;
+    }
+
+    @Override
+    public List<Block> listMainBlocks(int count) {
+        return listMainBlocksByHeight(count);
+//        return listMainBlocksByOrigin(count);
     }
 
     // TODO: 列出本矿池生成的主块，如果本矿池只在前期产块或者从未产块，会导致需要遍历所有的区块数据，这部分应该需要优化

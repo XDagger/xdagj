@@ -73,6 +73,9 @@ public class BlockStore {
 
     public static final byte SNAPSHOT_BOOT = 0x70;
 
+    // ADD: 根据高度查询,添加新的标志
+    public static final byte BLOCK_HEIGHT = (byte) 0x80;
+
     public static final String SUM_FILE_NAME = "sums.dat";
 
     private final Kryo kryo;
@@ -129,6 +132,11 @@ public class BlockStore {
         byte[] key = BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
         key = BytesUtils.merge(key, hashlow);
         return key;
+    }
+
+    // ADD: 高度键
+    public static byte[] getHeight(long height) {
+        return BytesUtils.merge(BLOCK_HEIGHT, BytesUtils.longToBytes(height, false));
     }
 
     public static int getOurIndex(byte[] key) {
@@ -243,7 +251,8 @@ public class BlockStore {
     // 存储block的过程
     public void saveBlock(Block block) {
         long time = block.getTimestamp();
-        timeSource.put(getTimeKey(time, block.getHashLow()), block.getHashLow().toArray());
+        // Fix: time中只拿key的后缀（hashlow）就够了，值可以不存
+        timeSource.put(getTimeKey(time, block.getHashLow()), new byte[]{0});
         blockSource.put(block.getHashLow().toArray(), block.getXdagBlock().getData().toArray());
         saveBlockSums(block);
         saveBlockInfo(block.getInfo());
@@ -439,6 +448,13 @@ public class BlockStore {
             log.error(e.getMessage(), e);
         }
         indexSource.put(BytesUtils.merge(HASH_BLOCK_INFO, blockInfo.getHashlow()), value);
+        // 如果区块是主块的话顺便保存对应的高度信息
+        // TODO: paulochen 如果回滚了，对应高度的键值对该怎么更新(直接让其height=0的区块覆盖)
+//        if (blockInfo.getHeight() > 0) {
+        indexSource.put(getHeight(blockInfo.getHeight()), blockInfo.getHashlow());
+//        } else {
+//            indexSource.get()
+//        }
     }
 
     public boolean hasBlock(Bytes32 hashlow) {
@@ -476,6 +492,12 @@ public class BlockStore {
             }
         }
         return blocks;
+    }
+
+    //ADD: 通过高度获取区块
+    public Block getBlockByHeight(long height) {
+        byte[] hashlow = indexSource.get(getHeight(height));
+        return getBlockByHash(Bytes32.wrap(hashlow), false);
     }
 
     public Block getBlockByHash(Bytes32 hashlow, boolean isRaw) {
