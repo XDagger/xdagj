@@ -192,4 +192,14 @@ public class ECKeyPair {
         return BytesUtils.merge(pubKeyYPrefix, BytesUtils.subArray(Numeric.toBytesPadded(publicKey, 64), 0, 32));
     }
 
+    /**
+     * ECKey 存储公钥类型为 压缩+前缀（0x04）
+     * 验证签名的时候需要获得压缩公钥
+     * 添加compressPubKey方法，将非压缩公钥解析成压缩公钥
+     */
+    public byte[] getPubKeyBytes() {
+        byte pubKeyYPrefix = 0x04;
+        return BytesUtils.merge(pubKeyYPrefix, BytesUtils.subArray(Numeric.toBytesPadded(publicKey, 64), 0, 64));
+    }
+
 }

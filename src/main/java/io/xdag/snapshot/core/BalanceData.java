@@ -6,6 +6,7 @@ import static io.xdag.utils.BasicUtils.hash2Address;
 import io.xdag.utils.XdagTime;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.Objects;
 import lombok.Data;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes;
@@ -68,5 +69,26 @@ public class BalanceData {
                 ", storage_pos=" + storage_pos +
                 ", hash=" + (hash != null ? hash2Address(Bytes32.wrap(hash)) : "") +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        BalanceData that = (BalanceData) o;
+        return amount == that.amount &&
+                time == that.time &&
+                storage_pos == that.storage_pos &&
+                flags == that.flags &&
+                java.util.Arrays.equals(hash, that.hash);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(amount, time, storage_pos, flags);
     }
 }

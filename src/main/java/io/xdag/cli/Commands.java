@@ -413,12 +413,15 @@ public class Commands {
      */
     public String block(Bytes32 blockhash) {
         try {
-//            byte[] hashLow = new byte[32];
             MutableBytes32 hashLow = MutableBytes32.create();
-//            System.arraycopy(blockhash, 8, hashLow, 8, 24);
             hashLow.set(8, blockhash.slice(8, 24));
             Block block = kernel.getBlockStore().getRawBlockByHash(hashLow);
-            return printBlockInfo(block);
+            if (block == null) {
+                block = kernel.getBlockStore().getBlockInfoByHash(hashLow);
+                return printBlockInfo(block, false);
+            } else {
+                return printBlockInfo(block, true);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return e.getMessage();
@@ -434,7 +437,7 @@ public class Commands {
         }
     }
 
-    public String printBlockInfo(Block block) {
+    public String printBlockInfo(Block block, boolean raw) {
         block.parse();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
         String heightFormat = ((block.getInfo().getFlags() & BI_MAIN) == 0 ? "" : "    height: %08d\n");
@@ -452,27 +455,29 @@ public class Commands {
                  direction  address                                    amount
                        fee: %s           %.9f""";
         StringBuilder inputs = null;
-        if (block.getInputs().size() != 0) {
-            inputs = new StringBuilder();
-            for (int i = 0; i < block.getInputs().size(); i++) {
-                inputs.append(String.format("     input: %s           %.9f\n",
-                        hash2Address(Bytes32.wrap(
-                                kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false)
-                                        .getInfo().getHash())),
-                        amount2xdag(block.getInputs().get(i).getAmount().longValue())
-                ));
-            }
-        }
         StringBuilder outputs = null;
-        if (block.getOutputs().size() != 0) {
-            outputs = new StringBuilder();
-            for (int i = 0; i < block.getOutputs().size(); i++) {
-                outputs.append(String.format("    output: %s           %.9f\n",
-                        hash2Address(Bytes32.wrap(
-                                kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false)
-                                        .getInfo().getHash())),
-                        amount2xdag(block.getOutputs().get(i).getAmount().longValue())
-                ));
+        if (raw) {
+            if (block.getInputs().size() != 0) {
+                inputs = new StringBuilder();
+                for (int i = 0; i < block.getInputs().size(); i++) {
+                    inputs.append(String.format("     input: %s           %.9f\n",
+                            hash2Address(Bytes32.wrap(
+                                    kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false)
+                                            .getInfo().getHash())),
+                            amount2xdag(block.getInputs().get(i).getAmount().longValue())
+                    ));
+                }
+            }
+            if (block.getOutputs().size() != 0) {
+                outputs = new StringBuilder();
+                for (int i = 0; i < block.getOutputs().size(); i++) {
+                    outputs.append(String.format("    output: %s           %.9f\n",
+                            hash2Address(Bytes32.wrap(
+                                    kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false)
+                                            .getInfo().getHash())),
+                            amount2xdag(block.getOutputs().get(i).getAmount().longValue())
+                    ));
+                }
             }
         }
         //TODO need add block as transaction

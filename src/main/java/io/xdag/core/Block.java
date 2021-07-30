@@ -147,7 +147,8 @@ public class Block implements Cloneable {
 
         if (CollectionUtils.isNotEmpty(keys)) {
             for (ECKeyPair key : keys) {
-                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey(), true);
+//                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey(), true); //耗时长
+                byte[] keydata = key.getCompressPubKeyBytes(); //耗时短
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);

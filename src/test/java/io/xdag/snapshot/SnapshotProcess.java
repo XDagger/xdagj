@@ -38,6 +38,7 @@ import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -259,7 +260,8 @@ public class SnapshotProcess {
 
     public void createSnapshotData(SnapshotChainStore snapshotChainStore, Kernel kernel) throws IOException {
         if (snapshotChainStore
-                .loadFromSnapshotData("/Users/paulochen/Documents/projects/self/xdag/build/snapshot", false)) {
+                .loadFromSnapshotData("/Users/paulochen/Documents/projects/self/xdag/build/snapshot", false,
+                        new ArrayList<>())) {
             System.out.println("load success");
         }
     }

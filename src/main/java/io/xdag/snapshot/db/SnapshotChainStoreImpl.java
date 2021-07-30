@@ -2,10 +2,12 @@ package io.xdag.snapshot.db;
 
 import static io.xdag.config.Constants.BI_APPLIED;
 import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.snapshot.config.SnapShotKeys.SNAPSHOT_KEY_STATS_MAIN;
 import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey;
 import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey_;
+import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
@@ -21,6 +23,8 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.ECDSASignature;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Hash;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
@@ -58,8 +62,9 @@ import org.xerial.snappy.Snappy;
 @Slf4j
 public class SnapshotChainStoreImpl implements SnapshotChainStore {
 
-    public static final byte SNAPTSHOT_UNIT = 0x10;
-    public static final byte SNAPTSHOT_STATS = 0x20;
+    public static final byte SNAPSHOT_UNIT = 0x10;
+    public static final byte SNAPSHOT_STATS = 0x20;
+    public static final byte SNAPSHOT_GLOBAL_BALANCE = 0x30;
     public static final String BALACNE_KEY = "balance";
     public static final String STATS_KEY = "stats";
     public static final String PUB_KEY = "pubkey";
@@ -133,13 +138,27 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        snapshotSource.put(BytesUtils.merge(SNAPTSHOT_UNIT, getHashlowByHash(hashOrHashlow)), value);
+        snapshotSource.put(BytesUtils.merge(SNAPSHOT_UNIT, getHashlowByHash(hashOrHashlow)), value);
+    }
+
+    @Override
+    public void saveGlobalBalance(long balance) {
+        snapshotSource.put(new byte[]{SNAPSHOT_GLOBAL_BALANCE}, BytesUtils.longToBytes(balance, false));
+    }
+
+    @Override
+    public long getGlobalBalance() {
+        if (snapshotSource.get(new byte[]{SNAPSHOT_GLOBAL_BALANCE}) == null) {
+            return 0;
+        } else {
+            return BytesUtils.bytesToLong(snapshotSource.get(new byte[]{SNAPSHOT_GLOBAL_BALANCE}), 0, false);
+        }
     }
 
     @Override
     public SnapshotUnit getSnapshotUnit(byte[] hashOrHashlow) {
         SnapshotUnit snapshotUnit = null;
-        byte[] data = snapshotSource.get(BytesUtils.merge(SNAPTSHOT_UNIT, getHashlowByHash(hashOrHashlow)));
+        byte[] data = snapshotSource.get(BytesUtils.merge(SNAPSHOT_UNIT, getHashlowByHash(hashOrHashlow)));
         if (data == null) {
             return null;
         }
@@ -154,7 +173,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
     @Override
     public List<SnapshotUnit> getAllSnapshotUnit() {
         List<SnapshotUnit> snapshotUnits = new ArrayList<>();
-        List<byte[]> datas = snapshotSource.prefixValueLookup(new byte[]{SNAPTSHOT_UNIT});
+        List<byte[]> datas = snapshotSource.prefixValueLookup(new byte[]{SNAPSHOT_UNIT});
         for (byte[] data : datas) {
             SnapshotUnit snapshotUnit;
             try {
@@ -169,7 +188,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
 
     public List<StatsBlock> getSnapshotStatsBlock() {
         List<StatsBlock> statsBlocks = new ArrayList<>();
-        List<byte[]> datas = snapshotSource.prefixValueLookup(new byte[]{SNAPTSHOT_STATS});
+        List<byte[]> datas = snapshotSource.prefixValueLookup(new byte[]{SNAPSHOT_STATS});
         for (byte[] data : datas) {
             StatsBlock statsBlock;
             try {
@@ -189,12 +208,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        snapshotSource.put(BytesUtils.merge(SNAPTSHOT_STATS, BytesUtils.intToBytes(i, false)), value);
+        snapshotSource.put(BytesUtils.merge(SNAPSHOT_STATS, BytesUtils.intToBytes(i, false)), value);
     }
 
     public StatsBlock getStatsBlockByIndex(int i) {
         StatsBlock statsBlock = null;
-        byte[] data = snapshotSource.get(BytesUtils.merge(SNAPTSHOT_STATS, BytesUtils.intToBytes(i, false)));
+        byte[] data = snapshotSource.get(BytesUtils.merge(SNAPSHOT_STATS, BytesUtils.intToBytes(i, false)));
         if (data == null) {
             return null;
         }
@@ -218,13 +237,15 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
      * @param mainLag 用于判断是主网的randomx lag还是测试网的randomx_lag 暂时固定128
      * @return
      */
-    public boolean loadFromSnapshotData(String filePath, boolean mainLag) {
+    public boolean loadFromSnapshotData(String filePath, boolean mainLag, List<ECKeyPair> ecKeyPairs) {
         // 1. 初始保存
         Set<Bytes32> set = new HashSet<>();
         Map<Bytes32, BalanceData> balanceDataMap = new HashMap<>();
         Map<Bytes32, byte[]> ecKeyPairHashMap = new HashMap<>();
         Map<Bytes32, ECDSASignature> signatureHashMap = new HashMap<>();
         Map<Bytes32, Block> blockHashMap = new HashMap<>();
+        // 初始余额
+        long ourBalance = 0;
 
         // 2. 查找snapshot文件
         String balanceFilePath = filePath + "/balance";
@@ -345,11 +366,47 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             } else if (block != null) {
                 data = block.getXdagBlock().getData().toArray();
             }
+
+            // 4.1 如果公钥存在，对比公钥
+            if (ecKeyPair != null) {
+                for (ECKeyPair key : ecKeyPairs) {
+                    // 如果有相等的说明是我们的区块
+                    if (Bytes.wrap(key.getCompressPubKeyBytes()).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                        int flag = balanceData.getFlags();
+                        flag |= BI_OURS;
+                        balanceData.setFlags(flag);
+                        // TODO: 添加我们的balance
+                        ourBalance += balanceData.getAmount();
+                    }
+                }
+            } else { // 4.2 否则对比签名
+                Block tmpBlock = new Block(new XdagBlock(data));
+                ECDSASignature outsig = tmpBlock.getOutsig();
+                for (int i = 0; i < ecKeyPairs.size(); i++) {
+                    ECKeyPair ecKey = ecKeyPairs.get(i);
+                    byte[] publicKeyBytes = ecKey.getCompressPubKeyBytes();
+                    Bytes digest = Bytes
+                            .wrap(tmpBlock.getSubRawData(tmpBlock.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
+                    Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
+//                    if (ecKey.verify(hash.toArray(), outsig)) { //verify耗时较长
+                    if (ECKeyPair.verify(hash.toArray(), outsig.toCanonicalised(), publicKeyBytes)) { // 耗时短点
+                        int flag = balanceData.getFlags();
+                        flag |= BI_OURS;
+                        balanceData.setFlags(flag);
+//                         TODO: 添加我们的balance
+                        ourBalance += balanceData.getAmount();
+                    }
+                }
+            }
+
             // 4.1 保存snapshot单元用于生成blockinfo
             saveSnapshotUnit(bytes32.toArray(), new SnapshotUnit(
                     ecKeyPair, balanceData, data,
                     bytes32.toArray()));
         }
+        // 保存balance
+        saveGlobalBalance(ourBalance);
+        System.out.println("快照点时 余额为：" + amount2xdag(ourBalance));
 
         final Dbi<ByteBuffer> stats_db = env.openDbi(STATS_KEY, MDB_CREATE);
         Txn<ByteBuffer> stats_txn = env.txnRead();

@@ -393,8 +393,12 @@ public class XdagCli extends Launcher {
         if (config instanceof MainnetConfig) {
             mainLag = true;
         }
-        boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag);
+        Wallet wallet = loadAndUnlockWallet();
+        long start = System.currentTimeMillis();
+        boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag, wallet.getAccounts());
+        long end = System.currentTimeMillis();
         System.out.println("load res:" + res);
+        System.out.println("耗时:" + (end - start) / 1000 + "s");
     }
 
     public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {

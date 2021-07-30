@@ -73,26 +73,22 @@ public class KryoTest {
     public void serialize() {
         BlockInfo blockInfo = new BlockInfo();
         blockInfo.setHeight(100);
-        System.out.println(blockInfo);
+//        System.out.println(blockInfo);
         try {
             byte[] data = serialize(blockInfo);
-            System.out.println(Hex.toHexString(data));
-
             BlockInfo blockInfo1 = (BlockInfo) deserialize(data, BlockInfo.class);
-            System.out.println(blockInfo1);
+            assertEquals(blockInfo, blockInfo1);
+//            System.out.println(blockInfo1);
         } catch (SerializationException e) {
         } catch (DeserializationException e) {
             e.printStackTrace();
         }
 
         BalanceData b = new BalanceData();
-        System.out.println(b);
         try {
             byte[] data = serialize(b);
-            System.out.println(Hex.toHexString(data));
-
             BalanceData b2 = (BalanceData) deserialize(data, BalanceData.class);
-            System.out.println(b2);
+            assertEquals(b, b2);
         } catch (SerializationException e) {
         } catch (DeserializationException e) {
             e.printStackTrace();

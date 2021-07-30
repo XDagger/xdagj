@@ -511,6 +511,14 @@ public class XdagCliTest {
         List<ECKeyPair> keyList = Lists.newArrayList(account);
 
         // mock wallet
+        Wallet wallet = mock(Wallet.class);
+        when(wallet.unlock("oldpassword")).thenReturn(true);
+        when(xdagCLI.loadWallet()).thenReturn(wallet);
+
+        // mock passwords
+        doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
+
+        // mock wallet
         doReturn(keyList).when(xdagCLI).readOldWallet("111111", "111111", walletFile);
         when(walletFile.exists()).thenReturn(true);
         // mock passwords

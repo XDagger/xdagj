@@ -198,7 +198,7 @@ public class BlockchainTest {
     @Test
     public void testTransactionBlock() {
         ECKeyPair addrKey = ECKeyPair.create(private_1);
-        ECKeyPair poolKey = ECKeyPair.create(private_2);
+        ECKeyPair poolKey = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -234,8 +234,10 @@ public class BlockchainTest {
 
         // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
         // 5. remote check
         assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
 
         result = blockchain.tryToConnect(txBlock);
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
@@ -442,6 +444,12 @@ public class BlockchainTest {
         public void startCheckMain() {
 
         }
+
+        @Override
+        public void addOurBlock(int keyIndex, Block block) {
+            return;
+        }
+
     }
 
 }

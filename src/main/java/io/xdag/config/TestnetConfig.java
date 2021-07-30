@@ -52,7 +52,7 @@ public class TestnetConfig extends AbstractConfig {
         // TODO: snapshot
         // TODO: paulochen 快照启动以及高度配置
         this.snapshotEnabled = true;
-        this.snapshotHeight = 190000;
+        this.snapshotHeight = 196300;
     }
 
 }

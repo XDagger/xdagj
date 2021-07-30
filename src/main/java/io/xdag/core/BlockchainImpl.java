@@ -172,9 +172,13 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void initSnapshot() {
+        long start = System.currentTimeMillis();
         initSnapshotChain();
         initStats();
         cleanSnapshotChain();
+        long end = System.currentTimeMillis();
+        System.out.println("init snapshot done");
+        System.out.println("耗时：" + (end - start) + "ms");
     }
 
 
@@ -192,7 +196,7 @@ public class BlockchainImpl implements Blockchain {
         this.xdagStats.setNnoref(0);
         this.xdagStats.setNextra(0);
 
-//        this.xdagStats.setBalance();
+        this.xdagStats.setBalance(snapshotChainStore.getGlobalBalance());
 //        this.xdagStats.setGlobalMiner();
         this.xdagStats.setTotalnblocks(0);
         this.xdagStats.setNblocks(0);
@@ -1231,11 +1235,12 @@ public class BlockchainImpl implements Blockchain {
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
             ECKeyPair ecKey = ourkeys.get(i);
-            byte[] publicKeyBytes = Sign.publicKeyBytesFromPrivate(ecKey.getPrivateKey(), true);
-//            byte[] digest = BytesUtils.merge(block.getSubRawData(block.getOutsigIndex() - 2), publicKeyBytes);
+            // TODO: 优化
+            byte[] publicKeyBytes = ecKey.getCompressPubKeyBytes();
             Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-            if (ecKey.verify(hash.toArray(), signature)) {
+//            if (ecKey.verify(hash.toArray(), signature)) { // TODO: 耗时长
+            if (ECKeyPair.verify(hash.toArray(), signature.toCanonicalised(), publicKeyBytes)) {
                 log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;

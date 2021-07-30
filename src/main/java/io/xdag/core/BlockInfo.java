@@ -29,6 +29,7 @@ import static io.xdag.utils.BasicUtils.amount2xdag;
 import io.xdag.snapshot.core.SnapshotInfo;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -69,5 +70,29 @@ public class BlockInfo {
                 ", timestamp=" + timestamp +
                 ", remark=" + Arrays.toString(remark) +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        BlockInfo blockInfo = (BlockInfo) o;
+        return type == blockInfo.type &&
+                flags == blockInfo.flags &&
+                height == blockInfo.height &&
+                amount == blockInfo.amount &&
+                timestamp == blockInfo.timestamp &&
+                Arrays.equals(hash, blockInfo.hash);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(type, flags, height, amount, timestamp);
+        result = 31 * result + Arrays.hashCode(hash);
+        return result;
     }
 }

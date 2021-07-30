@@ -32,6 +32,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.Test;
 
 public class KeysTest {
@@ -63,6 +64,17 @@ public class KeysTest {
         ECKeyPair ecKeyPair = Keys.createEcKeyPair();
         assertEquals(ecKeyPair.getPublicKey().signum(), (1));
         assertEquals(ecKeyPair.getPrivateKey().signum(), (1));
+    }
+
+    @Test
+    public void testTransform() {
+        for (int i = 0; i < 1000; i++) {
+            ECKeyPair ecKeyPair = Keys.createEcKeyPair();
+            assertEquals(Bytes.wrap(ecKeyPair.getCompressPubKeyBytes()),
+                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(ecKeyPair.getPrivateKey(), true)));
+            assertEquals(Bytes.wrap(ecKeyPair.getPubKeyBytes()),
+                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(ecKeyPair.getPrivateKey(), false)));
+        }
     }
 
 }
