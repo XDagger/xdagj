@@ -103,6 +103,10 @@ public class Launcher {
                 default -> config = new MainnetConfig();
             }
         }
+        //不传参数默认开启主网配置
+        if (args.length == 0) {
+            config = new MainnetConfig();
+        }
         config.changePara(args);
         config.setDir();
         logPoolInfo(config);
