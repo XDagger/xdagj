@@ -33,6 +33,9 @@ import org.apache.tuweni.bytes.Bytes32;
 
 public interface Blockchain {
 
+    // for snapshot pre seed
+    byte[] getPreSeed();
+
     ImportResult tryToConnect(Block block);
 
     Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to, boolean mining, String remark);

@@ -21,6 +21,8 @@ public interface SnapshotChainStore {
 
     StatsBlock getLatestStatsBlock();
 
+    byte[] getSnapshotPreSeed();
+
     void saveSnaptshotStatsBlock(int i, StatsBlock statsBlock);
 
     void saveGlobalBalance(long balance);

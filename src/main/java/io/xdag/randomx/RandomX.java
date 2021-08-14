@@ -63,7 +63,7 @@ public class RandomX {
 
     protected final RandomXMemory[] globalMemory = new RandomXMemory[2];
     protected final ReadWriteLock[] globalMemoryLock = new ReentrantReadWriteLock[2];
-
+    protected final Config config;
     protected boolean isTestNet = true;
     protected int mineType;
     protected long randomXForkSeedHeight;
@@ -81,6 +81,7 @@ public class RandomX {
     protected boolean is_Large_pages;
 
     public RandomX(Config config) {
+        this.config = config;
         if (config instanceof MainnetConfig) {
             isTestNet = false;
         }
@@ -321,6 +322,28 @@ public class RandomX {
             } finally {
                 globalMemoryLock[i].writeLock().unlock();
             }
+        }
+    }
+
+    public void randomXLoadingSnapshot(byte[] preseed, long forkTime) {
+        // TODO:
+        long firstMemIndex = randomXHashEpochIndex + 1;
+        RandomXMemory firstMemory = globalMemory[(int) (firstMemIndex) & 1];
+        firstMemory.seed = preseed;
+        randomXPoolUpdateSeed(firstMemIndex);
+        randomXHashEpochIndex = firstMemIndex;
+        firstMemory.isSwitched = 0;
+
+        int lag = 128;
+        randomXForkTime = XdagTime
+                .getEpoch(blockchain.getBlockByHeight(blockchain.getXdagStats().nmain - lag).getTimestamp());
+        Block block;
+        for (int i = lag; i >= 0; i--) {
+            block = blockchain.getBlockByHeight(blockchain.getXdagStats().nmain - i);
+            if (block == null) {
+                continue;
+            }
+            randomXSetForkTime(block);
         }
     }
 

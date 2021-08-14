@@ -12,6 +12,7 @@ public class SnapShotKeys {
     public final static String SNAPTSHOT_KEY_EXTSTATS = "g_xdag_extstats";
 
     public final static String SNAPSHOT_KEY_STATS_MAIN = "g_snapshot_main";
+    public final static String SNAPSHOT_PRE_SEED = "pre_seed";
 
 
     public static MutableBytes getMutableBytesByKey(String key) {

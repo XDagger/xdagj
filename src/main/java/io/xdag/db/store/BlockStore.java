@@ -497,6 +497,9 @@ public class BlockStore {
     //ADD: 通过高度获取区块
     public Block getBlockByHeight(long height) {
         byte[] hashlow = indexSource.get(getHeight(height));
+        if (hashlow == null) {
+            return null;
+        }
         return getBlockByHash(Bytes32.wrap(hashlow), false);
     }
 

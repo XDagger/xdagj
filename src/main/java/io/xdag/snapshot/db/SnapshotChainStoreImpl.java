@@ -5,6 +5,7 @@ import static io.xdag.config.Constants.BI_MAIN_REF;
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.snapshot.config.SnapShotKeys.SNAPSHOT_KEY_STATS_MAIN;
+import static io.xdag.snapshot.config.SnapShotKeys.SNAPSHOT_PRE_SEED;
 import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey;
 import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey_;
 import static io.xdag.utils.BasicUtils.amount2xdag;
@@ -65,6 +66,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
     public static final byte SNAPSHOT_UNIT = 0x10;
     public static final byte SNAPSHOT_STATS = 0x20;
     public static final byte SNAPSHOT_GLOBAL_BALANCE = 0x30;
+    public static final byte PRE_SEED = 0x40;
     public static final String BALACNE_KEY = "balance";
     public static final String STATS_KEY = "stats";
     public static final String PUB_KEY = "pubkey";
@@ -199,6 +201,14 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             }
         }
         return statsBlocks;
+    }
+
+    public void saveSnapshotPreSeed(Bytes bytes) {
+        snapshotSource.put(new byte[]{PRE_SEED}, bytes.toArray());
+    }
+
+    public byte[] getSnapshotPreSeed() {
+        return snapshotSource.get(new byte[]{PRE_SEED});
     }
 
     public void saveSnaptshotStatsBlock(int i, StatsBlock statsBlock) {
@@ -428,6 +438,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             saveSnaptshotStatsBlock(i, StatsBlock
                     .parse(Bytes.wrapByteBuffer(snapshotey), Bytes.wrapByteBuffer(snapshot)));
         }
+
+        String key = SNAPSHOT_PRE_SEED;
+        ByteBuffer snapshotey = allocateDirect(getMutableBytesByKey_(key).size());
+        snapshotey.put(getMutableBytesByKey_(key).toArray()).flip();
+        ByteBuffer snapshot = stats_db.get(stats_txn, snapshotey);
+        saveSnapshotPreSeed(Bytes.wrapByteBuffer(snapshot));
 
         stats_txn.close();
         env.close();

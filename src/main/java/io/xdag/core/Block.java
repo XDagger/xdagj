@@ -147,8 +147,9 @@ public class Block implements Cloneable {
 
         if (CollectionUtils.isNotEmpty(keys)) {
             for (ECKeyPair key : keys) {
-//                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey(), true); //耗时长
-                byte[] keydata = key.getCompressPubKeyBytes(); //耗时短
+                // TODO： paulochen 是不是可以替换
+                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey(), true); //耗时长
+//                byte[] keydata = key.getCompressPubKeyBytes(); //耗时短
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
@@ -342,6 +343,8 @@ public class Block implements Cloneable {
             encoder.write(info.getRemark());
         }
         for (ECKeyPair eckey : pubKeys) {
+            // TODO： paulochen 是不是可以替换
+//            byte[] pubkeyBytes = eckey.getCompressPubKeyBytes();
             byte[] pubkeyBytes = Sign.publicPointFromPrivate(eckey.getPrivateKey()).getEncoded(true);
             byte[] key = BytesUtils.subArray(pubkeyBytes, 1, 32);
             encoder.writeField(key);
@@ -377,6 +380,8 @@ public class Block implements Cloneable {
     private void sign(ECKeyPair ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
 //        log.debug("sign encoded:{}", Hex.toHexString(encoded));
+        // TODO： paulochen 是不是可以替换
+//        byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
         byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
 //        log.debug("sign digest:{}", Hex.toHexString(digest));
@@ -401,7 +406,9 @@ public class Block implements Cloneable {
         for (ECDSASignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 1);
             for (ECKeyPair ecKey : keys) {
-                byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
+                // TODO： paulochen 是不是可以替换
+//            byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
+                byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
 //                hash = Hash.hashTwice(Bytes.wrap(BytesUtils.merge(digest, pubkeyBytes)));
                 hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
                 if (ECKeyPair.verify(hash.toArray(), sig.toCanonicalised(), pubkeyBytes)) {
@@ -411,7 +418,9 @@ public class Block implements Cloneable {
         }
         digest = getSubRawData(getOutsigIndex() - 2);
         for (ECKeyPair ecKey : keys) {
-            byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
+            // TODO： paulochen 是不是可以替换
+//            byte[] pubkeyBytes = ecKey.getCompressPubKeyBytes();
+            byte[] pubkeyBytes = Sign.publicPointFromPrivate(ecKey.getPrivateKey()).getEncoded(true);
 //            hash = Hash.hashTwice(Bytes.wrap(BytesUtils.merge(digest, pubkeyBytes)));
             hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
 

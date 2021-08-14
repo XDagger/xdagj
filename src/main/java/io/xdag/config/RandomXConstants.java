@@ -35,6 +35,6 @@ public class RandomXConstants {
     public static final int XDAG_RANDOMX = 2;
     public static long SEEDHASH_EPOCH_TESTNET_BLOCKS = 2048;
     public static long SEEDHASH_EPOCH_TESTNET_LAG = 64;
-    public static long RANDOMX_TESTNET_FORK_HEIGHT = 4096;// 196288
+    public static long RANDOMX_TESTNET_FORK_HEIGHT = 184320;// 196288
 
 }

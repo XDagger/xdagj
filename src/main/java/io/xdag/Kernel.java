@@ -211,8 +211,9 @@ public class Kernel {
         // randomX init
         // ====================================
         // TODO: paulochen randomx 需要恢复
-//        randomXUtils = new RandomX(config);
-//        randomXUtils.init();
+        randomXUtils = new RandomX(config);
+        randomXUtils.init();
+//        randomXUtils.randomXLoadingForkTime();
         log.info("RandomX init");
 
         // ====================================
@@ -237,7 +238,12 @@ public class Kernel {
 
         // randomX loading
         // TODO: paulochen randomx 需要恢复
-//        randomXUtils.randomXLoadingForkTime();
+        if (config.getSnapshotSpec().isSnapshotEnabled()) {
+            // TODO: forkTime 怎么获得
+            randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
+        } else {
+            randomXUtils.randomXLoadingForkTime();
+        }
         log.info("RandomX reload");
 
         // log.debug("Net Status:"+netStatus);

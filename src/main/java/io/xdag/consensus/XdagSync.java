@@ -82,6 +82,7 @@ public class XdagSync {
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
         sumsRequestMap = new ConcurrentHashMap<>();
         blocksRequestMap = new ConcurrentHashMap<>();
+        this.startSyncTime = kernel.getConfig().getSnapshotSpec().getSnapshotTime();
     }
 
     /**
@@ -92,7 +93,7 @@ public class XdagSync {
             isRunning = true;
             status = Status.SYNCING;
             // TODO: paulochen 开始同步的时间点/快照时间点
-            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
+//            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
             sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 64, 64, TimeUnit.SECONDS);
         }
     }

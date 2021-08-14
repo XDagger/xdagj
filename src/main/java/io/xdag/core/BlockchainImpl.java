@@ -128,6 +128,9 @@ public class BlockchainImpl implements Blockchain {
     private SnapshotChainStore snapshotChainStore;
     private long snapshotHeight;
 
+    @Getter
+    private byte[] preSeed;
+
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
@@ -175,6 +178,7 @@ public class BlockchainImpl implements Blockchain {
         long start = System.currentTimeMillis();
         initSnapshotChain();
         initStats();
+        // TODO 清理snapshot的数据
         cleanSnapshotChain();
         long end = System.currentTimeMillis();
         System.out.println("init snapshot done");
@@ -234,6 +238,7 @@ public class BlockchainImpl implements Blockchain {
                 blockStore.saveBlockInfo(blockInfo);
             }
         }
+        preSeed = snapshotChainStore.getSnapshotPreSeed();
         // 设置为已通过快照启动
         blockStore.setSnapshotBoot();
     }

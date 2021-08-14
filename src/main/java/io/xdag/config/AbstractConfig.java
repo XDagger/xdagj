@@ -151,6 +151,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected boolean snapshotEnabled = false;
     protected long snapshotHeight;
+    protected long snapshotTime; // TODO：用于sync时的起始时间
 
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
@@ -436,5 +437,10 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public void snapshotEnable() {
         snapshotEnabled = true;
+    }
+
+    @Override
+    public long getSnapshotTime() {
+        return snapshotTime;
     }
 }

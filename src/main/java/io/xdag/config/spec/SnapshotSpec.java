@@ -9,4 +9,6 @@ public interface SnapshotSpec {
     void setSnapshotHeight(long height);
 
     void snapshotEnable();
+
+    long getSnapshotTime();
 }
