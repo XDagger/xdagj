@@ -183,7 +183,7 @@ public class BlockchainImpl implements Blockchain {
         initSnapshotChain();
         initStats();
         // TODO 清理snapshot的数据
-//        cleanSnapshotChain();
+        cleanSnapshotChain();
         long end = System.currentTimeMillis();
         System.out.println("init snapshot done");
         System.out.println("耗时：" + (end - start) + "ms");
