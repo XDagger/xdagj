@@ -204,6 +204,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
     }
 
     public void saveSnapshotPreSeed(Bytes bytes) {
+        System.out.println("pre seed:" + bytes);
         snapshotSource.put(new byte[]{PRE_SEED}, bytes.toArray());
     }
 
