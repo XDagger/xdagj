@@ -319,6 +319,9 @@ public class Kernel {
         minerManager.start();
         awardManager.start();
 
+        // register pow
+        blockchain.registerListener(pow);
+
         if (config instanceof MainnetConfig) {
             xdagState = XdagState.WAIT;
         } else if (config instanceof TestnetConfig) {

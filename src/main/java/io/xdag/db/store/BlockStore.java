@@ -141,7 +141,7 @@ public class BlockStore {
         return BytesUtils.merge(BLOCK_HEIGHT, BytesUtils.longToBytes(height, false));
     }
 
-    public static int getOurIndex(byte[] key) {
+    private static int getOurIndex(byte[] key) {
         try {
             byte[] index = BytesUtils.subArray(key, 1, 4);
             return BytesUtils.bytesToInt(index, 0, false);
@@ -149,6 +149,14 @@ public class BlockStore {
             return 0;
         }
 //        return BytesUtils.bytesToInt(key, 1, false);
+    }
+
+    private static byte[] getOurHash(byte[] key) {
+        try {
+            return BytesUtils.subArray(key, 5, 32);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void kryoRegister() {
@@ -261,7 +269,7 @@ public class BlockStore {
     }
 
     public void saveOurBlock(int index, byte[] hashlow) {
-        indexSource.put(getOurKey(index, hashlow), hashlow);
+        indexSource.put(getOurKey(index, hashlow), new byte[]{0});
     }
 
     public Bytes getOurBlock(int index) {
@@ -310,7 +318,8 @@ public class BlockStore {
     public void fetchOurBlocks(Function<Pair<Integer, Block>, Boolean> function) {
         indexSource.fetchPrefix(new byte[]{OURS_BLOCK_INFO}, pair -> {
             int index = getOurIndex(pair.getKey());
-            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
+//            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
+            Block block = getBlockInfoByHash(Bytes32.wrap(getOurHash(pair.getKey())));
             if (function.apply(Pair.of(index, block))) {
                 return Boolean.TRUE;
             }
