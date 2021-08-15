@@ -299,6 +299,7 @@ public class SyncManager {
         }
     }
 
+    // TODO：目前默认是一直保持同步，不负责出块
     public void makeSyncDone() {
         log.info("Sync Done");
         if (syncDone) {
