@@ -76,6 +76,8 @@ public class BlockStore {
     // ADD: 根据高度查询,添加新的标志
     public static final byte BLOCK_HEIGHT = (byte) 0x80;
 
+    public static final byte SNAPSHOT_PRESEED = (byte) 0x90;
+
     public static final String SUM_FILE_NAME = "sums.dat";
 
     private final Kryo kryo;
@@ -559,6 +561,14 @@ public class BlockStore {
 
     public void setSnapshotBoot() {
         indexSource.put(new byte[]{SNAPSHOT_BOOT}, BytesUtils.intToBytes(1, false));
+    }
+
+    public void savePreSeed(byte[] preseed) {
+        indexSource.put(new byte[]{SNAPSHOT_PRESEED}, preseed);
+    }
+
+    public byte[] getPreSeed() {
+        return indexSource.get(new byte[]{SNAPSHOT_PRESEED});
     }
 
 }

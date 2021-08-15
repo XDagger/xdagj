@@ -336,14 +336,81 @@ public class RandomX {
 
         int lag = 128;
         randomXForkTime = XdagTime
-                .getEpoch(blockchain.getBlockByHeight(blockchain.getXdagStats().nmain - lag).getTimestamp());
+                .getEpoch(
+                        blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight() - lag).getTimestamp());
         Block block;
         for (int i = lag; i >= 0; i--) {
-            block = blockchain.getBlockByHeight(blockchain.getXdagStats().nmain - i);
+            block = blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight() - i);
             if (block == null) {
                 continue;
             }
             randomXSetForkTime(block);
+        }
+    }
+
+    public void randomXLoadingForkTimeSnapshot(byte[] preseed, long forkTime) {
+        // 如果快照在还没切到下一个seed更换周期时就重启，那么还是第一个seed是初始的preseed
+        if (blockchain.getXdagStats().nmain < config.getSnapshotSpec().getSnapshotHeight() + (isTestNet
+                ? SEEDHASH_EPOCH_TESTNET_BLOCKS : SEEDHASH_EPOCH_BLOCKS)) {
+//            long firstMemIndex = randomXHashEpochIndex + 1;
+//            RandomXMemory firstMemory = globalMemory[(int) (firstMemIndex) & 1];
+//            firstMemory.seed = preseed;
+//            randomXPoolUpdateSeed(firstMemIndex);
+//            randomXHashEpochIndex = firstMemIndex;
+//            firstMemory.isSwitched = 0;
+//            randomXSetForkTime(blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight()));
+            randomXLoadingSnapshot(preseed, forkTime);
+        } else {
+            Block block;
+            if (blockchain.getXdagStats().nmain >= config.getSnapshotSpec().getSnapshotHeight()) {
+                block = blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight());
+                randomXForkTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag;
+
+                long seedEpoch = isTestNet ? SEEDHASH_EPOCH_TESTNET_BLOCKS : SEEDHASH_EPOCH_BLOCKS;
+                seedEpoch -= 1;
+                long seedHeight = blockchain.getXdagStats().nmain & ~seedEpoch;
+                long preSeedHeight = seedHeight - seedEpoch - 1;
+
+                if (preSeedHeight >= randomXForkSeedHeight) {
+                    randomXHashEpochIndex = 0;
+                    randomXPoolMemIndex = -1;
+
+                    block = blockchain.getBlockByHeight(preSeedHeight);
+                    long memoryIndex = randomXHashEpochIndex + 1;
+                    RandomXMemory memory = globalMemory[(int) (memoryIndex) & 1];
+                    memory.seed = Arrays
+                            .reverse(
+                                    blockchain.getBlockByHeight(preSeedHeight - randomXForkLag).getInfo().getHashlow());
+                    memory.switchTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag + 1;
+                    memory.seedTime = block.getTimestamp();
+                    memory.seedHeight = block.getInfo().getHeight();
+
+                    randomXPoolUpdateSeed(memoryIndex);
+                    randomXHashEpochIndex = memoryIndex;
+                    memory.isSwitched = 1;
+                }
+
+                if (seedHeight >= randomXForkSeedHeight) {
+                    block = blockchain.getBlockByHeight(seedHeight);
+                    long memoryIndex = randomXHashEpochIndex + 1;
+                    RandomXMemory memory = globalMemory[(int) (memoryIndex) & 1];
+                    memory.seed = Arrays
+                            .reverse(blockchain.getBlockByHeight(seedHeight - randomXForkLag).getInfo().getHashlow());
+                    memory.switchTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag + 1;
+                    memory.seedTime = block.getTimestamp();
+                    memory.seedHeight = block.getInfo().getHeight();
+
+                    randomXPoolUpdateSeed(memoryIndex);
+                    randomXHashEpochIndex = memoryIndex;
+//                memory.isSwitched = 0;
+                    if (XdagTime.getEpoch(blockchain.getBlockByHeight(blockchain.getXdagStats().nmain).getTimestamp())
+                            >= memory.getSwitchTime()) {
+                        memory.isSwitched = 1;
+                    } else {
+                        memory.isSwitched = 0;
+                    }
+                }
+            }
         }
     }
 

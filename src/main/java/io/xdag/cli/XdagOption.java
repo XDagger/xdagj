@@ -44,6 +44,9 @@ public enum XdagOption {
 
     CONVERT_OLD_WALLET("convertoldwallet"),
 
+    // Snapshot enable
+    ENABLE_SNAPSHOT("enablesnapshot"),
+
     // Snapshot load
     LOAD_SNAPSHOT("loadsnapshot");
 

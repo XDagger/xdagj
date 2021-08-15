@@ -123,9 +123,11 @@ public class Launcher {
     protected Config buildConfig(String[] args) throws Exception {
         Config config = null;
         for (String arg : args) {
-            switch (arg) {
-                case "-t" -> config = new TestnetConfig();
-                default -> config = new MainnetConfig();
+            if ("-t".equals(arg)) {
+                config = new TestnetConfig();
+                break;
+            } else {
+                config = new MainnetConfig();
             }
         }
         if (args.length == 0) {

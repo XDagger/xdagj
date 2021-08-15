@@ -11,4 +11,6 @@ public interface SnapshotSpec {
     void snapshotEnable();
 
     long getSnapshotTime();
+
+    void setSnapshotTime(long time);
 }

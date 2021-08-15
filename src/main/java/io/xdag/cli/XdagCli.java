@@ -31,7 +31,6 @@ import io.xdag.Launcher;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.MainnetConfig;
-import io.xdag.config.TestnetConfig;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
@@ -126,6 +125,15 @@ public class XdagCli extends Launcher {
                 .hasArg(true).optionalArg(false).argName("filename").type(String.class)
                 .build();
         addOption(loadSnapshotOption);
+
+        Option bootSnapshotOption = Option.builder()
+                .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
+                .hasArg(true).numberOfArgs(2).optionalArg(false).argName("snapshotheight").type(Integer.class)
+                .argName("snapshottime")
+                .type(Integer.class)
+                .desc("the parameter snapshottime uses hexadecimal")
+                .build();
+        addOption(bootSnapshotOption);
     }
 
     public static void main(String[] args, XdagCli cli) throws Exception {
@@ -146,9 +154,9 @@ public class XdagCli extends Launcher {
         // move old args
         List<String> argsList = new ArrayList<>();
         for (String arg : args) {
-            switch (arg) {
-                case "-t" -> config = new TestnetConfig();
-                default -> argsList.add(arg);
+            if ("-t".equals(arg)) {
+            } else {
+                argsList.add(arg);
             }
         }
         String[] newArgs = argsList.toArray(new String[0]);
@@ -187,6 +195,19 @@ public class XdagCli extends Launcher {
             File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
         } else {
+            if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
+                String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
+                try {
+                    long height = Long.parseLong(values[0]);
+                    long time = Long.parseLong(values[1], 16);
+                    config.getSnapshotSpec().setSnapshotHeight(height);
+                    config.getSnapshotSpec().setSnapshotTime(time);
+                    config.getSnapshotSpec().snapshotEnable();
+                    System.out.println("enable snapshot:" + config.getSnapshotSpec().isSnapshotEnabled());
+                } catch (NumberFormatException e) {
+                    System.out.println("参数错误");
+                }
+            }
             start();
         }
     }

@@ -94,15 +94,16 @@ public class XdagCliTest {
         xdagCLI.printHelp();
         String helpStr = """
                 usage: ./xdag.sh [options]
-                    --account <action>              init|create|list
-                    --changepassword                change wallet password
-                    --convertoldwallet <filename>   convert xdag old wallet.dat to private key hex
-                    --dumpprivatekey <address>      print hex key
-                    --help                          print help
-                    --importmnemonic <mnemonic>     import HDWallet mnemonic
-                    --importprivatekey <key>        import hex key
-                    --loadsnapshot <filename>       load snapshot
-                    --version                       show version
+                    --account <action>                init|create|list
+                    --changepassword                  change wallet password
+                    --convertoldwallet <filename>     convert xdag old wallet.dat to private key hex
+                    --dumpprivatekey <address>        print hex key
+                    --enablesnapshot <snapshottime>   the parameter snapshottime uses hexadecimal
+                    --help                            print help
+                    --importmnemonic <mnemonic>       import HDWallet mnemonic
+                    --importprivatekey <key>          import hex key
+                    --loadsnapshot <filename>         load snapshot
+                    --version                         show version
                 """;
         assertEquals(helpStr, outRule.getLog());
     }

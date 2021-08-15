@@ -69,12 +69,11 @@ public class XdagSync {
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> sumsRequestMap;
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> blocksRequestMap;
+    // TODO: paulochen 开始同步的时间点/快照时间点
+    private final long startSyncTime;
     private Status status;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
-
-    // TODO: paulochen 开始同步的时间点/快照时间点
-    private long startSyncTime;
 
     public XdagSync(Kernel kernel) {
         this.channelMgr = kernel.getChannelMgr();

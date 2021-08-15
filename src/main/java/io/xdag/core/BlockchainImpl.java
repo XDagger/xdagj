@@ -150,6 +150,9 @@ public class BlockchainImpl implements Blockchain {
             this.snapshotChainStore = new SnapshotChainStoreImpl(
                     new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
             initSnapshot();
+            // 保存最新快照的状态
+            blockStore.saveXdagTopStatus(xdagTopStatus);
+            blockStore.saveXdagStatus(xdagStats);
         } else {
             XdagStats storedStats = blockStore.getXdagStatus();
             if (storedStats != null) {
@@ -161,6 +164,7 @@ public class BlockchainImpl implements Blockchain {
             }
             XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
             this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
+            preSeed = blockStore.getPreSeed();
         }
 
         // add randomx utils
@@ -179,7 +183,7 @@ public class BlockchainImpl implements Blockchain {
         initSnapshotChain();
         initStats();
         // TODO 清理snapshot的数据
-        cleanSnapshotChain();
+//        cleanSnapshotChain();
         long end = System.currentTimeMillis();
         System.out.println("init snapshot done");
         System.out.println("耗时：" + (end - start) + "ms");
@@ -239,8 +243,7 @@ public class BlockchainImpl implements Blockchain {
             }
         }
         preSeed = snapshotChainStore.getSnapshotPreSeed();
-        // 设置为已通过快照启动
-        blockStore.setSnapshotBoot();
+        blockStore.savePreSeed(preSeed);
     }
 
     public List<String> getFileName(long time) {

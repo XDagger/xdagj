@@ -238,11 +238,17 @@ public class Kernel {
 
         // randomX loading
         // TODO: paulochen randomx 需要恢复
-        if (config.getSnapshotSpec().isSnapshotEnabled()) {
+        // 初次快照启动
+        if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
             // TODO: forkTime 怎么获得
             randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
+            // 设置为已通过快照启动
+            blockStore.setSnapshotBoot();
+        } else if (config.getSnapshotSpec().isSnapshotEnabled() && blockStore.isSnapshotBoot()) { // 快照加载后重启
+            randomXUtils.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
         } else {
             randomXUtils.randomXLoadingForkTime();
+
         }
         log.info("RandomX reload");
 
