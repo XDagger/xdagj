@@ -334,12 +334,12 @@ public class RandomX {
         randomXHashEpochIndex = firstMemIndex;
         firstMemory.isSwitched = 0;
 
-        int lag = 128;
+        long lag = isTestNet ? SEEDHASH_EPOCH_TESTNET_LAG : SEEDHASH_EPOCH_LAG;
         randomXForkTime = XdagTime
                 .getEpoch(
                         blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight() - lag).getTimestamp());
         Block block;
-        for (int i = lag; i >= 0; i--) {
+        for (long i = lag; i >= 0; i--) {
             block = blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight() - i);
             if (block == null) {
                 continue;
