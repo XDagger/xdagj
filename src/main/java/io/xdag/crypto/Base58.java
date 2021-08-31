@@ -21,11 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
 import java.util.Arrays;
 
 public class Base58 {
+
     private static final char[] ALPHABET =
             "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray();
     private static final char ENCODED_ZERO = ALPHABET[0];

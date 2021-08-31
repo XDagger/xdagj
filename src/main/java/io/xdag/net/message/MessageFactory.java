@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message;
 
 import org.apache.tuweni.bytes.MutableBytes;
@@ -28,5 +29,5 @@ import org.apache.tuweni.bytes.MutableBytes;
 public interface MessageFactory {
 
     Message create(byte code, MutableBytes encoded);
-    
+
 }

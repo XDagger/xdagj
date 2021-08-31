@@ -21,15 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.message;
+
+import static io.xdag.net.message.XdagMessageCodes.NEW_TASK;
 
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
-
-import static io.xdag.net.message.XdagMessageCodes.NEW_TASK;
 
 public class NewTaskMessage extends Message {
 

@@ -21,20 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto.jni;
 
 import io.xdag.utils.SystemUtil;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.file.Files;
-
 public class RandomX {
+
     private static final Logger logger = LoggerFactory.getLogger(RandomX.class);
 
     protected static File nativeDir;
     protected static boolean enabled = false;
+
+    // initialize library when the class loads
+    static {
+        init();
+    }
 
     /**
      * Initializes the native libraries
@@ -81,7 +91,7 @@ public class RandomX {
             if (!file.exists()) {
                 InputStream in = Native.class.getResourceAsStream(resource); // null pointer exception
                 OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                for (int c; (c = in.read()) != -1;) {
+                for (int c; (c = in.read()) != -1; ) {
                     out.write(c);
                 }
                 out.close();
@@ -96,18 +106,21 @@ public class RandomX {
         }
     }
 
-    // initialize library when the class loads
-    static {
-        init();
-    }
-
     public static native long allocCache();
-    public static native long initCache(long cache,byte[] key,int len);
+
+    public static native long initCache(long cache, byte[] key, int len);
+
     public static native void releaseCache(long cache);
+
     public static native long allocDataSet();
-    public static native long initDataSet(long cache,long dataset,int miners);
+
+    public static native long initDataSet(long cache, long dataset, int miners);
+
     public static native void releaseDataSet(long dataset);
-    public static native long createVm(long cache,long dataset,int miners);
+
+    public static native long createVm(long cache, long dataset, int miners);
+
     public static native long destroyVm(long vm);
-    public static native byte[] calculateHash(long vm,byte[] data,int length);
+
+    public static native byte[] calculateHash(long vm, byte[] data, int length);
 }

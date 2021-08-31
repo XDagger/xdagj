@@ -21,17 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
-import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.math.ec.ECPoint;
+import static io.xdag.crypto.Hash.hmacSha512;
+import static io.xdag.crypto.Hash.sha256hash160;
 
+import io.xdag.utils.Numeric;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
-import static io.xdag.crypto.Hash.*;
+import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.math.ec.ECPoint;
 
 /**
  * BIP-32 key pair.
@@ -40,6 +41,7 @@ import static io.xdag.crypto.Hash.*;
  * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/DeterministicKey.java
  */
 public class Bip32ECKeyPair extends ECKeyPair {
+
     public static final int HARDENED_BIT = 0x80000000;
 
     private final boolean parentHasPrivate;
@@ -94,6 +96,10 @@ public class Bip32ECKeyPair extends ECKeyPair {
         }
 
         return curr;
+    }
+
+    private static boolean isHardened(int a) {
+        return (a & HARDENED_BIT) != 0;
     }
 
     private Bip32ECKeyPair deriveChildKey(int childNumber) {
@@ -180,9 +186,5 @@ public class Bip32ECKeyPair extends ECKeyPair {
 
     private boolean hasPrivateKey() {
         return this.getPrivateKey() != null || parentHasPrivate;
-    }
-
-    private static boolean isHardened(int a) {
-        return (a & HARDENED_BIT) != 0;
     }
 }

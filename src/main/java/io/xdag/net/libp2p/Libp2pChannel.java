@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p;
 
 import io.libp2p.core.Connection;
@@ -32,11 +33,9 @@ import io.xdag.net.Channel;
 import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
-import java.net.InetSocketAddress;
-
 import org.apache.commons.lang3.math.NumberUtils;
 
 /**
@@ -45,6 +44,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 @Slf4j
 @Getter
 public class Libp2pChannel extends Channel {
+
     private final Connection connection;
     private final Libp2pXdagProtocol protocol;
 
@@ -57,7 +57,7 @@ public class Libp2pChannel extends Channel {
         String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
         String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
         this.inetSocketAddress = new InetSocketAddress(ip, NumberUtils.toInt(port));
-        this.node = new Node(connection.secureSession().getRemoteId().getBytes(),ip, NumberUtils.toInt(port));
+        this.node = new Node(connection.secureSession().getRemoteId().getBytes(), ip, NumberUtils.toInt(port));
         this.messageQueue = new MessageQueue(this);
         log.debug("Initwith Node host:" + ip + " port:" + port + " node:" + node.getHexId());
     }
@@ -93,13 +93,13 @@ public class Libp2pChannel extends Channel {
     }
 
     @Override
-    public void setActive(boolean b) {
-        isActive = b;
+    public boolean isActive() {
+        return isActive;
     }
 
     @Override
-    public boolean isActive() {
-        return isActive;
+    public void setActive(boolean b) {
+        isActive = b;
     }
 
     @Override

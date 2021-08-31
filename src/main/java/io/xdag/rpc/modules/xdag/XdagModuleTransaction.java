@@ -21,11 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
 
 public interface XdagModuleTransaction {
+
     String sendTransaction(Web3.CallArguments args);
 
     String sendRawTransaction(String rawData);

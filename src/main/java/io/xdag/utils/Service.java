@@ -21,16 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class Service {
-    enum State {
-        IDLE,
-        RUNNING,
-        STOPPED
-    }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
 
@@ -57,5 +53,11 @@ public abstract class Service {
 
     public boolean isRunning() {
         return state.get() == State.RUNNING;
+    }
+
+    enum State {
+        IDLE,
+        RUNNING,
+        STOPPED
     }
 }

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.cli;
 
 public enum XdagOption {
@@ -41,7 +42,13 @@ public enum XdagOption {
 
     IMPORT_MNEMONIC("importmnemonic"),
 
-    CONVERT_OLD_WALLET("convertoldwallet");
+    CONVERT_OLD_WALLET("convertoldwallet"),
+
+    // Snapshot enable
+    ENABLE_SNAPSHOT("enablesnapshot"),
+
+    // Snapshot load
+    LOAD_SNAPSHOT("loadsnapshot");
 
     private final String name;
 

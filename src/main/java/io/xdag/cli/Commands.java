@@ -21,12 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.cli;
+
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_MAIN;
+import static io.xdag.config.Constants.BI_MAIN_CHAIN;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.BI_REMARK;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
-import io.xdag.core.*;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.ImportResult;
+import io.xdag.core.XdagState;
+import io.xdag.core.XdagStats;
+import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
@@ -35,6 +56,20 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -44,18 +79,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-
-import static io.xdag.config.Constants.*;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.BasicUtils.*;
-
 @Slf4j
 public class Commands {
 
@@ -64,6 +87,54 @@ public class Commands {
 
     public Commands(Kernel kernel) {
         this.kernel = kernel;
+    }
+
+    public static String printHeaderBlockList() {
+        return """
+                ---------------------------------------------------------------------------------------------------------
+                height        address                            time                      state     mined by           \s
+                ---------------------------------------------------------------------------------------------------------
+                """;
+    }
+
+    public static String printBlock(Block block) {
+        return printBlock(block, false);
+    }
+
+    public static String printBlock(Block block, boolean print_only_addresses) {
+        StringBuilder sbd = new StringBuilder();
+        long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
+        if (print_only_addresses) {
+            sbd.append(String.format("%s   %08d",
+                    BasicUtils.hash2Address(block.getHash()),
+                    block.getInfo().getHeight()));
+        } else {
+            byte[] remark = block.getInfo().getRemark();
+            sbd.append(String.format("%08d   %s   %s   %-8s  %-32s",
+                    block.getInfo().getHeight(),
+                    BasicUtils.hash2Address(block.getHash()),
+                    FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
+                    getStateByFlags(block.getInfo().getFlags()),
+                    new String(remark == null ? "".getBytes() : remark, StandardCharsets.UTF_8)));
+        }
+        return sbd.toString();
+    }
+
+    public static String getStateByFlags(int flags) {
+        int flag = flags & ~(BI_OURS | BI_REMARK);
+        // 1F
+        if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED | BI_MAIN | BI_MAIN_CHAIN)) {
+            return "Main";
+        }
+        // 1C
+        if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+            return "Accepted";
+        }
+        // 18
+        if (flag == (BI_REF | BI_MAIN_REF)) {
+            return "Rejected";
+        }
+        return "Pending";
     }
 
     /**
@@ -76,15 +147,15 @@ public class Commands {
         // account in memory, do not store in rocksdb, do not show in terminal
         StringBuilder str = new StringBuilder();
 
-        Map<Block,Integer> ours = new HashMap<>();
+        Map<Block, Integer> ours = new HashMap<>();
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             Integer index = pair.getKey();
             Block block = pair.getValue();
-            ours.putIfAbsent(block,index);
+            ours.putIfAbsent(block, index);
             return false;
         });
 
-        List<Map.Entry<Block,Integer>> list = new ArrayList<>(ours.entrySet());
+        List<Map.Entry<Block, Integer>> list = new ArrayList<>(ours.entrySet());
 
         // 按balance降序排序，按key index降序排序
         list.sort((o1, o2) -> {
@@ -99,8 +170,8 @@ public class Commands {
 
         });
 
-        for(Map.Entry<Block,Integer> mapping:list){
-            if (num == 0 ){
+        for (Map.Entry<Block, Integer> mapping : list) {
+            if (num == 0) {
                 break;
             }
             str.append(hash2Address(mapping.getKey().getHash()))
@@ -109,7 +180,7 @@ public class Commands {
                     .append(" XDAG")
                     .append(" key ")
                     .append(mapping.getValue()).append("\n");
-            num --;
+            num--;
         }
 
         return str.toString();
@@ -123,7 +194,8 @@ public class Commands {
      */
     public String balance(String address) {
         if (StringUtils.isEmpty(address)) {
-            return "Balance:"+String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance())) + " XDAG";
+            return "Balance:" + String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance()))
+                    + " XDAG";
         } else {
 //            byte[] key = new byte[32];
             Bytes32 hash;
@@ -134,9 +206,9 @@ public class Commands {
                 hash = BasicUtils.getHash(address);
             }
 //            System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
-            key.set(8, Objects.requireNonNull(hash).slice(8,24));
+            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
             Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-            return "Balance:"+String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
+            return "Balance:" + String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
         }
     }
 
@@ -144,7 +216,7 @@ public class Commands {
      * Real make a transaction for given amount and address
      *
      * @param sendAmount amount
-     * @param address    receiver address
+     * @param address receiver address
      * @return Transaction hash
      */
     public String xfer(double sendAmount, Bytes32 address, String remark) {
@@ -152,11 +224,10 @@ public class Commands {
         StringBuilder str = new StringBuilder();
         str.append("Transaction :{ ").append("\n");
 
-
         long amount = xdag2amount(sendAmount);
         MutableBytes32 to = MutableBytes32.create();
 //        System.arraycopy(address, 8, to, 8, 24);
-        to.set(8,address.slice(8,24));
+        to.set(8, address.slice(8, 24));
 
         // 待转账余额
         AtomicLong remain = new AtomicLong(amount);
@@ -168,13 +239,15 @@ public class Commands {
             int index = pair.getKey();
             Block block = pair.getValue();
             if (remain.get() <= block.getInfo().getAmount()) {
-                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()), kernel.getWallet().getAccounts().get(index));
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
+                        kernel.getWallet().getAccounts().get(index));
                 remain.set(0);
                 return true;
             } else {
                 if (block.getInfo().getAmount() > 0) {
                     remain.set(remain.get() - block.getInfo().getAmount());
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()), kernel.getWallet().getAccounts().get(index));
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
+                            kernel.getWallet().getAccounts().get(index));
                     return false;
                 }
                 return false;
@@ -182,13 +255,13 @@ public class Commands {
         });
 
         // 余额不足
-        if (remain.get() > 0 ){
+        if (remain.get() > 0) {
             return "Balance not enough.";
         }
 
         // 生成多个交易块
         List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark);
-        for(BlockWrapper blockWrapper : txs) {
+        for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
@@ -200,11 +273,9 @@ public class Commands {
 
     }
 
-
-
     private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark) {
         // 判断是否有remark
-        int hasRemark = remark==null ? 0:1;
+        int hasRemark = remark == null ? 0 : 1;
 
         List<BlockWrapper> res = new ArrayList<>();
 
@@ -223,8 +294,8 @@ public class Commands {
         int base = 1 + 1 + 2 + hasRemark;
         long amount = 0;
 
-        while (stack.size() > 0){
-            Map.Entry<Address,ECKeyPair> key = stack.peek();
+        while (stack.size() > 0) {
+            Map.Entry<Address, ECKeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
@@ -234,12 +305,12 @@ public class Commands {
                 base += 3;
             }
             // 可以将该输入 放进一个区块
-            if (base < 16 ) {
+            if (base < 16) {
                 amount += key.getKey().getAmount().longValue();
-                keys.put(key.getKey(),key.getValue());
+                keys.put(key.getKey(), key.getValue());
                 stack.poll();
             } else {
-                res.add(createTransaction(to,amount,keys,remark));
+                res.add(createTransaction(to, amount, keys, remark));
                 // 清空keys，准备下一个
                 keys = new HashMap<>();
                 keysPerBlock = new HashSet<>();
@@ -249,12 +320,11 @@ public class Commands {
             }
         }
         if (keys.size() != 0) {
-            res.add(createTransaction(to,amount,keys,remark));
+            res.add(createTransaction(to, amount, keys, remark));
         }
 
         return res;
     }
-
 
     private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, ECKeyPair> keys, String remark) {
 
@@ -294,8 +364,8 @@ public class Commands {
         XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
 
         //diff
-        BigInteger currentDiff = xdagTopStatus.getTopDiff()!=null?xdagTopStatus.getTopDiff():BigInteger.ZERO;
-        BigInteger netDiff = xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty():BigInteger.ZERO;
+        BigInteger currentDiff = xdagTopStatus.getTopDiff() != null ? xdagTopStatus.getTopDiff() : BigInteger.ZERO;
+        BigInteger netDiff = xdagStats.getMaxdifficulty() != null ? xdagStats.getMaxdifficulty() : BigInteger.ZERO;
         BigInteger maxDiff = netDiff.max(currentDiff);
 
         return String.format("""
@@ -309,8 +379,8 @@ public class Commands {
                          chain difficulty: %s of %s
                               XDAG supply: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
-                xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(),xdagStats.getNblocks()),
-                xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(),xdagStats.getNmain()),
+                xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
+                xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
                 xdagStats.nextra,
                 xdagStats.nnoref,
                 xdagStats.nwaitsync,
@@ -319,7 +389,7 @@ public class Commands {
                 currentDiff.toString(16),
                 maxDiff.toString(16),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
-                amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain,xdagStats.totalnmain)))
+                amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))
         );
     }
 
@@ -330,11 +400,10 @@ public class Commands {
         kernel.getNodeMgr().doConnect(server, port);
     }
 
-    public void connectbylibp2p(String server,int port,String ip){
+    public void connectbylibp2p(String server, int port, String ip) {
         //       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
         kernel.getLibp2pNetwork().dail("/ip4/" + server + "/tcp/" + port + "/ipfs/" + ip.replaceAll(":", ""));
     }
-
 
     /**
      * Query block by hash
@@ -344,12 +413,15 @@ public class Commands {
      */
     public String block(Bytes32 blockhash) {
         try {
-//            byte[] hashLow = new byte[32];
             MutableBytes32 hashLow = MutableBytes32.create();
-//            System.arraycopy(blockhash, 8, hashLow, 8, 24);
             hashLow.set(8, blockhash.slice(8, 24));
             Block block = kernel.getBlockStore().getRawBlockByHash(hashLow);
-            return printBlockInfo(block);
+            if (block == null) {
+                block = kernel.getBlockStore().getBlockInfoByHash(hashLow);
+                return printBlockInfo(block, false);
+            } else {
+                return printBlockInfo(block, true);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return e.getMessage();
@@ -365,48 +437,47 @@ public class Commands {
         }
     }
 
-    public static String printHeaderBlockList() {
-        return """
-                ---------------------------------------------------------------------------------------------------------
-                height        address                            time                      state     mined by           \s
-                ---------------------------------------------------------------------------------------------------------
-                """;
-    }
-
-
-    public String printBlockInfo(Block block) {
+    public String printBlockInfo(Block block, boolean raw) {
         block.parse();
         long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
-        String heightFormat = ((block.getInfo().getFlags() & BI_MAIN) == 0? "":"    height: %08d\n");
+        String heightFormat = ((block.getInfo().getFlags() & BI_MAIN) == 0 ? "" : "    height: %08d\n");
         String otherFormat = """
-                         time: %s
-                    timestamp: %s
-                        flags: %s
-                        state: %s
-                         hash: %s
-                       remark: %s
-                   difficulty: %s
-                      balance: %s  %.9f
-                   -----------------------------------------------------------------------------------------------------------------------------
-                                                  block as transaction: details
-                    direction  address                                    amount
-                          fee: %s           %.9f""";
+                      time: %s
+                 timestamp: %s
+                     flags: %s
+                     state: %s
+                      hash: %s
+                    remark: %s
+                difficulty: %s
+                   balance: %s  %.9f
+                -----------------------------------------------------------------------------------------------------------------------------
+                                               block as transaction: details
+                 direction  address                                    amount
+                       fee: %s           %.9f""";
         StringBuilder inputs = null;
-        if (block.getInputs().size()!=0) {
-            inputs = new StringBuilder();
-            for (int i = 0; i < block.getInputs().size(); i++) {
-                inputs.append(String.format("     input: %s           %.9f\n",
-                        hash2Address(Bytes32.wrap(kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false).getInfo().getHash())), amount2xdag(block.getInputs().get(i).getAmount().longValue())
-                ));
-            }
-        }
         StringBuilder outputs = null;
-        if (block.getOutputs().size()!=0) {
-            outputs = new StringBuilder();
-            for (int i = 0; i < block.getOutputs().size(); i++) {
-                outputs.append(String.format("    output: %s           %.9f\n",
-                        hash2Address(Bytes32.wrap(kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false).getInfo().getHash())), amount2xdag(block.getOutputs().get(i).getAmount().longValue())
-                ));
+        if (raw) {
+            if (block.getInputs().size() != 0) {
+                inputs = new StringBuilder();
+                for (int i = 0; i < block.getInputs().size(); i++) {
+                    inputs.append(String.format("     input: %s           %.9f\n",
+                            hash2Address(Bytes32.wrap(
+                                    kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false)
+                                            .getInfo().getHash())),
+                            amount2xdag(block.getInputs().get(i).getAmount().longValue())
+                    ));
+                }
+            }
+            if (block.getOutputs().size() != 0) {
+                outputs = new StringBuilder();
+                for (int i = 0; i < block.getOutputs().size(); i++) {
+                    outputs.append(String.format("    output: %s           %.9f\n",
+                            hash2Address(Bytes32.wrap(
+                                    kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false)
+                                            .getInfo().getHash())),
+                            amount2xdag(block.getOutputs().get(i).getAmount().longValue())
+                    ));
+                }
             }
         }
         //TODO need add block as transaction
@@ -416,39 +487,16 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                block.getInfo().getRemark() == null?"":new String(block.getInfo().getRemark()),
+                block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark()),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
                 //fee目前为0
-                block.getInfo().getRef()==null?"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":hash2Address(Bytes32.wrap(block.getInfo().getRef())),0.0
-                )
-                +"\n"
-                +(inputs==null?"":inputs.toString())+(outputs==null?"":outputs.toString())
+                block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        : hash2Address(Bytes32.wrap(block.getInfo().getRef())), 0.0
+        )
+                + "\n"
+                + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
                 ;
-    }
-
-    public static String printBlock(Block block) {
-        return printBlock(block, false);
-    }
-
-
-    public static String printBlock(Block block, boolean print_only_addresses) {
-        StringBuilder sbd = new StringBuilder();
-        long time = XdagTime.xdagTimestampToMs(block.getTimestamp());
-        if(print_only_addresses) {
-            sbd.append(String.format("%s   %08d",
-                    BasicUtils.hash2Address(block.getHash()),
-                    block.getInfo().getHeight()));
-        } else {
-            byte[] remark = block.getInfo().getRemark();
-            sbd.append(String.format("%08d   %s   %s   %-8s  %-32s",
-                    block.getInfo().getHeight(),
-                    BasicUtils.hash2Address(block.getHash()),
-                    FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
-                    getStateByFlags(block.getInfo().getFlags()),
-                    new String(remark==null?"".getBytes():remark, StandardCharsets.UTF_8)));
-        }
-        return sbd.toString();
     }
 
     /**
@@ -479,23 +527,6 @@ public class Commands {
         }
         return printHeaderBlockList() +
                 blocks.stream().map(Commands::printBlock).collect(Collectors.joining("\n"));
-    }
-
-    public static String getStateByFlags(int flags) {
-        int flag = flags & ~(BI_OURS | BI_REMARK);
-        // 1F
-        if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED | BI_MAIN | BI_MAIN_CHAIN)) {
-            return "Main";
-        }
-        // 1C
-        if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
-            return "Accepted";
-        }
-        // 18
-        if (flag == (BI_REF | BI_MAIN_REF)) {
-            return "Rejected";
-        }
-        return "Pending";
     }
 
     public void run() {

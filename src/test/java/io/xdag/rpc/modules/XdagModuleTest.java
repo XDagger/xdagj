@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModuleTransaction;
 import io.xdag.rpc.modules.xdag.XdagModuleWallet;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
 
 public class XdagModuleTest {
 

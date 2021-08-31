@@ -21,20 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.mine;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicInteger;
+package io.xdag.mine;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
+import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel> {
+
     private final Kernel kernel;
     private final boolean isServer;
 
@@ -51,7 +52,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
             System.out.println("too many channels in this pool");
             return;
         }
-        log.info("init a new MinerChannel...... isServer：{}" , isServer);
+        log.info("init a new MinerChannel...... isServer：{}", isServer);
         // 如果是服务器 就会获取到的是外部的地址 否则获取到自己本地的地址
         channelsAccount.getAndIncrement();
         InetSocketAddress channelAddress = isServer

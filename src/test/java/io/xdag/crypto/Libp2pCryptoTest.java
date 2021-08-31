@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
+
+import static org.junit.Assert.assertArrayEquals;
 
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.crypto.PubKey;
@@ -30,8 +33,6 @@ import io.xdag.utils.Numeric;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-
 public class Libp2pCryptoTest {
 
     private PrivKey libp2pPrivKey;
@@ -39,8 +40,10 @@ public class Libp2pCryptoTest {
 
     @Before
     public void setUp() {
-        libp2pPrivKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(Numeric.hexStringToByteArray(SampleKeys.PRIVATE_KEY_STRING));
-        libp2pPubKey = Secp256k1Kt.unmarshalSecp256k1PublicKey(Numeric.hexStringToByteArray(SampleKeys.PUBLIC_KEY_COMPRESS_STRING));
+        libp2pPrivKey = Secp256k1Kt
+                .unmarshalSecp256k1PrivateKey(Numeric.hexStringToByteArray(SampleKeys.PRIVATE_KEY_STRING));
+        libp2pPubKey = Secp256k1Kt
+                .unmarshalSecp256k1PublicKey(Numeric.hexStringToByteArray(SampleKeys.PUBLIC_KEY_COMPRESS_STRING));
     }
 
     @Test

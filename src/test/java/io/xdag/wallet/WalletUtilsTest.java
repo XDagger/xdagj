@@ -21,34 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.wallet;
+
+import static io.xdag.crypto.Bip32Test.addChecksum;
+import static io.xdag.crypto.Bip32Test.serializePrivate;
+import static io.xdag.crypto.Bip32Test.serializePublic;
+import static org.junit.Assert.assertEquals;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.*;
+import io.xdag.crypto.Base58;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SampleKeys;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
+import java.io.IOException;
+import java.util.Collections;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static io.xdag.crypto.Bip32Test.addChecksum;
-import static io.xdag.crypto.Bip32Test.serializePrivate;
-import static io.xdag.crypto.Bip32Test.serializePublic;
-
 public class WalletUtilsTest {
-
-    private String pwd;
-    private Wallet wallet;
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    private String pwd;
+    private Wallet wallet;
 
     @Before
     public void setUp() {
@@ -77,7 +81,7 @@ public class WalletUtilsTest {
                 "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
                 Base58.encode(addChecksum(serializePrivate(masterKeypair))));
 
-        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair,0);
+        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, 0);
 
         assertEquals(
                 "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",
@@ -106,7 +110,7 @@ public class WalletUtilsTest {
                 "xprv9s21ZrQH143K2yA9Cdad5gjqHRC7apVUgEyYq5jXeXigDZ3PfEnps44tJprtMXr7PZivEsin6Qrbad7PuiEy4tn5jAEK6A3U46f9KvfRCmD",
                 Base58.encode(addChecksum(serializePrivate(masterKeypair))));
 
-        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair,0);
+        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, 0);
 
         assertEquals(
                 "xprvA3bRNS6bxNHSZQvJrLiPhVePhqy69cdmsJ2oa2XuMcyuiMDn13ZAVsVDWyQRHZLJrQMMs3qUEf6GDarnJpzBKHXVFcLZgvkD9oGDR845BTL",

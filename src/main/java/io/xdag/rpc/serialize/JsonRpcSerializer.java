@@ -21,16 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.serialize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.xdag.rpc.jsonrpc.JsonRpcMessage;
 import io.xdag.rpc.modules.XdagJsonRpcRequest;
-
 import java.io.IOException;
 import java.io.InputStream;
 
 public interface JsonRpcSerializer {
+
     /**
      * @return a JsonRpcMessage serialized into a JSON string
      * @throws JsonProcessingException when serialization fails

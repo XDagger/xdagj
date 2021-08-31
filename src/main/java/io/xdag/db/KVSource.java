@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.db;
 
 import cn.hutool.core.lang.Pair;
-
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -53,7 +53,7 @@ public interface KVSource<K, V> {
 
     List<K> prefixKeyLookup(byte[] key);
 
-    void fetchPrefix(byte[] key, Function<Pair<K,V>, Boolean> func);
+    void fetchPrefix(byte[] key, Function<Pair<K, V>, Boolean> func);
 
     List<V> prefixValueLookup(byte[] key);
 

@@ -21,17 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 @EqualsAndHashCode(callSuper = false)
 @Data
@@ -45,13 +45,18 @@ public class MessageCodes extends MessageToMessageCodec<Message, Message> {
         return new XdagBlock(message.getEncoded().toArray());
     }
 
-    /**出去的第二道*/
+    /**
+     * 出去的第二道
+     */
     @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         XdagBlock xdagblock = convertMessage(msg);
         out.add(xdagblock);
     }
-    /**进来的第二道*/
+
+    /**
+     * 进来的第二道
+     */
     @Override
     protected void decode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         out.add(msg);

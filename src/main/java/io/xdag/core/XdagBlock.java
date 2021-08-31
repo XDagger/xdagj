@@ -21,20 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
-
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.bytes.MutableBytes32;
-
-import java.nio.ByteOrder;
 
 import static io.xdag.core.XdagField.FieldType.fromByte;
 
+import java.nio.ByteOrder;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
+
 public class XdagBlock {
+
     public static final int XDAG_BLOCK_FIELDS = 16;
     public static final int XDAG_BLOCK_SIZE = 512;
 
-    /** data 以添加签名 */
+    /**
+     * data 以添加签名
+     */
     private MutableBytes data;
     private long sum;
     private XdagField[] fields;
@@ -59,7 +62,7 @@ public class XdagBlock {
 //                byte[] fieldBytes = new byte[32];
                 MutableBytes32 fieldBytes = MutableBytes32.create();
 //                System.arraycopy(data, i * 32, fieldBytes, 0, 32);
-                fieldBytes.set(0, data.slice(i * 32,32));
+                fieldBytes.set(0, data.slice(i * 32, 32));
                 fields[i] = new XdagField(fieldBytes);
                 fields[i].setType(fromByte(getMsgCode(i)));
             }
@@ -103,7 +106,9 @@ public class XdagBlock {
         return data;
     }
 
-    /** 获取区块sums* */
+    /**
+     * 获取区块sums*
+     */
     public long getSum() {
         return sum;
     }

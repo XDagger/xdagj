@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
@@ -30,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-public class XdagModule implements XdagModuleTransaction,XdagModuleWallet{
+public class XdagModule implements XdagModuleTransaction, XdagModuleWallet {
 
     private static final Logger logger = LoggerFactory.getLogger(XdagModule.class);
 
@@ -47,7 +48,7 @@ public class XdagModule implements XdagModuleTransaction,XdagModuleWallet{
 
 
     public String chainId() {
-        return TypeConverter.toJsonHex(new byte[] { chainId });
+        return TypeConverter.toJsonHex(new byte[]{chainId});
     }
 
     @Override
@@ -67,6 +68,6 @@ public class XdagModule implements XdagModuleTransaction,XdagModuleWallet{
 
     @Override
     public String sign(String addr, String data) {
-        return xdagModuleWallet.sign(addr,data);
+        return xdagModuleWallet.sign(addr, data);
     }
 }

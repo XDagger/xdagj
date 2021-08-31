@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.consensus;
 
 import io.xdag.utils.XdagSha256Digest;
@@ -29,6 +30,7 @@ import org.junit.Before;
 
 @Slf4j
 public class XdagNatServiceConfigurationPowTest {
+
     XdagSha256Digest currentTaskDigest;
 
     @Before

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
 
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -29,10 +30,9 @@ import io.xdag.core.BlockWrapper;
 import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.net.InetSocketAddress;
 
 /**
  * @author wawa
@@ -40,6 +40,7 @@ import java.net.InetSocketAddress;
 @Getter
 @Setter
 public abstract class Channel {
+
     protected NioSocketChannel socket;
     protected InetSocketAddress inetSocketAddress;
     protected Node node;
@@ -50,9 +51,9 @@ public abstract class Channel {
 
     public abstract InetSocketAddress getInetSocketAddress();
 
-    public abstract void setActive(boolean b);
-
     public abstract boolean isActive();
+
+    public abstract void setActive(boolean b);
 
     public abstract Node getNode();
 

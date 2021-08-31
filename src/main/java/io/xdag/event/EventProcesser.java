@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.event;
 
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.concurrent.Executors;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class EventProcesser {

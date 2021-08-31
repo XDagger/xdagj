@@ -21,17 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-
-import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import org.junit.Test;
 
 public class JsonRpcResultResponseTest {
+
     private ObjectMapper serializer = new ObjectMapper();
 
     @Test

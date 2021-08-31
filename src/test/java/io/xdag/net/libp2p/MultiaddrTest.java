@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p;
 
-import static org.junit.Assert.*;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.core.multiformats.Protocol;
+import org.junit.Test;
 
 public class MultiaddrTest {
 

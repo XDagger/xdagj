@@ -21,19 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
-
-import io.xdag.utils.SafeFuture;
-import org.junit.Test;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import io.xdag.utils.SafeFuture;
+import java.util.Optional;
+import org.junit.Test;
 
 public class NatServiceTest {
+
     private NatManager natManager = mock(NatManager.class);
     private Optional<NatManager> maybeNatManager = Optional.of(natManager);
 

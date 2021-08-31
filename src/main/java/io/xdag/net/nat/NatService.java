@@ -21,17 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NatService extends Service {
-
 
     private final Optional<NatManager> maybeNatManager;
     private final boolean isDiscoveryEnabled;

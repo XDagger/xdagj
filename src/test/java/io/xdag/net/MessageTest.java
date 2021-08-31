@@ -21,44 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
-
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.jni.Native;
-import io.xdag.net.message.AbstractMessage;
-import io.xdag.net.message.XdagMessageCodes;
-import io.xdag.net.message.impl.*;
-import io.xdag.utils.BytesUtils;
-import io.xdag.wallet.OldWallet;
-import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 import static org.junit.Assert.assertEquals;
 
+import io.xdag.net.message.AbstractMessage;
+import io.xdag.net.message.XdagMessageCodes;
+import io.xdag.net.message.impl.SumReplyMessage;
+import io.xdag.utils.BytesUtils;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.Test;
+
 public class MessageTest {
 
-    Config config = new DevnetConfig();
-    OldWallet xdagWallet;
-
-    //
-    @Before
-    public void setUp() throws Exception {
-        config.getNodeSpec().setStoreDir("/Users/punk/testRocksdb/XdagDB");
-        config.getNodeSpec().setStoreBackupDir("/Users/punk/testRocksdb/XdagDB/backupdata");
-
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
-        xdagWallet = new OldWallet();
-        xdagWallet.init(config);
-    }
     // blocksrequest
     // 8b010002f91eb6eb 0000000000000000 0000000000000000 0000000000100000
     // 修改starttime
@@ -91,190 +69,190 @@ public class MessageTest {
     // 7f000001 d49d 000000000000000000000000000000000000000000000000" +
 
     /**
-    @Test
-    public void messageTest() {
-        String sumsRequest = "8b010002f91eb6eb200000000000000000000000000000000000000000000100"
-                + "257b369b5a89d009000000000000000000000000000000000000000000000000"
-                + "511e9e9274800c750200000000000000511e9e9274800c750200000000000000"
-                + "ee00000000000000ee00000000000000d400000000000000d400000000000000"
-                + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
-                + "5f767f000001d49d000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
-
-        String sumsReply = "8b010002b43c544230000000000000000100000000000000000000606c010000"
-                + "aa26b306438b7079000000000000000000000000000000000000000000000000"
-                + "a99a1482d88ca4944503000000000000a99a1482d88ca4944503000000000000"
-                + "e706000000000000e706000000000000f50d000000000000f50d000000000000"
-                + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
-                + "5f767f000001d49d000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "8e6d98d2a548f5ab000200000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
-
-        // blockrequest
-        String blockrequest = "0000000000000000600000000000000000000000000000000000000000000000"
-                + "64754af0ca122910ff6b54cea0c60c7cfa1c3f67ee71095e0000000000000000"
-                + "000000000000000000000000000000007dbe92f2ea8ca4944503000000000000"
-                + "0000000000000000100e0000000000000000000000000000ef06000000000000"
-                + "0000000004000000cdd27901000000007f000001611e7f0000015f767f000001"
-                + "d49d7f000001b822000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
-
-        String blocksRequest = "8b010002f91eb6eb000000000000000000000000000000000000000000100000"
-                + "257b369b5a89d009000000000000000000000000000000000000000000000000"
-                + "511e9e9274800c750200000000000000511e9e9274800c750200000000000000"
-                + "ee00000000000000ee00000000000000d400000000000000d400000000000000"
-                + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
-                + "5f767f000001d49d000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
-
-        byte[] uncryptData = Hex.decode(sumsRequest);
-        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
-
-        // 全部都有的是
-        // status netdb一获取到新message 就更新status,netdb starttime endtime
-        // sumreply 只更新6个 因为后面8个字段是sum 其余更新14个字段
-
-        // System.out.println(Hex.toHexString(uncryptData));
-        SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
-        SumReplyMessage sumReplyMessage = new SumReplyMessage(Hex.decode(sumsReply));
-        BlockRequestMessage blockRequestMessage = new BlockRequestMessage(Hex.decode(blockrequest));
-        BlocksRequestMessage blocksRequestMessage = new BlocksRequestMessage(Hex.decode(blocksRequest));
-
-        System.out.println(
-                "=====================================sum request message========================================");
-        printMessage(sumRequestMessage);
-        System.out.println(
-                "=====================================sum reply message========================================");
-
-        printMessage(sumReplyMessage);
-        System.out.println(
-                "=====================================block request message========================================");
-
-        printMessage(blockRequestMessage);
-        System.out.println(
-                "=====================================blocks request message========================================");
-        printMessage(blocksRequestMessage);
-
-        System.out.println(
-                "=====================================Test generate message========================================");
-
-        long current = XdagTime.getCurrentTimestamp();
-        XdagStats xdagStats = new XdagStats();
-        xdagStats.setMaxdifficulty(new BigInteger(String.valueOf(100000)));
-        xdagStats.setDifficulty(new BigInteger(String.valueOf(100000)));
-        xdagStats.setTotalnmain(100);
-        xdagStats.setNmain(100);
-        xdagStats.setTotalnblocks(200);
-        xdagStats.setNblocks(200);
-        byte[] hash = Hex.decode("0000000000000000c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d798");
-        SumRequestMessage sumRequestMessage1 = new SumRequestMessage(0, current, xdagStats);
-        SumReplyMessage sumReplyMessage1 = new SumReplyMessage(current, sumRequestMessage1.getRandom(), xdagStats,
-                new byte[256]);
-        BlocksRequestMessage blocksRequestMessage1 = new BlocksRequestMessage(0, current, xdagStats);
-        BlockRequestMessage blockRequestMessage1 = new BlockRequestMessage(hash, xdagStats);
-
-        System.out.println(
-                "=====================================sum request message========================================");
-        printMessage(sumRequestMessage1);
-        System.out.println("rawdata:" + Hex.toHexString(sumRequestMessage1.getEncoded()));
-
-        System.out.println(
-                "=====================================sum reply message========================================");
-        printMessage(sumReplyMessage1);
-        System.out.println("rawdata:" + Hex.toHexString(sumReplyMessage1.getEncoded()));
-
-        System.out.println(
-                "=====================================sum request message========================================");
-        printMessage(blocksRequestMessage1);
-        System.out.println("rawdata:" + Hex.toHexString(blocksRequestMessage1.getEncoded()));
-
-        System.out.println(
-                "=====================================sum request message========================================");
-        printMessage(blockRequestMessage1);
-        System.out.println("rawdata:" + Hex.toHexString(blockRequestMessage1.getEncoded()));
-
-        String blockRawdata = "000000000000000038324654050000004d3782fa780100000000000000000000"
-                + "c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d7980000000000000000"
-                + "afa5fec4f56f7935125806e235d5280d7092c6840f35b397000000000a000000"
-                + "a08202c3f60123df5e3a973e21a2dd0418b9926a2eb7c4fc000000000a000000"
-                + "08b65d2e2816c0dea73bf1b226c95c2ae3bc683574f559bbc5dd484864b1dbeb"
-                + "f02a041d5f7ff83a69c0e35e7eeeb64496f76f69958485787d2c50fd8d9614e6"
-                + "7c2b69c79eddeff5d05b2bfc1ee487b9c691979d315586e9928c04ab3ace15bb"
-                + "3866f1a25ed00aa18dde715d2a4fc05147d16300c31fefc0f3ebe4d77c63fcbb"
-                + "ec6ece350f6be4c84b8705d3b49866a83986578a3a20e876eefe74de0c094bac"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
-        Block first = new Block(new XdagBlock(Hex.decode(blockRawdata)));
-
-        System.out.println(
-                "=====================================first block use key1========================================");
-
-        long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp());
-        List<Address> pending = new ArrayList<>();
-        pending.add(new Address(first.getHashLow()));
-        Block txfirst = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
-        ECKey ecKey1 = new ECKey();
-        txfirst.signOut(ecKey1);
-
-        NewBlockMessage newBlockMessage1 = new NewBlockMessage(first, 5);
-        NewBlockMessage newBlockMessage2 = new NewBlockMessage(txfirst, 5);
-        NewBlockMessage newBlockMessage3 = new NewBlockMessage(Hex.decode(blockRawdata));
-        NewBlockMessage newBlockMessage4 = new NewBlockMessage(new XdagBlock(Hex.decode(blockRawdata)), 5);
-        System.out.println(
-                "=====================================new block message1========================================");
-
-        System.out.println("new block message1:" + newBlockMessage1);
-        System.out.println(
-                "=====================================new block message2========================================");
-        System.out.println("new block message2:" + newBlockMessage2);
-        System.out.println(
-                "=====================================new block message3========================================");
-        System.out.println("new block message3:" + newBlockMessage3);
-        System.out.println(
-                "=====================================new block message4========================================");
-        System.out.println("new block message4:" + newBlockMessage4);
-    }
-    **/
+     * @Test public void messageTest() {
+     *         String sumsRequest = "8b010002f91eb6eb200000000000000000000000000000000000000000000100"
+     *         + "257b369b5a89d009000000000000000000000000000000000000000000000000"
+     *         + "511e9e9274800c750200000000000000511e9e9274800c750200000000000000"
+     *         + "ee00000000000000ee00000000000000d400000000000000d400000000000000"
+     *         + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
+     *         + "5f767f000001d49d000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000";
+     *
+     *         String sumsReply = "8b010002b43c544230000000000000000100000000000000000000606c010000"
+     *         + "aa26b306438b7079000000000000000000000000000000000000000000000000"
+     *         + "a99a1482d88ca4944503000000000000a99a1482d88ca4944503000000000000"
+     *         + "e706000000000000e706000000000000f50d000000000000f50d000000000000"
+     *         + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
+     *         + "5f767f000001d49d000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "8e6d98d2a548f5ab000200000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000";
+     *
+     *         // blockrequest
+     *         String blockrequest = "0000000000000000600000000000000000000000000000000000000000000000"
+     *         + "64754af0ca122910ff6b54cea0c60c7cfa1c3f67ee71095e0000000000000000"
+     *         + "000000000000000000000000000000007dbe92f2ea8ca4944503000000000000"
+     *         + "0000000000000000100e0000000000000000000000000000ef06000000000000"
+     *         + "0000000004000000cdd27901000000007f000001611e7f0000015f767f000001"
+     *         + "d49d7f000001b822000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000";
+     *
+     *         String blocksRequest = "8b010002f91eb6eb000000000000000000000000000000000000000000100000"
+     *         + "257b369b5a89d009000000000000000000000000000000000000000000000000"
+     *         + "511e9e9274800c750200000000000000511e9e9274800c750200000000000000"
+     *         + "ee00000000000000ee00000000000000d400000000000000d400000000000000"
+     *         + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
+     *         + "5f767f000001d49d000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000";
+     *
+     *         byte[] uncryptData = Hex.decode(sumsRequest);
+     *         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
+     *
+     *         // 全部都有的是
+     *         // status netdb一获取到新message 就更新status,netdb starttime endtime
+     *         // sumreply 只更新6个 因为后面8个字段是sum 其余更新14个字段
+     *
+     *         // System.out.println(Hex.toHexString(uncryptData));
+     *         SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
+     *         SumReplyMessage sumReplyMessage = new SumReplyMessage(Hex.decode(sumsReply));
+     *         BlockRequestMessage blockRequestMessage = new BlockRequestMessage(Hex.decode(blockrequest));
+     *         BlocksRequestMessage blocksRequestMessage = new BlocksRequestMessage(Hex.decode(blocksRequest));
+     *
+     *         System.out.println(
+     *         "=====================================sum request message========================================");
+     *         printMessage(sumRequestMessage);
+     *         System.out.println(
+     *         "=====================================sum reply message========================================");
+     *
+     *         printMessage(sumReplyMessage);
+     *         System.out.println(
+     *         "=====================================block request message========================================");
+     *
+     *         printMessage(blockRequestMessage);
+     *         System.out.println(
+     *         "=====================================blocks request message========================================");
+     *         printMessage(blocksRequestMessage);
+     *
+     *         System.out.println(
+     *         "=====================================Test generate message========================================");
+     *
+     *         long current = XdagTime.getCurrentTimestamp();
+     *         XdagStats xdagStats = new XdagStats();
+     *         xdagStats.setMaxdifficulty(new BigInteger(String.valueOf(100000)));
+     *         xdagStats.setDifficulty(new BigInteger(String.valueOf(100000)));
+     *         xdagStats.setTotalnmain(100);
+     *         xdagStats.setNmain(100);
+     *         xdagStats.setTotalnblocks(200);
+     *         xdagStats.setNblocks(200);
+     *         byte[] hash = Hex.decode("0000000000000000c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d798");
+     *         SumRequestMessage sumRequestMessage1 = new SumRequestMessage(0, current, xdagStats);
+     *         SumReplyMessage sumReplyMessage1 = new SumReplyMessage(current, sumRequestMessage1.getRandom(),
+     *         xdagStats,
+     *         new byte[256]);
+     *         BlocksRequestMessage blocksRequestMessage1 = new BlocksRequestMessage(0, current, xdagStats);
+     *         BlockRequestMessage blockRequestMessage1 = new BlockRequestMessage(hash, xdagStats);
+     *
+     *         System.out.println(
+     *         "=====================================sum request message========================================");
+     *         printMessage(sumRequestMessage1);
+     *         System.out.println("rawdata:" + Hex.toHexString(sumRequestMessage1.getEncoded()));
+     *
+     *         System.out.println(
+     *         "=====================================sum reply message========================================");
+     *         printMessage(sumReplyMessage1);
+     *         System.out.println("rawdata:" + Hex.toHexString(sumReplyMessage1.getEncoded()));
+     *
+     *         System.out.println(
+     *         "=====================================sum request message========================================");
+     *         printMessage(blocksRequestMessage1);
+     *         System.out.println("rawdata:" + Hex.toHexString(blocksRequestMessage1.getEncoded()));
+     *
+     *         System.out.println(
+     *         "=====================================sum request message========================================");
+     *         printMessage(blockRequestMessage1);
+     *         System.out.println("rawdata:" + Hex.toHexString(blockRequestMessage1.getEncoded()));
+     *
+     *         String blockRawdata = "000000000000000038324654050000004d3782fa780100000000000000000000"
+     *         + "c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d7980000000000000000"
+     *         + "afa5fec4f56f7935125806e235d5280d7092c6840f35b397000000000a000000"
+     *         + "a08202c3f60123df5e3a973e21a2dd0418b9926a2eb7c4fc000000000a000000"
+     *         + "08b65d2e2816c0dea73bf1b226c95c2ae3bc683574f559bbc5dd484864b1dbeb"
+     *         + "f02a041d5f7ff83a69c0e35e7eeeb64496f76f69958485787d2c50fd8d9614e6"
+     *         + "7c2b69c79eddeff5d05b2bfc1ee487b9c691979d315586e9928c04ab3ace15bb"
+     *         + "3866f1a25ed00aa18dde715d2a4fc05147d16300c31fefc0f3ebe4d77c63fcbb"
+     *         + "ec6ece350f6be4c84b8705d3b49866a83986578a3a20e876eefe74de0c094bac"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000"
+     *         + "0000000000000000000000000000000000000000000000000000000000000000";
+     *         Block first = new Block(new XdagBlock(Hex.decode(blockRawdata)));
+     *
+     *         System.out.println(
+     *         "=====================================first block use key1========================================");
+     *
+     *         long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp());
+     *         List<Address> pending = new ArrayList<>();
+     *         pending.add(new Address(first.getHashLow()));
+     *         Block txfirst = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
+     *         ECKey ecKey1 = new ECKey();
+     *         txfirst.signOut(ecKey1);
+     *
+     *         NewBlockMessage newBlockMessage1 = new NewBlockMessage(first, 5);
+     *         NewBlockMessage newBlockMessage2 = new NewBlockMessage(txfirst, 5);
+     *         NewBlockMessage newBlockMessage3 = new NewBlockMessage(Hex.decode(blockRawdata));
+     *         NewBlockMessage newBlockMessage4 = new NewBlockMessage(new XdagBlock(Hex.decode(blockRawdata)), 5);
+     *         System.out.println(
+     *         "=====================================new block message1========================================");
+     *
+     *         System.out.println("new block message1:" + newBlockMessage1);
+     *         System.out.println(
+     *         "=====================================new block message2========================================");
+     *         System.out.println("new block message2:" + newBlockMessage2);
+     *         System.out.println(
+     *         "=====================================new block message3========================================");
+     *         System.out.println("new block message3:" + newBlockMessage3);
+     *         System.out.println(
+     *         "=====================================new block message4========================================");
+     *         System.out.println("new block message4:" + newBlockMessage4);
+     *         }
+     **/
 
     public void printMessage(AbstractMessage message) {
         System.out.println(message.getCommand());
@@ -303,14 +281,14 @@ public class MessageTest {
             e.printStackTrace();
         }
         assert inetAddress != null;
-        assertEquals(ip,Hex.toHexString(inetAddress.getAddress()));
+        assertEquals(ip, Hex.toHexString(inetAddress.getAddress()));
 
         String port = "b822";
         byte[] portbyte = Hex.decode(port);
 
-        assertEquals(8888,BytesUtils.bytesToShort(portbyte, 0, true));
+        assertEquals(8888, BytesUtils.bytesToShort(portbyte, 0, true));
 
         byte[] res = BytesUtils.merge(inetAddress.getAddress(), BytesUtils.shortToBytes((short) 4444, true));
-        assertEquals("7f0000015c11",Hex.toHexString(res));
+        assertEquals("7f0000015c11", Hex.toHexString(res));
     }
 }

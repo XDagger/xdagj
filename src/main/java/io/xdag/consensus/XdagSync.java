@@ -21,27 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.consensus;
+
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.config.Constants.REQUEST_WAIT;
 
 import com.google.common.util.concurrent.SettableFuture;
 import io.xdag.Kernel;
 import io.xdag.db.store.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.manager.XdagChannelManager;
+import java.nio.ByteOrder;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
-
-import javax.annotation.Nonnull;
-import java.nio.ByteOrder;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-import static io.xdag.config.Constants.REQUEST_WAIT;
 
 @Slf4j
 public class XdagSync {
@@ -57,17 +64,16 @@ public class XdagSync {
 
     private final XdagChannelManager channelMgr;
     private final BlockStore blockStore;
-    private Status status;
     private final ScheduledExecutorService sendTask;
-    private ScheduledFuture<?> sendFuture;
-    private volatile boolean isRunning;
-
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> sumsRequestMap;
-
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> blocksRequestMap;
-
+    // TODO: paulochen 开始同步的时间点/快照时间点
+    private final long startSyncTime;
+    private Status status;
+    private ScheduledFuture<?> sendFuture;
+    private volatile boolean isRunning;
 
     public XdagSync(Kernel kernel) {
         this.channelMgr = kernel.getChannelMgr();
@@ -75,13 +81,18 @@ public class XdagSync {
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
         sumsRequestMap = new ConcurrentHashMap<>();
         blocksRequestMap = new ConcurrentHashMap<>();
+        this.startSyncTime = kernel.getConfig().getSnapshotSpec().getSnapshotTime();
     }
 
-    /** 不断发送send request */
+    /**
+     * 不断发送send request
+     */
     public void start() {
         if (status != Status.SYNCING) {
             isRunning = true;
             status = Status.SYNCING;
+            // TODO: paulochen 开始同步的时间点/快照时间点
+//            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
             sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 64, 64, TimeUnit.SECONDS);
         }
     }
@@ -89,9 +100,10 @@ public class XdagSync {
     private void syncLoop() {
         log.debug("SyncLoop...");
         try {
-            requestBlocks(0, 1L << 48);
+            // TODO: paulochen 开始同步的时间点/快照时间点
+            requestBlocks(startSyncTime, 1L << 48);
         } catch (Throwable e) {
-            log.error("error when requestBlocks {}",e.getMessage());
+            log.error("error when requestBlocks {}", e.getMessage());
         }
         log.debug("End syncLoop");
     }
@@ -106,10 +118,10 @@ public class XdagSync {
         SettableFuture<Bytes> sf = SettableFuture.create();
         if (any != null && any.size() != 0) {
             // TODO:随机选一个
-            int index = RandomUtils.nextInt()%any.size();
+            int index = RandomUtils.nextInt() % any.size();
             Channel xc = any.get(index);
             if (dt <= REQUEST_BLOCKS_MAX_TIME) {
-                randomSeq =  xc.getXdag().sendGetBlocks(t, t + dt);
+                randomSeq = xc.getXdag().sendGetBlocks(t, t + dt);
 //                log.debug("sendGetBlocks seq:{}",randomSeq);
                 blocksRequestMap.put(randomSeq, sf);
                 try {
@@ -124,7 +136,7 @@ public class XdagSync {
 //                byte[] lSums = new byte[256];
                 MutableBytes lSums = MutableBytes.create(256);
                 Bytes rSums;
-                if(blockStore.loadSum(t, t + dt, lSums) <= 0) {
+                if (blockStore.loadSum(t, t + dt, lSums) <= 0) {
                     return;
                 }
 //                log.debug("lSum is " + Hex.toHexString(lSums));
@@ -190,7 +202,9 @@ public class XdagSync {
     }
 
     public enum Status {
-        /** syncing */
+        /**
+         * syncing
+         */
         SYNCING, SYNC_DONE
     }
 }

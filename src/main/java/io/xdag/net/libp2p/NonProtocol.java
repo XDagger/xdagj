@@ -35,15 +35,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import io.xdag.net.libp2p.peer.NodeId;
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.CompletableFuture;
-
 @Getter
 @Setter
 public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
+
     private Connection connection;
 
     public NonProtocol() {
@@ -52,8 +52,9 @@ public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
     @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
-        return  new ProtocolDescriptor("xdagj-non-protocol");
+        return new ProtocolDescriptor("xdagj-non-protocol");
     }
+
     @NotNull
     @Override
     public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
@@ -65,15 +66,14 @@ public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
     }
 
 
-
     /**
      * SimpleChannelInboundHandler<> 括号是接受的对象
      */
     static class Controller extends SimpleChannelInboundHandler<ByteBuf> {
 
+        protected final CompletableFuture<Controller> activeFuture = new CompletableFuture<>();
         final NodeId nodeid;
         public P2PChannel p2pChannel;
-        protected final CompletableFuture<Controller> activeFuture = new CompletableFuture<>();
 
         public Controller(NodeId nodeid, P2PChannel p2pChannel) {
             this.nodeid = nodeid;
@@ -88,7 +88,6 @@ public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
             ctx.writeAndFlush(buf);
             activeFuture.complete(this);
         }
-
 
 
         //ByteBuf 是接受的对象

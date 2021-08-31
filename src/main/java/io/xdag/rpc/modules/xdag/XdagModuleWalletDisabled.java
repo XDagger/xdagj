@@ -21,20 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
 
-public class XdagModuleWalletDisabled implements XdagModuleWallet{
+import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class XdagModuleWalletDisabled implements XdagModuleWallet {
 
     private static final Logger logger = LoggerFactory.getLogger(XdagModuleWalletDisabled.class);
-
-
 
     @Override
     public String[] accounts() {

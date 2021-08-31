@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 import io.xdag.net.node.Node;
@@ -30,9 +31,12 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BlockWrapper implements Cloneable {
+
     private Block block;
     private int ttl;
-    /** 记录区块接收节点 */
+    /**
+     * 记录区块接收节点
+     */
     private Node remoteNode;
     // NO_PARENT waiting time
     private long time;

@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.core.Blockchain;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
@@ -38,17 +38,16 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
-import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
-import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Collections;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.math.BigInteger;
-import java.util.Collections;
 
 public class Web3XdagModuleTest {
 
@@ -103,8 +102,13 @@ public class Web3XdagModuleTest {
 //        Web3XdagModule web3XdagModule = createWeb3XdagModule(kernel,xdagModule);
     }
 
-    private Web3XdagModule createWeb3XdagModule(Kernel kernel,XdagModule module) {
+    private Web3XdagModule createWeb3XdagModule(Kernel kernel, XdagModule module) {
 
-        return new Web3XdagModuleImpl(module,kernel);
+        return new Web3XdagModuleImpl(module, kernel);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        wallet.delete();
     }
 }

@@ -44,7 +44,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */package io.xdag.rpc.jsonrpc;
+ */
+
+package io.xdag.rpc.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -52,16 +54,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({"jsonrpc", "id", "method", "result", "params", "error"})
 public abstract class JsonRpcMessage {
+
     private final JsonRpcVersion version;
 
     public JsonRpcMessage(JsonRpcVersion version) {
         this.version = verifyVersion(version);
-    }
-
-    @JsonProperty("jsonrpc")
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    public JsonRpcVersion getVersion() {
-        return version;
     }
 
     private static JsonRpcVersion verifyVersion(JsonRpcVersion version) {
@@ -71,6 +68,12 @@ public abstract class JsonRpcMessage {
             );
         }
 
+        return version;
+    }
+
+    @JsonProperty("jsonrpc")
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    public JsonRpcVersion getVersion() {
         return version;
     }
 }

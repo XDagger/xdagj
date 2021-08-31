@@ -21,9 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 import io.xdag.utils.SafeFuture;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.jupnp.model.action.ActionInvocation;
 import org.jupnp.model.message.UpnpResponse;
@@ -33,12 +35,11 @@ import org.jupnp.model.meta.RemoteService;
 import org.jupnp.model.meta.Service;
 import org.jupnp.support.igd.callback.GetExternalIP;
 
-import java.util.Optional;
-
 @Slf4j
 public class XdagGetExternalIP extends GetExternalIP {
-    private Optional<String> discoveredOnLocalAddress = Optional.empty();
+
     private final SafeFuture<String> future = new SafeFuture<>();
+    private Optional<String> discoveredOnLocalAddress = Optional.empty();
 
     public XdagGetExternalIP(Service<?, ?> service) {
         super(service);
@@ -54,6 +55,7 @@ public class XdagGetExternalIP extends GetExternalIP {
 
         super.success(invocation);
     }
+
     @Override
     protected void success(String result) {
         log.info("External IP address {} detected for internal address {}",
@@ -67,13 +69,14 @@ public class XdagGetExternalIP extends GetExternalIP {
      * Called when the action invocation failed.
      *
      * @param invocation The failed invocation, call its <code>getFailure()</code> method for more details.
-     * @param operation  If the invocation was on a remote service, the response message, otherwise null.
+     * @param operation If the invocation was on a remote service, the response message, otherwise null.
      * @see #createDefaultFailureMessage
      */
     @Override
     public void failure(ActionInvocation invocation, UpnpResponse operation, String msg) {
         future.completeExceptionally(new Exception(msg));
     }
+
     public SafeFuture<String> getFuture() {
         return future;
     }

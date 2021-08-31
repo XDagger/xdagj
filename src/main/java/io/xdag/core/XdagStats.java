@@ -21,16 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
+import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.math.BigInteger;
 
 @Getter
 @Setter
 public class XdagStats {
+
     public BigInteger difficulty;
     public BigInteger maxdifficulty;
     public long nblocks;
@@ -45,15 +46,17 @@ public class XdagStats {
     public long maintime;
     public long balance;
 
-private byte[] globalMiner;
+    private byte[] globalMiner;
     private byte[] ourLastBlockHash;
 
-    public XdagStats(){
+    public XdagStats() {
         difficulty = BigInteger.ZERO;
         maxdifficulty = BigInteger.ZERO;
     }
 
-    /** 用于记录remote node的 */
+    /**
+     * 用于记录remote node的
+     */
     public XdagStats(
             BigInteger maxdifficulty,
             long totalnblocks,
@@ -88,7 +91,8 @@ private byte[] globalMiner;
         this.totalnhosts = Math.max(this.totalnhosts, remoteXdagStats.totalnhosts);
         this.totalnblocks = Math.max(this.totalnblocks, remoteXdagStats.totalnblocks);
         this.totalnmain = Math.max(this.totalnmain, remoteXdagStats.totalnmain);
-        if (this.maxdifficulty != null && remoteXdagStats.maxdifficulty != null && remoteXdagStats.maxdifficulty.compareTo(this.maxdifficulty) > 0) {
+        if (this.maxdifficulty != null && remoteXdagStats.maxdifficulty != null
+                && remoteXdagStats.maxdifficulty.compareTo(this.maxdifficulty) > 0) {
             this.maxdifficulty = remoteXdagStats.maxdifficulty;
         }
     }
@@ -99,8 +103,9 @@ private byte[] globalMiner;
 
     @Override
     public String toString() {
-        return "XdagStatus[nmain:"+
-                this.nmain+",totalmain:"+this.totalnmain+",nblocks:"+this.nblocks+",totalblocks:"+this.totalnblocks
-                +"]";
+        return "XdagStatus[nmain:" +
+                this.nmain + ",totalmain:" + this.totalnmain + ",nblocks:" + this.nblocks + ",totalblocks:"
+                + this.totalnblocks
+                + "]";
     }
 }

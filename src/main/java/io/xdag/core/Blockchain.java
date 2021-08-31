@@ -21,17 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.listener.Listener;
 import io.xdag.utils.ByteArrayWrapper;
-import org.apache.tuweni.bytes.Bytes32;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.tuweni.bytes.Bytes32;
 
 public interface Blockchain {
+
+    // for snapshot pre seed
+    byte[] getPreSeed();
 
     ImportResult tryToConnect(Block block);
 
@@ -50,6 +53,7 @@ public interface Blockchain {
     Map<ByteArrayWrapper, Integer> getMemOurBlocks();
 
     XdagStats getXdagStats();
+
     XdagTopStatus getXdagTopStatus();
 
     long getSupply(long nmain);

@@ -21,7 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.miner;
+
+import static io.xdag.utils.BytesUtils.compareTo;
+import static java.lang.Math.E;
 
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
@@ -31,23 +35,24 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
+import java.net.InetSocketAddress;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-
-import static io.xdag.utils.BytesUtils.compareTo;
-import static java.lang.Math.E;
-
 @Slf4j
 public class MinerCalculate {
+
     private static final int NSAMPLES_MAX = 255;
 
-    /** 每一轮的确认数是16 */
+    /**
+     * 每一轮的确认数是16
+     */
     private static final int CONFIRMATIONS_COUNT = Constants.CONFIRMATIONS_COUNT;
 
-    /** 实现一个由难度转换为pay 的函数 */
+    /**
+     * 实现一个由难度转换为pay 的函数
+     */
     public static double diffToPay(double sum, int diffCount) {
         double result = 0.0;
         if (diffCount > 0) {
@@ -56,7 +61,9 @@ public class MinerCalculate {
         return result;
     }
 
-    /** 用于打印矿工但钱未支付的难度总和 */
+    /**
+     * 用于打印矿工但钱未支付的难度总和
+     */
     public static double calculateUnpaidShares(Miner miner) {
         double sum = miner.getPrevDiff();
         int count = miner.getPrevDiffCounts();
@@ -78,7 +85,7 @@ public class MinerCalculate {
                 ++count;
             }
         }
-        log.debug("打印信息的unpaid ，sum= [{}],count = [{}]",sum,count);
+        log.debug("打印信息的unpaid ，sum= [{}],count = [{}]", sum, count);
         return diffToPay(sum, count);
     }
 
@@ -139,8 +146,9 @@ public class MinerCalculate {
         // 不可能出现大于的情况 防止对老的任务重复计算
         long minerTaskTime = miner.getTaskTime();
         long channelTaskTime = channel.getTaskTime();
-        log.debug("channer = [{}],calculateNopaidShares,currentTaskTime = [{}],miner tasktime = [{}],channelTaskTime = [{}]",
-                channel.getAccountAddressHash().toHexString(),currentTaskTime, minerTaskTime,channelTaskTime);
+        log.debug(
+                "channer = [{}],calculateNopaidShares,currentTaskTime = [{}],miner tasktime = [{}],channelTaskTime = [{}]",
+                channel.getAccountAddressHash().toHexString(), currentTaskTime, minerTaskTime, channelTaskTime);
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
             int i = (int) (((currentTaskTime >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
@@ -154,12 +162,12 @@ public class MinerCalculate {
             }
             diff = 46 - Math.log(diff);
             log.debug("address [{}] calculateNopaidShares, 最新难度的diff为[{}]",
-                    channel.getAccountAddressHash().toHexString()  , diff);
+                    channel.getAccountAddressHash().toHexString(), diff);
             if (channelTaskTime < currentTaskTime) {
                 channel.setTaskTime(currentTaskTime);
                 double maxDiff = channel.getMaxDiffs(i);
                 log.debug("address [{}] calculateNopaidShares,首次channel获取到的maxdiff[{}] = [{}]",
-                        channel.getAccountAddressHash().toHexString(),i,maxDiff);
+                        channel.getAccountAddressHash().toHexString(), i, maxDiff);
                 if (maxDiff > 0) {
 
                     channel.addPrevDiff(maxDiff);
@@ -168,14 +176,14 @@ public class MinerCalculate {
                 channel.addMaxDiffs(i, diff);
             } else if (diff > channel.getMaxDiffs(i)) {
                 log.debug("address [{}] calculateNopaidShares,channel获取到的maxdiff[{}] = [{}]",
-                        channel.getAccountAddressHash().toHexString(),i,diff);
+                        channel.getAccountAddressHash().toHexString(), i, diff);
                 channel.addMaxDiffs(i, diff);
             }
             // 给对应的矿工设置
             if (minerTaskTime < currentTaskTime) {
                 miner.setTaskTime(currentTaskTime);
                 double maxDiff = miner.getMaxDiffs(i);
-                log.debug("calculateNopaidShares, channel获取到的maxdiff[{}] = [{}]",i,maxDiff);
+                log.debug("calculateNopaidShares, channel获取到的maxdiff[{}] = [{}]", i, maxDiff);
                 if (maxDiff > 0) {
                     miner.addPrevDiff(maxDiff);
                     miner.addPrevDiffCounts();
@@ -210,12 +218,9 @@ public class MinerCalculate {
     /**
      * 更新矿工的meanlog
      *
-     * @param channel
-     *            对应的矿工
-     * @param task
-     *            当前的任务
-     * @param hash
-     *            接收到矿工发送的share后计算的hash
+     * @param channel 对应的矿工
+     * @param task 当前的任务
+     * @param hash 接收到矿工发送的share后计算的hash
      */
     public static void updateMeanLogDiff(MinerChannel channel, Task task, Bytes32 hash) {
         log.debug("接收到一个Share消息，更新对应channel 的消息");
@@ -236,7 +241,7 @@ public class MinerCalculate {
                 }
             }
             channel.setMinHash(hash);
-        } else if (compareTo(hash.toArray(), 0, hash.size(), channel.getMinHash().toArray(),0,hash.size()) < 0) {
+        } else if (compareTo(hash.toArray(), 0, hash.size(), channel.getMinHash().toArray(), 0, hash.size()) < 0) {
             channel.setMinHash(hash);
         }
 
@@ -254,12 +259,12 @@ public class MinerCalculate {
                 miner.setMeanLogDiff(meanLogDiff);
                 //log.debug("miner updateMeanLogDiff [{}]", miner.getMeanLogDiff());
 
-                if (miner.boundedTaskCounter < NSAMPLES_MAX){
+                if (miner.boundedTaskCounter < NSAMPLES_MAX) {
                     miner.addBoundedTaskCounter();
                 }
             }
             miner.setLastMinHash(hash);
-        } else if (compareTo(hash.toArray(), 0, hash.size(), miner.getLastMinHash().toArray(),0, hash.size()) < 0) {
+        } else if (compareTo(hash.toArray(), 0, hash.size(), miner.getLastMinHash().toArray(), 0, hash.size()) < 0) {
             miner.setLastMinHash(hash);
         }
     }

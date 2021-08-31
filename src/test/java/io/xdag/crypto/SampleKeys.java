@@ -21,14 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
 import io.xdag.utils.Numeric;
-
 import java.math.BigInteger;
 
-
-/** Keys generated for unit testing purposes. */
+/**
+ * Keys generated for unit testing purposes.
+ */
 public class SampleKeys {
 
     public static final String PRIVATE_KEY_STRING =
@@ -51,6 +52,7 @@ public class SampleKeys {
 
     public static final ECKeyPair KEY_PAIR = new ECKeyPair(PRIVATE_KEY, PUBLIC_KEY);
 
-    private SampleKeys() {}
+    private SampleKeys() {
+    }
 }
 

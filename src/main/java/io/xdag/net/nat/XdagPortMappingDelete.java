@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 import io.xdag.utils.SafeFuture;
@@ -33,7 +34,9 @@ import org.jupnp.support.model.PortMapping;
 
 @Slf4j
 public class XdagPortMappingDelete extends PortMappingDelete {
+
     private final SafeFuture<Void> future = new SafeFuture<>();
+
     public XdagPortMappingDelete(Service<?, ?> service, PortMapping portMapping) {
         super(service, portMapping);
     }

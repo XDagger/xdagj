@@ -21,17 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.handler;
 
 import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 import static io.xdag.utils.BasicUtils.crc32Verify;
-
-import java.io.IOException;
-import java.util.List;
-
-import org.apache.commons.codec.binary.Hex;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,17 +40,21 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
+import java.io.IOException;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.MutableBytes;
 
 @Slf4j
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     private final MinerChannel channel;
-    private MessageFactory messageFactory;
-
-    /** 每一个字段的长度 */
+    /**
+     * 每一个字段的长度
+     */
     private final int DATA_SIZE = 32;
+    private MessageFactory messageFactory;
 
     public MinerMessageHandler(MinerChannel channel) {
         this.channel = channel;

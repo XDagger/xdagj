@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.wallet;
 
 import io.xdag.config.Config;
@@ -30,9 +31,6 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,6 +39,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class OldWallet {
 
@@ -49,7 +49,7 @@ public class OldWallet {
     private int keysNum = 0;
     private Config config;
 
-//    @Override
+    //    @Override
     public int init(Config config) throws Exception {
         this.config = config;
         File dnetDatFile = new File(config.getNodeSpec().getDnetKeyFile());
@@ -83,27 +83,27 @@ public class OldWallet {
         return 0;
     }
 
-//    @Override
+    //    @Override
     public KeyInternalItem getDefKey() {
         return defKey;
     }
 
-//    @Override
+    //    @Override
     public void createNewKey() {
         addKey(null);
     }
 
-//    @Override
+    //    @Override
     public ECKeyPair getKeyByIndex(int index) {
         return keyLists.get(index).ecKey;
     }
 
-//    @Override
+    //    @Override
     public List<KeyInternalItem> getKey_internal() {
         return keyLists;
     }
 
-    private void addKey(BigInteger priv)  {
+    private void addKey(BigInteger priv) {
         if (priv == null) {
             File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
             ECKeyPair ecKey = Keys.createEcKeyPair();

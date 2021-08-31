@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.xdag.core.Block;
@@ -29,6 +30,7 @@ import io.xdag.net.message.Message;
 import org.apache.tuweni.bytes.MutableBytes32;
 
 public class XdagAdapter implements Xdag {
+
     @Override
     public void sendNewBlock(Block newBlock, int ttl) {
         // TODO Auto-generated method stub

@@ -21,17 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
-import org.junit.Test;
+package io.xdag.crypto;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-/** "Unparameterized" tests of {@link MnemonicUtils}. */
+import io.xdag.utils.Numeric;
+import org.junit.Test;
+
+/**
+ * "Unparameterized" tests of {@link MnemonicUtils}.
+ */
 public class StaticMnemonicUtilsTest {
+
     @Test
     public void testShouldGenerateCorrectEntropyFromMnemonic() {
         // from https://github.com/trezor/python-mnemonic/blob/master/vectors.json

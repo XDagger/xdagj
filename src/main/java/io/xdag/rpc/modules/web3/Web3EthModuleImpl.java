@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.web3;
+
+import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 
 import io.xdag.rpc.dto.ETHBlockResultDTO;
 import io.xdag.rpc.dto.ETHTransactionReceiptDTO;
@@ -29,16 +32,9 @@ import io.xdag.rpc.modules.eth.EthModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
+public class Web3EthModuleImpl implements Web3EthModule {
 
-public class Web3EthModuleImpl implements Web3EthModule{
     private static final Logger logger = LoggerFactory.getLogger(Web3XdagModuleImpl.class);
-
-    class SyncingResult {
-        public String currentBlock;
-        public String highestBlock;
-    }
-
     private final EthModule ethModule;
 
     public Web3EthModuleImpl(EthModule ethModule) {
@@ -88,5 +84,11 @@ public class Web3EthModuleImpl implements Web3EthModule{
     @Override
     public ETHTransactionReceiptDTO eth_getTransactionReceipt(String transactionHash) throws Exception {
         return null;
+    }
+
+    class SyncingResult {
+
+        public String currentBlock;
+        public String highestBlock;
     }
 }

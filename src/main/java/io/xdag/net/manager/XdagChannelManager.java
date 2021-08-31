@@ -21,8 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.manager;
 
+import io.xdag.Kernel;
+import io.xdag.core.BlockWrapper;
+import io.xdag.net.Channel;
+import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,24 +36,21 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
-import io.xdag.net.Channel;
-import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagChannelManager {
-    protected ConcurrentHashMap<InetSocketAddress, Channel> channels = new ConcurrentHashMap<>();
-    protected ConcurrentHashMap<String, Channel> activeChannels = new ConcurrentHashMap<>();
+
     private final Kernel kernel;
-    /** Queue with new blocks from other peers */
+    /**
+     * Queue with new blocks from other peers
+     */
     private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
     // 广播区块
     private final Thread blockDistributeThread;
-
-    private final Set<InetSocketAddress> addressSet  = new HashSet<>();
+    private final Set<InetSocketAddress> addressSet = new HashSet<>();
+    protected ConcurrentHashMap<InetSocketAddress, Channel> channels = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<String, Channel> activeChannels = new ConcurrentHashMap<>();
 
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
@@ -85,7 +87,9 @@ public class XdagChannelManager {
         return new ArrayList<>(activeChannels.values());
     }
 
-    /** Processing new blocks received from other peers from queue */
+    /**
+     * Processing new blocks received from other peers from queue
+     */
     private void newBlocksDistributeLoop() {
         while (!Thread.currentThread().isInterrupted()) {
             BlockWrapper wrapper = null;
@@ -170,17 +174,18 @@ public class XdagChannelManager {
 
     private void initWhiteIPs() {
         List<String> ipList = kernel.getConfig().getNodeSpec().getWhiteIPList();
-        for(String ip : ipList){
-            String [] ips = ip.split(":");
-            addressSet.add(new InetSocketAddress(ips[0],Integer.parseInt(ips[1])));
+        for (String ip : ipList) {
+            String[] ips = ip.split(":");
+            addressSet.add(new InetSocketAddress(ips[0], Integer.parseInt(ips[1])));
         }
     }
 
     // use for ipv4
     private boolean isSelfAddress(InetSocketAddress address) {
         String inIP = address.getAddress().toString();
-        inIP = inIP.substring(inIP.lastIndexOf("/")+1);
-        return inIP.equals(kernel.getConfig().getNodeSpec().getNodeIp()) && (address.getPort() == kernel.getConfig().getNodeSpec().getNodePort());
+        inIP = inIP.substring(inIP.lastIndexOf("/") + 1);
+        return inIP.equals(kernel.getConfig().getNodeSpec().getNodeIp()) && (address.getPort() == kernel.getConfig()
+                .getNodeSpec().getNodePort());
     }
 
     public void stop() {

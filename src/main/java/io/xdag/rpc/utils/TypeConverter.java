@@ -21,15 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.rpc.utils;
 
-import org.bouncycastle.util.encoders.Hex;
+package io.xdag.rpc.utils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
+import org.bouncycastle.util.encoders.Hex;
 
 public class TypeConverter {
+
     private static final Pattern LEADING_ZEROS_PATTERN = Pattern.compile("0x(0)+");
 
     private TypeConverter() {
@@ -45,7 +46,7 @@ public class TypeConverter {
     }
 
     public static BigInteger stringHexToBigInteger(String input) {
-        if(!input.startsWith("0x")) {
+        if (!input.startsWith("0x")) {
             throw new NumberFormatException("Invalid hex number, expected 0x prefix");
         }
         String hexa = input.substring(2);
@@ -86,7 +87,7 @@ public class TypeConverter {
 //    }
 
     public static String toJsonHex(String x) {
-        return "0x"+x;
+        return "0x" + x;
     }
 
     /**
@@ -104,7 +105,7 @@ public class TypeConverter {
      * @return A Hex representation of n WITHOUT leading zeroes
      */
     public static String toQuantityJsonHex(BigInteger n) {
-        return "0x"+ n.toString(16);
+        return "0x" + n.toString(16);
     }
 
     /**
@@ -125,6 +126,7 @@ public class TypeConverter {
      * 0x000AEF -> 0x2AEF
      * <p>
      * 0x00 -> 0x0
+     *
      * @param x A hex string with or without leading zeroes ("0x00AEF"). If null, it is considered as zero.
      * @return A hex string without leading zeroes ("0xAEF")
      */

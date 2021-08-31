@@ -21,7 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.cli;
+
+import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
@@ -32,6 +48,10 @@ import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.Wallet;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.assertj.core.util.Lists;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,32 +61,15 @@ import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.mockito.Mockito;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.spy;
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
-
 public class XdagCliTest {
-
-    private Config config;
 
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-
     @Rule
     public final SystemOutRule outRule = new SystemOutRule();
-
     @Rule
     public final SystemErrRule errRule = new SystemErrRule();
+    private Config config;
 
     @Before
     public void setUp() throws Exception {
@@ -77,7 +80,7 @@ public class XdagCliTest {
 
     @Test
     public void testMain() throws Exception {
-        String[] args = { "arg1", "arg2" };
+        String[] args = {"arg1", "arg2"};
         XdagCli cli = mock(XdagCli.class);
         XdagCli.main(args, cli);
         verify(cli).start(args);
@@ -86,30 +89,32 @@ public class XdagCliTest {
     @Test
     public void testHelp() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
-        xdagCLI.start(new String[] { "--help" });
+        xdagCLI.start(new String[]{"--help"});
         outRule.enableLog();
         xdagCLI.printHelp();
         String helpStr = """
-        usage: ./xdag.sh [options]
-            --account <action>              init|create|list
-            --changepassword                change wallet password
-            --convertoldwallet <filename>   convert xdag old wallet.dat to private key hex
-            --dumpprivatekey <address>      print hex key
-            --help                          print help
-            --importmnemonic <mnemonic>     import HDWallet mnemonic
-            --importprivatekey <key>        import hex key
-            --version                       show version
-        """;
+                usage: ./xdag.sh [options]
+                    --account <action>                init|create|list
+                    --changepassword                  change wallet password
+                    --convertoldwallet <filename>     convert xdag old wallet.dat to private key hex
+                    --dumpprivatekey <address>        print hex key
+                    --enablesnapshot <snapshottime>   the parameter snapshottime uses hexadecimal
+                    --help                            print help
+                    --importmnemonic <mnemonic>       import HDWallet mnemonic
+                    --importprivatekey <key>          import hex key
+                    --loadsnapshot <filename>         load snapshot
+                    --version                         show version
+                """;
         assertEquals(helpStr, outRule.getLog());
     }
 
     @Test
     public void testVersion() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
-        xdagCLI.start(new String[] { "--version" });
+        xdagCLI.start(new String[]{"--version"});
         outRule.enableLog();
         xdagCLI.printVersion();
-        assertEquals(Constants.CLIENT_VERSION+"\n", outRule.getLog());
+        assertEquals(Constants.CLIENT_VERSION + "\n", outRule.getLog());
     }
 
     @Test
@@ -133,7 +138,7 @@ public class XdagCliTest {
         doReturn("oldpassword").when(xdagCLI).readPassword(any());
         doReturn(null).when(xdagCLI).startKernel(any(), any());
 
-        xdagCLI.start(new String[] {""});
+        xdagCLI.start(new String[]{""});
         assertTrue(xdagCLI.getConfig() instanceof MainnetConfig);
     }
 
@@ -158,7 +163,7 @@ public class XdagCliTest {
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
         doReturn(null).when(xdagCLI).startKernel(any(), any());
 
-        xdagCLI.start(new String[] {"-t"});
+        xdagCLI.start(new String[]{"-t"});
         assertTrue(xdagCLI.getConfig() instanceof TestnetConfig);
     }
 
@@ -247,7 +252,7 @@ public class XdagCliTest {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         Mockito.doNothing().when(xdagCLI).initHDAccount();
-        xdagCLI.start(new String[] { "--account", "init" });
+        xdagCLI.start(new String[]{"--account", "init"});
         verify(xdagCLI).initHDAccount();
     }
 
@@ -256,7 +261,7 @@ public class XdagCliTest {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         Mockito.doNothing().when(xdagCLI).createAccount();
-        xdagCLI.start(new String[] { "--account", "create" });
+        xdagCLI.start(new String[]{"--account", "create"});
         verify(xdagCLI).createAccount();
     }
 
@@ -265,7 +270,7 @@ public class XdagCliTest {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         Mockito.doNothing().when(xdagCLI).listAccounts();
-        xdagCLI.start(new String[] { "--account", "list" });
+        xdagCLI.start(new String[]{"--account", "list"});
         verify(xdagCLI).listAccounts();
     }
 
@@ -505,6 +510,14 @@ public class XdagCliTest {
         byte[] keyBytes = BytesUtils.hexStringToBytes(hexPrivKey);
         ECKeyPair account = ECKeyPair.create(keyBytes);
         List<ECKeyPair> keyList = Lists.newArrayList(account);
+
+        // mock wallet
+        Wallet wallet = mock(Wallet.class);
+        when(wallet.unlock("oldpassword")).thenReturn(true);
+        when(xdagCLI.loadWallet()).thenReturn(wallet);
+
+        // mock passwords
+        doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
 
         // mock wallet
         doReturn(keyList).when(xdagCLI).readOldWallet("111111", "111111", walletFile);

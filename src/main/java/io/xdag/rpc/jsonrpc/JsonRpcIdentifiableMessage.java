@@ -21,21 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public abstract class JsonRpcIdentifiableMessage extends JsonRpcMessage{
+public abstract class JsonRpcIdentifiableMessage extends JsonRpcMessage {
+
     private final int id;
 
     public JsonRpcIdentifiableMessage(JsonRpcVersion version, int id) {
         super(version);
         this.id = requireNonNegative(id);
-    }
-
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    public int getId() {
-        return id;
     }
 
     private static int requireNonNegative(int id) {
@@ -45,6 +42,11 @@ public abstract class JsonRpcIdentifiableMessage extends JsonRpcMessage{
             );
         }
 
+        return id;
+    }
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    public int getId() {
         return id;
     }
 }

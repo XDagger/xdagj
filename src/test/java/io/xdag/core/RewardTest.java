@@ -21,7 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
+
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
@@ -40,7 +49,11 @@ import io.xdag.randomx.RandomX;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import org.apache.tuweni.bytes.Bytes;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.text.ParseException;
+import java.util.Collections;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.After;
 import org.junit.Before;
@@ -48,19 +61,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.math.BigInteger;
-import java.text.ParseException;
-import java.util.Collections;
-import java.util.List;
-
-import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class RewardTest {
+
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
@@ -72,20 +74,6 @@ public class RewardTest {
 
     String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
     BigInteger privateKey = new BigInteger(privString, 16);
-
-
-    class MockBlockchain extends BlockchainImpl {
-
-        public MockBlockchain(Kernel kernel) {
-            super(kernel);
-        }
-
-        @Override
-        public long getReward(long nmain) {
-            long start = getStartAmount(nmain);
-            return start >> (nmain >> 4);
-        }
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -155,7 +143,7 @@ public class RewardTest {
         Bytes32 unwindRef = Bytes32.ZERO;
         long unwindDate = 0;
         // 2. create 20 mainblocks
-        for(int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
@@ -180,19 +168,32 @@ public class RewardTest {
         ref = unwindRef;
 
         // 3. create 20 fork blocks
-        for (int i = 0; i < 30; i++ ) {
+        for (int i = 0; i < 30; i++) {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending,"3456");
+            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "3456");
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertEquals(0,blockchain.getBlockByHash(targetBlock,false).getInfo().getAmount());
+        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount());
+    }
+
+    class MockBlockchain extends BlockchainImpl {
+
+        public MockBlockchain(Kernel kernel) {
+            super(kernel);
+        }
+
+        @Override
+        public long getReward(long nmain) {
+            long start = getStartAmount(nmain);
+            return start >> (nmain >> 4);
+        }
     }
 
 

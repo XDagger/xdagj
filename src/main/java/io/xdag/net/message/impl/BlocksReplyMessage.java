@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REPLY;
 
-import io.xdag.net.message.AbstractMessage;
 import io.xdag.core.XdagStats;
+import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
 import org.apache.tuweni.bytes.Bytes;
@@ -34,6 +35,7 @@ import org.apache.tuweni.bytes.MutableBytes;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlocksReplyMessage extends AbstractMessage {
+
     public BlocksReplyMessage(long starttime, long endtime, long random, XdagStats xdagStats) {
         super(BLOCKS_REPLY, starttime, endtime, random, xdagStats);
         updateCrc();

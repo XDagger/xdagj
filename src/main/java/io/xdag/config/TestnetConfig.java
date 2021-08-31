@@ -21,15 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config;
 
-import com.google.common.primitives.UnsignedLong;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+
+import com.google.common.primitives.UnsignedLong;
 
 public class TestnetConfig extends AbstractConfig {
 
     public TestnetConfig() {
-        super("testnet","xdag-testnet.config");
+        super("testnet", "xdag-testnet.config");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
 
         // testnet wait 1 epoch
@@ -42,10 +44,16 @@ public class TestnetConfig extends AbstractConfig {
         this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
 
-        this.dnetKeyFile = this.rootDir+"/dnet_keys.bin";
-        this.walletKeyFile = this.rootDir+"/wallet-testnet.dat";
+        this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";
+        this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
 
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
+
+        // TODO: snapshot
+        // TODO: paulochen 快照启动以及高度配置
+//        this.snapshotEnabled = true;
+//        this.snapshotHeight = 192192;
+//        this.snapshotTime = 0x171edc90000L;
     }
 
 }

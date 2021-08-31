@@ -21,19 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.db;
 
 public enum DatabaseName {
 
-    /** Block index. */
+    /**
+     * Block index.
+     */
     INDEX,
 
-    /** Block raw data. */
+    /**
+     * Block raw data.
+     */
     BLOCK,
 
-    /** Time related block. */
+    /**
+     * Time related block.
+     */
     TIME,
 
-    /** Orphan block index */
-    ORPHANIND
+    /**
+     * Orphan block index
+     */
+    ORPHANIND,
+
+    SNAPSHOT
 }

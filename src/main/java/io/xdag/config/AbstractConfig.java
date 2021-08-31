@@ -21,31 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config;
 
 import cn.hutool.setting.Setting;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
-import io.xdag.config.spec.*;
+import io.xdag.config.spec.AdminSpec;
+import io.xdag.config.spec.NodeSpec;
+import io.xdag.config.spec.PoolSpec;
+import io.xdag.config.spec.RPCSpec;
+import io.xdag.config.spec.SnapshotSpec;
+import io.xdag.config.spec.WalletSpec;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.rpc.modules.ModuleDescription;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec {
+public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec {
+
     protected String configName;
 
     // =========================
@@ -103,7 +109,8 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int TTL = 5;
     protected byte[] dnetKeyBytes = new byte[2048];
     protected DnetKeys xKeys;
-    protected List<String> whiteIPList = new ArrayList<>(){};
+    protected List<String> whiteIPList = new ArrayList<>() {
+    };
 
 
     // =========================
@@ -138,13 +145,13 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int rpcPortHttp;
     protected int rpcPortWs;
 
-    public void setDir() {
-        storeDir = getRootDir() + "/rocksdb/xdagdb";
-        storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
-        whiteListDir = getRootDir() + "/netdb-white.txt";
-        netDBDir = getRootDir() + "/netdb.txt";
-    }
 
+    // =========================
+    // Xdag Snapshot
+    // =========================
+    protected boolean snapshotEnabled = false;
+    protected long snapshotHeight;
+    protected long snapshotTime; // TODO：用于sync时的起始时间
 
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
@@ -152,6 +159,13 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
         getSetting();
         setDir();
+    }
+
+    public void setDir() {
+        storeDir = getRootDir() + "/rocksdb/xdagdb";
+        storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
+        whiteListDir = getRootDir() + "/netdb-white.txt";
+        netDBDir = getRootDir() + "/netdb.txt";
     }
 
     public void initKeys() throws Exception {
@@ -180,6 +194,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     @Override
     public RPCSpec getRPCSpec() {
+        return this;
+    }
+
+    @Override
+    public SnapshotSpec getSnapshotSpec() {
         return this;
     }
 
@@ -287,7 +306,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                     // todo bind the host for us
                     break;
                 case "-tag":
-                    this.poolTag = StringUtils.substring(args[i+1], 0, 31);
+                    this.poolTag = StringUtils.substring(args[i + 1], 0, 31);
                     break;
                 default:
                     log.error("Illegal instruction");
@@ -301,7 +320,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         this.nodePort = Integer.parseInt(args[1]);
     }
 
-    /** 设置矿池的分配奖励 */
+    /**
+     * 设置矿池的分配奖励
+     */
     public void changePoolPara(String para) {
         String[] args = para.split(":");
         if (args.length != 9) {
@@ -401,5 +422,25 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public int getRPCPortByWebSocket() {
         return rpcPortWs;
+    }
+
+    @Override
+    public boolean isSnapshotEnabled() {
+        return snapshotEnabled;
+    }
+
+    @Override
+    public long getSnapshotHeight() {
+        return snapshotHeight;
+    }
+
+    @Override
+    public void snapshotEnable() {
+        snapshotEnabled = true;
+    }
+
+    @Override
+    public long getSnapshotTime() {
+        return snapshotTime;
     }
 }

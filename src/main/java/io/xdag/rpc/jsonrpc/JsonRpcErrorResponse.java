@@ -21,11 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
 
 import java.util.Objects;
 
 public class JsonRpcErrorResponse extends JsonRpcIdentifiableMessage {
+
     private final JsonRpcError error;
 
     public JsonRpcErrorResponse(int id, JsonRpcError error) {

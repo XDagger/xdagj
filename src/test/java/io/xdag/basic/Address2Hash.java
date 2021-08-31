@@ -21,14 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.basic;
 
-import org.apache.tuweni.bytes.Bytes32;
-import org.junit.Test;
+package io.xdag.basic;
 
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static org.junit.Assert.assertTrue;
+
+import org.apache.tuweni.bytes.Bytes32;
+import org.junit.Test;
 
 public class Address2Hash {
 

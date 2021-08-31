@@ -21,31 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.handler;
 
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ChannelHandler.Sharable
 public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
 
-    /** 这里保存了一个地址和对应的数量 */
+    /**
+     * 这里保存了一个地址和对应的数量
+     */
     private static final Map<String, AtomicInteger> connectionCount = new ConcurrentHashMap<>();
 
     private final int maxInboundConnectionsPerIp;
 
     /**
-     * @param maxConnectionsPerIp
-     *            Maximum allowed connections of each unique IP address.
+     * @param maxConnectionsPerIp Maximum allowed connections of each unique IP address.
      */
     public ConnectionLimitHandler(int maxConnectionsPerIp) {
         this.maxInboundConnectionsPerIp = maxConnectionsPerIp;
@@ -54,8 +55,7 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
     /**
      * Get the connection count of an address
      *
-     * @param address
-     *            an IP address
+     * @param address an IP address
      * @return current connection count
      */
     public static int getConnectionsCount(InetAddress address) {
@@ -66,15 +66,16 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
     /**
      * Check whether there is a counter of the provided address.
      *
-     * @param address
-     *            an IP address
+     * @param address an IP address
      * @return whether there is a counter of the address.
      */
     public static boolean containsAddress(InetAddress address) {
         return connectionCount.get(address.getHostAddress()) != null;
     }
 
-    /** Reset connection count */
+    /**
+     * Reset connection count
+     */
     public static void reset() {
         connectionCount.clear();
     }

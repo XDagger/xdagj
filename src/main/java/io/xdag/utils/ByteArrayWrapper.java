@@ -21,11 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import java.util.Arrays;
 
 public final class ByteArrayWrapper {
+
     private final byte[] data;
 
     public ByteArrayWrapper(byte[] data) {
@@ -35,12 +37,12 @@ public final class ByteArrayWrapper {
         this.data = data;
     }
 
-    public byte[] getData() {
-        return data;
-    }
-
     public static ByteArrayWrapper of(byte[] data) {
         return new ByteArrayWrapper(data);
+    }
+
+    public byte[] getData() {
+        return data;
     }
 
     @Override

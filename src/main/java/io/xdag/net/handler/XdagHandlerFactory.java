@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.xdag.net.XdagVersion;
@@ -28,5 +29,5 @@ import io.xdag.net.XdagVersion;
 public interface XdagHandlerFactory {
 
     XdagHandler create(XdagVersion version);
-    
+
 }
