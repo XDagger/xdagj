@@ -27,8 +27,6 @@ package io.xdag.core;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.listener.Listener;
 import io.xdag.utils.ByteArrayWrapper;
-import org.apache.tuweni.bytes.Bytes32;
-
 import java.util.List;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes32;
