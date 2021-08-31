@@ -1,10 +1,11 @@
 package io.xdag.utils;
 
+import static org.junit.Assert.assertEquals;
+
 import io.xdag.crypto.Hash;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 public class BytesTest {

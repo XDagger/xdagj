@@ -21,20 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
+import java.net.InetSocketAddress;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
-
 public class WhliteListTest {
+
     Kernel kernel;
+
     @Before
-    public void setup(){
+    public void setup() {
         Config config = new DevnetConfig();
         kernel = new Kernel(config);
     }
@@ -42,12 +44,12 @@ public class WhliteListTest {
     @Test
     public void WhileList() {
         XdagClient client = new XdagClient(kernel.getConfig());
-        client.addWhilteIP("127.0.0.1",8882);
+        client.addWhilteIP("127.0.0.1", 8882);
         //白名单有的节点
-        boolean ans = client.isAcceptable(new InetSocketAddress("127.0.0.1",8882));
+        boolean ans = client.isAcceptable(new InetSocketAddress("127.0.0.1", 8882));
         assert ans;
         //白名单无的节点
-        boolean ans1 = client.isAcceptable(new InetSocketAddress("127.0.0.1",8883));
+        boolean ans1 = client.isAcceptable(new InetSocketAddress("127.0.0.1", 8883));
         assert !ans1;
     }
 }

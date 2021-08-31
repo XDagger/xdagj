@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.miner;
 
 import org.junit.Assert;
@@ -44,7 +45,6 @@ public class MinerCalculateTest {
 
         Double a = Double.valueOf(0.000001);
         Assert.assertTrue(a.compareTo(Double.valueOf(0)) > 0);
-
 
 
     }

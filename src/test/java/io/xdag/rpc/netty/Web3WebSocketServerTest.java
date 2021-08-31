@@ -21,7 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.netty;
+
+import static io.xdag.rpc.netty.Web3HttpServerTest.APPLICATION_JSON;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,15 +38,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.modules.ModuleDescription;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
-import lombok.SneakyThrows;
-import okhttp3.*;
-import okio.Buffer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collections;
@@ -50,15 +49,23 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static io.xdag.rpc.netty.Web3HttpServerTest.APPLICATION_JSON;
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.refEq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import lombok.SneakyThrows;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.Buffer;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class Web3WebSocketServerTest {
+
     private static JsonNodeFactory JSON_NODE_FACTORY = JsonNodeFactory.instance;
     private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -77,21 +84,23 @@ public class Web3WebSocketServerTest {
 
         int randomPort = 9998;//new ServerSocket(0).getLocalPort();
 
-        List<ModuleDescription> filteredModules = Collections.singletonList(new ModuleDescription("web3", "1.0", true, Collections.emptyList(), Collections.emptyList()));
-        XdagJsonRpcHandler handler = new XdagJsonRpcHandler( new JacksonBasedRpcSerializer());
+        List<ModuleDescription> filteredModules = Collections.singletonList(
+                new ModuleDescription("web3", "1.0", true, Collections.emptyList(), Collections.emptyList()));
+        XdagJsonRpcHandler handler = new XdagJsonRpcHandler(new JacksonBasedRpcSerializer());
         JsonRpcWeb3ServerHandler serverHandler = new JsonRpcWeb3ServerHandler(web3Mock, filteredModules);
 
-        Web3WebSocketServer websocketServer = new Web3WebSocketServer(InetAddress.getLoopbackAddress(), randomPort, handler, serverHandler);
+        Web3WebSocketServer websocketServer = new Web3WebSocketServer(InetAddress.getLoopbackAddress(), randomPort,
+                handler, serverHandler);
         websocketServer.start();
 
         OkHttpClient wsClient = new OkHttpClient();
-        Request wsRequest = new Request.Builder().url("ws://localhost:"+randomPort+"/websocket").build();
+        Request wsRequest = new Request.Builder().url("ws://localhost:" + randomPort + "/websocket").build();
 
         CountDownLatch wsAsyncResultLatch = new CountDownLatch(1);
         CountDownLatch wsAsyncCloseLatch = new CountDownLatch(1);
         AtomicReference<Throwable> failureReference = new AtomicReference<>();
 
-        wsClient.newWebSocket(wsRequest,new WebSocketListener() {
+        wsClient.newWebSocket(wsRequest, new WebSocketListener() {
 
             private WebSocket webSocket;
 
@@ -100,11 +109,11 @@ public class Web3WebSocketServerTest {
                 wsExecutor.submit(() -> {
                     Buffer buffer = new Buffer();
                     try {
-                        RequestBody.create( getJsonRpcDummyMessage(),MediaType.get(APPLICATION_JSON)).writeTo(buffer);
+                        RequestBody.create(getJsonRpcDummyMessage(), MediaType.get(APPLICATION_JSON)).writeTo(buffer);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    String req =  buffer.readUtf8();
+                    String req = buffer.readUtf8();
                     try {
                         this.webSocket = webSocket;
                         this.webSocket.send(req);
@@ -124,7 +133,7 @@ public class Web3WebSocketServerTest {
             @Override
             public void onMessage(@NotNull WebSocket webSocket, @NotNull String bytes) {
                 JsonNode jsonRpcResponse = OBJECT_MAPPER.readTree(bytes);
-                assertEquals(jsonRpcResponse.at("/result").asText(),mockResult);
+                assertEquals(jsonRpcResponse.at("/result").asText(), mockResult);
                 wsAsyncResultLatch.countDown();
             }
 
@@ -138,7 +147,6 @@ public class Web3WebSocketServerTest {
                 wsAsyncCloseLatch.countDown();
             }
         });
-
 
         if (!wsAsyncResultLatch.await(10, TimeUnit.SECONDS)) {
             fail("Result timed out");

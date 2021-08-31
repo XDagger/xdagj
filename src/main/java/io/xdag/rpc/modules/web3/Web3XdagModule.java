@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.web3;
 
 import io.xdag.rpc.Web3;
@@ -58,8 +59,8 @@ public interface Web3XdagModule {
 
     String xdag_getTotalBalance() throws Exception;
 
-    default BlockResultDTO xdag_getTransactionByHash(String hash, Boolean full)throws Exception{
-        return xdag_getBlockByHash(hash,full);
+    default BlockResultDTO xdag_getTransactionByHash(String hash, Boolean full) throws Exception {
+        return xdag_getBlockByHash(hash, full);
     }
 
     BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception;

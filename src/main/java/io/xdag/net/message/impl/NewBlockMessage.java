@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.config.Constants.DNET_PKT_XDAG;
@@ -30,11 +31,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
+import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.bouncycastle.util.encoders.Hex;
-
-import java.util.zip.CRC32;
 
 public class NewBlockMessage extends Message {
 
@@ -42,12 +41,16 @@ public class NewBlockMessage extends Message {
     private Block block;
     private int ttl;
 
-    /** 不处理crc */
+    /**
+     * 不处理crc
+     */
     public NewBlockMessage(MutableBytes bytes) {
         super(bytes);
     }
 
-    /** 处理crc 创建新的用于发送Block的message */
+    /**
+     * 处理crc 创建新的用于发送Block的message
+     */
     public NewBlockMessage(Block block, int ttl) {
         this.block = block;
         this.ttl = ttl;
@@ -55,7 +58,9 @@ public class NewBlockMessage extends Message {
         encode();
     }
 
-    /** 不处理crc */
+    /**
+     * 不处理crc
+     */
     public NewBlockMessage(XdagBlock xdagBlock, int ttl) {
         super(xdagBlock.getData().mutableCopy());
         this.xdagBlock = xdagBlock;

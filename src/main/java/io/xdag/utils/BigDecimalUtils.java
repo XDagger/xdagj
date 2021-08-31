@@ -21,13 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public class BigDecimalUtils {
-    /** 默认的除法运算的精度 */
+
+    /**
+     * 默认的除法运算的精度
+     */
     private static final int DEF_DIV_SCALE = 6;
 
     public static double add(double v1, double v2) {
@@ -53,12 +57,9 @@ public class BigDecimalUtils {
     }
 
     /**
-     * @param v1
-     *            被除数
-     * @param v2
-     *            除数
-     * @param scale
-     *            精确到小数点后几位
+     * @param v1 被除数
+     * @param v2 除数
+     * @param scale 精确到小数点后几位
      * @return 四舍五入后的结果
      */
     public static double div(double v1, double v2, int scale) {
@@ -73,10 +74,8 @@ public class BigDecimalUtils {
     /**
      * 对一个double 提供精确到某位小数点的精确结果
      *
-     * @param value
-     *            数字
-     * @param scale
-     *            要保留的小数点的后几位
+     * @param value 数字
+     * @param scale 要保留的小数点的后几位
      * @return 四舍五入后的结果
      */
     public static double round(double value, int scale) {

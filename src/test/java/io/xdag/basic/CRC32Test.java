@@ -21,14 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.basic;
+
+import static io.xdag.utils.BasicUtils.crc32Verify;
+import static org.junit.Assert.assertTrue;
 
 import io.xdag.utils.BytesUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
-
-import static io.xdag.utils.BasicUtils.crc32Verify;
-import static org.junit.Assert.*;
 
 public class CRC32Test {
 

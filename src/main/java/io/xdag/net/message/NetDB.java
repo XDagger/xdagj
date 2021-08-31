@@ -21,28 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message;
-
-import io.xdag.net.node.Node;
-import io.xdag.utils.BytesUtils;
-import lombok.extern.slf4j.Slf4j;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.*;
 
 import static io.xdag.utils.BytesUtils.isFullZero;
 
+import io.xdag.net.node.Node;
+import io.xdag.utils.BytesUtils;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 public class NetDB {
-    /** remote */
+
+    /**
+     * remote
+     */
     List<IP> ipList = new ArrayList<>();
 
     public NetDB() {
     }
 
-    /** 从remote节点获取的iplist */
+    /**
+     * 从remote节点获取的iplist
+     */
     public NetDB(byte[] data) {
         parse(data);
     }
@@ -69,7 +78,9 @@ public class NetDB {
         }
     }
 
-    /** address 6字节 4字节ip+2字节port */
+    /**
+     * address 6字节 4字节ip+2字节port
+     */
     public void addNewIP(byte[] address) {
         byte[] ip = BytesUtils.subArray(address, 0, 4);
         byte[] port = BytesUtils.subArray(address, 4, 2);
@@ -79,7 +90,9 @@ public class NetDB {
         addNewIP(ip, port);
     }
 
-    /** 获取remote接收到的新IP */
+    /**
+     * 获取remote接收到的新IP
+     */
     public Set<Node> getIPList() {
         Set<Node> res = new HashSet<>();
         if (ipList.size() != 0) {
@@ -93,8 +106,7 @@ public class NetDB {
     /**
      * 解析字节数组到List中
      *
-     * @param data
-     *            消息内容
+     * @param data 消息内容
      */
     public void parse(byte[] data) {
         int size = data.length / 6;
@@ -120,6 +132,7 @@ public class NetDB {
         }
         return res;
     }
+
     //todo
     public int getSize() {
         return ipList.size();
@@ -157,6 +170,7 @@ public class NetDB {
     }
 
     static class IP {
+
         InetAddress ip;
         int port;
 

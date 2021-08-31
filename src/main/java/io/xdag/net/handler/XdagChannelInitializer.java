@@ -21,9 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.net.handler;
 
-import java.net.InetSocketAddress;
+package io.xdag.net.handler;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
@@ -33,14 +32,16 @@ import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel> {
+
     private final Node remoteNode;
-    protected Kernel kernel;
     private final XdagChannelManager channelMgr;
     private final boolean isServer;
+    protected Kernel kernel;
 
     public XdagChannelInitializer(Kernel kernel, boolean isServer, Node remoteNode) {
         this.kernel = kernel;

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message;
 
 import static io.xdag.net.XdagVersion.V03;
@@ -34,13 +35,13 @@ import java.util.Map;
  *
  * <p>
  * enum xdag_message_type {
- *  XDAG_MESSAGE_BLOCKS_REQUEST,
- *  XDAG_MESSAGE_BLOCKS_REPLY,
- *  XDAG_MESSAGE_SUMS_REQUEST,
- *  XDAG_MESSAGE_SUMS_REPLY,
- *  XDAG_MESSAGE_BLOCKEXT_REQUEST,
- *  XDAG_MESSAGE_BLOCKEXT_REPLY,
- *  XDAG_MESSAGE_BLOCK_REQUEST
+ * XDAG_MESSAGE_BLOCKS_REQUEST,
+ * XDAG_MESSAGE_BLOCKS_REPLY,
+ * XDAG_MESSAGE_SUMS_REQUEST,
+ * XDAG_MESSAGE_SUMS_REPLY,
+ * XDAG_MESSAGE_BLOCKEXT_REQUEST,
+ * XDAG_MESSAGE_BLOCKEXT_REPLY,
+ * XDAG_MESSAGE_BLOCK_REQUEST
  * };
  */
 public enum XdagMessageCodes {
@@ -66,7 +67,7 @@ public enum XdagMessageCodes {
     static {
         versionToValuesMap.put(
                 V03,
-                new XdagMessageCodes[] {
+                new XdagMessageCodes[]{
                         BLOCKS_REQUEST,
                         BLOCKS_REPLY,
                         SUMS_REQUEST,

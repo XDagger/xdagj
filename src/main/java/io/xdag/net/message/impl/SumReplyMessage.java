@@ -21,20 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetDB;
-import io.xdag.core.XdagStats;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
-
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class SumReplyMessage extends AbstractMessage {
 
@@ -97,11 +97,11 @@ public class SumReplyMessage extends AbstractMessage {
 
         this.starttime = encoded.getLong(16, ByteOrder.LITTLE_ENDIAN);
         this.endtime = encoded.getLong(24, ByteOrder.LITTLE_ENDIAN);
-        this.random = encoded.getLong(32,ByteOrder.LITTLE_ENDIAN);
+        this.random = encoded.getLong(32, ByteOrder.LITTLE_ENDIAN);
         BigInteger maxdifficulty = encoded.slice(80, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
         long totalnblocks = encoded.getLong(104, ByteOrder.LITTLE_ENDIAN);
         long totalnmains = encoded.getLong(120, ByteOrder.LITTLE_ENDIAN);
-        int totalnhosts = encoded.getInt(132,ByteOrder.LITTLE_ENDIAN);
+        int totalnhosts = encoded.getInt(132, ByteOrder.LITTLE_ENDIAN);
         long maintime = encoded.getLong(136, ByteOrder.LITTLE_ENDIAN);
         xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
 
@@ -112,7 +112,7 @@ public class SumReplyMessage extends AbstractMessage {
         MutableBytes netdb = MutableBytes.create(length * 32 - 80);
 //        System.arraycopy(encoded.toArray(), 144, netdb, 0, length * 32 - 80);
 //        netdb.set(0, encoded);
-        netdb.set(0, encoded.slice(144,length*32-80));
+        netdb.set(0, encoded.slice(144, length * 32 - 80));
         netDB = new NetDB(netdb.toArray());
 
 //        sums = new byte[256];

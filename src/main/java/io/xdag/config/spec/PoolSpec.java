@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.config.spec;
 
 /**
@@ -29,35 +30,55 @@ package io.xdag.config.spec;
 public interface PoolSpec {
 
     String getPoolIp();
+
     int getPoolPort();
+
     String getPoolTag();
+
     int getGlobalMinerLimit();
+
     int getGlobalMinerChannelLimit();
+
     int getMaxConnectPerIp();
 
-    /** 拥有相同地址块的矿工最多允许同时在线的数量 g_connections_per_miner_limit */
+    /**
+     * 拥有相同地址块的矿工最多允许同时在线的数量 g_connections_per_miner_limit
+     */
     int getMaxMinerPerAccount();
+
     int getMaxShareCountPerChannel();
 
     int getConnectionTimeout();
 
 
-    /** 矿池自己的收益占比 */
+    /**
+     * 矿池自己的收益占比
+     */
     double getPoolRation();
 
-    /** 出块矿工收益占比 */
+    /**
+     * 出块矿工收益占比
+     */
     double getRewardRation();
 
-    /** 基金会收益占比 */
+    /**
+     * 基金会收益占比
+     */
     double getFundRation();
 
-    /** 参与奖励的占比 */
+    /**
+     * 参与奖励的占比
+     */
     double getDirectRation();
 
-    /** 奖励支付的周期 */
+    /**
+     * 奖励支付的周期
+     */
     int getAwardEpoch();
 
-    /** 等待超过10个epoch默认启动挖矿 */
+    /**
+     * 等待超过10个epoch默认启动挖矿
+     */
     int getWaitEpoch();
 
 }

@@ -21,20 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p.discovery;
 
 import com.google.common.base.MoreObjects;
-import lombok.Getter;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.net.InetSocketAddress;
 import java.util.Objects;
+import lombok.Getter;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * @author wawa
  */
 @Getter
 public class DiscoveryPeer {
+
     private final Bytes publicKey;
     private final InetSocketAddress nodeAddress;
 

@@ -21,8 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;
@@ -30,12 +33,13 @@ import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-/** Cryptographic hash functions. */
+/**
+ * Cryptographic hash functions.
+ */
 public class Hash {
-    private Hash() {}
+
+    private Hash() {
+    }
 
     /**
      * Generates a digest for the given {@code input}.
@@ -80,7 +84,9 @@ public class Hash {
         return sha256(sha256(input));
     }
 
-    /** MessageDigest not thread safe */
+    /**
+     * MessageDigest not thread safe
+     */
     public static MessageDigest newDigest() {
         try {
             return MessageDigest.getInstance("SHA-256");

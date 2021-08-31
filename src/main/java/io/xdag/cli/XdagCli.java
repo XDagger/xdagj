@@ -21,50 +21,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.cli;
+
+import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 import io.xdag.Kernel;
 import io.xdag.Launcher;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
-import io.xdag.config.TestnetConfig;
+import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.jni.Native;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.snapshot.db.SnapshotChainStore;
+import io.xdag.snapshot.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.ParseException;
-
-import java.io.*;
+import java.io.Console;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
-
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.ParseException;
 
 public class XdagCli extends Launcher {
 
     private static final Scanner scanner = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-
-    public static void main(String[] args, XdagCli cli) throws Exception {
-        try {
-            cli.start(args);
-        } catch (IOException exception) {
-            System.err.println(exception.getMessage());
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        main(args, new XdagCli());
-    }
 
     /**
      * Creates a new Xdag CLI instance.
@@ -120,6 +119,33 @@ public class XdagCli extends Launcher {
                 .hasArg(true).optionalArg(false).argName("filename").type(String.class)
                 .build();
         addOption(convertOldWalletOption);
+
+        Option loadSnapshotOption = Option.builder()
+                .longOpt(XdagOption.LOAD_SNAPSHOT.toString()).desc("load snapshot")
+                .hasArg(true).optionalArg(false).argName("filename").type(String.class)
+                .build();
+        addOption(loadSnapshotOption);
+
+        Option bootSnapshotOption = Option.builder()
+                .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
+                .hasArg(true).numberOfArgs(2).optionalArg(false).argName("snapshotheight").type(Integer.class)
+                .argName("snapshottime")
+                .type(Integer.class)
+                .desc("the parameter snapshottime uses hexadecimal")
+                .build();
+        addOption(bootSnapshotOption);
+    }
+
+    public static void main(String[] args, XdagCli cli) throws Exception {
+        try {
+            cli.start(args);
+        } catch (IOException exception) {
+            System.err.println(exception.getMessage());
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        main(args, new XdagCli());
     }
 
     public void start(String[] args) throws Exception {
@@ -128,9 +154,9 @@ public class XdagCli extends Launcher {
         // move old args
         List<String> argsList = new ArrayList<>();
         for (String arg : args) {
-            switch (arg) {
-                case "-t" -> config = new TestnetConfig();
-                default -> argsList.add(arg);
+            if ("-t".equals(arg)) {
+            } else {
+                argsList.add(arg);
             }
         }
         String[] newArgs = argsList.toArray(new String[0]);
@@ -165,7 +191,23 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.CONVERT_OLD_WALLET.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
             convertOldWallet(file);
+        } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
+            File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
+            loadSnapshot(file);
         } else {
+            if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
+                String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
+                try {
+                    long height = Long.parseLong(values[0]);
+                    long time = Long.parseLong(values[1], 16);
+                    config.getSnapshotSpec().setSnapshotHeight(height);
+                    config.getSnapshotSpec().setSnapshotTime(time);
+                    config.getSnapshotSpec().snapshotEnable();
+                    System.out.println("enable snapshot:" + config.getSnapshotSpec().isSnapshotEnabled());
+                } catch (NumberFormatException e) {
+                    System.out.println("参数错误");
+                }
+            }
             start();
         }
     }
@@ -220,7 +262,7 @@ public class XdagCli extends Launcher {
     protected void initHDAccount() {
         // create/unlock wallet
         Wallet wallet;
-        if(loadWallet().exists()) {
+        if (loadWallet().exists()) {
             wallet = loadAndUnlockWallet();
         } else {
             wallet = createNewWallet();
@@ -238,7 +280,7 @@ public class XdagCli extends Launcher {
 
     protected void createAccount() {
         Wallet wallet = loadAndUnlockWallet();
-        if(Objects.nonNull(wallet) && !wallet.isHdWalletInitialized()) {
+        if (Objects.nonNull(wallet) && !wallet.isHdWalletInitialized()) {
             System.out.println("Please init HD Wallet account first!");
             return;
         }
@@ -264,7 +306,7 @@ public class XdagCli extends Launcher {
 
     protected void changePassword() {
         Wallet wallet = loadAndUnlockWallet();
-        if(wallet.isUnlocked()) {
+        if (wallet.isUnlocked()) {
             String newPassword = readNewPassword("EnterNewPassword", "ReEnterNewPassword");
             if (newPassword == null) {
                 return;
@@ -321,12 +363,12 @@ public class XdagCli extends Launcher {
     protected boolean importMnemonic(String mnemonic) {
         Wallet wallet = loadAndUnlockWallet();
 
-        if(wallet.isHdWalletInitialized()) {
+        if (wallet.isHdWalletInitialized()) {
             System.out.println("HDWallet Mnemonic Already In Wallet");
             return false;
         }
 
-        if(!MnemonicUtils.validateMnemonic(mnemonic)) {
+        if (!MnemonicUtils.validateMnemonic(mnemonic)) {
             System.out.println("Wrong Mnemonic");
             return false;
         }
@@ -344,21 +386,40 @@ public class XdagCli extends Launcher {
         return true;
     }
 
-    protected boolean convertOldWallet(File file)   {
-        if(!file.exists()) {
+    protected boolean convertOldWallet(File file) {
+        if (!file.exists()) {
             System.out.println("File:" + file.getName() + " not exists.");
             return false;
         }
         String password = readPassword("Old wallet password:");
         String random = readPassword("Old wallet random:");
         List<ECKeyPair> keyList = readOldWallet(password, random, file);
-        for(ECKeyPair key : keyList) {
+        for (ECKeyPair key : keyList) {
             System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
             System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
             System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            importPrivateKey(key.getPrivateKey().toString(16));
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
+    }
+
+    // snapshot load
+    protected void loadSnapshot(File file) {
+        Config config = getConfig();
+        DatabaseFactory dbFactory = new RocksdbFactory(config);
+        SnapshotChainStore snapshotChainStore = new SnapshotChainStoreImpl(dbFactory.getDB(DatabaseName.SNAPSHOT));
+        snapshotChainStore.reset();
+        boolean mainLag = false;
+        if (config instanceof MainnetConfig) {
+            mainLag = true;
+        }
+        Wallet wallet = loadAndUnlockWallet();
+        long start = System.currentTimeMillis();
+        boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag, wallet.getAccounts());
+        long end = System.currentTimeMillis();
+        System.out.println("load res:" + res);
+        System.out.println("耗时:" + (end - start) / 1000 + "s");
     }
 
     public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {
@@ -369,7 +430,8 @@ public class XdagCli extends Launcher {
         try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
-                BytesUtils.arrayReverse(priv32);
+                // TODO: paulochen java跟c 两边的钱包字节序不一样 一个需要reverse一个不需要
+//                BytesUtils.arrayReverse(priv32);
                 ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
                 keyList.add(ecKey);
             }
@@ -459,7 +521,7 @@ public class XdagCli extends Launcher {
             byte[] initialEntropy = new byte[16];
             SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
             String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
-            printer.println("HdWallet Mnemonic:"+ phrase);
+            printer.println("HdWallet Mnemonic:" + phrase);
 
             String repeat = readLine("HdWallet Mnemonic Repeat:");
             repeat = String.join(" ", repeat.trim().split("\\s+"));

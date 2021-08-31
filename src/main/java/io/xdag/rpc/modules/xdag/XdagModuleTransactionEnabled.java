@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.core.Blockchain;
 
-public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase{
+public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
     public XdagModuleTransactionEnabled(Blockchain blockchain) {
         super(blockchain);

@@ -21,21 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.SUMS_REQUEST;
 
-import org.apache.commons.lang3.RandomUtils;
-
-import io.xdag.net.message.AbstractMessage;
 import io.xdag.core.XdagStats;
+import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
 @EqualsAndHashCode(callSuper = false)
 public class SumRequestMessage extends AbstractMessage {
+
     public SumRequestMessage(long starttime, long endtime, XdagStats xdagStats) {
         super(SUMS_REQUEST, starttime, endtime, RandomUtils.nextLong(), xdagStats);
         updateCrc();

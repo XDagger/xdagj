@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -45,12 +46,12 @@ public enum ImportResult {
         this.hashLow = hashLow;
     }
 
-    public void setErrorInfo(String errorInfo) {
-        this.errorInfo = errorInfo;
-    }
-
     public String getErrorInfo() {
         return errorInfo;
+    }
+
+    public void setErrorInfo(String errorInfo) {
+        this.errorInfo = errorInfo;
     }
 
     public boolean isNormal() {

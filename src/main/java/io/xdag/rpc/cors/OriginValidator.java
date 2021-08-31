@@ -21,18 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.cors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import javax.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OriginValidator {
+
     private static final Logger LOGGER = LoggerFactory.getLogger("jsonrpc");
 
     private URI[] origins;
@@ -57,6 +58,17 @@ public class OriginValidator {
                 this.origins = new URI[0];
             }
         }
+    }
+
+    private static URI[] toUris(@Nonnull String list) throws URISyntaxException {
+        String[] elements = list.split(" ");
+        URI[] uris = new URI[elements.length];
+
+        for (int k = 0; k < elements.length; k++) {
+            uris[k] = new URI(elements[k].trim());
+        }
+
+        return uris;
     }
 
     public boolean isValidOrigin(String origin) {
@@ -117,16 +129,5 @@ public class OriginValidator {
         }
 
         return false;
-    }
-
-    private static URI[] toUris(@Nonnull String list) throws URISyntaxException {
-        String[] elements = list.split(" ");
-        URI[] uris = new URI[elements.length];
-
-        for (int k = 0; k < elements.length; k++) {
-            uris[k] = new URI(elements[k].trim());
-        }
-
-        return uris;
     }
 }

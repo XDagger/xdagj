@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import com.google.common.util.concurrent.SettableFuture;
@@ -33,7 +34,13 @@ import io.xdag.net.Channel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.*;
+import io.xdag.net.message.impl.BlockExtRequestMessage;
+import io.xdag.net.message.impl.BlockRequestMessage;
+import io.xdag.net.message.impl.BlocksReplyMessage;
+import io.xdag.net.message.impl.BlocksRequestMessage;
+import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.net.message.impl.SumReplyMessage;
+import io.xdag.net.message.impl.SumRequestMessage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +48,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-
-import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -117,7 +122,9 @@ public class Xdag03 extends XdagHandler {
         msgQueue.close();
     }
 
-    /** *********************** Message Processing * *********************** */
+    /**
+     * ********************** Message Processing * ***********************
+     */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
         log.debug("processNewBlock:{}", block.getHashLow().toHexString());
@@ -125,7 +132,9 @@ public class Xdag03 extends XdagHandler {
         syncMgr.validateAndAddNewBlock(bw);
     }
 
-    /** 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 * */
+    /**
+     * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
+     */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
 //        log.debug("processBlocksRequest:" + msg);
         // 更新全网状态
@@ -134,38 +143,53 @@ public class Xdag03 extends XdagHandler {
         long endTime = msg.getEndtime();
         long random = msg.getRandom();
 
-        // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
-        List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
-        for (Block block : blocks) {
-            sendNewBlock(block, 1);
-        }
-        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+        // TODO: paulochen 处理多区块请求
+//        // 如果大于快照点的话 我可以发送
+//        if (startTime > 1658318225407L) {
+//            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
+//            List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
+//            for (Block block : blocks) {
+//                sendNewBlock(block, 1);
+//            }
+//            sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+//        }
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
         updateXdagStats(msg);
         long randomSeq = msg.getRandom();
         SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
-        if(sf != null) {
+        if (sf != null) {
             sf.set(Bytes.wrap(new byte[]{0}));
         }
     }
 
-    /** 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送 */
+    /**
+     * 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送
+     */
     protected void processSumsRequest(SumRequestMessage msg) {
         updateXdagStats(msg);
 //        byte[] sums = new byte[256];
         MutableBytes sums = MutableBytes.create(256);
-        kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
-        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(), kernel.getBlockchain().getXdagStats(), sums);
-        sendMessage(reply);
+        // TODO: paulochen 处理sum请求
+////        if (msg.getEndtime() < 1658318225407L) {
+////            sums =
+////        } else {
+//        if (msg.getStarttime() > 1658318225407L) {
+//            kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
+////        }
+//            SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
+//                    kernel.getBlockchain().getXdagStats(), sums);
+//
+//            sendMessage(reply);
+//        }
     }
 
     protected void processSumsReply(SumReplyMessage msg) {
         updateXdagStats(msg);
         long randomSeq = msg.getRandom();
         SettableFuture<Bytes> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
-        if(sf != null) {
+        if (sf != null) {
             sf.set(msg.getSum());
         }
     }
@@ -189,7 +213,9 @@ public class Xdag03 extends XdagHandler {
         }
     }
 
-    /** *********************** Message Sending * *********************** */
+    /**
+     * ********************** Message Sending * ***********************
+     */
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
 //        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));

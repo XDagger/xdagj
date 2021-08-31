@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.net.XdagVersion.V03;
@@ -31,7 +32,7 @@ import io.xdag.net.message.XdagMessageCodes;
 import org.apache.tuweni.bytes.MutableBytes;
 
 public class Xdag03MessageFactory implements MessageFactory {
-    
+
     @Override
     public Message create(byte code, MutableBytes encoded) {
         XdagMessageCodes receivedCommand = XdagMessageCodes.fromByte(code, V03);
@@ -48,5 +49,5 @@ public class Xdag03MessageFactory implements MessageFactory {
             default -> throw new IllegalArgumentException("No such message code" + code);
         };
     }
-    
+
 }

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p;
 
 import io.libp2p.core.Host;
@@ -39,36 +40,29 @@ import io.xdag.crypto.ECKeyPair;
 import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.SafeFuture;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 
 
 @Slf4j
 @Getter
 public class Libp2pNetwork {
-    enum State {
-        IDLE,
-        RUNNING,
-        STOPPED
-    }
-    private final ProtocolBinding<?> protocol;
-    private int port;
-    private Host host;
-    private final PrivKey privKey;
-    private NodeId nodeId;
-    private String ip;
 
+    private final ProtocolBinding<?> protocol;
+    private final PrivKey privKey;
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
     private final Multiaddr advertisedAddr;
+    private final List<String> bootnodes;
+    private int port;
+    private Host host;
+    private NodeId nodeId;
+    private String ip;
     private DiscV5Service discV5Service;
-    private final List<String> bootnodes ;
-
     public Libp2pNetwork(PrivKey privKey, Multiaddr listenAddr) {
         this.protocol = new NonProtocol();
         this.privKey = privKey;
@@ -76,7 +70,7 @@ public class Libp2pNetwork {
         this.bootnodes = new ArrayList<>();
     }
 
-    public Libp2pNetwork(Kernel kernel){
+    public Libp2pNetwork(Kernel kernel) {
         this.port = kernel.getConfig().getNodeSpec().getLibp2pPort();
         this.protocol = new Libp2pXdagProtocol(kernel);
         // libp2p use wallet default key
@@ -85,15 +79,15 @@ public class Libp2pNetwork {
         ip = kernel.getConfig().getNodeSpec().getNodeIp();
         nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKey.publicKey()));
         advertisedAddr = Libp2pUtils.fromInetSocketAddress(
-                        new InetSocketAddress(kernel.getConfig().getNodeSpec().getNodeIp(), port),nodeId);
+                new InetSocketAddress(kernel.getConfig().getNodeSpec().getNodeIp(), port), nodeId);
         bootnodes = kernel.getConfig().getNodeSpec().getBootnodes();
 
     }
 
-    private void crate(){
+    private void crate() {
         host = BuilderJKt.hostJ(Builder.Defaults.None,
-                b->{
-                    b.getIdentity().setFactory(()-> privKey);
+                b -> {
+                    b.getIdentity().setFactory(() -> privKey);
                     b.getTransports().add(TcpTransport::new);
                     b.getSecureChannels().add(NoiseXXSecureChannel::new);
                     b.getMuxers().add(StreamMuxerProtocol.getMplex());
@@ -104,7 +98,7 @@ public class Libp2pNetwork {
 //                    b.getDebug().getBeforeSecureHandler().addNettyHandler(firewall);
 //                    b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
                 });
-        discV5Service = DiscV5Service.create(Bytes.wrap(privKey.raw()),ip,port,bootnodes);
+        discV5Service = DiscV5Service.create(Bytes.wrap(privKey.raw()), ip, port, bootnodes);
     }
 
     public SafeFuture<?> start() {
@@ -115,7 +109,7 @@ public class Libp2pNetwork {
         //16Uiu2HAm3NZUwzzNHfnnB8ADfnuP5MTDuqjRb3nTRBxPTQ4g7Wjj
         log.info("id ={}", host.getPeerId());
         log.info("Starting libp2p network...");
-        if(discV5Service!=null){
+        if (discV5Service != null) {
             discV5Service.start();
             discV5Service.searchForPeers();
         }
@@ -127,10 +121,9 @@ public class Libp2pNetwork {
                         });
     }
 
-
     public void dail(String peer) {
         Multiaddr address = Multiaddr.fromString(peer);
-        protocol.dial(host,address);
+        protocol.dial(host, address);
     }
 
     public String getNodeAddress() {
@@ -148,6 +141,12 @@ public class Libp2pNetwork {
         log.debug("LibP2PNetwork.stop()");
         SafeFuture.of(discV5Service.stop());
         return SafeFuture.of(host.stop());
+    }
+
+    enum State {
+        IDLE,
+        RUNNING,
+        STOPPED
     }
 
 }

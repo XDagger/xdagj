@@ -21,29 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.node;
 
 import io.xdag.utils.BytesUtils;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomUtils;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
 public class Node {
 
     @Getter
     private final String host;
-    
+
     @Getter
     private final int port;
-    
-    @Getter
-    private byte[] id;
-    
     @Getter
     private final NodeStat stat = new NodeStat();
+    @Getter
+    private byte[] id;
 
     public Node(String host, int port) {
         this.host = host;

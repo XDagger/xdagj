@@ -21,10 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.nat;
 
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.xdag.utils.SafeFuture;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URL;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.jupnp.UpnpService;
@@ -40,15 +50,8 @@ import org.jupnp.registry.Registry;
 import org.jupnp.registry.RegistryListener;
 import org.mockito.ArgumentCaptor;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URL;
-import java.util.Optional;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.*;
-
 public class UpnpClientTest {
+
     private UpnpService natService = mock(UpnpService.class);
     private Registry registry = mock(Registry.class);
     private UpnpClient upnpClient;
@@ -58,6 +61,7 @@ public class UpnpClientTest {
         when(natService.getRegistry()).thenReturn(registry);
         this.upnpClient = new UpnpClient(natService);
     }
+
     @Test
     public void registryListenerShouldDetectService() throws Exception {
         final SafeFuture<?> startupFuture = upnpClient.startup();
@@ -97,9 +101,10 @@ public class UpnpClientTest {
         assertThat(startupFuture).isCompleted();
         assertThat(upnpClient.getWanIpFuture().join()).isEqualTo(wanIpConnectionService);
     }
+
     @Test
-    public void testClientnomalRun(){
-        NatService natService = new NatService(10000,true, Optional.of(new NatManager()));
+    public void testClientnomalRun() {
+        NatService natService = new NatService(10000, true, Optional.of(new NatManager()));
         SafeFuture<Void> start = natService.doStart();
         assertThat(start).isCompleted();
     }

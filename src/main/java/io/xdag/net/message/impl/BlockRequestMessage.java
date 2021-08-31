@@ -21,25 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message.impl;
 
 import static io.xdag.config.Constants.DNET_PKT_XDAG;
 import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 
-import io.xdag.net.message.AbstractMessage;
 import io.xdag.core.XdagStats;
+import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
-
 import lombok.EqualsAndHashCode;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
@@ -97,7 +96,7 @@ public class BlockRequestMessage extends AbstractMessage {
         BigInteger diff = xdagStats.getDifficulty();
         BigInteger maxDiff = xdagStats.getMaxdifficulty();
         long nmain = xdagStats.getNmain();
-        long totalMainNumber = Math.max(xdagStats.getTotalnmain(),nmain);
+        long totalMainNumber = Math.max(xdagStats.getTotalnmain(), nmain);
         long nblocks = xdagStats.getNblocks();
         long totalBlockNumber = xdagStats.getTotalnblocks();
 
@@ -132,13 +131,13 @@ public class BlockRequestMessage extends AbstractMessage {
 
         // field3 nblock totalblock main totalmain
 //        System.arraycopy(BytesUtils.longToBytes(nblocks, true), 0, encoded, 96, 8);
-        encoded.set(96, Bytes.wrap(BytesUtils.longToBytes(nblocks,  true)));
+        encoded.set(96, Bytes.wrap(BytesUtils.longToBytes(nblocks, true)));
 //        System.arraycopy(BytesUtils.longToBytes(totalBlockNumber, true), 0, encoded, 104, 8);
-        encoded.set(104, Bytes.wrap(BytesUtils.longToBytes(totalBlockNumber,  true)));
+        encoded.set(104, Bytes.wrap(BytesUtils.longToBytes(totalBlockNumber, true)));
 //        System.arraycopy(BytesUtils.longToBytes(nmain, true), 0, encoded, 112, 8);
-        encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain,  true)));
+        encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain, true)));
 //        System.arraycopy(BytesUtils.longToBytes(totalMainNumber, true), 0, encoded, 120, 8);
-        encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber,  true)));
+        encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber, true)));
 //        System.arraycopy(tmpbyte, 0, encoded, 128, tmpbyte.length);
         encoded.set(128, Bytes.wrap(tmpbyte));
         updateCrc();
@@ -156,7 +155,7 @@ public class BlockRequestMessage extends AbstractMessage {
 //        BigInteger maxdifficulty = BytesUtils.bytesToBigInteger(encoded, 80, true);
         BigInteger maxdifficulty = encoded.slice(80, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
 //        long totalnblocks = BytesUtils.bytesToLong(encoded, 104, true);
-        long totalnblocks = encoded.getLong(104,ByteOrder.LITTLE_ENDIAN);
+        long totalnblocks = encoded.getLong(104, ByteOrder.LITTLE_ENDIAN);
 //        long totalnmains = BytesUtils.bytesToLong(encoded, 120, true);
         long totalnmains = encoded.getLong(120, ByteOrder.LITTLE_ENDIAN);
 //        int totalnhosts = BytesUtils.bytesToInt(encoded, 132, true);

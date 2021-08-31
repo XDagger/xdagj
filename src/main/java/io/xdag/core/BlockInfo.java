@@ -21,26 +21,78 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
+import static io.xdag.utils.BasicUtils.amount2xdag;
+
+import io.xdag.snapshot.core.SnapshotInfo;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.math.BigInteger;
 
 @Getter
 @Setter
 public class BlockInfo {
-    private long height;
-    private byte[] hash;
-    private byte[] hashlow;
-    private long amount;
+
     public long type;
+    public int flags;
+    private long height;
     private BigInteger difficulty;
     private byte[] ref;
     private byte[] maxDiffLink;
-    public int flags;
     private long fee;
-    private long timestamp;
     private byte[] remark;
+    private byte[] hash;
+    private byte[] hashlow;
+    private long amount;
+    private long timestamp;
+
+    // snapshot
+    private boolean isSnapshot = false;
+    private SnapshotInfo snapshotInfo = null;
+
+    @Override
+    public String toString() {
+        return "BlockInfo{" +
+                "height=" + height +
+                ", hash=" + Arrays.toString(hash) +
+                ", hashlow=" + Arrays.toString(hashlow) +
+                ", amount=" + amount2xdag(amount) +
+                ", type=" + type +
+                ", difficulty=" + difficulty +
+                ", ref=" + Arrays.toString(ref) +
+                ", maxDiffLink=" + Arrays.toString(maxDiffLink) +
+                ", flags=" + Integer.toHexString(flags) +
+                ", fee=" + fee +
+                ", timestamp=" + timestamp +
+                ", remark=" + Arrays.toString(remark) +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        BlockInfo blockInfo = (BlockInfo) o;
+        return type == blockInfo.type &&
+                flags == blockInfo.flags &&
+                height == blockInfo.height &&
+                amount == blockInfo.amount &&
+                timestamp == blockInfo.timestamp &&
+                Arrays.equals(hash, blockInfo.hash);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(type, flags, height, amount, timestamp);
+        result = 31 * result + Arrays.hashCode(hash);
+        return result;
+    }
 }

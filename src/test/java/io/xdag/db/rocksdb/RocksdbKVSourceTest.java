@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.db.rocksdb;
+
+import static org.junit.Assert.assertEquals;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -30,6 +33,7 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.store.BlockStore;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
@@ -38,10 +42,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.List;
-import static org.junit.Assert.*;
-
 public class RocksdbKVSourceTest {
+
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 

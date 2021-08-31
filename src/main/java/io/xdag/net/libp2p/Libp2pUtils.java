@@ -21,23 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p;
+
+import static io.libp2p.crypto.keys.Secp256k1Kt.unmarshalSecp256k1PublicKey;
 
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.PubKey;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.libp2p.peer.NodeId;
-import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.beacon.discovery.schema.EnrField;
-import org.ethereum.beacon.discovery.schema.NodeRecord;
-
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Optional;
-
-import static io.libp2p.crypto.keys.Secp256k1Kt.unmarshalSecp256k1PublicKey;
+import org.apache.tuweni.bytes.Bytes;
+import org.ethereum.beacon.discovery.schema.EnrField;
+import org.ethereum.beacon.discovery.schema.NodeRecord;
 
 /**
  * @author wawa
@@ -55,9 +55,9 @@ public class Libp2pUtils {
         return new DiscoveryPeer(((Bytes) nodeRecord.get(EnrField.PKEY_SECP256K1)), address);
     }
 
-    public static String discoveryPeerToDailId(DiscoveryPeer peer){
-        String dailId =  fromInetSocketAddress(peer.getNodeAddress(), getNodeId(peer)).toString();
-        return dailId.replaceAll("p2p","ipfs");
+    public static String discoveryPeerToDailId(DiscoveryPeer peer) {
+        String dailId = fromInetSocketAddress(peer.getNodeAddress(), getNodeId(peer)).toString();
+        return dailId.replaceAll("p2p", "ipfs");
     }
 
     public static Multiaddr fromInetSocketAddress(

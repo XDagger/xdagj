@@ -21,13 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p;
 
 import io.libp2p.core.PeerId;
 import io.xdag.net.libp2p.peer.NodeId;
 import org.apache.tuweni.bytes.Bytes;
 
-public class  LibP2PNodeId extends NodeId {
+public class LibP2PNodeId extends NodeId {
+
     private final PeerId peerId;
 
     public LibP2PNodeId(final PeerId peerId) {

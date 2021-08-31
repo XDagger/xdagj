@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.db.rocksdb;
 
 import cn.hutool.core.lang.Pair;
@@ -28,13 +29,6 @@ import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.FileUtils;
-import org.rocksdb.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -46,6 +40,24 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
+import org.rocksdb.BackupEngine;
+import org.rocksdb.BackupableDBOptions;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.CompressionType;
+import org.rocksdb.Env;
+import org.rocksdb.LRUCache;
+import org.rocksdb.Options;
+import org.rocksdb.ReadOptions;
+import org.rocksdb.RestoreOptions;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 
 @Slf4j
 @Setter
@@ -56,13 +68,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         RocksDB.loadLibrary();
     }
 
-    private Config config;
-    private String name;
-    private RocksDB db;
-    private ReadOptions readOpts;
-    private boolean alive;
-    private int prefixSeekLength;
-
     /**
      * The native RocksDB insert/update/delete are normally thread-safe However
      * closeoperation is not thread-safe. This ReadWriteLock still permits
@@ -70,6 +75,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
      * on init/close/delete operations
      */
     private final ReadWriteLock resetDbLock = new ReentrantReadWriteLock();
+    private Config config;
+    private String name;
+    private RocksDB db;
+    private ReadOptions readOpts;
+    private boolean alive;
+    private int prefixSeekLength;
 
     public RocksdbKVSource(String name) {
         this.name = name;
@@ -209,7 +220,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 if (db == null) {
                     log.error("db is null");
                 } else {
-                    log.debug("put block key ={} ,val = {}",Hex.encodeHexString(key),Hex.encodeHexString(val));
+                    log.debug("put block key ={} ,val = {}", Hex.encodeHexString(key), Hex.encodeHexString(val));
                     db.put(key, val);
                 }
             } else {
@@ -233,6 +244,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             resetDbLock.readLock().unlock();
         }
     }
+
     //get 不到
     @Override
     public byte[] get(byte[] key) {
@@ -310,7 +322,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     public List<byte[]> prefixValueLookup(byte[] key) {
         List<byte[]> retList = Lists.newLinkedList();
         fetchPrefix(key, pair -> {
-            retList.add(pair.getKey());
+            retList.add(pair.getValue());
             return Boolean.FALSE;
         });
         return retList;
@@ -332,7 +344,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         try (RocksIterator it = db.newIterator(readOpts)) {
             for (it.seek(key); it.isValid(); it.next()) {
                 if (BytesUtils.keyStartsWith(it.key(), key)) {
-                    if (func.apply(Pair.of(it.key(), it.value()))){
+                    if (func.apply(Pair.of(it.key(), it.value()))) {
                         return;
                     }
                 } else {

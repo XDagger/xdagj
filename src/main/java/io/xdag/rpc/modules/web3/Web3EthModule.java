@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.web3;
 
 import io.xdag.rpc.dto.ETHBlockResultDTO;
@@ -46,8 +47,6 @@ public interface Web3EthModule {
 //        return getEthModule().estimateGas(args);
 //    }
 
-
-
 //    default Map<String, Object> eth_bridgeState() throws Exception {
 //        return getEthModule().bridgeState();
 //    }
@@ -68,7 +67,7 @@ public interface Web3EthModule {
 
 //    BigInteger eth_hashrate();
 
-    default String eth_gasPrice(){
+    default String eth_gasPrice() {
         return "0x1";
     }
 

@@ -21,26 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.netty;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.xdag.rpc.cors.OriginValidator;
 import io.xdag.rpc.utils.HttpUtils;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.*;
-import java.util.ArrayList;
-import java.util.List;
-
-
-
 @ChannelHandler.Sharable
 public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+
     private static final Logger logger = LoggerFactory.getLogger("jsonrpc");
     private final List<String> rpcHost;
     private final InetAddress rpcAddress;
@@ -106,15 +117,13 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
             if (!"application/json".equals(mimeType) && !"application/json-rpc".equals(mimeType)) {
                 logger.debug("Unsupported content type");
                 response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE);
-            }
-            else if (origin != null && !this.originValidator.isValidOrigin(origin)) {
+            } else if (origin != null && !this.originValidator.isValidOrigin(origin)) {
                 logger.debug("Invalid origin");
                 response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
             } else if (referer != null && !this.originValidator.isValidReferer(referer)) {
                 logger.debug("Invalid referer");
                 response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
-            }
-            else {
+            } else {
                 ctx.fireChannelRead(request);
                 return;
             }
@@ -137,7 +146,7 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
 
     private boolean isAcceptedAddress(final InetAddress address) {
         // Check if the address is a valid special local or loop back
-        if (address.isLoopbackAddress() ) {
+        if (address.isLoopbackAddress()) {
             return true;
         }
         // Check if the address is defined on any interface

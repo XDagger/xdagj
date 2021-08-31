@@ -21,16 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
+
+import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
 
 import io.xdag.core.Blockchain;
 import io.xdag.rpc.Web3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
-
-public class XdagModuleTransactionDisabled extends XdagModuleTransactionBase{
+public class XdagModuleTransactionDisabled extends XdagModuleTransactionBase {
 
     private static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionDisabled.class);
 

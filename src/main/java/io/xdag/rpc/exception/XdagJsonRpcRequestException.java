@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.exception;
 
 public class XdagJsonRpcRequestException extends RuntimeException {
@@ -35,10 +36,6 @@ public class XdagJsonRpcRequestException extends RuntimeException {
     public XdagJsonRpcRequestException(Integer code, String message) {
         super(message);
         this.code = code;
-    }
-
-    public Integer getCode() {
-        return code;
     }
 
     public static XdagJsonRpcRequestException transactionRevertedExecutionError() {
@@ -75,5 +72,9 @@ public class XdagJsonRpcRequestException extends RuntimeException {
 
     public static XdagJsonRpcRequestException stateNotFound(String message) {
         return new XdagJsonRpcRequestException(-32600, message);
+    }
+
+    public Integer getCode() {
+        return code;
     }
 }

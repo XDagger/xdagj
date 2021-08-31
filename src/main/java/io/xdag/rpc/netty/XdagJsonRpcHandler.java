@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.netty;
 
 import io.netty.buffer.ByteBufHolder;
@@ -33,13 +34,13 @@ import io.xdag.rpc.jsonrpc.JsonRpcResultOrError;
 import io.xdag.rpc.modules.XdagJsonRpcRequest;
 import io.xdag.rpc.modules.XdagJsonRpcRequestVisitor;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
 public class XdagJsonRpcHandler extends SimpleChannelInboundHandler<ByteBufHolder>
         implements XdagJsonRpcRequestVisitor {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(XdagJsonRpcHandler.class);
 
     private final JsonRpcSerializer serializer;

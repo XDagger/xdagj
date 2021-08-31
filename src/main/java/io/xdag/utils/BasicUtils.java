@@ -21,19 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
-
-import io.xdag.utils.exception.XdagOverFlowException;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 
 import static io.xdag.utils.BytesUtils.equalBytes;
 
+import io.xdag.utils.exception.XdagOverFlowException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,6 +36,12 @@ import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BasicUtils {
 
@@ -51,7 +50,7 @@ public class BasicUtils {
         MutableBytes data = MutableBytes.create(16);
         // 实现了右移32位 4个字节
 //        System.arraycopy(hash, 0, data, 4, 12);
-        data.set(4, hash.slice(0,12));
+        data.set(4, hash.slice(0, 12));
         BigInteger res = new BigInteger(data.toUnprefixedHexString(), 16);
 //        BigInteger res = data.toUnsignedBigInteger();
         // max是2的128次方减1 这样效率高吗
@@ -88,9 +87,17 @@ public class BasicUtils {
         return res;
     }
 
+    public static byte[] getHashlowByHash(byte[] hash) {
+        byte[] hashLow = new byte[32];
+        System.arraycopy(hash, 8, hashLow, 8, 24);
+        return hashLow;
+    }
+
     // convert xdag to cheato
     public static long xdag2amount(double input) {
-        if(input < 0) throw new XdagOverFlowException();
+        if (input < 0) {
+            throw new XdagOverFlowException();
+        }
         double amount = Math.floor(input);
         long res = (long) amount << 32;
         input -= amount; // 小数部分
@@ -112,7 +119,9 @@ public class BasicUtils {
      * Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
      */
     public static double amount2xdag(long xdag) {
-        if(xdag < 0) throw new XdagOverFlowException();
+        if (xdag < 0) {
+            throw new XdagOverFlowException();
+        }
         long first = xdag >> 32;
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
@@ -161,7 +170,7 @@ public class BasicUtils {
         boolean match = Pattern.matches("0[xX][0-9a-fA-F]+", number);
         if (!match) {
             return (new BigInteger(number));
-        } else{
+        } else {
             number = number.substring(2);
             number = number.length() % 2 != 0 ? "0".concat(number) : number;
             byte[] numberBytes = Hex.decode(number);

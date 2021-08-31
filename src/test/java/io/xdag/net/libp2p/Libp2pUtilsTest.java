@@ -21,9 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p;
 
+import static io.xdag.net.libp2p.Libp2pUtils.convertToDiscoveryPeer;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.ethereum.beacon.discovery.schema.EnrField;
@@ -31,15 +40,6 @@ import org.ethereum.beacon.discovery.schema.IdentitySchema;
 import org.ethereum.beacon.discovery.schema.NodeRecord;
 import org.ethereum.beacon.discovery.schema.NodeRecordFactory;
 import org.junit.Test;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Optional;
-
-import static io.xdag.net.libp2p.Libp2pUtils.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class Libp2pUtilsTest {
 
@@ -59,7 +59,7 @@ public class Libp2pUtilsTest {
                 new DiscoveryPeer(
                         Bytes.fromHexString(
                                 "0x03B86ED9F747A7FA99963F39E3B176B45E9E863108A2D145EA3A4E76D8D0935194"),
-                        new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 9000));
+                        new InetSocketAddress(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}), 9000));
         assertThat(convertToDiscoveryPeer(nodeRecord)).contains(expectedPeer);
     }
 
@@ -72,7 +72,7 @@ public class Libp2pUtilsTest {
     public void shouldNotConvertRecordWithIpButNoPort() {
         assertThat(
                 convertNodeRecordWithFields(
-                        new EnrField(EnrField.IP_V4, Bytes.wrap(new byte[] {127, 0, 0, 1}))))
+                        new EnrField(EnrField.IP_V4, Bytes.wrap(new byte[]{127, 0, 0, 1}))))
                 .isEmpty();
     }
 
@@ -80,7 +80,7 @@ public class Libp2pUtilsTest {
     public void shouldNotConvertRecordWithIpAndUdpPortButNoTcpPort() {
         assertThat(
                 convertNodeRecordWithFields(
-                        new EnrField(EnrField.IP_V4, Bytes.wrap(new byte[] {127, 0, 0, 1})),
+                        new EnrField(EnrField.IP_V4, Bytes.wrap(new byte[]{127, 0, 0, 1})),
                         new EnrField(EnrField.UDP, 30303)))
                 .isEmpty();
     }
@@ -111,7 +111,7 @@ public class Libp2pUtilsTest {
         // IP address bytes are unsigned. Make sure we handle that correctly.
         final Optional<DiscoveryPeer> result =
                 convertNodeRecordWithFields(
-                        new EnrField(EnrField.IP_V4, Bytes.wrap(new byte[] {-127, 24, 31, 22})),
+                        new EnrField(EnrField.IP_V4, Bytes.wrap(new byte[]{-127, 24, 31, 22})),
                         new EnrField(EnrField.TCP, 1234));
         assertThat(result)
                 .contains(new DiscoveryPeer(PUB_KEY, new InetSocketAddress("129.24.31.22", 1234)));

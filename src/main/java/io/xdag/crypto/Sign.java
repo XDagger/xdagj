@@ -21,8 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
 
+import java.math.BigInteger;
+import java.security.SignatureException;
+import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
@@ -32,10 +36,6 @@ import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
-
-import java.math.BigInteger;
-import java.security.SignatureException;
-import java.util.Arrays;
 
 /**
  * Transaction signing logic.
@@ -134,7 +134,9 @@ public class Sign {
         return new BigInteger(1, Arrays.copyOfRange(qBytes, 1, qBytes.length));
     }
 
-    /** Decompress a compressed public key (x co-ord and low-bit of y-coord). */
+    /**
+     * Decompress a compressed public key (x co-ord and low-bit of y-coord).
+     */
     public static ECPoint decompressKey(BigInteger xBN, boolean yBit) {
         X9IntegerConverter x9 = new X9IntegerConverter();
         byte[] compEnc = x9.integerToBytes(xBN, 1 + x9.getByteLength(CURVE.getCurve()));
@@ -150,7 +152,7 @@ public class Sign {
      * @param message encoded message.
      * @param signatureData The message signature components
      * @throws SignatureException If the public key could not be recovered or if there was a
-     *     signature format error.
+     *         signature format error.
      */
     public static void signedMessageToKey(byte[] message, SignatureData signatureData)
             throws SignatureException {
@@ -165,7 +167,7 @@ public class Sign {
      * @param messageHash The message hash.
      * @param signatureData The message signature components
      * @throws SignatureException If the public key could not be recovered or if there was a
-     *     signature format error.
+     *         signature format error.
      */
     public static void signedMessageHashToKey(Bytes messageHash, SignatureData signatureData)
             throws SignatureException {
@@ -238,13 +240,26 @@ public class Sign {
         return new BigInteger(1, Arrays.copyOfRange(bits, 1, bits.length)); // remove prefix
     }
 
+    /**
+     * Verify that the provided precondition holds true.
+     *
+     * @param assertionResult assertion value
+     * @param errorMessage error message if precondition failure
+     */
+    public static void verifyPrecondition(boolean assertionResult, String errorMessage) {
+        if (!assertionResult) {
+            throw new RuntimeException(errorMessage);
+        }
+    }
+
     public static class SignatureData {
+
         private final byte[] v;
         private final byte[] r;
         private final byte[] s;
 
         public SignatureData(byte v, byte[] r, byte[] s) {
-            this(new byte[] {v}, r, s);
+            this(new byte[]{v}, r, s);
         }
 
         public SignatureData(byte[] v, byte[] r, byte[] s) {
@@ -291,18 +306,6 @@ public class Sign {
             result = 31 * result + Arrays.hashCode(r);
             result = 31 * result + Arrays.hashCode(s);
             return result;
-        }
-    }
-
-    /**
-     * Verify that the provided precondition holds true.
-     *
-     * @param assertionResult assertion value
-     * @param errorMessage error message if precondition failure
-     */
-    public static void verifyPrecondition(boolean assertionResult, String errorMessage) {
-        if (!assertionResult) {
-            throw new RuntimeException(errorMessage);
         }
     }
 }

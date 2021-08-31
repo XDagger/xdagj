@@ -21,18 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.crypto;
-
-import java.security.*;
-import java.security.spec.ECGenParameterSpec;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import static io.xdag.crypto.SecureRandomUtils.secureRandom;
 
-/** Crypto key utilities. */
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.spec.ECGenParameterSpec;
+import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+/**
+ * Crypto key utilities.
+ */
 public class Keys {
+
     public static final int PUBLIC_KEY_SIZE = 64;
     static final int PUBLIC_KEY_LENGTH_IN_HEX = PUBLIC_KEY_SIZE << 1;
 
@@ -42,7 +51,8 @@ public class Keys {
         }
     }
 
-    private Keys() {}
+    private Keys() {
+    }
 
     /**
      * Create a keypair using SECP-256k1 curve.
@@ -79,7 +89,7 @@ public class Keys {
         KeyPair keyPair;
         try {
             keyPair = createSecp256k1KeyPair(random);
-        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException  | NoSuchProviderException e) {
+        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException(e.getMessage(), e.getCause());
         }
         return ECKeyPair.create(keyPair);

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import io.xdag.core.Block;
@@ -40,22 +41,25 @@ public interface Xdag {
 
     long sendGetSums(long startTime, long endTime);
 
-    void dropConnection() ;
+    void dropConnection();
 
     void activate();
 
-    /** Disables pending block processing */
+    /**
+     * Disables pending block processing
+     */
     void disableBlocks();
 
-    /** Enables pending block processing */
+    /**
+     * Enables pending block processing
+     */
     void enableBlocks();
 
     /**
      * Fires inner logic related to long sync done or undone event
      *
-     * @param done
-     *            true notifies that long sync is finished, false notifies that it's
-     *            enabled again
+     * @param done true notifies that long sync is finished, false notifies that it's
+     *         enabled again
      */
     void onSyncDone(boolean done);
 

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.message;
 
 import static io.xdag.config.Constants.DNET_PKT_XDAG;
@@ -28,13 +29,11 @@ import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 
+import io.xdag.core.XdagStats;
+import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.zip.CRC32;
-
-import io.xdag.core.XdagStats;
-
-import io.xdag.utils.BytesUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,6 +45,7 @@ import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractMessage extends Message {
+
     @Getter
     @Setter
     protected long starttime;
@@ -62,10 +62,14 @@ public abstract class AbstractMessage extends Message {
     @Setter
     protected Bytes32 hash;
 
-    /** 获取对方节点的netstatus */
+    /**
+     * 获取对方节点的netstatus
+     */
     @Setter
     protected XdagStats xdagStats;
-    /** 获取对方节点的netdb */
+    /**
+     * 获取对方节点的netdb
+     */
     protected NetDB netDB;
     protected XdagMessageCodes codes;
 
@@ -111,10 +115,10 @@ public abstract class AbstractMessage extends Message {
         endtime = encoded.getLong(24, ByteOrder.LITTLE_ENDIAN);
         random = encoded.getLong(32, ByteOrder.LITTLE_ENDIAN);
         BigInteger maxdifficulty = encoded.slice(80, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
-        long totalnblocks = encoded.getLong(104,ByteOrder.LITTLE_ENDIAN);
-        long totalnmains = encoded.getLong(120,ByteOrder.LITTLE_ENDIAN);
-        int totalnhosts = encoded.getInt(132,ByteOrder.LITTLE_ENDIAN);
-        long maintime = encoded.getLong(136,ByteOrder.LITTLE_ENDIAN);
+        long totalnblocks = encoded.getLong(104, ByteOrder.LITTLE_ENDIAN);
+        long totalnmains = encoded.getLong(120, ByteOrder.LITTLE_ENDIAN);
+        int totalnhosts = encoded.getInt(132, ByteOrder.LITTLE_ENDIAN);
+        long maintime = encoded.getLong(136, ByteOrder.LITTLE_ENDIAN);
         xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
 
         // test netdb
@@ -137,7 +141,7 @@ public abstract class AbstractMessage extends Message {
         BigInteger diff = xdagStats.difficulty;
         BigInteger maxDiff = xdagStats.maxdifficulty;
         long nmain = xdagStats.nmain;
-        long totalMainNumber = Math.max(xdagStats.totalnmain,nmain);
+        long totalMainNumber = Math.max(xdagStats.totalnmain, nmain);
         long nblocks = xdagStats.nblocks;
         long totalBlockNumber = xdagStats.totalnblocks;
 
@@ -164,10 +168,10 @@ public abstract class AbstractMessage extends Message {
         encoded.set(80, Bytes.wrap(BytesUtils.bigIntegerToBytes(maxDiff, 16, true)));
 
         // field3 nblock totalblock main totalmain
-        encoded.set(96, Bytes.wrap(BytesUtils.longToBytes(nblocks,  true)));
-        encoded.set(104, Bytes.wrap(BytesUtils.longToBytes(totalBlockNumber,  true)));
-        encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain,  true)));
-        encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber,  true)));
+        encoded.set(96, Bytes.wrap(BytesUtils.longToBytes(nblocks, true)));
+        encoded.set(104, Bytes.wrap(BytesUtils.longToBytes(totalBlockNumber, true)));
+        encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain, true)));
+        encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber, true)));
         encoded.set(128, Bytes.wrap(tmpbyte));
     }
 
@@ -175,7 +179,7 @@ public abstract class AbstractMessage extends Message {
         CRC32 crc32 = new CRC32();
         crc32.update(encoded.toArray(), 0, 512);
         //System.arraycopy(BytesUtils.longToBytes(crc32.getValue(), true), 0, encoded, 4, 4);
-        encoded.set(4,Bytes.wrap(BytesUtils.intToBytes((int) crc32.getValue(), true)));
+        encoded.set(4, Bytes.wrap(BytesUtils.intToBytes((int) crc32.getValue(), true)));
     }
 
 }

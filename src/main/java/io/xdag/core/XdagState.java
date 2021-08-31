@@ -21,35 +21,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 public enum XdagState {
-    /** The pool is initializing...... */
+
+    /**
+     * The pool is initializing......
+     */
     INIT(0x00),
-    /** wallet generating keys.... */
+    /**
+     * wallet generating keys....
+     */
     KEYS(0x01),
-    /** The local storage is corrupted. Resetting blocks engine. */
+    /**
+     * The local storage is corrupted. Resetting blocks engine.
+     */
     REST(0x02),
-    /** Loading blocks from the local storage. */
+    /**
+     * Loading blocks from the local storage.
+     */
     LOAD(0x03),
-    /** Blocks loaded. Waiting for 'run' command. */
+    /**
+     * Blocks loaded. Waiting for 'run' command.
+     */
     STOP(0x04),
-    /** Trying to connect to the test network. */
+    /**
+     * Trying to connect to the test network.
+     */
     WTST(0x05),
-    /** Trying to connect to the main network. */
+    /**
+     * Trying to connect to the main network.
+     */
     WAIT(0x06),
 
-    /** Connected to the test network. Synchronizing. */
+    /**
+     * Connected to the test network. Synchronizing.
+     */
     CTST(0x07),
-    /** Connected to the main network. Synchronizing. */
+    /**
+     * Connected to the main network. Synchronizing.
+     */
     CONN(0x08),
 
-    /** Synchronized with the test network. Normal testing. */
+    /**
+     * Synchronized with the test network. Normal testing.
+     */
     STST(0x09),
-    /** Synchronized with the main network. Normal operation. */
+    /**
+     * Synchronized with the main network. Normal operation.
+     */
     SYNC(0x0a),
 
-    /** Waiting for transfer to complete. */
+    /**
+     * Waiting for transfer to complete.
+     */
     XFER(0x0b);
 
     private int cmd;

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -36,21 +37,28 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MinerServer {
+
     protected Kernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
-    /** 用来接受监听的fuyire */
+    /**
+     * 用来接受监听的fuyire
+     */
     private ChannelFuture channelFuture;
 
-    /** 是否正在监听 */
+    /**
+     * 是否正在监听
+     */
     private boolean isListening = false;
 
     public MinerServer(Kernel kernel) {
         this.kernel = kernel;
     }
 
-    /** 开启监听的事件 */
+    /**
+     * 开启监听的事件
+     */
     public void start() {
         start(kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
     }
@@ -81,7 +89,9 @@ public class MinerServer {
         }
     }
 
-    /** 关闭连接 */
+    /**
+     * 关闭连接
+     */
     public void close() {
         if (isListening && channelFuture != null && channelFuture.channel().isOpen()) {
             try {

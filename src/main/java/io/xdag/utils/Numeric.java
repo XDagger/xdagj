@@ -21,17 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
-import org.apache.commons.lang3.StringUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
+import org.apache.commons.lang3.StringUtils;
 
 public class Numeric {
+
     private static final String HEX_PREFIX = "0x";
     private static final char[] HEX_CHAR_MAP = "0123456789abcdef".toCharArray();
 
-    private Numeric() {}
+    private Numeric() {
+    }
 
     public static String cleanHexPrefix(String input) {
         if (containsHexPrefix(input)) {
@@ -124,7 +127,7 @@ public class Numeric {
         int len = cleanInput.length();
 
         if (len == 0) {
-            return new byte[] {};
+            return new byte[]{};
         }
 
         byte[] data;

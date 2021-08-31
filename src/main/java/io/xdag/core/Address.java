@@ -21,27 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 import io.xdag.utils.BytesUtils;
+import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 
-import java.math.BigInteger;
-
 public class Address {
-    /** 放入字段的数据 正常顺序 */
+
+    /**
+     * 放入字段的数据 正常顺序
+     */
     protected MutableBytes32 data;
-    /** 输入or输出or不带amount的输出 */
+    /**
+     * 输入or输出or不带amount的输出
+     */
     @Getter
     @Setter
     protected XdagField.FieldType type;
-    /** 转账金额（输入or输出） */
+    /**
+     * 转账金额（输入or输出）
+     */
     protected BigInteger amount;
-    /** 地址hash低192bit */
+    /**
+     * 地址hash低192bit
+     */
     protected MutableBytes32 hashLow;
 
     protected boolean parsed = false;
@@ -52,14 +61,18 @@ public class Address {
         parse();
     }
 
-    /** 只用于ref 跟 maxdifflink */
+    /**
+     * 只用于ref 跟 maxdifflink
+     */
     public Address(Bytes32 hashLow) {
         this.hashLow = hashLow.mutableCopy();
         this.amount = BigInteger.valueOf(0);
         parsed = true;
     }
 
-    /** 只用于ref 跟 maxdifflink */
+    /**
+     * 只用于ref 跟 maxdifflink
+     */
     public Address(Block block) {
         this.hashLow = block.getHashLow().mutableCopy();
         this.amount = BigInteger.valueOf(0);
@@ -82,7 +95,7 @@ public class Address {
     public Bytes getData() {
         if (this.data == null) {
             this.data = MutableBytes32.create();
-            this.data.set(8, this.hashLow.slice(8,24));
+            this.data.set(8, this.hashLow.slice(8, 24));
             this.data.set(0, Bytes.wrap(BytesUtils.bigIntegerToBytes(amount, 8)));
         }
         return this.data;

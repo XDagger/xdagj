@@ -21,14 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.wallet;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
 import io.xdag.config.Config;
 import io.xdag.core.SimpleEncoder;
-import io.xdag.crypto.*;
+import io.xdag.crypto.Aes;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SystemUtil;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -36,28 +57,16 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.crypto.generators.BCrypt;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.*;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
-
 @Slf4j
 @Getter
 @Setter
 public class Wallet {
 
+    public static final Set<PosixFilePermission> POSIX_SECURED_PERMISSIONS = Set.of(OWNER_READ, OWNER_WRITE);
     private static final int VERSION = 4;
     private static final int SALT_LENGTH = 16;
     private static final int BCRYPT_COST = 12;
     private static final String MNEMONIC_PASS_PHRASE = "";
-
-    public static final Set<PosixFilePermission> POSIX_SECURED_PERMISSIONS = Set.of(OWNER_READ, OWNER_WRITE);
-
     private final File file;
     private final Config config;
 
@@ -107,7 +116,7 @@ public class Wallet {
 
     public ECKeyPair getDefKey() {
         List<ECKeyPair> accountList = getAccounts();
-        if(CollectionUtils.isNotEmpty(accountList)) {
+        if (CollectionUtils.isNotEmpty(accountList)) {
             return accountList.get(0);
         }
         return null;
@@ -237,6 +246,16 @@ public class Wallet {
     }
 
     /**
+     * Returns a copy of the accounts inside this wallet.
+     */
+    public List<ECKeyPair> getAccounts() {
+        requireUnlocked();
+        synchronized (accounts) {
+            return new ArrayList<>(accounts.values());
+        }
+    }
+
+    /**
      * Sets the accounts inside this wallet.
      */
     public void setAccounts(List<ECKeyPair> list) {
@@ -244,16 +263,6 @@ public class Wallet {
         accounts.clear();
         for (ECKeyPair key : list) {
             addAccount(key);
-        }
-    }
-
-    /**
-     * Returns a copy of the accounts inside this wallet.
-     */
-    public List<ECKeyPair> getAccounts(){
-        requireUnlocked();
-        synchronized (accounts) {
-            return new ArrayList<>(accounts.values());
         }
     }
 
@@ -408,8 +417,7 @@ public class Wallet {
     /**
      * Initialize the HD wallet.
      *
-     * @param mnemonicPhrase
-     *            the mnemonic word list
+     * @param mnemonicPhrase the mnemonic word list
      */
     public void initializeHdWallet(String mnemonicPhrase) {
         this.mnemonicPhrase = mnemonicPhrase;

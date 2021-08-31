@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
 
 
+import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.math.BigInteger;
 
 @Getter
 @Setter
@@ -38,7 +38,7 @@ public class XdagTopStatus {
     private byte[] preTop;
     private BigInteger preTopDiff;
 
-    public XdagTopStatus(){
+    public XdagTopStatus() {
         topDiff = BigInteger.ZERO;
         preTopDiff = BigInteger.ZERO;
     }

@@ -21,18 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.jsonrpc;
-
-import org.bouncycastle.util.encoders.Hex;
-
-import java.math.BigInteger;
 
 import static io.xdag.utils.BasicUtils.unifiedNumericToBigInteger;
 import static io.xdag.utils.BytesUtils.EMPTY_BYTE_ARRAY;
 import static io.xdag.utils.BytesUtils.stripLeadingZeroes;
 
+import java.math.BigInteger;
+import org.bouncycastle.util.encoders.Hex;
+
 public class JsonUtils {
-    public static byte[] parseVarData(String data){
+
+    public static byte[] parseVarData(String data) {
         if (data == null || data.equals("")) {
             return EMPTY_BYTE_ARRAY;
         }
@@ -63,7 +64,7 @@ public class JsonUtils {
         return Hex.decode(data);
     }
 
-    public static byte[] parseNumericData(String data){
+    public static byte[] parseNumericData(String data) {
 
         if (data == null || data.equals("")) {
             return EMPTY_BYTE_ARRAY;

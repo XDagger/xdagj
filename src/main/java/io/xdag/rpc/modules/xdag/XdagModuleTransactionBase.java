@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.core.Block;
@@ -28,14 +29,12 @@ import io.xdag.core.Blockchain;
 import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
 import io.xdag.rpc.Web3;
-import io.xdag.rpc.utils.TypeConverter;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
+public class XdagModuleTransactionBase implements XdagModuleTransaction {
 
-public class XdagModuleTransactionBase implements XdagModuleTransaction{
     protected static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionBase.class);
 
     private final Blockchain blockchain;

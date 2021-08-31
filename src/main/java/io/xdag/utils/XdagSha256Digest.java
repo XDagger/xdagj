@@ -21,16 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
+import java.io.IOException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.io.DigestOutputStream;
 import org.bouncycastle.util.Arrays;
 
-import java.io.IOException;
-
 public class XdagSha256Digest {
+
     private SHA256Digest sha256Digest;
     private DigestOutputStream outputStream;
 
@@ -56,7 +57,9 @@ public class XdagSha256Digest {
         outputStream.write(in.toArray());
     }
 
-    /** double sha256* */
+    /**
+     * double sha256*
+     */
     public byte[] sha256Final(Bytes in) throws IOException {
         outputStream.write(in.toArray());
         byte[] hash = outputStream.getDigest();
@@ -67,7 +70,9 @@ public class XdagSha256Digest {
         return origin;
     }
 
-    /** 获取可以发送给C的state */
+    /**
+     * 获取可以发送给C的state
+     */
     public byte[] getState() {
         byte[] encodedState = sha256Digest.getEncodedState();
         byte[] state = new byte[32];

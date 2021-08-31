@@ -21,7 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine.manager;
+
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.utils.BytesUtils.compareTo;
+import static java.lang.Math.E;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -37,40 +43,54 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.wallet.Wallet;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.utils.BytesUtils.compareTo;
-import static java.lang.Math.E;
-
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
-    /** 每一轮的确认数是16 */
+
+    /**
+     * 每一轮的确认数是16
+     */
     private static final int CONFIRMATIONS_COUNT = 16;
-    /** 矿池自己的收益 */
+    /**
+     * 矿池自己的收益
+     */
     private static double poolRation;
-    /** 出块矿工占比 */
+    /**
+     * 出块矿工占比
+     */
     private static double minerRewardRation;
-    /** 基金会的奖励 */
+    /**
+     * 基金会的奖励
+     */
     private static double fundRation;
-    /** 矿工的参与奖励 */
+    /**
+     * 矿工的参与奖励
+     */
     private static double directRation;
     private final double DBL = 2.2204460492503131E-016;
-
+    private final Kernel kernel;
+    private final Blockchain blockchain;
+    private final Wallet wallet;
+    private final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
     // 定义每一个部分的收益占比
     protected Miner poolMiner;
-    /** 存放的是过去十六个区块的hash */
+    /**
+     * 存放的是过去十六个区块的hash
+     */
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>();
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected long currentTaskTime;
@@ -79,12 +99,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private List<Miner> miners;
     @Setter
     private MinerManager minerManager;
-    private final Kernel kernel;
-    private final Blockchain blockchain;
-    private final Wallet wallet;
-
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
+    private Thread t;
 
     public AwardManagerImpl(Kernel kernel) {
         this.kernel = kernel;
@@ -96,8 +113,39 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         init();
         setPoolConfig();
     }
-    private final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
-    private Thread t;
+
+    /**
+     * 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值
+     */
+    private static double processOutdatedMiner(Miner miner) {
+        log.debug("processOutdatedMiner");
+        double sum = 0.0;
+        int diffcount = 0;
+        double temp;
+        for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
+            if ((temp = miner.getMaxDiffs(i)) > 0) {
+                sum += temp;
+                miner.setMaxDiffs(i, 0.0);
+                ++diffcount;
+            }
+        }
+
+        if (diffcount > 0) {
+            sum /= diffcount;
+        }
+        return sum;
+    }
+
+    /**
+     * 实现一个由难度转换为pay 的函数
+     */
+    private static double diffToPay(double sum, int diffCount) {
+        double result = 0.0;
+        if (diffCount > 0) {
+            result = Math.pow(E, ((sum / diffCount) - 20)) * diffCount;
+        }
+        return result;
+    }
 
     @Override
     public void run() {
@@ -105,7 +153,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.take();
                 payAndaddNewAwardBlock(awardBlock);
-            }catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error(" can not take the awardBlock from awardBlockQueue ");
                 break;
@@ -135,47 +183,15 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
     }
 
-
-
-
     @Override
-    public void addAwardBlock(Bytes32 share, Bytes32 hash, long generateTime){
+    public void addAwardBlock(Bytes32 share, Bytes32 hash, long generateTime) {
         AwardBlock awardBlock = new AwardBlock();
         awardBlock.share = share;
         awardBlock.hash = hash;
         awardBlock.generateTime = generateTime;
         if (!awardBlockBlockingQueue.offer(awardBlock)) {
-            log.error("Failed to add a awardBlock to the b queue!" );
+            log.error("Failed to add a awardBlock to the b queue!");
         }
-    }
-
-    /** 计算一个矿工所有未支付的数据 返回的是一个平均的 diff 对过去的十六个难度的平均值 */
-    private static double processOutdatedMiner(Miner miner) {
-        log.debug("processOutdatedMiner");
-        double sum = 0.0;
-        int diffcount = 0;
-        double temp;
-        for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
-            if ((temp = miner.getMaxDiffs(i)) > 0) {
-                sum += temp;
-                miner.setMaxDiffs(i, 0.0);
-                ++diffcount;
-            }
-        }
-
-        if (diffcount > 0) {
-            sum /= diffcount;
-        }
-        return sum;
-    }
-
-    /** 实现一个由难度转换为pay 的函数 */
-    private static double diffToPay(double sum, int diffCount) {
-        double result = 0.0;
-        if (diffCount > 0) {
-            result = Math.pow(E, ((sum / diffCount) - 20)) * diffCount;
-        }
-        return result;
     }
 
     public void init() {
@@ -187,7 +203,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
     }
 
-    /** 给矿池设置一些支付上的参数 */
+    /**
+     * 给矿池设置一些支付上的参数
+     */
     private void setPoolConfig() {
         poolRation = BigDecimalUtils.div(config.getPoolSpec().getPoolRation(), 100);
         if (poolRation < 0) {
@@ -246,13 +264,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
     /**
-     * @param time
-     *            时间段
+     * @param time 时间段
      * @return 错误代码   -1 没有矿工参与挖矿 不进行支付操作 -2 找不到对应的区块hash 或者 结果nonce -3 找不到对应的区块
-     *                  -4区块余额不足，不是主块不进行支付 -5 余额分配失败 -6 找不到签名密钥 -7 难度太小 不予支付
+     *         -4区块余额不足，不是主块不进行支付 -5 余额分配失败 -6 找不到签名密钥 -7 难度太小 不予支付
      */
     public int payMiners(long time) {
-        log.debug("=========== start  payMiners for time [{}]===========",time);
+        log.debug("=========== start  payMiners for time [{}]===========", time);
         // 获取到的是当前任务的对应的+1的位置 以此延迟16轮
         int index = (int) (((time >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
         int keyPos = -1;
@@ -263,11 +280,11 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         int payminersPerBlock;
         miners = new ArrayList<>();
         // 统计矿工的数量
-        if(minerManager != null) {
+        if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 miners.add(miner);
                 minerCounts++;
-                log.debug("矿工的数量为[{}]",minerCounts);
+                log.debug("矿工的数量为[{}]", minerCounts);
                 //log.debug("添加的矿工地址为[{}],共计[{}]个矿工",Hex.toHexString(miner.getAddressHash()), minerCounts);
             }
         }
@@ -283,7 +300,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         Bytes32 nonce = minShares.get(index) == null ? null : minShares.get(index);
 
         if (hash == null || nonce == null) {
-            log.debug("can not find  the hash or nonce ,hash is null？[{}],nonce is null ?[{}]", hash == null, nonce == null);
+            log.debug("can not find  the hash or nonce ,hash is null？[{}],nonce is null ?[{}]", hash == null,
+                    nonce == null);
             return -2;
         }
 
@@ -300,8 +318,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             } else {
                 keyPos = kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray()));
             }
-            log.debug("keypos : "+keyPos);
-            if (keyPos < 0){
+            log.debug("keypos : " + keyPos);
+            if (keyPos < 0) {
                 return -2;
             }
         }
@@ -357,7 +375,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         Collections.fill(prev_diff, 0.0);
         double prevDiffSum = precalculatePayments(nonce, index, payData);
 
-        log.debug("after cal prevdiffSum为[{}]",prevDiffSum);
+        log.debug("after cal prevdiffSum为[{}]", prevDiffSum);
         if (prevDiffSum <= DBL) {
             log.debug("diff is too low");
             return -7;
@@ -365,7 +383,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         // 通过precalculatePay后计算出的数据 进行计算
         doPayments(hashlow, payminersPerBlock, payData, keyPos);
-        log.debug("=========== end  payMiners for time [{}]===========",time);
+        log.debug("=========== end  payMiners for time [{}]===========", time);
         return 0;
     }
 
@@ -373,12 +391,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("precalculatePayments........");
         //这里缺少对矿池的计算
         //现对矿池进行计算
-        payData.prevDiffSums = countpay(poolMiner,index,payData);
+        payData.prevDiffSums = countpay(poolMiner, index, payData);
 
         //遍历每一个矿工进行运行 获取到对应的数据
         for (int i = 0; i < miners.size(); i++) {
             Miner miner = miners.get(i);
-            prev_diff.add(i,countpay(miner, index, i));
+            prev_diff.add(i, countpay(miner, index, i));
 
             payData.diffSums += diff.get(i);
             payData.prevDiffSums += prev_diff.get(i);
@@ -393,9 +411,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             }
         }
 
-        for (Map.Entry<InetSocketAddress, MinerChannel> entry : minerManager.getActivateMinerChannels().entrySet()){
+        for (Map.Entry<InetSocketAddress, MinerChannel> entry : minerManager.getActivateMinerChannels().entrySet()) {
             MinerChannel channel = entry.getValue();
-            if (channel.getMaxDiffs(index) > 0 ) {
+            if (channel.getMaxDiffs(index) > 0) {
                 channel.addMaxDiffs(index, 0);
             }
             channel.setPrevDiff(0.0);
@@ -413,12 +431,10 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     /**
      * 对矿工之前的挖矿的难度进行计算 主要是用于形成支付的权重
      *
-     * @param miner
-     *            矿工的结构体
-     * @param index
-     *            对应的要计算的难度编号
+     * @param miner 矿工的结构体
+     * @param index 对应的要计算的难度编号
      */
-    private Double countpay(Miner miner, int index,int i) {
+    private Double countpay(Miner miner, int index, int i) {
         double diffSum = 0.0;
         int diffCount = 0;
         // 这里是如果矿工的
@@ -445,7 +461,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     }
 
-    private Double countpay(Miner miner, int index,PayData payData) {
+    private Double countpay(Miner miner, int index, PayData payData) {
         double diffSum = 0.0;
         int diffCount = 0;
         // 这里是如果矿工的
@@ -540,7 +556,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, long payAmount, int keypos) {
         log.debug("All Payment: {}", payAmount);
-        log.debug("unlock keypos =[{}]",keypos);
+        log.debug("unlock keypos =[{}]", keypos);
         for (Address address : receipt) {
             log.debug("pay data: {}", address.getData().toHexString());
         }
@@ -562,8 +578,11 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // kernel.getBlockchain().tryToConnect(block);
     }
 
-    /** 内部类 用于计算支付数据 */
+    /**
+     * 内部类 用于计算支付数据
+     */
     public static class PayData {
+
         // 整个区块用于支付的金额
         long balance;
         // 每一次扣除后剩余的钱 回合所用矿工平分
@@ -585,8 +604,11 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
 
-    /** 用于记录奖励主块的信息 */
+    /**
+     * 用于记录奖励主块的信息
+     */
     public static class AwardBlock {
+
         Bytes32 share;
         Bytes32 hash;
         long generateTime;

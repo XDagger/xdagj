@@ -21,18 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.core;
+
+import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
+import static io.xdag.utils.BasicUtils.xdag2amount;
+import static org.junit.Assert.assertEquals;
 
 import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import org.junit.Test;
 
-import static io.xdag.config.Constants.*;
-import static io.xdag.utils.BasicUtils.xdag2amount;
-import static org.junit.Assert.assertEquals;
-
 public class MintTest {
+
     Config config = new MainnetConfig();
+
     @Test
     public void testMint() {
         // 每四年减半 大致就是增加了 2097152个块
@@ -40,12 +43,14 @@ public class MintTest {
         long reward = getCurrentReward();
         long reward1 = getReward(0, num);
 
-        assertEquals(4398046511104L,reward);
-        assertEquals(274877906944L,reward1);
+        assertEquals(4398046511104L, reward);
+        assertEquals(274877906944L, reward1);
 
     }
 
-    /** 根据当前区块数量计算奖励金额 cheato * */
+    /**
+     * 根据当前区块数量计算奖励金额 cheato *
+     */
     public long getCurrentReward() {
         return xdag2amount(1024);
     }

@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.modules;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public enum  XdagJsonRpcMethod {
+public enum XdagJsonRpcMethod {
     @JsonProperty("eth_subscribe")
     ETH_SUBSCRIBE,
     @JsonProperty("eth_unsubscribe")

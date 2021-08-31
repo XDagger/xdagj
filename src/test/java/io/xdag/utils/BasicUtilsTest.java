@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import static org.junit.Assert.assertEquals;
 
+import io.xdag.utils.exception.XdagOverFlowException;
 import java.math.BigDecimal;
 import org.junit.Test;
-
-import io.xdag.utils.exception.XdagOverFlowException;
 
 public class BasicUtilsTest {
 
@@ -42,7 +42,7 @@ public class BasicUtilsTest {
         assertEquals(219902325556L, BasicUtils.xdag2amount(b.doubleValue()));
 
         BigDecimal c = BigDecimal.valueOf(100);
-        assertEquals(429496729600L,BasicUtils.xdag2amount(c.doubleValue()));
+        assertEquals(429496729600L, BasicUtils.xdag2amount(c.doubleValue()));
     }
 
     @Test(expected = XdagOverFlowException.class)

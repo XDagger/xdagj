@@ -27,6 +27,7 @@ package io.xdag.rpc.modules.eth;
 import io.xdag.rpc.Web3;
 
 public interface EthModuleTransaction {
+    
     String sendTransaction(Web3.CallArguments args);
 
     String sendRawTransaction(String rawData);

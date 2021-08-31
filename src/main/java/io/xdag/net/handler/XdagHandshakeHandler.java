@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.handler;
 
 import java.net.InetSocketAddress;
@@ -40,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {
+
     private final XdagChannel channel;
     private final Kernel kernel;
     private boolean isServer;

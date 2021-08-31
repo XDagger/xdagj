@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.mine;
+
+import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -41,7 +44,11 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.ByteArrayWrapper;
-import io.xdag.utils.BytesUtils;
+import java.net.InetSocketAddress;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -49,97 +56,116 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 
-import java.net.InetSocketAddress;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
-
 @Slf4j
 @Getter
 public class MinerChannel {
-    /** 对应的是服务端的还是客户端的 */
+
+    /**
+     * 对应的是服务端的还是客户端的
+     */
     private final boolean isServer;
     private final Kernel kernel;
     private final Config config;
-    /** 这个channel是否是活跃的 仅当连接成功后变为true */
+    private final BlockStore blockStore;
+    private final MinerManager minerManager;
+    /**
+     * 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs
+     */
+    private final List<Double> maxDiffs = new CopyOnWriteArrayList<>();
+    /**
+     * 记录的是出入站的消息
+     */
+    private final StatHandle inBound;
+    private final StatHandle outBound;
+    /**
+     * 这个channel是否是活跃的 仅当连接成功后变为true
+     */
     @Getter
     @Setter
     private boolean isActive;
-    /** 记录对应的矿工对象 */
+    /**
+     * 记录对应的矿工对象
+     */
     @Getter
     @Setter
     private Miner miner;
-    /** 当前接受的最近的任务编号 */
+    /**
+     * 当前接受的最近的任务编号
+     */
     @Getter
     @Setter
     private long taskIndex;
     private long taskTime = 0;
-    /** 每一轮任务分享share的次数 接收一次加1 */
+    /**
+     * 每一轮任务分享share的次数 接收一次加1
+     */
     @Getter
     @Setter
     private int sharesCounts;
-    /** 上一次发送shares 的时间 接收到shares 的时候会更新 */
+    /**
+     * 上一次发送shares 的时间 接收到shares 的时候会更新
+     */
     @Getter
     @Setter
     private long lastSharesTime;
-    /** 连接成功的时间 暂时只适用于打印 没有其他用途 */
+    /**
+     * 连接成功的时间 暂时只适用于打印 没有其他用途
+     */
     @Getter
     private Date connectTime;
-    /** 如果是服务端端 则保存的是远程连接的客户端地址 若是客户端，则保存的是本地的地址 */
+    /**
+     * 如果是服务端端 则保存的是远程连接的客户端地址 若是客户端，则保存的是本地的地址
+     */
     @Getter
     @Setter
     private InetSocketAddress inetAddress;
-    /** 发起连接的账户的地址块 */
+    /**
+     * 发起连接的账户的地址块
+     */
     @Getter
     @Setter
     private Bytes32 accountAddressHash;
-    /** 保存上一轮的share */
+    /**
+     * 保存上一轮的share
+     */
     @Getter
     @Setter
     private byte[] share = new byte[32];
-    /** 跟新为当前最小的hash 每收到一个share 后跟新 */
+    /**
+     * 跟新为当前最小的hash 每收到一个share 后跟新
+     */
     @Getter
     @Setter
     private byte[] lastMinHash = new byte[32];
-    /** 记录prevDiff的次数 实际上类似于进行了多少次计算 */
+    /**
+     * 记录prevDiff的次数 实际上类似于进行了多少次计算
+     */
     @Getter
     @Setter
     private int prevDiffCounts;
-
     @Setter
     private ChannelHandlerContext ctx;
-
-    private final BlockStore blockStore;
-
-    private final MinerManager minerManager;
-
-    /** 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs */
-    private final List<Double> maxDiffs = new CopyOnWriteArrayList<>();
-
-    /** 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个 */
+    /**
+     * 记录的是当前任务所有难度之和，每当接收到一个新的nonce 会更新这个
+     */
     @Getter
     @Setter
     private double prevDiff;
-
     @Getter
     @Setter
     private double meanLogDiff;
-
     @Getter
     @Setter
     private int boundedTaskCounter;
-
-    /** 保存这个channel 最后的计算的hash */
+    /**
+     * 保存这个channel 最后的计算的hash
+     */
     @Getter
     @Setter
     private Bytes32 minHash;
-    /** 记录的是出入站的消息 */
-    private final StatHandle inBound;
-    private final StatHandle outBound;
-    /** 各种处理器* */
+    /**
+     * 各种处理器*
+     */
     private MinerHandShakeHandler minerHandShakeHandler;
     private MinerMessageHandler minerMessageHandler;
     private Miner03 miner03;
@@ -148,7 +174,9 @@ public class MinerChannel {
     @Getter
     private boolean isMill = false;
 
-    /** 初始化 同时需要判断是服务器端还是客户端 */
+    /**
+     * 初始化 同时需要判断是服务器端还是客户端
+     */
     public MinerChannel(Kernel kernel, boolean isServer) {
         this.kernel = kernel;
         this.config = kernel.getConfig();
@@ -168,10 +196,8 @@ public class MinerChannel {
     /**
      * 初始化一个channel 并且注册到管道上
      *
-     * @param pipeline
-     *            注册的管道
-     * @param inetSocketAddress
-     *            若是矿池开启的channel 则对应的是远程矿工地址，若为客户端开启，则为本地地址
+     * @param pipeline 注册的管道
+     * @param inetSocketAddress 若是矿池开启的channel 则对应的是远程矿工地址，若为客户端开启，则为本地地址
      */
     public void init(ChannelPipeline pipeline, InetSocketAddress inetSocketAddress) {
         this.inetAddress = inetSocketAddress;
@@ -195,8 +221,7 @@ public class MinerChannel {
     /**
      * 根据版本创建一个信息工厂
      *
-     * @param version
-     *            对应的版本
+     * @param version 对应的版本
      * @return 工厂
      */
     private MessageFactory createMinerMessageFactory(XdagVersion version) {
@@ -208,10 +233,8 @@ public class MinerChannel {
     /**
      * 激活这个channel的各种handler 为管道添加各种处理器
      *
-     * @param ctx
-     *            上下文
-     * @param version
-     *            版本号
+     * @param ctx 上下文
+     * @param version 版本号
      */
     public void activateHadnler(ChannelHandlerContext ctx, XdagVersion version) {
         log.debug("activate handler");
@@ -277,14 +300,18 @@ public class MinerChannel {
         sharesCounts += i;
     }
 
-    /** 矿池发送给矿工的任务 */
+    /**
+     * 矿池发送给矿工的任务
+     */
     public void sendTaskToMiner(XdagField[] fields) {
 //        byte[] bytes = BytesUtils.merge(fields[0].getData(), fields[1].getData());
 //        Bytes.wrap(fields[0].getData(), fields[1].getData())
         miner03.sendMessage(Bytes.wrap(fields[0].getData(), fields[1].getData()));
     }
 
-    /** 矿池发送余额给矿工 */
+    /**
+     * 矿池发送余额给矿工
+     */
     public void sendBalance() {
 //        byte[] hashlow = new byte[32];
         MutableBytes32 hashlow = MutableBytes32.create();
@@ -343,8 +370,20 @@ public class MinerChannel {
         miner03.dropConnection();
     }
 
-    /** 内部类 用于计算这个channel 的入栈和出战信息 */
+    public void updateMiner(Miner miner) {
+        this.miner = miner;
+        this.accountAddressHash = miner.getAddressHash();
+        miner.putChannel(this.getInetAddress(), this);
+        miner.addChannelCounts(1);
+        miner.setMinerStates(MinerStates.MINER_ACTIVE);
+        isMill = true;
+    }
+
+    /**
+     * 内部类 用于计算这个channel 的入栈和出战信息
+     */
     public static class StatHandle {
+
         AtomicLong count = new AtomicLong(0);
 
         public void add() {
@@ -363,15 +402,5 @@ public class MinerChannel {
         public String toString() {
             return count.toString();
         }
-    }
-
-
-    public void updateMiner(Miner miner) {
-        this.miner = miner;
-        this.accountAddressHash = miner.getAddressHash();
-        miner.putChannel(this.getInetAddress(), this);
-        miner.addChannelCounts(1);
-        miner.setMinerStates(MinerStates.MINER_ACTIVE);
-        isMill = true;
     }
 }

@@ -21,21 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.core;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.tuweni.bytes.MutableBytes;
+package io.xdag.core;
 
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class XdagField {
+
     @Getter
     @Setter
     private FieldType type;
-    
+
     @Getter
     @Setter
     private MutableBytes data;

@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.dto;
 
 
@@ -42,9 +43,7 @@ public class BlockResultDTO {
     }
 
 
-
     public static BlockResultDTO fromBlock(Block b, boolean raw) {
-
 
         return null;
     }

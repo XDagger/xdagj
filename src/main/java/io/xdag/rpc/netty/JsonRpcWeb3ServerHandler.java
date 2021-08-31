@@ -21,14 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.rpc.netty;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.googlecode.jsonrpc4j.*;
-import io.netty.buffer.*;
+import com.googlecode.jsonrpc4j.AnnotationsErrorResolver;
+import com.googlecode.jsonrpc4j.DefaultErrorResolver;
+import com.googlecode.jsonrpc4j.ErrorResolver;
+import com.googlecode.jsonrpc4j.JsonRpcBasicServer;
+import com.googlecode.jsonrpc4j.MultipleErrorResolver;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufHolder;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -36,18 +45,16 @@ import io.xdag.rpc.Web3;
 import io.xdag.rpc.exception.XdagErrorResolver;
 import io.xdag.rpc.filter.JsonRpcMethodFilter;
 import io.xdag.rpc.modules.ModuleDescription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ChannelHandler.Sharable
 public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBufHolder> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("jsonrpc");
-
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonNodeFactory jsonNodeFactory = JsonNodeFactory.instance;
     private final JsonRpcBasicServer jsonRpcServer;
@@ -55,7 +62,9 @@ public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBu
     public JsonRpcWeb3ServerHandler(Web3 service, List<ModuleDescription> filteredModules) {
         this.jsonRpcServer = new JsonRpcBasicServer(service, service.getClass());
         jsonRpcServer.setRequestInterceptor(new JsonRpcMethodFilter(filteredModules));
-        jsonRpcServer.setErrorResolver(new MultipleErrorResolver(new XdagErrorResolver(), AnnotationsErrorResolver.INSTANCE, DefaultErrorResolver.INSTANCE));
+        jsonRpcServer.setErrorResolver(
+                new MultipleErrorResolver(new XdagErrorResolver(), AnnotationsErrorResolver.INSTANCE,
+                        DefaultErrorResolver.INSTANCE));
     }
 
     @Override
@@ -63,7 +72,7 @@ public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBu
         ByteBuf responseContent = Unpooled.buffer();
         int responseCode;
         try (ByteBufOutputStream os = new ByteBufOutputStream(responseContent);
-             ByteBufInputStream is = new ByteBufInputStream(request.content().retain())){
+                ByteBufInputStream is = new ByteBufInputStream(request.content().retain())) {
 
             responseCode = jsonRpcServer.handleRequest(is, os);
         } catch (Exception e) {
@@ -75,8 +84,8 @@ public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBu
         }
 
         ctx.fireChannelRead(new Web3Result(
-            responseContent,
-            responseCode
+                responseContent,
+                responseCode
         ));
     }
 
@@ -90,7 +99,8 @@ public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBu
         Map<String, JsonNode> errorProperties = new HashMap<>();
         errorProperties.put("code", jsonNodeFactory.numberNode(errorCode));
         errorProperties.put("message", jsonNodeFactory.textNode(errorMessage));
-        JsonNode error = jsonNodeFactory.objectNode().set("error", jsonNodeFactory.objectNode().setAll(errorProperties));
+        JsonNode error = jsonNodeFactory.objectNode()
+                .set("error", jsonNodeFactory.objectNode().setAll(errorProperties));
         return Unpooled.wrappedBuffer(mapper.writeValueAsBytes(mapper.treeToValue(error, Object.class)));
     }
 }

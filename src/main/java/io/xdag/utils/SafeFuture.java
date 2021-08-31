@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.utils;
 
 import java.util.Arrays;
@@ -28,7 +29,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class SafeFuture<T> extends CompletableFuture<T> {
@@ -90,7 +94,7 @@ public class SafeFuture<T> extends CompletableFuture<T> {
      * failures are reported, not just the first one.
      *
      * @param completionException the exception reported by {@link
-     *     CompletableFuture#allOf(CompletableFuture[])}
+     *         CompletableFuture#allOf(CompletableFuture[])}
      * @param futures the futures passed to allOf
      */
     @SuppressWarnings("FutureReturnValueIgnored")
@@ -204,7 +208,7 @@ public class SafeFuture<T> extends CompletableFuture<T> {
      *
      * @param onError the function to executor when this stage completes exceptionally.
      * @return a new SafeFuture which completes with the same result (successful or exceptionally) as
-     *     this stage.
+     *         this stage.
      */
     public SafeFuture<T> catchAndRethrow(final Consumer<Throwable> onError) {
         return exceptionallyCompose(
@@ -220,7 +224,9 @@ public class SafeFuture<T> extends CompletableFuture<T> {
         return (SafeFuture<U>) super.thenApply(fn);
     }
 
-    /** Shortcut to process the value when complete and return the same future */
+    /**
+     * Shortcut to process the value when complete and return the same future
+     */
     public SafeFuture<T> thenPeek(Consumer<T> fn) {
         return thenApply(
                 v -> {

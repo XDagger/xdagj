@@ -21,11 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net;
-
-import java.net.InetSocketAddress;
-
-import org.bouncycastle.util.encoders.Hex;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,6 +42,7 @@ import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -55,15 +53,26 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @Setter
 public class XdagChannel extends Channel {
-    /** 握手 密钥 */
+
+    /**
+     * 握手 密钥
+     */
     private XdagHandshakeHandler handshakeHandler;
-    /** 信息编码处理 */
+    /**
+     * 信息编码处理
+     */
     private MessageCodes messageCodec;
-    /** 处理区块 */
+    /**
+     * 处理区块
+     */
     private XdagBlockHandler blockHandler;
-    /** 获取xdag03handler */
+    /**
+     * 获取xdag03handler
+     */
     private Xdag xdag = new XdagAdapter();
-    /** 用来创建xdag03handler处理message 实际的逻辑操作 */
+    /**
+     * 用来创建xdag03handler处理message 实际的逻辑操作
+     */
     private XdagHandlerFactory xdagHandlerFactory;
 
     // TODO：记录该连接发送错误消息的次数，一旦超过某个值将断开连接
@@ -101,13 +110,13 @@ public class XdagChannel extends Channel {
     }
 
     @Override
-    public void setActive(boolean b) {
-        this.isActive = b;
+    public boolean isActive() {
+        return this.isActive;
     }
 
     @Override
-    public boolean isActive() {
-        return this.isActive;
+    public void setActive(boolean b) {
+        this.isActive = b;
     }
 
     @Override
@@ -156,7 +165,9 @@ public class XdagChannel extends Channel {
         xdag.sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
     }
 
-    /** 激活xdaghandler */
+    /**
+     * 激活xdaghandler
+     */
     public void activateXdag(ChannelHandlerContext ctx, XdagVersion version) {
         XdagHandler handler = xdagHandlerFactory.create(version);
         MessageFactory messageFactory = createXdagMessageFactory(version);

@@ -21,11 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package io.xdag.net.libp2p.discovery;
 
 import io.xdag.net.libp2p.Libp2pUtils;
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.beacon.discovery.DiscoverySystem;
 import org.ethereum.beacon.discovery.DiscoverySystemBuilder;
@@ -33,10 +37,6 @@ import org.ethereum.beacon.discovery.schema.NodeRecord;
 import org.ethereum.beacon.discovery.schema.NodeRecordBuilder;
 import org.ethereum.beacon.discovery.schema.NodeRecordInfo;
 import org.ethereum.beacon.discovery.schema.NodeStatus;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * @author wawa
