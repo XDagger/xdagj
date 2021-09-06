@@ -322,7 +322,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 }
             } else {
                 // xfer must check dnet password
-                if (!readPassword("Enter Dnet password> ", false)) {
+                // TODO: xfer 暂时使用root密码
+                if (!readPassword("Enter Dnet password> ", true)) {
                     return;
                 }
             }
