@@ -1,78 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="warn" shutdownHook="disable">
-
-    <properties>
+    <Properties>
         <property name="Logs_Dir">./logs</property>
-        <property name="Info_File_Name">xdag_info</property>
-        <property name="Error_File_Name">xdag_error</property>
-        <property name="Debug_File_Name">xdag_debug</property>
-
-    </properties>
-
+        <Property name="log_level">info</Property>
+    </Properties>
     <Appenders>
+        <!-- 输出到控制台 -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%t] %p - %c - %m%n"/>
         </Console>
-
-        <File fileName="${Logs_Dir}/${Error_File_Name}.log" name="Error">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-            <Filters>
-                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
-            </Filters>
-        </File>
-        <RollingRandomAccessFile name="Debug"
-                                 fileName="${Logs_Dir}/${Debug_File_Name}.log"
-                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Debug_File_Name}-%d{yyyy-MM-dd}.log">
-            <PatternLayout
-                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        <!-- 与properties文件中位置存在冲突，如有问题，请注意调整 -->
+        <RollingFile name="logFile" fileName="${Logs_Dir}/xdag-${log_level}.log"
+                filePattern="${Logs_Dir}/history/xdag-${log_level}-%d{MM-dd-yyyy}-%i.log">
+            <ThresholdFilter level="${log_level}" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%p] [%c:%L] -- %m%n"/>
             <Policies>
+                <!-- 按天递计算频率 -->
                 <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="512 MB"/>
+                <!--                <OnStartupTriggeringPolicy/>-->
             </Policies>
-            <DefaultRolloverStrategy max="100"/>
-
-            <Filters>
-                <ThresholdFilter level="INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
-                <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
-            </Filters>
-        </RollingRandomAccessFile>
-
-        <RollingRandomAccessFile name="Info"
-                                 fileName="${Logs_Dir}/${Info_File_Name}.log"
-                                 filePattern="${Logs_Dir}/$${date:yyyy-MM}/${Info_File_Name}-%d{yyyy-MM-dd}.log">
-            <PatternLayout
-                    pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1"/>
-            </Policies>
-            <DefaultRolloverStrategy max="100"/>
-            <Filters>
-                <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
-                <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-            </Filters>
-        </RollingRandomAccessFile>
-
+            <!-- 删除策略配置 -->
+            <DefaultRolloverStrategy max="5">
+                <Delete basePath="${Logs_Dir}/history" maxDepth="1">
+                    <IfFileName glob="*.log"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+        <Async name="Async" bufferSize="2000" blocking="false">
+            <AppenderRef ref="logFile"/>
+        </Async>
     </Appenders>
 
-
     <Loggers>
-
-<!--        <logger name="io.xdag" level="ERROR">-->
-<!--            <AppenderRef ref="Error"/>-->
-<!--        </logger>-->
-<!---->
-<!--        <logger name="io.xdag" level="DEBUG">-->
-<!--            <AppenderRef ref="Debug"/>-->
-<!--        </logger>-->
-<!---->
-<!--        <logger name="io.xdag" level="INFO">-->
-<!--            <AppenderRef ref="Info"/>-->
-<!--        </logger>-->
-
-        <Root level="INFO">
-            <AppenderRef ref="Info"/>
-            <AppenderRef ref="Error"/>
-            <AppenderRef ref="Debug"/>
+        <Root level="${log_level}">
+            <AppenderRef ref="Async"/>
         </Root>
-
+        <!-- 配置个例 -->
+        <Logger name="com.xx.filter" level="info"/>
     </Loggers>
 </Configuration>
