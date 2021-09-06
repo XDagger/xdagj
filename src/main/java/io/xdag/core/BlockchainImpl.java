@@ -34,6 +34,7 @@ import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
 import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
+import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
@@ -454,7 +455,7 @@ public class BlockchainImpl implements Blockchain {
     // TODO: 目前syncFixHeight 写死 后续需要修改
     // TODO: paulochen 同步问题改进，切换高度未定
     public boolean isSyncFixFork(long currentHeight) {
-        long syncFixHeight = 0;
+        long syncFixHeight = SYNC_FIX_HEIGHT;
         return currentHeight >= syncFixHeight;
     }
 
