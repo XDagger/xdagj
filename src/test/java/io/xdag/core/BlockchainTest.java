@@ -36,6 +36,7 @@ import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -462,6 +463,7 @@ public class BlockchainTest {
             assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
             ref = extraBlock.getHashLow();
         }
+        Bytes32 first = blockchain.getBlockByHeight(5).getHash();
 
         generateTime = 1600616700001L;
         Block addressBlock1 = generateAddressBlock(config, addrKey, generateTime);
@@ -481,6 +483,9 @@ public class BlockchainTest {
             ref = extraBlock.getHashLow();
         }
         assertEquals(29, blockchain.getXdagStats().nmain);
+        Bytes32 second = blockchain.getBlockByHeight(5).getHash();
+        assertNotEquals(first, second);
+
     }
 
     static class MockBlockchain extends BlockchainImpl {
