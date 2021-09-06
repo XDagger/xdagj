@@ -81,6 +81,7 @@ import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
@@ -406,7 +407,7 @@ public class Kernel {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
                     "*",
                     InetAddress.getByName(config.getRPCSpec().getRPCHost()),
-                    null
+                    Collections.singletonList(config.getRPCSpec().getRPCHost())
             );
         }
 
