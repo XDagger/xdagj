@@ -351,7 +351,7 @@ public class SyncManager {
             this.isRunning = true;
             while (this.isRunning) {
                 if (isTimeToStart()) {
-//                    makeSyncDone();
+                    makeSyncDone();
                 }
                 try {
                     Thread.sleep(10000);
