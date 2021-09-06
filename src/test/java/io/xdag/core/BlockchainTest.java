@@ -434,6 +434,55 @@ public class BlockchainTest {
         assertEquals(secondDiff, blockchain.getXdagTopStatus().getTopDiff().toString(16));
     }
 
+    @Test
+    public void testForkAllChain() {
+        ECKeyPair addrKey = ECKeyPair.create(private_1);
+        ECKeyPair poolKey = ECKeyPair.create(private_2);
+        long generateTime = 1600616700000L;
+
+        // 1. add one address block
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        Bytes32 ref = addressBlock.getHashLow();
+
+        // 2. create 20 mainblocks
+        for (int i = 1; i <= 20; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+        }
+
+        generateTime = 1600616700001L;
+        Block addressBlock1 = generateAddressBlock(config, addrKey, generateTime);
+        result = blockchain.tryToConnect(addressBlock1);
+        pending = Lists.newArrayList();
+        ref = addressBlock1.getHashLow();
+
+        // 3. create 30 fork blocks
+        for (int i = 0; i < 40; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "3456");
+            result = blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+        }
+        assertEquals(29, blockchain.getXdagStats().nmain);
+    }
+
     static class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {

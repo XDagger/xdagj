@@ -565,14 +565,11 @@ public class BlockchainImpl implements Blockchain {
      * 回退到区块block *
      */
     public void unWindMain(Block block) {
-        if (block == null) {
-            return;
-        }
-        log.debug("Unwind main to block,{}", block.getHashLow().toHexString());
+        log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
 //        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
         if (xdagTopStatus.getTop() != null) {
             for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
-                    && !tmp.equals(block); tmp = getMaxDiffLink(tmp, true)) {
+                    && !blockEqual(block, tmp); tmp = getMaxDiffLink(tmp, true)) {
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
                 // 更新对应的flag信息
                 if ((tmp.getInfo().flags & BI_MAIN) != 0) {
@@ -581,6 +578,15 @@ public class BlockchainImpl implements Blockchain {
                     blockStore.saveBlockInfo(tmp.getInfo());
                 }
             }
+        }
+    }
+
+
+    private boolean blockEqual(Block block1, Block block2) {
+        if (block1 == null) {
+            return block2 == null;
+        } else {
+            return block2.equals(block1);
         }
     }
 
