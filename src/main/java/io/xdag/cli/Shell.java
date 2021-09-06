@@ -25,10 +25,12 @@
 package io.xdag.cli;
 
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 import io.xdag.Kernel;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
+import io.xdag.wallet.Wallet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -314,18 +316,10 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            // TODO: 交易密码验证
-            if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()) {
-                // xfer must check root password
-                if (!readPassword("Enter Admin password> ", true)) {
-                    return;
-                }
-            } else {
-                // xfer must check dnet password
-                // TODO: xfer 暂时使用root密码
-                if (!readPassword("Enter Dnet password> ", true)) {
-                    return;
-                }
+            Wallet wallet = new Wallet(kernel.getConfig());
+            if (!wallet.unlock(readPassword(WALLET_PASSWORD_PROMPT))) {
+                println("The password is incorrect");
+                return;
             }
             println(commands.xfer(amount, hash, remark));
 
@@ -497,6 +491,15 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
         }
         return true;
+    }
+
+    private String readPassword(String prompt) {
+        Character mask = '*';
+        String line;
+        do {
+            line = reader.readLine(prompt, mask);
+        } while (StringUtils.isEmpty(line));
+        return line;
     }
 
     @Override
