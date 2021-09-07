@@ -101,12 +101,13 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
         String hostHeader = headers.get(HttpHeaderNames.HOST);
         String parsedHeader = parseHostHeader(hostHeader);
 
-        if (!acceptedHosts.contains(parsedHeader)) {
-            logger.debug("Invalid header HOST {}", hostHeader);
-            response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
-            ctx.write(response).addListener(ChannelFutureListener.CLOSE);
-            return;
-        }
+        // TODO:暂时让所有人都可以调用
+//        if (!acceptedHosts.contains(parsedHeader)) {
+//            logger.debug("Invalid header HOST {}", hostHeader);
+//            response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
+//            ctx.write(response).addListener(ChannelFutureListener.CLOSE);
+//            return;
+//        }
 
         if (HttpMethod.POST.equals(httpMethod)) {
 
