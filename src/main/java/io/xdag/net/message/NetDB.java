@@ -59,19 +59,27 @@ public class NetDB {
     public void addNewIP(String address) {
         String ip = address.split(":")[0];
         int port = Integer.parseInt(address.split(":")[1]);
-        ipList.add(new IP(ip, port));
+        IP newIp = new IP(ip, port);
+        if (!ipList.contains(newIp)) {
+            ipList.add(newIp);
+        }
     }
 
     public void addNewIP(String ip, int port) {
-        ipList.add(new IP(ip, port));
+        IP newIp = new IP(ip, port);
+        if (!ipList.contains(newIp)) {
+            ipList.add(newIp);
+        }
     }
 
     public void addNewIP(byte[] ip, byte[] port) {
         try {
-            ipList.add(
-                    new IP(
-                            InetAddress.getByAddress(ip),
-                            Short.toUnsignedInt(BytesUtils.bytesToShort(port, 0, true))));
+            IP newIp = new IP(
+                    InetAddress.getByAddress(ip),
+                    Short.toUnsignedInt(BytesUtils.bytesToShort(port, 0, true)));
+            if (!ipList.contains(newIp)) {
+                ipList.add(newIp);
+            }
 
         } catch (UnknownHostException e) {
             e.printStackTrace();

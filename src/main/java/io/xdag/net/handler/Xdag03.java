@@ -41,6 +41,7 @@ import io.xdag.net.message.impl.BlocksRequestMessage;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.net.message.impl.SumRequestMessage;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,7 @@ public class Xdag03 extends XdagHandler {
         this.blockchain = kernel.getBlockchain();
         this.syncMgr = kernel.getSyncMgr();
         this.version = XdagVersion.V03;
+        this.netDBManager = kernel.getNetDBMgr();
     }
 
     @Override
@@ -147,11 +149,12 @@ public class Xdag03 extends XdagHandler {
 //        // 如果大于快照点的话 我可以发送
 //        if (startTime > 1658318225407L) {
 //            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
-//            List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
-//            for (Block block : blocks) {
-//                sendNewBlock(block, 1);
-//            }
-//            sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats()));
+        List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
+        for (Block block : blocks) {
+            sendNewBlock(block, 1);
+        }
+        sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats(),
+                netDBManager.getNetDB()));
 //        }
     }
 
@@ -225,7 +228,8 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetBlocks(long startTime, long endTime) {
-        BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats());
+        BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats(),
+                netDBManager.getNetDB());
         sendMessage(msg);
         return msg.getRandom();
     }
@@ -233,14 +237,16 @@ public class Xdag03 extends XdagHandler {
     @Override
     public long sendGetBlock(MutableBytes32 hash) {
 //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
-        BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
+        BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(),
+                netDBManager.getNetDB());
         sendMessage(msg);
         return msg.getRandom();
     }
 
     @Override
     public long sendGetSums(long startTime, long endTime) {
-        SumRequestMessage msg = new SumRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats());
+        SumRequestMessage msg = new SumRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats(),
+                netDBManager.getNetDB());
         sendMessage(msg);
         return msg.getRandom();
     }

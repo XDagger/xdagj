@@ -32,6 +32,7 @@ import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.net.Channel;
 import io.xdag.net.XdagVersion;
+import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.XdagMessageCodes;
@@ -53,6 +54,8 @@ public abstract class XdagHandler extends SimpleChannelInboundHandler<Message> i
     protected Block bestKnownBlock;
     protected BigInteger totalDifficulty;
     protected SyncManager syncMgr;
+
+    protected NetDBManager netDBManager;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {

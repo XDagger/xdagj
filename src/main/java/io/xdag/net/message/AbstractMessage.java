@@ -41,7 +41,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractMessage extends Message {
@@ -73,24 +72,33 @@ public abstract class AbstractMessage extends Message {
     protected NetDB netDB;
     protected XdagMessageCodes codes;
 
+    /**
+     * 本地net DB
+     */
+    protected NetDB currentDB;
+
+
     public AbstractMessage(
-            XdagMessageCodes type, long starttime, long endtime, long random, XdagStats xdagStats) {
+            XdagMessageCodes type, long starttime, long endtime, long random, XdagStats xdagStats, NetDB currentDB) {
         parsed = true;
         this.starttime = starttime;
         this.endtime = endtime;
         this.random = random;
         this.xdagStats = xdagStats;
         this.codes = type;
+        this.currentDB = currentDB;
         encode();
     }
 
-    public AbstractMessage(XdagMessageCodes type, long starttime, long endtime, Bytes32 hash, XdagStats xdagStats) {
+    public AbstractMessage(XdagMessageCodes type, long starttime, long endtime, Bytes32 hash, XdagStats xdagStats,
+            NetDB currentDB) {
         parsed = true;
         this.starttime = starttime;
         this.endtime = endtime;
         this.hash = hash;
         this.xdagStats = xdagStats;
         this.codes = type;
+        this.currentDB = currentDB;
         encode();
     }
 
@@ -145,10 +153,18 @@ public abstract class AbstractMessage extends Message {
         long nblocks = xdagStats.nblocks;
         long totalBlockNumber = xdagStats.totalnblocks;
 
-        // TODO：后续根据ip替换
-        String tmp = "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
-        // net 相关
-        byte[] tmpbyte = Hex.decode(tmp);
+        MutableBytes mutableBytes = MutableBytes.create(112);
+        long nhosts = currentDB.getIpList().size();
+        long totalHosts = currentDB.getIpList().size();
+
+        mutableBytes.set(0, Bytes.wrap(BytesUtils.longToBytes(nhosts, true)));
+        mutableBytes.set(8, Bytes.wrap(BytesUtils.longToBytes(totalHosts, true)));
+        mutableBytes.set(16, Bytes.wrap(currentDB.getEncoded()));
+
+//        // TODO：后续根据ip替换
+//        String tmp = "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
+//        // net 相关
+//        byte[] tmpbyte = Hex.decode(tmp);
 
         // add netdb
         // byte[] iplist = netDB.encode(netDB.getActiveIP());
@@ -172,7 +188,8 @@ public abstract class AbstractMessage extends Message {
         encoded.set(104, Bytes.wrap(BytesUtils.longToBytes(totalBlockNumber, true)));
         encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain, true)));
         encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber, true)));
-        encoded.set(128, Bytes.wrap(tmpbyte));
+//        encoded.set(128, Bytes.wrap(tmpbyte));
+        encoded.set(128, Bytes.wrap(mutableBytes));
     }
 
     public void updateCrc() {
