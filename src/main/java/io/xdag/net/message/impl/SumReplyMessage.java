@@ -40,8 +40,8 @@ public class SumReplyMessage extends AbstractMessage {
 
     MutableBytes sums;
 
-    public SumReplyMessage(long endtime, long random, XdagStats xdagStats, MutableBytes sums) {
-        super(SUMS_REPLY, 1, endtime, random, xdagStats);
+    public SumReplyMessage(long endtime, long random, XdagStats xdagStats, MutableBytes sums, NetDB currentDB) {
+        super(SUMS_REPLY, 1, endtime, random, xdagStats, currentDB);
         this.sums = sums;
 //        System.arraycopy(BytesUtils.longToBytes(random, true), 0, encoded, 32, 8);
         encoded.set(32, Bytes.wrap(BytesUtils.longToBytes(random, true)));
