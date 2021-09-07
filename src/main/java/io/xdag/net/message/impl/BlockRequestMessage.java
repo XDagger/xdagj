@@ -30,6 +30,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
+import io.xdag.net.message.NetDB;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
@@ -39,13 +40,12 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.util.encoders.Hex;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlockRequestMessage extends AbstractMessage {
 
-    public BlockRequestMessage(MutableBytes hash, XdagStats xdagStats) {
-        super(XdagMessageCodes.BLOCK_REQUEST, 0, 0, Bytes32.wrap(hash), xdagStats);
+    public BlockRequestMessage(MutableBytes hash, XdagStats xdagStats, NetDB currentDB) {
+        super(XdagMessageCodes.BLOCK_REQUEST, 0, 0, Bytes32.wrap(hash), xdagStats, currentDB);
     }
 
     public BlockRequestMessage(MutableBytes hash) {
@@ -100,10 +100,18 @@ public class BlockRequestMessage extends AbstractMessage {
         long nblocks = xdagStats.getNblocks();
         long totalBlockNumber = xdagStats.getTotalnblocks();
 
-        // TODO：后续根据ip替换
-        String tmp = "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
-        // net 相关
-        byte[] tmpbyte = Hex.decode(tmp);
+        MutableBytes mutableBytes = MutableBytes.create(112);
+        long nhosts = currentDB.getIpList().size();
+        long totalHosts = currentDB.getIpList().size();
+
+        mutableBytes.set(0, Bytes.wrap(BytesUtils.longToBytes(nhosts, true)));
+        mutableBytes.set(8, Bytes.wrap(BytesUtils.longToBytes(totalHosts, true)));
+        mutableBytes.set(16, Bytes.wrap(currentDB.getEncoded()));
+
+//        // TODO：后续根据ip替换
+//        String tmp = "04000000040000003ef4780100000000" + "7f000001611e7f000001b8227f0000015f767f000001d49d";
+//        // net 相关
+//        byte[] tmpbyte = Hex.decode(tmp);
 
         // field 0 and field1
         MutableBytes32 first = MutableBytes32.create();
@@ -139,7 +147,8 @@ public class BlockRequestMessage extends AbstractMessage {
 //        System.arraycopy(BytesUtils.longToBytes(totalMainNumber, true), 0, encoded, 120, 8);
         encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber, true)));
 //        System.arraycopy(tmpbyte, 0, encoded, 128, tmpbyte.length);
-        encoded.set(128, Bytes.wrap(tmpbyte));
+//        encoded.set(128, Bytes.wrap(tmpbyte));
+        encoded.set(128, Bytes.wrap(mutableBytes));
         updateCrc();
     }
 

@@ -28,6 +28,7 @@ import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REPLY;
 
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
+import io.xdag.net.message.NetDB;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
 import org.apache.tuweni.bytes.Bytes;
@@ -36,8 +37,8 @@ import org.apache.tuweni.bytes.MutableBytes;
 @EqualsAndHashCode(callSuper = false)
 public class BlocksReplyMessage extends AbstractMessage {
 
-    public BlocksReplyMessage(long starttime, long endtime, long random, XdagStats xdagStats) {
-        super(BLOCKS_REPLY, starttime, endtime, random, xdagStats);
+    public BlocksReplyMessage(long starttime, long endtime, long random, XdagStats xdagStats, NetDB currentDB) {
+        super(BLOCKS_REPLY, starttime, endtime, random, xdagStats, currentDB);
         updateCrc();
     }
 

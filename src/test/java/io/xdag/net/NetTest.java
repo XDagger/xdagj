@@ -33,6 +33,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
@@ -46,12 +47,14 @@ public class NetTest {
         String second = "7f0000015f76";
         String third = "7f000001d49d";
         String fourth = "7f000001b822";
+        String five = "7f000001b822";
 
         int size = 4;
         netDB.addNewIP(Hex.decode(first));
         netDB.addNewIP(Hex.decode(second));
         netDB.addNewIP(Hex.decode(third));
         netDB.addNewIP(Hex.decode(fourth));
+        netDB.addNewIP(Hex.decode(five));
 
         assertEquals(size, netDB.getSize());
 
@@ -62,6 +65,16 @@ public class NetTest {
         NetDB netDB1 = new NetDB(Hex.decode(all));
         assertEquals(size, netDB1.getSize());
         assertEquals(all, Hex.toHexString(netDB1.getEncoded()));
+
+        MutableBytes mutableBytes = MutableBytes.create(112);
+        long nhosts = netDB.getIpList().size();
+        long totalHosts = netDB.getIpList().size();
+
+        mutableBytes.set(0, Bytes.wrap(BytesUtils.longToBytes(nhosts, true)));
+        mutableBytes.set(8, Bytes.wrap(BytesUtils.longToBytes(totalHosts, true)));
+        mutableBytes.set(16, Bytes.wrap(netDB.getEncoded()));
+        assertEquals(mutableBytes.toHexString(),
+                "0x040000000000000004000000000000007f000001611e7f0000015f767f000001d49d7f000001b822000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
     }
 

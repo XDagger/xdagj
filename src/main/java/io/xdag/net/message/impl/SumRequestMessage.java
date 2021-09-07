@@ -28,6 +28,7 @@ import static io.xdag.net.message.XdagMessageCodes.SUMS_REQUEST;
 
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
+import io.xdag.net.message.NetDB;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.RandomUtils;
@@ -37,8 +38,8 @@ import org.apache.tuweni.bytes.MutableBytes;
 @EqualsAndHashCode(callSuper = false)
 public class SumRequestMessage extends AbstractMessage {
 
-    public SumRequestMessage(long starttime, long endtime, XdagStats xdagStats) {
-        super(SUMS_REQUEST, starttime, endtime, RandomUtils.nextLong(), xdagStats);
+    public SumRequestMessage(long starttime, long endtime, XdagStats xdagStats, NetDB currentDB) {
+        super(SUMS_REQUEST, starttime, endtime, RandomUtils.nextLong(), xdagStats, currentDB);
         updateCrc();
     }
 
