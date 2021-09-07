@@ -85,6 +85,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -1316,7 +1317,33 @@ public class BlockchainImpl implements Blockchain {
         if (checkLoop == null) {
             return;
         }
-        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 1024, TimeUnit.MILLISECONDS);
+        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkState, 0, 1024, TimeUnit.MILLISECONDS);
+    }
+
+    public void checkState() {
+        // 检查extra
+        checkExtra();
+        checkMain();
+    }
+
+    public void checkExtra() {
+//        if (g_block_production_on &&
+//                (nblk = (unsigned)g_xdag_extstats.nnoref / (XDAG_BLOCK_FIELDS - 5))) {
+//            nblk = nblk / 61 + (nblk % 61 > (unsigned)rand() % 61);
+//
+//            xdag_mess("Starting refer blocks creation...");
+//            while (nblk--) {
+//                xdag_create_and_send_block(0, 0, 0, 0, 0, 0, NULL);
+//            }
+//        }
+        long nblk = xdagStats.getNextra() / 11;
+        if (nblk > 0) {
+            boolean b = nblk % 61 > (RandomUtils.nextLong() % 61);
+            nblk = nblk / 61 + (b ? 1 : 0);
+        }
+        while (nblk-- > 0) {
+            createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
+        }
     }
 
     public void checkMain() {
