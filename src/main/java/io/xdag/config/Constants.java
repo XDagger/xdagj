@@ -80,4 +80,9 @@ public class Constants {
      * 同步问题 分叉高度
      */
     public static final Long SYNC_FIX_HEIGHT = 0L;
+
+    public enum MessageType {
+        PRE_TOP,
+        NEW_LINK;
+    }
 }

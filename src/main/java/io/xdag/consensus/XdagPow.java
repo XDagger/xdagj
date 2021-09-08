@@ -28,6 +28,7 @@ import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
 import io.xdag.Kernel;
+import io.xdag.config.Constants.MessageType;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
@@ -415,8 +416,14 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     @Override
-    public void onMessage(io.xdag.listener.Message message) {
-        receiveNewPretop(message.getData());
+    public void onMessage(io.xdag.listener.Message message, MessageType type) {
+        if (type == MessageType.PRE_TOP) {
+            receiveNewPretop(message.getData());
+        } else if (type == MessageType.NEW_LINK) {
+            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(message.getData().toArray())),
+                    kernel.getConfig().getNodeSpec().getTTL());
+            broadcaster.broadcast(bw);
+        }
     }
 
     public static class Event {

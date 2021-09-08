@@ -34,7 +34,11 @@ import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
 import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
+import static io.xdag.config.Constants.MessageType.NEW_LINK;
+import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
@@ -177,7 +181,7 @@ public class BlockchainImpl implements Blockchain {
 
         checkLoop = new ScheduledThreadPoolExecutor(1, factory);
         // 检查主块链
-        this.startCheckMain();
+        this.startCheckMain(1024);
     }
 
     public void initSnapshot() {
@@ -275,7 +279,7 @@ public class BlockchainImpl implements Blockchain {
         // TODO: if current height is snapshot height, we need change logic to process new block
 
         try {
-            ImportResult result = ImportResult.IMPORTED_NOT_BEST;
+            ImportResult result = IMPORTED_NOT_BEST;
 
             long type = block.getType() & 0xf;
             if (kernel.getConfig() instanceof MainnetConfig) {
@@ -409,7 +413,7 @@ public class BlockchainImpl implements Blockchain {
                 }
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
-                result = ImportResult.IMPORTED_BEST;
+                result = IMPORTED_BEST;
             }
 
             // 新增区块
@@ -528,9 +532,15 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    private void onNewPretop() {
+    protected void onNewPretop() {
         for (Listener listener : listeners) {
-            listener.onMessage(new Message(Bytes.wrap(xdagTopStatus.getPreTop())));
+            listener.onMessage(new Message(Bytes.wrap(xdagTopStatus.getPreTop())), PRE_TOP);
+        }
+    }
+
+    protected void onNewBlock(Block block) {
+        for (Listener listener : listeners) {
+            listener.onMessage(new Message(Bytes.wrap(block.getXdagBlock().getData())), NEW_LINK);
         }
     }
 
@@ -770,6 +780,8 @@ public class BlockchainImpl implements Blockchain {
         if (pairs == null && to == null) {
             if (mining) {
                 return createMainBlock();
+            } else {
+                return createLinkBlock(remark);
             }
         }
         int defKeyIndex = -1;
@@ -843,6 +855,30 @@ public class BlockchainImpl implements Blockchain {
         }
         return new Block(kernel.getConfig(), sendTime, null, refs, true, null,
                 kernel.getConfig().getPoolSpec().getPoolTag(), -1);
+    }
+
+    public Block createLinkBlock(String remark) {
+        // <header + remark + outsig + nonce>
+        int hasRemark = remark == null ? 0 : 1;
+        int res = 1 + hasRemark + 2;
+
+        long sendTime = XdagTime.getCurrentTimestamp();
+        Address preTop = null;
+        Bytes32 pretopHash = getPreTopMainBlockForLink(sendTime);
+        if (pretopHash != null) {
+            preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT);
+            res++;
+        }
+        List<Address> refs = Lists.newArrayList();
+        if (preTop != null) {
+            refs.add(preTop);
+        }
+        List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
+        if (CollectionUtils.isNotEmpty(orphans)) {
+            refs.addAll(orphans);
+        }
+        return new Block(kernel.getConfig(), sendTime, null, refs, false, null,
+                remark, -1);
     }
 
     /**
@@ -1056,6 +1092,11 @@ public class BlockchainImpl implements Blockchain {
         }
         ByteArrayWrapper key = new ByteArrayWrapper(hashlow.toArray());
         Block b = memOrphanPool.get(key);
+
+//        for (ByteArrayWrapper byteArrayWrapper : memOrphanPool.keySet()) {
+//            System.out.println("mem:" + Hex.toHexString(byteArrayWrapper.getData()));
+//        }
+
         if (b == null) {
             b = blockStore.getBlockByHash(hashlow, isRaw);
         }
@@ -1313,11 +1354,11 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public void startCheckMain() {
+    public void startCheckMain(long period) {
         if (checkLoop == null) {
             return;
         }
-        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkState, 0, 1024, TimeUnit.MILLISECONDS);
+        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkState, 0, period, TimeUnit.MILLISECONDS);
     }
 
     public void checkState() {
@@ -1327,22 +1368,18 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void checkExtra() {
-//        if (g_block_production_on &&
-//                (nblk = (unsigned)g_xdag_extstats.nnoref / (XDAG_BLOCK_FIELDS - 5))) {
-//            nblk = nblk / 61 + (nblk % 61 > (unsigned)rand() % 61);
-//
-//            xdag_mess("Starting refer blocks creation...");
-//            while (nblk--) {
-//                xdag_create_and_send_block(0, 0, 0, 0, 0, 0, NULL);
-//            }
-//        }
-        long nblk = xdagStats.getNextra() / 11;
+        long nblk = xdagStats.nextra / 11;
         if (nblk > 0) {
             boolean b = nblk % 61 > (RandomUtils.nextLong() % 61);
             nblk = nblk / 61 + (b ? 1 : 0);
         }
         while (nblk-- > 0) {
-            createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
+            Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
+            linkBlock.signOut(kernel.getWallet().getDefKey());
+            ImportResult result = this.tryToConnect(linkBlock);
+            if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
+                onNewBlock(linkBlock);
+            }
         }
     }
 
