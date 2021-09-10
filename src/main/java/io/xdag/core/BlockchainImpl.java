@@ -407,7 +407,7 @@ public class BlockchainImpl implements Blockchain {
                 // 更新新的链
                 updateNewChain(block, isSyncFixFork(xdagStats.nmain));
                 // 发生回退
-                if (currentHeight - xdagStats.nmain > 0) {
+                if (currentHeight - xdagStats.nmain > 1) {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
