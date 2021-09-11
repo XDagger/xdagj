@@ -279,7 +279,7 @@ public class BlockchainImpl implements Blockchain {
         // TODO: if current height is snapshot height, we need change logic to process new block
 
         try {
-            ImportResult result = IMPORTED_NOT_BEST;
+            ImportResult result = ImportResult.IMPORTED_NOT_BEST;
 
             long type = block.getType() & 0xf;
             if (kernel.getConfig() instanceof MainnetConfig) {
@@ -413,7 +413,7 @@ public class BlockchainImpl implements Blockchain {
                 }
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
-                result = IMPORTED_BEST;
+                result = ImportResult.IMPORTED_BEST;
             }
 
             // 新增区块
@@ -1092,11 +1092,6 @@ public class BlockchainImpl implements Blockchain {
         }
         ByteArrayWrapper key = new ByteArrayWrapper(hashlow.toArray());
         Block b = memOrphanPool.get(key);
-
-//        for (ByteArrayWrapper byteArrayWrapper : memOrphanPool.keySet()) {
-//            System.out.println("mem:" + Hex.toHexString(byteArrayWrapper.getData()));
-//        }
-
         if (b == null) {
             b = blockStore.getBlockByHash(hashlow, isRaw);
         }

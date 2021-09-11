@@ -29,7 +29,10 @@ import static io.xdag.BlockBuilder.generateExtraBlock;
 import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
@@ -49,7 +52,6 @@ import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
@@ -108,7 +110,7 @@ public class ExtraBlockTest {
     }
 
     @Test
-    public void testExtraBlockReUse() throws ParseException {
+    public void testExtraBlockReUse() {
         ECKeyPair addrKey = ECKeyPair.create(private_1);
         ECKeyPair poolKey = ECKeyPair.create(private_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
@@ -149,10 +151,61 @@ public class ExtraBlockTest {
             extraBlockList.add(extraBlock);
         }
 
-        System.out.println(blockchain.getXdagStats().nextra);
-//        assertEquals(expectedExtraBlocks + 1, blockchain.getXdagStats().nextra);
+        assertEquals(13, blockchain.getXdagStats().nextra);
+        assertEquals(34, blockchain.getXdagStats().nblocks);
 
     }
+
+
+    @Test
+    public void testExtraGenerate() {
+        ECKeyPair addrKey = ECKeyPair.create(private_1);
+        ECKeyPair poolKey = ECKeyPair.create(private_2);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. add one address block
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        blockchain.checkExtra();
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = addressBlock.getHashLow();
+
+        // 2. create 20 mainblocks and 6 extra block
+        for (int i = 1; i <= 20; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertTrue(result == IMPORTED_BEST);
+            blockchain.checkExtra();
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+        generateTime += 64000L;
+
+        // 3. create 30 extra block
+        for (int i = 10; i <= 40; i++) {
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "01" + i);
+            blockchain.tryToConnect(extraBlock);
+            blockchain.checkExtra();
+            extraBlockList.add(extraBlock);
+        }
+
+        assertEquals(12, blockchain.getXdagStats().nextra);
+        assertEquals(55, blockchain.getXdagStats().nblocks);
+    }
+
 
     @After
     public void tearDown() throws IOException {
@@ -183,19 +236,16 @@ public class ExtraBlockTest {
 
         @Override
         public void startCheckMain(long period) {
-            super.startCheckMain(1);
         }
 
         @Override
         public void checkExtra() {
             long nblk = this.getXdagStats().nextra / 11;
-            System.out.println("nblk:" + nblk);
             while (nblk-- > 0) {
-                System.out.println("createLink");
                 Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
                 linkBlock.signOut(kernel.getWallet().getDefKey());
                 ImportResult result = this.tryToConnect(linkBlock);
-                System.out.println("hhhhhhhhh:" + result);
+                assertTrue(result == IMPORTED_BEST || result == IMPORTED_NOT_BEST);
             }
         }
     }
