@@ -1358,8 +1358,8 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void checkState() {
-        // 检查extra
-        checkExtra();
+        // TODO:检查extra
+//        checkExtra();
         checkMain();
     }
 
