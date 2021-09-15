@@ -34,7 +34,11 @@ import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
 import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
+import static io.xdag.config.Constants.MessageType.NEW_LINK;
+import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
@@ -85,6 +89,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -176,7 +181,7 @@ public class BlockchainImpl implements Blockchain {
 
         checkLoop = new ScheduledThreadPoolExecutor(1, factory);
         // 检查主块链
-        this.startCheckMain();
+        this.startCheckMain(1024);
     }
 
     public void initSnapshot() {
@@ -402,7 +407,7 @@ public class BlockchainImpl implements Blockchain {
                 // 更新新的链
                 updateNewChain(block, isSyncFixFork(xdagStats.nmain));
                 // 发生回退
-                if (currentHeight - xdagStats.nmain > 0) {
+                if (currentHeight - xdagStats.nmain > 1) {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
@@ -527,9 +532,15 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    private void onNewPretop() {
+    protected void onNewPretop() {
         for (Listener listener : listeners) {
-            listener.onMessage(new Message(Bytes.wrap(xdagTopStatus.getPreTop())));
+            listener.onMessage(new Message(Bytes.wrap(xdagTopStatus.getPreTop())), PRE_TOP);
+        }
+    }
+
+    protected void onNewBlock(Block block) {
+        for (Listener listener : listeners) {
+            listener.onMessage(new Message(Bytes.wrap(block.getXdagBlock().getData())), NEW_LINK);
         }
     }
 
@@ -769,6 +780,8 @@ public class BlockchainImpl implements Blockchain {
         if (pairs == null && to == null) {
             if (mining) {
                 return createMainBlock();
+            } else {
+                return createLinkBlock(remark);
             }
         }
         int defKeyIndex = -1;
@@ -842,6 +855,30 @@ public class BlockchainImpl implements Blockchain {
         }
         return new Block(kernel.getConfig(), sendTime, null, refs, true, null,
                 kernel.getConfig().getPoolSpec().getPoolTag(), -1);
+    }
+
+    public Block createLinkBlock(String remark) {
+        // <header + remark + outsig + nonce>
+        int hasRemark = remark == null ? 0 : 1;
+        int res = 1 + hasRemark + 2;
+
+        long sendTime = XdagTime.getCurrentTimestamp();
+        Address preTop = null;
+        Bytes32 pretopHash = getPreTopMainBlockForLink(sendTime);
+        if (pretopHash != null) {
+            preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT);
+            res++;
+        }
+        List<Address> refs = Lists.newArrayList();
+        if (preTop != null) {
+            refs.add(preTop);
+        }
+        List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
+        if (CollectionUtils.isNotEmpty(orphans)) {
+            refs.addAll(orphans);
+        }
+        return new Block(kernel.getConfig(), sendTime, null, refs, false, null,
+                remark, -1);
     }
 
     /**
@@ -1009,7 +1046,8 @@ public class BlockchainImpl implements Blockchain {
         if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
             return null;
         }
-        if (height > xdagStats.nmain) {
+        // 补充高度低于0时不返回
+        if (height > xdagStats.nmain || height <= 0) {
             return null;
         }
         return blockStore.getBlockByHeight(height);
@@ -1312,11 +1350,33 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public void startCheckMain() {
+    public void startCheckMain(long period) {
         if (checkLoop == null) {
             return;
         }
-        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkMain, 0, 1024, TimeUnit.MILLISECONDS);
+        checkLoopFuture = checkLoop.scheduleAtFixedRate(this::checkState, 0, period, TimeUnit.MILLISECONDS);
+    }
+
+    public void checkState() {
+        // TODO:检查extra
+//        checkExtra();
+        checkMain();
+    }
+
+    public void checkExtra() {
+        long nblk = xdagStats.nextra / 11;
+        if (nblk > 0) {
+            boolean b = (nblk % 61) > (RandomUtils.nextLong() % 61);
+            nblk = nblk / 61 + (b ? 1 : 0);
+        }
+        while (nblk-- > 0) {
+            Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
+            linkBlock.signOut(kernel.getWallet().getDefKey());
+            ImportResult result = this.tryToConnect(linkBlock);
+            if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
+                onNewBlock(linkBlock);
+            }
+        }
     }
 
     public void checkMain() {

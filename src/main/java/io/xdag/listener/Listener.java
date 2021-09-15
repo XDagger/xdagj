@@ -24,7 +24,9 @@
 
 package io.xdag.listener;
 
+import io.xdag.config.Constants.MessageType;
+
 public interface Listener {
 
-    void onMessage(Message message);
+    void onMessage(Message message, MessageType type);
 }

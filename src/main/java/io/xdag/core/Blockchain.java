@@ -62,7 +62,7 @@ public interface Blockchain {
 
     // TODO ： 补充单元测试
     // 启动检查主块链线程
-    void startCheckMain();
+    void startCheckMain(long period);
 
     // 关闭检查主块链线程
     void stopCheckMain();

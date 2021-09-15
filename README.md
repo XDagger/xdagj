@@ -61,7 +61,7 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [ ] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
+- [x] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
 
 - [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 

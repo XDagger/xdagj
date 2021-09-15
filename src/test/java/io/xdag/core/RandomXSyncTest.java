@@ -238,7 +238,7 @@ public class RandomXSyncTest {
         }
 
         @Override
-        public void startCheckMain() {
+        public void startCheckMain(long period) {
 
         }
     }

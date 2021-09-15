@@ -190,7 +190,7 @@ public class SyncTest {
         }
 
         @Override
-        public void startCheckMain() {
+        public void startCheckMain(long period) {
         }
 
         @Override
@@ -207,7 +207,7 @@ public class SyncTest {
         }
 
         @Override
-        public void startCheckMain() {
+        public void startCheckMain(long period) {
         }
 
         @Override
