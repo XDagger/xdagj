@@ -1046,7 +1046,8 @@ public class BlockchainImpl implements Blockchain {
         if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
             return null;
         }
-        if (height > xdagStats.nmain) {
+        // 补充高度低于0时不返回
+        if (height > xdagStats.nmain || height <= 0) {
             return null;
         }
         return blockStore.getBlockByHeight(height);
