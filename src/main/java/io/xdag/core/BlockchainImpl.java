@@ -1365,7 +1365,7 @@ public class BlockchainImpl implements Blockchain {
     public void checkExtra() {
         long nblk = xdagStats.nextra / 11;
         if (nblk > 0) {
-            boolean b = nblk % 61 > (RandomUtils.nextLong() % 61);
+            boolean b = (nblk % 61) > (RandomUtils.nextLong() % 61);
             nblk = nblk / 61 + (b ? 1 : 0);
         }
         while (nblk-- > 0) {

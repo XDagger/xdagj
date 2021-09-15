@@ -80,7 +80,7 @@ public class XdagClient {
             ChannelFuture f = connectAsync(host, port, xdagChannelInitializer);
             f.sync();
         } catch (Exception e) {
-            log.error("message:" + e.getMessage(), e);
+//            log.error("message:" + e.getMessage(), e);
         }
     }
 

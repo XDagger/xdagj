@@ -202,12 +202,13 @@ public class MinerManagerImpl implements MinerManager, Runnable {
      * 清理minger
      */
     public void cleanUnactivateMiner() {
-        for (Miner miner : activateMiners.values()) {
-            if (miner.canRemove()) {
-                log.debug("remove a miner,miner address=[{}]", miner.getAddressHash().toHexString());
-                activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash().toArray()));
-            }
-        }
+//        for (Miner miner : activateMiners.values()) {
+//            if (miner.canRemove()) {
+//                log.debug("remove a miner,miner address=[{}]", miner.getAddressHash().toHexString());
+//                activateMiners.remove(new ByteArrayWrapper(miner.getAddressHash().toArray()));
+//            }
+//        }
+        activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
     }
 
 
