@@ -278,7 +278,7 @@ public class SnapshotProcess {
         }
 
         @Override
-        public void startCheckMain() {
+        public void startCheckMain(long period) {
 
         }
 

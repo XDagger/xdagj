@@ -485,8 +485,7 @@ public class Kernel {
         }
 
         // release
-        // TODO: paulochen randomx 需要恢复
-//        randomXUtils.randomXPoolReleaseMem();
+        randomXUtils.randomXPoolReleaseMem();
         log.info("Release randomx");
 
     }
