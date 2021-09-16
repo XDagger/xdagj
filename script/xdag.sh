@@ -5,7 +5,7 @@ XDAG_JARNAME="xdagj-${XDAG_VERSION}-shaded.jar"
 XDAG_OPTS="-t"
 
 # Linux Java Home
-JAVA_HOME="/usr/local/java/"
+#JAVA_HOME="/usr/local/java/"
 
 # MacOS Java Home
 #JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home/
