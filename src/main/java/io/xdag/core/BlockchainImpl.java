@@ -990,7 +990,9 @@ public class BlockchainImpl implements Blockchain {
                     tmpBlock = getMaxDiffLink(tmpBlock, false);
                 }
                 if (tmpBlock != null
-                        && (XdagTime.getEpoch(tmpBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp()))) {
+                        && (XdagTime.getEpoch(tmpBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp()))
+                        && tmpBlock.getInfo().getDifficulty().add(diff0).compareTo(curDiff) > 0
+                ) {
                     curDiff = tmpBlock.getInfo().getDifficulty().add(diff0);
                 }
                 if (curDiff == null) {
