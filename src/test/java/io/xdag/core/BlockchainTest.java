@@ -494,10 +494,11 @@ public class BlockchainTest {
             super(kernel);
         }
 
-//        @Override
-//        public void startCheckMain() {
-//
-//        }
+
+        @Override
+        public void startCheckMain(long period) {
+//            super.startCheckMain(period);
+        }
 
         @Override
         public void addOurBlock(int keyIndex, Block block) {
