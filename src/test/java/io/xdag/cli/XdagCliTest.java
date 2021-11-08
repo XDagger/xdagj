@@ -521,7 +521,8 @@ public class XdagCliTest {
 
         // mock wallet
         doReturn(keyList).when(xdagCLI).readOldWallet("111111", "111111", walletFile);
-        when(walletFile.exists()).thenReturn(true);
+        doReturn(true).when(walletFile).exists();
+
         // mock passwords
         doReturn("111111").when(xdagCLI).readPassword("Old wallet password:");
         doReturn("111111").when(xdagCLI).readPassword("Old wallet random:");

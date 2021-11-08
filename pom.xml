@@ -11,14 +11,13 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <java.version>15</java.version>
         <kotlin.version>1.4.20</kotlin.version>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.60.Final</netty.version>
+        <netty.version>4.1.70.Final</netty.version>
     </properties>
 
     <organization>
@@ -79,9 +78,6 @@
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
                     <skip>false</skip>
-                    <compilerArgs>
-                        <arg>--enable-preview</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
 
@@ -368,7 +364,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>29.0-jre</version>
+            <version>31.0.1-jre</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.errorprone</groupId>
@@ -394,7 +390,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.16</version>
+            <version>1.18.22</version>
             <scope>provided</scope>
         </dependency>
 
@@ -425,7 +421,7 @@
         <dependency>
             <groupId>io.libp2p</groupId>
             <artifactId>jvm-libp2p-minimal</artifactId>
-            <version>0.8.2-RELEASE</version>
+            <version>0.8.3-RELEASE</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jetbrains</groupId>
@@ -524,7 +520,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.3.3</version>
+            <version>4.0.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
