@@ -86,8 +86,7 @@ public class Web3EthModuleImpl implements Web3EthModule {
         return null;
     }
 
-    class SyncingResult {
-
+    static class SyncingResult {
         public String currentBlock;
         public String highestBlock;
     }

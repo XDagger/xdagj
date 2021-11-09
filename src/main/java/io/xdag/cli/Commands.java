@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +116,7 @@ public class Commands {
                     BasicUtils.hash2Address(block.getHash()),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                     getStateByFlags(block.getInfo().getFlags()),
-                    new String(remark == null ? "".getBytes() : remark, StandardCharsets.UTF_8)));
+                    new String(remark == null ? "".getBytes(StandardCharsets.UTF_8) : remark, StandardCharsets.UTF_8)));
         }
         return sbd.toString();
     }
@@ -487,7 +488,7 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark()),
+                block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
                 //fee目前为0
@@ -544,7 +545,8 @@ public class Commands {
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
         StringBuilder stringBuilder = new StringBuilder();
-        for (Node node : map.keySet()) {
+        for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
+            Node node = it.next();
             stringBuilder
                     .append(node.getAddress())
                     .append(" ")
