@@ -30,6 +30,7 @@ import static io.xdag.crypto.Hash.sha256hash160;
 import io.xdag.utils.Numeric;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.math.ec.ECPoint;
@@ -76,7 +77,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
     }
 
     public static Bip32ECKeyPair generateKeyPair(byte[] seed) {
-        byte[] i = hmacSha512("Bitcoin seed".getBytes(), seed);
+        byte[] i = hmacSha512("Bitcoin seed".getBytes(StandardCharsets.UTF_8), seed);
         byte[] il = Arrays.copyOfRange(i, 0, 32);
         byte[] ir = Arrays.copyOfRange(i, 32, 64);
         Arrays.fill(i, (byte) 0);

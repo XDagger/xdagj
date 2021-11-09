@@ -47,6 +47,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -338,7 +339,7 @@ public class BlockStore {
     }
 
     public MutableBytes getSums(String key) {
-        byte[] value = indexSource.get(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes()));
+        byte[] value = indexSource.get(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes(StandardCharsets.UTF_8)));
         if (value == null) {
             return null;
         } else {
@@ -359,7 +360,7 @@ public class BlockStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        indexSource.put(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes()), value);
+        indexSource.put(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes(StandardCharsets.UTF_8)), value);
     }
 
     public void updateSum(String key, long sum, long size, long index) {

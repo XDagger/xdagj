@@ -40,6 +40,7 @@ import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -138,7 +139,7 @@ public class Block implements Cloneable {
 
         if (StringUtils.isAsciiPrintable(remark)) {
             setType(XDAG_FIELD_REMARK, lenghth++);
-            byte[] data = remark.getBytes();
+            byte[] data = remark.getBytes(StandardCharsets.UTF_8);
             byte[] safeRemark = new byte[32];
             Arrays.fill(safeRemark, (byte) 0);
             System.arraycopy(data, 0, safeRemark, 0, Math.min(data.length, 32));
