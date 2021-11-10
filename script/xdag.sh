@@ -11,7 +11,7 @@ XDAG_OPTS="-t"
 #JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home/
 
 # default JVM options
-JAVA_OPTS="--enable-preview -server -Xms1g -Xmx1g"
+JAVA_OPTS="-server -Xms1g -Xmx1g"
 
 # start kernel
 java ${JAVA_OPTS} -cp .:${XDAG_JARNAME} io.xdag.Bootstrap "$@"

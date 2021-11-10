@@ -10,7 +10,7 @@ Libp2p handles peer discovery and handshake protocols.
 
 #### Libp2p version
 
-XDAGJ adopts the JVM-libp2p 0.5.1-RELEASE version, which aims to provide the smallest network stack. JVM-libp2p allow XDAGJ to interoperate with mature versions of libp2p clients written in other language versions.
+XDAGJ adopts the JVM-libp2p 0.8.3-RELEASE version, which aims to provide the smallest network stack. JVM-libp2p allow XDAGJ to interoperate with mature versions of libp2p clients written in other language versions.
 
 #### Future plan
 

@@ -14,8 +14,8 @@
 - System environment
 
   ```yaml
-  JDK   : v15
-  Maven : v3.6.3
+  JDK   : v17
+  Maven : v3.8.3
   ```
 
   Please make sure that the above environment is already available in your operating system, and the JDK version must be 15
@@ -52,7 +52,7 @@
 
   ```shell
   cd target
-  nohup java -jar --enable-preview xdagj-0.4.0-shaded.jar > xdagj.log 2>&1 &
+  nohup java -jar xdagj-0.4.5-shaded.jar > xdagj.log 2>&1 &
   #Wait for the system to start up, use telnet to access
   telnet ip:port
   ```
@@ -63,7 +63,7 @@
 
 ## Modify pool parameters
 
-The configuration file is located in `src/main/resources/xdag.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
+The configuration file is located in `src/main/resources/xdag-testnet.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
 
 ```yaml
 #Connection settings

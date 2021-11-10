@@ -15,7 +15,7 @@ If you want to learn the structure of your Xdag wallet, you can play with the "x
 ## System environment
 
 ```yaml
-     JDK   : v15
+     JDK   : v17
   script   : xdag.sh
      jar   : xdagj-0.x.y-shaded.jar
 ```
@@ -23,9 +23,9 @@ If you want to learn the structure of your Xdag wallet, you can play with the "x
 example:
 ```shell
 xdager@localhost xdag_full_node % java --version
-openjdk 15.0.2 2021-01-19
-OpenJDK Runtime Environment (build 15.0.2+7)
-OpenJDK 64-Bit Server VM (build 15.0.2+7, mixed mode, sharing)
+openjdk 17.0.1 2021-10-19
+OpenJDK Runtime Environment (build 17.0.1+12-39)
+OpenJDK 64-Bit Server VM (build 17.0.1+12-39, mixed mode, sharing)
 xdager@localhost xdag_full_node % mkdir -p /usr/local/xdag_full_node && cd /usr/local/xdag_full_node
 xdager@localhost xdag_full_node % pwd
 /usr/local/xdag_full_node

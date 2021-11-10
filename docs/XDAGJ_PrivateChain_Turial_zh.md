@@ -15,8 +15,8 @@
 - 系统环境
 
   ```yaml
-  JDK   : v15
-  Maven : v3.6.3
+  JDK   : v17
+  Maven : v3.8.3
   ```
 
   请确保您的操作系统中已经具备上述环境，其中JDK版本必须确保为15
@@ -55,7 +55,7 @@
 
   ```shell
   cd target
-  nohup java -jar --enable-preview xdagj-0.4.0-shaded.jar > xdagj.log 2>&1 &
+  nohup java -jar xdagj-0.4.5-shaded.jar > xdagj.log 2>&1 &
   #等待系统启动完毕，采用telnet接入
   telnet ip:port
   ```
