@@ -30,7 +30,6 @@ import static org.junit.Assert.assertTrue;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.utils.Numeric;
@@ -41,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +57,7 @@ public class WalletTest {
         config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
         wallet.lock();
@@ -90,12 +90,12 @@ public class WalletTest {
     public void testAddAccounts() {
         wallet.unlock(pwd);
         wallet.setAccounts(Collections.emptyList());
-        ECKeyPair key1 = Keys.createEcKeyPair();
-        ECKeyPair key2 = Keys.createEcKeyPair();
+        SECP256K1.KeyPair key1 = Keys.createEcKeyPair();
+        SECP256K1.KeyPair key2 = Keys.createEcKeyPair();
         wallet.addAccounts(Arrays.asList(key1, key2));
-        List<ECKeyPair> accounts = wallet.getAccounts();
-        ECKeyPair k1 = accounts.get(0);
-        ECKeyPair k2 = accounts.get(1);
+        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
+        SECP256K1.KeyPair k1 = accounts.get(0);
+        SECP256K1.KeyPair k2 = accounts.get(1);
         assertEquals(k1, key1);
         assertEquals(k2, key2);
     }
@@ -139,7 +139,7 @@ public class WalletTest {
     public void testRemoveAccount() {
         wallet.unlock(pwd);
         int oldAccountSize = wallet.getAccounts().size();
-        ECKeyPair key = Keys.createEcKeyPair();
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
         wallet.addAccount(key);
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
         wallet.removeAccount(key);
@@ -172,10 +172,10 @@ public class WalletTest {
     public void testHDKeyRecover() {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<ECKeyPair> keyPairList1 = new ArrayList<>();
+        List<SECP256K1.KeyPair> keyPairList1 = new ArrayList<>();
         int hdkeyCount = 5;
         for (int i = 0; i < hdkeyCount; i++) {
-            ECKeyPair key = wallet.addAccountWithNextHdKey();
+            SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
             keyPairList1.add(key);
         }
 
@@ -184,9 +184,9 @@ public class WalletTest {
         // use different password and same mnemonic
         wallet2.unlock(pwd + pwd);
         wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<ECKeyPair> keyPairList2 = new ArrayList<>();
+        List<SECP256K1.KeyPair> keyPairList2 = new ArrayList<>();
         for (int i = 0; i < hdkeyCount; i++) {
-            ECKeyPair key = wallet2.addAccountWithNextHdKey();
+            SECP256K1.KeyPair key = wallet2.addAccountWithNextHdKey();
             keyPairList2.add(key);
         }
         assertTrue(CollectionUtils.isEqualCollection(keyPairList1, keyPairList2));

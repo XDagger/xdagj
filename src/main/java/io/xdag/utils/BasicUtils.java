@@ -34,14 +34,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 
 public class BasicUtils {
 
@@ -140,11 +139,12 @@ public class BasicUtils {
         byte[] bytes = BytesUtils.bigIntegerToBytes(diff, 16, false);
         byte[] resByte = new byte[8];
         System.arraycopy(bytes, 8, resByte, 0, 8);
-        BigInteger res = new BigInteger(Hex.toHexString(resByte), 16);
+
+        BigInteger res =  Bytes.wrap(resByte).toBigInteger();
         byte[] data = new byte[16];
         Arrays.fill(data, (byte) 0);
         System.arraycopy(bytes, 0, data, 0, 8);
-        BigInteger diffI = new BigInteger(Hex.toHexString(data), 16);
+        BigInteger diffI = Bytes.wrap(data).toBigInteger();
         if (diffI.compareTo(BigInteger.ZERO) > 0) {
             BigInteger temp = BigInteger.valueOf(2 ^ 64);
             res = res.add(diffI.multiply(temp));
@@ -173,7 +173,7 @@ public class BasicUtils {
         } else {
             number = number.substring(2);
             number = number.length() % 2 != 0 ? "0".concat(number) : number;
-            byte[] numberBytes = Hex.decode(number);
+            byte[] numberBytes = Bytes.fromHexString(number).toArray();
             return (new BigInteger(1, numberBytes));
         }
     }

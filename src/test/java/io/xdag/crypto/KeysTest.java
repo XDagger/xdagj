@@ -33,6 +33,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.junit.Test;
 
 public class KeysTest {
@@ -60,20 +61,20 @@ public class KeysTest {
     }
 
     @Test
-    public void testCreateEcKeyPair() throws Exception {
-        ECKeyPair ecKeyPair = Keys.createEcKeyPair();
-        assertEquals(ecKeyPair.getPublicKey().signum(), (1));
-        assertEquals(ecKeyPair.getPrivateKey().signum(), (1));
+    public void testCreateEcKeyPair() {
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        assertEquals(key.publicKey().bytes().toUnsignedBigInteger().signum(), (1));
+        assertEquals(key.secretKey().bytes().toUnsignedBigInteger().signum(), (1));
     }
 
     @Test
     public void testTransform() {
         for (int i = 0; i < 1000; i++) {
-            ECKeyPair ecKeyPair = Keys.createEcKeyPair();
-            assertEquals(Bytes.wrap(ecKeyPair.getCompressPubKeyBytes()),
-                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(ecKeyPair.getPrivateKey(), true)));
-            assertEquals(Bytes.wrap(ecKeyPair.getPubKeyBytes()),
-                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(ecKeyPair.getPrivateKey(), false)));
+            SECP256K1.KeyPair key = Keys.createEcKeyPair();
+            assertEquals(Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)),
+                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(key.secretKey().bytes().toUnsignedBigInteger(), true)));
+            assertEquals(Bytes.wrap(key.publicKey().asEcPoint().getEncoded(false)),
+                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(key.secretKey().bytes().toUnsignedBigInteger(), false)));
         }
     }
 

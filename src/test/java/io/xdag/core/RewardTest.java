@@ -37,7 +37,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -55,6 +54,7 @@ import java.text.ParseException;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,6 +74,7 @@ public class RewardTest {
 
     String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
     BigInteger privateKey = new BigInteger(privString, 16);
+    SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromInteger(privateKey);
 
     @Before
     public void setUp() throws Exception {
@@ -87,7 +88,7 @@ public class RewardTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -126,8 +127,8 @@ public class RewardTest {
 
         Bytes32 targetBlock = Bytes32.ZERO;
 
-        ECKeyPair addrKey = ECKeyPair.create(privateKey);
-        ECKeyPair poolKey = ECKeyPair.create(privateKey);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretKey);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(secretKey);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block

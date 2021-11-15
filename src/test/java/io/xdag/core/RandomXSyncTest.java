@@ -38,7 +38,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -47,7 +46,6 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.randomx.RandomX;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.math.BigInteger;
@@ -58,6 +56,7 @@ import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,6 +68,7 @@ public class RandomXSyncTest {
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     private final String privString = "10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046";
     private final BigInteger privateKey = new BigInteger(privString, 16);
+    private final SECP256K1.SecretKey secretKey =  SECP256K1.SecretKey.fromInteger(privateKey);
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();
     @Rule
@@ -130,7 +130,7 @@ public class RandomXSyncTest {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
 //        ECKeyPair key = ECKeyPair.create(privateKey);
-        ECKeyPair key = ECKeyPair.create(privateKey);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretKey);
 //        System.out.println(key.getPrivateKey().toString(16));
         List<Address> pending = Lists.newArrayList();
 
@@ -202,7 +202,7 @@ public class RandomXSyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config);

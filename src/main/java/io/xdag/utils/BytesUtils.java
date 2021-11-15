@@ -28,7 +28,8 @@ import com.google.common.io.BaseEncoding;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import org.bouncycastle.util.Arrays;
+import java.util.Arrays;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class BytesUtils {
 
@@ -278,7 +279,7 @@ public class BytesUtils {
         byte[] data = new byte[8];
         System.arraycopy(input, offset, data, 0, 8);
         if (littleEndian) {
-            data = Arrays.reverse(data);
+            ArrayUtils.reverse(data);
         }
         return Numeric.toBigInt(data).doubleValue();
     }

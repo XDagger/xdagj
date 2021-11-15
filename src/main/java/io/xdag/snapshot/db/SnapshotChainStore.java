@@ -1,9 +1,9 @@
 package io.xdag.snapshot.db;
 
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import java.util.List;
+import org.apache.tuweni.crypto.SECP256K1;
 
 public interface SnapshotChainStore {
 
@@ -31,6 +31,6 @@ public interface SnapshotChainStore {
 
     StatsBlock getStatsBlockByIndex(int i);
 
-    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<ECKeyPair> ecKeyPairs);
+    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<SECP256K1.KeyPair> publicKeys);
 
 }

@@ -39,7 +39,6 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockchainImpl;
 import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
@@ -59,6 +58,7 @@ import java.util.Date;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
@@ -91,7 +91,7 @@ public class MinerConnectTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -124,8 +124,7 @@ public class MinerConnectTest {
     @Test
     public void testMinerConnect() {
         Native.crypt_start();
-
-        ECKeyPair key = Keys.createEcKeyPair();
+        SECP256K1.KeyPair key = Keys.createEcKeyPair();
         Block address = generateAddressBlock(config, key, new Date().getTime());
         MutableBytes encoded = address.getXdagBlock().getData();
         byte[] data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
