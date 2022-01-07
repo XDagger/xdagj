@@ -75,7 +75,7 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Improve the address block structure and increase the handling fee
 
-- [ ] Optimize and improve mobile wallets to improve user experience
+- [x] Optimize and improve mobile wallets to improve user experience
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
