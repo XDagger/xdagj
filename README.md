@@ -136,7 +136,7 @@ If you are interested in the development of XDAGJ, we also welcome you to join t
 
 ## Sponsorship
 
-Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough.The development of XDAGJ has gradually been on the right track. Due to limited resources, your support can strongly help us to improve XDAGJ.
+Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough.The development of XDAGJ has gradually been on the right track. Your support is an affirmation of our workcan and can strongly help us to improve XDAGJ.
 
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
