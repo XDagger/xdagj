@@ -34,7 +34,7 @@ The Private Chain Building Tutorial helps you to build a private-chain for testi
 
 ## Develop
 
-XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
+XDAGJ already has the basic functions as a pool. Follow-up works will improve the stability of the system and add new functions. The aim is to prepar for xdag to enter the meta universe. It is important to adopt excellent blockchain technology for XDAGJ.
 
 ### XDAG Mars Project
 
