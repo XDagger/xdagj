@@ -36,12 +36,14 @@ import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SystemUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -54,9 +56,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.crypto.generators.BCrypt;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 @Slf4j
 @Getter
@@ -77,6 +79,12 @@ public class Wallet {
     // hd wallet key
     private String mnemonicPhrase = "";
     private int nextAccountIndex = 0;
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     /**
      * Creates a new wallet instance.
@@ -183,8 +191,8 @@ public class Wallet {
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
             byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
-            SECP256K1.KeyPair KeyPair = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromBytes(Bytes32.wrap(privateKey)));
-            keys.add(KeyPair);
+            SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromInteger(Numeric.toBigInt(privateKey)));
+            keys.add(keyPair);
         }
         return keys;
     }
