@@ -122,7 +122,7 @@ The XDAG Mars Project is divided into four stages：
 
 - Security Question
 
-  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, I hope you can give it back as soon as possible.
+  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, we hope you can give it back as soon as possible.
 
   If you find a problem that may affect the security of the deployed system, we hope that you can send the problem privately to xdagj@xdag.io. Please do not discuss it publicly!
 
