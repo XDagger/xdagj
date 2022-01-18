@@ -152,6 +152,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected boolean snapshotEnabled = false;
     protected long snapshotHeight;
     protected long snapshotTime; // TODO：用于sync时的起始时间
+    protected boolean isSnapshotJ;
 
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
@@ -430,8 +431,18 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     @Override
+    public boolean isSnapshotJ() {
+        return isSnapshotJ;
+    }
+
+    @Override
     public long getSnapshotHeight() {
         return snapshotHeight;
+    }
+
+    @Override
+    public void setSnapshotJ(boolean isSnapshot) {
+        this.isSnapshotJ = isSnapshot;
     }
 
     @Override

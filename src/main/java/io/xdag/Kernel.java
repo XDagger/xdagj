@@ -241,20 +241,24 @@ public class Kernel {
         // randomX loading
         // TODO: paulochen randomx 需要恢复
         // 初次快照启动
-        if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
-            // TODO: forkTime 怎么获得
-
-            System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
-            randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
-            // 设置为已通过快照启动
-            blockStore.setSnapshotBoot();
-        } else if (config.getSnapshotSpec().isSnapshotEnabled() && blockStore.isSnapshotBoot()) { // 快照加载后重启
-            System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
-            randomXUtils.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
-        } else {
+        if(config.getSnapshotSpec().isSnapshotJ()){
             randomXUtils.randomXLoadingForkTime();
-
+            blockStore.setSnapshotBoot();
+        }else {
+            if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
+                // TODO: forkTime 怎么获得
+                System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
+                randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
+                // 设置为已通过快照启动
+                blockStore.setSnapshotBoot();
+            } else if (config.getSnapshotSpec().isSnapshotEnabled() && blockStore.isSnapshotBoot()) { // 快照加载后重启
+                System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
+                randomXUtils.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
+            } else {
+                randomXUtils.randomXLoadingForkTime();
+            }
         }
+
         log.info("RandomX reload");
 
         // log.debug("Net Status:"+netStatus);
