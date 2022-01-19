@@ -69,6 +69,8 @@ public class BlockInfo {
                 ", fee=" + fee +
                 ", timestamp=" + timestamp +
                 ", remark=" + Arrays.toString(remark) +
+                ", isSnapshot=" + isSnapshot +
+                ", snapshotInfo=" + snapshotInfo +
                 '}';
     }
 

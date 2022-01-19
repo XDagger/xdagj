@@ -19,7 +19,7 @@ public class SnapshotUnit {
     protected byte[] data;
     protected boolean hasPubkey = false;
     protected int type;
-
+    protected int keyIndex = -1;
     protected byte[] hash;
 
     public SnapshotUnit() {
@@ -38,6 +38,21 @@ public class SnapshotUnit {
         this.balanceData = balanceData;
         this.data = data;
         this.hash = hash;
+    }
+
+    public SnapshotUnit(byte[] pubkey, BalanceData balanceData, byte[] data, byte[] hash,int keyIndex) {
+        if (pubkey == null && data != null) {
+            this.type = 0; //BI_DATA_BALANCE;
+        } else if (pubkey != null && balanceData != null) {
+            this.type = 1; //Type.BI_PUBKEY_BALANCE;
+        } else {
+            this.type = 2; //Type.BI_PUBKEY;
+        }
+        this.pubkey = pubkey;
+        this.balanceData = balanceData;
+        this.data = data;
+        this.hash = hash;
+        this.keyIndex = keyIndex;
     }
 
     public static BlockInfo trasferToBlockInfo(SnapshotUnit snapshotUnit) {

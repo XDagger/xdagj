@@ -172,20 +172,12 @@ public class Xdag03 extends XdagHandler {
      */
     protected void processSumsRequest(SumRequestMessage msg) {
         updateXdagStats(msg);
-//        byte[] sums = new byte[256];
         MutableBytes sums = MutableBytes.create(256);
         // TODO: paulochen 处理sum请求
-////        if (msg.getEndtime() < 1658318225407L) {
-////            sums =
-////        } else {
-//        if (msg.getStarttime() > 1658318225407L) {
-//            kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
-////        }
-//            SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
-//                    kernel.getBlockchain().getXdagStats(), sums);
-//
-//            sendMessage(reply);
-//        }
+        kernel.getBlockStore().loadSum(msg.getStarttime(),msg.getEndtime(),sums);
+            SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
+                    kernel.getBlockchain().getXdagStats(), sums,netDBManager.getNetDB());
+            sendMessage(reply);
     }
 
     protected void processSumsReply(SumReplyMessage msg) {

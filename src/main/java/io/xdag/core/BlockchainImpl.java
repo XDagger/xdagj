@@ -58,15 +58,18 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.listener.Listener;
 import io.xdag.listener.Message;
 import io.xdag.randomx.RandomX;
+import io.xdag.snapshot.SnapshotJ;
 import io.xdag.snapshot.core.SnapshotInfo;
 import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -83,6 +86,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -132,6 +136,7 @@ public class BlockchainImpl implements Blockchain {
     @Setter
     private SnapshotChainStore snapshotChainStore;
     private long snapshotHeight;
+    private SnapshotJ snapshotJ;
 
     @Getter
     private byte[] preSeed;
@@ -152,9 +157,16 @@ public class BlockchainImpl implements Blockchain {
             this.xdagStats = new XdagStats();
             this.xdagTopStatus = new XdagTopStatus();
             snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
-            this.snapshotChainStore = new SnapshotChainStoreImpl(
-                    new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
-            initSnapshot();
+
+            if (kernel.getConfig().getSnapshotSpec().isSnapshotJ()) {
+                this.snapshotJ = new SnapshotJ("SNAPSHOTJ");
+                initSnapshotJ();
+            } else {
+                this.snapshotChainStore = new SnapshotChainStoreImpl(
+                        new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
+                initSnapshot();
+            }
+
             // 保存最新快照的状态
             blockStore.saveXdagTopStatus(xdagTopStatus);
             blockStore.saveXdagStatus(xdagStats);
@@ -181,6 +193,36 @@ public class BlockchainImpl implements Blockchain {
         checkLoop = new ScheduledThreadPoolExecutor(1, factory);
         // 检查主块链
         this.startCheckMain(1024);
+    }
+
+    public void initSnapshotJ() {
+        long start = System.currentTimeMillis();
+        System.out.println("init snapshot...");
+        snapshotJ.setConfig(kernel.getConfig());
+        snapshotJ.init();
+        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts());
+        Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
+
+        xdagStats.balance = snapshotJ.getOurBalance();
+        xdagStats.setNwaitsync(0);
+        xdagStats.setNnoref(0);
+        xdagStats.setNextra(0);
+        xdagStats.setTotalnblocks(0);
+        xdagStats.setNblocks(0);
+        xdagStats.setTotalnmain(snapshotHeight);
+        xdagStats.setNmain(snapshotHeight);
+        xdagStats.setMaxdifficulty(lastBlock.getInfo().getDifficulty());
+        xdagStats.setDifficulty(lastBlock.getInfo().getDifficulty());
+
+        xdagTopStatus.setPreTop(lastBlock.getHashLow().toArray());
+        xdagTopStatus.setTop(lastBlock.getHashLow().toArray());
+        xdagTopStatus.setTopDiff(lastBlock.getInfo().getDifficulty());
+        xdagTopStatus.setPreTopDiff(lastBlock.getInfo().getDifficulty());
+
+        long end = System.currentTimeMillis();
+        System.out.println("init snapshotJ done");
+        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotJ.getOurBalance()));
     }
 
     public void initSnapshot() {
@@ -234,7 +276,11 @@ public class BlockchainImpl implements Blockchain {
     protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStore blockStore) {
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         for (SnapshotUnit snapshotUnit : snapshotUnits) {
-            blockStore.saveBlockInfo(SnapshotUnit.trasferToBlockInfo(snapshotUnit));
+            BlockInfo blockInfo = SnapshotUnit.trasferToBlockInfo(snapshotUnit);
+            blockStore.saveBlockInfo(blockInfo);
+            if (snapshotUnit.getKeyIndex() > -1) {
+                blockStore.saveOurBlock(snapshotUnit.getKeyIndex(), blockInfo.getHashlow());
+            }
         }
 
         List<StatsBlock> statsBlocks = snapshotChainStore.getSnapshotStatsBlock();
@@ -1044,7 +1090,8 @@ public class BlockchainImpl implements Blockchain {
     // ADD: 新版本-通过高度获取区块
     public Block getBlockByHeightNew(long height) {
         // TODO: if snapshto enabled, need height > snapshotHeight - 128
-        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
+        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)
+                && !kernel.getConfig().getSnapshotSpec().isSnapshotJ()) {
             return null;
         }
         // 补充高度低于0时不返回
@@ -1068,8 +1115,8 @@ public class BlockchainImpl implements Blockchain {
         Block block;
         int i = 0;
         for (block = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
-                block != null && (i < xdagStats.nmain);
-                block = getBlockByHash(Bytes32.wrap(block.getInfo().getMaxDiffLink()), false)) {
+             block != null && (i < xdagStats.nmain);
+             block = getBlockByHash(Bytes32.wrap(block.getInfo().getMaxDiffLink()), false)) {
             if ((block.getInfo().getFlags() & BI_MAIN) != 0) {
                 if (height == block.getInfo().getHeight()) {
                     break;
@@ -1234,7 +1281,7 @@ public class BlockchainImpl implements Blockchain {
             MutableBytes subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 //            log.debug("verify encoded:{}", Hex.toHexString(subdata));
             SECP256K1.Signature sig = inBlock.getOutsig();
-            return verifySignature(subdata, sig, publicKeys);
+            return verifySignature(subdata, sig, publicKeys, block.getInfo());
         }
     }
 
@@ -1262,19 +1309,28 @@ public class BlockchainImpl implements Blockchain {
             block.parse();
             MutableBytes subdata = block.getSubRawData(block.getOutsigIndex() - 2);
             SECP256K1.Signature sig = block.getOutsig();
-            return verifySignature(subdata, sig, publicKeys);
+            return verifySignature(subdata, sig, publicKeys, blockInfo);
         }
 
 
     }
 
-    private boolean verifySignature(MutableBytes subdata, SECP256K1.Signature sig, List<SECP256K1.PublicKey> publicKeys) {
+    private boolean verifySignature(MutableBytes subdata, SECP256K1.Signature sig, List<SECP256K1.PublicKey> publicKeys, BlockInfo blockInfo) {
         for (SECP256K1.PublicKey publicKey : publicKeys) {
             byte[] publicKeyBytes = publicKey.asEcPoint().getEncoded(true);
             Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));
 //            log.debug("verify encoded:{}", Hex.toHexString(digest));
             Bytes32 hash = Hash.hashTwice(digest);
             if (SECP256K1.verifyHashed(hash, sig, publicKey)) {
+                SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
+                byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
+                if (snapshotInfo != null) {
+                    snapshotInfo.setData(pubkeyBytes);
+                    snapshotInfo.setType(true);
+                } else {
+                    blockInfo.setSnapshotInfo(new SnapshotInfo(true, pubkeyBytes));
+                }
+                blockStore.saveBlockInfo(blockInfo);
                 return true;
             }
         }

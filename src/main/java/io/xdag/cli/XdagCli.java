@@ -38,11 +38,15 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.snapshot.SnapshotJ;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
+import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
@@ -55,6 +59,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -129,12 +134,18 @@ public class XdagCli extends Launcher {
 
         Option bootSnapshotOption = Option.builder()
                 .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
-                .hasArg(true).numberOfArgs(2).optionalArg(false).argName("snapshotheight").type(Integer.class)
-                .argName("snapshottime")
-                .type(Integer.class)
+                .hasArg(true).numberOfArgs(3).optionalArg(false)
+                .argName("isSnapshotJ").type(Boolean.class)
+                .argName("snapshotheight").type(Integer.class)
+                .argName("snapshottime").type(Integer.class)
                 .desc("the parameter snapshottime uses hexadecimal")
                 .build();
         addOption(bootSnapshotOption);
+
+        Option makeSnapshotOption = Option.builder()
+                .longOpt(XdagOption.MAKE_SNAPSHOT.toString()).desc("make snapshot")
+                .build();
+        addOption(makeSnapshotOption);
     }
 
     public static void main(String[] args, XdagCli cli) throws Exception {
@@ -195,12 +206,16 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
+        } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
+            makeSnapshot();
         } else {
             if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
                 String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
                 try {
-                    long height = Long.parseLong(values[0]);
-                    long time = Long.parseLong(values[1], 16);
+                    boolean isSnapshotJ = Boolean.parseBoolean(values[0]);
+                    long height = Long.parseLong(values[1]);
+                    long time = Long.parseLong(values[2], 16);
+                    config.getSnapshotSpec().setSnapshotJ(isSnapshotJ);
                     config.getSnapshotSpec().setSnapshotHeight(height);
                     config.getSnapshotSpec().setSnapshotTime(time);
                     config.getSnapshotSpec().snapshotEnable();
@@ -308,7 +323,7 @@ public class XdagCli extends Launcher {
     protected void changePassword() {
         Wallet wallet = loadAndUnlockWallet();
         if (wallet.isUnlocked()) {
-            String newPassword = readNewPassword("EnterNewPassword", "ReEnterNewPassword");
+            String newPassword = readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
             if (newPassword == null) {
                 return;
             }
@@ -551,4 +566,25 @@ public class XdagCli extends Launcher {
         return new String(console.readPassword(prompt));
     }
 
+    public void makeSnapshot() {
+
+        long start = System.currentTimeMillis();
+        this.getConfig().getSnapshotSpec().setSnapshotJ(true);
+        RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());
+        blockSource.setConfig(getConfig());
+        blockSource.init();
+        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOTJ");
+        snapshotSource.setConfig(getConfig());
+        snapshotSource.init();
+        SnapshotJ index = new SnapshotJ(DatabaseName.INDEX.toString());
+        index.setConfig(getConfig());
+        index.init();
+        index.makeSnapshot(blockSource, snapshotSource);
+
+        long end = System.currentTimeMillis();
+        System.out.println("make snapshot done");
+        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("snapshot height: " + index.getHeight());
+        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(index.getNextTime()) + 1));
+    }
 }
