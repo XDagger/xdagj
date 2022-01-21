@@ -108,6 +108,7 @@ public class XdagCliTest {
                     --importmnemonic <mnemonic>       import HDWallet mnemonic
                     --importprivatekey <key>          import hex key
                     --loadsnapshot <filename>         load snapshot
+                    --makesnapshot                    make snapshot
                     --version                         show version
                 """;
         assertEquals(helpStr, outRule.getLog());
