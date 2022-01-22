@@ -34,7 +34,7 @@ The Private Chain Building Tutorial helps you to build a private-chain for testi
 
 ## Develop
 
-XDAGJ already has the basic functions as a pool, and the follow-up work is to improve the stability of the system while optimizing the existing code. It is important to adopt  excellent blockchain technology for XDAGJ.
+XDAGJ has the basic functions as a pool. Follow-up works will improve the stability of the system and add new functions. The aim is to prepar for XDAG to enter the metaverse. It is important to adopt excellent blockchain technology.
 
 ### XDAG Mars Project
 
@@ -75,7 +75,7 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Improve the address block structure and increase the handling fee
 
-- [ ] Optimize and improve mobile wallets to improve user experience
+- [x] Optimize and improve mobile wallets to improve user experience
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
@@ -122,7 +122,7 @@ The XDAG Mars Project is divided into four stages：
 
 - Security Question
 
-  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, I hope you can give it back as soon as possible.
+  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, we hope you can give it back as soon as possible.
 
   If you find a problem that may affect the security of the deployed system, we hope that you can send the problem privately to xdagj@xdag.io. Please do not discuss it publicly!
 
@@ -136,7 +136,7 @@ If you are interested in the development of XDAGJ, we also welcome you to join t
 
 ## Sponsorship
 
-Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough as a milestone.The development of XDAGJ has gradually been on the right track. Due to limited resources, your support can strongly help us to improve XDAGJ.
+Since the Apollo Project was proposed, XDAGJ has achieved a 0 to 1 breakthrough.The development of XDAGJ has gradually been on the right track. Your support is an affirmation of our work and can strongly help us to improve XDAGJ.
 
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
