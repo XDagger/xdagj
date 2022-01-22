@@ -31,7 +31,9 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.net.manager.XdagChannelManager;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +45,11 @@ public class XdagChannelManagerTest {
     @Before
     public void setUp() throws Exception {
         String[] list = new String[]{"127.0.0.1:1001", "127.0.0.1:1002"};
-        config.getNodeSpec().setWhiteIPList(Arrays.asList(list));
+        List<InetSocketAddress> addressList = new ArrayList<>();
+        for (String address : list) {
+            addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
+        }
+        config.getNodeSpec().setWhiteIPList(addressList);
         kernel = new Kernel(config);
     }
 

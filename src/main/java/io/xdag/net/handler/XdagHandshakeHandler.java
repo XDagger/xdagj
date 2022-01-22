@@ -79,7 +79,8 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
                 // 发送过pubkey后加2
                 channel.getNode().getStat().Inbound.add(2);
                 if (!checkDnetPubkey(remotePubKey)) {
-                    throw new RuntimeException("dnet key error!");
+                    log.debug("illegal address");
+                    return;
                 }
                 // 发送pubkey
                 if (isServer) {

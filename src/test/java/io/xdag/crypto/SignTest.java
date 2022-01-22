@@ -79,8 +79,7 @@ public class SignTest {
             long second = second(hash.toArray(), signature, poolKey);
             start2 += second;
         }
-        System.out.println("spend " + start1);
-        System.out.println("spend " + start2);
+
     }
 
     public long first(byte[] hash, ECDSASignature sig, ECKeyPair key) {

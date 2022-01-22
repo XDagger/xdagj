@@ -65,6 +65,13 @@ public class NetDB {
         }
     }
 
+    public void addNewIP(InetSocketAddress address) {
+        IP newIp = new IP(address.getAddress().getHostAddress(),address.getPort());
+        if (!ipList.contains(newIp)) {
+            ipList.add(newIp);
+        }
+    }
+
     public void addNewIP(String ip, int port) {
         IP newIp = new IP(ip, port);
         if (!ipList.contains(newIp)) {
