@@ -592,10 +592,6 @@
                     <groupId>com.google.guava</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>jffi</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
                     <artifactId>commons-codec</artifactId>
                     <groupId>commons-codec</groupId>
                 </exclusion>
