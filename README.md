@@ -61,11 +61,11 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [x] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
+- [x] Implement the snapshot function: reduce the cost of runing a mining pool 
 
 - [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
-- [ ] Improve the mining protocol: introduce the more mature Stratum protocol
+- [x] Improve the mining protocol: introduce the more mature Stratum protocol
 
 - [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
 
