@@ -38,7 +38,7 @@ XDAGJ has the basic functions as a pool. Follow-up works will improve the stabil
 
 ### XDAG Mars Project
 
-The XDAG Mars Project is divided into four stages：
+Four stages：
 
 #### Exploration phase: XDAGJ testnet is online (online, in beta)
 
