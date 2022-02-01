@@ -59,7 +59,7 @@ The XDAG Mars Project is divided into four stages：
 
 - [ ] Improve the log function: provide a relatively complete log service to facilitate trouble shooting
 
-- [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
+- [x] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
 - [x] Implement the snapshot function: reduce the cost of runing a mining pool 
 
