@@ -128,6 +128,14 @@ public class BasicUtils {
         return bigDecimal.setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
+    public static BigDecimal amount2xdagNew(long xdag) {
+        if(xdag < 0) throw new XdagOverFlowException();
+        long first = xdag >> 32;
+        long temp = xdag - (first << 32);
+        double tem = temp / Math.pow(2, 32);
+        return new BigDecimal(first + tem);
+    }
+
     public static boolean crc32Verify(byte[] src, int crc) {
         CRC32 crc32 = new CRC32();
         crc32.update(src, 0, 512);

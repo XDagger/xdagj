@@ -54,6 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec {
 
     protected String configName;
+    protected byte id;
 
     // =========================
     // Admin spec
@@ -155,8 +156,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected long snapshotTime; // TODO：用于sync时的起始时间
     protected boolean isSnapshotJ;
 
-    protected AbstractConfig(String rootDir, String configName) {
+    protected AbstractConfig(String rootDir, byte id, String configName) {
         this.rootDir = rootDir;
+        this.id = id;
         this.configName = configName;
 
         getSetting();

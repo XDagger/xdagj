@@ -34,7 +34,6 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
     @Override
     public String sendRawTransaction(String rawData) {
-        String result = super.sendRawTransaction(rawData);
-        return result;
+        return super.sendRawTransaction(rawData);
     }
 }

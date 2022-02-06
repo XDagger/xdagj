@@ -38,6 +38,11 @@ import io.xdag.core.XdagField;
 public interface Config {
 
     /**
+     * Id.
+     */
+    byte getId();
+
+    /**
      * Config File Name.
      */
     String getConfigName();

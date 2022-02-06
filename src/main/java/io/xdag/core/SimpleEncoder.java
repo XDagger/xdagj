@@ -21,16 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package io.xdag.core;
 
 import io.xdag.utils.exception.SimpleCodecException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class SimpleEncoder {
-
     private final ByteArrayOutputStream out;
 
     public SimpleEncoder() {
@@ -100,8 +99,10 @@ public class SimpleEncoder {
     /**
      * Encode a byte array.
      *
-     * @param bytes the byte array to encode
-     * @param vlq should always be true unless we're providing pre-mainnet support.
+     * @param bytes
+     *            the byte array to encode
+     * @param vlq
+     *            should always be true unless we're providing pre-mainnet support.
      */
     public void writeBytes(byte[] bytes, boolean vlq) {
         if (vlq) {
@@ -119,6 +120,14 @@ public class SimpleEncoder {
 
     public void writeBytes(byte[] bytes) {
         writeBytes(bytes, true);
+    }
+
+    public void writeBytes(Bytes bytes) {
+        writeBytes(bytes.toArray(), true);
+    }
+
+    public void writeXAmount(XAmount a) {
+        writeLong(a.toLong());
     }
 
     public byte[] toBytes() {

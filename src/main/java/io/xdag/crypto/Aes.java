@@ -59,10 +59,6 @@ public class Aes {
     /**
      * Encrypt data with AES/CBC/PKCS5Padding.
      *
-     * @param raw
-     * @param key
-     * @param iv
-     * @return
      */
     public static byte[] encrypt(byte[] raw, byte[] key, byte[] iv) {
 
@@ -82,10 +78,6 @@ public class Aes {
     /**
      * Decrypt data with AES/CBC/PKCS5Padding
      *
-     * @param encrypted
-     * @param key
-     * @param iv
-     * @return
      */
     public static byte[] decrypt(byte[] encrypted, byte[] key, byte[] iv) {
         try {

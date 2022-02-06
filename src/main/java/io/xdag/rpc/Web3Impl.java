@@ -44,7 +44,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String web3_sha3(String data) throws Exception {
+    public String web3_sha3(String data) {
         return null;
     }
 
@@ -109,7 +109,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
+    public String personal_sendTransaction(CallArguments transactionArgs, String passphrase) {
         return null;
     }
 
@@ -124,7 +124,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String personal_dumpRawKey(String address) throws Exception {
+    public String personal_dumpRawKey(String address) {
         return null;
     }
 
