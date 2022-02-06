@@ -31,7 +31,6 @@ import io.xdag.Launcher;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
@@ -39,11 +38,15 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.snapshot.SnapshotJ;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
+import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,10 +59,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 
 public class XdagCli extends Launcher {
 
@@ -128,12 +134,18 @@ public class XdagCli extends Launcher {
 
         Option bootSnapshotOption = Option.builder()
                 .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
-                .hasArg(true).numberOfArgs(2).optionalArg(false).argName("snapshotheight").type(Integer.class)
-                .argName("snapshottime")
-                .type(Integer.class)
+                .hasArg(true).numberOfArgs(3).optionalArg(false)
+                .argName("isSnapshotJ").type(Boolean.class)
+                .argName("snapshotheight").type(Integer.class)
+                .argName("snapshottime").type(Integer.class)
                 .desc("the parameter snapshottime uses hexadecimal")
                 .build();
         addOption(bootSnapshotOption);
+
+        Option makeSnapshotOption = Option.builder()
+                .longOpt(XdagOption.MAKE_SNAPSHOT.toString()).desc("make snapshot")
+                .build();
+        addOption(makeSnapshotOption);
     }
 
     public static void main(String[] args, XdagCli cli) throws Exception {
@@ -194,12 +206,16 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
+        } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
+            makeSnapshot();
         } else {
             if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
                 String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
                 try {
-                    long height = Long.parseLong(values[0]);
-                    long time = Long.parseLong(values[1], 16);
+                    boolean isSnapshotJ = Boolean.parseBoolean(values[0]);
+                    long height = Long.parseLong(values[1]);
+                    long time = Long.parseLong(values[2], 16);
+                    config.getSnapshotSpec().setSnapshotJ(isSnapshotJ);
                     config.getSnapshotSpec().setSnapshotHeight(height);
                     config.getSnapshotSpec().setSnapshotTime(time);
                     config.getSnapshotSpec().snapshotEnable();
@@ -234,9 +250,9 @@ public class XdagCli extends Launcher {
         }
 
         // create a new account if the wallet is empty
-        List<ECKeyPair> accounts = wallet.getAccounts();
+        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
         if (accounts.isEmpty()) {
-            ECKeyPair key = wallet.addAccountWithNextHdKey();
+            SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
             System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
         }
@@ -284,16 +300,16 @@ public class XdagCli extends Launcher {
             System.out.println("Please init HD Wallet account first!");
             return;
         }
-        ECKeyPair key = wallet.addAccountWithNextHdKey();
+        SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
         if (wallet.flush()) {
             System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            System.out.println("PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
+            System.out.println("PublicKey:" + key.publicKey().bytes().toHexString());
         }
     }
 
     protected void listAccounts() {
         Wallet wallet = loadAndUnlockWallet();
-        List<ECKeyPair> accounts = wallet.getAccounts();
+        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
 
         if (accounts.isEmpty()) {
             System.out.println("Account Missing");
@@ -307,7 +323,7 @@ public class XdagCli extends Launcher {
     protected void changePassword() {
         Wallet wallet = loadAndUnlockWallet();
         if (wallet.isUnlocked()) {
-            String newPassword = readNewPassword("EnterNewPassword", "ReEnterNewPassword");
+            String newPassword = readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
             if (newPassword == null) {
                 return;
             }
@@ -328,19 +344,18 @@ public class XdagCli extends Launcher {
     protected void dumpPrivateKey(String address) {
         Wallet wallet = loadAndUnlockWallet();
         byte[] addressBytes = BytesUtils.hexStringToBytes(address);
-        ECKeyPair account = wallet.getAccount(addressBytes);
+        SECP256K1.KeyPair account = wallet.getAccount(addressBytes);
         if (account == null) {
             System.out.println("Address Not In Wallet");
         } else {
-            System.out.println("Private:" + BytesUtils.toHexString(account.getPrivateKey().toByteArray()));
+            System.out.println("Private:" + BytesUtils.toHexString(account.secretKey().bytesArray()));
         }
         System.out.println("Private Dump Successfully!");
     }
 
     protected boolean importPrivateKey(String key) {
         Wallet wallet = loadAndUnlockWallet();
-        byte[] keyBytes = BytesUtils.hexStringToBytes(key);
-        ECKeyPair account = ECKeyPair.create(keyBytes);
+        SECP256K1.KeyPair account = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(key)));
 
         boolean accountAdded = wallet.addAccount(account);
         if (!accountAdded) {
@@ -355,7 +370,7 @@ public class XdagCli extends Launcher {
         }
 
         System.out.println("Address:" + BytesUtils.toHexString(Keys.toBytesAddress(account)));
-        System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().toByteArray()));
+        System.out.println("PublicKey:" + BytesUtils.toHexString(account.publicKey().bytesArray()));
         System.out.println("Private Key Imported Successfully!");
         return true;
     }
@@ -393,12 +408,12 @@ public class XdagCli extends Launcher {
         }
         String password = readPassword("Old wallet password:");
         String random = readPassword("Old wallet random:");
-        List<ECKeyPair> keyList = readOldWallet(password, random, file);
-        for (ECKeyPair key : keyList) {
-            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().toByteArray()));
-            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().toByteArray()));
+        List<SECP256K1.KeyPair> keyList = readOldWallet(password, random, file);
+        for (SECP256K1.KeyPair key : keyList) {
+            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.secretKey().bytesArray()));
+            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.publicKey().bytesArray()));
             System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            importPrivateKey(key.getPrivateKey().toString(16));
+            importPrivateKey(key.secretKey().bytes().toHexString());
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
@@ -422,17 +437,17 @@ public class XdagCli extends Launcher {
         System.out.println("耗时:" + (end - start) / 1000 + "s");
     }
 
-    public List<ECKeyPair> readOldWallet(String password, String random, File walletDatFile) {
+    public List<SECP256K1.KeyPair> readOldWallet(String password, String random, File walletDatFile) {
         byte[] priv32Encrypted = new byte[32];
         int keysNum = 0;
-        List<ECKeyPair> keyList = new ArrayList<>();
+        List<SECP256K1.KeyPair> keyList = new ArrayList<>();
         Native.general_dnet_key(password, random);
         try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 // TODO: paulochen java跟c 两边的钱包字节序不一样 一个需要reverse一个不需要
 //                BytesUtils.arrayReverse(priv32);
-                ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
+                SECP256K1.KeyPair ecKey = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromInteger(Numeric.toBigInt(priv32)));
                 keyList.add(ecKey);
             }
         } catch (FileNotFoundException e) {
@@ -551,4 +566,25 @@ public class XdagCli extends Launcher {
         return new String(console.readPassword(prompt));
     }
 
+    public void makeSnapshot() {
+
+        long start = System.currentTimeMillis();
+        this.getConfig().getSnapshotSpec().setSnapshotJ(true);
+        RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());
+        blockSource.setConfig(getConfig());
+        blockSource.init();
+        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOTJ");
+        snapshotSource.setConfig(getConfig());
+        snapshotSource.init();
+        SnapshotJ index = new SnapshotJ(DatabaseName.INDEX.toString());
+        index.setConfig(getConfig());
+        index.init();
+        index.makeSnapshot(blockSource, snapshotSource);
+
+        long end = System.currentTimeMillis();
+        System.out.println("make snapshot done");
+        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("snapshot height: " + index.getHeight());
+        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(index.getNextTime()) + 1));
+    }
 }

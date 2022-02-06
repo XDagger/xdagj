@@ -24,8 +24,6 @@
 
 package io.xdag.crypto;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;
@@ -38,26 +36,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
  */
 public class Hash {
 
-    private Hash() {
-    }
-
-    /**
-     * Generates a digest for the given {@code input}.
-     *
-     * @param input The input to digest
-     * @param algorithm The hash algorithm to use
-     * @return The hash value for the given input
-     * @throws RuntimeException If we couldn't find any provider for the given algorithm
-     */
-    public static byte[] hash(byte[] input, String algorithm) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance(algorithm.toUpperCase());
-            return digest.digest(input);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Couldn't find a " + algorithm + " provider", e);
-        }
-    }
-
     /**
      * Sha-256 hash function.
      *
@@ -69,31 +47,12 @@ public class Hash {
         return result.toHexString();
     }
 
-    /**
-     * Generates SHA-256 digest for the given {@code input}.
-     *
-     * @param input The input to digest
-     * @return The hash value for the given input
-     * @throws RuntimeException If we couldn't find any SHA-256 provider
-     */
-    public static Bytes32 sha256(Bytes input) {
-        return Bytes32.wrap(newDigest().digest(input.toArray()));
-    }
-
     public static Bytes32 hashTwice(Bytes input) {
         return sha256(sha256(input));
     }
 
-    /**
-     * MessageDigest not thread safe
-     */
-    public static MessageDigest newDigest() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            // Can't happen.
-            throw new RuntimeException(e);
-        }
+    public static Bytes32 sha256(Bytes input) {
+        return org.apache.tuweni.crypto.Hash.sha2_256(input);
     }
 
     public static byte[] hmacSha512(byte[] key, byte[] input) {

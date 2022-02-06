@@ -24,32 +24,45 @@
 
 package io.xdag.net;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
 public class WhliteListTest {
 
     Kernel kernel;
+    Config config = new DevnetConfig();
 
     @Before
     public void setup() {
-        Config config = new DevnetConfig();
+        // 初始化白名单
+        String[] list = new String[]{"124.34.34.1:1001", "127.0.0.1:1002"};
+        List<InetSocketAddress> addressList = new ArrayList<>();
+        for (String address : list) {
+            addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
+        }
+        config.getNodeSpec().setWhiteIPList(addressList);
         kernel = new Kernel(config);
     }
 
     @Test
     public void WhileList() {
-        XdagClient client = new XdagClient(kernel.getConfig());
+        XdagClient client = new XdagClient(config);
+        // 新增白名单节点
         client.addWhilteIP("127.0.0.1", 8882);
         //白名单有的节点
-        boolean ans = client.isAcceptable(new InetSocketAddress("127.0.0.1", 8882));
-        assert ans;
-        //白名单无的节点
-        boolean ans1 = client.isAcceptable(new InetSocketAddress("127.0.0.1", 8883));
-        assert !ans1;
+        assertTrue(client.isAcceptable(new InetSocketAddress("124.34.34.1", 1001)));
+        assertTrue(client.isAcceptable(new InetSocketAddress("127.0.0.1", 1002)));
+        assertTrue(client.isAcceptable(new InetSocketAddress("127.0.0.1", 8882)));
+        assertFalse(client.isAcceptable(new InetSocketAddress("127.0.0.1", 8883)));
+
     }
 }

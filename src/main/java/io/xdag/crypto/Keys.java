@@ -35,6 +35,8 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.apache.tuweni.io.Base58;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
@@ -81,27 +83,17 @@ public class Keys {
         return keyPairGenerator.generateKeyPair();
     }
 
-    public static ECKeyPair createEcKeyPair() {
-        return createEcKeyPair(secureRandom());
+    public static SECP256K1.KeyPair createEcKeyPair() {
+        return SECP256K1.KeyPair.random();
     }
 
-    public static ECKeyPair createEcKeyPair(SecureRandom random) {
-        KeyPair keyPair;
-        try {
-            keyPair = createSecp256k1KeyPair(random);
-        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
-            throw new RuntimeException(e.getMessage(), e.getCause());
-        }
-        return ECKeyPair.create(keyPair);
+    public static byte[] toBytesAddress(SECP256K1.KeyPair key) {
+        return Hash.sha256hash160(Bytes.wrap(key.publicKey().bytesArray()));
     }
 
-    public static byte[] toBytesAddress(ECKeyPair key) {
-        return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().toByteArray()));
-    }
-
-    public static String toBase58Address(ECKeyPair key) {
+    public static String toBase58Address(SECP256K1.KeyPair key) {
         byte[] addrBytes = toBytesAddress(key);
-        return Base58.encode(addrBytes);
+        return Base58.encode(Bytes.wrap(addrBytes));
     }
 }
 

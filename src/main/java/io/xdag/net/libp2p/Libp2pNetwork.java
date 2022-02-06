@@ -36,7 +36,6 @@ import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.libp2p.security.noise.NoiseXXSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
 import io.xdag.Kernel;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.SafeFuture;
@@ -47,6 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.SECP256K1;
 
 
 @Slf4j
@@ -74,8 +74,8 @@ public class Libp2pNetwork {
         this.port = kernel.getConfig().getNodeSpec().getLibp2pPort();
         this.protocol = new Libp2pXdagProtocol(kernel);
         // libp2p use wallet default key
-        ECKeyPair key = kernel.getWallet().getDefKey();
-        privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(key.getPrivateKey().toByteArray());
+        SECP256K1.KeyPair key = kernel.getWallet().getDefKey();
+        privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(key.secretKey().bytesArray());
         ip = kernel.getConfig().getNodeSpec().getNodeIp();
         nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKey.publicKey()));
         advertisedAddr = Libp2pUtils.fromInetSocketAddress(

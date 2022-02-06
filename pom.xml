@@ -6,12 +6,12 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.4.5</version>
+    <version>0.4.6</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <kotlin.version>1.4.20</kotlin.version>
+        <kotlin.version>1.5.31</kotlin.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <dist.phase>package</dist.phase>
@@ -87,7 +87,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
-                    <argLine>--enable-preview -Xmx1024m</argLine>
+                    <argLine>-Xmx1024m</argLine>
                 </configuration>
             </plugin>
 
@@ -300,41 +300,35 @@
 
     <dependencies>
         <dependency>
-            <groupId>fr.acinq.bitcoin</groupId>
-            <artifactId>secp256k1-jni</artifactId>
-            <version>1.3</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>16.0.1</version>
+            <version>22.0.0</version>
         </dependency>
 
         <!-- Logging framework -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.13.3</version>
+            <version>2.17.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.13.3</version>
+            <version>2.17.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.13.3</version>
+            <version>2.17.1</version>
         </dependency>
 
         <!-- Apache Commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.11</version>
+            <version>3.12.0</version>
         </dependency>
 
         <dependency>
@@ -463,31 +457,35 @@
                     <artifactId>kotlin-stdlib-common</artifactId>
                     <groupId>org.jetbrains.kotlin</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib-jdk8</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>2.8.6</version>
+            <version>3.0.4</version>
         </dependency>
 
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
-            <version>3.16.0</version>
+            <version>3.20.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.jupnp</groupId>
             <artifactId>org.jupnp.support</artifactId>
-            <version>2.5.2</version>
+            <version>2.6.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.jupnp</groupId>
             <artifactId>org.jupnp</artifactId>
-            <version>2.5.2</version>
+            <version>2.6.0</version>
         </dependency>
 
         <dependency>
@@ -500,7 +498,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.8.1</version>
+            <version>4.9.2</version>
             <exclusions>
                 <exclusion>
                     <artifactId>annotations</artifactId>
@@ -546,50 +544,76 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.19.0</version>
+            <version>3.21.0</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.4.4</version>
+            <version>5.7.15</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.tuweni</groupId>
-            <artifactId>bytes</artifactId>
-            <version>1.3.0</version>
+            <artifactId>tuweni-bytes</artifactId>
+            <version>2.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.tuweni</groupId>
-            <artifactId>units</artifactId>
-            <version>1.3.0</version>
+            <artifactId>tuweni-units</artifactId>
+            <version>2.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tuweni</groupId>
+            <artifactId>tuweni-crypto</artifactId>
+            <version>2.0.0</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>commons-codec</artifactId>
+                    <groupId>commons-codec</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.68</version>
+            <version>1.69</version>
         </dependency>
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.68</version>
+            <version>1.69</version>
         </dependency>
 
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>3.8.0</version>
+            <version>4.2.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -657,19 +681,19 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.12.2</version>
+            <version>2.13.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.12.2</version>
+            <version>2.13.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.12.2</version>
+            <version>2.13.0</version>
         </dependency>
 
         <dependency>
@@ -725,6 +749,10 @@
                     <artifactId>jnr-ffi</artifactId>
                     <groupId>com.github.jnr</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>vertx-core</artifactId>
+                    <groupId>io.vertx</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -759,24 +787,12 @@
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-ri</artifactId>
-            <version>2.3.0</version>
+            <version>2.3.3</version>
             <type>pom</type>
             <exclusions>
                 <exclusion>
-                    <artifactId>stax-ex</artifactId>
-                    <groupId>org.jvnet.staxex</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jaxb-api</artifactId>
-                    <groupId>javax.xml.bind</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jaxws-eclipselink-plugin</artifactId>
-                    <groupId>com.sun.xml.ws</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>sdo-eclipselink-plugin</artifactId>
-                    <groupId>com.sun.xml.ws</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                    <groupId>com.sun.activation</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -793,13 +809,19 @@
         <dependency>
             <groupId>org.lmdbjava</groupId>
             <artifactId>lmdbjava</artifactId>
-            <version>0.8.1</version>
+            <version>0.8.2</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>jnr-ffi</artifactId>
+                    <groupId>com.github.jnr</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.agrona/agrona -->
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.10.0</version>
+            <version>1.11.0</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->

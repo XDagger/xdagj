@@ -2,6 +2,8 @@ package io.xdag.snapshot.core;
 
 import lombok.Data;
 
+import java.util.Arrays;
+
 @Data
 public class SnapshotInfo {
 
@@ -19,5 +21,13 @@ public class SnapshotInfo {
 
     public boolean getType() {
         return type;
+    }
+
+    @Override
+    public String toString() {
+        return "SnapshotInfo{" +
+                "type=" + type +
+                ", data=" + Arrays.toString(data) +
+                '}';
     }
 }

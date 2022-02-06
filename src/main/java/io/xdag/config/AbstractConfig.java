@@ -38,6 +38,7 @@ import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.rpc.modules.ModuleDescription;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -109,7 +110,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int TTL = 5;
     protected byte[] dnetKeyBytes = new byte[2048];
     protected DnetKeys xKeys;
-    protected List<String> whiteIPList = new ArrayList<>() {
+    protected List<InetSocketAddress> whiteIPList = new ArrayList<>() {
     };
 
 
@@ -152,6 +153,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected boolean snapshotEnabled = false;
     protected long snapshotHeight;
     protected long snapshotTime; // TODO：用于sync时的起始时间
+    protected boolean isSnapshotJ;
 
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
@@ -254,7 +256,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         String[] list = setting.getStrings("whiteIPs");
         if (list != null) {
             log.debug("{} IP access", list.length);
-            whiteIPList.addAll(Arrays.asList(list));
+            for (String address : list) {
+                String ip = address.split(":")[0];
+                int port = Integer.parseInt(address.split(":")[1]);
+                whiteIPList.add(new InetSocketAddress(ip,port));
+            }
         }
         String[] bootnodelist = setting.getStrings("bootnode");
         if (bootnodelist != null) {
@@ -430,8 +436,18 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     @Override
+    public boolean isSnapshotJ() {
+        return isSnapshotJ;
+    }
+
+    @Override
     public long getSnapshotHeight() {
         return snapshotHeight;
+    }
+
+    @Override
+    public void setSnapshotJ(boolean isSnapshot) {
+        this.isSnapshotJ = isSnapshot;
     }
 
     @Override

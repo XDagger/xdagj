@@ -19,7 +19,6 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockchainImpl;
 import io.xdag.core.ImportResult;
 import io.xdag.core.XdagTopStatus;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -44,6 +43,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;
@@ -90,7 +90,7 @@ public class SnapshotProcess {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config);
@@ -138,7 +138,7 @@ public class SnapshotProcess {
     public void createTestBlockchain(SnapshotChainStore snapshotChainStore, Kernel kernel) {
         long generateTime = 1600616700000L;
         long starttime = generateTime;
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -181,7 +181,7 @@ public class SnapshotProcess {
         List<Block> blocks = blockchain.getBlocksByTime(starttime, endTime);
         List<Block> mains = blockchain.listMainBlocks(10);
 
-        saveBlocks(snapshotChainStore, blocks, key.getCompressPubKeyBytes());
+        saveBlocks(snapshotChainStore, blocks, key.publicKey().asEcPoint().getEncoded(true));
 
         saveStatsBlock(mains);
     }

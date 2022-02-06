@@ -39,7 +39,6 @@ import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
@@ -47,7 +46,6 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;
@@ -55,6 +53,7 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -76,6 +75,9 @@ public class ExtraBlockTest {
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
+    SECP256K1.SecretKey secretkey_1 = SECP256K1.SecretKey.fromInteger(private_1);
+    SECP256K1.SecretKey secretkey_2 = SECP256K1.SecretKey.fromInteger(private_2);
+
     @Before
     public void setUp() throws Exception {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
@@ -88,7 +90,7 @@ public class ExtraBlockTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.create(Numeric.toBigInt(SampleKeys.PRIVATE_KEY_STRING));
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -111,8 +113,8 @@ public class ExtraBlockTest {
 
     @Test
     public void testExtraBlockReUse() {
-        ECKeyPair addrKey = ECKeyPair.create(private_1);
-        ECKeyPair poolKey = ECKeyPair.create(private_2);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(secretkey_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -120,7 +122,7 @@ public class ExtraBlockTest {
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
@@ -134,7 +136,7 @@ public class ExtraBlockTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
@@ -159,8 +161,8 @@ public class ExtraBlockTest {
 
     @Test
     public void testExtraGenerate() {
-        ECKeyPair addrKey = ECKeyPair.create(private_1);
-        ECKeyPair poolKey = ECKeyPair.create(private_2);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(secretkey_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -183,7 +185,7 @@ public class ExtraBlockTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             blockchain.checkExtra();
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);

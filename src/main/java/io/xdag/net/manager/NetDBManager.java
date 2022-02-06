@@ -52,7 +52,10 @@ public class NetDBManager {
     @Getter
     private NetDB whiteDB;
 
+    private Config config;
+
     public NetDBManager(Config config) {
+        this.config = config;
         database = config.getNodeSpec().getNetDBDir();
         databaseWhite = config.getNodeSpec().getWhiteListDir();
         whiteUrl = config.getNodeSpec().getWhitelistUrl();
@@ -61,7 +64,12 @@ public class NetDBManager {
     }
 
     public void init() {
-        // List<NetDB.IP> res = new ArrayList<>();
+        // 1. 从配置文件读取白名单
+        for (InetSocketAddress address:config.getNodeSpec().getWhiteIPList()){
+            whiteDB.addNewIP(address);
+        }
+
+        // 2. 从官网读取白名单并写入到netdb.txt文件上
         File file = new File(databaseWhite);
         BufferedReader reader = null;
         try {

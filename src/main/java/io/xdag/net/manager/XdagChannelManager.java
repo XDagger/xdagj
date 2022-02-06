@@ -163,21 +163,18 @@ public class XdagChannelManager {
         //对于进来的连接，端口不固定，不能从白名单中判断,或者只判断ip，不判断port
         // 默认空为允许所有连接
 //        if (addressSet.size() != 0) {
-//            if (!addressSet.contains(address)) {
-//                return false;
+//            for (InetSocketAddress inetSocketAddress : addressSet) {
+//                if (!inetSocketAddress.getAddress().equals(address.getAddress())) {
+//                    return false;
+//                }
 //            }
 //        }
-
         // 不连接自己
         return !isSelfAddress(address);
     }
 
     private void initWhiteIPs() {
-        List<String> ipList = kernel.getConfig().getNodeSpec().getWhiteIPList();
-        for (String ip : ipList) {
-            String[] ips = ip.split(":");
-            addressSet.add(new InetSocketAddress(ips[0], Integer.parseInt(ips[1])));
-        }
+        addressSet.addAll(kernel.getConfig().getNodeSpec().getWhiteIPList());
     }
 
     // use for ipv4

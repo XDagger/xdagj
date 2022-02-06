@@ -18,8 +18,8 @@
 
 ## System environment
 ```yaml
-JDK   : v15
-Maven : v3.6.3
+JDK   : v17
+Maven : v3.8.3
 ```
 ## Installation and usage
 

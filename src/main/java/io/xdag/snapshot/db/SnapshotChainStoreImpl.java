@@ -23,8 +23,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
-import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Hash;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
@@ -35,6 +33,7 @@ import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FileUtils;
 import io.xdag.utils.Numeric;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,10 +45,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.crypto.SECP256K1;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 import org.lmdbjava.CursorIterable;
@@ -245,15 +246,15 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
      * 从lmdb文件中加载到rocksdb
      *
      * @param filePath
-     * @param mainLag 用于判断是主网的randomx lag还是测试网的randomx_lag 暂时固定128
+     * @param mainLag  用于判断是主网的randomx lag还是测试网的randomx_lag 暂时固定128
      * @return
      */
-    public boolean loadFromSnapshotData(String filePath, boolean mainLag, List<ECKeyPair> ecKeyPairs) {
+    public boolean loadFromSnapshotData(String filePath, boolean mainLag, List<SECP256K1.KeyPair> keys) {
         // 1. 初始保存
         Set<Bytes32> set = new HashSet<>();
         Map<Bytes32, BalanceData> balanceDataMap = new HashMap<>();
         Map<Bytes32, byte[]> ecKeyPairHashMap = new HashMap<>();
-        Map<Bytes32, ECDSASignature> signatureHashMap = new HashMap<>();
+        Map<Bytes32, SECP256K1.Signature> signatureHashMap = new HashMap<>();
         Map<Bytes32, Block> blockHashMap = new HashMap<>();
         // 初始余额
         long ourBalance = 0;
@@ -324,7 +325,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 BigInteger s;
                 r = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(0, 32).toArray());
                 s = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(32, 32).toArray());
-                ECDSASignature ecdsaSignature = new ECDSASignature(r, s);
+                SECP256K1.Signature ecdsaSignature = SECP256K1.Signature.create((byte) 0, r, s);
                 //
                 set.add(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())));
                 signatureHashMap
@@ -361,7 +362,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         for (Bytes32 bytes32 : set) {
             BalanceData balanceData = balanceDataMap.get(bytes32);
             byte[] ecKeyPair = ecKeyPairHashMap.get(bytes32);
-            ECDSASignature signature = signatureHashMap.get(bytes32);
+            SECP256K1.Signature signature = signatureHashMap.get(bytes32);
             Block block = blockHashMap.get(bytes32);
             if (balanceData == null) {
                 balanceData = new BalanceData();
@@ -378,42 +379,50 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 data = block.getXdagBlock().getData().toArray();
             }
 
+            // 地址可能不是自己的，需要清除BI_OURS标志位
+            int flag = balanceData.getFlags();
+            flag &= ~BI_OURS;
+            int keyIndex = -1;
             // 4.1 如果公钥存在，对比公钥
             if (ecKeyPair != null) {
-                for (ECKeyPair key : ecKeyPairs) {
+                for (int i = 0; i < keys.size(); i++) {
+                    SECP256K1.KeyPair key = keys.get(i);
                     // 如果有相等的说明是我们的区块
-                    if (Bytes.wrap(key.getCompressPubKeyBytes()).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
-                        int flag = balanceData.getFlags();
+                    if (Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                         flag |= BI_OURS;
-                        balanceData.setFlags(flag);
+                        keyIndex = i;
                         // TODO: 添加我们的balance
                         ourBalance += balanceData.getAmount();
+                        break;
                     }
                 }
             } else { // 4.2 否则对比签名
                 Block tmpBlock = new Block(new XdagBlock(data));
-                ECDSASignature outsig = tmpBlock.getOutsig();
-                for (int i = 0; i < ecKeyPairs.size(); i++) {
-                    ECKeyPair ecKey = ecKeyPairs.get(i);
-                    byte[] publicKeyBytes = ecKey.getCompressPubKeyBytes();
+                SECP256K1.Signature outsig = tmpBlock.getOutsig();
+                for (int i = 0; i < keys.size(); i++) {
+                    SECP256K1.KeyPair keyPair = keys.get(i);
+                    byte[] publicKeyBytes = keyPair.publicKey().asEcPoint().getEncoded(true);
                     Bytes digest = Bytes
                             .wrap(tmpBlock.getSubRawData(tmpBlock.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
 //                    if (ecKey.verify(hash.toArray(), outsig)) { //verify耗时较长
-                    if (ECKeyPair.verify(hash.toArray(), outsig.toCanonicalised(), publicKeyBytes)) { // 耗时短点
-                        int flag = balanceData.getFlags();
+                    if (SECP256K1.verifyHashed(hash.toArray(), outsig, keyPair.publicKey())) { // 耗时短点
+                        //int flag = balanceData.getFlags();
                         flag |= BI_OURS;
-                        balanceData.setFlags(flag);
+                        //balanceData.setFlags(flag);
+                        keyIndex = i;
 //                         TODO: 添加我们的balance
                         ourBalance += balanceData.getAmount();
+                        break;
                     }
                 }
             }
+            balanceData.setFlags(flag);
 
             // 4.1 保存snapshot单元用于生成blockinfo
             saveSnapshotUnit(bytes32.toArray(), new SnapshotUnit(
                     ecKeyPair, balanceData, data,
-                    bytes32.toArray()));
+                    bytes32.toArray(),keyIndex));
         }
         // 保存balance
         saveGlobalBalance(ourBalance);
@@ -452,13 +461,13 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         return true;
     }
 
-    private byte[] createXdagBlock(ECDSASignature signature, BalanceData balanceData) {
+    private byte[] createXdagBlock(SECP256K1.Signature signature, BalanceData balanceData) {
         MutableBytes mutableBytes = MutableBytes.create(512);
         byte[] transportHeader = BytesUtils.longToBytes(0, true);
         byte[] type = BytesUtils.longToBytes(1368, true);
         byte[] time = BytesUtils.longToBytes(balanceData.getTime(), true);
         byte[] fee = BytesUtils.longToBytes(0, true);
-        byte[] sig = BytesUtils.subArray(signature.toByteArray(), 0, 64);
+        byte[] sig = BytesUtils.subArray(signature.bytes().toArray(), 0, 64);
         mutableBytes.set(0, Bytes.wrap(transportHeader));
         mutableBytes.set(8, Bytes.wrap(type));
         mutableBytes.set(16, Bytes.wrap(time));

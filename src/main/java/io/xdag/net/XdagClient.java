@@ -112,6 +112,7 @@ public class XdagClient {
         return node;
     }
 
+    // 判断远程服务器是否可以连接 白名单
     public boolean isAcceptable(InetSocketAddress address) {
         //TODO res = netDBManager.canAccept(address);
 
@@ -124,11 +125,7 @@ public class XdagClient {
     }
 
     private void initWhiteIPs() {
-        List<String> ipList = config.getNodeSpec().getWhiteIPList();
-        for (String ip : ipList) {
-            String[] ips = ip.split(":");
-            whilelist.add(new InetSocketAddress(ips[0], Integer.parseInt(ips[1])));
-        }
+        whilelist.addAll(config.getNodeSpec().getWhiteIPList());
     }
 
     public void addWhilteIP(String host, int port) {
