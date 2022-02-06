@@ -52,21 +52,23 @@
   ```
 
 - 运行矿池
-
   ```shell
-  cd target
-  nohup java -jar xdagj-0.4.5-shaded.jar > xdagj.log 2>&1 &
+  cd dist
+  unzip xdagj-linux.zip -d xdagj
+  cd xdagj
+  chmod +x xdag.sh
+  ./xdag.sh -t
   #等待系统启动完毕，采用telnet接入
   telnet ip:port
   ```
 
-  系统初始密码为123456
+  系统初始密码为root,在xdag-testnet.config或xdag-mainet.config中配置(password属性)
 
 
 
 ## 修改矿池参数
 
-配置文件位于`src/main/resources/xdag.config`，具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
+配置文件位于`src/main/resources/xdag-testnet.config`，具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
 
 ```yaml
 #链接设置
@@ -126,7 +128,7 @@ whiteIPs                  #允许连接的矿池节点，形式为ip:port，用�
 
   ```shell
   xdag>state
-  [显示矿池的连接信息，是否连接上其它对等矿池]
+  [显示矿池的连接信息, 是否连接上其它对等矿池]
   ```
 
 - 查看链上状态
@@ -140,14 +142,14 @@ whiteIPs                  #允许连接的矿池节点，形式为ip:port，用�
 
   ```shell
   xdag>mainblocks [N]
-  [N为可选项，显示最新N个主块信息，默认20]
+  [N为可选项, 显示最新N个主块信息, 默认20]
   ```
 
 - 查询自身出块情况
 
   ```shell
   xdag>minedblocks
-  [N为可选项，显示最新N个本地产生的区块信息，默认20]
+  [N为可选项, 显示最新N个本地产生的区块信息, 默认20]
   ```
 
 - 查询余额
@@ -181,7 +183,7 @@ whiteIPs                  #允许连接的矿池节点，形式为ip:port，用�
 
   ```shell
   xdag>net -c IP:Port
-  [连接对等节点，添加矿池]
+  [连接对等节点, 添加矿池]
   ```
 
 - 查看已链接的矿工信息

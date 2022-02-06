@@ -41,23 +41,26 @@
   make
   ```
 
-- Build the Jar package
+- Build the zip package
 
   ```shell
   #Please go back to the xdagj root directory first
   mvn clean package
   ```
-
-- Run
+  
+- Run with shell script
 
   ```shell
-  cd target
-  nohup java -jar xdagj-0.4.5-shaded.jar > xdagj.log 2>&1 &
-  #Wait for the system to start up, use telnet to access
+  cd dist
+  unzip xdagj-linux.zip -d xdagj
+  cd xdagj
+  chmod +x xdag.sh
+  ./xdag.sh -t
+  #Wait for the system to start up, use telnet to access(ip and port config in xdag-testnet.config or xdag-mainnet.config)
   telnet ip:port
   ```
 
-  The initial system password is 123456
+  The initial telnet system password is xdag-testnet.config or xdag-mainnet.config(password)
 
 
 
