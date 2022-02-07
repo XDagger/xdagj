@@ -48,19 +48,6 @@ public class KeysTest {
     }
 
     @Test
-    public void testCreateSecp256k1KeyPair() throws Exception {
-        KeyPair keyPair = Keys.createSecp256k1KeyPair();
-        PrivateKey privateKey = keyPair.getPrivate();
-        PublicKey publicKey = keyPair.getPublic();
-
-        assertNotNull(privateKey);
-        assertNotNull(publicKey);
-
-        assertEquals(privateKey.getEncoded().length, (144));
-        assertEquals(publicKey.getEncoded().length, (88));
-    }
-
-    @Test
     public void testCreateEcKeyPair() {
         SECP256K1.KeyPair key = Keys.createEcKeyPair();
         assertEquals(key.publicKey().bytes().toUnsignedBigInteger().signum(), (1));

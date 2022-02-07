@@ -27,9 +27,11 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.Arrays;
 
 import com.google.common.io.BaseEncoding;
+import org.bouncycastle.util.encoders.Hex;
 
 public class BytesUtils {
 

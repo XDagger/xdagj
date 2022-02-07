@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 import io.xdag.utils.exception.SimpleCodecException;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

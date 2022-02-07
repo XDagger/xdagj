@@ -23,6 +23,7 @@
  */
 package io.xdag.evm.chainspec;
 
+import io.xdag.crypto.Sign;
 import io.xdag.utils.HashUtils;
 import io.xdag.crypto.Keys;
 import io.xdag.evm.DataWord;
@@ -145,35 +146,31 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
         }
     }
 
-    public static class ContractSign {
-        public static final BigInteger SECP256K1N = new BigInteger(
-                "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
-        public byte v;
-        public BigInteger r;
-        public BigInteger s;
-
-        public ContractSign(BigInteger r, BigInteger s) {
-            this.r = r;
-            this.s = s;
-        }
-
-        public static ContractSign fromComponents(byte[] r, byte[] s, byte v) {
-            ContractSign sig = new ContractSign(new BigInteger(1, r), new BigInteger(1, s));
-            sig.v = v;
-            return sig;
-        }
-
-        public boolean validateComponents() {
-            if (v != 27 && v != 28)
-                return false;
-
-            if (isLessThan(r, BigInteger.ONE) || !isLessThan(r, SECP256K1N)) {
-                return false;
-            }
-
-            return !isLessThan(s, BigInteger.ONE) && isLessThan(s, SECP256K1N);
-        }
-    }
+//    public static class ContractSign {
+//        public static final BigInteger SECP256K1N = new BigInteger(
+//                "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+//        public byte v;
+//        public BigInteger r;
+//        public BigInteger s;
+//
+//        public ContractSign(BigInteger r, BigInteger s) {
+//            this.r = r;
+//            this.s = s;
+//        }
+//
+//
+//
+//        public boolean validateComponents() {
+//            if (v != 27 && v != 28)
+//                return false;
+//
+//            if (isLessThan(r, BigInteger.ONE) || !isLessThan(r, SECP256K1N)) {
+//                return false;
+//            }
+//
+//            return !isLessThan(s, BigInteger.ONE) && isLessThan(s, SECP256K1N);
+//        }
+//    }
 
     public static class ECRecover implements PrecompiledContract {
 
@@ -202,7 +199,7 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
                 System.arraycopy(data.toArray(), 96, s, 0, sLength);
 
                 //v[31]
-                ContractSign sig = ContractSign.fromComponents(r, s, v[31]);
+                Sign.ECDSASignature sig = Sign.ECDSASignature.fromComponents(r, s, v[31]);
                 if (validateV(v) && sig.validateComponents() ) {
                     out = DataWord.of(Bytes.wrap(Keys.signatureToAddress(h, sig)));
                 }

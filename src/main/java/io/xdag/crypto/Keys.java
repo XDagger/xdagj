@@ -23,22 +23,32 @@
  */
 package io.xdag.crypto;
 
+import java.math.BigInteger;
 import java.security.*;
-import java.security.spec.ECGenParameterSpec;
+import java.util.Arrays;
 
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.HashUtils;
+import io.xdag.utils.Numeric;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.crypto.SECP256K1;
+import org.apache.tuweni.io.Base58;
+import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
 
-import static io.xdag.crypto.SecureRandomUtils.secureRandom;
+import static com.google.common.base.Preconditions.*;
 
 /** Crypto key utilities. */
 public class Keys {
     public static final int PUBLIC_KEY_SIZE = 64;
-    static final int PUBLIC_KEY_LENGTH_IN_HEX = PUBLIC_KEY_SIZE << 1;
+    public static final int PUBLIC_KEY_LENGTH_IN_HEX = PUBLIC_KEY_SIZE << 1;
+    public static final int ADDRESS_SIZE = 160;
+    public static final int ADDRESS_LENGTH_IN_HEX = ADDRESS_SIZE >> 2;
 
     static {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
@@ -123,6 +133,34 @@ public class Keys {
         return BytesUtils.merge(pubKeyYPrefix,BytesUtils.subArray(Numeric.toBytesPadded(publicKey,64),0,32));
     }
 
+    private static void check(boolean test, String message) {
+        if (!test) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    public static byte[] signatureToAddress(byte[] messageHash, Sign.ECDSASignature sig) throws SignatureException {
+        check(messageHash.length == 32, "messageHash argument has length " + messageHash.length);
+
+        int header = sig.v;
+        // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
+        // 0x1D = second key with even y, 0x1E = second key with odd y
+        if (header < 27 || header > 34) {
+            throw new SignatureException("Header byte out of range: " + header);
+        }
+        if (header >= 31) {
+            header -= 4;
+        }
+        int recId = header - 27;
+
+        byte[] pubBytes = recoverPubBytesFromSignature(recId, sig, messageHash);
+        if (pubBytes == null) {
+            throw new SignatureException("Could not recover public key from signature");
+        }
+
+        return Hash.sha3omit12(Arrays.copyOfRange(pubBytes, 1, pubBytes.length));
+    }
+
     /** Decompress a compressed public key (x co-ord and low-bit of y-coord). */
     public static ECPoint decompressKey(BigInteger xBN, boolean yBit) {
         X9IntegerConverter x9 = new X9IntegerConverter();
@@ -165,7 +203,7 @@ public class Keys {
      *            Hash of the data that was signed.
      * @return 65-byte encoded public key
      */
-    public static byte[] recoverPubBytesFromSignature(int recId, BasePrecompiledContracts.ContractSign sig, byte[] messageHash) {
+    public static byte[] recoverPubBytesFromSignature(int recId, Sign.ECDSASignature sig, byte[] messageHash) {
         checkArgument(recId >= 0, "recId must be positive");
         checkArgument(sig.r.signum() >= 0, "r must be positive");
         checkArgument(sig.s.signum() >= 0, "s must be positive");
@@ -229,23 +267,24 @@ public class Keys {
         return q.getEncoded(/* compressed */ false);
     }
 
-    public static ECKeyPair createEcKeyPair(SecureRandom random) {
-        KeyPair keyPair;
-        try {
-            keyPair = createSecp256k1KeyPair(random);
-        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException  | NoSuchProviderException e) {
-            throw new RuntimeException(e.getMessage(), e.getCause());
-        }
-        return ECKeyPair.create(keyPair);
+    public static byte[] toBytesAddress(SECP256K1.KeyPair key) {
+        return Hash.sha256hash160(Bytes.wrap(key.publicKey().bytesArray()));
     }
 
-    public static byte[] toBytesAddress(ECKeyPair key) {
-        return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().toByteArray()));
-    }
-
-    public static String toBase58Address(ECKeyPair key) {
+    public static String toBase58Address(SECP256K1.KeyPair key) {
         byte[] addrBytes = toBytesAddress(key);
-        return Base58.encode(addrBytes);
+        return Base58.encode(Bytes.wrap(addrBytes));
+    }
+
+    /**
+     * This is the generic Signature exception.
+     */
+    public static class SignatureException extends GeneralSecurityException {
+        private static final long serialVersionUID = 1L;
+
+        public SignatureException(String msg) {
+            super(msg);
+        }
     }
 
 }

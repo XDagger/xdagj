@@ -30,6 +30,9 @@ import org.bouncycastle.crypto.digests.RIPEMD160Digest;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
+
+import java.util.Arrays;
 
 /**
  * Cryptographic hash functions.
@@ -72,6 +75,33 @@ public class Hash {
         digest.doFinal(out, 0);
         return out;
     }
+
+    /**
+     * Computes the Keccak-256 hash digest.
+     *
+     * @param input
+     *            the input data
+     * @return a 32 bytes digest
+     */
+    public static byte[] keccak256(byte[] input) {
+        Keccak.Digest256 digest = new Keccak.Digest256();
+        digest.update(input);
+        return digest.digest();
+    }
+
+    /**
+     * Calculates RIGTMOST160(KECCAK256(input)). This is used in address
+     * calculations. *
+     *
+     * @param input
+     *            data
+     * @return 20 right bytes of the hash keccak of the data
+     */
+    public static byte[] sha3omit12(byte[] input) {
+        byte[] hash = keccak256(input);
+        return Arrays.copyOfRange(hash, 12, hash.length);
+    }
+
 
 }
 

@@ -24,6 +24,7 @@
 package io.xdag.evm.chainspec;
 
 import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
 import io.xdag.evm.DataWord;
 import io.xdag.evm.client.Repository;
 import io.xdag.evm.program.InternalTransaction;
@@ -139,7 +140,7 @@ public class ByzantiumPrecompiledContractsTest {
         byte v = 28;
         Bytes r = Bytes.fromHexString("51e4dbbbcebade695a3f0fdf10beb8b5f83fda161e1a3105a14c41168bf3dce0");
         Bytes s = Bytes.fromHexString("46eabf35680328e26ef4579caf8aeb2cf9ece05dbf67a4f3d1f28c7b1d0e3546");
-        BasePrecompiledContracts.ContractSign sig = BasePrecompiledContracts.ContractSign.fromComponents(r.toArray(), s.toArray(), v);
+        Sign.ECDSASignature sig = Sign.ECDSASignature.fromComponents(r.toArray(), s.toArray(), v);
 
         Bytes address = Bytes.wrap(Keys.signatureToAddress(messageHash.toArray(), sig));
 
