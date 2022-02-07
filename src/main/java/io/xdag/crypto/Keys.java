@@ -90,49 +90,6 @@ public class Keys {
         return Arrays.copyOfRange(hash, hash.length - 20, hash.length); // right most 160 bits
     }
 
-    public static SECP256K1.Signature toCanonicalised(SECP256K1.Signature  sig) {
-        if (!sig.isCanonical()) {
-            // The order of the curve is the number of valid points that exist on that curve.
-            // If S is in the upper half of the number of valid points, then bring it back to
-            // the lower half. Otherwise, imagine that
-            //    N = 10
-            //    s = 8, so (-8 % 10 == 2) thus both (r, 8) and (r, 2) are valid solutions.
-            //    10 - 8 == 2, giving us always the latter solution, which is canonical.
-
-            return SECP256K1.Signature.create(sig.v(), sig.r(), SECP256K1.Parameters.CURVE.getN().subtract(sig.s()));
-        } else {
-            return sig;
-        }
-    }
-
-    public static ECPoint publicPointFromPrivate(BigInteger privKey) {
-        /*
-         * TODO: FixedPointCombMultiplier currently doesn't support scalars longer than the group
-         * order, but that could change in future versions.
-         */
-        if (privKey.bitLength() > SECP256K1.Parameters.CURVE.getN().bitLength()) {
-            privKey = privKey.mod(SECP256K1.Parameters.CURVE.getN());
-        }
-        return new FixedPointCombMultiplier().multiply(SECP256K1.Parameters.CURVE.getG(), privKey);
-    }
-
-    /**
-     *
-     * ECKey 存储公钥类型为 非压缩+去前缀（0x04）
-     * 验证签名的时候需要获得压缩公钥
-     * 添加compressPubKey方法，将非压缩公钥解析成压缩公钥
-     */
-    public static byte[] addPrefixOnCompressPubkeyBytes(BigInteger publicKey) {
-        byte pubKeyYPrefix;
-        // pubkey 是奇数公钥
-        if (publicKey.testBit(0)) {
-            pubKeyYPrefix = 0x03;
-        } else {
-            pubKeyYPrefix = 0x02;
-        }
-        return BytesUtils.merge(pubKeyYPrefix,BytesUtils.subArray(Numeric.toBytesPadded(publicKey,64),0,32));
-    }
-
     private static void check(boolean test, String message) {
         if (!test) {
             throw new IllegalArgumentException(message);
