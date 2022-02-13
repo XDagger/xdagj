@@ -88,6 +88,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected String nodeIp;
     protected int nodePort;
     protected int maxConnections = 1024;
+    protected int maxInboundConnectionsPerIp = 8;
     protected int connectionTimeout = 10000;
     protected int connectionReadTimeout = 10000;
 
@@ -233,6 +234,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
         nodeIp = setting.getStr("nodeIp");
         nodePort = setting.getInt("nodePort");
+        maxInboundConnectionsPerIp = setting.getInt("node.maxInboundConnectionsPerIp");
 
         poolIp = setting.getStr("poolIp");
         poolPort = setting.getInt("poolPort");
@@ -348,6 +350,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public boolean isBootnode() {
         return this.isBootnode;
+    }
+
+    @Override
+    public int getMaxInboundConnectionsPerIp() {
+        return this.maxInboundConnectionsPerIp;
     }
 
     @Override

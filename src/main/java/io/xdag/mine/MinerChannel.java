@@ -207,8 +207,7 @@ public class MinerChannel {
         this.miner03 = new Miner03(this, kernel);
 
         if (isServer) {
-            connectionLimitHandler = kernel.getConnectionLimitHandler();
-            pipeline.addLast("connectionLimitHandler", connectionLimitHandler);
+            pipeline.addLast("connectionLimitHandler", new ConnectionLimitHandler(kernel.getConfig().getPoolSpec().getMaxConnectPerIp()));
         }
 
         // 仅服务器端需要这个握手协议 接受

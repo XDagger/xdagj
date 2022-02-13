@@ -46,7 +46,6 @@ import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
-import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
 import io.xdag.mine.manager.MinerManager;
@@ -111,10 +110,6 @@ public class Kernel {
     protected XdagSync sync;
     protected XdagPow pow;
     protected SyncManager syncMgr;
-    /**
-     * 初始化一个后续都可以用的handler
-     */
-    protected ConnectionLimitHandler connectionLimitHandler;
 
     protected Block firstAccount;
     protected Miner poolMiner;
@@ -313,7 +308,6 @@ public class Kernel {
         // ====================================
         // poolnode open
         // ====================================
-        connectionLimitHandler = new ConnectionLimitHandler(this.config.getPoolSpec().getMaxConnectPerIp());
         minerServer = new MinerServer(this);
         log.info("Pool Server init");
 
