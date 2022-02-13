@@ -5,7 +5,7 @@
     ```shell script
     ./xdag.sh --convertoldwallet <your_wallet_path>/wallet-testnet.dat -t
     ```
-2. load snapshot ready
+2. prepare to load snapshot
     ```shell script
    ./xdag.sh --loadsnapshot <your_snapshot_file_path> -t
     ```
