@@ -51,14 +51,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -68,16 +63,6 @@ import org.apache.tuweni.bytes.Bytes32;
 @Getter
 @Setter
 public class SyncManager {
-
-    private static final ThreadFactory factory = new ThreadFactory() {
-        private final AtomicInteger cnt = new AtomicInteger(0);
-
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "node-" + cnt.getAndIncrement());
-        }
-    };
-    private final ScheduledExecutorService exec;
     private Kernel kernel;
     private Blockchain blockchain;
     private long importStart;
@@ -103,10 +88,7 @@ public class SyncManager {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
-
         this.stateListener = new StateListener();
-        this.exec = new ScheduledThreadPoolExecutor(1, factory);
-
     }
 
     public void start() {
