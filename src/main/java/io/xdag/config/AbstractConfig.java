@@ -24,7 +24,6 @@
 
 package io.xdag.config;
 
-import cn.hutool.setting.Setting;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
 import io.xdag.config.spec.AdminSpec;
@@ -37,14 +36,25 @@ import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.rpc.modules.ModuleDescription;
+
+import java.io.File;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.FileBasedBuilderParameters;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.apache.commons.configuration2.convert.DisabledListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -60,7 +70,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected String telnetIp = "127.0.0.1";
     protected int telnetPort = 7001;
-    protected String password;
+    protected String telnetPassword;
 
     // =========================
     // Mining Pool spec
@@ -226,55 +236,73 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     public void getSetting() {
-        Setting setting = new Setting(getConfigName());
-        setting = setting.getSetting("default");
+        Parameters params = new Parameters();
+        File file = new File(getConfigName());
+        FileBasedBuilderParameters fileBasedBuilderParameters = params.fileBased()
+                .setFile(file)
+                .setEncoding("UTF-8")
+                .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
+                .setThrowExceptionOnMissing(true);
+        FileBasedConfigurationBuilder<PropertiesConfiguration> builder = new FileBasedConfigurationBuilder(PropertiesConfiguration.class);
 
-        telnetIp = setting.getStr("telnetIp");
-        telnetPort = setting.getInt("telnetPort");
+        try {
+            PropertiesConfiguration config = builder.configure(fileBasedBuilderParameters).getConfiguration();
+            FileBasedConfigurationBuilder.setDefaultEncoding(PropertiesConfiguration.class, "UTF-8");
+            config.setListDelimiterHandler(new DisabledListDelimiterHandler());
 
-        nodeIp = setting.getStr("nodeIp");
-        nodePort = setting.getInt("nodePort");
-        maxInboundConnectionsPerIp = setting.getInt("node.maxInboundConnectionsPerIp");
+            telnetIp = config.getString("admin.telnet.ip", "127.0.0.1");
+            telnetPort = config.getInt("admin.telnet.port", 6001);
+            telnetPassword = config.getString("admin.telnet.password");
 
-        poolIp = setting.getStr("poolIp");
-        poolPort = setting.getInt("poolPort");
-        poolTag = setting.getOrDefault("poolTag", "XdagJ");
+            poolIp = config.getString("pool.ip", "127.0.0.1");
+            poolPort = config.getInt("pool.port", 7001);
+            poolTag = config.getString("pool.tag", "xdagj");
 
-        poolRation = setting.getInt("poolRation");
-        rewardRation = setting.getInt("rewardRation");
-        fundRation = setting.getInt("fundRation");
-        directRation = setting.getInt("directRation");
+            poolRation = config.getInt("pool.poolRation");
+            rewardRation = config.getInt("pool.rewardRation");
+            fundRation = config.getInt("pool.fundRation");
+            directRation = config.getInt("pool.directRation");
 
-        globalMinerLimit = setting.getInt("globalMinerLimit");
-        globalMinerChannelLimit = setting.getInt("globalMinerChannelLimit");
-        maxConnectPerIp = setting.getInt("maxConnectPerIp");
-        maxMinerPerAccount = setting.getInt("maxMinerPerAccount");
+            nodeIp = config.getString("node.ip", "127.0.0.1");
+            nodePort = config.getInt("node.port", 8001);
+            maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
 
-        libp2pPort = setting.getInt("libp2pPort");
-        libp2pPrivkey = setting.getStr("libp2pPrivkey");
-        isBootnode = setting.getBool("isbootnode");
-        password = setting.getStr("password");
-
-        String[] list = setting.getStrings("whiteIPs");
-        if (list != null) {
-            log.debug("{} IP access", list.length);
-            for (String address : list) {
-                String ip = address.split(":")[0];
-                int port = Integer.parseInt(address.split(":")[1]);
-                whiteIPList.add(new InetSocketAddress(ip,port));
+            List<String> list = config.getList(String.class, "node.whiteIPs");
+            if (list != null) {
+                log.debug("{} IP access", list.size());
+                for (String address : list) {
+                    String ip = address.split(":")[0];
+                    int port = Integer.parseInt(address.split(":")[1]);
+                    whiteIPList.add(new InetSocketAddress(ip,port));
+                }
             }
+
+            libp2pPort = config.getInt("node.libp2p.port");
+            libp2pPrivkey = config.getString("node.libp2p.privkey");
+            isBootnode = config.getBoolean("node.libp2p.isbootnode");
+
+            String[] bootnodelist = config.getStringArray("node.libp2p.bootnode");
+            if (bootnodelist != null) {
+                bootnodes.addAll(Arrays.asList(bootnodelist));
+            }
+
+            globalMinerLimit = config.getInt("miner.globalMinerLimit");
+            globalMinerChannelLimit = config.getInt("miner.globalMinerChannelLimit");
+            maxConnectPerIp = config.getInt("miner.maxConnectPerIp");
+            maxMinerPerAccount = config.getInt("miner.maxMinerPerAccount");
+
+            // rpc
+            rpcEnabled = config.getBoolean("rpc.enabled", false);
+            if (rpcEnabled) {
+                rpcHost = config.getString("rpc.http.host", "127.0.0.1");
+                rpcPortHttp = config.getInt("rpc.http.port", 10001);
+                rpcPortWs = config.getInt("rpc.ws.port", 10002);
+            }
+            // access configuration properties
+        } catch (ConfigurationException cex) {
+            log.error(cex.getMessage(), cex);
         }
-        String[] bootnodelist = setting.getStrings("bootnode");
-        if (bootnodelist != null) {
-            bootnodes.addAll(Arrays.asList(bootnodelist));
-        }
-        // rpc
-        rpcEnabled = setting.getBool("isRPCEnabled") != null && setting.getBool("isRPCEnabled");
-        if (rpcEnabled) {
-            rpcHost = setting.getStr("rpcHost");
-            rpcPortHttp = setting.getInt("rpcPort_http");
-            rpcPortWs = setting.getInt("rpcPort_ws");
-        }
+
     }
 
     @Override
