@@ -26,7 +26,6 @@ package io.xdag.db.store;
 
 import static io.xdag.utils.BytesUtils.equalBytes;
 
-import cn.hutool.core.lang.Pair;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -54,6 +53,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
