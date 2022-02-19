@@ -55,7 +55,7 @@ Four stages：
 
 #### Landing phase: XDAGJ mainnet is online
 
-- [x] Add test cases: write test cases for existing functions
+- [ ] Add test cases: write test cases for existing functions
 
 - [x] Add log functions: provide a relatively complete log service to facilitate trouble shooting
 
