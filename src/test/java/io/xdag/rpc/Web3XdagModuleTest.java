@@ -41,7 +41,7 @@ import io.xdag.wallet.Wallet;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,7 +74,7 @@ public class Web3XdagModuleTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 

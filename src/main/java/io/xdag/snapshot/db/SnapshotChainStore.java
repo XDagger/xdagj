@@ -3,7 +3,7 @@ package io.xdag.snapshot.db;
 import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import java.util.List;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 public interface SnapshotChainStore {
 

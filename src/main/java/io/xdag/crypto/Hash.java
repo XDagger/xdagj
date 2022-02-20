@@ -52,7 +52,7 @@ public class Hash {
     }
 
     public static Bytes32 sha256(Bytes input) {
-        return org.apache.tuweni.crypto.Hash.sha2_256(input);
+        return org.hyperledger.besu.crypto.Hash.sha256(input);
     }
 
     public static byte[] hmacSha512(byte[] key, byte[] input) {

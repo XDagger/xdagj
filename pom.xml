@@ -58,6 +58,10 @@
             <id>jvm-libp2p</id>
             <url>https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/</url>
         </repository>
+        <repository>
+            <id>hyperledger.jfrog.io</id>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -563,7 +567,7 @@
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-bytes</artifactId>
-            <version>2.0.0</version>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
@@ -579,7 +583,7 @@
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-units</artifactId>
-            <version>2.0.0</version>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>guava</artifactId>
@@ -590,8 +594,8 @@
 
         <dependency>
             <groupId>org.apache.tuweni</groupId>
-            <artifactId>tuweni-crypto</artifactId>
-            <version>2.0.0</version>
+            <artifactId>tuweni-io</artifactId>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>guava</artifactId>
@@ -602,6 +606,12 @@
                     <groupId>commons-codec</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hyperledger.besu.internal</groupId>
+            <artifactId>crypto</artifactId>
+            <version>1.4.5-RC1</version>
         </dependency>
 
         <dependency>

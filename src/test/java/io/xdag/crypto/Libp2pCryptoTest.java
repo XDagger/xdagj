@@ -54,11 +54,11 @@ public class Libp2pCryptoTest {
     @Test
     public void testUnmarshalSecp256k1PrivateKey() {
         Bytes libp2pBytes = Bytes.wrap(libp2pPrivKey.raw()).slice(1, 33 -1);
-        assertArrayEquals(libp2pBytes.toArray(), SampleKeys.KEY_PAIR.secretKey().bytesArray());
+        assertArrayEquals(libp2pBytes.toArray(), SampleKeys.KEY_PAIR.getPrivateKey().getEncoded());
     }
 
     @Test
     public void testUnmarshalSecp256k1PublicKey() {
-        assertArrayEquals(libp2pPubKey.raw(), SampleKeys.KEY_PAIR.publicKey().asEcPoint().getEncoded(true));
+        assertArrayEquals(libp2pPubKey.raw(), SampleKeys.KEY_PAIR.getPublicKey().asEcPoint().getEncoded(true));
     }
 }

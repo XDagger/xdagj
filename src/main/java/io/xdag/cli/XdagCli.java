@@ -65,7 +65,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 public class XdagCli extends Launcher {
 
@@ -303,7 +303,7 @@ public class XdagCli extends Launcher {
         SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
         if (wallet.flush()) {
             System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            System.out.println("PublicKey:" + key.publicKey().bytes().toHexString());
+            System.out.println("PublicKey:" + key.getPublicKey().getEncodedBytes().toHexString());
         }
     }
 
@@ -348,14 +348,14 @@ public class XdagCli extends Launcher {
         if (account == null) {
             System.out.println("Address Not In Wallet");
         } else {
-            System.out.println("Private:" + BytesUtils.toHexString(account.secretKey().bytesArray()));
+            System.out.println("Private:" + BytesUtils.toHexString(account.getPrivateKey().getEncoded()));
         }
         System.out.println("Private Dump Successfully!");
     }
 
     protected boolean importPrivateKey(String key) {
         Wallet wallet = loadAndUnlockWallet();
-        SECP256K1.KeyPair account = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(key)));
+        SECP256K1.KeyPair account = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create(Bytes32.fromHexString(key)));
 
         boolean accountAdded = wallet.addAccount(account);
         if (!accountAdded) {
@@ -370,7 +370,7 @@ public class XdagCli extends Launcher {
         }
 
         System.out.println("Address:" + BytesUtils.toHexString(Keys.toBytesAddress(account)));
-        System.out.println("PublicKey:" + BytesUtils.toHexString(account.publicKey().bytesArray()));
+        System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().getEncoded()));
         System.out.println("Private Key Imported Successfully!");
         return true;
     }
@@ -410,10 +410,10 @@ public class XdagCli extends Launcher {
         String random = readPassword("Old wallet random:");
         List<SECP256K1.KeyPair> keyList = readOldWallet(password, random, file);
         for (SECP256K1.KeyPair key : keyList) {
-            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.secretKey().bytesArray()));
-            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.publicKey().bytesArray()));
+            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().getEncoded()));
+            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().getEncoded()));
             System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            importPrivateKey(key.secretKey().bytes().toHexString());
+            importPrivateKey(key.getPrivateKey().getEncodedBytes().toHexString());
         }
         System.out.println("Old Wallet Converted Successfully!");
         return true;
@@ -447,7 +447,7 @@ public class XdagCli extends Launcher {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 // TODO: paulochen java跟c 两边的钱包字节序不一样 一个需要reverse一个不需要
 //                BytesUtils.arrayReverse(priv32);
-                SECP256K1.KeyPair ecKey = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromInteger(Numeric.toBigInt(priv32)));
+                SECP256K1.KeyPair ecKey = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create(Numeric.toBigInt(priv32)));
                 keyList.add(ecKey);
             }
         } catch (FileNotFoundException e) {

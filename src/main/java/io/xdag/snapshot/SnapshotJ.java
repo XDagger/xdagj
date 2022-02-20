@@ -17,7 +17,7 @@ import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 import org.rocksdb.*;
 
@@ -112,7 +112,7 @@ public class SnapshotJ extends RocksdbKVSource {
                                 byte[] ecKeyPair = snapshotInfo.getData();
                                 for (int i = 0; i < keys.size(); i++) {
                                     SECP256K1.KeyPair key = keys.get(i);
-                                    if (Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                                    if (Bytes.wrap(key.getPublicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();
@@ -124,11 +124,11 @@ public class SnapshotJ extends RocksdbKVSource {
                                 SECP256K1.Signature outSig = block.getOutsig();
                                 for (int i = 0; i < keys.size(); i++) {
                                     SECP256K1.KeyPair keyPair = keys.get(i);
-                                    byte[] publicKeyBytes = keyPair.publicKey().asEcPoint().getEncoded(true);
+                                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint().getEncoded(true);
                                     Bytes digest = Bytes
                                             .wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                                    if (SECP256K1.verifyHashed(hash.toArray(), outSig, keyPair.publicKey())) {
+                                    if (SECP256K1.verify(hash, outSig, keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();

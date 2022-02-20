@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.Hash;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -265,7 +264,7 @@ public class MnemonicUtils {
     public static byte calculateChecksum(byte[] initialEntropy) {
         int ent = initialEntropy.length * 8;
         byte mask = (byte) (0xff << 8 - ent / 32);
-        Bytes32 bytes = Hash.sha2_256(Bytes.wrap(initialEntropy));
+        Bytes32 bytes = Hash.sha256(Bytes.wrap(initialEntropy));
 
         return (byte) (bytes.get(0) & mask);
     }

@@ -53,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.assertj.core.util.Lists;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
@@ -383,7 +383,7 @@ public class XdagCliTest {
 
         // verification
         verify(wallet).getAccount(addressBytes);
-        verify(account).secretKey();
+        verify(account).getPrivateKey();
     }
 
     @Test
@@ -514,8 +514,8 @@ public class XdagCliTest {
         xdagCLI.setConfig(config);
         String hexPrivKey = "8f30bc86f42f55d8d64dd26a5428fc1e65f0616823153c084b43aad76cd97e04";
         byte[] keyBytes = BytesUtils.hexStringToBytes(hexPrivKey);
-        SECP256K1.SecretKey secretKey = SECP256K1.SecretKey.fromBytes(Bytes32.wrap(keyBytes));
-        SECP256K1.KeyPair account = SECP256K1.KeyPair.fromSecretKey(secretKey);
+        SECP256K1.PrivateKey secretKey = SECP256K1.PrivateKey.create(Bytes32.wrap(keyBytes));
+        SECP256K1.KeyPair account = SECP256K1.KeyPair.create(secretKey);
         List<SECP256K1.KeyPair> keyList = Lists.newArrayList(account);
 
         // mock wallet

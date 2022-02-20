@@ -56,7 +56,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -191,7 +191,7 @@ public class Wallet {
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
             byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
-            SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromInteger(Numeric.toBigInt(privateKey)));
+            SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create((Numeric.toBigInt(privateKey))));
             keys.add(keyPair);
         }
         return keys;
@@ -207,7 +207,7 @@ public class Wallet {
                 byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
 
                 enc.writeBytes(iv);
-                enc.writeBytes(Aes.encrypt(keyPair.secretKey().bytesArray(), key, iv));
+                enc.writeBytes(Aes.encrypt(keyPair.getPrivateKey().getEncoded(), key, iv));
             }
         }
     }

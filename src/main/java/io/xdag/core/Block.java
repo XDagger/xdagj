@@ -55,9 +55,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 @Getter
@@ -149,12 +148,12 @@ public class Block implements Cloneable {
         if (CollectionUtils.isNotEmpty(keys)) {
             for (SECP256K1.KeyPair key : keys) {
                 // TODO： paulochen 是不是可以替换
-                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.secretKey().bytes().toUnsignedBigInteger(), true); //耗时长
+                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), true); //耗时长
 //                byte[] keydata = key.getCompressPubKeyBytes(); //耗时短
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
-                pubKeys.add(key.publicKey());
+                pubKeys.add(key.getPublicKey());
             }
             for (int i = 0; i < keys.size(); i++) {
                 if (i != defKeyIndex) {
@@ -270,7 +269,7 @@ public class Block implements Cloneable {
                                 signo_s = j;
                                 r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
                                 s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
-                                SECP256K1.Signature tmp = SECP256K1.Signature.create((byte)0, r, s);
+                                SECP256K1.Signature tmp = SECP256K1.Signature.create(r, s, (byte)0);
                                 if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
                                     insigs.put(tmp, i);
                                 } else {
@@ -291,7 +290,7 @@ public class Block implements Cloneable {
                     ECPoint point = Sign.decompressKey(key.toUnsignedBigInteger(), yBit);
                     // 解析成非压缩去前缀 公钥
                     byte[] encodePub = point.getEncoded(false);
-                    SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.fromInteger(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
+                    SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
                     pubKeys.add(publicKey);
                     break;
                 default:
@@ -306,10 +305,10 @@ public class Block implements Cloneable {
         encoder.write(getEncodedBody());
 
         for (SECP256K1.Signature sig : insigs.keySet()) {
-            encoder.writeSignature(BytesUtils.subArray(sig.bytes().toArray(), 0, 64));
+            encoder.writeSignature(BytesUtils.subArray(sig.encodedBytes().toArray(), 0, 64));
         }
         if (outsig != null) {
-            encoder.writeSignature(BytesUtils.subArray(outsig.bytes().toArray(), 0, 64));
+            encoder.writeSignature(BytesUtils.subArray(outsig.encodedBytes().toArray(), 0, 64));
         }
         int length = encoder.getWriteFieldIndex();
         tempLength = length;
@@ -378,12 +377,12 @@ public class Block implements Cloneable {
         byte[] encoded = toBytes();
         // log.debug("sign encoded:{}", Hex.toHexString(encoded));
         // TODO： paulochen 是不是可以替换
-        byte[] pubkeyBytes = ecKey.publicKey().asEcPoint().getEncoded(true);;
+        byte[] pubkeyBytes = ecKey.getPublicKey().asEcPoint().getEncoded(true);;
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
         //log.debug("sign digest:{}", Hex.toHexString(digest));
         Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
         //log.debug("sign hash:{}", Hex.toHexString(hash.toArray()));
-        SECP256K1.Signature signature = SECP256K1.signHashed(hash, ecKey);
+        SECP256K1.Signature signature = SECP256K1.sign(hash, ecKey);
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
         } else {
@@ -405,7 +404,7 @@ public class Block implements Cloneable {
                 // TODO： paulochen 是不是可以替换
                 byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
                 hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
-                if (SECP256K1.verifyHashed(hash, sig, publicKey)) {
+                if (SECP256K1.verify(hash, sig, publicKey)) {
                     res.add(publicKey);
                 }
             }
@@ -415,7 +414,7 @@ public class Block implements Cloneable {
             // TODO： paulochen 是不是可以替换
             byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
             hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
-            if (SECP256K1.verifyHashed(hash, this.getOutsig(), publicKey)) {
+            if (SECP256K1.verify(hash, this.getOutsig(), publicKey)) {
                 res.add(publicKey);
             }
         }

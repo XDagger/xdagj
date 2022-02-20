@@ -39,7 +39,7 @@ import io.xdag.utils.BytesUtils;
 import java.io.IOException;
 import java.security.Security;
 import java.util.Collections;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.apache.tuweni.io.Base58;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
@@ -63,7 +63,7 @@ public class WalletUtilsTest {
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
 
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
