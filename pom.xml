@@ -18,6 +18,7 @@
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
         <netty.version>4.1.70.Final</netty.version>
+        <surefire.test.excludes>**/*RandomXSyncTest.java</surefire.test.excludes>
     </properties>
 
     <organization>
@@ -123,6 +124,9 @@
                 <version>2.22.2</version>
                 <configuration>
                     <argLine>-Xmx1024m</argLine>
+                    <excludes>
+                        <exclude>${surefire.test.excludes}</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
