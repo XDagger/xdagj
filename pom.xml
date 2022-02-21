@@ -85,6 +85,40 @@
                 </configuration>
             </plugin>
 
+            <!-- cmake on maven compile -->
+            <plugin>
+                <groupId>com.googlecode.cmake-maven-project</groupId>
+                <artifactId>cmake-maven-plugin</artifactId>
+                <version>3.22.1-b1</version>
+                <executions>
+                    <execution>
+                        <id>cmake-generate</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <sourcePath>${project.basedir}/src/c</sourcePath>
+                            <targetPath>${project.basedir}/src/c/build</targetPath>
+                            <environmentVariables>
+                                <CMAKE_CLASSIFIER>mac-x86_64</CMAKE_CLASSIFIER>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cmake-compile</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <projectDirectory>${project.basedir}/src/c/build</projectDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
             <!-- testing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -846,7 +880,6 @@
             <artifactId>snappy-java</artifactId>
             <version>1.1.8.4</version>
         </dependency>
-
 
     </dependencies>
 
