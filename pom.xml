@@ -100,9 +100,6 @@
                         <configuration>
                             <sourcePath>${project.basedir}/src/c</sourcePath>
                             <targetPath>${project.basedir}/src/c/build</targetPath>
-                            <environmentVariables>
-                                <CMAKE_CLASSIFIER>mac-x86_64</CMAKE_CLASSIFIER>
-                            </environmentVariables>
                         </configuration>
                     </execution>
                     <execution>
