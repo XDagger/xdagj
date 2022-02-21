@@ -18,7 +18,7 @@
   Maven : v3.8.3
   ```
 
-  Please make sure that the above environment is already available in your operating system, and the JDK version must be 15
+  Please make sure that the above environment is already available in your operating system, and the JDK version must be 17
 
 - Hardware parameters
 
