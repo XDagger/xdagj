@@ -81,6 +81,7 @@ public class XdagCliTest {
         config = new DevnetConfig();
         outRule.mute();
         errRule.mute();
+        SECP256K1.enableNative();
     }
 
     @Test
