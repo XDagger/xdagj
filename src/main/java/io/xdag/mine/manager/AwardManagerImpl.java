@@ -50,9 +50,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -93,15 +99,21 @@ public class AwardManagerImpl implements AwardManager, Runnable {
      */
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>();
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-    protected long currentTaskTime;
-    protected long currentTaskIndex;
+    protected volatile long currentTaskTime;
+    protected volatile long currentTaskIndex;
     protected Config config;
     private List<Miner> miners;
     @Setter
     private MinerManager minerManager;
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
-    private Thread t;
+
+    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("AwardManager-work-thread")
+            .daemon(true)
+            .build());
+
+    private volatile boolean isRunning = false;
 
     public AwardManagerImpl(Kernel kernel) {
         this.kernel = kernel;
@@ -149,38 +161,27 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     @Override
     public void run() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (isRunning) {
             try {
-                AwardBlock awardBlock = awardBlockBlockingQueue.take();
+                AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
                 payAndaddNewAwardBlock(awardBlock);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error(" can not take the awardBlock from awardBlockQueue ");
-                break;
+                log.error(" can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
             }
         }
     }
 
     @Override
     public void start() {
-        if (t == null) {
-            t = new Thread(this, "AwardManagerImpl");
-            t.start();
-        }
+        isRunning = true;
+        workExecutor.submit(this);
+        log.debug("AwardManager started.");
     }
 
     @Override
     public void stop() {
-        if (t != null) {
-            try {
-                t.interrupt();
-                t.join();
-            } catch (InterruptedException e) {
-                log.error("Failed to stop AwardManagerImpl");
-                Thread.currentThread().interrupt();
-            }
-            t = null;
-        }
+        isRunning = false;
+        workExecutor.shutdown();
     }
 
     @Override
