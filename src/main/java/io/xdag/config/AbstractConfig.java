@@ -24,8 +24,24 @@
 
 package io.xdag.config;
 
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.configuration2.ImmutableConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
+
 import io.xdag.config.spec.AdminSpec;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.PoolSpec;
@@ -36,27 +52,9 @@ import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.rpc.modules.ModuleDescription;
-
-import java.io.File;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.FileBasedBuilderParameters;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
-import org.apache.commons.configuration2.convert.DisabledListDelimiterHandler;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 @Getter
@@ -237,18 +235,15 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     public void getSetting() {
         Parameters params = new Parameters();
-        File file = new File(getConfigName());
-        FileBasedBuilderParameters fileBasedBuilderParameters = params.fileBased()
-                .setFile(file)
-                .setEncoding("UTF-8")
-                .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
-                .setThrowExceptionOnMissing(true);
-        FileBasedConfigurationBuilder<PropertiesConfiguration> builder = new FileBasedConfigurationBuilder(PropertiesConfiguration.class);
+        FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
+                new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class)
+                        .configure(params.properties()
+                                .setFileName(getConfigName())
+                                .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
+                                .setEncoding("UTF-8"));
 
         try {
-            PropertiesConfiguration config = builder.configure(fileBasedBuilderParameters).getConfiguration();
-            FileBasedConfigurationBuilder.setDefaultEncoding(PropertiesConfiguration.class, "UTF-8");
-            config.setListDelimiterHandler(new DisabledListDelimiterHandler());
+            ImmutableConfiguration config = builder.getConfiguration();
 
             telnetIp = config.getString("admin.telnet.ip", "127.0.0.1");
             telnetPort = config.getInt("admin.telnet.port", 6001);
@@ -267,10 +262,10 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             nodePort = config.getInt("node.port", 8001);
             maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
 
-            List<String> list = config.getList(String.class, "node.whiteIPs");
-            if (list != null) {
-                log.debug("{} IP access", list.size());
-                for (String address : list) {
+            String[] whiteIpArray = config.get(String[].class, "node.whiteIPs");
+            if (whiteIpArray != null) {
+                log.debug("{} IP access", whiteIpArray.length);
+                for (String address : whiteIpArray) {
                     String ip = address.split(":")[0];
                     int port = Integer.parseInt(address.split(":")[1]);
                     whiteIPList.add(new InetSocketAddress(ip,port));
@@ -315,10 +310,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-a":
-                    break;
                 case "-c":
-                    break;
                 case "-m":
+                case "-s":
                     i++;
                     // todo 设置挖矿的线程数
                     break;
@@ -336,10 +330,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                     break;
                 case "-r":
                     // todo only load block but no run
-                    break;
-                case "-s":
-                    i++;
-                    // todo bind the host for us
                     break;
                 case "-tag":
                     this.poolTag = StringUtils.substring(args[i + 1], 0, 31);
