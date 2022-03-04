@@ -36,6 +36,7 @@ import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
+
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -269,7 +271,15 @@ public class Block implements Cloneable {
                                 signo_s = j;
                                 r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
                                 s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
-                                SECP256K1.Signature tmp = SECP256K1.Signature.create(r, s, (byte)0);
+                                SECP256K1.Signature tmp = null;
+                                try {
+                                    tmp = SECP256K1.Signature.create(r, s, (byte) 0);
+                                } catch (Exception e) {
+                                    log.info(e.getMessage());
+                                }
+                                if (tmp == null) {
+                                    tmp = SECP256K1.Signature.create(BigInteger.ONE, BigInteger.ONE, (byte) 0);
+                                }
                                 if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
                                     insigs.put(tmp, i);
                                 } else {
@@ -377,7 +387,7 @@ public class Block implements Cloneable {
         byte[] encoded = toBytes();
         // log.debug("sign encoded:{}", Hex.toHexString(encoded));
         // TODO： paulochen 是不是可以替换
-        byte[] pubkeyBytes = ecKey.getPublicKey().asEcPoint().getEncoded(true);;
+        byte[] pubkeyBytes = ecKey.getPublicKey().asEcPoint().getEncoded(true);
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
         //log.debug("sign digest:{}", Hex.toHexString(digest));
         Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
