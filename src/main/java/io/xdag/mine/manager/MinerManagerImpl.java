@@ -97,7 +97,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     public void start() {
         isRunning = true;
         init();
-        workExecutor.submit(this);
+        workExecutor.execute(this);
         log.debug("MinerManager started.");
     }
 

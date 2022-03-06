@@ -132,9 +132,9 @@ public class XdagPow implements PoW, Listener, Runnable {
                 this.minShares.add(null);
             }
 
-            timerExecutor.submit(timer);
-            mainExecutor.submit(this);
-            broadcasterExecutor.submit(this.broadcaster);
+            timerExecutor.execute(timer);
+            mainExecutor.execute(this);
+            broadcasterExecutor.execute(this.broadcaster);
         }
     }
 
@@ -241,7 +241,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
-        events.removeIf(e -> e.type == Event.Type.TIMEOUT);
     }
 
     @Override

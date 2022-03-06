@@ -164,7 +164,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         while (isRunning) {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
-                payAndaddNewAwardBlock(awardBlock);
+                if(awardBlock != null) {
+                    payAndaddNewAwardBlock(awardBlock);
+                }
             } catch (InterruptedException e) {
                 log.error(" can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
             }
@@ -174,7 +176,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     @Override
     public void start() {
         isRunning = true;
-        workExecutor.submit(this);
+        workExecutor.execute(this);
         log.debug("AwardManager started.");
     }
 
