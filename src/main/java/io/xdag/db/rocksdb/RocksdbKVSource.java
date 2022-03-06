@@ -220,7 +220,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 if (db == null) {
                     log.error("db is null");
                 } else {
-                    log.debug("put block key ={} ,val = {}", Hex.encodeHexString(key), Hex.encodeHexString(val));
                     db.put(key, val);
                 }
             } else {
