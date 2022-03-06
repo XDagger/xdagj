@@ -398,6 +398,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
             <version>2.7</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-lang3</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -647,6 +653,36 @@
             <groupId>org.hyperledger.besu.internal</groupId>
             <artifactId>crypto</artifactId>
             <version>1.4.5-RC1</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                    <groupId>org.bouncycastle</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-api</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-core</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-bytes</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-units</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>vertx-core</artifactId>
+                    <groupId>io.vertx</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -803,6 +839,14 @@
                 <exclusion>
                     <artifactId>vertx-core</artifactId>
                     <groupId>io.vertx</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>bytes</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>units</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
