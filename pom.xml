@@ -123,7 +123,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
-                    <argLine>-Xmx1024m</argLine>
                     <excludes>
                         <exclude>${surefire.test.excludes}</exclude>
                     </excludes>
