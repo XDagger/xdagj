@@ -24,8 +24,9 @@
 
 package io.xdag.utils;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import org.apache.commons.lang3.time.FastDateFormat;
 
 public class XdagTime {
 
@@ -89,8 +90,7 @@ public class XdagTime {
     }
 
     public static String format(Date date) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-        return simpleDateFormat.format(date);
+        return FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss").format(date);
     }
 
 }

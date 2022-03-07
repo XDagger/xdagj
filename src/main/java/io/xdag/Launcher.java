@@ -25,6 +25,7 @@
 package io.xdag;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import java.util.ArrayList;
@@ -123,7 +124,10 @@ public class Launcher {
     protected Config buildConfig(String[] args) throws Exception {
         Config config = null;
         for (String arg : args) {
-            if ("-t".equals(arg)) {
+            if ("-d".equals(arg)) {
+                config = new DevnetConfig();
+                break;
+            } else if ("-t".equals(arg)) {
                 config = new TestnetConfig();
                 break;
             } else {

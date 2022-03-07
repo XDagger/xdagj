@@ -47,36 +47,48 @@ public enum XdagState {
      */
     STOP(0x04),
     /**
+     * Trying to connect to the  dev network.
+     */
+    WDST(0x05),
+    /**
      * Trying to connect to the test network.
      */
-    WTST(0x05),
+    WTST(0x06),
     /**
      * Trying to connect to the main network.
      */
-    WAIT(0x06),
+    WAIT(0x07),
 
+    /**
+     * Connected to the  dev network. Synchronizing.
+     */
+    CDST(0x08),
     /**
      * Connected to the test network. Synchronizing.
      */
-    CTST(0x07),
+    CTST(0x09),
     /**
      * Connected to the main network. Synchronizing.
      */
-    CONN(0x08),
+    CONN(0x0a),
 
     /**
      * Synchronized with the test network. Normal testing.
      */
-    STST(0x09),
+    SDST(0x0b),
+    /**
+     * Synchronized with the test network. Normal testing.
+     */
+    STST(0x0c),
     /**
      * Synchronized with the main network. Normal operation.
      */
-    SYNC(0x0a),
+    SYNC(0x0d),
 
     /**
      * Waiting for transfer to complete.
      */
-    XFER(0x0b);
+    XFER(0x0e);
 
     private int cmd;
     private int temp;
@@ -104,24 +116,6 @@ public enum XdagState {
         this.temp = -1;
     }
 
-    public XdagState fromByte(byte i) {
-        return switch (i) {
-            case 0x00 -> INIT;
-            case 0x01 -> KEYS;
-            case 0x02 -> REST;
-            case 0x03 -> LOAD;
-            case 0x04 -> STOP;
-            case 0x05 -> WTST;
-            case 0x06 -> WAIT;
-            case 0x07 -> CTST;
-            case 0x08 -> CONN;
-            case 0x09 -> STST;
-            case 0x0a -> SYNC;
-            case 0x0b -> XFER;
-            default -> null;
-        };
-    }
-
     @Override
     public String toString() {
         return switch (cmd) {
@@ -130,13 +124,16 @@ public enum XdagState {
             case 0x02 -> "The local storage is corrupted. Resetting blocks engine.";
             case 0x03 -> "Loading blocks from the local storage.";
             case 0x04 -> "Blocks loaded. Waiting for 'run' command.";
-            case 0x05 -> "Trying to connect to the test network.";
-            case 0x06 -> "Trying to connect to the main network.";
-            case 0x07 -> "Connected to the test network. Synchronizing.";
-            case 0x08 -> "Connected to the main network. Synchronizing.";
-            case 0x09 -> "Synchronized with the test network. Normal testing.";
-            case 0x0a -> "Synchronized with the main network. Normal operation.";
-            case 0x0b -> "Waiting for transfer to complete.";
+            case 0x05 -> "Trying to connect to the  dev network.";
+            case 0x06 -> "Trying to connect to the test network.";
+            case 0x07 -> "Trying to connect to the main network.";
+            case 0x08 -> "Connected to the  dev network. Synchronizing.";
+            case 0x09 -> "Connected to the test network. Synchronizing.";
+            case 0x0a -> "Connected to the main network. Synchronizing.";
+            case 0x0b -> "Synchronized with the  dev network. Normal testing.";
+            case 0x0c -> "Synchronized with the test network. Normal testing.";
+            case 0x0d -> "Synchronized with the main network. Normal operation.";
+            case 0x0e -> "Waiting for transfer to complete.";
             default -> "Abnormal State";
         };
     }

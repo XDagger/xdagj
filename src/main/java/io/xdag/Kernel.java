@@ -29,6 +29,7 @@ import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.consensus.SyncManager;
@@ -326,6 +327,8 @@ public class Kernel {
             xdagState = XdagState.WAIT;
         } else if (config instanceof TestnetConfig) {
             xdagState = XdagState.WTST;
+        } else if (config instanceof DevnetConfig) {
+            xdagState = XdagState.WDST;
         }
 
         // ====================================

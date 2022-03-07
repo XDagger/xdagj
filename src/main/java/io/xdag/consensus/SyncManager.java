@@ -31,7 +31,9 @@ import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
@@ -57,6 +59,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
@@ -107,11 +111,18 @@ public class SyncManager {
                     .getPoolSpec().getWaitEpoch())) {
                 res = true;
             }
-        } else {
+        } else if (config instanceof TestnetConfig){
             if (kernel.getXdagState() != XdagState.CTST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
                     .getPoolSpec().getWaitEpoch())) {
                 res = true;
             }
+        } else if (config instanceof DevnetConfig){
+            if (kernel.getXdagState() != XdagState.CDST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
+                    .getPoolSpec().getWaitEpoch())) {
+                res = true;
+            }
+        } else {
+            throw new IllegalStateException("error xdag network type." + config.toString());
         }
         return res;
     }
@@ -135,8 +146,10 @@ public class SyncManager {
             if (!syncDone) {
                 if (config instanceof MainnetConfig) {
                     kernel.setXdagState(XdagState.CONN);
-                } else {
+                } else if (config instanceof TestnetConfig) {
                     kernel.setXdagState(XdagState.CTST);
+                } else if (config instanceof DevnetConfig) {
+                    kernel.setXdagState(XdagState.CDST);
                 }
             }
 
@@ -281,13 +294,12 @@ public class SyncManager {
 
     // TODO：目前默认是一直保持同步，不负责出块
     public void makeSyncDone() {
-        log.info("Sync Done");
+
         if (syncDone) {
             return;
         }
         syncDone = true;
 
-        System.out.println("Sync done");
         // 关闭状态检测进程
         this.stateListener.isRunning = false;
         Config config = kernel.getConfig();
@@ -295,17 +307,18 @@ public class SyncManager {
             if (kernel.getXdagState() != XdagState.SYNC) {
                 kernel.setXdagState(XdagState.SYNC);
             }
-        } else {
+        } else if (config instanceof TestnetConfig) {
             if (kernel.getXdagState() != XdagState.STST) {
                 kernel.setXdagState(XdagState.STST);
             }
+        } else if (config instanceof DevnetConfig) {
+            if (kernel.getXdagState() != XdagState.SDST) {
+                kernel.setXdagState(XdagState.SDST);
+            }
         }
 
-        log.info("sync finish! tha last mainBlock number = {}", blockchain.getXdagStats().nmain);
-
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
-        Date date = new Date(System.currentTimeMillis());
-        System.out.println("Start PoW at:" + formatter.format(date));
+        log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
+        log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
 
         // 检查主块链
         kernel.getMinerServer().start();

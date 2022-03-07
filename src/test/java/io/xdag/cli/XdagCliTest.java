@@ -175,6 +175,31 @@ public class XdagCliTest {
     }
 
     @Test
+    public void testDevnet() throws Exception {
+        XdagCli xdagCLI = spy(new XdagCli());
+        xdagCLI.setConfig(new DevnetConfig());
+
+        // mock accounts
+        List<SECP256K1.KeyPair> accounts = new ArrayList<>();
+        SECP256K1.KeyPair account = Keys.createEcKeyPair();
+        accounts.add(account);
+
+        // mock wallet
+        Wallet wallet = mock(Wallet.class);
+        when(wallet.unlock("oldpassword")).thenReturn(true);
+        when(wallet.getAccounts()).thenReturn(accounts);
+        when(wallet.exists()).thenReturn(true);
+        when(xdagCLI.loadWallet()).thenReturn(wallet);
+
+        // mock passwords
+        doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
+        doReturn(null).when(xdagCLI).startKernel(any(), any());
+
+        xdagCLI.start(new String[]{"-d"});
+        assertTrue(xdagCLI.getConfig() instanceof DevnetConfig);
+    }
+
+    @Test
     public void testLoadAndUnlockWalletWithWrongPassword() {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);

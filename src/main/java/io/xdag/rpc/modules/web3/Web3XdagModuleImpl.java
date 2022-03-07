@@ -30,7 +30,9 @@ import static io.xdag.utils.BasicUtils.amount2xdag;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.core.XdagState;
@@ -78,8 +80,12 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
             if (kernel.getXdagState() != XdagState.SYNC) {
                 return false;
             }
-        } else {
+        } else if (config instanceof TestnetConfig) {
             if (kernel.getXdagState() != XdagState.STST) {
+                return false;
+            }
+        } else if (config instanceof DevnetConfig) {
+            if (kernel.getXdagState() != XdagState.SDST) {
                 return false;
             }
         }
