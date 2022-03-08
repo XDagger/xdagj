@@ -65,7 +65,6 @@ import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
@@ -121,8 +120,8 @@ public class BlockchainImpl implements Blockchain {
      */
     private final OrphanPool orphanPool;
 
-    private final LinkedHashMap<ByteArrayWrapper, Block> memOrphanPool = new LinkedHashMap<>();
-    private final Map<ByteArrayWrapper, Integer> memOurBlocks = new ConcurrentHashMap<>();
+    private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
+    private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
     private final XdagStats xdagStats;
     private final Kernel kernel;
 
@@ -461,7 +460,7 @@ public class BlockchainImpl implements Blockchain {
 //            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
 //                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
-                memOrphanPool.put(new ByteArrayWrapper(block.getHashLow().toArray()), block);
+                memOrphanPool.put(block.getHashLow(), block);
                 xdagStats.nextra++;
             } else {
 //                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
@@ -1100,8 +1099,7 @@ public class BlockchainImpl implements Blockchain {
         if (hashlow == null) {
             return null;
         }
-        ByteArrayWrapper key = new ByteArrayWrapper(hashlow.toArray());
-        Block b = memOrphanPool.get(key);
+        Block b = memOrphanPool.get(hashlow);
         if (b == null) {
             b = blockStore.getBlockByHash(hashlow, isRaw);
         }
@@ -1128,7 +1126,7 @@ public class BlockchainImpl implements Blockchain {
 //                log.debug("移除Extra");
                 // 那removeBlockInfo就是完整的
                 // 从MemOrphanPool中去除
-                ByteArrayWrapper key = new ByteArrayWrapper(b.getHashLow().toArray());
+                Bytes key = b.getHashLow();
                 Block removeBlockRaw = memOrphanPool.get(key);
                 memOrphanPool.remove(key);
                 if (action != OrphanRemoveActions.ORPHAN_REMOVE_REUSE) {
@@ -1188,15 +1186,15 @@ public class BlockchainImpl implements Blockchain {
         block.isSaved = true;
         blockStore.saveBlock(block);
         // 如果是自己的账户
-        if (memOurBlocks.containsKey(new ByteArrayWrapper(block.getHash().toArray()))) {
+        if (memOurBlocks.containsKey(block.getHash())) {
 //            log.info("new account:{}", Hex.toHexString(block.getHash()));
             if (xdagStats.getOurLastBlockHash() == null) {
 //                log.info("Global miner");
                 xdagStats.setGlobalMiner(block.getHash().toArray());
                 blockStore.saveXdagStatus(xdagStats);
             }
-            addOurBlock(memOurBlocks.get(new ByteArrayWrapper(block.getHash().toArray())), block);
-            memOurBlocks.remove(new ByteArrayWrapper(block.getHash().toArray()));
+            addOurBlock(memOurBlocks.get(block.getHash()), block);
+            memOurBlocks.remove(block.getHash());
         }
 
         if (block.isPretopCandidate()) {
@@ -1321,7 +1319,7 @@ public class BlockchainImpl implements Blockchain {
     public void addOurBlock(int keyIndex, Block block) {
         xdagStats.setOurLastBlockHash(block.getHash().toArray());
         if (!block.isSaved()) {
-            memOurBlocks.put(new ByteArrayWrapper(block.getHash().toArray()), keyIndex);
+            memOurBlocks.put(block.getHash(), keyIndex);
         } else {
             blockStore.saveOurBlock(keyIndex, block.getInfo().getHashlow());
         }
@@ -1329,7 +1327,7 @@ public class BlockchainImpl implements Blockchain {
 
     public void removeOurBlock(Block block) {
         if (!block.isSaved) {
-            memOurBlocks.remove(new ByteArrayWrapper(block.getHash().toArray()));
+            memOurBlocks.remove(block.getHash());
         } else {
             blockStore.removeOurBlock(block.getHashLow().toArray());
         }
@@ -1450,7 +1448,7 @@ public class BlockchainImpl implements Blockchain {
      * 判断是否已经接收过区块 *
      */
     public boolean isExist(Bytes32 hashlow) {
-        return memOrphanPool.containsKey(new ByteArrayWrapper(hashlow.toArray())) ||
+        return memOrphanPool.containsKey(hashlow) ||
                 blockStore.hasBlock(hashlow) || isExitInSnapshot(hashlow);
     }
 
@@ -1535,7 +1533,7 @@ public class BlockchainImpl implements Blockchain {
         return res;
     }
 
-    public Map<ByteArrayWrapper, Integer> getMemOurBlocks() {
+    public Map<Bytes, Integer> getMemOurBlocks() {
         return memOurBlocks;
     }
 
