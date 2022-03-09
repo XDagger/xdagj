@@ -29,13 +29,15 @@ import io.xdag.consensus.Task;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.net.message.Message;
-import io.xdag.utils.ByteArrayWrapper;
+
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.apache.tuweni.bytes.Bytes;
+
 public interface MinerManager {
 
-    Map<ByteArrayWrapper, Miner> getActivateMiners();
+    Map<Bytes, Miner> getActivateMiners();
 
     /**
      * 接收到share

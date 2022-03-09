@@ -42,7 +42,6 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import java.io.IOException;
@@ -135,7 +134,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             if (block != null) {
                 blockHash = block.getHash();
                 Miner miner = kernel.getMinerManager().getActivateMiners()
-                        .get(new ByteArrayWrapper(blockHash.toArray()));
+                        .get(blockHash);
                 if (miner == null) {
                     log.debug("creat a new miner");
                     miner = new Miner(blockHash);
@@ -147,12 +146,12 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                         channel.getInetAddress().toString(), blockHash.toHexString());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
+                minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
             } else {
                 //to do nothing
                 log.debug("can not receive the share, No such address exists.");
                 ctx.close();
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
+                minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
             }
         }
 

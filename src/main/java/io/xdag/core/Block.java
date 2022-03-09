@@ -34,7 +34,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 import io.xdag.config.Config;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
@@ -245,64 +244,49 @@ public class Block implements Cloneable {
                 throw new IllegalArgumentException("xdagBlock field:" + i + " is null");
             }
             switch (field.getType()) {
-                case XDAG_FIELD_IN:
-                    inputs.add(new Address(xdagBlock.getField(i)));
-                    break;
-                case XDAG_FIELD_OUT:
-                    outputs.add(new Address(field));
-                    break;
-                case XDAG_FIELD_REMARK:
-                    this.info.setRemark(field.getData().toArray());
-                    break;
-                case XDAG_FIELD_SIGN_IN:
-                case XDAG_FIELD_SIGN_OUT:
-                    BigInteger r;
-                    BigInteger s;
-                    int j, signo_s = -1;
-                    XdagField ixf;
-                    for (j = i; j < XdagBlock.XDAG_BLOCK_FIELDS; ++j) {
-                        ixf = xdagBlock.getField(j);
-                        if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()
-                                || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
-                            if (j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType()
-                                    .ordinal()) {
-                                signo_s = j;
-                                r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
-                                s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
-                                SECP256K1.Signature tmp = null;
-                                try {
-                                    tmp = SECP256K1.Signature.create(r, s, (byte) 0);
-                                } catch (Exception e) {
-                                    log.error(e.getMessage());
-                                }
-                                if (tmp == null) {
-                                    tmp = SECP256K1.Signature.create(BigInteger.ONE, BigInteger.ONE, (byte) 0);
-                                }
-                                if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                                    insigs.put(tmp, i);
-                                } else {
-                                    outsig = tmp;
-                                }
+            case XDAG_FIELD_IN -> inputs.add(new Address(xdagBlock.getField(i)));
+            case XDAG_FIELD_OUT -> outputs.add(new Address(field));
+            case XDAG_FIELD_REMARK -> this.info.setRemark(field.getData().toArray());
+            case XDAG_FIELD_SIGN_IN, XDAG_FIELD_SIGN_OUT -> {
+                BigInteger r;
+                BigInteger s;
+                int j, signo_s = -1;
+                XdagField ixf;
+                for (j = i; j < XdagBlock.XDAG_BLOCK_FIELDS; ++j) {
+                    ixf = xdagBlock.getField(j);
+                    if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()
+                            || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
+                        if (j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType()
+                                .ordinal()) {
+                            signo_s = j;
+                            r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
+                            s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
+                            SECP256K1.Signature tmp = SECP256K1.Signature.create(r, s, (byte) 0);
+                            if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
+                                insigs.put(tmp, i);
+                            } else {
+                                outsig = tmp;
                             }
                         }
                     }
-                    if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                        this.nonce = Bytes32.wrap(xdagBlock.getField(i).getData());
-                        continue;
-                    }
-                    break;
-                case XDAG_FIELD_PUBLIC_KEY_0:
-                case XDAG_FIELD_PUBLIC_KEY_1:
-                    Bytes key = xdagBlock.getField(i).getData();
-                    boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
-                    ECPoint point = Sign.decompressKey(key.toUnsignedBigInteger(), yBit);
-                    // 解析成非压缩去前缀 公钥
-                    byte[] encodePub = point.getEncoded(false);
-                    SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
-                    pubKeys.add(publicKey);
-                    break;
-                default:
-//                    log.debug("no match xdagBlock field type:" + field.getType());
+                }
+                if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
+                    this.nonce = Bytes32.wrap(xdagBlock.getField(i).getData());
+                }
+            }
+            case XDAG_FIELD_PUBLIC_KEY_0, XDAG_FIELD_PUBLIC_KEY_1 -> {
+                Bytes key = xdagBlock.getField(i).getData();
+                boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
+                ECPoint point = Sign.decompressKey(key.toUnsignedBigInteger(), yBit);
+                // 解析成非压缩去前缀 公钥
+                byte[] encodePub = point.getEncoded(false);
+                SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.create(
+                        new BigInteger(1, Arrays.copyOfRange(encodePub, 1, encodePub.length)));
+                pubKeys.add(publicKey);
+            }
+            default -> {
+            }
+            //                    log.debug("no match xdagBlock field type:" + field.getType());
             }
         }
         this.parsed = true;
@@ -504,7 +488,7 @@ public class Block implements Cloneable {
 
     @Override
     public int hashCode() {
-        return new ByteArrayWrapper(this.getHashLow().toArray()).hashCode();
+        return Bytes.of(this.getHashLow().toArray()).hashCode();
     }
 
     public long getTimestamp() {

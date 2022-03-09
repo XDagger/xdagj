@@ -334,6 +334,10 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                 case "-tag":
                     this.poolTag = StringUtils.substring(args[i + 1], 0, 31);
                     break;
+                case "-d":
+                case "-t":
+                    // only devnet or testnet
+                    break;
                 default:
                     log.error("Illegal instruction");
             }

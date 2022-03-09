@@ -31,7 +31,7 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
-import io.xdag.utils.ByteArrayWrapper;
+
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.tuweni.bytes.Bytes;
 
 @Slf4j
 public class MinerManagerImpl implements MinerManager, Runnable{
@@ -73,7 +74,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     /**
      * 根据miner的地址保存的数组 activate 代表的是一个已经注册的矿工
      */
-    protected Map<ByteArrayWrapper, Miner> activateMiners = new ConcurrentHashMap<>(200);
+    protected Map<Bytes, Miner> activateMiners = new ConcurrentHashMap<>(200);
     private volatile Task currentTask;
     @Setter
     private PoW poW;
@@ -97,7 +98,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     public void start() {
         isRunning = true;
         init();
-        workExecutor.submit(this);
+        workExecutor.execute(this);
         log.debug("MinerManager started.");
     }
 
@@ -157,7 +158,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
         if (!channel.isActive()) {
             log.debug("remove a channel");
             activateMinerChannels.remove(channel.getInetAddress(), channel);
-            Miner miner = activateMiners.get(new ByteArrayWrapper(channel.getAccountAddressHash().toArray()));
+            Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
             miner.removeChannel(channel.getInetAddress());
             miner.subChannelCounts();
             kernel.getChannelsAccount().getAndDecrement();
@@ -192,7 +193,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
 
     @Override
     public void addActiveMiner(Miner miner) {
-        activateMiners.put(new ByteArrayWrapper(miner.getAddressHash().toArray()), miner);
+        activateMiners.put(miner.getAddressHash(), miner);
     }
 
     /**
@@ -216,7 +217,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     }
 
     @Override
-    public Map<ByteArrayWrapper, Miner> getActivateMiners() {
+    public Map<Bytes, Miner> getActivateMiners() {
         return activateMiners;
     }
 

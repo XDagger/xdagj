@@ -40,7 +40,6 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -164,7 +163,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         while (isRunning) {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
-                payAndaddNewAwardBlock(awardBlock);
+                if(awardBlock != null) {
+                    payAndaddNewAwardBlock(awardBlock);
+                }
             } catch (InterruptedException e) {
                 log.error(" can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
             }
@@ -174,7 +175,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     @Override
     public void start() {
         isRunning = true;
-        workExecutor.submit(this);
+        workExecutor.execute(this);
         log.debug("AwardManager started.");
     }
 
@@ -314,10 +315,10 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         //TODO
         log.debug("Hash low : " + hashlow.toHexString());
         if (keyPos < 0) {
-            if (kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray())) == null) {
+            if (kernel.getBlockchain().getMemOurBlocks().get(hashlow) == null) {
                 keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
             } else {
-                keyPos = kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray()));
+                keyPos = kernel.getBlockchain().getMemOurBlocks().get(hashlow);
             }
             log.debug("keypos : " + keyPos);
             if (keyPos < 0) {

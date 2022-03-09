@@ -132,9 +132,9 @@ public class XdagPow implements PoW, Listener, Runnable {
                 this.minShares.add(null);
             }
 
-            timerExecutor.submit(timer);
-            mainExecutor.submit(this);
-            broadcasterExecutor.submit(this.broadcaster);
+            timerExecutor.execute(timer);
+            mainExecutor.execute(this);
+            broadcasterExecutor.execute(this.broadcaster);
         }
     }
 
@@ -241,7 +241,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
-        events.removeIf(e -> e.type == Event.Type.TIMEOUT);
     }
 
     @Override
@@ -410,12 +409,12 @@ public class XdagPow implements PoW, Listener, Runnable {
                         break;
                     case TIMEOUT:
                         // TODO : 判断当前是否可以进行产块
-                        if (kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
                             onTimeout();
                         }
                         break;
                     case NEW_PRETOP:
-                        if (kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
                             onNewPreTop();
                         }
                         break;

@@ -64,6 +64,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.SECP256K1;
 
@@ -166,7 +167,8 @@ public class XdagCli extends Launcher {
         // move old args
         List<String> argsList = new ArrayList<>();
         for (String arg : args) {
-            if ("-t".equals(arg)) {
+            if (StringUtils.equalsAny(arg, "-d", "-t")) {
+                // only devnet or testnet
             } else {
                 argsList.add(arg);
             }
