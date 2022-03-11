@@ -61,7 +61,7 @@ Four stages：
 
 - [x] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [x] Implement the snapshot function: reduce the cost of runing a mining pool 
+- [x] Implement the snapshot function: reduce the cost of runing a mining pool and boost the loading process
 
 - [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
