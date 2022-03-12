@@ -29,23 +29,23 @@
 - Download source code
 
   ```shell
-  git clone https://github.com/XDagger/xdagj.git
+  $git clone https://github.com/XDagger/xdagj.git
   ```
 
 - Compile RandomX link library
 
   ```shell
-  cd src/c
-  mkdir build && cd build
-  cmake ..
-  make
+  $cd src/c
+  $mkdir build && cd build
+  $cmake ..
+  $make
   ```
 
 - Build the Jar package
 
   ```shell
   #Please go back to the xdagj root directory first
-  mvn clean package
+  $mvn clean package (-Dmaven.test.skip=true)
   ```
 
 - Run
