@@ -325,6 +325,11 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 BigInteger s;
                 r = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(0, 32).toArray());
                 s = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(32, 32).toArray());
+
+                if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
+                    r = BigInteger.ONE;
+                    s = BigInteger.ONE;
+                }
                 SECP256K1.Signature ecdsaSignature = SECP256K1.Signature.create(r, s, (byte) 0);
                 //
                 set.add(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())));
