@@ -200,12 +200,14 @@ public class MinerManagerImpl implements MinerManager, Runnable{
      * 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况
      */
     public void updateNewTaskandBroadcast() {
+        Task task = null;
         try {
-            currentTask = taskQueue.poll(1, TimeUnit.SECONDS);
+            task = taskQueue.poll(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             log.error(" can not take the task from taskQueue" + e.getMessage(), e);
         }
-        if(currentTask != null) {
+        if(task != null) {
+            currentTask = task;
             activateMinerChannels.values().parallelStream()
                     .filter( c -> c.isActive())
                     .forEach( c -> {
@@ -224,7 +226,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     @Override
     public void onNewShare(MinerChannel channel, Message msg) {
         if (currentTask == null) {
-            System.out.println("currentTask is empty");
+            log.info("currentTask is empty");
         } else if (currentTask.getTaskIndex() == channel.getTaskIndex()) {
             poW.receiveNewShare(channel, msg);
         }
