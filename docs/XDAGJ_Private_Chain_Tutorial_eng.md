@@ -51,8 +51,14 @@
 - Run
 
   ```shell
-  cd target
-  nohup java -jar xdagj-0.4.5-shaded.jar > xdagj.log 2>&1 &
+  $mkdir run 
+
+  #Please copy “xdag-testnet.config”,“xdag.sh” &“xdagj-0.4.6-shaded.jar”into run.
+  #“xdag-testnet.config” is in “src-main-resources”;“xdag.sh” is in “script”;“xdagj-0.4.6-shaded.jar”is in “target”
+
+  $cd run
+  $sh xdag.sh -t
+  
   #Wait for the system to start up, use telnet to access
   telnet ip:port
   ```
