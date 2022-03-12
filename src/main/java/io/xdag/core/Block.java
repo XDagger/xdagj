@@ -261,6 +261,13 @@ public class Block implements Cloneable {
                             signo_s = j;
                             r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
                             s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
+
+                            // r and s are 0, the signature is illegal or it is a pseudo block sent by the miner
+                            if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
+                                r = BigInteger.ONE;
+                                s = BigInteger.ONE;
+                            }
+
                             SECP256K1.Signature tmp = SECP256K1.Signature.create(r, s, (byte) 0);
                             if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
                                 insigs.put(tmp, i);
