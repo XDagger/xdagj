@@ -53,8 +53,8 @@
   ```shell
   $mkdir run 
 
-  #Please copy “xdag-testnet.config”,“xdag.sh” &“xdagj-0.4.6-shaded.jar”into run.
-  #“xdag-testnet.config” is in “src-main-resources”;“xdag.sh” is in “script”;“xdagj-0.4.6-shaded.jar”is in “target”
+  #Please copy xdag-testnet.config, xdag.sh & xdagj-0.4.6-shaded.jar into /run
+  # xdag-testnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.4.6-shaded.jar is in /target
 
   $cd run
   $sh xdag.sh -t
