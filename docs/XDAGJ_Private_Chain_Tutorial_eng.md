@@ -26,7 +26,7 @@
 
 ## Build
 
-－Environment
+- Environment
   ```shell
   System：Ubuntu-18.04.1
   JDK：v17
