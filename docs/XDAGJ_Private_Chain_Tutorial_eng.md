@@ -15,7 +15,7 @@
 
   ```yaml
   JDK   : v17
-  Maven : v3.8.3
+  Maven : v3.8.4
   ```
 
   Please make sure that the above environment is already available in your operating system, and the JDK version must be 17
@@ -25,14 +25,7 @@
   **Since the RandomX algorithm has high memory requirements, in order to ensure the normal operation of the XDAGJ mining pool, please ensure that the available memory of the system is greater than 5.5G**
 
 ## Build
-
-- Environment
-  ```shell
-  System：Ubuntu-18.04.1
-  JDK：v17
-  Maven：3.8.4
-  ```
-  
+ 
 - Download source code
 
   ```shell
