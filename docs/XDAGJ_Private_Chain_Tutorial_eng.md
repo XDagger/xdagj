@@ -26,6 +26,13 @@
 
 ## Build
 
+－Environment
+  ```shell
+  System：Ubuntu-18.04.1
+  JDK：v17
+  Maven：3.8.4
+  ```
+  
 - Download source code
 
   ```shell
