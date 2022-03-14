@@ -103,6 +103,7 @@ public class BlockchainTest {
 
     @Before
     public void setUp() throws Exception {
+        SECP256K1.enableNative();
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 

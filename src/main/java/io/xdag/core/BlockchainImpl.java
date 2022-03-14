@@ -220,7 +220,7 @@ public class BlockchainImpl implements Blockchain {
 
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
-        System.out.println("cost：" + (end - start) + "ms");
+        System.out.println("耗时：" + (end - start) + "ms");
         System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotJ.getOurBalance()));
     }
 
@@ -435,11 +435,8 @@ public class BlockchainImpl implements Blockchain {
                 long currentHeight = xdagStats.nmain;
                 // 找到共同祖先blockref
                 Block blockRef = findAncestor(block, isSyncFixFork(xdagStats.nmain));
-                if(blockRef != null) {
-                    // 将主链回退到blockRef
-                    unWindMain(blockRef);
-                }
-
+                // 将主链回退到blockRef
+                unWindMain(blockRef);
                 // 更新新的链
                 updateNewChain(block, isSyncFixFork(xdagStats.nmain));
                 // 发生回退
@@ -447,7 +444,6 @@ public class BlockchainImpl implements Blockchain {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
-                xdagStats.setMaxdifficulty(block.getInfo().getDifficulty());
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
