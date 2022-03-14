@@ -184,7 +184,7 @@ public class Miner {
     }
 
     public void addPrevDiff(double i) {
-        prevDiff = +i;
+        prevDiff += i;
     }
 
     public void addPrevDiffCounts() {

@@ -341,7 +341,7 @@ public class MinerChannel {
     }
 
     public void addPrevDiff(double i) {
-        prevDiff = +i;
+        prevDiff += i;
     }
 
     public void addPrevDiffCounts() {
