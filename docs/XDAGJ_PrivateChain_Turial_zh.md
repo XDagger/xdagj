@@ -19,7 +19,7 @@
   Maven : v3.8.3
   ```
 
-  请确保您的操作系统中已经具备上述环境，其中JDK版本必须确保为17
+  请确保您的操作系统中已经具备上述环境，其中JDK版本必须确保为17，maven 版本必须 > 3.8，否则无法与 JDK17 兼容
 
 - 硬件参数
 
@@ -29,64 +29,99 @@
 
 ## 构建XDAGJ客户端
 
+## UNIX
+
 - 下载源码
 
   ```shell
   git clone https://github.com/XDagger/xdagj.git
   ```
 
-- 编译RandomX链接库
+- 安装依赖
 
   ```shell
-  cd src/c
-  mkdir build && cd build
-  cmake ..
-  make
+  # macOS
+  brew install cmake openssl libtool gmp autoconf 
+  # linux (Ubuntu20.04 LTS)
+  apt-get install cmake gcc build-essential pkg-config libssl-dev libgmp-dev libtool libsecp256k1-dev librandomx-dev
   ```
 
-- 构建Jar包
+- 在当前目录下进入 script 文件夹执行编译脚本
 
   ```shell
-  #请先回退至xdagj根目录
-  mvn clean package
+  cd  script
+  ./xdag.sh -t
   ```
 
-- 运行矿池
+  命令说明
 
   ```shell
-  cd target
-  nohup java -jar xdagj-0.4.5-shaded.jar > xdagj.log 2>&1 &
+  -t 使用测试网环境
+  -m 使用主网环境
+  -D 跳过 mvn clean package 时的测试任务
+  ```
+
+  **首次运行 xdagj 的时候，建议先执行 xdag.sh ，确保程序可以正常启动后再根据自身的需要进行配置内容的替换**
+
+  Xdag.sh 会对 xdagj 项目进行构建，构建成功之后会创建在工程根目录下创建一个 pool 的文件夹，用于存放程序运行时所需的配置文件以及数据。
+
+- 非首次启动 xdagj，或者想直接直接后台启动，可以在 pool 文件夹下找到对应的 xdagj-{version}-shaded.jar 包单独运行
+
+  ```shell
+  cd pool
+  nohup java -jar xdagj-0.4.6-shaded.jar > xdagj.log 2>&1 &
   #等待系统启动完毕，采用telnet接入
-  telnet ip:port
+  telnet 127.0.0.1:6001
   ```
 
-  系统初始密码为123456
+  telnet 默认密码为 `ADMIN_TELNET_PASSWORD`，可在配置文件中自行修改。具体参数含义见下节
+
+## Window
+
+TODO
 
 
 
 ## 修改矿池参数
 
-配置文件位于`src/main/resources/xdag.config`，具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
+配置文件位于`src/main/resources/xdag-xxx.config`，打包后位于程序的根目录下（./pool）具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
+
+- xdag-testnet.config 为例
 
 ```yaml
-#链接设置
-telnetIP && telnetPort    #用于绑定telnet服务的ip和端口
-nodeIP && nodePort        #暴露给对等矿池的ip和端口
-poolIP && poolPort        #矿工接入挖矿的ip和端口
+# 管理员控制
+admin.telnet.ip									# telnet 远程连接 ip，默认为 127.0.0.1
+admin.telnet.port								# telnet 远程连接端口，默认为 6001
+admin.telnet.password						# telnet 远程连接密码
 
-#奖励设置
-poolRation                #挖矿矿池抽成比例(1-100)
-rewardRation              #出块矿工奖励比例(1-100)
-fundRation                #基金会抽成比例(1-100)
-directRation              #参与奖励比例(1-100)
+# 矿池设置（适用于矿工连接）
+pool.ip													# 矿工连接的 ip，默认为 127.0.0.1
+pool.port												# 矿工连接地址对应的端口，默认为 7001
+pool.tag												# 矿池标识，即矿池 identifier
 
-#矿工限制
-globalMinerLimit          #矿池最大允许接入矿工数量
-maxConnectPerIP           #相同ip地址允许最多的接入矿工数
-maxMinerPerAccount        #相同钱包账户允许最多的接入矿工数
+# 奖励设置
+poolRation                			# 挖矿矿池抽成比例(1-100)，默认为 5
+rewardRation              			# 出块矿工奖励比例(1-100)，默认为 5
+fundRation                			# 基金会抽成比例(1-100)，默认为 5
+directRation              			# 参与奖励比例(1-100)，默认为 5
 
-#白名单配置
-whiteIPs                  #允许连接的矿池节点，形式为ip:port，用‘，’隔开
+# 节点设置（用于矿池之间的相互连接）
+node.ip													# 矿池之间相互连接的 ip，默认为 127.0.0.1
+node.port												# 矿池之间相互连接的端口，默认为 8001
+node.maxInboundConnectionsPerIp	# 矿池之间允许入站连接数，默认为 8
+node.whiteIPs										# 白名单列表，可选。在该列表内的 ip 才允许被连接
+
+# Node RPC Config
+rpc.enabled											# 是否开启 RPC 功能，默认为 true
+rpc.http.host										# rpc 地址，默认为 127.0.0.1
+rpc.http.port										# rpc http 端口，默认为 10001
+rpc.ws.port											# rpc websocket 端口，默认为 10002
+
+# 矿工限制
+miner.globalMinerLimit					# 矿池最大允许接入矿工数量
+miner.globalMinerChannelLimit 	# 矿池最大允许接入连接数
+miner.maxConnectPerIp 					# 相同ip地址允许最多的接入矿工数
+miner.maxMinerPerAccount 				# 相同钱包账户允许最多的接入矿工数
 ```
 
 
@@ -203,5 +238,4 @@ whiteIPs                  #允许连接的矿池节点，形式为ip:port，用�
 至此，您已经可以使用XDAGJ构建一个属于您独有的私有链环境
 
 您可以对现有的功能进行测试，寻找任何有可能令系统出错或者崩溃的错误。我们非常欢迎您在[Issue](https://github.com/XDagger/xdagj/issues)中提出任何存在的问题或者改进的建议
-
 
