@@ -90,38 +90,38 @@ TODO
 
 ```yaml
 # 管理员控制
-admin.telnet.ip									# telnet 远程连接 ip，默认为 127.0.0.1
-admin.telnet.port								# telnet 远程连接端口，默认为 6001
-admin.telnet.password						# telnet 远程连接密码
+admin.telnet.port            # telnet 远程连接 ip，默认为 127.0.0.1
+admin.telnet.port            # telnet 远程连接端口，默认为 6001
+admin.telnet.password	   # telnet 远程连接密码
 
 # 矿池设置（适用于矿工连接）
-pool.ip													# 矿工连接的 ip，默认为 127.0.0.1
-pool.port												# 矿工连接地址对应的端口，默认为 7001
-pool.tag												# 矿池标识，即矿池 identifier
+pool.ip                         # 矿工连接的 ip，默认为 127.0.0.1
+pool.port                     # 矿工连接地址对应的端口，默认为 7001
+pool.tag                      # 矿池标识，即矿池 identifier
 
 # 奖励设置
-poolRation                			# 挖矿矿池抽成比例(1-100)，默认为 5
-rewardRation              			# 出块矿工奖励比例(1-100)，默认为 5
-fundRation                			# 基金会抽成比例(1-100)，默认为 5
-directRation              			# 参与奖励比例(1-100)，默认为 5
+poolRation                 # 挖矿矿池抽成比例(1-100)，默认为 5
+rewardRation             # 出块矿工奖励比例(1-100)，默认为 5
+fundRation                # 基金会抽成比例(1-100)，默认为 5
+directRation              # 参与奖励比例(1-100)，默认为 5
 
 # 节点设置（用于矿池之间的相互连接）
-node.ip													# 矿池之间相互连接的 ip，默认为 127.0.0.1
-node.port												# 矿池之间相互连接的端口，默认为 8001
-node.maxInboundConnectionsPerIp	# 矿池之间允许入站连接数，默认为 8
-node.whiteIPs										# 白名单列表，可选。在该列表内的 ip 才允许被连接
+node.ip                                          # 矿池之间相互连接的 ip，默认为 127.0.0.1
+node.port                                      # 矿池之间相互连接的端口，默认为 8001
+node.maxInboundConnectionsPerIp  # 矿池之间允许入站连接数，默认为 8
+node.whiteIPs                               # 白名单列表，可选。在该列表内的 ip 才允许被连接
 
 # Node RPC Config
-rpc.enabled											# 是否开启 RPC 功能，默认为 true
-rpc.http.host										# rpc 地址，默认为 127.0.0.1
-rpc.http.port										# rpc http 端口，默认为 10001
-rpc.ws.port											# rpc websocket 端口，默认为 10002
+rpc.enabled              # 是否开启 RPC 功能，默认为 true
+rpc.http.host            # rpc 地址，默认为 127.0.0.1
+rpc.http.port            # rpc http 端口，默认为 10001
+rpc.ws.port             # rpc websocket 端口，默认为 10002
 
 # 矿工限制
-miner.globalMinerLimit					# 矿池最大允许接入矿工数量
-miner.globalMinerChannelLimit 	# 矿池最大允许接入连接数
-miner.maxConnectPerIp 					# 相同ip地址允许最多的接入矿工数
-miner.maxMinerPerAccount 				# 相同钱包账户允许最多的接入矿工数
+miner.globalMinerLimit               # 矿池最大允许接入矿工数量
+miner.globalMinerChannelLimit   # 矿池最大允许接入连接数
+miner.maxConnectPerIp             # 相同ip地址允许最多的接入矿工数
+miner.maxMinerPerAccount       #相同钱包账户允许最多的接入矿工数
 ```
 
 
