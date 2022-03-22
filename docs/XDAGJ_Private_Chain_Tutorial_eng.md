@@ -63,7 +63,6 @@
   telnet ip:port
   ```
 
-  The initial system password is 123456
 
 
 
