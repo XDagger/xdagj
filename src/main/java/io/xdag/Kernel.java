@@ -240,7 +240,7 @@ public class Kernel {
         if(config.getSnapshotSpec().isSnapshotJ()){
             randomXUtils.randomXLoadingSnapshot();
             blockStore.setSnapshotBoot();
-        }else {
+        } else {
             if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
                 // TODO: forkTime 怎么获得
                 System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
@@ -269,8 +269,8 @@ public class Kernel {
         client = new XdagClient(this.config);
         log.info("XdagClient nodeId {}", client.getNode().getHexId());
 
-        libp2pNetwork = new Libp2pNetwork(this);
-        libp2pNetwork.start();
+//        libp2pNetwork = new Libp2pNetwork(this);
+//        libp2pNetwork.start();
 
 //        discoveryController = new DiscoveryController(this);
 //        discoveryController.start();
@@ -461,7 +461,7 @@ public class Kernel {
 
         log.info("ChannelManager stop.");
 //        discoveryController.stop();
-        libp2pNetwork.stop();
+//        libp2pNetwork.stop();
         // close timer
         MessageQueue.timer.shutdown();
 

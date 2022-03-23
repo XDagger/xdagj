@@ -71,7 +71,7 @@ public class SyncManager {
     private Blockchain blockchain;
     private long importStart;
     private AtomicLong importIdleTime = new AtomicLong();
-    private boolean syncDone = false;
+    private AtomicBoolean syncDone = new AtomicBoolean(false);
     private XdagChannelManager channelMgr;
     private ScheduledFuture<?> connectlibp2pFuture;
     private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
@@ -140,10 +140,12 @@ public class SyncManager {
             log.debug("Block have exist:" + blockWrapper.getBlock().getHash().toHexString());
         }
 
-        Config config = kernel.getConfig();
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
+            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
+
+            Config config = kernel.getConfig();
             // 状态设置为正在同步
-            if (!syncDone) {
+            if (!syncDone.get()) {
                 if (config instanceof MainnetConfig) {
                     kernel.setXdagState(XdagState.CONN);
                 } else if (config instanceof TestnetConfig) {
@@ -151,19 +153,13 @@ public class SyncManager {
                 } else if (config instanceof DevnetConfig) {
                     kernel.setXdagState(XdagState.CDST);
                 }
-            }
 
-            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
-            if (!syncDone
-                    && ((blockchain.getXdagStats().getMaxdifficulty().compareTo(BigInteger.ZERO) > 0
-                    && currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)
-            )
-            ) {
-                makeSyncDone();
+                if((blockchain.getXdagStats().getMaxdifficulty().compareTo(BigInteger.ZERO) > 0) &&
+                        (currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)) {
+                    makeSyncDone();
+                }
             }
-        }
-
-        if (syncDone && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
+        } else if(importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
             // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
             if (blockWrapper.getRemoteNode() == null
                     || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
@@ -173,10 +169,6 @@ public class SyncManager {
             }
         }
         return importResult;
-    }
-
-    public boolean isSyncDone() {
-        return syncDone;
     }
 
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
@@ -294,36 +286,31 @@ public class SyncManager {
 
     // TODO：目前默认是一直保持同步，不负责出块
     public void makeSyncDone() {
+        if (syncDone.compareAndExchange(false, true)) {
+            // 关闭状态检测进程
+            this.stateListener.isRunning = false;
+            Config config = kernel.getConfig();
+            if (config instanceof MainnetConfig) {
+                if (kernel.getXdagState() != XdagState.SYNC) {
+                    kernel.setXdagState(XdagState.SYNC);
+                }
+            } else if (config instanceof TestnetConfig) {
+                if (kernel.getXdagState() != XdagState.STST) {
+                    kernel.setXdagState(XdagState.STST);
+                }
+            } else if (config instanceof DevnetConfig) {
+                if (kernel.getXdagState() != XdagState.SDST) {
+                    kernel.setXdagState(XdagState.SDST);
+                }
+            }
 
-        if (syncDone) {
-            return;
+            log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
+            log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
+
+            // 检查主块链
+            kernel.getMinerServer().start();
+            kernel.getPow().start();
         }
-        syncDone = true;
-
-        // 关闭状态检测进程
-        this.stateListener.isRunning = false;
-        Config config = kernel.getConfig();
-        if (config instanceof MainnetConfig) {
-            if (kernel.getXdagState() != XdagState.SYNC) {
-                kernel.setXdagState(XdagState.SYNC);
-            }
-        } else if (config instanceof TestnetConfig) {
-            if (kernel.getXdagState() != XdagState.STST) {
-                kernel.setXdagState(XdagState.STST);
-            }
-        } else if (config instanceof DevnetConfig) {
-            if (kernel.getXdagState() != XdagState.SDST) {
-                kernel.setXdagState(XdagState.SDST);
-            }
-        }
-
-        log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
-        log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
-
-        // 检查主块链
-        kernel.getMinerServer().start();
-        kernel.getPow().start();
-
     }
 
     public void stop() {

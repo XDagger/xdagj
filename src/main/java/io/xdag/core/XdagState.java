@@ -73,7 +73,7 @@ public enum XdagState {
     CONN(0x0a),
 
     /**
-     * Synchronized with the test network. Normal testing.
+     * Synchronized with the  dev network. Normal testing.
      */
     SDST(0x0b),
     /**
