@@ -238,7 +238,7 @@ public class Kernel {
         // TODO: paulochen randomx 需要恢复
         // 初次快照启动
         if(config.getSnapshotSpec().isSnapshotJ()){
-            randomXUtils.randomXLoadingForkTime();
+            randomXUtils.randomXLoadingSnapshot();
             blockStore.setSnapshotBoot();
         }else {
             if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {

@@ -241,6 +241,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
+        events.removeIf(e->e.type== Event.Type.TIMEOUT);
     }
 
     @Override
@@ -392,7 +393,8 @@ public class XdagPow implements PoW, Listener, Runnable {
     @Override
     public void run() {
         log.info("Main PoW start ....");
-        resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
+ //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
+        timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
         globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
         while (this.isRunning) {
