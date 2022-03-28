@@ -33,9 +33,12 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
+import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
+import io.xdag.core.TxHistory;
 import io.xdag.core.XdagBlock;
+import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.db.KVSource;
@@ -47,6 +50,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -78,6 +82,9 @@ public class BlockStore {
 
     public static final byte SNAPSHOT_PRESEED = (byte) 0x90;
 
+    // tx history
+    public static final byte TX_HISTORY = (byte) 0xa0;
+
     public static final String SUM_FILE_NAME = "sums.dat";
 
     private final Kryo kryo;
@@ -95,6 +102,8 @@ public class BlockStore {
      */
     private final KVSource<byte[], byte[]> blockSource;
 
+    private final KVSource<byte[], byte[]> txHistorySource;
+
     public BlockStore(
             KVSource<byte[], byte[]> index,
             KVSource<byte[], byte[]> time,
@@ -102,7 +111,21 @@ public class BlockStore {
         this.indexSource = index;
         this.timeSource = time;
         this.blockSource = block;
+        this.txHistorySource = null;
         this.kryo = new Kryo();
+        kryoRegister();
+    }
+
+    public BlockStore(
+            KVSource<byte[], byte[]> index,
+            KVSource<byte[], byte[]> time,
+            KVSource<byte[], byte[]> block,
+            KVSource<byte[], byte[]> txHistory) {
+        this.indexSource = index;
+        this.timeSource = time;
+        this.blockSource = block;
+        this.kryo = new Kryo();
+        this.txHistorySource = txHistory;
         kryoRegister();
     }
 
@@ -200,12 +223,14 @@ public class BlockStore {
         indexSource.init();
         timeSource.init();
         blockSource.init();
+        txHistorySource.init();
     }
 
     public void reset() {
         indexSource.reset();
         timeSource.reset();
         blockSource.reset();
+        txHistorySource.reset();
     }
 
     public void saveXdagStatus(XdagStats status) {
@@ -580,5 +605,35 @@ public class BlockStore {
         return indexSource.get(new byte[]{SNAPSHOT_PRESEED});
     }
 
+
+    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, BigInteger amount,
+            long time) {
+        byte[] key = BytesUtils.merge(TX_HISTORY,
+                BytesUtils.merge(addressHashlow.toArray(), txHashlow.toArray())); // key 0xa0 + address hash + tx hash
+
+        byte[] value = null;
+        value = BytesUtils.merge(type.asByte(), BytesUtils
+                .merge(txHashlow.toArray(), BytesUtils.merge(BytesUtils.bigIntegerToBytes(amount, 8, true),
+                        BytesUtils.longToBytes(time, true)))); // type + tx hash + amount + time
+        txHistorySource.put(key, value);
+    }
+
+    public List<TxHistory> getTxHistoryByAddress(Bytes32 addressHashlow) {
+        List<byte[]> values = txHistorySource.prefixValueLookup(BytesUtils.merge(TX_HISTORY, addressHashlow.toArray()));
+        List<TxHistory> res = new ArrayList<>();
+
+        for (byte[] value : values) {
+            byte type = BytesUtils.subArray(value, 0, 1)[0];
+            XdagField.FieldType fieldType = XdagField.FieldType.fromByte(type);
+            Bytes32 hashlow = Bytes32.wrap(BytesUtils.subArray(value, 1, 32));
+            long amount = BytesUtils.bytesToLong(BytesUtils.subArray(value, 33, 8), 0, true);
+            long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
+            Address address = new Address(hashlow, fieldType, amount);
+
+            res.add(new TxHistory(address, timestamp));
+        }
+        return res;
+
+    }
 }
 

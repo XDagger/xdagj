@@ -60,6 +60,7 @@ public class BlockStoreTest {
     KVSource<byte[], byte[]> indexSource;
     KVSource<byte[], byte[]> timeSource;
     KVSource<byte[], byte[]> blockSource;
+    KVSource<byte[], byte[]> txHistory;
 
     @Before
     public void setUp() throws Exception {
@@ -69,29 +70,30 @@ public class BlockStoreTest {
         indexSource = factory.getDB(DatabaseName.INDEX);
         timeSource = factory.getDB(DatabaseName.TIME);
         blockSource = factory.getDB(DatabaseName.BLOCK);
+        txHistory = factory.getDB(DatabaseName.TXHISTORY);
     }
 
     @Test
     public void testNewBlockStore() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         assertNotNull(bs);
     }
 
     @Test
     public void testInit() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
     }
 
     @Test
     public void testReset() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.reset();
     }
 
     @Test
     public void testSaveXdagStatus() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         XdagStats stats = new XdagStats();
         stats.setNmain(1);
@@ -102,7 +104,7 @@ public class BlockStoreTest {
 
     @Test
     public void testSaveBlock() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
@@ -115,7 +117,7 @@ public class BlockStoreTest {
 
     @Test
     public void testSaveOurBlock() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
@@ -127,7 +129,7 @@ public class BlockStoreTest {
 
     @Test
     public void testRemoveOurBlock() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         ECKeyPair key = Keys.createEcKeyPair();
@@ -141,7 +143,7 @@ public class BlockStoreTest {
 
     @Test
     public void testSaveBlockSums() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = 1602951025307L;
         ECKeyPair key = Keys.createEcKeyPair();
@@ -154,7 +156,7 @@ public class BlockStoreTest {
 
     @Test
     public void getBlockByTimeTest() {
-        BlockStore blockStore = new BlockStore(indexSource, timeSource, blockSource);
+        BlockStore blockStore = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         blockStore.init();
 
         // 创建区块

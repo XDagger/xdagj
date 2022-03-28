@@ -82,6 +82,7 @@ public class Constants {
     public static final Long SYNC_FIX_HEIGHT = 0L;
 
     public enum MessageType {
+        UPDATE,
         PRE_TOP,
         NEW_LINK;
     }

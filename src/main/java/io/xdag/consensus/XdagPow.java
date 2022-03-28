@@ -28,7 +28,6 @@ import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
 import io.xdag.Kernel;
-import io.xdag.config.Constants.MessageType;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
@@ -36,7 +35,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagState;
 import io.xdag.crypto.Hash;
+import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
+import io.xdag.listener.PretopMessage;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.MinerManager;
@@ -380,7 +381,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     @Override
     public void run() {
         log.info("Main PoW start ....");
-        resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
+        timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
         globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
         while (this.isRunning) {
@@ -416,13 +417,16 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     @Override
-    public void onMessage(io.xdag.listener.Message message, MessageType type) {
-        if (type == MessageType.PRE_TOP) {
-            receiveNewPretop(message.getData());
-        } else if (type == MessageType.NEW_LINK) {
+    public void onMessage(io.xdag.listener.Message msg) {
+        if (msg instanceof BlockMessage) {
+            BlockMessage message = (BlockMessage) msg;
             BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(message.getData().toArray())),
                     kernel.getConfig().getNodeSpec().getTTL());
             broadcaster.broadcast(bw);
+        }
+        if (msg instanceof PretopMessage) {
+            PretopMessage message = (PretopMessage) msg;
+            receiveNewPretop(message.getData());
         }
     }
 

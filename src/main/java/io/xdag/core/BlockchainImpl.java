@@ -37,8 +37,6 @@ import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
 import static io.xdag.config.Constants.MessageType.NEW_LINK;
 import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
@@ -49,6 +47,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
+import io.xdag.core.XdagField.FieldType;
 import io.xdag.crypto.ECDSASignature;
 import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Hash;
@@ -57,8 +56,9 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
-import io.xdag.listener.Message;
+import io.xdag.listener.PretopMessage;
 import io.xdag.randomx.RandomX;
 import io.xdag.snapshot.core.SnapshotInfo;
 import io.xdag.snapshot.core.SnapshotUnit;
@@ -351,6 +351,15 @@ public class BlockchainImpl implements Blockchain {
                 // if(!all.get(i).getAmount().equals(BigInteger.ZERO)){
                 // Block blockRef = getBlockByHash(all.get(i).getHashLow(),false);
                 // }
+                if (!ref.getAmount().equals(BigInteger.ZERO)) {
+                    if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
+                        onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
+                                block.getTimestamp());
+                    } else {
+                        onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
+                                block.getTimestamp());
+                    }
+                }
             }
 
             // 检查当前主链
@@ -414,6 +423,7 @@ public class BlockchainImpl implements Blockchain {
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
+                xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
             }
 
             // 新增区块
@@ -451,6 +461,16 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+
+    private void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
+            BigInteger amount, long time) {
+        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time);
+    }
+
+
+    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow) {
+        return blockStore.getTxHistoryByAddress(addressHashlow);
+    }
 
     /**
      * 用于判断是否切换到修复同步问题的分支
@@ -534,13 +554,13 @@ public class BlockchainImpl implements Blockchain {
 
     protected void onNewPretop() {
         for (Listener listener : listeners) {
-            listener.onMessage(new Message(Bytes.wrap(xdagTopStatus.getPreTop())), PRE_TOP);
+            listener.onMessage(new PretopMessage(Bytes.wrap(xdagTopStatus.getPreTop()), PRE_TOP));
         }
     }
 
     protected void onNewBlock(Block block) {
         for (Listener listener : listeners) {
-            listener.onMessage(new Message(Bytes.wrap(block.getXdagBlock().getData())), NEW_LINK);
+            listener.onMessage(new BlockMessage(Bytes.wrap(block.getXdagBlock().getData()), NEW_LINK));
         }
     }
 
@@ -1375,9 +1395,9 @@ public class BlockchainImpl implements Blockchain {
             Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
             linkBlock.signOut(kernel.getWallet().getDefKey());
             ImportResult result = this.tryToConnect(linkBlock);
-            if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
-                onNewBlock(linkBlock);
-            }
+//            if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
+//                onNewBlock(linkBlock);
+//            }
         }
     }
 

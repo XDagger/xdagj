@@ -24,6 +24,7 @@
 
 package io.xdag.cli;
 
+import static io.xdag.config.BlockState.MAIN;
 import static io.xdag.config.Constants.BI_APPLIED;
 import static io.xdag.config.Constants.BI_MAIN;
 import static io.xdag.config.Constants.BI_MAIN_CHAIN;
@@ -41,10 +42,12 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
+import io.xdag.config.BlockState;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
+import io.xdag.core.TxHistory;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
@@ -124,17 +127,17 @@ public class Commands {
         int flag = flags & ~(BI_OURS | BI_REMARK);
         // 1F
         if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED | BI_MAIN | BI_MAIN_CHAIN)) {
-            return "Main";
+            return MAIN.getDesc();
         }
         // 1C
         if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
-            return "Accepted";
+            return BlockState.ACCEPTED.getDesc();
         }
         // 18
         if (flag == (BI_REF | BI_MAIN_REF)) {
-            return "Rejected";
+            return BlockState.REJECTED.getDesc();
         }
-        return "Pending";
+        return BlockState.PENDING.getDesc();
     }
 
     /**
@@ -480,6 +483,34 @@ public class Commands {
                 }
             }
         }
+
+        String txHisFormat = """
+                -----------------------------------------------------------------------------------------------------------------------------
+                                               block as address: details
+                 direction  address                                    amount                 time
+                       """;
+        StringBuilder tx = new StringBuilder();
+        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
+            tx.append(String.format("    earn: %s           %.9f   %s\n", hash2Address(block.getHashLow()),
+                    amount2xdag(kernel.getBlockchain().getReward(block.getInfo().getHeight())),
+                    FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                            .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
+        }
+        for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow())) {
+            Address address = txHistory.getAddress();
+            if (address.getType().equals(XDAG_FIELD_IN)) {
+                tx.append(String.format("    input: %s           %.9f   %s\n", hash2Address(address.getHashLow()),
+                        amount2xdag(address.getAmount().longValue()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            } else {
+                tx.append(String.format("    output: %s           %.9f   %s\n", hash2Address(address.getHashLow()),
+                        amount2xdag(address.getAmount().longValue()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            }
+        }
+
         //TODO need add block as transaction
         return String.format(heightFormat, block.getInfo().getHeight()) + String.format(otherFormat,
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
@@ -496,6 +527,11 @@ public class Commands {
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
+
+                + "\n"
+                + txHisFormat
+                + "\n"
+                + tx.toString()
                 ;
     }
 
