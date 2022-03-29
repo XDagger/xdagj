@@ -541,7 +541,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 continue;
             }
             payAmount += paymentSum;
-            receipt.add(new Address(miner.getAddressHaashLow(), XDAG_FIELD_OUT, paymentSum));
+            receipt.add(new Address(miner.getAddressHashLow(), XDAG_FIELD_OUT, paymentSum));
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hash, receipt, payAmount, keyPos);

@@ -175,6 +175,13 @@ public class MinerChannel {
     private boolean isMill = false;
 
     /**
+     * 矿工名
+     */
+    @Getter
+    @Setter
+    private String workerName = "";
+
+    /**
      * 初始化 同时需要判断是服务器端还是客户端
      */
     public MinerChannel(Kernel kernel, boolean isServer) {
@@ -349,7 +356,7 @@ public class MinerChannel {
     }
 
     public void addMaxDiffs(int index, double diff) {
-        maxDiffs.add(index, diff);
+        maxDiffs.set(index, diff);
     }
 
     public double getMaxDiffs(int index) {

@@ -70,8 +70,8 @@ public class MinerCalculate {
         for (int i = 0; i < CONFIRMATIONS_COUNT; i++) {
             if (miner.getMaxDiffs(i) > 0) {
                 sum = BigDecimalUtils.add(sum, miner.getMaxDiffs(i));
+                ++count;
             }
-            ++count;
         }
         return diffToPay(sum, count);
     }
@@ -117,6 +117,9 @@ public class MinerCalculate {
             double rate = BasicUtils.xdag_log_difficulty2hashrate(mean);
 
             channelStr
+                    .append("WorkerName: ")
+                    .append(channel.getWorkerName())
+                    .append("   ")
                     .append("ip: ")
                     .append(ip)
                     .append("   ")
