@@ -38,6 +38,7 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.NewBalanceMessage;
 import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
+import io.xdag.mine.message.WorkerNameMessage;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
@@ -73,6 +74,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             case TASK_SHARE -> processTaskShare((TaskShareMessage) msg);
             case NEW_TASK -> processNewTask((NewTaskMessage) msg);
             case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
+            case WORKER_NAME ->processWorkerName((WorkerNameMessage) msg);
             default -> log.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
         }
     }
@@ -162,6 +164,14 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             log.debug("Too many Shares,Reject...");
         }
 
+    }
+
+    private void processWorkerName(WorkerNameMessage msg) {
+        log.debug("Pool Receive Worker Name");
+        byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
+        String workerName = new String(workerNameByte).trim();
+        System.out.println(workerName);
+        channel.setWorkerName(workerName);
     }
 
     /**

@@ -245,7 +245,7 @@ public class Miner {
         return prevDiffSum.get(key);
     }
 
-    public Bytes32 getAddressHaashLow() {
+    public Bytes32 getAddressHashLow() {
         return this.addressHashLow;
     }
 

@@ -379,7 +379,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             }
             byte[] data = null;
             if (block == null && signature != null) {
-                data = createXdagBlock(signature, balanceData);
+                data = createXdagBlock(signature, balanceData, mainLag);
             } else if (block != null) {
                 data = block.getXdagBlock().getData().toArray();
             }
@@ -465,10 +465,11 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         return true;
     }
 
-    private byte[] createXdagBlock(SECP256K1.Signature signature, BalanceData balanceData) {
+    private byte[] createXdagBlock(SECP256K1.Signature signature, BalanceData balanceData, boolean mainLag) {
+        long blockType = mainLag ? 1361L : 1368L;
         MutableBytes mutableBytes = MutableBytes.create(512);
         byte[] transportHeader = BytesUtils.longToBytes(0, true);
-        byte[] type = BytesUtils.longToBytes(1368, true);
+        byte[] type = BytesUtils.longToBytes(blockType, true);
         byte[] time = BytesUtils.longToBytes(balanceData.getTime(), true);
         byte[] fee = BytesUtils.longToBytes(0, true);
         byte[] sig = BytesUtils.subArray(signature.encodedBytes().toArray(), 0, 64);
