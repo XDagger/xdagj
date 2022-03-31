@@ -451,7 +451,7 @@ public class XdagCliTest {
         when(xdagCLI.loadWallet()).thenReturn(wallet);
         when(wallet.addAccount(any(SECP256K1.KeyPair.class))).thenReturn(false);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
-
+        when(wallet.exists()).thenReturn(true);
         // mock passwords
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
         doReturn(null).when(xdagCLI).startKernel(any(), any());
@@ -476,7 +476,7 @@ public class XdagCliTest {
         when(wallet.addAccount(any(SECP256K1.KeyPair.class))).thenReturn(true);
         when(wallet.flush()).thenReturn(false);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
-
+        when(wallet.exists()).thenReturn(true);
         // mock passwords
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
         doReturn(null).when(xdagCLI).startKernel(any(), any());
@@ -501,7 +501,10 @@ public class XdagCliTest {
         when(wallet.flush()).thenReturn(true);
         when(wallet.isHdWalletInitialized()).thenReturn(true);
 
+        when(wallet.exists()).thenReturn(false);
+        //when(xdagCLI.readPassword())
         // mock passwords
+        doReturn("oldpassword").when(xdagCLI).readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
         doReturn(null).when(xdagCLI).startKernel(any(), any());
 
@@ -548,7 +551,8 @@ public class XdagCliTest {
         Wallet wallet = mock(Wallet.class);
         when(wallet.unlock("oldpassword")).thenReturn(true);
         when(xdagCLI.loadWallet()).thenReturn(wallet);
-
+        when(wallet.exists()).thenReturn(true);
+        doReturn("oldpassword").when(xdagCLI).readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
         // mock passwords
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
 

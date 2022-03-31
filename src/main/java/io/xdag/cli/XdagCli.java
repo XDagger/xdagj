@@ -356,7 +356,7 @@ public class XdagCli extends Launcher {
     }
 
     protected boolean importPrivateKey(String key) {
-        Wallet wallet = loadAndUnlockWallet();
+        Wallet wallet = loadWallet().exists() ? loadAndUnlockWallet() : createNewWallet();
         SECP256K1.KeyPair account = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create(Bytes32.fromHexString(key)));
 
         boolean accountAdded = wallet.addAccount(account);
