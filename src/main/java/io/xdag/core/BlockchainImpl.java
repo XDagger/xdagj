@@ -1372,13 +1372,12 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void checkState() {
-        // TODO:检查extra
-//        checkExtra();
+        checkOrphan();
         checkMain();
     }
 
-    public void checkExtra() {
-        long nblk = xdagStats.nextra / 11;
+    public void checkOrphan() {
+        long nblk = xdagStats.nnoref / 11;
         if (nblk > 0) {
             boolean b = (nblk % 61) > (RandomUtils.nextLong() % 61);
             nblk = nblk / 61 + (b ? 1 : 0);

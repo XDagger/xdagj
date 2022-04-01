@@ -171,7 +171,7 @@ public class ExtraBlockTest {
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(result, IMPORTED_BEST);
-        blockchain.checkExtra();
+        blockchain.checkOrphan();
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
@@ -186,25 +186,25 @@ public class ExtraBlockTest {
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
             assertSame(result, IMPORTED_BEST);
-            blockchain.checkExtra();
+            blockchain.checkOrphan();
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        generateTime += 64000L;
+        generateTime += 63000L;
 
         // 3. create 30 extra block
         for (int i = 10; i <= 40; i++) {
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
-            long xdagTime = XdagTime.getEndOfEpoch(time);
+            long xdagTime = time;
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "01" + i);
             blockchain.tryToConnect(extraBlock);
-            blockchain.checkExtra();
+            blockchain.checkOrphan();
             extraBlockList.add(extraBlock);
         }
 
-        assertEquals(12, blockchain.getXdagStats().nextra);
+        assertEquals(1, blockchain.getXdagStats().nnoref);
         assertEquals(55, blockchain.getXdagStats().nblocks);
     }
 
@@ -241,8 +241,8 @@ public class ExtraBlockTest {
         }
 
         @Override
-        public void checkExtra() {
-            long nblk = this.getXdagStats().nextra / 11;
+        public void checkOrphan() {
+            long nblk = this.getXdagStats().nnoref / 11;
             while (nblk-- > 0) {
                 Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
                 linkBlock.signOut(kernel.getWallet().getDefKey());
