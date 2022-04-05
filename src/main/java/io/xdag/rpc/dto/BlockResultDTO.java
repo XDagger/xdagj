@@ -25,26 +25,70 @@
 package io.xdag.rpc.dto;
 
 
-import io.xdag.core.Block;
+import java.util.List;
+import lombok.Builder;
 import lombok.Data;
 
+//@Data
+////TODO: Return xdagblock info
+//public class BlockResultDTO {
+//
+//    // blockInfo
+//    // rawData
+//    String height;
+//    String data;
+//
+//    public BlockResultDTO(long height) {
+//        this.height = Long.toHexString(height);
+//        this.data = "0x";
+//    }
+//
+//
+//    public static BlockResultDTO fromBlock(Block b, boolean raw) {
+//
+//        return null;
+//    }
+//}
+
 @Data
-//TODO: Return xdagblock info
+@Builder
 public class BlockResultDTO {
 
-    // blockInfo
-    // rawData
-    String height;
-    String data;
+    private long height;
+    private long balance;
+    private long blockTime;
+    private String state;
+    private String hash;
+    private String address;
+    private String remark;
+    private String diff;
+    private String type;
+    private List<Link> addresses;
+    private List<TxLink> txLinks;
 
-    public BlockResultDTO(long height) {
-        this.height = Long.toHexString(height);
-        this.data = "0x";
+
+    @Data
+    @Builder
+    public static class TxLink {
+
+        private int direction; // 0 input 1 output
+        private String hashlow;
+        private String address;
+        private long amount;
+        private long time;
+    }
+
+    @Data
+    @Builder
+    public static class Link {
+
+        private int direction; // 0 input 1 output
+        private String address;
+        private String hashlow;
+        private long amount;
     }
 
 
-    public static BlockResultDTO fromBlock(Block b, boolean raw) {
-
-        return null;
-    }
 }
+
+

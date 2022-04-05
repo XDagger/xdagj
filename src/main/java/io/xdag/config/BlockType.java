@@ -1,7 +1,7 @@
 package io.xdag.config;
 
 public enum BlockType {
-    MAIN(0, "Main"),
+    MAIN_BLOCK(0, "Main"),
     WALLET(1, "Wallet"),
     TRANSACTION(2, "Transaction");
 

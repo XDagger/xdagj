@@ -164,13 +164,13 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception {
-        return web3XdagModule.xdag_getBlockByNumber(bnOrId, full);
+    public BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getBlockByNumber(bnOrId);
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception {
-        return web3XdagModule.xdag_getBlockByHash(blockHash, full);
+    public BlockResultDTO xdag_getBlockByHash(String blockHash) {
+        return web3XdagModule.xdag_getBlockByHash(blockHash);
     }
 
     @Override

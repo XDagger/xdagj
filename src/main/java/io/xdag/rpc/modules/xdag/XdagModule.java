@@ -25,25 +25,35 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.utils.TypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-public class XdagModule implements XdagModuleTransaction, XdagModuleWallet {
+public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, XdagModuleChain {
 
     private static final Logger logger = LoggerFactory.getLogger(XdagModule.class);
 
     private final XdagModuleWallet xdagModuleWallet;
     private final XdagModuleTransaction xdagModuleTransaction;
+    private final XdagModuleChain xdagModuleChain;
     private final byte chainId;
 
+//    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction) {
+//        this.chainId = chainId;
+//        this.xdagModuleWallet = xdagModuleWallet;
+//        this.xdagModuleTransaction = xdagModuleTransaction;
+//        this.xdagModuleChain = null;
+//    }
 
-    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction) {
+    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction,
+            XdagModuleChain xdagModuleChain) {
         this.chainId = chainId;
         this.xdagModuleWallet = xdagModuleWallet;
         this.xdagModuleTransaction = xdagModuleTransaction;
+        this.xdagModuleChain = xdagModuleChain;
     }
 
 
@@ -69,5 +79,20 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet {
     @Override
     public String sign(String addr, String data) {
         return xdagModuleWallet.sign(addr, data);
+    }
+
+    @Override
+    public String getCoinBase() {
+        return null;
+    }
+
+    @Override
+    public BlockResultDTO getBlockByHash(String hash) {
+        return xdagModuleChain.getBlockByHash(hash);
+    }
+
+    @Override
+    public BlockResultDTO getBlockByNumber(String bnOrId) {
+        return xdagModuleChain.getBlockByNumber(bnOrId);
     }
 }

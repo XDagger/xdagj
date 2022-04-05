@@ -607,9 +607,10 @@ public class BlockStore {
 
 
     public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, BigInteger amount,
-            long time) {
+            long time, int id) { // id is used to avoid repeat key
         byte[] key = BytesUtils.merge(TX_HISTORY,
-                BytesUtils.merge(addressHashlow.toArray(), txHashlow.toArray())); // key 0xa0 + address hash + tx hash
+                BytesUtils.merge(addressHashlow.toArray(), BytesUtils.merge(txHashlow.toArray(),
+                        BytesUtils.intToBytes(id, true)))); // key 0xa0 + address hash + tx hash + id
 
         byte[] value = null;
         value = BytesUtils.merge(type.asByte(), BytesUtils

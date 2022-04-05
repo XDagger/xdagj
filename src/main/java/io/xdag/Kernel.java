@@ -68,6 +68,7 @@ import io.xdag.rpc.cors.CorsConfiguration;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
+import io.xdag.rpc.modules.xdag.XdagModuleChainBase;
 import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
 import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
 import io.xdag.rpc.netty.JsonRpcWeb3FilterHandler;
@@ -357,7 +358,8 @@ public class Kernel {
     private Web3 buildWeb3() {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
-                        new XdagModuleTransactionEnabled(this.getBlockchain())), this);
+                        new XdagModuleTransactionEnabled(this.getBlockchain()),
+                        new XdagModuleChainBase(this.getBlockchain())), this);
         return new Web3Impl(web3XdagModule);
     }
 

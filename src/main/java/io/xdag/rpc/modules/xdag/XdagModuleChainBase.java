@@ -24,9 +24,36 @@
 
 package io.xdag.rpc.modules.xdag;
 
+import static io.xdag.cli.Commands.getStateByFlags;
+import static io.xdag.config.BlockState.MAIN;
+import static io.xdag.config.BlockType.MAIN_BLOCK;
+import static io.xdag.config.BlockType.TRANSACTION;
+import static io.xdag.config.BlockType.WALLET;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.hash2Address;
+
+import cn.hutool.core.collection.CollectionUtil;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.Blockchain;
+import io.xdag.core.TxHistory;
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.BlockResultDTO.Link;
+import io.xdag.rpc.dto.BlockResultDTO.TxLink;
+import io.xdag.utils.BasicUtils;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
 
 public class XdagModuleChainBase implements XdagModuleChain {
+
+    private Blockchain blockchain;
+
+    public XdagModuleChainBase(Blockchain blockchain) {
+        this.blockchain = blockchain;
+    }
 
     @Override
     public String getCoinBase() {
@@ -34,12 +61,97 @@ public class XdagModuleChainBase implements XdagModuleChain {
     }
 
     @Override
-    public BlockResultDTO getBlockByHash(String hash, boolean full) {
-        return null;
+    public BlockResultDTO getBlockByHash(String hash) {
+        return getBlockDTOByHash(hash);
     }
 
     @Override
-    public BlockResultDTO getBlockByNumber(String bnOrId, boolean full) {
-        return null;
+    public BlockResultDTO getBlockByNumber(String bnOrId) {
+        Block block = blockchain.getBlockByHeight(Long.parseLong(bnOrId));
+        if (null == block) {
+            return null;
+        }
+        return transferBlockToBlockResultDTO(blockchain.getBlockByHash(block.getHash(), true));
     }
+
+    public BlockResultDTO getBlockDTOByHash(String hash) {
+        Bytes32 blockHash;
+        if (StringUtils.length(hash) == 32) {
+            blockHash = address2Hash(hash);
+        } else {
+            blockHash = BasicUtils.getHash(hash);
+        }
+        Block block = blockchain.getBlockByHash(blockHash, true);
+        return transferBlockToBlockResultDTO(block);
+    }
+
+    private BlockResultDTO transferBlockToBlockResultDTO(Block block) {
+        if (null == block) {
+            return null;
+        }
+        BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
+        BlockResultDTOBuilder.address(hash2Address(block.getHash()))
+                .hash(block.getHash().toUnprefixedHexString())
+                .balance(block.getInfo().getAmount())
+                .blockTime(block.getTimestamp())
+                .diff(block.getInfo().getDifficulty().toString(16))
+                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark()))
+                .state(getStateByFlags(block.getInfo().getFlags()))
+                .type(getType(block))
+                .addresses(getLinks(block))
+                .height(block.getInfo().getHeight())
+                .txLinks(getTxLinks(block));
+        return BlockResultDTOBuilder.build();
+    }
+
+    private List<Link> getLinks(Block block) {
+        List<Address> inputs = block.getInputs();
+        List<Address> outputs = block.getOutputs();
+        List<Link> links = new ArrayList<>();
+        for (Address input : inputs) {
+            Link.LinkBuilder linkBuilder = Link.builder();
+            linkBuilder.address(hash2Address(input.getHashLow()))
+                    .hashlow(input.getHashLow().toUnprefixedHexString())
+                    .amount(input.getAmount().longValue())
+                    .direction(0);
+            links.add(linkBuilder.build());
+        }
+
+        for (Address output : outputs) {
+            Link.LinkBuilder linkBuilder = Link.builder();
+            linkBuilder.address(hash2Address(output.getHashLow()))
+                    .hashlow(output.getHashLow().toUnprefixedHexString())
+                    .amount(output.getAmount().longValue())
+                    .direction(1);
+            links.add(linkBuilder.build());
+        }
+
+        return links;
+    }
+
+    private List<TxLink> getTxLinks(Block block) {
+        List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(block.getHashLow());
+        List<TxLink> txLinks = new ArrayList<>();
+        for (TxHistory txHistory : txHistories) {
+            TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
+            txLinkBuilder.address(hash2Address(txHistory.getAddress().getHashLow()))
+                    .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
+                    .amount(txHistory.getAddress().getAmount().longValue())
+                    .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 : 1)
+                    .time(txHistory.getTimeStamp());
+            txLinks.add(txLinkBuilder.build());
+        }
+        return txLinks;
+    }
+
+    private String getType(Block block) {
+        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
+            return MAIN_BLOCK.getDesc();
+        } else if (!CollectionUtil.isEmpty(block.getInsigs())) {
+            return TRANSACTION.getDesc();
+        } else {
+            return WALLET.getDesc();
+        }
+    }
+
 }

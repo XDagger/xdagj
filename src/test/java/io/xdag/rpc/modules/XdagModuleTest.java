@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import io.xdag.rpc.modules.xdag.XdagModule;
+import io.xdag.rpc.modules.xdag.XdagModuleChain;
 import io.xdag.rpc.modules.xdag.XdagModuleTransaction;
 import io.xdag.rpc.modules.xdag.XdagModuleWallet;
 import org.junit.Test;
@@ -39,7 +40,8 @@ public class XdagModuleTest {
         XdagModule xdagModule = new XdagModule(
                 (byte) 0x21,
                 mock(XdagModuleWallet.class),
-                mock(XdagModuleTransaction.class)
+                mock(XdagModuleTransaction.class),
+                mock(XdagModuleChain.class)
 
         );
         assertEquals("0x21", xdagModule.chainId());

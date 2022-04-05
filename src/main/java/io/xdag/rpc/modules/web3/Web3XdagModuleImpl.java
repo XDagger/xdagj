@@ -35,7 +35,6 @@ import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
-import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.BasicUtils;
@@ -52,6 +51,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     private final Blockchain blockchain;
     private final XdagModule xdagModule;
     private final Kernel kernel;
+
     public Web3XdagModuleImpl(XdagModule xdagModule, Kernel kernel) {
         this.blockchain = kernel.getBlockchain();
         this.xdagModule = xdagModule;
@@ -131,28 +131,13 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         return toQuantityJsonHex(balance);
     }
 
-    @Override
-    public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) {
-        System.out.println(bnOrId);
-        System.out.println(full);
-        if (full) {
-            System.out.println("hello");
-        }
-
-        return new BlockResultDTO(Integer.parseInt(bnOrId));
-    }
-
-    @Override
-    public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) {
-        return null;
-    }
 
     @Override
     public StatusDTO xdag_getStatus() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
         long nblocks = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks());
-        long nmain = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNmain());
-        BigInteger diff = xdagStats.getDifficulty();
+        long nmain = Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain());
+        BigInteger diff = xdagStats.getMaxdifficulty();
         double supply = amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)));
         return new StatusDTO(nblocks, nmain, diff, supply);
     }

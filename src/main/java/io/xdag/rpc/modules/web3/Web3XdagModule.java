@@ -59,11 +59,13 @@ public interface Web3XdagModule {
 
     String xdag_getTotalBalance() throws Exception;
 
-    default BlockResultDTO xdag_getTransactionByHash(String hash, Boolean full) throws Exception {
-        return xdag_getBlockByHash(hash, full);
+    default BlockResultDTO xdag_getTransactionByHash(String hash) throws Exception {
+        return xdag_getBlockByHash(hash);
     }
 
-    BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception;
+    default BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
+        return getXdagModule().getBlockByNumber(bnOrId);
+    }
 
     default String xdag_sendRawTransaction(String rawData) {
         return getXdagModule().sendRawTransaction(rawData);
@@ -73,7 +75,9 @@ public interface Web3XdagModule {
         return getXdagModule().sendTransaction(args);
     }
 
-    BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception;
+    default BlockResultDTO xdag_getBlockByHash(String blockHash) {
+        return getXdagModule().getBlockByHash(blockHash);
+    }
 
     StatusDTO xdag_getStatus() throws Exception;
 }

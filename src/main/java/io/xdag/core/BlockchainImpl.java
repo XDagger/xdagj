@@ -93,6 +93,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
@@ -341,6 +342,7 @@ public class BlockchainImpl implements Blockchain {
                 }
             }
 
+            int id = 0;
             // remove links
             for (Address ref : all) {
                 removeOrphan(ref.getHashLow(),
@@ -354,12 +356,13 @@ public class BlockchainImpl implements Blockchain {
                 if (!ref.getAmount().equals(BigInteger.ZERO)) {
                     if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
                         onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
-                                block.getTimestamp());
+                                block.getTimestamp(), id);
                     } else {
                         onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
-                                block.getTimestamp());
+                                block.getTimestamp(), id);
                     }
                 }
+                id++;
             }
 
             // 检查当前主链
@@ -463,8 +466,8 @@ public class BlockchainImpl implements Blockchain {
 
 
     private void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
-            BigInteger amount, long time) {
-        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time);
+            BigInteger amount, long time, int id) {
+        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id);
     }
 
 
@@ -1113,10 +1116,14 @@ public class BlockchainImpl implements Blockchain {
         if (hashlow == null) {
             return null;
         }
-        ByteArrayWrapper key = new ByteArrayWrapper(hashlow.toArray());
+        // ensure that hashlow is hashlow
+        MutableBytes32 keyHashlow = MutableBytes32.create();
+        keyHashlow.set(8, Objects.requireNonNull(hashlow).slice(8, 24));
+
+        ByteArrayWrapper key = new ByteArrayWrapper(keyHashlow.toArray());
         Block b = memOrphanPool.get(key);
         if (b == null) {
-            b = blockStore.getBlockByHash(hashlow, isRaw);
+            b = blockStore.getBlockByHash(keyHashlow, isRaw);
         }
         return b;
     }
