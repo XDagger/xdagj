@@ -25,19 +25,24 @@
 package io.xdag.crypto;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.math.ec.ECPoint;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SignTest {
 
     private static final byte[] TEST_MESSAGE = "A test message".getBytes();
+
+    @Before
+    public void setup() {
+        SECP256K1.enableNative();
+    }
 
     @Test
     public void testPublicKeyFromPrivateKey() {
@@ -58,10 +63,10 @@ public class SignTest {
         long start2 = 0;
         for (int i = 0; i < n; i++) {
             SECP256K1.KeyPair poolKey = Keys.createEcKeyPair();
-            byte[] pubkeyBytes = poolKey.publicKey().asEcPoint().getEncoded(true);
+            byte[] pubkeyBytes = poolKey.getPublicKey().asEcPoint().getEncoded(true);
             byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-            SECP256K1.Signature signature = SECP256K1.signHashed(hash, poolKey);
+            SECP256K1.Signature signature = SECP256K1.sign(hash, poolKey);
 
             long first = first(hash.toArray(), signature, poolKey);
             start1 += first;
@@ -73,14 +78,14 @@ public class SignTest {
 
     public long first(byte[] hash, SECP256K1.Signature sig, SECP256K1.KeyPair key) {
         long start = System.currentTimeMillis();
-        assertTrue(SECP256K1.verifyHashed(hash, sig, key.publicKey()));
+        assertTrue(SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
         long end = System.currentTimeMillis();
         return end - start;
     }
 
     public long second(byte[] hash, SECP256K1.Signature sig, SECP256K1.KeyPair key) {
         long start = System.currentTimeMillis();
-        assertTrue(SECP256K1.verifyHashed(hash, sig, key.publicKey()));
+        assertTrue(SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
         long end = System.currentTimeMillis();
         return end - start;
     }

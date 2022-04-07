@@ -25,6 +25,7 @@
 package io.xdag.net.manager;
 
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.net.message.NetDB;
 import java.io.BufferedReader;
 import java.io.File;
@@ -63,12 +64,13 @@ public class NetDBManager {
         netDB = new NetDB();
     }
 
-    public void init() {
-        // 1. 从配置文件读取白名单
+    public void loadFromConfig() {
         for (InetSocketAddress address:config.getNodeSpec().getWhiteIPList()){
             whiteDB.addNewIP(address);
         }
+    }
 
+    public void loadFromUrl() {
         // 2. 从官网读取白名单并写入到netdb.txt文件上
         File file = new File(databaseWhite);
         BufferedReader reader = null;
@@ -115,6 +117,15 @@ public class NetDBManager {
                 log.error(e.getMessage(), e);
             }
         }
+    }
+
+    public void init() {
+        loadFromConfig();
+        if(config instanceof DevnetConfig) {
+            // devnet only read from config
+            return;
+        }
+        loadFromUrl();
     }
 
     public void updateNetDB(NetDB netDB) {

@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 
 public class BlockBuilder {

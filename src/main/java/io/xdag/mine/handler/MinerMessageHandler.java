@@ -25,8 +25,7 @@
 package io.xdag.mine.handler;
 
 import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
-import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
-import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
+import static io.xdag.net.message.XdagMessageCodes.*;
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
 import io.netty.buffer.ByteBuf;
@@ -41,6 +40,7 @@ import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
@@ -54,6 +54,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
      * 每一个字段的长度
      */
     private final int DATA_SIZE = 32;
+    private static final long WORKERNAME_HEADER_WORD = 0xf46b9853;
     private MessageFactory messageFactory;
 
     public MinerMessageHandler(MinerChannel channel) {
@@ -91,18 +92,23 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         Message msg = null;
         long sectorNo = channel.getInBound().get();
         int len = in.readableBytes();
-        // 接收到的是任务share
+        // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {
             log.debug("Received a message from the miner,msg len == 32");
             byte[] encryptData = new byte[DATA_SIZE];
             in.readBytes(encryptData);
             byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 1, sectorNo);
             BytesUtils.arrayReverse(unCryptData);
-            if (channel.isServer()) {
-                // 如果是服务端 那么收到的一个字节的消息只能是task——share
-                msg = messageFactory.create(TASK_SHARE.asByte(), MutableBytes.wrap(unCryptData));
-            } else {
-                msg = messageFactory.create(NEW_BALANCE.asByte(), MutableBytes.wrap(unCryptData));
+            //The message received is the worker_name
+            if(BytesUtils.compareTo(unCryptData,28,4, BigInteger.valueOf(WORKERNAME_HEADER_WORD).toByteArray(),0,4)==0){
+                msg = messageFactory.create(WORKER_NAME.asByte(),MutableBytes.wrap(unCryptData));
+            }else {
+                if (channel.isServer()) {
+                    // 如果是服务端 那么收到的一个字节的消息只能是task——share
+                    msg = messageFactory.create(TASK_SHARE.asByte(), MutableBytes.wrap(unCryptData));
+                } else {
+                    msg = messageFactory.create(NEW_BALANCE.asByte(), MutableBytes.wrap(unCryptData));
+                }
             }
             channel.getInBound().add();
             // 两个字段 说明收到的是一个任务字段 只有可能是矿工收到新的任务

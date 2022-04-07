@@ -35,7 +35,6 @@ import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SystemUtil;
@@ -56,7 +55,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -73,7 +73,7 @@ public class Wallet {
     private final File file;
     private final Config config;
 
-    private final Map<ByteArrayWrapper, SECP256K1.KeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<Bytes, SECP256K1.KeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
     private String password;
 
     // hd wallet key
@@ -148,7 +148,7 @@ public class Wallet {
                 SimpleDecoder dec = new SimpleDecoder(FileUtils.readFileToByteArray(file));
                 int version = dec.readInt(); // version
 
-                Set<SECP256K1.KeyPair> newAccounts = null;
+                Set<SECP256K1.KeyPair> newAccounts;
                 switch (version) {
                     // only version 4
                     case 4 -> {
@@ -168,8 +168,8 @@ public class Wallet {
                 synchronized (accounts) {
                     accounts.clear();
                     for (SECP256K1.KeyPair account : newAccounts) {
-                        ByteArrayWrapper baw = ByteArrayWrapper.of(Keys.toBytesAddress(account));
-                        accounts.put(baw, account);
+                        Bytes b = Bytes.wrap(Keys.toBytesAddress(account));
+                        accounts.put(b, account);
                     }
                 }
             }
@@ -191,7 +191,7 @@ public class Wallet {
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
             byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
-            SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.fromSecretKey(SECP256K1.SecretKey.fromInteger(Numeric.toBigInt(privateKey)));
+            SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create((Numeric.toBigInt(privateKey))));
             keys.add(keyPair);
         }
         return keys;
@@ -207,7 +207,7 @@ public class Wallet {
                 byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
 
                 enc.writeBytes(iv);
-                enc.writeBytes(Aes.encrypt(keyPair.secretKey().bytesArray(), key, iv));
+                enc.writeBytes(Aes.encrypt(keyPair.getPrivateKey().getEncoded(), key, iv));
             }
         }
     }
@@ -293,7 +293,7 @@ public class Wallet {
         requireUnlocked();
 
         synchronized (accounts) {
-            return accounts.get(ByteArrayWrapper.of(address));
+            return accounts.get(Bytes.of(address));
         }
     }
 
@@ -348,12 +348,12 @@ public class Wallet {
         requireUnlocked();
 
         synchronized (accounts) {
-            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(newKey));
-            if (accounts.containsKey(address)) {
+            Bytes b = Bytes.wrap(Keys.toBytesAddress(newKey));
+            if (accounts.containsKey(b)) {
                 return false;
             }
 
-            accounts.put(address, newKey);
+            accounts.put(b, newKey);
             return true;
         }
     }
@@ -393,7 +393,7 @@ public class Wallet {
     public boolean removeAccount(byte[] address) {
         requireUnlocked();
         synchronized (accounts) {
-            return accounts.remove(ByteArrayWrapper.of(address)) != null;
+            return accounts.remove(Bytes.of(address)) != null;
         }
     }
 
@@ -453,8 +453,8 @@ public class Wallet {
             byte[] seed = getSeed();
             Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
             Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, nextAccountIndex++);
-            ByteArrayWrapper address = ByteArrayWrapper.of(Keys.toBytesAddress(bip44Keypair.getKeyPair()));
-            accounts.put(address, bip44Keypair.getKeyPair());
+            Bytes b = Bytes.wrap(Keys.toBytesAddress(bip44Keypair.getKeyPair()));
+            accounts.put(b, bip44Keypair.getKeyPair());
             return bip44Keypair.getKeyPair();
         }
     }

@@ -35,8 +35,7 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.crypto.SECP256K1;
-import org.apache.tuweni.io.Base58;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
@@ -84,16 +83,17 @@ public class Keys {
     }
 
     public static SECP256K1.KeyPair createEcKeyPair() {
-        return SECP256K1.KeyPair.random();
+        return SECP256K1.KeyPair.generate();
     }
 
     public static byte[] toBytesAddress(SECP256K1.KeyPair key) {
-        return Hash.sha256hash160(Bytes.wrap(key.publicKey().bytesArray()));
+        return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().getEncoded()));
     }
 
-    public static String toBase58Address(SECP256K1.KeyPair key) {
-        byte[] addrBytes = toBytesAddress(key);
-        return Base58.encode(Bytes.wrap(addrBytes));
-    }
+//    public static String toBase58Address(SECP256K1.KeyPair key) {
+//        byte[] addrBytes = toBytesAddress(key);
+//
+//        return Base58.encode(Bytes.wrap(addrBytes));
+//    }
 }
 

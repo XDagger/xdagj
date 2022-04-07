@@ -126,8 +126,8 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 channel.setIsActivate(true);
                 channel.setConnectTime(new Date(System.currentTimeMillis()));
                 channel.setAccountAddressHash(addressBlock.getHash());
-                ctx.pipeline().remove(this);
                 channel.activateHadnler(ctx, V03);
+                ctx.pipeline().remove(this);
                 // TODO: 2020/5/8 这里可能还有一点小bug 如果无限加入 岂不是会无线创建了
                 log.debug("add a new miner,miner address [" + BasicUtils.hash2Address(addressBlock.getHash()) + "]");
             }

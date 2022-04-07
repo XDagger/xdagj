@@ -24,7 +24,7 @@
 
 package io.xdag.wallet;
 
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 public class KeyInternalItem {
 

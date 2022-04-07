@@ -25,11 +25,13 @@
 package io.xdag.core;
 
 import io.xdag.listener.Listener;
-import io.xdag.utils.ByteArrayWrapper;
+
 import java.util.List;
 import java.util.Map;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 public interface Blockchain {
 
@@ -50,7 +52,7 @@ public interface Blockchain {
 
     List<Block> listMinedBlocks(int count);
 
-    Map<ByteArrayWrapper, Integer> getMemOurBlocks();
+    Map<Bytes, Integer> getMemOurBlocks();
 
     XdagStats getXdagStats();
 

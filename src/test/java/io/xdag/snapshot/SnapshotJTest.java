@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.snapshot;
 
 import com.google.common.collect.Lists;
@@ -23,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 import org.junit.After;
 import org.junit.Before;
@@ -67,7 +90,7 @@ public class SnapshotJTest {
     DatabaseFactory dbFactory;
 
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
-    SECP256K1.SecretKey secretkey_1 = SECP256K1.SecretKey.fromInteger(private_1);
+    SECP256K1.PrivateKey secretkey_1 = SECP256K1.PrivateKey.create(private_1);
 
     SECP256K1.KeyPair poolKey;
 
@@ -85,6 +108,7 @@ public class SnapshotJTest {
 
     @Before
     public void setUp() throws Exception {
+        SECP256K1.enableNative();
 
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 64;
         RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 128;
@@ -103,7 +127,7 @@ public class SnapshotJTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -156,9 +180,9 @@ public class SnapshotJTest {
         assertEquals("0.0", String.valueOf(amount2xdag(blockInfo2.getAmount())));
 
         //Compare public key
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
-        assertArrayEquals(poolKey.publicKey().asEcPoint().getEncoded(true), blockInfo1.getSnapshotInfo().getData());
-        assertArrayEquals(addrKey.publicKey().asEcPoint().getEncoded(true), blockInfo2.getSnapshotInfo().getData());
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
+        assertArrayEquals(poolKey.getPublicKey().asEcPoint().getEncoded(true), blockInfo1.getSnapshotInfo().getData());
+        assertArrayEquals(addrKey.getPublicKey().asEcPoint().getEncoded(true), blockInfo2.getSnapshotInfo().getData());
 
         //Compare 512 bytes of data
         assertArrayEquals(extraBlockList.get(220).getXdagBlock().getData().toArray(), blockInfo3.getSnapshotInfo().getData());
@@ -217,8 +241,8 @@ public class SnapshotJTest {
     }
 
     public void createBlockchain() {
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
-        poolKey = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
+        poolKey = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block

@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 
 @Slf4j
@@ -75,7 +75,7 @@ public class Libp2pNetwork {
         this.protocol = new Libp2pXdagProtocol(kernel);
         // libp2p use wallet default key
         SECP256K1.KeyPair key = kernel.getWallet().getDefKey();
-        privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(key.secretKey().bytesArray());
+        privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(key.getPrivateKey().getEncoded());
         ip = kernel.getConfig().getNodeSpec().getNodeIp();
         nodeId = new LibP2PNodeId(PeerId.fromPubKey(privKey.publicKey()));
         advertisedAddr = Libp2pUtils.fromInetSocketAddress(

@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.snapshot.db;
 
 import static io.xdag.config.Constants.BI_APPLIED;
@@ -50,7 +73,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 import org.lmdbjava.CursorIterable;
@@ -325,7 +348,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 BigInteger s;
                 r = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(0, 32).toArray());
                 s = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(32, 32).toArray());
-                SECP256K1.Signature ecdsaSignature = SECP256K1.Signature.create((byte) 0, r, s);
+
+                if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
+                    r = BigInteger.ONE;
+                    s = BigInteger.ONE;
+                }
+                SECP256K1.Signature ecdsaSignature = SECP256K1.Signature.create(r, s, (byte) 0);
                 //
                 set.add(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())));
                 signatureHashMap
@@ -374,7 +402,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             }
             byte[] data = null;
             if (block == null && signature != null) {
-                data = createXdagBlock(signature, balanceData);
+                data = createXdagBlock(signature, balanceData, mainLag);
             } else if (block != null) {
                 data = block.getXdagBlock().getData().toArray();
             }
@@ -388,7 +416,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 for (int i = 0; i < keys.size(); i++) {
                     SECP256K1.KeyPair key = keys.get(i);
                     // 如果有相等的说明是我们的区块
-                    if (Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                    if (Bytes.wrap(key.getPublicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                         flag |= BI_OURS;
                         keyIndex = i;
                         // TODO: 添加我们的balance
@@ -401,12 +429,11 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 SECP256K1.Signature outsig = tmpBlock.getOutsig();
                 for (int i = 0; i < keys.size(); i++) {
                     SECP256K1.KeyPair keyPair = keys.get(i);
-                    byte[] publicKeyBytes = keyPair.publicKey().asEcPoint().getEncoded(true);
+                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint().getEncoded(true);
                     Bytes digest = Bytes
                             .wrap(tmpBlock.getSubRawData(tmpBlock.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-//                    if (ecKey.verify(hash.toArray(), outsig)) { //verify耗时较长
-                    if (SECP256K1.verifyHashed(hash.toArray(), outsig, keyPair.publicKey())) { // 耗时短点
+                    if (SECP256K1.verify(hash, outsig, keyPair.getPublicKey())) {
                         //int flag = balanceData.getFlags();
                         flag |= BI_OURS;
                         //balanceData.setFlags(flag);
@@ -461,13 +488,14 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         return true;
     }
 
-    private byte[] createXdagBlock(SECP256K1.Signature signature, BalanceData balanceData) {
+    private byte[] createXdagBlock(SECP256K1.Signature signature, BalanceData balanceData, boolean mainLag) {
+        long blockType = mainLag ? 1361L : 1368L;
         MutableBytes mutableBytes = MutableBytes.create(512);
         byte[] transportHeader = BytesUtils.longToBytes(0, true);
-        byte[] type = BytesUtils.longToBytes(1368, true);
+        byte[] type = BytesUtils.longToBytes(blockType, true);
         byte[] time = BytesUtils.longToBytes(balanceData.getTime(), true);
         byte[] fee = BytesUtils.longToBytes(0, true);
-        byte[] sig = BytesUtils.subArray(signature.bytes().toArray(), 0, 64);
+        byte[] sig = BytesUtils.subArray(signature.encodedBytes().toArray(), 0, 64);
         mutableBytes.set(0, Bytes.wrap(transportHeader));
         mutableBytes.set(8, Bytes.wrap(type));
         mutableBytes.set(16, Bytes.wrap(time));

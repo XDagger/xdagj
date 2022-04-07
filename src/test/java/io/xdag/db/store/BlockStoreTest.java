@@ -43,7 +43,7 @@ import io.xdag.db.KVSource;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import java.util.List;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Rule;

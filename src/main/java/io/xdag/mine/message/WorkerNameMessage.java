@@ -21,40 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.mine.message;
 
-package io.xdag.utils;
 
-import java.util.Arrays;
+import io.xdag.core.XdagField;
+import io.xdag.net.message.Message;
+import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
-public final class ByteArrayWrapper {
+import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 
-    private final byte[] data;
+public class WorkerNameMessage extends Message {
 
-    public ByteArrayWrapper(byte[] data) {
-        if (data == null) {
-            throw new NullPointerException();
-        }
-        this.data = data;
-    }
+    private final XdagField xdagField;
 
-    public static ByteArrayWrapper of(byte[] data) {
-        return new ByteArrayWrapper(data);
-    }
-
-    public byte[] getData() {
-        return data;
+    public WorkerNameMessage(MutableBytes encoded) {
+        super(encoded);
+        this.xdagField = new XdagField(encoded);
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (!(other instanceof ByteArrayWrapper)) {
-            return false;
-        }
-        return Arrays.equals(data, ((ByteArrayWrapper) other).data);
+    public Bytes getEncoded() {
+        return xdagField.getData();
     }
 
     @Override
-    public int hashCode() {
-        return Arrays.hashCode(data);
+    public Class<?> getAnswerMessage() {
+        return null;
+    }
+
+    @Override
+    public XdagMessageCodes getCommand() {
+        return WORKER_NAME;
+    }
+
+    @Override
+    public String toString() {
+        return null;
     }
 }

@@ -66,7 +66,7 @@ import java.util.Date;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -91,8 +91,8 @@ public class BlockchainTest {
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
-    SECP256K1.SecretKey secretkey_1 = SECP256K1.SecretKey.fromInteger(private_1);
-    SECP256K1.SecretKey secretkey_2 = SECP256K1.SecretKey.fromInteger(private_2);
+    SECP256K1.PrivateKey secretkey_1 = SECP256K1.PrivateKey.create(private_1);
+    SECP256K1.PrivateKey secretkey_2 = SECP256K1.PrivateKey.create(private_2);
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
         assertEquals("blocks:", nblocks, bci.getXdagStats().nblocks);
@@ -103,6 +103,7 @@ public class BlockchainTest {
 
     @Before
     public void setUp() throws Exception {
+        SECP256K1.enableNative();
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
@@ -113,7 +114,7 @@ public class BlockchainTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -141,7 +142,7 @@ public class BlockchainTest {
 
     @Test
     public void testAddressBlock() {
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(secretkey_1);
         Block addressBlock = generateAddressBlock(config, key, new Date().getTime());
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
@@ -158,7 +159,7 @@ public class BlockchainTest {
     public void testExtraBlock() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
+        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(secretkey_1);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -204,8 +205,8 @@ public class BlockchainTest {
 
     @Test
     public void testTransactionBlock() {
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
-        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -329,8 +330,8 @@ public class BlockchainTest {
     public void testCanUseInput() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        SECP256K1.KeyPair fromKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
-        SECP256K1.KeyPair toKey = SECP256K1.KeyPair.fromSecretKey(secretkey_2);
+        SECP256K1.KeyPair fromKey = SECP256K1.KeyPair.create(secretkey_1);
+        SECP256K1.KeyPair toKey = SECP256K1.KeyPair.create(secretkey_2);
         Block fromAddrBlock = generateAddressBlock(config, fromKey, generateTime);
         Block toAddrBlock = generateAddressBlock(config, toKey, generateTime);
 
@@ -389,8 +390,8 @@ public class BlockchainTest {
         String firstDiff = "60b6a7744b";
         String secondDiff = "b20217d6e2";
 
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
-        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(secretkey_2);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.create(secretkey_2);
         long generateTime = 1600616700000L;
         // 1. add one address block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
@@ -443,8 +444,8 @@ public class BlockchainTest {
 
     @Test
     public void testForkAllChain() {
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
-        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.fromSecretKey(secretkey_2);
+        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
+        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.create(secretkey_2);
         long generateTime = 1600616700000L;
 
         // 1. add one address block

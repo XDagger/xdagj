@@ -184,7 +184,7 @@ public class Miner {
     }
 
     public void addPrevDiff(double i) {
-        prevDiff = +i;
+        prevDiff += i;
     }
 
     public void addPrevDiffCounts() {
@@ -245,7 +245,7 @@ public class Miner {
         return prevDiffSum.get(key);
     }
 
-    public Bytes32 getAddressHaashLow() {
+    public Bytes32 getAddressHashLow() {
         return this.addressHashLow;
     }
 

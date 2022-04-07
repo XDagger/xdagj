@@ -75,13 +75,10 @@ public class MinerServer {
                     ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
             bootstrap.childOption(
                     ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
-            // 这个是这是可以远程主动关闭？
-            // bootstrap.childOption(ChannelOption.ALLOW_HALF_CLOSURE,true);
             bootstrap.handler(new LoggingHandler());
             bootstrap.childHandler(new MinerChannelInitializer(kernel, true));
             channelFuture = bootstrap.bind(ip, port).sync();
             isListening = true;
-            // channelFuture.channel().closeFuture().sync();
             log.info("start listening the pool,host:[{}:{}]", ip, port);
         } catch (Exception e) {
             log.error("miner server error: {} ({})", e.getMessage(), e.getClass().getName());

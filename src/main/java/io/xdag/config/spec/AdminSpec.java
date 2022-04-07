@@ -33,5 +33,5 @@ public interface AdminSpec {
 
     int getTelnetPort();
 
-    String getPassword();
+    String getTelnetPassword();
 }
