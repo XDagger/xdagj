@@ -25,7 +25,6 @@
 package io.xdag.wallet;
 
 import io.xdag.config.Config;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
@@ -41,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 public class OldWallet {
 
@@ -94,7 +94,7 @@ public class OldWallet {
     }
 
     //    @Override
-    public ECKeyPair getKeyByIndex(int index) {
+    public SECP256K1.KeyPair getKeyByIndex(int index) {
         return keyLists.get(index).ecKey;
     }
 
@@ -106,10 +106,10 @@ public class OldWallet {
     private void addKey(BigInteger priv) {
         if (priv == null) {
             File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
-            ECKeyPair ecKey = Keys.createEcKeyPair();
+            SECP256K1.KeyPair ecKey = Keys.createEcKeyPair();
 
             // 奇偶 true为偶 false为奇
-            boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
+            boolean pubKeyParity = !ecKey.getPublicKey().getEncodedBytes().toUnsignedBigInteger().testBit(0);
             KeyInternalItem newKey = new KeyInternalItem();
             newKey.ecKey = ecKey;
             newKey.pubKeyParity = pubKeyParity;
@@ -125,7 +125,7 @@ public class OldWallet {
                     }
                 }
                 // encrypted the priv byte with user's password
-                byte[] priv32 = Numeric.toBytesPadded(ecKey.getPrivateKey(), 32);
+                byte[] priv32 = Numeric.toBytesPadded(ecKey.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), 32);
                 byte[] priv32Encrypted = Native.encrypt_wallet_key(priv32, keysNum++);
                 IOUtils.write(priv32Encrypted, fileOutputStream);
             } catch (Exception e) {
@@ -169,9 +169,9 @@ public class OldWallet {
         File walletDatFile = new File(config.getWalletSpec().getWalletKeyFile());
         if (!walletDatFile.exists() || walletDatFile.length() == 0) {
             // if wallet.dat not exist create it
-            ECKeyPair ecKey = Keys.createEcKeyPair();
+            SECP256K1.KeyPair ecKey = Keys.createEcKeyPair();
             // 奇偶
-            boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
+            boolean pubKeyParity = !ecKey.getPublicKey().getEncodedBytes().toUnsignedBigInteger().testBit(0);
             KeyInternalItem newKey = new KeyInternalItem();
             newKey.ecKey = ecKey;
             newKey.pubKeyParity = pubKeyParity;
@@ -185,7 +185,7 @@ public class OldWallet {
             }
             // encrypted the priv byte with user's password
             FileOutputStream fileOutputStream = new FileOutputStream(walletDatFile);
-            byte[] priv32 = Numeric.toBytesPadded(ecKey.getPrivateKey(), 32);
+            byte[] priv32 = Numeric.toBytesPadded(ecKey.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), 32);
             byte[] priv32Encrypted = Native.encrypt_wallet_key(priv32, keysNum++);
             IOUtils.write(priv32Encrypted, fileOutputStream);
             fileOutputStream.close();
@@ -196,9 +196,9 @@ public class OldWallet {
             while (fileInputStream.read(priv32Encrypted) != -1) {
                 byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
                 BytesUtils.arrayReverse(priv32);
-                ECKeyPair ecKey = ECKeyPair.create(Numeric.toBigInt(priv32));
+                SECP256K1.KeyPair ecKey = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create(Numeric.toBigInt(priv32)));
                 // 奇偶
-                boolean pubKeyParity = !ecKey.getPublicKey().testBit(0);
+                boolean pubKeyParity = !ecKey.getPublicKey().getEncodedBytes().toUnsignedBigInteger().testBit(0);
                 KeyInternalItem newKey = new KeyInternalItem();
                 newKey.ecKey = ecKey;
                 newKey.pubKeyParity = pubKeyParity;

@@ -24,10 +24,11 @@
 
 package io.xdag.db;
 
-import cn.hutool.core.lang.Pair;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 public interface KVSource<K, V> {
 

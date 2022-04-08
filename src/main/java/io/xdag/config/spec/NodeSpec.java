@@ -25,6 +25,7 @@
 package io.xdag.config.spec;
 
 import io.xdag.crypto.DnetKeys;
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -39,6 +40,8 @@ public interface NodeSpec {
 
     int getMaxConnections();
 
+    int getMaxInboundConnectionsPerIp();
+
     int getConnectionReadTimeout();
 
     byte[] getDnetKeyBytes();
@@ -49,9 +52,9 @@ public interface NodeSpec {
 
     int getTTL();
 
-    List<String> getWhiteIPList();
+    List<InetSocketAddress> getWhiteIPList();
 
-    void setWhiteIPList(List<String> list);
+    void setWhiteIPList(List<InetSocketAddress> list);
 
     // libp2p
     boolean isBootnode();

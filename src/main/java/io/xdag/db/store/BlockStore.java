@@ -26,7 +26,6 @@ package io.xdag.db.store;
 
 import static io.xdag.utils.BytesUtils.equalBytes;
 
-import cn.hutool.core.lang.Pair;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -50,6 +49,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -81,9 +82,6 @@ public class BlockStore {
     public static final byte BLOCK_HEIGHT = (byte) 0x80;
 
     public static final byte SNAPSHOT_PRESEED = (byte) 0x90;
-
-    // tx history
-    public static final byte TX_HISTORY = (byte) 0xa0;
 
     public static final String SUM_FILE_NAME = "sums.dat";
 
@@ -363,7 +361,7 @@ public class BlockStore {
     }
 
     public MutableBytes getSums(String key) {
-        byte[] value = indexSource.get(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes()));
+        byte[] value = indexSource.get(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes(StandardCharsets.UTF_8)));
         if (value == null) {
             return null;
         } else {
@@ -384,7 +382,7 @@ public class BlockStore {
         } catch (SerializationException e) {
             log.error(e.getMessage(), e);
         }
-        indexSource.put(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes()), value);
+        indexSource.put(BytesUtils.merge(SUMS_BLOCK_INFO, key.getBytes(StandardCharsets.UTF_8)), value);
     }
 
     public void updateSum(String key, long sum, long size, long index) {

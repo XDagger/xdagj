@@ -31,8 +31,11 @@ import static org.junit.Assert.assertNotNull;
 
 import io.xdag.utils.Numeric;
 import java.nio.ByteBuffer;
+import java.security.Security;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.io.Base58;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
 /**
@@ -43,13 +46,15 @@ import org.junit.Test;
  */
 public class Bip32Test {
 
-    public static byte[] addChecksum(byte[] input) {
+    static { Security.addProvider(new BouncyCastleProvider());  }
+
+    public static Bytes addChecksum(byte[] input) {
         int inputLength = input.length;
         byte[] checksummed = new byte[inputLength + 4];
         System.arraycopy(input, 0, checksummed, 0, inputLength);
         Bytes32 checksum = hashTwice(Bytes.wrap(input));
         System.arraycopy(checksum.toArray(), 0, checksummed, inputLength, 4);
-        return checksummed;
+        return Bytes.wrap(checksummed);
     }
 
     public static byte[] serializePublic(Bip32ECKeyPair pair) {

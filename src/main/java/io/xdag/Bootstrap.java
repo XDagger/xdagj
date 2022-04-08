@@ -24,11 +24,14 @@
 
 package io.xdag;
 
+import org.hyperledger.besu.crypto.SECP256K1;
+
 import io.xdag.cli.XdagCli;
 
 public class Bootstrap {
 
     public static void main(String[] args) throws Exception {
+        SECP256K1.enableNative();
         XdagCli.main(args);
     }
 

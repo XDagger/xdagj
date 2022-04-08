@@ -24,13 +24,13 @@
 
 package io.xdag.crypto;
 
-import static io.xdag.crypto.Hash.sha256;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -264,7 +264,7 @@ public class MnemonicUtils {
     public static byte calculateChecksum(byte[] initialEntropy) {
         int ent = initialEntropy.length * 8;
         byte mask = (byte) (0xff << 8 - ent / 32);
-        Bytes32 bytes = sha256(Bytes.wrap(initialEntropy));
+        Bytes32 bytes = Hash.sha256(Bytes.wrap(initialEntropy));
 
         return (byte) (bytes.get(0) & mask);
     }
@@ -282,7 +282,7 @@ public class MnemonicUtils {
     }
 
     private static List<String> readAllLines(InputStream inputStream) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         List<String> data = new ArrayList<>();
         for (String line; (line = br.readLine()) != null; ) {
             data.add(line);

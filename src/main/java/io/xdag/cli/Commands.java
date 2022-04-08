@@ -51,7 +51,6 @@ import io.xdag.core.TxHistory;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
-import io.xdag.crypto.ECKeyPair;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -66,6 +65,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +80,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
@@ -118,7 +119,7 @@ public class Commands {
                     BasicUtils.hash2Address(block.getHash()),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                     getStateByFlags(block.getInfo().getFlags()),
-                    new String(remark == null ? "".getBytes() : remark, StandardCharsets.UTF_8)));
+                    new String(remark == null ? "".getBytes(StandardCharsets.UTF_8) : remark, StandardCharsets.UTF_8)));
         }
         return sbd.toString();
     }
@@ -235,7 +236,7 @@ public class Commands {
         // 待转账余额
         AtomicLong remain = new AtomicLong(amount);
         // 转账输入
-        Map<Address, ECKeyPair> ourBlocks = Maps.newHashMap();
+        Map<Address, SECP256K1.KeyPair> ourBlocks = Maps.newHashMap();
 
         // our block select
         kernel.getBlockStore().fetchOurBlocks(pair -> {
@@ -276,7 +277,7 @@ public class Commands {
 
     }
 
-    private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, SECP256K1.KeyPair> ourKeys, Bytes32 to, String remark) {
         // 判断是否有remark
         int hasRemark = remark == null ? 0 : 1;
 
@@ -284,12 +285,12 @@ public class Commands {
 
         // 遍历ourKeys 计算每个区块最多能放多少个
         // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
-        LinkedList<Map.Entry<Address, ECKeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
+        LinkedList<Map.Entry<Address, SECP256K1.KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
 
         // 每次创建区块用到的keys
-        Map<Address, ECKeyPair> keys = new HashMap<>();
+        Map<Address, SECP256K1.KeyPair> keys = new HashMap<>();
         // 保证key的唯一性
-        Set<ECKeyPair> keysPerBlock = new HashSet<>();
+        Set<SECP256K1.KeyPair> keysPerBlock = new HashSet<>();
         // 放入defkey
         keysPerBlock.add(kernel.getWallet().getDefKey());
 
@@ -298,7 +299,7 @@ public class Commands {
         long amount = 0;
 
         while (stack.size() > 0) {
-            Map.Entry<Address, ECKeyPair> key = stack.peek();
+            Map.Entry<Address, SECP256K1.KeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
@@ -329,7 +330,7 @@ public class Commands {
         return res;
     }
 
-    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, ECKeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, SECP256K1.KeyPair> keys, String remark) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
 
@@ -339,11 +340,11 @@ public class Commands {
             return null;
         }
 
-        ECKeyPair defaultKey = kernel.getWallet().getDefKey();
+        SECP256K1.KeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isdefaultKey = false;
         // 签名
-        for (ECKeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+        for (SECP256K1.KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
                 block.signOut(ecKey);
@@ -518,7 +519,7 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark()),
+                block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
                 //fee目前为0
@@ -580,7 +581,8 @@ public class Commands {
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
         StringBuilder stringBuilder = new StringBuilder();
-        for (Node node : map.keySet()) {
+        for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
+            Node node = it.next();
             stringBuilder
                     .append(node.getAddress())
                     .append(" ")

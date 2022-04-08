@@ -28,6 +28,7 @@ import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
 import io.xdag.Kernel;
+import io.xdag.config.Constants.MessageType;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
@@ -53,10 +54,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -69,14 +73,27 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected Timer timer;
     protected Broadcaster broadcaster;
     // 当前区块
-    protected Block generateBlock;
-    protected Bytes32 minShare;
-    protected Bytes32 minHash;
+    protected volatile Block generateBlock;
+    protected volatile Bytes32 minShare;
+    protected volatile Bytes32 minHash;
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
-    protected Bytes32 globalPretop;
-    protected Task currentTask;
-    protected long taskIndex = 0;
+    protected volatile Bytes32 globalPretop;
+    protected volatile Task currentTask;
+    protected volatile long taskIndex = 0;
+
+
+    private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("XdagPow-timer-thread")
+            .build());
+
+    private final ExecutorService mainExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("XdagPow-main-thread")
+            .build());
+
+    private final ExecutorService broadcasterExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("XdagPow-broadcaster-thread")
+            .build());
     /**
      * 存放的是过去十六个区块的hash
      */
@@ -101,7 +118,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         this.broadcaster = new Broadcaster();
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
-
         this.randomXUtils = kernel.getRandomXUtils();
     }
 
@@ -118,18 +134,18 @@ public class XdagPow implements PoW, Listener, Runnable {
                 this.minShares.add(null);
             }
 
-            new Thread(this.timer, "xdag-pow-timer").start();
-            new Thread(this, "xdag-pow-main").start();
-            new Thread(this.broadcaster, "xdag-pow-broadcaster").start();
+            timerExecutor.execute(timer);
+            mainExecutor.execute(this);
+            broadcasterExecutor.execute(this.broadcaster);
         }
     }
 
     @Override
     public void stop() {
-        if (this.isRunning) {
-            this.isRunning = false;
-            this.timer.isRunning = false;
-            this.broadcaster.isRunning = false;
+        if (isRunning) {
+            isRunning = false;
+            timer.isRunning = false;
+            broadcaster.isRunning = false;
         }
     }
 
@@ -145,10 +161,8 @@ public class XdagPow implements PoW, Listener, Runnable {
 
             if (randomXUtils.getRandomXPoolMemIndex() == -1) {
 
-                long switchTime0 = randomXUtils.getGlobalMemory()[0] == null ? 0
-                        : randomXUtils.getGlobalMemory()[0].getSwitchTime();
-                long switchTime1 = randomXUtils.getGlobalMemory()[1] == null ? 0
-                        : randomXUtils.getGlobalMemory()[1].getSwitchTime();
+                long switchTime0 = randomXUtils.getGlobalMemory()[0] == null ? 0 : randomXUtils.getGlobalMemory()[0].getSwitchTime();
+                long switchTime1 = randomXUtils.getGlobalMemory()[1] == null ? 0 : randomXUtils.getGlobalMemory()[1].getSwitchTime();
 
                 if (switchTime0 > switchTime1) {
                     if (XdagTime.getEpoch(sendTime) > switchTime0) {
@@ -168,12 +182,10 @@ public class XdagPow implements PoW, Listener, Runnable {
             long randomXMemIndex = randomXUtils.getRandomXPoolMemIndex() + 1;
             RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) (randomXMemIndex) & 1];
 
-            if ((XdagTime.getEpoch(XdagTime.getMainTime()) >= memory.getSwitchTime()) && (memory.getIsSwitched()
-                    == 0)) {
+            if ((XdagTime.getEpoch(XdagTime.getMainTime()) >= memory.getSwitchTime()) && (memory.getIsSwitched() == 0)) {
                 randomXUtils.setRandomXPoolMemIndex(randomXUtils.getRandomXPoolMemIndex() + 1);
                 memory.setIsSwitched(1);
             }
-
             generateBlock = generateRandomXBlock(sendTime);
         } else {
             generateBlock = generateBlock(sendTime);
@@ -198,9 +210,10 @@ public class XdagPow implements PoW, Listener, Runnable {
         currentTask = createTaskByRandomXBlock(block, sendTime);
 
         // 更新poolminer的贡献
-        log.debug("Send randomx task to Miners");
+
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
+        log.debug("send randomx task to miners");
 
         return block;
     }
@@ -219,17 +232,18 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         currentTask = createTaskByNewBlock(block, sendTime);
         // 发送给矿工
-        log.debug("Send origin task to Miners");
+
         // 更新poolminer的贡献
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
+        log.debug("send origin task to Miners");
 
         return block;
     }
 
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
-        events.removeIf(e -> e.type == Event.Type.TIMEOUT);
+        events.removeIf(e->e.type== Event.Type.TIMEOUT);
     }
 
     @Override
@@ -369,7 +383,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             task[0] = new XdagField(MutableBytes.wrap(state));
             currentTaskDigest.sha256Update(block.getXdagBlock().getField(14).getData());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
         newTask.setTask(task);
         newTask.setTaskTime(XdagTime.getEpoch(sendTime));
@@ -381,6 +395,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     @Override
     public void run() {
         log.info("Main PoW start ....");
+ //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
         globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
@@ -398,12 +413,12 @@ public class XdagPow implements PoW, Listener, Runnable {
                         break;
                     case TIMEOUT:
                         // TODO : 判断当前是否可以进行产块
-                        if (kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
                             onTimeout();
                         }
                         break;
                     case NEW_PRETOP:
-                        if (kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
+                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
                             onNewPreTop();
                         }
                         break;
@@ -522,14 +537,13 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     public class Broadcaster implements Runnable {
-
         private final LinkedBlockingQueue<BlockWrapper> queue = new LinkedBlockingQueue<>();
-        private boolean isRunning = false;
+        private volatile boolean isRunning = false;
 
         @Override
         public void run() {
-            this.isRunning = true;
-            while (this.isRunning) {
+            isRunning = true;
+            while (isRunning) {
                 BlockWrapper bw = null;
                 try {
                     bw = queue.poll(50, TimeUnit.MILLISECONDS);
@@ -538,7 +552,6 @@ public class XdagPow implements PoW, Listener, Runnable {
                 }
                 if (bw != null) {
                     channelMgr.sendNewBlock(bw);
-
                 }
             }
         }

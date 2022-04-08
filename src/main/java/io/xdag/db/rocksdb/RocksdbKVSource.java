@@ -24,7 +24,6 @@
 
 package io.xdag.db.rocksdb;
 
-import cn.hutool.core.lang.Pair;
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.db.KVSource;
@@ -45,6 +44,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.rocksdb.BackupEngine;
 import org.rocksdb.BackupableDBOptions;
 import org.rocksdb.BlockBasedTableConfig;
@@ -220,7 +220,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 if (db == null) {
                     log.error("db is null");
                 } else {
-                    log.debug("put block key ={} ,val = {}", Hex.encodeHexString(key), Hex.encodeHexString(val));
                     db.put(key, val);
                 }
             } else {

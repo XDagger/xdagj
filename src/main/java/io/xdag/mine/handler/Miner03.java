@@ -38,11 +38,11 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.NewBalanceMessage;
 import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
+import io.xdag.mine.message.WorkerNameMessage;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import java.io.IOException;
@@ -74,6 +74,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             case TASK_SHARE -> processTaskShare((TaskShareMessage) msg);
             case NEW_TASK -> processNewTask((NewTaskMessage) msg);
             case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
+            case WORKER_NAME ->processWorkerName((WorkerNameMessage) msg);
             default -> log.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
         }
     }
@@ -135,7 +136,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             if (block != null) {
                 blockHash = block.getHash();
                 Miner miner = kernel.getMinerManager().getActivateMiners()
-                        .get(new ByteArrayWrapper(blockHash.toArray()));
+                        .get(blockHash);
                 if (miner == null) {
                     log.debug("creat a new miner");
                     miner = new Miner(blockHash);
@@ -147,12 +148,12 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                         channel.getInetAddress().toString(), blockHash.toHexString());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
+                minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
             } else {
                 //to do nothing
                 log.debug("can not receive the share, No such address exists.");
                 ctx.close();
-                minerManager.getActivateMiners().remove(new ByteArrayWrapper(oldMiner.getAddressHash().toArray()));
+                minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
             }
         }
 
@@ -163,6 +164,14 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             log.debug("Too many Shares,Reject...");
         }
 
+    }
+
+    private void processWorkerName(WorkerNameMessage msg) {
+        log.debug("Pool Receive Worker Name");
+        byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
+        String workerName = new String(workerNameByte).trim();
+        System.out.println(workerName);
+        channel.setWorkerName(workerName);
     }
 
     /**

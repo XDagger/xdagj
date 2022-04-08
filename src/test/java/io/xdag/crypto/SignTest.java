@@ -25,33 +25,28 @@
 package io.xdag.crypto;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.math.ec.ECPoint;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SignTest {
 
     private static final byte[] TEST_MESSAGE = "A test message".getBytes();
 
-    @Test
-    public void testPublicKeyFromPrivateKey() {
-        assertEquals(Sign.publicKeyFromPrivate(SampleKeys.PRIVATE_KEY), (SampleKeys.PUBLIC_KEY));
+    @Before
+    public void setup() {
+        SECP256K1.enableNative();
     }
 
     @Test
-    public void testInvalidSignature() {
-
-        assertThrows(
-                RuntimeException.class,
-                () ->
-                        Sign.signedMessageToKey(
-                                TEST_MESSAGE,
-                                new Sign.SignatureData((byte) 27, new byte[]{1}, new byte[]{0})));
+    public void testPublicKeyFromPrivateKey() {
+        assertEquals(Sign.publicKeyFromPrivate(SampleKeys.PRIVATE_KEY), (SampleKeys.PUBLIC_KEY));
     }
 
     @Test
@@ -67,33 +62,30 @@ public class SignTest {
         long start1 = 0;
         long start2 = 0;
         for (int i = 0; i < n; i++) {
-            ECKeyPair poolKey = Keys.createEcKeyPair();
-            byte[] pubkeyBytes = poolKey.getCompressPubKeyBytes();
-//            byte[] pubkeyBytes = Sign.publicPointFromPrivate(poolKey.getPrivateKey()).getEncoded(true);
+            SECP256K1.KeyPair poolKey = Keys.createEcKeyPair();
+            byte[] pubkeyBytes = poolKey.getPublicKey().asEcPoint().getEncoded(true);
             byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-            ECDSASignature signature = poolKey.sign(hash.toArray());
+            SECP256K1.Signature signature = SECP256K1.sign(hash, poolKey);
 
             long first = first(hash.toArray(), signature, poolKey);
             start1 += first;
             long second = second(hash.toArray(), signature, poolKey);
             start2 += second;
         }
-        System.out.println("spend " + start1);
-        System.out.println("spend " + start2);
+
     }
 
-    public long first(byte[] hash, ECDSASignature sig, ECKeyPair key) {
+    public long first(byte[] hash, SECP256K1.Signature sig, SECP256K1.KeyPair key) {
         long start = System.currentTimeMillis();
-        assertTrue(ECKeyPair.verify(hash, sig.toCanonicalised(), key.getCompressPubKeyBytes()));
+        assertTrue(SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
         long end = System.currentTimeMillis();
         return end - start;
     }
 
-    public long second(byte[] hash, ECDSASignature sig, ECKeyPair key) {
+    public long second(byte[] hash, SECP256K1.Signature sig, SECP256K1.KeyPair key) {
         long start = System.currentTimeMillis();
-        assertTrue(ECKeyPair
-                .verify(hash, sig.toCanonicalised(), Sign.publicKeyBytesFromPrivate(key.getPrivateKey(), false)));
+        assertTrue(SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
         long end = System.currentTimeMillis();
         return end - start;
     }

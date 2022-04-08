@@ -30,8 +30,11 @@ import static io.xdag.crypto.Hash.sha256hash160;
 import io.xdag.utils.Numeric;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.math.ec.ECPoint;
 
 /**
@@ -40,7 +43,8 @@ import org.bouncycastle.math.ec.ECPoint;
  * <p>Adapted from:
  * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/DeterministicKey.java
  */
-public class Bip32ECKeyPair extends ECKeyPair {
+@Getter
+public class Bip32ECKeyPair {
 
     public static final int HARDENED_BIT = 0x80000000;
 
@@ -49,6 +53,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
     private final int depth;
     private final byte[] chainCode;
     private final int parentFingerprint;
+    private final SECP256K1.KeyPair keyPair;
 
     private ECPoint publicKeyPoint;
 
@@ -58,7 +63,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
             int childNumber,
             byte[] chainCode,
             Bip32ECKeyPair parent) {
-        super(privateKey, publicKey);
+        keyPair = new SECP256K1.KeyPair(SECP256K1.PrivateKey.create(privateKey), SECP256K1.PublicKey.create(publicKey));
         this.parentHasPrivate = parent != null && parent.hasPrivateKey();
         this.childNumber = childNumber;
         this.depth = parent == null ? 0 : parent.depth + 1;
@@ -76,7 +81,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
     }
 
     public static Bip32ECKeyPair generateKeyPair(byte[] seed) {
-        byte[] i = hmacSha512("Bitcoin seed".getBytes(), seed);
+        byte[] i = hmacSha512("Bitcoin seed".getBytes(StandardCharsets.UTF_8), seed);
         byte[] il = Arrays.copyOfRange(i, 0, 32);
         byte[] ir = Arrays.copyOfRange(i, 32, 64);
         Arrays.fill(i, (byte) 0);
@@ -133,7 +138,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
             Arrays.fill(i, (byte) 0);
             BigInteger ilInt = new BigInteger(1, il);
             Arrays.fill(il, (byte) 0);
-            BigInteger privateKey = getPrivateKey().add(ilInt).mod(Sign.CURVE.getN());
+            BigInteger privateKey = keyPair.getPrivateKey().getEncodedBytes().toUnsignedBigInteger().add(ilInt).mod(Sign.CURVE.getN());
 
             return new Bip32ECKeyPair(
                     privateKey,
@@ -171,7 +176,7 @@ public class Bip32ECKeyPair extends ECKeyPair {
 
     public ECPoint getPublicKeyPoint() {
         if (publicKeyPoint == null) {
-            publicKeyPoint = Sign.publicPointFromPrivate(getPrivateKey());
+            publicKeyPoint = SECP256K1.PublicKey.create(keyPair.getPrivateKey()).asEcPoint();
         }
         return publicKeyPoint;
     }
@@ -179,12 +184,12 @@ public class Bip32ECKeyPair extends ECKeyPair {
     public byte[] getPrivateKeyBytes33() {
         final int numBytes = 33;
         byte[] bytes33 = new byte[numBytes];
-        byte[] priv = Numeric.bigIntegerToBytes32(getPrivateKey());
+        byte[] priv = keyPair.getPrivateKey().getEncodedBytes().toArray();
         System.arraycopy(priv, 0, bytes33, numBytes - priv.length, priv.length);
         return bytes33;
     }
 
     private boolean hasPrivateKey() {
-        return this.getPrivateKey() != null || parentHasPrivate;
+        return keyPair.getPrivateKey() != null || parentHasPrivate;
     }
 }

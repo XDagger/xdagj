@@ -14,56 +14,61 @@
 - System environment
 
   ```yaml
-  JDK   : v15
-  Maven : v3.6.3
+  JDK   : v17
+  Maven : v3.8.4
   ```
 
-  Please make sure that the above environment is already available in your operating system, and the JDK version must be 15
+  Please make sure that the above environment is already available in your operating system, and the JDK version must be 17
 
 - Hardware parameters
 
   **Since the RandomX algorithm has high memory requirements, in order to ensure the normal operation of the XDAGJ mining pool, please ensure that the available memory of the system is greater than 5.5G**
 
 ## Build
-
+ 
 - Download source code
 
   ```shell
-  git clone https://github.com/XDagger/xdagj.git
+  $git clone https://github.com/XDagger/xdagj.git
   ```
 
 - Compile RandomX link library
 
   ```shell
-  cd src/c
-  mkdir build && cd build
-  cmake ..
-  make
+  $cd src/c
+  $mkdir build && cd build
+  $cmake ..
+  $make
   ```
 
 - Build the Jar package
 
   ```shell
   #Please go back to the xdagj root directory first
-  mvn clean package
+  $mvn clean package (-Dmaven.test.skip=true)
   ```
 
 - Run
 
   ```shell
-  cd target
-  nohup java -jar --enable-preview xdagj-0.4.0-shaded.jar > xdagj.log 2>&1 &
+  $mkdir run 
+
+  #Please copy xdag-testnet.config, xdag.sh & xdagj-0.4.7-shaded.jar into /run
+  # xdag-testnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.4.7-shaded.jar is in /target
+
+  $cd run
+  $sh xdag.sh -t
+  
   #Wait for the system to start up, use telnet to access
   telnet ip:port
   ```
 
-  The initial system password is 123456
 
 
 
 ## Modify pool parameters
 
-The configuration file is located in `src/main/resources/xdag.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
+The configuration file is located in `src/main/resources/xdag-testnet.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
 
 ```yaml
 #Connection settings

@@ -51,5 +51,6 @@ public class DevnetConfigTest {
         assertEquals(1000, config.getApolloForkHeight());
         assertEquals("1024.0", String.valueOf(amount2xdag(config.getMainStartAmount())));
         assertEquals("128.0", String.valueOf(amount2xdag(config.getApolloForkAmount())));
+        assertEquals(8, config.getNodeSpec().getMaxInboundConnectionsPerIp());
     }
 }

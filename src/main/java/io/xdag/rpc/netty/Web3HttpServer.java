@@ -82,7 +82,6 @@ public class Web3HttpServer {
         logger.info("RPC HTTP enabled");
 
         ServerBootstrap b = new ServerBootstrap();
-        b.option(ChannelOption.SO_LINGER, socketLinger);
         b.option(ChannelOption.SO_REUSEADDR, reuseAddress);
         b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)

@@ -29,6 +29,7 @@ import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.consensus.SyncManager;
@@ -46,7 +47,6 @@ import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
-import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
 import io.xdag.mine.manager.MinerManager;
@@ -88,8 +88,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 @Getter
@@ -112,10 +112,6 @@ public class Kernel {
     protected XdagSync sync;
     protected XdagPow pow;
     protected SyncManager syncMgr;
-    /**
-     * 初始化一个后续都可以用的handler
-     */
-    protected ConnectionLimitHandler connectionLimitHandler;
 
     protected Block firstAccount;
     protected Miner poolMiner;
@@ -243,19 +239,24 @@ public class Kernel {
         // randomX loading
         // TODO: paulochen randomx 需要恢复
         // 初次快照启动
-        if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
-            // TODO: forkTime 怎么获得
-            System.out.println("pre seed:" + Hex.toHexString(blockchain.getPreSeed()));
-            randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
-            // 设置为已通过快照启动
+        if(config.getSnapshotSpec().isSnapshotJ()){
+            randomXUtils.randomXLoadingSnapshot();
             blockStore.setSnapshotBoot();
-        } else if (config.getSnapshotSpec().isSnapshotEnabled() && blockStore.isSnapshotBoot()) { // 快照加载后重启
-            System.out.println("pre seed:" + Hex.toHexString(blockchain.getPreSeed()));
-            randomXUtils.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
         } else {
-            randomXUtils.randomXLoadingForkTime();
-
+            if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
+                // TODO: forkTime 怎么获得
+                System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
+                randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
+                // 设置为已通过快照启动
+                blockStore.setSnapshotBoot();
+            } else if (config.getSnapshotSpec().isSnapshotEnabled() && blockStore.isSnapshotBoot()) { // 快照加载后重启
+                System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
+                randomXUtils.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
+            } else {
+                randomXUtils.randomXLoadingForkTime();
+            }
         }
+
         log.info("RandomX reload");
 
         // log.debug("Net Status:"+netStatus);
@@ -270,8 +271,8 @@ public class Kernel {
         client = new XdagClient(this.config);
         log.info("XdagClient nodeId {}", client.getNode().getHexId());
 
-        libp2pNetwork = new Libp2pNetwork(this);
-        libp2pNetwork.start();
+//        libp2pNetwork = new Libp2pNetwork(this);
+//        libp2pNetwork.start();
 
 //        discoveryController = new DiscoveryController(this);
 //        discoveryController.start();
@@ -310,7 +311,6 @@ public class Kernel {
         // ====================================
         // poolnode open
         // ====================================
-        connectionLimitHandler = new ConnectionLimitHandler(this.config.getPoolSpec().getMaxConnectPerIp());
         minerServer = new MinerServer(this);
         log.info("Pool Server init");
 
@@ -329,6 +329,8 @@ public class Kernel {
             xdagState = XdagState.WAIT;
         } else if (config instanceof TestnetConfig) {
             xdagState = XdagState.WTST;
+        } else if (config instanceof DevnetConfig) {
+            xdagState = XdagState.WDST;
         }
 
         // ====================================
@@ -462,7 +464,7 @@ public class Kernel {
 
         log.info("ChannelManager stop.");
 //        discoveryController.stop();
-        libp2pNetwork.stop();
+//        libp2pNetwork.stop();
         // close timer
         MessageQueue.timer.shutdown();
 
