@@ -83,6 +83,9 @@ public class BlockStore {
 
     public static final byte SNAPSHOT_PRESEED = (byte) 0x90;
 
+    // tx history
+    public static final byte TX_HISTORY = (byte) 0xa0;
+
     public static final String SUM_FILE_NAME = "sums.dat";
 
     private final Kryo kryo;

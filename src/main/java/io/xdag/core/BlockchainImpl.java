@@ -49,23 +49,24 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.ECDSASignature;
-import io.xdag.crypto.ECKeyPair;
+import io.xdag.core.XdagField.FieldType;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
-import io.xdag.listener.Message;
+import io.xdag.listener.PretopMessage;
 import io.xdag.randomx.RandomX;
+import io.xdag.snapshot.SnapshotJ;
 import io.xdag.snapshot.core.SnapshotInfo;
 import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
-import io.xdag.utils.ByteArrayWrapper;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
@@ -93,9 +94,11 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.SECP256K1;
 
 
 @Slf4j
@@ -826,7 +829,8 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark) {
+    public Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining,
+            String remark) {
 
         int hasRemark = remark == null ? 0 : 1;
 
@@ -1123,8 +1127,7 @@ public class BlockchainImpl implements Blockchain {
         MutableBytes32 keyHashlow = MutableBytes32.create();
         keyHashlow.set(8, Objects.requireNonNull(hashlow).slice(8, 24));
 
-        ByteArrayWrapper key = new ByteArrayWrapper(keyHashlow.toArray());
-        Block b = memOrphanPool.get(key);
+        Block b = memOrphanPool.get(Bytes32.wrap(keyHashlow));
         if (b == null) {
             b = blockStore.getBlockByHash(keyHashlow, isRaw);
         }
@@ -1278,7 +1281,8 @@ public class BlockchainImpl implements Blockchain {
             ECPoint point = Sign.decompressKey(xBn, yBit);
             // 解析成非压缩去前缀 公钥
             byte[] encodePub = point.getEncoded(false);
-            SECP256K1.PublicKey targetPublicKey = SECP256K1.PublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
+            SECP256K1.PublicKey targetPublicKey = SECP256K1.PublicKey
+                    .create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
             for (SECP256K1.PublicKey publicKey : publicKeys) {
                 if (publicKey.equals(targetPublicKey)) {
                     return true;
@@ -1298,7 +1302,8 @@ public class BlockchainImpl implements Blockchain {
 
     }
 
-    private boolean verifySignature(MutableBytes subdata, SECP256K1.Signature sig, List<SECP256K1.PublicKey> publicKeys, BlockInfo blockInfo) {
+    private boolean verifySignature(MutableBytes subdata, SECP256K1.Signature sig, List<SECP256K1.PublicKey> publicKeys,
+            BlockInfo blockInfo) {
         for (SECP256K1.PublicKey publicKey : publicKeys) {
             byte[] publicKeyBytes = publicKey.asEcPoint().getEncoded(true);
             Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));

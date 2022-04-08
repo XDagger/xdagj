@@ -33,7 +33,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.hash2Address;
 
-import cn.hutool.core.collection.CollectionUtil;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
@@ -147,10 +146,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
     private String getType(Block block) {
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
             return MAIN_BLOCK.getDesc();
-        } else if (!CollectionUtil.isEmpty(block.getInsigs())) {
-            return TRANSACTION.getDesc();
-        } else {
+        } else if (block.getInsigs() == null || block.getInsigs().isEmpty()) {
             return WALLET.getDesc();
+        } else {
+            return TRANSACTION.getDesc();
         }
     }
 
