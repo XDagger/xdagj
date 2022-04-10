@@ -220,7 +220,7 @@ public class BlockchainImpl implements Blockchain {
 
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
-        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("time：" + (end - start) + "ms");
         System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotJ.getOurBalance()));
     }
 
@@ -232,7 +232,7 @@ public class BlockchainImpl implements Blockchain {
         cleanSnapshotChain();
         long end = System.currentTimeMillis();
         System.out.println("init snapshot done");
-        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("time：" + (end - start) + "ms");
     }
 
 

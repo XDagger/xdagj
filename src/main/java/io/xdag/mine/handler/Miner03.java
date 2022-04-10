@@ -170,7 +170,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         log.debug("Pool Receive Worker Name");
         byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
         String workerName = new String(workerNameByte).trim();
-        System.out.println(workerName);
         channel.setWorkerName(workerName);
     }
 
