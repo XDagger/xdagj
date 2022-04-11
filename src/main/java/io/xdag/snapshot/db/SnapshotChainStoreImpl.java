@@ -453,7 +453,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         }
         // 保存balance
         saveGlobalBalance(ourBalance);
-        System.out.println("快照点时 余额为：" + amount2xdag(ourBalance));
+        System.out.println("our balance：" + amount2xdag(ourBalance));
 
         final Dbi<ByteBuffer> stats_db = env.openDbi(STATS_KEY, MDB_CREATE);
         Txn<ByteBuffer> stats_txn = env.txnRead();

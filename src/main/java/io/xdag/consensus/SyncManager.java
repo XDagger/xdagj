@@ -286,7 +286,7 @@ public class SyncManager {
 
     // TODO：目前默认是一直保持同步，不负责出块
     public void makeSyncDone() {
-        if (syncDone.compareAndExchange(false, true)) {
+        if (syncDone.compareAndSet(false, true)) {
             // 关闭状态检测进程
             this.stateListener.isRunning = false;
             Config config = kernel.getConfig();
