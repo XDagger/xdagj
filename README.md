@@ -55,17 +55,17 @@ Four stages：
 
 #### Landing phase: XDAGJ mainnet is online
 
-- [ ] Improve test cases: write test cases for existing functions
+- [x] Add test cases: write test cases for existing functions
 
-- [ ] Improve the log function: provide a relatively complete log service to facilitate trouble shooting
+- [x] Add log functions: provide a relatively complete log service to facilitate trouble shooting
 
 - [x] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [x] Implement the snapshot function: reduce the cost of runing a mining pool 
+- [x] Implement the snapshot function: reduce the cost of runing a mining pool and boost the loading process
 
 - [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
-- [x] Improve the mining protocol: introduce the more mature Stratum protocol
+- [x] Introduce the Stratum protocol for miners
 
 - [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
 
