@@ -15,52 +15,54 @@
 
   ```yaml
   JDK   : v17
-  Maven : v3.8.3
+  Maven : v3.8.4
   ```
 
-  Please make sure that the above environment is already available in your operating system, and the JDK version must be 15
+  Please make sure that the above environment is already available in your operating system, and the JDK version must be 17
 
 - Hardware parameters
 
   **Since the RandomX algorithm has high memory requirements, in order to ensure the normal operation of the XDAGJ mining pool, please ensure that the available memory of the system is greater than 5.5G**
 
 ## Build
-
+ 
 - Download source code
 
   ```shell
-  git clone https://github.com/XDagger/xdagj.git
+  $git clone https://github.com/XDagger/xdagj.git
   ```
 
 - Compile RandomX link library
 
   ```shell
-  cd src/c
-  mkdir build && cd build
-  cmake ..
-  make
+  $cd src/c
+  $mkdir build && cd build
+  $cmake ..
+  $make
   ```
 
-- Build the zip package
+- Build the Jar package
 
   ```shell
   #Please go back to the xdagj root directory first
-  mvn clean package
+  $mvn clean package (-Dmaven.test.skip=true)
   ```
-  
-- Run with shell script
+
+- Run
 
   ```shell
-  cd dist
-  unzip xdagj-linux.zip -d xdagj
-  cd xdagj
-  chmod +x xdag.sh
-  ./xdag.sh -t
-  #Wait for the system to start up, use telnet to access(ip and port config in xdag-testnet.config or xdag-mainnet.config)
+  $mkdir run 
+
+  #Please copy xdag-testnet.config, xdag.sh & xdagj-0.4.7-shaded.jar into /run
+  # xdag-testnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.4.7-shaded.jar is in /target
+
+  $cd run
+  $sh xdag.sh -t
+  
+  #Wait for the system to start up, use telnet to access
   telnet ip:port
   ```
 
-  The initial telnet system password is xdag-testnet.config or xdag-mainnet.config(password)
 
 
 

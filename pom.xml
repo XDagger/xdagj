@@ -6,7 +6,7 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.4.6</version>
+    <version>0.4.7</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -279,7 +279,7 @@
                                 <copy file="src/main/resources/xdag-testnet.config"
                                         tofile="${dist.base}/windows/xdag-testnet.config"/>
                                 <copy file="src/main/resources/xdag-devnet.config"
-                                      tofile="${dist.base}/windows/xdag-devnet.config"/>
+                                        tofile="${dist.base}/windows/xdag-devnet.config"/>
                                 <copy file="${project.basedir}/script/xdag.bat"
                                         tofile="${dist.base}/windows/xdag.bat"/>
                                 <zip basedir="${dist.base}/windows/"
@@ -296,7 +296,7 @@
                                 <copy file="src/main/resources/xdag-testnet.config"
                                         tofile="${dist.base}/linux/xdag-testnet.config"/>
                                 <copy file="src/main/resources/xdag-devnet.config"
-                                      tofile="${dist.base}/linux/xdag-devnet.config"/>
+                                        tofile="${dist.base}/linux/xdag-devnet.config"/>
                                 <copy file="${project.basedir}/script/xdag.sh"
                                         tofile="${dist.base}/linux/xdag.sh"/>
                                 <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
@@ -314,7 +314,7 @@
                                 <copy file="src/main/resources/xdag-testnet.config"
                                         tofile="${dist.base}/macos/xdag-testnet.config"/>
                                 <copy file="src/main/resources/xdag-devnet.config"
-                                      tofile="${dist.base}/macos/xdag-devnet.config"/>
+                                        tofile="${dist.base}/macos/xdag-devnet.config"/>
                                 <copy file="${project.basedir}/script/xdag.sh"
                                         tofile="${dist.base}/macos/xdag.sh"/>
                                 <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
@@ -783,7 +783,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.13.1</version>
+            <version>2.13.2.1</version>
         </dependency>
 
         <dependency>
@@ -801,7 +801,7 @@
         <dependency>
             <groupId>tech.pegasys.discovery</groupId>
             <artifactId>discovery</artifactId>
-            <version>0.4.6</version>
+            <version>0.4.7</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-api</artifactId>
