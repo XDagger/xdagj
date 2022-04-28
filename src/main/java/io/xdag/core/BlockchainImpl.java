@@ -24,19 +24,9 @@
 
 package io.xdag.core;
 
-import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.BI_EXTRA;
-import static io.xdag.config.Constants.BI_MAIN;
-import static io.xdag.config.Constants.BI_MAIN_CHAIN;
-import static io.xdag.config.Constants.BI_MAIN_REF;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
-import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
-import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
+import static io.xdag.config.Constants.*;
 import static io.xdag.config.Constants.MessageType.NEW_LINK;
 import static io.xdag.config.Constants.MessageType.PRE_TOP;
-import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
@@ -136,14 +126,14 @@ public class BlockchainImpl implements Blockchain {
     private SnapshotChainStore snapshotChainStore;
     private long snapshotHeight;
     private SnapshotJ snapshotJ;
-
+    private final XdagExtStats xdagExtStats;
     @Getter
     private byte[] preSeed;
 
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
-
+        this.xdagExtStats = new XdagExtStats();
         // 1. init chain state from rocksdb
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
@@ -475,6 +465,33 @@ public class BlockchainImpl implements Blockchain {
                 if ((block.getInfo().getFlags() & BI_OURS) != 0) {
                     log.info("XDAG:pool transaction(reward). block hash:{}", block.getHash().toHexString());
                 }
+            }
+
+            BigInteger diff0;
+            // 初始区块自身难度设置
+            if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
+                    && XdagTime.isEndOfEpoch(block.getTimestamp())) {
+                diff0 = getDiffByRandomXHash(block);
+            } else {
+                diff0 = getDiffByRawHash(block.getHash());
+            }
+
+            //把过去四个小时每个时间片的diff都记录下来，后面会用这些diff去转换出一个全局hashrate
+            int i = (int)(XdagTime.getEpoch(block.getTimestamp())& (HASH_RATE_LAST_MAX_TIME - 1));
+            if(XdagTime.getEpoch(block.getTimestamp())>XdagTime.getEpoch(xdagExtStats.getHashrate_last_time())){
+                xdagExtStats.getHashRateTotal()[i] = BigInteger.ZERO;
+                xdagExtStats.getHashRateOurs()[i] = BigInteger.ZERO;
+                xdagExtStats.setHashrate_last_time(block.getTimestamp());
+            }
+
+            if(diff0.compareTo(xdagExtStats.getHashRateTotal()[i])>0){
+                xdagExtStats.getHashRateTotal()[i] = diff0;
+            }
+
+            if((block.getInfo().getFlags()&BI_OURS)!=0
+                    &&diff0.compareTo(xdagExtStats.getHashRateOurs()[i])>0){
+                xdagExtStats.getHashRateOurs()[i] = diff0;
+
             }
 
             return result;
