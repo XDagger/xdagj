@@ -71,4 +71,6 @@ public interface Blockchain {
 
     // 注册监听器
     void registerListener(Listener listener);
+
+    XdagExtStats getXdagExtStats();
 }

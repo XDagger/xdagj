@@ -96,6 +96,13 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         channel.onDisconnect();
     }
 
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        log.info("Close miner at time:{}", XdagTime.format(new Date()));
+        ctx.channel().closeFuture();
+        channel.onDisconnect();
+    }
+
     /**
      * ********************** Message Processing * ***********************
      */
@@ -104,7 +111,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         ImportResult importResult = syncManager
                 .validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         if (importResult.isNormal()) {
-            log.info("XDAG:receive tansaction. A Transaction from wallet/miner, block hash:{}",
+            log.info("XDAG:receive transaction. A Transaction from wallet/miner, block hash:{}",
                     block.getHash().toHexString());
         }
     }

@@ -7,7 +7,7 @@ XDAG_WARNING="\033[33m[XDAG_WARNING] \033[0m"
 XDAG_ERROR="\033[31m[XDAG_ERROR] \033[0m"
 
 # default JVM options
-JAVA_OPTS="--add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED -server -Xms1g -Xmx1g"
+JAVA_OPTS="--add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED -server -Xms1g -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./heapdump -Xlog:gc*,gc+heap=trace,gc+age=trace,safepoint:file=./xdag-gc-%t.log:time,level,tid,tags:filecount=8,filesize=10m"
 
 # xdag launch options
 XDAG_OPTS=""
