@@ -437,6 +437,7 @@ public class BlockchainImpl implements Blockchain {
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
+                xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
             }
 
             // 新增区块
