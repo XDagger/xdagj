@@ -608,15 +608,18 @@ public class BlockStore {
 
 
     public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, BigInteger amount,
-            long time, int id) { // id is used to avoid repeat key
+            long time, int id, byte[] remark) { // id is used to avoid repeat key
         byte[] key = BytesUtils.merge(TX_HISTORY,
                 BytesUtils.merge(addressHashlow.toArray(), BytesUtils.merge(txHashlow.toArray(),
                         BytesUtils.intToBytes(id, true)))); // key 0xa0 + address hash + tx hash + id
 
         byte[] value = null;
-        value = BytesUtils.merge(type.asByte(), BytesUtils
-                .merge(txHashlow.toArray(), BytesUtils.merge(BytesUtils.bigIntegerToBytes(amount, 8, true),
-                        BytesUtils.longToBytes(time, true)))); // type + tx hash + amount + time
+        value = BytesUtils.merge(type.asByte(),
+                BytesUtils.merge(txHashlow.toArray(),
+                        BytesUtils.merge(BytesUtils.bigIntegerToBytes(amount, 8, true),
+                                BytesUtils.merge(BytesUtils.longToBytes(time, true),
+                                        BytesUtils.merge(BytesUtils.longToBytes(remark.length, true),
+                                                remark))))); // type + tx hash + amount + time + remark_length + remark
         txHistorySource.put(key, value);
     }
 
@@ -632,7 +635,13 @@ public class BlockStore {
             long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
             Address address = new Address(hashlow, fieldType, amount);
 
-            res.add(new TxHistory(address, timestamp));
+            long remarkLength = BytesUtils.bytesToLong(BytesUtils.subArray(value, 49, 8), 0, true);
+
+            String remark = "";
+            if (remarkLength != 0) {
+                remark = new String(BytesUtils.subArray(value, 57, (int) remarkLength), StandardCharsets.UTF_8);
+            }
+            res.add(new TxHistory(address, timestamp, remark));
         }
         return res;
 

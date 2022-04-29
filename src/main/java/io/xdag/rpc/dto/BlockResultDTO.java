@@ -76,6 +76,7 @@ public class BlockResultDTO {
         private String address;
         private long amount;
         private long time;
+        private String remark;
     }
 
     @Data

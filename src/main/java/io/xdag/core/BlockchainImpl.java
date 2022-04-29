@@ -400,10 +400,10 @@ public class BlockchainImpl implements Blockchain {
                 if (!ref.getAmount().equals(BigInteger.ZERO)) {
                     if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
                         onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
-                                block.getTimestamp(), id);
+                                block.getTimestamp(), id, block.getInfo().getRemark());
                     } else {
                         onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
-                                block.getTimestamp(), id);
+                                block.getTimestamp(), id, block.getInfo().getRemark());
                     }
                 }
                 id++;
@@ -499,8 +499,8 @@ public class BlockchainImpl implements Blockchain {
 
 
     private void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
-            BigInteger amount, long time, int id) {
-        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id);
+            BigInteger amount, long time, int id, byte[] remark) {
+        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id, remark);
     }
 
 

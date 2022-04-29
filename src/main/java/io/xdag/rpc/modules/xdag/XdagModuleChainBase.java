@@ -137,7 +137,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
                     .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
                     .amount(txHistory.getAddress().getAmount().longValue())
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 : 1)
-                    .time(txHistory.getTimeStamp());
+                    .time(txHistory.getTimeStamp())
+                    .remark(txHistory.getRemark());
             txLinks.add(txLinkBuilder.build());
         }
         return txLinks;
