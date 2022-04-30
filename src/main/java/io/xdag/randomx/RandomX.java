@@ -328,6 +328,7 @@ public class RandomX {
     public void randomXLoadingSnapshot(byte[] preseed, long forkTime) {
         // TODO:
         long firstMemIndex = randomXHashEpochIndex + 1;
+        randomXPoolMemIndex = -1;
         RandomXMemory firstMemory = globalMemory[(int) (firstMemIndex) & 1];
         firstMemory.seed = preseed;
         randomXPoolUpdateSeed(firstMemIndex);

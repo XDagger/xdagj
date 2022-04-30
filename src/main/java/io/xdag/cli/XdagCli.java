@@ -435,8 +435,8 @@ public class XdagCli extends Launcher {
         long start = System.currentTimeMillis();
         boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag, wallet.getAccounts());
         long end = System.currentTimeMillis();
-        System.out.println("load res:" + res);
-        System.out.println("耗时:" + (end - start) / 1000 + "s");
+        System.out.println("load res: " + res);
+        System.out.println("time: " + (end - start) / 1000 + "s");
     }
 
     public List<SECP256K1.KeyPair> readOldWallet(String password, String random, File walletDatFile) {
@@ -585,7 +585,7 @@ public class XdagCli extends Launcher {
 
         long end = System.currentTimeMillis();
         System.out.println("make snapshot done");
-        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("time：" + (end - start) + "ms");
         System.out.println("snapshot height: " + index.getHeight());
         System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(index.getNextTime()) + 1));
     }

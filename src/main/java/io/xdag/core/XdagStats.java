@@ -107,6 +107,12 @@ public class XdagStats {
         return maxdifficulty;
     }
 
+    public void updateMaxDiff(BigInteger maxdifficulty) {
+        if (this.getMaxdifficulty().compareTo(maxdifficulty) < 0) {
+            this.maxdifficulty = maxdifficulty;
+        }
+    }
+
     @Override
     public String toString() {
         return "XdagStatus[nmain:" +
