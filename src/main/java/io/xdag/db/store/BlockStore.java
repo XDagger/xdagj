@@ -639,7 +639,7 @@ public class BlockStore {
 
             String remark = "";
             if (remarkLength != 0) {
-                remark = new String(BytesUtils.subArray(value, 57, (int) remarkLength), StandardCharsets.UTF_8);
+                remark = new String(BytesUtils.subArray(value, 57, (int) remarkLength), StandardCharsets.UTF_8).trim();
             }
             res.add(new TxHistory(address, timestamp, remark));
         }

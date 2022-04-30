@@ -40,7 +40,6 @@ import io.xdag.core.XdagStats;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.BasicUtils;
-import java.math.BigInteger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -74,30 +73,33 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     public Object xdag_syncing() {
         long currentBlock = this.blockchain.getXdagStats().nmain;
         long highestBlock = Math.max(this.blockchain.getXdagStats().totalnmain, currentBlock);
+        SyncingResult s = new SyncingResult();
+        s.isSyncDone = false;
 
         Config config = kernel.getConfig();
         if (config instanceof MainnetConfig) {
             if (kernel.getXdagState() != XdagState.SYNC) {
-                return false;
+                return s;
             }
         } else if (config instanceof TestnetConfig) {
             if (kernel.getXdagState() != XdagState.STST) {
-                return false;
+                return s;
             }
         } else if (config instanceof DevnetConfig) {
             if (kernel.getXdagState() != XdagState.SDST) {
-                return false;
+                return s;
             }
         }
 
-        SyncingResult s = new SyncingResult();
         try {
             s.currentBlock = toQuantityJsonHex(currentBlock);
             s.highestBlock = toQuantityJsonHex(highestBlock);
+            s.isSyncDone = true;
 
             return s;
         } finally {
-            logger.debug("xdag_syncing():current {}, highest {} ", s.currentBlock, s.highestBlock);
+            logger.debug("xdag_syncing():current {}, highest {}, isSyncDone {}", s.currentBlock, s.highestBlock,
+                    s.isSyncDone);
         }
     }
 
@@ -141,16 +143,23 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     @Override
     public StatusDTO xdag_getStatus() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
-        long nblocks = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks());
-        long nmain = Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain());
-        BigInteger diff = xdagStats.getMaxdifficulty();
+//        long nblocks = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks());
+//        long nmain = Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain());
+//        BigInteger diff = xdagStats.getMaxdifficulty();
         double supply = amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)));
-        return new StatusDTO(nblocks, nmain, diff, supply);
+
+        double hashrateOurs = BasicUtils.xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateOurs());
+        double hashrateTotal = BasicUtils.xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal());
+        return new StatusDTO(xdagStats.getNblocks(), xdagStats.getTotalnblocks(), xdagStats.getNmain(),
+                xdagStats.getTotalnblocks(), xdagStats.getDifficulty(), xdagStats.getMaxdifficulty(), hashrateOurs,
+                hashrateTotal, supply);
     }
 
     static class SyncingResult {
 
         public String currentBlock;
         public String highestBlock;
+        public boolean isSyncDone;
+
     }
 }

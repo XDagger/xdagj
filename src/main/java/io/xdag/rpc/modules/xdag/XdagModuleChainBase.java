@@ -41,6 +41,7 @@ import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
 import io.xdag.utils.BasicUtils;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -94,7 +95,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .balance(block.getInfo().getAmount())
                 .blockTime(block.getTimestamp())
                 .diff(block.getInfo().getDifficulty().toString(16))
-                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark()))
+                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
+                        StandardCharsets.UTF_8).trim())
                 .state(getStateByFlags(block.getInfo().getFlags()))
                 .type(getType(block))
                 .addresses(getLinks(block))
