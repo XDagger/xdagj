@@ -47,13 +47,18 @@ import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
  */
 public class Sign {
 
-    public static final X9ECParameters CURVE_PARAMS = CustomNamedCurves.getByName("secp256k1");
-    static final ECDomainParameters CURVE =
+    public static final String CURVE_NAME = "secp256k1";
+
+    public static final X9ECParameters CURVE_PARAMS = CustomNamedCurves.getByName(CURVE_NAME);
+    public static final ECDomainParameters CURVE =
             new ECDomainParameters(
                     CURVE_PARAMS.getCurve(),
                     CURVE_PARAMS.getG(),
                     CURVE_PARAMS.getN(),
                     CURVE_PARAMS.getH());
+
+    public static final SECP256K1 SECP256K1 = new SECP256K1();
+
     /**
      * Decompress a compressed public key (x co-ord and low-bit of y-coord).
      */

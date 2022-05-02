@@ -61,7 +61,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
@@ -494,9 +494,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void doPayments(Bytes32 hash, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-        HashMap<Address, SECP256K1.KeyPair> inputMap = new HashMap<>();
+        HashMap<Address, KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
-        SECP256K1.KeyPair inputKey = wallet.getAccount(keyPos);
+        KeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         long payAmount = 0L;
         /**
@@ -562,9 +562,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         for (Address address : receipt) {
             log.debug("pay data: {}", address.getData().toHexString());
         }
-        Map<Address, SECP256K1.KeyPair> inputMap = new HashMap<>();
+        Map<Address, KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
-        SECP256K1.KeyPair inputKey = wallet.getAccount(keypos);
+        KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
         if (inputKey.equals(wallet.getDefKey())) {

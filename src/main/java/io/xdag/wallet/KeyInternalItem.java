@@ -24,11 +24,11 @@
 
 package io.xdag.wallet;
 
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class KeyInternalItem {
 
-    public SECP256K1.KeyPair ecKey;
+    public KeyPair ecKey;
     /**
      * 0:even 1:odd
      */
