@@ -1,4 +1,4 @@
-# XDAGJ Private Chain Construction Tutorial
+# XDAGJ Devnet Construction Tutorial
 
 
   - [System environment and hardware requirements](#system-environment-and-hardware-requirements)
@@ -53,11 +53,11 @@
   ```shell
   $mkdir run 
 
-  #Please copy xdag-testnet.config, xdag.sh & xdagj-0.4.7-shaded.jar into /run
-  # xdag-testnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.4.7-shaded.jar is in /target
+  #Please copy xdag-devnet.config, xdag.sh & xdagj-0.4.7-shaded.jar into /run
+  # xdag-devnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.4.7-shaded.jar is in /target
 
   $cd run
-  $sh xdag.sh -t
+  $sh xdag.sh -d
   
   #Wait for the system to start up, use telnet to access
   telnet ip:port
@@ -68,7 +68,7 @@
 
 ## Modify pool parameters
 
-The configuration file is located in `src/main/resources/xdag-testnet.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
+The configuration file is located in `src/main/resources/xdag-devnet.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
 
 ```yaml
 #Connection settings
@@ -97,7 +97,7 @@ whiteIPs                  #The mining pool nodes that are allowed to connect, in
 
 ### Miner access
 
-For details, please refer to [XDAGJ Access Test Net Tutorial](./XDAGJ_TestNet_Access_Tutorial_eng.md)
+For details, please refer to [XDAGJ Access Test Net Tutorial](./XDAGJ_TestNet_Tutorial_en.md)
 
 ### Pool startup parameters
 
