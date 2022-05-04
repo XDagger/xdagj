@@ -27,11 +27,11 @@ Maven : v3.8.3
 
 XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私有链搭建教程帮助您搭建一个独有的链上环境，能更好的测试并发现错误
 
-[XDAGJ测试网接入教程](XDAGJ_TestNet_Access_Turial_zh.md)
+[XDAGJ测试网接入教程](XDAGJ_TestNet_Tutorial_zh.md)
 
-[XDAGJ私有链搭建教程](XDAGJ_PrivateChain_Turial_zh.md)
+[XDAGJ私有链搭建教程](XDAGJ_Devnet_Tutorial_zh.md)
 
-[区块浏览器](http://146.56.240.230/)
+[XDAGJ测试网区块浏览器](http://146.56.240.230/)
 
 ## 发展
 
@@ -56,17 +56,17 @@ XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私�
 
 #### 登陆阶段：XDAGJ主网上线
 
-- [ ] 完善测试案例：逐步完善现有功能的测试案例
+- [x] 完善测试案例：逐步完善现有功能的测试案例
   
-- [ ] 完善日志功能：提供较为完整的日志功能，便于后期问题排查
+- [x] 完善日志功能：提供较为完整的日志功能，便于后期问题排查
   
-- [ ] 优化同步协议：改进现有的同步协议，提高同步效率
+- [x] 优化同步协议：改进现有的同步协议，提高同步效率
   
-- [x] 实现快照功能：解决历史区块过多所造成的加载数据耗时较长问题
+- [x] 实现快照功能：降低矿池运行的成本，加速启动
   
 - [x] 实现RPC功能：接入Web3j，实现接口的规范化
   
-- [ ] 挖矿协议改进：引入较成熟的Stratum协议，方便矿机的接入与使用
+- [x] 挖矿协议改进：引入较成熟的Stratum协议，方便矿机的接入与使用
   
 - [ ] 轻量级钱包应用：接入MateMask，加入浏览器钱包
   
@@ -142,7 +142,7 @@ XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私�
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## 其他
-[XDAGJ_Libp2P介绍](./XDAGJ_Networking_Specification.md)
+[XDAGJ Libp2P介绍](./XDAGJ_Networking_Specification.md)
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)  
 

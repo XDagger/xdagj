@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.snapshot.db;
 
 import static io.xdag.config.Constants.BI_APPLIED;
@@ -24,6 +47,7 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
 import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
@@ -50,9 +74,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.CursorIterable.KeyVal;
 import org.lmdbjava.Dbi;
@@ -249,12 +274,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
      * @param mainLag  用于判断是主网的randomx lag还是测试网的randomx_lag 暂时固定128
      * @return
      */
-    public boolean loadFromSnapshotData(String filePath, boolean mainLag, List<SECP256K1.KeyPair> keys) {
+    public boolean loadFromSnapshotData(String filePath, boolean mainLag, List<KeyPair> keys) {
         // 1. 初始保存
         Set<Bytes32> set = new HashSet<>();
         Map<Bytes32, BalanceData> balanceDataMap = new HashMap<>();
         Map<Bytes32, byte[]> ecKeyPairHashMap = new HashMap<>();
-        Map<Bytes32, SECP256K1.Signature> signatureHashMap = new HashMap<>();
+        Map<Bytes32, SECPSignature> signatureHashMap = new HashMap<>();
         Map<Bytes32, Block> blockHashMap = new HashMap<>();
         // 初始余额
         long ourBalance = 0;
@@ -325,7 +350,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 BigInteger s;
                 r = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(0, 32).toArray());
                 s = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(32, 32).toArray());
-                SECP256K1.Signature ecdsaSignature = SECP256K1.Signature.create((byte) 0, r, s);
+
+                if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
+                    r = BigInteger.ONE;
+                    s = BigInteger.ONE;
+                }
+                SECPSignature ecdsaSignature = SECPSignature.create(r, s, (byte) 0, Sign.CURVE.getN());
                 //
                 set.add(Bytes32.wrap(Arrays.reverse(Bytes.wrapByteBuffer(kv.key()).toArray())));
                 signatureHashMap
@@ -362,7 +392,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         for (Bytes32 bytes32 : set) {
             BalanceData balanceData = balanceDataMap.get(bytes32);
             byte[] ecKeyPair = ecKeyPairHashMap.get(bytes32);
-            SECP256K1.Signature signature = signatureHashMap.get(bytes32);
+            SECPSignature signature = signatureHashMap.get(bytes32);
             Block block = blockHashMap.get(bytes32);
             if (balanceData == null) {
                 balanceData = new BalanceData();
@@ -374,7 +404,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             }
             byte[] data = null;
             if (block == null && signature != null) {
-                data = createXdagBlock(signature, balanceData);
+                data = createXdagBlock(signature, balanceData, mainLag);
             } else if (block != null) {
                 data = block.getXdagBlock().getData().toArray();
             }
@@ -386,9 +416,9 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             // 4.1 如果公钥存在，对比公钥
             if (ecKeyPair != null) {
                 for (int i = 0; i < keys.size(); i++) {
-                    SECP256K1.KeyPair key = keys.get(i);
+                    KeyPair key = keys.get(i);
                     // 如果有相等的说明是我们的区块
-                    if (Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                    if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                         flag |= BI_OURS;
                         keyIndex = i;
                         // TODO: 添加我们的balance
@@ -398,15 +428,14 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 }
             } else { // 4.2 否则对比签名
                 Block tmpBlock = new Block(new XdagBlock(data));
-                SECP256K1.Signature outsig = tmpBlock.getOutsig();
+                SECPSignature outsig = tmpBlock.getOutsig();
                 for (int i = 0; i < keys.size(); i++) {
-                    SECP256K1.KeyPair keyPair = keys.get(i);
-                    byte[] publicKeyBytes = keyPair.publicKey().asEcPoint().getEncoded(true);
+                    KeyPair keyPair = keys.get(i);
+                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                     Bytes digest = Bytes
                             .wrap(tmpBlock.getSubRawData(tmpBlock.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-//                    if (ecKey.verify(hash.toArray(), outsig)) { //verify耗时较长
-                    if (SECP256K1.verifyHashed(hash.toArray(), outsig, keyPair.publicKey())) { // 耗时短点
+                    if (Sign.SECP256K1.verify(hash, outsig, keyPair.getPublicKey())) {
                         //int flag = balanceData.getFlags();
                         flag |= BI_OURS;
                         //balanceData.setFlags(flag);
@@ -426,7 +455,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         }
         // 保存balance
         saveGlobalBalance(ourBalance);
-        System.out.println("快照点时 余额为：" + amount2xdag(ourBalance));
+        System.out.println("our balance：" + amount2xdag(ourBalance));
 
         final Dbi<ByteBuffer> stats_db = env.openDbi(STATS_KEY, MDB_CREATE);
         Txn<ByteBuffer> stats_txn = env.txnRead();
@@ -461,13 +490,14 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         return true;
     }
 
-    private byte[] createXdagBlock(SECP256K1.Signature signature, BalanceData balanceData) {
+    private byte[] createXdagBlock(SECPSignature signature, BalanceData balanceData, boolean mainLag) {
+        long blockType = mainLag ? 1361L : 1368L;
         MutableBytes mutableBytes = MutableBytes.create(512);
         byte[] transportHeader = BytesUtils.longToBytes(0, true);
-        byte[] type = BytesUtils.longToBytes(1368, true);
+        byte[] type = BytesUtils.longToBytes(blockType, true);
         byte[] time = BytesUtils.longToBytes(balanceData.getTime(), true);
         byte[] fee = BytesUtils.longToBytes(0, true);
-        byte[] sig = BytesUtils.subArray(signature.bytes().toArray(), 0, 64);
+        byte[] sig = BytesUtils.subArray(signature.encodedBytes().toArray(), 0, 64);
         mutableBytes.set(0, Bytes.wrap(transportHeader));
         mutableBytes.set(8, Bytes.wrap(type));
         mutableBytes.set(16, Bytes.wrap(time));

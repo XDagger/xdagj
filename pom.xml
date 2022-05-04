@@ -6,7 +6,7 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.4.6</version>
+    <version>0.4.7</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,7 +17,8 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.70.Final</netty.version>
+        <netty.version>4.1.74.Final</netty.version>
+        <surefire.test.excludes>**/*RandomXSyncTest.java</surefire.test.excludes>
     </properties>
 
     <organization>
@@ -58,6 +59,10 @@
             <id>jvm-libp2p</id>
             <url>https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/</url>
         </repository>
+        <repository>
+            <id>hyperledger.jfrog.io</id>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -73,13 +78,47 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.9.0</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <fork>true</fork>
+                    <meminitial>1024m</meminitial>
+                    <maxmem>2048m</maxmem>
                     <skip>false</skip>
                 </configuration>
             </plugin>
+
+            <!-- cmake on maven compile -->
+            <plugin>
+                <groupId>com.googlecode.cmake-maven-project</groupId>
+                <artifactId>cmake-maven-plugin</artifactId>
+                <version>3.22.1-b1</version>
+                <executions>
+                    <execution>
+                        <id>cmake-generate</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <sourcePath>${project.basedir}/src/c</sourcePath>
+                            <targetPath>${project.basedir}/src/c/build</targetPath>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cmake-compile</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <projectDirectory>${project.basedir}/src/c/build</projectDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
 
             <!-- testing -->
             <plugin>
@@ -87,7 +126,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
-                    <argLine>-Xmx1024m</argLine>
+                    <argLine>-Xmx1280m</argLine>
+                    <excludes>
+                        <exclude>${surefire.test.excludes}</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
@@ -236,6 +278,8 @@
                                         tofile="${dist.base}/windows/xdag-mainnet.config"/>
                                 <copy file="src/main/resources/xdag-testnet.config"
                                         tofile="${dist.base}/windows/xdag-testnet.config"/>
+                                <copy file="src/main/resources/xdag-devnet.config"
+                                        tofile="${dist.base}/windows/xdag-devnet.config"/>
                                 <copy file="${project.basedir}/script/xdag.bat"
                                         tofile="${dist.base}/windows/xdag.bat"/>
                                 <zip basedir="${dist.base}/windows/"
@@ -251,6 +295,8 @@
                                         tofile="${dist.base}/linux/xdag-mainnet.config"/>
                                 <copy file="src/main/resources/xdag-testnet.config"
                                         tofile="${dist.base}/linux/xdag-testnet.config"/>
+                                <copy file="src/main/resources/xdag-devnet.config"
+                                        tofile="${dist.base}/linux/xdag-devnet.config"/>
                                 <copy file="${project.basedir}/script/xdag.sh"
                                         tofile="${dist.base}/linux/xdag.sh"/>
                                 <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
@@ -267,6 +313,8 @@
                                         tofile="${dist.base}/macos/xdag-mainnet.config"/>
                                 <copy file="src/main/resources/xdag-testnet.config"
                                         tofile="${dist.base}/macos/xdag-testnet.config"/>
+                                <copy file="src/main/resources/xdag-devnet.config"
+                                        tofile="${dist.base}/macos/xdag-devnet.config"/>
                                 <copy file="${project.basedir}/script/xdag.sh"
                                         tofile="${dist.base}/macos/xdag.sh"/>
                                 <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
@@ -309,19 +357,19 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.17.1</version>
+            <version>2.17.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.17.1</version>
+            <version>2.17.2</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.17.1</version>
+            <version>2.17.2</version>
         </dependency>
 
         <!-- Apache Commons -->
@@ -346,19 +394,37 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.8.0</version>
+            <version>2.11.0</version>
         </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
-            <version>1.4</version>
+            <version>1.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.7</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-lang3</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.4</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.0.1-jre</version>
+            <version>31.1-jre</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.errorprone</groupId>
@@ -378,7 +444,7 @@
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
-            <version>5.2.0</version>
+            <version>5.3.0</version>
         </dependency>
 
         <dependency>
@@ -467,13 +533,13 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.0.4</version>
+            <version>3.0.5</version>
         </dependency>
 
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
-            <version>3.20.0</version>
+            <version>3.21.0</version>
         </dependency>
 
         <dependency>
@@ -498,7 +564,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.9.2</version>
+            <version>4.9.3</version>
             <exclusions>
                 <exclusion>
                     <artifactId>annotations</artifactId>
@@ -518,7 +584,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.0.0</version>
+            <version>4.3.1</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -544,20 +610,14 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.21.0</version>
+            <version>3.22.0</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>5.7.15</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-bytes</artifactId>
-            <version>2.0.0</version>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
@@ -573,7 +633,7 @@
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-units</artifactId>
-            <version>2.0.0</version>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>guava</artifactId>
@@ -584,8 +644,8 @@
 
         <dependency>
             <groupId>org.apache.tuweni</groupId>
-            <artifactId>tuweni-crypto</artifactId>
-            <version>2.0.0</version>
+            <artifactId>tuweni-io</artifactId>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>guava</artifactId>
@@ -599,21 +659,57 @@
         </dependency>
 
         <dependency>
+            <groupId>org.hyperledger.besu.internal</groupId>
+            <artifactId>crypto</artifactId>
+            <version>22.4.0-RC1</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                    <groupId>org.bouncycastle</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-api</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-core</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-bytes</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-units</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>vertx-core</artifactId>
+                    <groupId>io.vertx</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.69</version>
+            <version>1.70</version>
         </dependency>
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.69</version>
+            <version>1.70</version>
         </dependency>
 
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>4.2.0</version>
+            <version>4.2.5</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -679,27 +775,33 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jnr-ffi</artifactId>
+            <version>2.2.11</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.13.0</version>
+            <version>2.13.2.2</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.13.0</version>
+            <version>2.13.2</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.13.0</version>
+            <version>2.13.2</version>
         </dependency>
 
         <dependency>
             <groupId>tech.pegasys.discovery</groupId>
             <artifactId>discovery</artifactId>
-            <version>0.4.6</version>
+            <version>0.4.7</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-api</artifactId>
@@ -752,6 +854,14 @@
                 <exclusion>
                     <artifactId>vertx-core</artifactId>
                     <groupId>io.vertx</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>bytes</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>units</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -821,7 +931,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.11.0</version>
+            <version>1.14.0</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
@@ -830,7 +940,6 @@
             <artifactId>snappy-java</artifactId>
             <version>1.1.8.4</version>
         </dependency>
-
 
     </dependencies>
 

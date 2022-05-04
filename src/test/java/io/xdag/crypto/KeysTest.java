@@ -28,12 +28,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import io.xdag.utils.Numeric;
-import java.security.KeyPair;
+
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.Test;
 
 public class KeysTest {
@@ -48,20 +51,35 @@ public class KeysTest {
     }
 
     @Test
-    public void testCreateEcKeyPair() {
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
-        assertEquals(key.publicKey().bytes().toUnsignedBigInteger().signum(), (1));
-        assertEquals(key.secretKey().bytes().toUnsignedBigInteger().signum(), (1));
+    public void testCreateSecp256k1KeyPair() throws Exception {
+        KeyPair keyPair = Keys.createSecp256k1KeyPair();
+        PrivateKey privateKey = keyPair.getPrivateKey();
+        PublicKey publicKey = keyPair.getPublicKey();
+
+        assertNotNull(privateKey);
+        assertNotNull(publicKey);
+
+        assertEquals(privateKey.getEncoded().length, (32));
+        assertEquals(publicKey.getEncoded().length, (64));
     }
 
     @Test
-    public void testTransform() {
+    public void testCreateEcKeyPair()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        KeyPair key = Keys.createEcKeyPair();
+        assertEquals(key.getPublicKey().getEncodedBytes().toUnsignedBigInteger().signum(), (1));
+        assertEquals(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger().signum(), (1));
+    }
+
+    @Test
+    public void testTransform()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         for (int i = 0; i < 1000; i++) {
-            SECP256K1.KeyPair key = Keys.createEcKeyPair();
-            assertEquals(Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)),
-                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(key.secretKey().bytes().toUnsignedBigInteger(), true)));
-            assertEquals(Bytes.wrap(key.publicKey().asEcPoint().getEncoded(false)),
-                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(key.secretKey().bytes().toUnsignedBigInteger(), false)));
+            KeyPair key = Keys.createEcKeyPair();
+            assertEquals(Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)),
+                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), true)));
+            assertEquals(Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(false)),
+                    Bytes.wrap(Sign.publicKeyBytesFromPrivate(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), false)));
         }
     }
 

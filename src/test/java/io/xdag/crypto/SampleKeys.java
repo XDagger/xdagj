@@ -26,7 +26,10 @@ package io.xdag.crypto;
 
 import io.xdag.utils.Numeric;
 import java.math.BigInteger;
-import org.apache.tuweni.crypto.SECP256K1;
+
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 
 /**
  * Keys generated for unit testing purposes.
@@ -51,10 +54,10 @@ public class SampleKeys {
     public static final BigInteger PRIVATE_KEY = Numeric.toBigInt(PRIVATE_KEY_STRING);
     public static final BigInteger PUBLIC_KEY = Numeric.toBigInt(PUBLIC_KEY_STRING);
 
-    public static final SECP256K1.SecretKey SRIVATE_KEY = SECP256K1.SecretKey.fromInteger(PRIVATE_KEY);
-    public static final SECP256K1.PublicKey SPUBLIC_KEY = SECP256K1.PublicKey.fromInteger(PUBLIC_KEY);
+    public static final SECPPrivateKey SRIVATE_KEY = SECPPrivateKey.create(PRIVATE_KEY, Sign.CURVE_NAME);
+    public static final SECPPublicKey SPUBLIC_KEY = SECPPublicKey.create(PUBLIC_KEY, Sign.CURVE_NAME);
 
-    public static final SECP256K1.KeyPair KEY_PAIR = SECP256K1.KeyPair.create(SRIVATE_KEY, SPUBLIC_KEY);
+    public static final KeyPair KEY_PAIR = new KeyPair(SRIVATE_KEY, SPUBLIC_KEY);
 
     private SampleKeys() {
     }

@@ -28,6 +28,24 @@ import static io.xdag.BlockBuilder.generateAddressBlock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -41,6 +59,7 @@ import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -50,21 +69,7 @@ import io.xdag.db.store.OrphanPool;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import io.xdag.wallet.Wallet;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.crypto.SECP256K1;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class MinerConnectTest {
 
@@ -91,7 +96,7 @@ public class MinerConnectTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -122,9 +127,10 @@ public class MinerConnectTest {
     }
 
     @Test
-    public void testMinerConnect() {
+    public void testMinerConnect()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         Native.crypt_start();
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        KeyPair key = Keys.createEcKeyPair();
         Block address = generateAddressBlock(config, key, new Date().getTime());
         MutableBytes encoded = address.getXdagBlock().getData();
         byte[] data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);

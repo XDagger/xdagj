@@ -34,8 +34,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 
 /**
  * BIP-32 key pair.
@@ -53,7 +55,7 @@ public class Bip32ECKeyPair {
     private final int depth;
     private final byte[] chainCode;
     private final int parentFingerprint;
-    private final SECP256K1.KeyPair keyPair;
+    private final KeyPair keyPair;
 
     private ECPoint publicKeyPoint;
 
@@ -63,7 +65,7 @@ public class Bip32ECKeyPair {
             int childNumber,
             byte[] chainCode,
             Bip32ECKeyPair parent) {
-        keyPair = SECP256K1.KeyPair.create(SECP256K1.SecretKey.fromInteger(privateKey), SECP256K1.PublicKey.fromInteger(publicKey));
+        keyPair = new KeyPair(SECPPrivateKey.create(privateKey, Sign.CURVE_NAME), SECPPublicKey.create(publicKey, Sign.CURVE_NAME));
         this.parentHasPrivate = parent != null && parent.hasPrivateKey();
         this.childNumber = childNumber;
         this.depth = parent == null ? 0 : parent.depth + 1;
@@ -138,7 +140,7 @@ public class Bip32ECKeyPair {
             Arrays.fill(i, (byte) 0);
             BigInteger ilInt = new BigInteger(1, il);
             Arrays.fill(il, (byte) 0);
-            BigInteger privateKey = keyPair.secretKey().bytes().toUnsignedBigInteger().add(ilInt).mod(Sign.CURVE.getN());
+            BigInteger privateKey = keyPair.getPrivateKey().getEncodedBytes().toUnsignedBigInteger().add(ilInt).mod(Sign.CURVE.getN());
 
             return new Bip32ECKeyPair(
                     privateKey,
@@ -176,7 +178,7 @@ public class Bip32ECKeyPair {
 
     public ECPoint getPublicKeyPoint() {
         if (publicKeyPoint == null) {
-            publicKeyPoint = SECP256K1.PublicKey.fromSecretKey(keyPair.secretKey()).asEcPoint();
+            publicKeyPoint = SECPPublicKey.create(keyPair.getPrivateKey(), Sign.CURVE, Sign.CURVE_NAME).asEcPoint(Sign.CURVE);
         }
         return publicKeyPoint;
     }
@@ -184,12 +186,12 @@ public class Bip32ECKeyPair {
     public byte[] getPrivateKeyBytes33() {
         final int numBytes = 33;
         byte[] bytes33 = new byte[numBytes];
-        byte[] priv = keyPair.secretKey().bytes().toArray();
+        byte[] priv = keyPair.getPrivateKey().getEncodedBytes().toArray();
         System.arraycopy(priv, 0, bytes33, numBytes - priv.length, priv.length);
         return bytes33;
     }
 
     private boolean hasPrivateKey() {
-        return keyPair.secretKey() != null || parentHasPrivate;
+        return keyPair.getPrivateKey() != null || parentHasPrivate;
     }
 }

@@ -34,7 +34,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 import io.xdag.config.Config;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
@@ -55,9 +54,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SECPSignature;
 
 @Slf4j
 @Getter
@@ -82,9 +82,9 @@ public class Block implements Cloneable {
     /**
      * 记录公钥 前缀+压缩公钥*
      */
-    private List<SECP256K1.PublicKey> pubKeys = new CopyOnWriteArrayList<>();
-    private Map<SECP256K1.Signature, Integer> insigs = new LinkedHashMap<>();
-    private SECP256K1.Signature outsig;
+    private List<SECPPublicKey> pubKeys = new CopyOnWriteArrayList<>();
+    private Map<SECPSignature, Integer> insigs = new LinkedHashMap<>();
+    private SECPSignature outsig;
     /**
      * 主块的nonce记录矿工地址跟nonce*
      */
@@ -107,7 +107,7 @@ public class Block implements Cloneable {
             List<Address> links,
             List<Address> pendings,
             boolean mining,
-            List<SECP256K1.KeyPair> keys,
+            List<KeyPair> keys,
             String remark,
             int defKeyIndex) {
         parsed = true;
@@ -147,14 +147,14 @@ public class Block implements Cloneable {
         }
 
         if (CollectionUtils.isNotEmpty(keys)) {
-            for (SECP256K1.KeyPair key : keys) {
+            for (KeyPair key : keys) {
                 // TODO： paulochen 是不是可以替换
-                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.secretKey().bytes().toUnsignedBigInteger(), true); //耗时长
+                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), true); //耗时长
 //                byte[] keydata = key.getCompressPubKeyBytes(); //耗时短
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
-                pubKeys.add(key.publicKey());
+                pubKeys.add(key.getPublicKey());
             }
             for (int i = 0; i < keys.size(); i++) {
                 if (i != defKeyIndex) {
@@ -246,56 +246,56 @@ public class Block implements Cloneable {
                 throw new IllegalArgumentException("xdagBlock field:" + i + " is null");
             }
             switch (field.getType()) {
-                case XDAG_FIELD_IN:
-                    inputs.add(new Address(xdagBlock.getField(i)));
-                    break;
-                case XDAG_FIELD_OUT:
-                    outputs.add(new Address(field));
-                    break;
-                case XDAG_FIELD_REMARK:
-                    this.info.setRemark(field.getData().toArray());
-                    break;
-                case XDAG_FIELD_SIGN_IN:
-                case XDAG_FIELD_SIGN_OUT:
-                    BigInteger r;
-                    BigInteger s;
-                    int j, signo_s = -1;
-                    XdagField ixf;
-                    for (j = i; j < XdagBlock.XDAG_BLOCK_FIELDS; ++j) {
-                        ixf = xdagBlock.getField(j);
-                        if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()
-                                || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
-                            if (j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType()
-                                    .ordinal()) {
-                                signo_s = j;
-                                r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
-                                s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
-                                SECP256K1.Signature tmp = SECP256K1.Signature.create((byte)0, r, s);
-                                if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                                    insigs.put(tmp, i);
-                                } else {
-                                    outsig = tmp;
-                                }
+            case XDAG_FIELD_IN -> inputs.add(new Address(xdagBlock.getField(i)));
+            case XDAG_FIELD_OUT -> outputs.add(new Address(field));
+            case XDAG_FIELD_REMARK -> this.info.setRemark(field.getData().toArray());
+            case XDAG_FIELD_SIGN_IN, XDAG_FIELD_SIGN_OUT -> {
+                BigInteger r;
+                BigInteger s;
+                int j, signo_s = -1;
+                XdagField ixf;
+                for (j = i; j < XdagBlock.XDAG_BLOCK_FIELDS; ++j) {
+                    ixf = xdagBlock.getField(j);
+                    if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()
+                            || ixf.getType() == XDAG_FIELD_SIGN_OUT) {
+                        if (j > i && signo_s < 0 && ixf.getType().ordinal() == xdagBlock.getField(i).getType()
+                                .ordinal()) {
+                            signo_s = j;
+                            r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
+                            s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
+
+                            // r and s are 0, the signature is illegal or it is a pseudo block sent by the miner
+                            if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
+                                r = BigInteger.ONE;
+                                s = BigInteger.ONE;
+                            }
+
+                            SECPSignature tmp = SECPSignature.create(r, s, (byte) 0, Sign.CURVE.getN());
+                            if (ixf.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
+                                insigs.put(tmp, i);
+                            } else {
+                                outsig = tmp;
                             }
                         }
                     }
-                    if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
-                        this.nonce = Bytes32.wrap(xdagBlock.getField(i).getData());
-                        continue;
-                    }
-                    break;
-                case XDAG_FIELD_PUBLIC_KEY_0:
-                case XDAG_FIELD_PUBLIC_KEY_1:
-                    Bytes key = xdagBlock.getField(i).getData();
-                    boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
-                    ECPoint point = Sign.decompressKey(key.toUnsignedBigInteger(), yBit);
-                    // 解析成非压缩去前缀 公钥
-                    byte[] encodePub = point.getEncoded(false);
-                    SECP256K1.PublicKey publicKey = SECP256K1.PublicKey.fromInteger(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
-                    pubKeys.add(publicKey);
-                    break;
-                default:
-//                    log.debug("no match xdagBlock field type:" + field.getType());
+                }
+                if (i == MAX_LINKS && field.getType().ordinal() == XDAG_FIELD_SIGN_IN.ordinal()) {
+                    this.nonce = Bytes32.wrap(xdagBlock.getField(i).getData());
+                }
+            }
+            case XDAG_FIELD_PUBLIC_KEY_0, XDAG_FIELD_PUBLIC_KEY_1 -> {
+                Bytes key = xdagBlock.getField(i).getData();
+                boolean yBit = (field.getType().ordinal() == XDAG_FIELD_PUBLIC_KEY_1.ordinal());
+                ECPoint point = Sign.decompressKey(key.toUnsignedBigInteger(), yBit);
+                // 解析成非压缩去前缀 公钥
+                byte[] encodePub = point.getEncoded(false);
+                SECPPublicKey publicKey = SECPPublicKey.create(
+                        new BigInteger(1, Arrays.copyOfRange(encodePub, 1, encodePub.length)), Sign.CURVE_NAME);
+                pubKeys.add(publicKey);
+            }
+            default -> {
+            }
+            //                    log.debug("no match xdagBlock field type:" + field.getType());
             }
         }
         this.parsed = true;
@@ -305,11 +305,11 @@ public class Block implements Cloneable {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.write(getEncodedBody());
 
-        for (SECP256K1.Signature sig : insigs.keySet()) {
-            encoder.writeSignature(BytesUtils.subArray(sig.bytes().toArray(), 0, 64));
+        for (SECPSignature sig : insigs.keySet()) {
+            encoder.writeSignature(BytesUtils.subArray(sig.encodedBytes().toArray(), 0, 64));
         }
         if (outsig != null) {
-            encoder.writeSignature(BytesUtils.subArray(outsig.bytes().toArray(), 0, 64));
+            encoder.writeSignature(BytesUtils.subArray(outsig.encodedBytes().toArray(), 0, 64));
         }
         int length = encoder.getWriteFieldIndex();
         tempLength = length;
@@ -341,8 +341,8 @@ public class Block implements Cloneable {
         if (info.getRemark() != null) {
             encoder.write(info.getRemark());
         }
-        for (SECP256K1.PublicKey publicKey : pubKeys) {
-            byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
+        for (SECPPublicKey publicKey : pubKeys) {
+            byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
             byte[] key = BytesUtils.subArray(pubkeyBytes, 1, 32);
             encoder.writeField(key);
         }
@@ -366,24 +366,24 @@ public class Block implements Cloneable {
         return xdagBlock;
     }
 
-    public void signIn(SECP256K1.KeyPair ecKey) {
+    public void signIn(KeyPair ecKey) {
         sign(ecKey, XDAG_FIELD_SIGN_IN);
     }
 
-    public void signOut(SECP256K1.KeyPair ecKey) {
+    public void signOut(KeyPair ecKey) {
         sign(ecKey, XDAG_FIELD_SIGN_OUT);
     }
 
-    private void sign(SECP256K1.KeyPair ecKey, XdagField.FieldType type) {
+    private void sign(KeyPair ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
         // log.debug("sign encoded:{}", Hex.toHexString(encoded));
         // TODO： paulochen 是不是可以替换
-        byte[] pubkeyBytes = ecKey.publicKey().asEcPoint().getEncoded(true);;
+        byte[] pubkeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
         //log.debug("sign digest:{}", Hex.toHexString(digest));
         Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
         //log.debug("sign hash:{}", Hex.toHexString(hash.toArray()));
-        SECP256K1.Signature signature = SECP256K1.signHashed(hash, ecKey);
+        SECPSignature signature = Sign.SECP256K1.sign(hash, ecKey);
         if (type == XDAG_FIELD_SIGN_OUT) {
             outsig = signature;
         } else {
@@ -394,28 +394,28 @@ public class Block implements Cloneable {
     /**
      * 只匹配输入签名 并返回有用的key
      */
-    public List<SECP256K1.PublicKey> verifiedKeys() {
-        List<SECP256K1.PublicKey> keys = getPubKeys();
-        List<SECP256K1.PublicKey> res = new ArrayList<>();
+    public List<SECPPublicKey> verifiedKeys() {
+        List<SECPPublicKey> keys = getPubKeys();
+        List<SECPPublicKey> res = new ArrayList<>();
         Bytes digest;
         Bytes32 hash;
-        for (SECP256K1.Signature sig : this.getInsigs().keySet()) {
+        for (SECPSignature sig : this.getInsigs().keySet()) {
             digest = getSubRawData(this.getInsigs().get(sig) - 1);
-            for (SECP256K1.PublicKey publicKey : keys) {
+            for (SECPPublicKey publicKey : keys) {
                 // TODO： paulochen 是不是可以替换
-                byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
+                byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
                 hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
-                if (SECP256K1.verifyHashed(hash, sig, publicKey)) {
+                if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
                     res.add(publicKey);
                 }
             }
         }
         digest = getSubRawData(getOutsigIndex() - 2);
-        for (SECP256K1.PublicKey publicKey : keys) {
+        for (SECPPublicKey publicKey : keys) {
             // TODO： paulochen 是不是可以替换
-            byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
+            byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
             hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
-            if (SECP256K1.verifyHashed(hash, this.getOutsig(), publicKey)) {
+            if (Sign.SECP256K1.verify(hash, this.getOutsig(), publicKey)) {
                 res.add(publicKey);
             }
         }
@@ -460,7 +460,7 @@ public class Block implements Cloneable {
         return inputs;
     }
 
-    public List<SECP256K1.PublicKey> getPubKeys() {
+    public List<SECPPublicKey> getPubKeys() {
         return pubKeys;
     }
 
@@ -468,11 +468,11 @@ public class Block implements Cloneable {
         return nonce;
     }
 
-    public SECP256K1.Signature getOutsig() {
+    public SECPSignature getOutsig() {
         return outsig == null ? null : outsig;
     }
 
-    public Map<SECP256K1.Signature, Integer> getInsigs() {
+    public Map<SECPSignature, Integer> getInsigs() {
         return insigs;
     }
 
@@ -497,7 +497,7 @@ public class Block implements Cloneable {
 
     @Override
     public int hashCode() {
-        return new ByteArrayWrapper(this.getHashLow().toArray()).hashCode();
+        return Bytes.of(this.getHashLow().toArray()).hashCode();
     }
 
     public long getTimestamp() {

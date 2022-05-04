@@ -43,7 +43,7 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
-import io.xdag.utils.ByteArrayWrapper;
+
 import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.List;
@@ -175,6 +175,13 @@ public class MinerChannel {
     private boolean isMill = false;
 
     /**
+     * 矿工名
+     */
+    @Getter
+    @Setter
+    private String workerName = "";
+
+    /**
      * 初始化 同时需要判断是服务器端还是客户端
      */
     public MinerChannel(Kernel kernel, boolean isServer) {
@@ -207,8 +214,7 @@ public class MinerChannel {
         this.miner03 = new Miner03(this, kernel);
 
         if (isServer) {
-            connectionLimitHandler = kernel.getConnectionLimitHandler();
-            pipeline.addLast("connectionLimitHandler", connectionLimitHandler);
+            pipeline.addLast("connectionLimitHandler", new ConnectionLimitHandler(kernel.getConfig().getPoolSpec().getMaxConnectPerIp()));
         }
 
         // 仅服务器端需要这个握手协议 接受
@@ -248,12 +254,12 @@ public class MinerChannel {
         this.accountAddressHash = accountAddressHash;
         log.debug("init a Miner:" + accountAddressHash.toHexString());
         // 判断这个矿工是否已经存在了
-        if (minerManager.getActivateMiners().containsKey(new ByteArrayWrapper(accountAddressHash.toArray()))) {
+        if (minerManager.getActivateMiners().containsKey(accountAddressHash)) {
             // 存在 但是会不会超过限制数
             log.debug("已经存在一个对应的矿工了");
-            this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash.toArray()));
+            this.miner = minerManager.getActivateMiners().get(accountAddressHash);
             if (miner.getConnChannelCounts() < config.getPoolSpec().getMaxMinerPerAccount()) {
-                this.miner = minerManager.getActivateMiners().get(new ByteArrayWrapper(accountAddressHash.toArray()));
+                this.miner = minerManager.getActivateMiners().get(accountAddressHash);
                 this.miner.addChannelCounts(1);
                 this.miner.putChannel(this.inetAddress, this);
                 this.miner.setMinerStates(MINER_ACTIVE);
@@ -264,7 +270,7 @@ public class MinerChannel {
             }
         } else {
             this.miner = new Miner(accountAddressHash);
-            minerManager.getActivateMiners().put(new ByteArrayWrapper(accountAddressHash.toArray()), miner);
+            minerManager.getActivateMiners().put(accountAddressHash, miner);
             miner.addChannelCounts(1);
             this.miner.putChannel(this.inetAddress, this);
             this.miner.setMinerStates(MINER_ACTIVE);
@@ -342,7 +348,7 @@ public class MinerChannel {
     }
 
     public void addPrevDiff(double i) {
-        prevDiff = +i;
+        prevDiff += i;
     }
 
     public void addPrevDiffCounts() {
@@ -350,7 +356,7 @@ public class MinerChannel {
     }
 
     public void addMaxDiffs(int index, double diff) {
-        maxDiffs.add(index, diff);
+        maxDiffs.set(index, diff);
     }
 
     public double getMaxDiffs(int index) {

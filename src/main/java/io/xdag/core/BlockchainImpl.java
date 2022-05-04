@@ -31,6 +31,7 @@ import static io.xdag.config.Constants.BI_MAIN_CHAIN;
 import static io.xdag.config.Constants.BI_MAIN_REF;
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
 import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
@@ -45,8 +46,39 @@ import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SECPSignature;
+
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
+
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.Hash;
@@ -65,41 +97,12 @@ import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.crypto.SECP256K1;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
 
 @Slf4j
 @Getter
@@ -121,8 +124,8 @@ public class BlockchainImpl implements Blockchain {
      */
     private final OrphanPool orphanPool;
 
-    private final LinkedHashMap<ByteArrayWrapper, Block> memOrphanPool = new LinkedHashMap<>();
-    private final Map<ByteArrayWrapper, Integer> memOurBlocks = new ConcurrentHashMap<>();
+    private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
+    private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
     private final XdagStats xdagStats;
     private final Kernel kernel;
 
@@ -137,14 +140,14 @@ public class BlockchainImpl implements Blockchain {
     private SnapshotChainStore snapshotChainStore;
     private long snapshotHeight;
     private SnapshotJ snapshotJ;
-
+    private final XdagExtStats xdagExtStats;
     @Getter
     private byte[] preSeed;
 
     public BlockchainImpl(Kernel kernel) {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
-
+        this.xdagExtStats = new XdagExtStats();
         // 1. init chain state from rocksdb
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
@@ -221,7 +224,7 @@ public class BlockchainImpl implements Blockchain {
 
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
-        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("time：" + (end - start) + "ms");
         System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotJ.getOurBalance()));
     }
 
@@ -233,7 +236,7 @@ public class BlockchainImpl implements Blockchain {
         cleanSnapshotChain();
         long end = System.currentTimeMillis();
         System.out.println("init snapshot done");
-        System.out.println("耗时：" + (end - start) + "ms");
+        System.out.println("time：" + (end - start) + "ms");
     }
 
 
@@ -416,29 +419,18 @@ public class BlockchainImpl implements Blockchain {
             }
 
             // 更新区块难度和maxDiffLink
-            calculateBlockDiff(block);
+            BigInteger diff = calculateBlockDiff(block);
 
             // 更新preTop
-            setPreTop(block);
+            setPreTop(block, diff);
             setPreTop(getBlockByHash(xdagTopStatus.getTop() == null ? null : Bytes32.wrap(xdagTopStatus.getTop()),
-                    false));
+                    false), diff);
 
             // 通知XdagPoW 新pretop产生
             onNewPretop();
 
             // TODO:extra 处理
             processExtraBlock();
-//            if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
-//                Block reuse = getHead(memOrphanPool).getValue();
-//                log.debug("remove when extra too big");
-//                removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
-//                xdagStats.nblocks--;
-//                xdagStats.totalnblocks = Math.max(xdagStats.nblocks,xdagStats.totalnblocks);
-//
-//                if ((reuse.getInfo().flags & BI_OURS) != 0) {
-//                    removeOurBlock(reuse);
-//                }
-//            }
 
             // 根据难度更新主链
             // 判断难度是否是比当前最大，并以此更新topMainChain
@@ -459,6 +451,7 @@ public class BlockchainImpl implements Blockchain {
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
+                xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
             }
 
             // 新增区块
@@ -472,7 +465,7 @@ public class BlockchainImpl implements Blockchain {
 //            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
 //                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
-                memOrphanPool.put(new ByteArrayWrapper(block.getHashLow().toArray()), block);
+                memOrphanPool.put(block.getHashLow(), block);
                 xdagStats.nextra++;
             } else {
 //                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
@@ -487,6 +480,33 @@ public class BlockchainImpl implements Blockchain {
                 if ((block.getInfo().getFlags() & BI_OURS) != 0) {
                     log.info("XDAG:pool transaction(reward). block hash:{}", block.getHash().toHexString());
                 }
+            }
+
+            BigInteger diff0;
+            // 初始区块自身难度设置
+            if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
+                    && XdagTime.isEndOfEpoch(block.getTimestamp())) {
+                diff0 = getDiffByRandomXHash(block);
+            } else {
+                diff0 = getDiffByRawHash(block.getHash());
+            }
+
+            //把过去四个小时每个时间片的diff都记录下来，后面会用这些diff去转换出一个全局hashrate
+            int i = (int)(XdagTime.getEpoch(block.getTimestamp())& (HASH_RATE_LAST_MAX_TIME - 1));
+            if(XdagTime.getEpoch(block.getTimestamp())>XdagTime.getEpoch(xdagExtStats.getHashrate_last_time())){
+                xdagExtStats.getHashRateTotal()[i] = BigInteger.ZERO;
+                xdagExtStats.getHashRateOurs()[i] = BigInteger.ZERO;
+                xdagExtStats.setHashrate_last_time(block.getTimestamp());
+            }
+
+            if(diff0.compareTo(xdagExtStats.getHashRateTotal()[i])>0){
+                xdagExtStats.getHashRateTotal()[i] = diff0;
+            }
+
+            if((block.getInfo().getFlags()&BI_OURS)!=0
+                    &&diff0.compareTo(xdagExtStats.getHashRateOurs()[i])>0){
+                xdagExtStats.getHashRateOurs()[i] = diff0;
+
             }
 
             return result;
@@ -818,7 +838,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark) {
+    public Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark) {
 
         int hasRemark = remark == null ? 0 : 1;
 
@@ -833,7 +853,7 @@ public class BlockchainImpl implements Blockchain {
 
         // 遍历所有key 判断是否有defKey
         assert pairs != null;
-        List<SECP256K1.KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
+        List<KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey())) {
                 defKeyIndex = i;
@@ -953,14 +973,14 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    public void setPreTop(Block block) {
+    public void setPreTop(Block block, BigInteger diff) {
         if (block == null) {
             return;
         }
         if (XdagTime.getEpoch(block.getTimestamp()) > XdagTime.getCurrentEpoch()) {
             return;
         }
-        BigInteger blockDiff = calculateBlockDiff(block);
+        BigInteger blockDiff = diff;
         if (xdagTopStatus.getPreTop() == null) {
             xdagTopStatus.setPreTop(block.getHashLow().toArray());
             xdagTopStatus.setPreTopDiff(blockDiff);
@@ -1101,37 +1121,9 @@ public class BlockchainImpl implements Blockchain {
         return blockStore.getBlockByHeight(height);
     }
 
-    // REMOVE: 旧版本-通过高度获取区块
-    public Block getBlockByHeightOrigin(long height) {
-        // TODO: if snapshto enabled, need height > snapshotHeight - 128
-        if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled() && (height < snapshotHeight - 128)) {
-            return null;
-        }
-
-        if (height > xdagStats.nmain) {
-            return null;
-        }
-
-        Block block;
-        int i = 0;
-        for (block = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
-             block != null && (i < xdagStats.nmain);
-             block = getBlockByHash(Bytes32.wrap(block.getInfo().getMaxDiffLink()), false)) {
-            if ((block.getInfo().getFlags() & BI_MAIN) != 0) {
-                if (height == block.getInfo().getHeight()) {
-                    break;
-                }
-                ++i;
-            }
-        }
-        return block;
-    }
-
     @Override
     public Block getBlockByHeight(long height) {
-        // ADD: 使用新版本获取
         return getBlockByHeightNew(height);
-//        return getBlockByHeightOrigin(height);
     }
 
     @Override
@@ -1139,8 +1131,7 @@ public class BlockchainImpl implements Blockchain {
         if (hashlow == null) {
             return null;
         }
-        ByteArrayWrapper key = new ByteArrayWrapper(hashlow.toArray());
-        Block b = memOrphanPool.get(key);
+        Block b = memOrphanPool.get(hashlow);
         if (b == null) {
             b = blockStore.getBlockByHash(hashlow, isRaw);
         }
@@ -1167,7 +1158,7 @@ public class BlockchainImpl implements Blockchain {
 //                log.debug("移除Extra");
                 // 那removeBlockInfo就是完整的
                 // 从MemOrphanPool中去除
-                ByteArrayWrapper key = new ByteArrayWrapper(b.getHashLow().toArray());
+                Bytes key = b.getHashLow();
                 Block removeBlockRaw = memOrphanPool.get(key);
                 memOrphanPool.remove(key);
                 if (action != OrphanRemoveActions.ORPHAN_REMOVE_REUSE) {
@@ -1227,15 +1218,15 @@ public class BlockchainImpl implements Blockchain {
         block.isSaved = true;
         blockStore.saveBlock(block);
         // 如果是自己的账户
-        if (memOurBlocks.containsKey(new ByteArrayWrapper(block.getHash().toArray()))) {
+        if (memOurBlocks.containsKey(block.getHash())) {
 //            log.info("new account:{}", Hex.toHexString(block.getHash()));
             if (xdagStats.getOurLastBlockHash() == null) {
 //                log.info("Global miner");
                 xdagStats.setGlobalMiner(block.getHash().toArray());
                 blockStore.saveXdagStatus(xdagStats);
             }
-            addOurBlock(memOurBlocks.get(new ByteArrayWrapper(block.getHash().toArray())), block);
-            memOurBlocks.remove(new ByteArrayWrapper(block.getHash().toArray()));
+            addOurBlock(memOurBlocks.get(block.getHash()), block);
+            memOurBlocks.remove(block.getHash());
         }
 
         if (block.isPretopCandidate()) {
@@ -1256,8 +1247,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean canUseInput(Block block) {
-//        boolean canUse = false;
-        List<SECP256K1.PublicKey> keys = block.verifiedKeys();
+        List<SECPPublicKey> keys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
         if (inputs == null || inputs.size() == 0) {
             return true;
@@ -1270,7 +1260,7 @@ public class BlockchainImpl implements Blockchain {
         return true;
     }
 
-    private boolean verifySignature(Address in, List<SECP256K1.PublicKey> publicKeys) {
+    private boolean verifySignature(Address in, List<SECPPublicKey> publicKeys) {
         // TODO: 判断in是不是snapshot中的块, 使用isRaw为false的方式获取blockinfo
         Block block = getBlockByHash(in.getHashLow(), false);
         boolean isSnapshotBlock = block.getInfo().isSnapshot();
@@ -1280,13 +1270,13 @@ public class BlockchainImpl implements Blockchain {
             Block inBlock = getBlockByHash(in.getHashLow(), true);
             MutableBytes subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 //            log.debug("verify encoded:{}", Hex.toHexString(subdata));
-            SECP256K1.Signature sig = inBlock.getOutsig();
+            SECPSignature sig = inBlock.getOutsig();
             return verifySignature(subdata, sig, publicKeys, block.getInfo());
         }
     }
 
     // TODO: 当输入是snapshot中的区块时，需要验证snapshot的公钥或签名数据
-    private boolean verifySignatureFromSnapshot(Address in, List<SECP256K1.PublicKey> publicKeys) {
+    private boolean verifySignatureFromSnapshot(Address in, List<SECPPublicKey> publicKeys) {
         BlockInfo blockInfo = blockStore.getBlockInfoByHash(in.getHashLow()).getInfo();
         SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
         if (snapshotInfo.getType()) {
@@ -1295,8 +1285,8 @@ public class BlockchainImpl implements Blockchain {
             ECPoint point = Sign.decompressKey(xBn, yBit);
             // 解析成非压缩去前缀 公钥
             byte[] encodePub = point.getEncoded(false);
-            SECP256K1.PublicKey targetPublicKey = SECP256K1.PublicKey.fromInteger(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
-            for (SECP256K1.PublicKey publicKey : publicKeys) {
+            SECPPublicKey targetPublicKey = SECPPublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)), Sign.CURVE_NAME);
+            for (SECPPublicKey publicKey : publicKeys) {
                 if (publicKey.equals(targetPublicKey)) {
                     return true;
                 }
@@ -1308,22 +1298,22 @@ public class BlockchainImpl implements Blockchain {
             block.setParsed(false);
             block.parse();
             MutableBytes subdata = block.getSubRawData(block.getOutsigIndex() - 2);
-            SECP256K1.Signature sig = block.getOutsig();
+            SECPSignature sig = block.getOutsig();
             return verifySignature(subdata, sig, publicKeys, blockInfo);
         }
 
 
     }
 
-    private boolean verifySignature(MutableBytes subdata, SECP256K1.Signature sig, List<SECP256K1.PublicKey> publicKeys, BlockInfo blockInfo) {
-        for (SECP256K1.PublicKey publicKey : publicKeys) {
-            byte[] publicKeyBytes = publicKey.asEcPoint().getEncoded(true);
+    private boolean verifySignature(MutableBytes subdata, SECPSignature sig, List<SECPPublicKey> publicKeys, BlockInfo blockInfo) {
+        for (SECPPublicKey publicKey : publicKeys) {
+            byte[] publicKeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
             Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));
 //            log.debug("verify encoded:{}", Hex.toHexString(digest));
             Bytes32 hash = Hash.hashTwice(digest);
-            if (SECP256K1.verifyHashed(hash, sig, publicKey)) {
+            if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
                 SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
-                byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
+                byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
                 if (snapshotInfo != null) {
                     snapshotInfo.setData(pubkeyBytes);
                     snapshotInfo.setType(true);
@@ -1338,18 +1328,18 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<SECP256K1.KeyPair> ourkeys = wallet.getAccounts();
+        List<KeyPair> ourkeys = wallet.getAccounts();
         // 输出签名只有一个
-        SECP256K1.Signature signature = block.getOutsig();
+        SECPSignature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            SECP256K1.KeyPair ecKey = ourkeys.get(i);
+            KeyPair ecKey = ourkeys.get(i);
             // TODO: 优化
-            byte[] publicKeyBytes = ecKey.publicKey().asEcPoint().getEncoded(true);
+            byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
             Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-//            if (ecKey.verify(hash.toArray(), signature)) { // TODO: 耗时长
-            if (SECP256K1.verifyHashed(hash, signature, ecKey.publicKey())) {
+            // use hyperledger besu crypto native secp256k1
+            if (Sign.SECP256K1.verify(hash, signature, ecKey.getPublicKey())) {
                 log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;
@@ -1361,7 +1351,7 @@ public class BlockchainImpl implements Blockchain {
     public void addOurBlock(int keyIndex, Block block) {
         xdagStats.setOurLastBlockHash(block.getHash().toArray());
         if (!block.isSaved()) {
-            memOurBlocks.put(new ByteArrayWrapper(block.getHash().toArray()), keyIndex);
+            memOurBlocks.put(block.getHash(), keyIndex);
         } else {
             blockStore.saveOurBlock(keyIndex, block.getInfo().getHashlow());
         }
@@ -1369,7 +1359,7 @@ public class BlockchainImpl implements Blockchain {
 
     public void removeOurBlock(Block block) {
         if (!block.isSaved) {
-            memOurBlocks.remove(new ByteArrayWrapper(block.getHash().toArray()));
+            memOurBlocks.remove(block.getHash());
         } else {
             blockStore.removeOurBlock(block.getHashLow().toArray());
         }
@@ -1414,13 +1404,12 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void checkState() {
-        // TODO:检查extra
-//        checkExtra();
+        checkOrphan();
         checkMain();
     }
 
-    public void checkExtra() {
-        long nblk = xdagStats.nextra / 11;
+    public void checkOrphan() {
+        long nblk = xdagStats.nnoref / 11;
         if (nblk > 0) {
             boolean b = (nblk % 61) > (RandomUtils.nextLong() % 61);
             nblk = nblk / 61 + (b ? 1 : 0);
@@ -1490,7 +1479,7 @@ public class BlockchainImpl implements Blockchain {
      * 判断是否已经接收过区块 *
      */
     public boolean isExist(Bytes32 hashlow) {
-        return memOrphanPool.containsKey(new ByteArrayWrapper(hashlow.toArray())) ||
+        return memOrphanPool.containsKey(hashlow) ||
                 blockStore.hasBlock(hashlow) || isExitInSnapshot(hashlow);
     }
 
@@ -1575,7 +1564,7 @@ public class BlockchainImpl implements Blockchain {
         return res;
     }
 
-    public Map<ByteArrayWrapper, Integer> getMemOurBlocks() {
+    public Map<Bytes, Integer> getMemOurBlocks() {
         return memOurBlocks;
     }
 

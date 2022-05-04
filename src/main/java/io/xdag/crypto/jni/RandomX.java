@@ -31,6 +31,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+
+import org.hyperledger.besu.crypto.SECP256K1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,16 +59,18 @@ public class RandomX {
 
         SystemUtil.OsName os = SystemUtil.getOsName();
         switch (os) {
-            case LINUX:
+            case LINUX: {
                 if (SystemUtil.getOsArch().equals("aarch64")) {
                     enabled = loadLibrary("/native/Linux-aarch64/librandomx.so");
                 } else {
                     enabled = loadLibrary("/native/Linux-x86_64/librandomx.so");
                 }
                 break;
-            case MACOS:
+            }
+            case MACOS: {
                 enabled = loadLibrary("/native/Darwin-x86_64/librandomx.dylib");
                 break;
+            }
             case WINDOWS:
                 enabled = loadLibrary("/native/Windows-x86_64/librandomx.dll");
                 break;

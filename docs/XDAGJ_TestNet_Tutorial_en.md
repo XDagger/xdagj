@@ -2,7 +2,7 @@
 
   - [Wallet Access Tutorial](#wallet-access-tutorial)
     - [MacOS/Linux Command Line Wallet](#macoslinux-command-line-wallet)
-      - [MacOS](#macos)
+      - [MacOS](#MacOS)
       - [Ubuntu](#ubuntu)
     - [Usage](#usage)
     - [Windows Visual Wallet](#windows-visual-wallet)
@@ -10,7 +10,7 @@
     - [Backup](#backup)
     - [Recover](#recover)
   - [Mining Tutorial](#mining-tutorial)
-    - [MacOS](#macos-1)
+    - [MacOS](#MacOS)
     - [Linux](#linux)
     - [Windows](#windows)
     - [General question](#general-question)

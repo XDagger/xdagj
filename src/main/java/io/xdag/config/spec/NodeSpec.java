@@ -40,6 +40,8 @@ public interface NodeSpec {
 
     int getMaxConnections();
 
+    int getMaxInboundConnectionsPerIp();
+
     int getConnectionReadTimeout();
 
     byte[] getDnetKeyBytes();

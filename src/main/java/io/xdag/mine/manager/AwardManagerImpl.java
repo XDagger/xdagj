@@ -40,7 +40,6 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
-import io.xdag.utils.ByteArrayWrapper;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -50,13 +49,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
@@ -93,15 +98,21 @@ public class AwardManagerImpl implements AwardManager, Runnable {
      */
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>();
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-    protected long currentTaskTime;
-    protected long currentTaskIndex;
+    protected volatile long currentTaskTime;
+    protected volatile long currentTaskIndex;
     protected Config config;
     private List<Miner> miners;
     @Setter
     private MinerManager minerManager;
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
-    private Thread t;
+
+    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("AwardManager-work-thread")
+            .daemon(true)
+            .build());
+
+    private volatile boolean isRunning = false;
 
     public AwardManagerImpl(Kernel kernel) {
         this.kernel = kernel;
@@ -149,38 +160,29 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     @Override
     public void run() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (isRunning) {
             try {
-                AwardBlock awardBlock = awardBlockBlockingQueue.take();
-                payAndaddNewAwardBlock(awardBlock);
+                AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
+                if(awardBlock != null) {
+                    payAndaddNewAwardBlock(awardBlock);
+                }
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error(" can not take the awardBlock from awardBlockQueue ");
-                break;
+                log.error(" can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
             }
         }
     }
 
     @Override
     public void start() {
-        if (t == null) {
-            t = new Thread(this, "AwardManagerImpl");
-            t.start();
-        }
+        isRunning = true;
+        workExecutor.execute(this);
+        log.debug("AwardManager started.");
     }
 
     @Override
     public void stop() {
-        if (t != null) {
-            try {
-                t.interrupt();
-                t.join();
-            } catch (InterruptedException e) {
-                log.error("Failed to stop AwardManagerImpl");
-                Thread.currentThread().interrupt();
-            }
-            t = null;
-        }
+        isRunning = false;
+        workExecutor.shutdown();
     }
 
     @Override
@@ -313,10 +315,10 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         //TODO
         log.debug("Hash low : " + hashlow.toHexString());
         if (keyPos < 0) {
-            if (kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray())) == null) {
+            if (kernel.getBlockchain().getMemOurBlocks().get(hashlow) == null) {
                 keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
             } else {
-                keyPos = kernel.getBlockchain().getMemOurBlocks().get(new ByteArrayWrapper(hashlow.toArray()));
+                keyPos = kernel.getBlockchain().getMemOurBlocks().get(hashlow);
             }
             log.debug("keypos : " + keyPos);
             if (keyPos < 0) {
@@ -492,9 +494,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void doPayments(Bytes32 hash, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-        HashMap<Address, SECP256K1.KeyPair> inputMap = new HashMap<>();
+        HashMap<Address, KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hash, XDAG_FIELD_IN);
-        SECP256K1.KeyPair inputKey = wallet.getAccount(keyPos);
+        KeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         long payAmount = 0L;
         /**
@@ -539,7 +541,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 continue;
             }
             payAmount += paymentSum;
-            receipt.add(new Address(miner.getAddressHaashLow(), XDAG_FIELD_OUT, paymentSum));
+            receipt.add(new Address(miner.getAddressHashLow(), XDAG_FIELD_OUT, paymentSum));
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hash, receipt, payAmount, keyPos);
@@ -560,9 +562,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         for (Address address : receipt) {
             log.debug("pay data: {}", address.getData().toHexString());
         }
-        Map<Address, SECP256K1.KeyPair> inputMap = new HashMap<>();
+        Map<Address, KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
-        SECP256K1.KeyPair inputKey = wallet.getAccount(keypos);
+        KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
         if (inputKey.equals(wallet.getDefKey())) {

@@ -21,50 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.mine.message;
 
-package io.xdag.utils;
 
-import org.bouncycastle.util.encoders.Hex;
+import io.xdag.core.XdagField;
+import io.xdag.net.message.Message;
+import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
-import java.util.Arrays;
+import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 
-public final class ByteArrayWrapper {
+public class WorkerNameMessage extends Message {
 
-    private final byte[] data;
+    private final XdagField xdagField;
 
-    public ByteArrayWrapper(byte[] data) {
-        if (data == null) {
-            throw new NullPointerException();
-        }
-        this.data = data;
-    }
-
-    public static ByteArrayWrapper of(byte[] data) {
-        return new ByteArrayWrapper(data);
-    }
-
-    public byte[] getData() {
-        return data;
+    public WorkerNameMessage(MutableBytes encoded) {
+        super(encoded);
+        this.xdagField = new XdagField(encoded);
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        return Arrays.equals(data, ((ByteArrayWrapper) o).data);
+    public Bytes getEncoded() {
+        return xdagField.getData();
     }
 
     @Override
-    public int hashCode() {
-        return Arrays.hashCode(data);
+    public Class<?> getAnswerMessage() {
+        return null;
+    }
+
+    @Override
+    public XdagMessageCodes getCommand() {
+        return WORKER_NAME;
     }
 
     @Override
     public String toString() {
-        return Hex.toHexString(data);
+        return null;
     }
 }

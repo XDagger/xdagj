@@ -25,11 +25,13 @@
 package io.xdag.core;
 
 import io.xdag.listener.Listener;
-import io.xdag.utils.ByteArrayWrapper;
+
 import java.util.List;
 import java.util.Map;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public interface Blockchain {
 
@@ -38,7 +40,7 @@ public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark);
+    Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark);
 
     Block getBlockByHash(Bytes32 hash, boolean isRaw);
 
@@ -50,7 +52,7 @@ public interface Blockchain {
 
     List<Block> listMinedBlocks(int count);
 
-    Map<ByteArrayWrapper, Integer> getMemOurBlocks();
+    Map<Bytes, Integer> getMemOurBlocks();
 
     XdagStats getXdagStats();
 
@@ -69,4 +71,6 @@ public interface Blockchain {
 
     // 注册监听器
     void registerListener(Listener listener);
+
+    XdagExtStats getXdagExtStats();
 }

@@ -1,3 +1,26 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2030 The XdagJ Developers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package io.xdag.snapshot;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -7,6 +30,7 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.*;
 
 import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.db.rocksdb.RocksdbKVSource;
@@ -17,8 +41,9 @@ import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.rocksdb.*;
 
 import java.io.ByteArrayInputStream;
@@ -89,7 +114,7 @@ public class SnapshotJ extends RocksdbKVSource {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<SECP256K1.KeyPair> keys) {
+    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys) {
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {
@@ -111,8 +136,8 @@ public class SnapshotJ extends RocksdbKVSource {
                             if (snapshotInfo.getType()) {
                                 byte[] ecKeyPair = snapshotInfo.getData();
                                 for (int i = 0; i < keys.size(); i++) {
-                                    SECP256K1.KeyPair key = keys.get(i);
-                                    if (Bytes.wrap(key.publicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                                    KeyPair key = keys.get(i);
+                                    if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();
@@ -121,14 +146,14 @@ public class SnapshotJ extends RocksdbKVSource {
                                 }
                             } else {    //Verify signature
                                 Block block = new Block(new XdagBlock(snapshotInfo.getData()));
-                                SECP256K1.Signature outSig = block.getOutsig();
+                                SECPSignature outSig = block.getOutsig();
                                 for (int i = 0; i < keys.size(); i++) {
-                                    SECP256K1.KeyPair keyPair = keys.get(i);
-                                    byte[] publicKeyBytes = keyPair.publicKey().asEcPoint().getEncoded(true);
+                                    KeyPair keyPair = keys.get(i);
+                                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                                     Bytes digest = Bytes
                                             .wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                                    if (SECP256K1.verifyHashed(hash.toArray(), outSig, keyPair.publicKey())) {
+                                    if (Sign.SECP256K1.verify(hash, outSig, keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();

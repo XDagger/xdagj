@@ -24,6 +24,7 @@
 
 package io.xdag.utils;
 
+import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
 import io.xdag.utils.exception.XdagOverFlowException;
@@ -200,5 +201,13 @@ public class BasicUtils {
             inputStream.close();
         }
         return buffer;
+    }
+    public static double xdagHashRate(BigInteger[] diffs){
+        double sum = 0;
+        for (BigInteger diff : diffs) {
+            sum += xdag_diff2log(diff);
+        }
+        sum /= HASH_RATE_LAST_MAX_TIME;
+        return Math.exp(sum) * Math.pow(2, -58);
     }
 }

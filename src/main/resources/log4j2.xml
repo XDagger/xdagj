@@ -17,7 +17,7 @@
                 <ThresholdFilter level="${error_level}" onMatch="DENY" onMismatch="NEUTRAL"/>
                 <ThresholdFilter level="${log_level}" onMatch="ACCEPT" onMismatch="DENY"/>
             </Filters>
-            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%p] [%c:%L] -- %m%n"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%t] [%p] [%c:%L] -- %m%n"/>
             <Policies>
                 <!-- 按天递计算频率 -->
                 <TimeBasedTriggeringPolicy interval="1"/>
@@ -38,7 +38,7 @@
         <RollingFile name="errorFile" fileName="${Logs_Dir}/xdag-${error_level}.log"
                 filePattern="${Logs_Dir}/history/xdag-%d{MM-dd-yyyy}-%i-${error_level}.log">
             <ThresholdFilter level="${error_level}" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%p] [%c:%L] -- %m%n"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%t] [%p] [%c:%L] -- %m%n"/>
             <Policies>
                 <!-- 按天递计算频率 -->
                 <TimeBasedTriggeringPolicy interval="1"/>

@@ -59,7 +59,8 @@ public enum XdagMessageCodes {
     TASK_SHARE(0x08),
     NEW_TASK(0x09),
     NEW_BALANCE(0x0A),
-    NEW_BLOCK(0x0B);
+    NEW_BLOCK(0x0B),
+    WORKER_NAME(0x0C);
 
     private static final Map<XdagVersion, Map<Integer, XdagMessageCodes>> intToTypeMap = new HashMap<>();
     private static final Map<XdagVersion, XdagMessageCodes[]> versionToValuesMap = new HashMap<>();
@@ -79,7 +80,8 @@ public enum XdagMessageCodes {
                         TASK_SHARE,
                         NEW_TASK,
                         NEW_BALANCE,
-                        NEW_BLOCK
+                        NEW_BLOCK,
+                        WORKER_NAME
                 });
 
         for (XdagVersion v : XdagVersion.values()) {

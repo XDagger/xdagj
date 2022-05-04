@@ -44,6 +44,7 @@ import io.xdag.core.Blockchain;
 import io.xdag.core.BlockchainImpl;
 import io.xdag.core.ImportResult;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -58,8 +59,10 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -79,7 +82,11 @@ public class SyncTest {
 
     Config config = new DevnetConfig();
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
-    SECP256K1.SecretKey secretkey_1 = SECP256K1.SecretKey.fromInteger(private_1);
+    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
+
+    @Before
+    public void setup() {
+    }
 
     @Test
     //  |    epoch 1    |    epoch 2    |   epoch 3    |
@@ -127,7 +134,7 @@ public class SyncTest {
 
     public String syncCase(Blockchain blockchain, boolean direction) {
         // 1. create case
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
+        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
         List<Address> pending = Lists.newArrayList();
 
         long generateTime = 1600616700000L;
@@ -182,7 +189,7 @@ public class SyncTest {
 
     public String[] syncCase2(Blockchain blockchain, boolean direction) {
         // 1. create case
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(secretkey_1);
+        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
         List<Address> pending = Lists.newArrayList();
 
         long generateTime = 1600616700000L;
@@ -338,7 +345,7 @@ public class SyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.fromSecretKey(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config);

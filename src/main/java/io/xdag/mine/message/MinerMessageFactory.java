@@ -46,6 +46,8 @@ public class MinerMessageFactory implements MessageFactory {
                 return new NewTaskMessage(encoded);
             case NEW_BALANCE:
                 return new NewBalanceMessage(encoded);
+            case WORKER_NAME:
+                return new WorkerNameMessage(encoded);
             default:
                 log.debug(encoded.toHexString());
                 throw new IllegalArgumentException("No such message code" + receivedCommand);

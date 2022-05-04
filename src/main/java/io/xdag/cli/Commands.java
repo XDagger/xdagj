@@ -58,6 +58,9 @@ import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -77,7 +80,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
@@ -233,7 +236,7 @@ public class Commands {
         // 待转账余额
         AtomicLong remain = new AtomicLong(amount);
         // 转账输入
-        Map<Address, SECP256K1.KeyPair> ourBlocks = Maps.newHashMap();
+        Map<Address, KeyPair> ourBlocks = Maps.newHashMap();
 
         // our block select
         kernel.getBlockStore().fetchOurBlocks(pair -> {
@@ -274,7 +277,7 @@ public class Commands {
 
     }
 
-    private List<BlockWrapper> createTransactionBlock(Map<Address, SECP256K1.KeyPair> ourKeys, Bytes32 to, String remark) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark) {
         // 判断是否有remark
         int hasRemark = remark == null ? 0 : 1;
 
@@ -282,12 +285,12 @@ public class Commands {
 
         // 遍历ourKeys 计算每个区块最多能放多少个
         // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
-        LinkedList<Map.Entry<Address, SECP256K1.KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
+        LinkedList<Map.Entry<Address, KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
 
         // 每次创建区块用到的keys
-        Map<Address, SECP256K1.KeyPair> keys = new HashMap<>();
+        Map<Address, KeyPair> keys = new HashMap<>();
         // 保证key的唯一性
-        Set<SECP256K1.KeyPair> keysPerBlock = new HashSet<>();
+        Set<KeyPair> keysPerBlock = new HashSet<>();
         // 放入defkey
         keysPerBlock.add(kernel.getWallet().getDefKey());
 
@@ -296,7 +299,7 @@ public class Commands {
         long amount = 0;
 
         while (stack.size() > 0) {
-            Map.Entry<Address, SECP256K1.KeyPair> key = stack.peek();
+            Map.Entry<Address, KeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
@@ -327,7 +330,7 @@ public class Commands {
         return res;
     }
 
-    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, SECP256K1.KeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, KeyPair> keys, String remark) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
 
@@ -337,11 +340,11 @@ public class Commands {
             return null;
         }
 
-        SECP256K1.KeyPair defaultKey = kernel.getWallet().getDefKey();
+        KeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isdefaultKey = false;
         // 签名
-        for (SECP256K1.KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+        for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
                 block.signOut(ecKey);
@@ -378,7 +381,8 @@ public class Commands {
                             orphan blocks: %d
                          wait sync blocks: %d
                          chain difficulty: %s of %s
-                              XDAG supply: %.9f of %.9f""",
+                              XDAG supply: %.9f of %.9f
+                        4 hr hashrate MHs: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
@@ -390,7 +394,9 @@ public class Commands {
                 currentDiff.toString(16),
                 maxDiff.toString(16),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
-                amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))
+                amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain))),
+                BasicUtils.xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateOurs()),
+                BasicUtils.xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal())
         );
     }
 
@@ -561,7 +567,8 @@ public class Commands {
         return stringBuilder.toString();
     }
 
-    public String keygen() {
+    public String keygen()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         kernel.getXdagState().tempSet(XdagState.KEYS);
         kernel.getWallet().addAccountRandom();
         int size = kernel.getWallet().getAccounts().size();

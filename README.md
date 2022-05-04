@@ -26,11 +26,11 @@ Maven : v3.8.3
 XDAGJ Testnet Tutorial can help you quickly access XDAGJ testnet by using wallets and mining functions.
 The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
 
-[XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
+[XDAGJ_TestNet_Tutorial](./docs/XDAGJ_TestNet_Tutorial_en.md)
 
-[XDAGJ Private Chain Construction Tutorial](./docs/XDAGJ_Private_Chain_Tutorial_eng.md)
+[XDAGJ_Devnet_Tutorial](./docs/XDAGJ_Devnet_Tutorial_en.md)
 
-[Explorer](http://146.56.240.230/)
+[XDAGJ TestNet Explorer](http://146.56.240.230/)
 
 ## Develop
 
@@ -38,7 +38,7 @@ XDAGJ has the basic functions as a pool. Follow-up works will improve the stabil
 
 ### XDAG Mars Project
 
-The XDAG Mars Project is divided into four stages：
+Four stages：
 
 #### Exploration phase: XDAGJ testnet is online (online, in beta)
 
@@ -55,17 +55,17 @@ The XDAG Mars Project is divided into four stages：
 
 #### Landing phase: XDAGJ mainnet is online
 
-- [ ] Improve test cases: write test cases for existing functions
+- [x] Add test cases: write test cases for existing functions
 
-- [ ] Improve the log function: provide a relatively complete log service to facilitate trouble shooting
+- [x] Add log functions: provide a relatively complete log service to facilitate trouble shooting
 
-- [ ] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
+- [x] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [x] Implement the snapshot function: solve the problem of long time-consuming loading data caused by too many historical blocks
+- [x] Implement the snapshot function: reduce the cost of runing a mining pool and boost the loading process
 
 - [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
 
-- [ ] Improve the mining protocol: introduce the more mature Stratum protocol
+- [x] Introduce the Stratum protocol for miners
 
 - [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
 
@@ -142,7 +142,7 @@ XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## Other
 
-[XDAGJ Libp2P Introduction](./docs/XDAGJ_Networking_Specification.md)
+[XDAGJ Libp2p Introduction](./docs/XDAGJ_Networking_Specification.md)
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)
 

@@ -24,7 +24,9 @@
 
 package io.xdag;
 
+import io.xdag.cli.XdagOption;
 import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ public class Launcher {
      */
     private static final List<Pair<String, Runnable>> shutdownHooks = Collections.synchronizedList(new ArrayList<>());
 
+    private static final String ENV_XDAGJ_WALLET_PASSWORD = "XDAGJ_WALLET_PASSWORD";
+
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(Launcher::shutdownHook, "shutdown-hook"));
     }
@@ -62,6 +66,15 @@ public class Launcher {
     private final Options options = new Options();
     private String password = null;
     private Config config;
+
+    public Launcher() {
+        Option passwordOption = Option.builder()
+                .longOpt(XdagOption.PASSWORD.toString())
+                .desc("wallet password")
+                .hasArg(true).numberOfArgs(1).optionalArg(false).argName("password").type(String.class)
+                .build();
+        addOption(passwordOption);
+    }
 
     /**
      * Registers a shutdown hook which will be executed in the order of
@@ -112,10 +125,18 @@ public class Launcher {
 
     /**
      * Parses options from the given arguments.
+     *
+     * Priority: arguments => system property => console input
      */
     protected CommandLine parseOptions(String[] args) throws ParseException {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(getOptions(), args);
+
+        if (cmd.hasOption(XdagOption.PASSWORD.toString())) {
+            setPassword(cmd.getOptionValue(XdagOption.PASSWORD.toString()));
+        } else if (System.getenv(ENV_XDAGJ_WALLET_PASSWORD) != null) {
+            setPassword(System.getenv(ENV_XDAGJ_WALLET_PASSWORD));
+        }
 
         return cmd;
     }
@@ -123,7 +144,10 @@ public class Launcher {
     protected Config buildConfig(String[] args) throws Exception {
         Config config = null;
         for (String arg : args) {
-            if ("-t".equals(arg)) {
+            if ("-d".equals(arg)) {
+                config = new DevnetConfig();
+                break;
+            } else if ("-t".equals(arg)) {
                 config = new TestnetConfig();
                 break;
             } else {

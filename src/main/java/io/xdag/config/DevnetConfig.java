@@ -35,6 +35,8 @@ public class DevnetConfig extends AbstractConfig {
         super("devnet", (byte)1, "xdag-devnet.config");
         this.whitelistUrl = StringUtils.EMPTY;
 
+        this.waitEpoch = 1;
+
         this.xdagEra = 0x16900000000L;
         this.mainStartAmount = UnsignedLong.fromLongBits(1L << 42).longValue();
 
