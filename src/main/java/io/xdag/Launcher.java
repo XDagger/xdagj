@@ -24,6 +24,7 @@
 
 package io.xdag;
 
+import io.xdag.cli.XdagOption;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
@@ -56,6 +57,8 @@ public class Launcher {
      */
     private static final List<Pair<String, Runnable>> shutdownHooks = Collections.synchronizedList(new ArrayList<>());
 
+    private static final String ENV_XDAG_WALLET_PASSWORD = "XDAG_WALLET_PASSWORD";
+
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(Launcher::shutdownHook, "shutdown-hook"));
     }
@@ -63,6 +66,15 @@ public class Launcher {
     private final Options options = new Options();
     private String password = null;
     private Config config;
+
+    public Launcher() {
+        Option passwordOption = Option.builder()
+                .longOpt(XdagOption.PASSWORD.toString())
+                .desc("WalletPassword")
+                .hasArg(true).numberOfArgs(1).optionalArg(false).argName("password").type(String.class)
+                .build();
+        addOption(passwordOption);
+    }
 
     /**
      * Registers a shutdown hook which will be executed in the order of
@@ -113,10 +125,18 @@ public class Launcher {
 
     /**
      * Parses options from the given arguments.
+     *
+     * Priority: arguments => system property => console input
      */
     protected CommandLine parseOptions(String[] args) throws ParseException {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(getOptions(), args);
+
+        if (cmd.hasOption(XdagOption.PASSWORD.toString())) {
+            setPassword(cmd.getOptionValue(XdagOption.PASSWORD.toString()));
+        } else if (System.getenv(ENV_XDAG_WALLET_PASSWORD) != null) {
+            setPassword(System.getenv(ENV_XDAG_WALLET_PASSWORD));
+        }
 
         return cmd;
     }
