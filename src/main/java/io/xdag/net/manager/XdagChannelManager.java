@@ -158,19 +158,17 @@ public class XdagChannelManager {
     }
 
     public boolean isAcceptable(InetSocketAddress address) {
-        //TODO res = netDBManager.canAccept(address);
 
-        //对于进来的连接，端口不固定，不能从白名单中判断,或者只判断ip，不判断port
-        // 默认空为允许所有连接
-//        if (addressSet.size() != 0) {
-//            for (InetSocketAddress inetSocketAddress : addressSet) {
-//                if (!inetSocketAddress.getAddress().equals(address.getAddress())) {
-//                    return false;
-//                }
-//            }
-//        }
-        // 不连接自己
-        return !isSelfAddress(address);
+        //对于进来的连接，只判断ip，不判断port
+        if (addressSet.size() != 0) {
+            for (InetSocketAddress inetSocketAddress : addressSet) {
+                // 不连接自己
+                if (!isSelfAddress(address)&&inetSocketAddress.getAddress().equals(address.getAddress())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void initWhiteIPs() {
