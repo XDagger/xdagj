@@ -23,14 +23,16 @@
  */
 package io.xdag.core;
 
-import io.xdag.utils.HashUtils;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
 import io.xdag.utils.SimpleDecoder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.Hash;
-import org.apache.tuweni.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECPSignature;
 
 public class XdagTransaction {
 
@@ -54,10 +56,12 @@ public class XdagTransaction {
 
     private final Bytes32 hash;
 
-    private SECP256K1.Signature signature;
+    private SECPSignature signature;
 
     private final long gas;
     private final XAmount gasPrice; // nanoSEM per gas
+
+    private SECP256K1 secp256K1 = new SECP256K1();
 
     /**
      * Create a new transaction.
@@ -101,7 +105,7 @@ public class XdagTransaction {
             enc.writeXAmount(gasPrice);
         }
         this.encoded = Bytes.wrap(enc.toBytes());
-        this.hash = Hash.sha2_256(encoded);
+        this.hash = Hash.sha256(encoded);
     }
 
     /**
@@ -129,7 +133,7 @@ public class XdagTransaction {
 
         this.encoded = encoded;
 
-        this.signature = SECP256K1.Signature.fromBytes(signature);
+        this.signature = SECPSignature.decode(signature, Sign.CURVE.getN());
     }
 
     public XdagTransaction(byte id, TransactionType type, Bytes toAddress, XAmount value, XAmount fee, long nonce,
@@ -147,8 +151,8 @@ public class XdagTransaction {
      * @param key
      * @return
      */
-    public XdagTransaction sign(SECP256K1.KeyPair key) {
-        this.signature = SECP256K1.sign(this.hash, key);
+    public XdagTransaction sign(KeyPair key) {
+        this.signature = secp256K1.sign(this.hash, key);
         return this;
     }
 
@@ -338,7 +342,7 @@ public class XdagTransaction {
      *
      * @return
      */
-    public SECP256K1.Signature getSignature() {
+    public SECPSignature getSignature() {
         return signature;
     }
 
@@ -351,7 +355,7 @@ public class XdagTransaction {
         SimpleEncoder enc = new SimpleEncoder();
         enc.writeBytes(hash);
         enc.writeBytes(encoded);
-        enc.writeBytes(signature.bytes().toArray());
+        enc.writeBytes(signature.encodedBytes());
         return enc.toBytes();
     }
 

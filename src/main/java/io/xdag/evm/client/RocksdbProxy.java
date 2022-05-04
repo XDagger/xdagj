@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 
-import cn.hutool.core.lang.Pair;
 import io.xdag.db.KVSource;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 

@@ -25,83 +25,16 @@ package io.xdag.utils;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.digests.RIPEMD160Digest;
-import org.bouncycastle.crypto.digests.SHA512Digest;
-import org.bouncycastle.crypto.macs.HMac;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.apache.tuweni.bytes.MutableBytes;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
-import static org.apache.tuweni.crypto.Hash.*;
+import io.xdag.crypto.Hash;
 
 public final class HashUtils {
 
-    public static byte[] hmacSha512(byte[] key, byte[] input) {
-        HMac hMac = new HMac(new SHA512Digest());
-        hMac.init(new KeyParameter(key));
-        hMac.update(input, 0, input.length);
-        byte[] out = new byte[64];
-        hMac.doFinal(out, 0);
-        return out;
-    }
-
     public static Bytes32 hashTwice(Bytes input) {
-        return sha2_256(sha2_256(input));
-    }
-
-    public static byte[] sha256hash160(Bytes input) {
-        Bytes32 sha256 = sha2_256(input);
-        return ripemd160(sha256.toArray());
-    }
-
-    public static byte[] ripemd160(byte[] data) {
-        Digest digest = new RIPEMD160Digest();
-        byte[] buffer = new byte[digest.getDigestSize()];
-        digest.update(data, 0, data.length);
-        digest.doFinal(buffer, 0);
-        return buffer;
-    }
-
-    /**
-     * Keccak-256 hash function.
-     *
-     * @param hexInput hex encoded input data with optional 0x prefix
-     * @return hash value as hex encoded string
-     */
-    public static String sha3(String hexInput) {
-        byte[] bytes = Numeric.hexStringToByteArray(hexInput);
-        byte[] result = sha3_256(bytes);
-        return Numeric.toHexString(result);
-    }
-
-    /**
-     * Keccak-256 hash function.
-     *
-     * @param input binary encoded input data
-     * @param offset of start of data
-     * @param length of data
-     * @return hash value
-     */
-    public static byte[] sha3(byte[] input, int offset, int length) {
-        Keccak.DigestKeccak kecc = new Keccak.Digest256();
-        kecc.update(input, offset, length);
-        return kecc.digest();
-    }
-
-    /**
-     * Calculates RIGTMOST160(KECCAK256(input)). This is used in address
-     * calculations. *
-     *
-     * @param input
-     *            data
-     * @return 20 right bytes of the hash keccak of the data
-     */
-    public static byte[] sha3omit12(byte[] input) {
-        byte[] hash = keccak256(input);
-        return Arrays.copyOfRange(hash, 12, hash.length);
+        return Hash.sha256(Hash.sha256(input));
     }
 
     /**
@@ -118,8 +51,13 @@ public final class HashUtils {
     public static byte[] calcNewAddress(byte[] address, long nonce) {
         ByteBuffer buffer = ByteBuffer.allocate(20 + 8);
         buffer.put(address).putLong(nonce);
-        byte[] keccak256 = keccak256(buffer.array());
-        return Arrays.copyOfRange(keccak256, 12, 32);
+        Bytes32 keccak256 = Hash.sha3(Bytes.wrap(buffer.array()));
+        return keccak256.slice(12, 20).toArray();
+    }
+
+    public static Bytes sha3omit12(Bytes input) {
+        Bytes32 hash = Hash.sha3(input);
+        return hash.slice(12);
     }
 
     /**
@@ -135,17 +73,23 @@ public final class HashUtils {
      *            - salt to make different result addresses
      * @return new address
      */
-    public static byte[] calcSaltAddress(byte[] senderAddr, byte[] initCode, byte[] salt) {
+    public static Bytes calcSaltAddress(Bytes senderAddr, Bytes initCode, Bytes salt) {
         // 1 - 0xff length, 32 bytes - keccak-256
-        byte[] data = new byte[1 + senderAddr.length + salt.length + 32];
-        data[0] = (byte) 0xff;
+//        byte[] data = new byte[1 + senderAddr.length + salt.length + 32];
+        MutableBytes data = MutableBytes.create(1 + senderAddr.size() + salt.size() + 32);
+//        data[0] = (byte) 0xff;
+        data.set(0, (byte) 0xff);
+
         int currentOffset = 1;
-        System.arraycopy(senderAddr, 0, data, currentOffset, senderAddr.length);
-        currentOffset += senderAddr.length;
-        System.arraycopy(salt, 0, data, currentOffset, salt.length);
-        currentOffset += salt.length;
-        byte[] sha3InitCode = keccak256(initCode);
-        System.arraycopy(sha3InitCode, 0, data, currentOffset, sha3InitCode.length);
+//        System.arraycopy(senderAddr, 0, data, currentOffset, senderAddr.length);
+        data.set(currentOffset, senderAddr);
+        currentOffset += senderAddr.size();
+//        System.arraycopy(salt, 0, data, currentOffset, salt.length);
+        data.set(currentOffset, salt);
+        currentOffset += salt.size();
+        Bytes sha3InitCode = Hash.sha3(Bytes.wrap(initCode));
+//        System.arraycopy(sha3InitCode, 0, data, currentOffset, sha3InitCode.length);
+        data.set(currentOffset, sha3InitCode);
         return sha3omit12(data);
     }
 

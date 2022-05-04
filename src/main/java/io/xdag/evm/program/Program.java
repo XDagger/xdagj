@@ -349,7 +349,7 @@ public class Program {
         }
 
         Bytes programCode = Bytes.wrap(memoryChunk(memStart.intValue(), memSize.intValue()));
-        Bytes contractAddress = Bytes.wrap(HashUtils.calcSaltAddress(senderAddress.toArray(), programCode.toArray(), salt.getData().toArray()));
+        Bytes contractAddress = Bytes.wrap(HashUtils.calcSaltAddress(senderAddress, programCode, salt.getData()));
 
         ProgramResult callResult = createContractImpl(value, programCode, contractAddress, gas);
         setReturnDataBuffer(callResult.getReturnData().toArray());

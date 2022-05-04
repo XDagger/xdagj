@@ -25,11 +25,15 @@ package io.xdag.evm.chainspec;
 
 import io.xdag.crypto.Sign;
 import io.xdag.utils.HashUtils;
-import io.xdag.crypto.Keys;
 import io.xdag.evm.DataWord;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.crypto.Hash;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.hyperledger.besu.crypto.Hash;
+import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 
 import java.math.BigInteger;
 
@@ -50,6 +54,7 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
     private static final DataWord ripempd160Addr = DataWord.of(3);
     private static final DataWord identityAddr = DataWord.of(4);
     private static final DataWord modExpAddr = DataWord.of(5);
+    private static final SECP256K1 secp256K1 = new SECP256K1();
 
     @Override
     public PrecompiledContract getContractForAddress(DataWord address) {
@@ -116,7 +121,7 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
         @Override
         public Pair<Boolean, Bytes> execute(PrecompiledContractContext context) {
             Bytes data = context.getInternalTransaction().getData();
-            return Pair.of(true, Hash.sha2_256(data == null ? Bytes.EMPTY : data));
+            return Pair.of(true, Hash.sha256(data == null ? Bytes.EMPTY : data));
         }
     }
 
@@ -137,9 +142,9 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
             Bytes data = context.getInternalTransaction().getData();
             Bytes result;
             if (data == null) {
-                result = Bytes.wrap(HashUtils.ripemd160(EMPTY_BYTE_ARRAY));
+                result = Bytes.wrap(Hash.ripemd160(Bytes.EMPTY));
             } else {
-                result = Bytes.wrap(HashUtils.ripemd160(data.toArray()));
+                result = Bytes.wrap(Hash.ripemd160(data));
             }
 
             return Pair.of(true, DataWord.of(result).getData());
@@ -157,25 +162,28 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
         public Pair<Boolean, Bytes> execute(PrecompiledContractContext context) {
             Bytes data = context.getInternalTransaction().getData();
 
-            byte[] h = new byte[32];
-            byte[] v = new byte[32];
-            byte[] r = new byte[32];
-            byte[] s = new byte[32];
+            MutableBytes32 h = MutableBytes32.create();
+            MutableBytes32 v = MutableBytes32.create();
+            MutableBytes32 r = MutableBytes32.create();
+            MutableBytes32 s = MutableBytes32.create();
 
             DataWord out = null;
 
             try {
-                System.arraycopy(data.toArray(), 0, h, 0, 32);
-                System.arraycopy(data.toArray(), 32, v, 0, 32);
-                System.arraycopy(data.toArray(), 64, r, 0, 32);
+                h.set(0, data.slice(0, 32));
+                v.set(0, data.slice(32, 32));
+                r.set(0, data.slice(64, 32));
 
                 int sLength = data.size() < 128 ? data.size() - 96 : 32;
-                System.arraycopy(data.toArray(), 96, s, 0, sLength);
+                s.set(0, data.slice(96, sLength));
 
                 //v[31]
-                Sign.ECDSASignature sig = Sign.ECDSASignature.fromComponents(r, s, v[31]);
-                if (validateV(v) && sig.validateComponents() ) {
-                    out = DataWord.of(Bytes.wrap(Keys.signatureToAddress(h, sig)));
+                SECPSignature sig = SECPSignature.decode(Bytes.wrap(r, s, v), Sign.CURVE.getN());
+
+                if (validateV(v) && validateComponents(r, s, v) ) {
+                    SECPPublicKey publicKey = secp256K1.recoverPublicKeyFromSignature(h, sig).get();
+                    Bytes address = HashUtils.sha3omit12(publicKey.getEncodedBytes());
+                    out = DataWord.of(address);
                 }
             } catch (Throwable any) {
                 any.printStackTrace();
@@ -184,11 +192,28 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
             return Pair.of(true, Bytes.wrap(out == null ? EMPTY_BYTE_ARRAY : out.getData().toArray()));
         }
 
-        private static boolean validateV(byte[] v) {
-            for (int i = 0; i < v.length - 1; i++) {
-                if (v[i] != 0) {
+        private static boolean validateV(Bytes v) {
+            for (int i = 0; i < v.size() - 1; i++) {
+                if (v.get(i) != 0) {
                     return false;
                 }
+            }
+            return true;
+        }
+
+        public boolean validateComponents(Bytes r, Bytes s, Bytes v) {
+            if (v.get(0) != 27 && v.get(0) != 28)
+                return false;
+
+            final BigInteger halfCurveOrder = SignatureAlgorithmFactory.getInstance().getHalfCurveOrder();
+            final BigInteger rb = r.toUnsignedBigInteger();
+            final BigInteger sb = s.toUnsignedBigInteger();
+            if (isLessThan(rb, BigInteger.ONE) || !isLessThan(rb, halfCurveOrder)) {
+                return false;
+            }
+
+            if (isLessThan(sb, BigInteger.ONE) || !isLessThan(sb, halfCurveOrder)) {
+                return false;
             }
             return true;
         }
