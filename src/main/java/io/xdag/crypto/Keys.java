@@ -27,7 +27,6 @@ package io.xdag.crypto;
 import static io.xdag.crypto.SecureRandomUtils.secureRandom;
 
 import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -35,19 +34,24 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SignatureAlgorithm;
 
 /**
  * Crypto key utilities.
  */
 public class Keys {
 
+    public static final String ALGORITHM = SignatureAlgorithm.ALGORITHM;
+    public static final String PROVIDER = BouncyCastleProvider.PROVIDER_NAME;
+    public static final String CURVE_NAME = "secp256k1";
+
     public static final int PUBLIC_KEY_SIZE = 64;
     static final int PUBLIC_KEY_LENGTH_IN_HEX = PUBLIC_KEY_SIZE << 1;
 
     static {
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+        if (Security.getProvider(PROVIDER) == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
     }
@@ -72,28 +76,27 @@ public class Keys {
             throws NoSuchProviderException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException {
 
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
-        ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("secp256k1");
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(ALGORITHM, PROVIDER);
+        ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec(CURVE_NAME);
         if (random != null) {
             keyPairGenerator.initialize(ecGenParameterSpec, random);
         } else {
             keyPairGenerator.initialize(ecGenParameterSpec);
         }
-        return keyPairGenerator.generateKeyPair();
+        return KeyPair.generate(keyPairGenerator, ALGORITHM);
     }
 
-    public static SECP256K1.KeyPair createEcKeyPair() {
-        return SECP256K1.KeyPair.generate();
+    public static KeyPair createEcKeyPair()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(ALGORITHM, PROVIDER);
+        ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec(CURVE_NAME);
+        keyPairGenerator.initialize(ecGenParameterSpec);
+        return KeyPair.generate(keyPairGenerator, ALGORITHM);
     }
 
-    public static byte[] toBytesAddress(SECP256K1.KeyPair key) {
+    public static byte[] toBytesAddress(KeyPair key) {
         return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().getEncoded()));
     }
 
-//    public static String toBase58Address(SECP256K1.KeyPair key) {
-//        byte[] addrBytes = toBytesAddress(key);
-//
-//        return Base58.encode(Bytes.wrap(addrBytes));
-//    }
 }
 

@@ -29,24 +29,27 @@ import static io.xdag.crypto.Bip32Test.serializePrivate;
 import static io.xdag.crypto.Bip32Test.serializePublic;
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
+import java.security.Security;
+import java.util.Collections;
+
+import org.apache.tuweni.io.Base58;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
-import java.io.IOException;
-import java.security.Security;
-import java.util.Collections;
-import org.hyperledger.besu.crypto.SECP256K1;
-import org.apache.tuweni.io.Base58;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class WalletUtilsTest {
 
@@ -63,7 +66,7 @@ public class WalletUtilsTest {
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();

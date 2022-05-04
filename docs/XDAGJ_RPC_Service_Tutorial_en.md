@@ -8,12 +8,12 @@ This section describes XDAGJ RPC service.
 ## System environment
 
 ```yaml
-     JDK   : v15
+     JDK   : v17
   script   : xdag.sh
      jar   : xdagj-0.x.y-shaded.jar
 ```
 
-  Please make sure that the above environment is already available in your operating system, and the JDK version must be 15
+  Please make sure that the above environment is already available in your operating system, and the JDK version must be 17
 
 
 ## Usage

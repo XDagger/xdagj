@@ -27,11 +27,16 @@ package io.xdag.crypto;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,7 +46,6 @@ public class SignTest {
 
     @Before
     public void setup() {
-        SECP256K1.enableNative();
     }
 
     @Test
@@ -56,17 +60,18 @@ public class SignTest {
     }
 
     @Test
-    public void testVerifySpend() {
+    public void testVerifySpend()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         long n = 1;
         byte[] encoded = new byte[]{0};
         long start1 = 0;
         long start2 = 0;
         for (int i = 0; i < n; i++) {
-            SECP256K1.KeyPair poolKey = Keys.createEcKeyPair();
-            byte[] pubkeyBytes = poolKey.getPublicKey().asEcPoint().getEncoded(true);
+            KeyPair poolKey = Keys.createEcKeyPair();
+            byte[] pubkeyBytes = poolKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
             byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-            SECP256K1.Signature signature = SECP256K1.sign(hash, poolKey);
+            SECPSignature signature = Sign.SECP256K1.sign(hash, poolKey);
 
             long first = first(hash.toArray(), signature, poolKey);
             start1 += first;
@@ -76,16 +81,16 @@ public class SignTest {
 
     }
 
-    public long first(byte[] hash, SECP256K1.Signature sig, SECP256K1.KeyPair key) {
+    public long first(byte[] hash, SECPSignature sig, KeyPair key) {
         long start = System.currentTimeMillis();
-        assertTrue(SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
+        assertTrue(Sign.SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
         long end = System.currentTimeMillis();
         return end - start;
     }
 
-    public long second(byte[] hash, SECP256K1.Signature sig, SECP256K1.KeyPair key) {
+    public long second(byte[] hash, SECPSignature sig, KeyPair key) {
         long start = System.currentTimeMillis();
-        assertTrue(SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
+        assertTrue(Sign.SECP256K1.verify(Bytes32.wrap(hash), sig, key.getPublicKey()));
         long end = System.currentTimeMillis();
         return end - start;
     }

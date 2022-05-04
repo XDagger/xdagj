@@ -24,9 +24,20 @@
 
 package io.xdag.core;
 
-import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_EXTRA;
+import static io.xdag.config.Constants.BI_MAIN;
+import static io.xdag.config.Constants.BI_MAIN_CHAIN;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
+import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
+import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
+import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
 import static io.xdag.config.Constants.MessageType.NEW_LINK;
 import static io.xdag.config.Constants.MessageType.PRE_TOP;
+import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
@@ -35,8 +46,39 @@ import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SECPSignature;
+
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
+
 import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.Hash;
@@ -58,37 +100,9 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.hyperledger.besu.crypto.SECP256K1;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
 
 @Slf4j
 @Getter
@@ -824,7 +838,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark) {
+    public Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark) {
 
         int hasRemark = remark == null ? 0 : 1;
 
@@ -839,7 +853,7 @@ public class BlockchainImpl implements Blockchain {
 
         // 遍历所有key 判断是否有defKey
         assert pairs != null;
-        List<SECP256K1.KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
+        List<KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey())) {
                 defKeyIndex = i;
@@ -1233,7 +1247,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean canUseInput(Block block) {
-        List<SECP256K1.PublicKey> keys = block.verifiedKeys();
+        List<SECPPublicKey> keys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
         if (inputs == null || inputs.size() == 0) {
             return true;
@@ -1246,7 +1260,7 @@ public class BlockchainImpl implements Blockchain {
         return true;
     }
 
-    private boolean verifySignature(Address in, List<SECP256K1.PublicKey> publicKeys) {
+    private boolean verifySignature(Address in, List<SECPPublicKey> publicKeys) {
         // TODO: 判断in是不是snapshot中的块, 使用isRaw为false的方式获取blockinfo
         Block block = getBlockByHash(in.getHashLow(), false);
         boolean isSnapshotBlock = block.getInfo().isSnapshot();
@@ -1256,13 +1270,13 @@ public class BlockchainImpl implements Blockchain {
             Block inBlock = getBlockByHash(in.getHashLow(), true);
             MutableBytes subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 //            log.debug("verify encoded:{}", Hex.toHexString(subdata));
-            SECP256K1.Signature sig = inBlock.getOutsig();
+            SECPSignature sig = inBlock.getOutsig();
             return verifySignature(subdata, sig, publicKeys, block.getInfo());
         }
     }
 
     // TODO: 当输入是snapshot中的区块时，需要验证snapshot的公钥或签名数据
-    private boolean verifySignatureFromSnapshot(Address in, List<SECP256K1.PublicKey> publicKeys) {
+    private boolean verifySignatureFromSnapshot(Address in, List<SECPPublicKey> publicKeys) {
         BlockInfo blockInfo = blockStore.getBlockInfoByHash(in.getHashLow()).getInfo();
         SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
         if (snapshotInfo.getType()) {
@@ -1271,8 +1285,8 @@ public class BlockchainImpl implements Blockchain {
             ECPoint point = Sign.decompressKey(xBn, yBit);
             // 解析成非压缩去前缀 公钥
             byte[] encodePub = point.getEncoded(false);
-            SECP256K1.PublicKey targetPublicKey = SECP256K1.PublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)));
-            for (SECP256K1.PublicKey publicKey : publicKeys) {
+            SECPPublicKey targetPublicKey = SECPPublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)), Sign.CURVE_NAME);
+            for (SECPPublicKey publicKey : publicKeys) {
                 if (publicKey.equals(targetPublicKey)) {
                     return true;
                 }
@@ -1284,22 +1298,22 @@ public class BlockchainImpl implements Blockchain {
             block.setParsed(false);
             block.parse();
             MutableBytes subdata = block.getSubRawData(block.getOutsigIndex() - 2);
-            SECP256K1.Signature sig = block.getOutsig();
+            SECPSignature sig = block.getOutsig();
             return verifySignature(subdata, sig, publicKeys, blockInfo);
         }
 
 
     }
 
-    private boolean verifySignature(MutableBytes subdata, SECP256K1.Signature sig, List<SECP256K1.PublicKey> publicKeys, BlockInfo blockInfo) {
-        for (SECP256K1.PublicKey publicKey : publicKeys) {
-            byte[] publicKeyBytes = publicKey.asEcPoint().getEncoded(true);
+    private boolean verifySignature(MutableBytes subdata, SECPSignature sig, List<SECPPublicKey> publicKeys, BlockInfo blockInfo) {
+        for (SECPPublicKey publicKey : publicKeys) {
+            byte[] publicKeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
             Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));
 //            log.debug("verify encoded:{}", Hex.toHexString(digest));
             Bytes32 hash = Hash.hashTwice(digest);
-            if (SECP256K1.verify(hash, sig, publicKey)) {
+            if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
                 SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
-                byte[] pubkeyBytes = publicKey.asEcPoint().getEncoded(true);
+                byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
                 if (snapshotInfo != null) {
                     snapshotInfo.setData(pubkeyBytes);
                     snapshotInfo.setType(true);
@@ -1314,18 +1328,18 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<SECP256K1.KeyPair> ourkeys = wallet.getAccounts();
+        List<KeyPair> ourkeys = wallet.getAccounts();
         // 输出签名只有一个
-        SECP256K1.Signature signature = block.getOutsig();
+        SECPSignature signature = block.getOutsig();
         // 遍历所有key
         for (int i = 0; i < ourkeys.size(); i++) {
-            SECP256K1.KeyPair ecKey = ourkeys.get(i);
+            KeyPair ecKey = ourkeys.get(i);
             // TODO: 优化
-            byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint().getEncoded(true);
+            byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
             Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
             // use hyperledger besu crypto native secp256k1
-            if (SECP256K1.verify(hash, signature, ecKey.getPublicKey())) {
+            if (Sign.SECP256K1.verify(hash, signature, ecKey.getPublicKey())) {
                 log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;

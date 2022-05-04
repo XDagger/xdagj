@@ -2,7 +2,7 @@
 
 
   - [系统环境与硬件要求](#系统环境与硬件要求)
-  - [构建XDAGJ客户端](#构建xdagj客户端)
+  - [构建XDAGJ客户端](#构建XDAGJ客户端)
   - [修改矿池参数](#修改矿池参数)
   - [矿池用法](#矿池用法)
     - [矿工接入](#矿工接入)
@@ -38,11 +38,13 @@
   ```
 
 - 安装依赖
-
+### MacOS
   ```shell
-  # macOS
   brew install cmake openssl libtool gmp autoconf 
-  # linux (Ubuntu20.04 LTS)
+  
+  ```
+### Linux(Ubuntu)
+  ```shell
   apt-get install cmake gcc build-essential pkg-config libssl-dev libgmp-dev libtool libsecp256k1-dev librandomx-dev
   ```
 
@@ -50,7 +52,7 @@
 
   ```shell
   cd  script
-  ./xdag.sh -t
+  ./xdag.sh -d
   ```
 
   命令说明
@@ -86,7 +88,7 @@ TODO
 
 配置文件位于`src/main/resources/xdag-xxx.config`，打包后位于程序的根目录下（./pool）具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
 
-- xdag-testnet.config 为例
+- xdag-devnet.config 为例
 
 ```yaml
 # 管理员控制
@@ -130,7 +132,7 @@ miner.maxMinerPerAccount       #相同钱包账户允许最多的接入矿工数
 
 ### 矿工接入
 
-详见[接入测试网教程](XDAGJ_TestNet_Access_Turial_zh.md)
+详见[接入测试网教程](XDAGJ_TestNet_Tutorial_zh.md)
 
 ### 矿池启动参数
 

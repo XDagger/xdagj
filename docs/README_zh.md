@@ -27,11 +27,11 @@ Maven : v3.8.3
 
 XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私有链搭建教程帮助您搭建一个独有的链上环境，能更好的测试并发现错误
 
-[XDAGJ测试网接入教程](XDAGJ_TestNet_Access_Turial_zh.md)
+[XDAGJ测试网接入教程](XDAGJ_TestNet_Tutorial_zh.md)
 
-[XDAGJ私有链搭建教程](XDAGJ_PrivateChain_Turial_zh.md)
+[XDAGJ私有链搭建教程](XDAGJ_Devnet_Tutorial_zh.md)
 
-[区块浏览器](http://146.56.240.230/)
+[XDAGJ测试网区块浏览器](http://146.56.240.230/)
 
 ## 发展
 
@@ -142,7 +142,7 @@ XDAGJ教程可以让您快速加入并体验XDAGJ的钱包及挖矿功能，私�
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## 其他
-[XDAGJ_Libp2P介绍](./XDAGJ_Networking_Specification.md)
+[XDAGJ Libp2P介绍](./XDAGJ_Networking_Specification.md)
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)  
 

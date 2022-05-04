@@ -34,8 +34,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 
 /**
  * BIP-32 key pair.
@@ -53,7 +55,7 @@ public class Bip32ECKeyPair {
     private final int depth;
     private final byte[] chainCode;
     private final int parentFingerprint;
-    private final SECP256K1.KeyPair keyPair;
+    private final KeyPair keyPair;
 
     private ECPoint publicKeyPoint;
 
@@ -63,7 +65,7 @@ public class Bip32ECKeyPair {
             int childNumber,
             byte[] chainCode,
             Bip32ECKeyPair parent) {
-        keyPair = new SECP256K1.KeyPair(SECP256K1.PrivateKey.create(privateKey), SECP256K1.PublicKey.create(publicKey));
+        keyPair = new KeyPair(SECPPrivateKey.create(privateKey, Sign.CURVE_NAME), SECPPublicKey.create(publicKey, Sign.CURVE_NAME));
         this.parentHasPrivate = parent != null && parent.hasPrivateKey();
         this.childNumber = childNumber;
         this.depth = parent == null ? 0 : parent.depth + 1;
@@ -176,7 +178,7 @@ public class Bip32ECKeyPair {
 
     public ECPoint getPublicKeyPoint() {
         if (publicKeyPoint == null) {
-            publicKeyPoint = SECP256K1.PublicKey.create(keyPair.getPrivateKey()).asEcPoint();
+            publicKeyPoint = SECPPublicKey.create(keyPair.getPrivateKey(), Sign.CURVE, Sign.CURVE_NAME).asEcPoint(Sign.CURVE);
         }
         return publicKeyPoint;
     }

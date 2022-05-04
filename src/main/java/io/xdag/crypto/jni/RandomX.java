@@ -65,12 +65,10 @@ public class RandomX {
                 } else {
                     enabled = loadLibrary("/native/Linux-x86_64/librandomx.so");
                 }
-                SECP256K1.enableNative();
                 break;
             }
             case MACOS: {
                 enabled = loadLibrary("/native/Darwin-x86_64/librandomx.dylib");
-                SECP256K1.enableNative();
                 break;
             }
             case WINDOWS:

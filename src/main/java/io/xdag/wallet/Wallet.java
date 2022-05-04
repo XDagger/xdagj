@@ -28,20 +28,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
-import io.xdag.config.Config;
-import io.xdag.core.SimpleEncoder;
-import io.xdag.crypto.Aes;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.utils.Numeric;
-import io.xdag.utils.SimpleDecoder;
-import io.xdag.utils.SystemUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,15 +43,29 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import io.xdag.config.Config;
+import io.xdag.core.SimpleEncoder;
+import io.xdag.crypto.Aes;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.Numeric;
+import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SystemUtil;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter
@@ -73,7 +80,7 @@ public class Wallet {
     private final File file;
     private final Config config;
 
-    private final Map<Bytes, SECP256K1.KeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<Bytes, KeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
     private String password;
 
     // hd wallet key
@@ -123,8 +130,8 @@ public class Wallet {
         accounts.clear();
     }
 
-    public SECP256K1.KeyPair getDefKey() {
-        List<SECP256K1.KeyPair> accountList = getAccounts();
+    public KeyPair getDefKey() {
+        List<KeyPair> accountList = getAccounts();
         if (CollectionUtils.isNotEmpty(accountList)) {
             return accountList.get(0);
         }
@@ -148,7 +155,7 @@ public class Wallet {
                 SimpleDecoder dec = new SimpleDecoder(FileUtils.readFileToByteArray(file));
                 int version = dec.readInt(); // version
 
-                Set<SECP256K1.KeyPair> newAccounts;
+                Set<KeyPair> newAccounts;
                 switch (version) {
                     // only version 4
                     case 4 -> {
@@ -167,7 +174,7 @@ public class Wallet {
 
                 synchronized (accounts) {
                     accounts.clear();
-                    for (SECP256K1.KeyPair account : newAccounts) {
+                    for (KeyPair account : newAccounts) {
                         Bytes b = Bytes.wrap(Keys.toBytesAddress(account));
                         accounts.put(b, account);
                     }
@@ -184,14 +191,14 @@ public class Wallet {
     /**
      * Reads the account keys.
      */
-    protected LinkedHashSet<SECP256K1.KeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version) {
-        LinkedHashSet<SECP256K1.KeyPair> keys = new LinkedHashSet<>();
+    protected LinkedHashSet<KeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version) {
+        LinkedHashSet<KeyPair> keys = new LinkedHashSet<>();
         int total = dec.readInt(); // size
 
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
             byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
-            SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.create(SECP256K1.PrivateKey.create((Numeric.toBigInt(privateKey))));
+            KeyPair keyPair = KeyPair.create(SECPPrivateKey.create(Numeric.toBigInt(privateKey), Sign.CURVE_NAME), Sign.CURVE, Sign.CURVE_NAME);
             keys.add(keyPair);
         }
         return keys;
@@ -203,7 +210,7 @@ public class Wallet {
     protected void writeAccounts(byte[] key, SimpleEncoder enc) {
         synchronized (accounts) {
             enc.writeInt(accounts.size());
-            for (SECP256K1.KeyPair keyPair : accounts.values()) {
+            for (KeyPair keyPair : accounts.values()) {
                 byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
 
                 enc.writeBytes(iv);
@@ -258,7 +265,7 @@ public class Wallet {
     /**
      * Returns a copy of the accounts inside this wallet.
      */
-    public List<SECP256K1.KeyPair> getAccounts() {
+    public List<KeyPair> getAccounts() {
         requireUnlocked();
         synchronized (accounts) {
             return new ArrayList<>(accounts.values());
@@ -268,10 +275,10 @@ public class Wallet {
     /**
      * Sets the accounts inside this wallet.
      */
-    public void setAccounts(List<SECP256K1.KeyPair> list) {
+    public void setAccounts(List<KeyPair> list) {
         requireUnlocked();
         accounts.clear();
-        for (SECP256K1.KeyPair key : list) {
+        for (KeyPair key : list) {
             addAccount(key);
         }
     }
@@ -279,7 +286,7 @@ public class Wallet {
     /**
      * Returns account by index.
      */
-    public SECP256K1.KeyPair getAccount(int idx) {
+    public KeyPair getAccount(int idx) {
         requireUnlocked();
         synchronized (accounts) {
             return getAccounts().get(idx);
@@ -289,7 +296,7 @@ public class Wallet {
     /**
      * Returns account by address.
      */
-    public SECP256K1.KeyPair getAccount(byte[] address) {
+    public KeyPair getAccount(byte[] address) {
         requireUnlocked();
 
         synchronized (accounts) {
@@ -344,7 +351,7 @@ public class Wallet {
     /**
      * Adds a new account to the wallet.
      */
-    public boolean addAccount(SECP256K1.KeyPair newKey) {
+    public boolean addAccount(KeyPair newKey) {
         requireUnlocked();
 
         synchronized (accounts) {
@@ -361,8 +368,9 @@ public class Wallet {
     /**
      * Add an account with randomly generated key.
      */
-    public SECP256K1.KeyPair addAccountRandom() {
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+    public KeyPair addAccountRandom()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        KeyPair key = Keys.createEcKeyPair();
         addAccount(key);
         return key;
     }
@@ -370,11 +378,11 @@ public class Wallet {
     /**
      * Adds a list of accounts to the wallet.
      */
-    public int addAccounts(List<SECP256K1.KeyPair> accounts) {
+    public int addAccounts(List<KeyPair> accounts) {
         requireUnlocked();
 
         int n = 0;
-        for (SECP256K1.KeyPair acc : accounts) {
+        for (KeyPair acc : accounts) {
             n += addAccount(acc) ? 1 : 0;
         }
         return n;
@@ -383,7 +391,7 @@ public class Wallet {
     /**
      * Deletes an account in the wallet.
      */
-    public boolean removeAccount(SECP256K1.KeyPair key) {
+    public boolean removeAccount(KeyPair key) {
         return removeAccount(Keys.toBytesAddress(key));
     }
 
@@ -445,7 +453,7 @@ public class Wallet {
      * Derives a key based on the current HD account index, and put it into the
      * wallet.
      */
-    public SECP256K1.KeyPair addAccountWithNextHdKey() {
+    public KeyPair addAccountWithNextHdKey() {
         requireUnlocked();
         requireHdWalletInitialized();
 

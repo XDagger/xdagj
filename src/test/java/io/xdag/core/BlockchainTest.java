@@ -48,6 +48,7 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -66,8 +67,9 @@ import java.util.Date;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -91,8 +93,8 @@ public class BlockchainTest {
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
-    SECP256K1.PrivateKey secretkey_1 = SECP256K1.PrivateKey.create(private_1);
-    SECP256K1.PrivateKey secretkey_2 = SECP256K1.PrivateKey.create(private_2);
+    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
+    SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
         assertEquals("blocks:", nblocks, bci.getXdagStats().nblocks);
@@ -103,7 +105,6 @@ public class BlockchainTest {
 
     @Before
     public void setUp() throws Exception {
-        SECP256K1.enableNative();
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
@@ -114,7 +115,7 @@ public class BlockchainTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -142,7 +143,7 @@ public class BlockchainTest {
 
     @Test
     public void testAddressBlock() {
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(secretkey_1);
+        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
         Block addressBlock = generateAddressBlock(config, key, new Date().getTime());
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
@@ -159,7 +160,7 @@ public class BlockchainTest {
     public void testExtraBlock() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(secretkey_1);
+        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -205,8 +206,8 @@ public class BlockchainTest {
 
     @Test
     public void testTransactionBlock() {
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
-        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
+        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -285,7 +286,7 @@ public class BlockchainTest {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, xdag2amount(50.00))); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, xdag2amount(50.00)));
-        List<SECP256K1.KeyPair> keys = new ArrayList<>();
+        List<KeyPair> keys = new ArrayList<>();
         keys.add(addrKey);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, -1); // orphan
         b.signIn(addrKey);
@@ -330,8 +331,8 @@ public class BlockchainTest {
     public void testCanUseInput() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        SECP256K1.KeyPair fromKey = SECP256K1.KeyPair.create(secretkey_1);
-        SECP256K1.KeyPair toKey = SECP256K1.KeyPair.create(secretkey_2);
+        KeyPair fromKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair toKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
         Block fromAddrBlock = generateAddressBlock(config, fromKey, generateTime);
         Block toAddrBlock = generateAddressBlock(config, toKey, generateTime);
 
@@ -390,8 +391,8 @@ public class BlockchainTest {
         String firstDiff = "60b6a7744b";
         String secondDiff = "b20217d6e2";
 
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
-        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.create(secretkey_2);
+        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
         long generateTime = 1600616700000L;
         // 1. add one address block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
@@ -444,8 +445,8 @@ public class BlockchainTest {
 
     @Test
     public void testForkAllChain() {
-        SECP256K1.KeyPair addrKey = SECP256K1.KeyPair.create(secretkey_1);
-        SECP256K1.KeyPair poolKey = SECP256K1.KeyPair.create(secretkey_2);
+        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
         long generateTime = 1600616700000L;
 
         // 1. add one address block
