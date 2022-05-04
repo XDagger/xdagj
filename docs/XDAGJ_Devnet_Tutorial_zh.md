@@ -38,11 +38,13 @@
   ```
 
 - 安装依赖
-
+### MacOS
   ```shell
-  # macOS
   brew install cmake openssl libtool gmp autoconf 
-  # linux (Ubuntu20.04 LTS)
+  
+  ```
+### Linux(Ubuntu)
+  ```shell
   apt-get install cmake gcc build-essential pkg-config libssl-dev libgmp-dev libtool libsecp256k1-dev librandomx-dev
   ```
 
@@ -50,7 +52,7 @@
 
   ```shell
   cd  script
-  ./xdag.sh -t
+  ./xdag.sh -d
   ```
 
   命令说明

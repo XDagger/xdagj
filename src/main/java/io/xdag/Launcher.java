@@ -57,7 +57,7 @@ public class Launcher {
      */
     private static final List<Pair<String, Runnable>> shutdownHooks = Collections.synchronizedList(new ArrayList<>());
 
-    private static final String ENV_XDAG_WALLET_PASSWORD = "XDAG_WALLET_PASSWORD";
+    private static final String ENV_XDAGJ_WALLET_PASSWORD = "XDAGJ_WALLET_PASSWORD";
 
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(Launcher::shutdownHook, "shutdown-hook"));
@@ -134,8 +134,8 @@ public class Launcher {
 
         if (cmd.hasOption(XdagOption.PASSWORD.toString())) {
             setPassword(cmd.getOptionValue(XdagOption.PASSWORD.toString()));
-        } else if (System.getenv(ENV_XDAG_WALLET_PASSWORD) != null) {
-            setPassword(System.getenv(ENV_XDAG_WALLET_PASSWORD));
+        } else if (System.getenv(ENV_XDAGJ_WALLET_PASSWORD) != null) {
+            setPassword(System.getenv(ENV_XDAGJ_WALLET_PASSWORD));
         }
 
         return cmd;
