@@ -70,7 +70,7 @@ public class Launcher {
     public Launcher() {
         Option passwordOption = Option.builder()
                 .longOpt(XdagOption.PASSWORD.toString())
-                .desc("WalletPassword")
+                .desc("wallet password")
                 .hasArg(true).numberOfArgs(1).optionalArg(false).argName("password").type(String.class)
                 .build();
         addOption(passwordOption);
