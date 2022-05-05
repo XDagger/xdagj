@@ -17,7 +17,7 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.74.Final</netty.version>
+        <netty.version>4.1.76.Final</netty.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java</surefire.test.excludes>
     </properties>
 
@@ -450,7 +450,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.22</version>
+            <version>1.18.24</version>
             <scope>provided</scope>
         </dependency>
 
@@ -461,9 +461,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.data-artisans</groupId>
-            <artifactId>frocksdbjni</artifactId>
-            <version>5.17.2-artisans-2.0</version>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>7.1.2</version>
         </dependency>
 
         <dependency>
@@ -533,7 +533,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.0.5</version>
+            <version>3.0.6</version>
         </dependency>
 
         <dependency>
@@ -584,7 +584,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.3.1</version>
+            <version>4.5.1</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -617,7 +617,7 @@
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-bytes</artifactId>
-            <version>2.1.0</version>
+            <version>2.2.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
@@ -633,7 +633,7 @@
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-units</artifactId>
-            <version>2.1.0</version>
+            <version>2.2.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>guava</artifactId>
@@ -645,7 +645,7 @@
         <dependency>
             <groupId>org.apache.tuweni</groupId>
             <artifactId>tuweni-io</artifactId>
-            <version>2.1.0</version>
+            <version>2.2.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>guava</artifactId>
@@ -709,7 +709,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>4.2.5</version>
+            <version>4.2.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -777,7 +777,7 @@
         <dependency>
             <groupId>com.github.jnr</groupId>
             <artifactId>jnr-ffi</artifactId>
-            <version>2.2.11</version>
+            <version>2.2.12</version>
         </dependency>
 
         <dependency>
@@ -912,7 +912,7 @@
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
-            <version>1.4.1</version>
+            <version>1.4.2</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.lmdbjava/lmdbjava -->
@@ -931,7 +931,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.14.0</version>
+            <version>1.15.1</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
