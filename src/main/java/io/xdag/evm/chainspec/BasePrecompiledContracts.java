@@ -177,14 +177,14 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
                 int sLength = data.size() < 128 ? data.size() - 96 : 32;
                 s.set(0, data.slice(96, sLength));
 
-                //v[31]
-                SECPSignature sig = SECPSignature.decode(Bytes.wrap(r, s, v), Sign.CURVE.getN());
 
-                if (validateV(v) && validateComponents(r, s, v) ) {
-                    SECPPublicKey publicKey = secp256K1.recoverPublicKeyFromSignature(h, sig).get();
-                    Bytes address = HashUtils.sha3omit12(publicKey.getEncodedBytes());
-                    out = DataWord.of(address);
-                }
+                //v[31]
+                SECPSignature sig = SECPSignature.decode(Bytes.wrap(r, s, Bytes.of(v.get(31))), Sign.CURVE.getN());
+
+                SECPPublicKey publicKey = secp256K1.recoverPublicKeyFromSignature(h, sig).get();
+                Bytes address = HashUtils.sha3omit12(publicKey.getEncodedBytes());
+                out = DataWord.of(address);
+
             } catch (Throwable any) {
                 any.printStackTrace();
             }
@@ -201,22 +201,6 @@ public class BasePrecompiledContracts implements PrecompiledContracts {
             return true;
         }
 
-        public boolean validateComponents(Bytes r, Bytes s, Bytes v) {
-            if (v.get(0) != 27 && v.get(0) != 28)
-                return false;
-
-            final BigInteger halfCurveOrder = SignatureAlgorithmFactory.getInstance().getHalfCurveOrder();
-            final BigInteger rb = r.toUnsignedBigInteger();
-            final BigInteger sb = s.toUnsignedBigInteger();
-            if (isLessThan(rb, BigInteger.ONE) || !isLessThan(rb, halfCurveOrder)) {
-                return false;
-            }
-
-            if (isLessThan(sb, BigInteger.ONE) || !isLessThan(sb, halfCurveOrder)) {
-                return false;
-            }
-            return true;
-        }
     }
 
     /**

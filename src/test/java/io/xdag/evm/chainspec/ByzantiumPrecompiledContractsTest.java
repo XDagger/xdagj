@@ -142,7 +142,7 @@ public class ByzantiumPrecompiledContractsTest {
     public void ecRecoverTest1() {
         SECP256K1 secp256K1 = new SECP256K1();
         Bytes32 messageHash = Bytes32.fromHexString("14431339128bd25f2c7f93baa611e367472048757f4ad67f6d71a5ca0da550f5");
-        byte v = 28;
+        byte v = 0;
         Bytes r = Bytes.fromHexString("51e4dbbbcebade695a3f0fdf10beb8b5f83fda161e1a3105a14c41168bf3dce0");
         Bytes s = Bytes.fromHexString("46eabf35680328e26ef4579caf8aeb2cf9ece05dbf67a4f3d1f28c7b1d0e3546");
         SECPSignature sig = SECPSignature.create(r.toUnsignedBigInteger(),s.toUnsignedBigInteger(), v, Sign.CURVE.getN());
@@ -150,20 +150,20 @@ public class ByzantiumPrecompiledContractsTest {
         SECPPublicKey publicKey = secp256K1.recoverPublicKeyFromSignature(messageHash, sig).get();
         Bytes address = HashUtils.sha3omit12(publicKey.getEncodedBytes());
 
-        String expected = "7f8b3b04bf34618f4a1723fba96b5db211279a2b";
+        String expected = "cc9a4f6461ee2c7794bffa47b0a24b47eb012194";
         assertEquals(expected, address.toUnprefixedHexString());
 
         Bytes data = Bytes.fromHexString("14431339128bd25f2c7f93baa611e367"
                 + "472048757f4ad67f6d71a5ca0da550f5"
                 + "00000000000000000000000000000000"
-                + "0000000000000000000000000000001c"
+                + "00000000000000000000000000000000"
                 + "51e4dbbbcebade695a3f0fdf10beb8b5"
                 + "f83fda161e1a3105a14c41168bf3dce0"
                 + "46eabf35680328e26ef4579caf8aeb2c"
                 + "f9ece05dbf67a4f3d1f28c7b1d0e3546");
         DataWord addr = DataWord.of("0000000000000000000000000000000000000000000000000000000000000001");
         PrecompiledContract contract = precompiledContracts.getContractForAddress(addr);
-        String expected2 = "0000000000000000000000007f8b3b04bf34618f4a1723fba96b5db211279a2b";
+        String expected2 = "000000000000000000000000cc9a4f6461ee2c7794bffa47b0a24b47eb012194";
 
         Bytes result = contract.execute(wrapData(data)).getRight();
         assertEquals(expected2, result.toUnprefixedHexString());

@@ -57,7 +57,7 @@ public class PrecompiledContractCallTest extends TestTransactionBase {
 
         Bytes method = Bytes.wrap(Arrays.copyOf(Hash.keccak256("verify(bytes32,uint8,bytes32,bytes32)".getBytes(StandardCharsets.UTF_8)), 4));
         Bytes hash = Bytes.wrap(Hash.keccak256("hello".getBytes(StandardCharsets.UTF_8)));
-        Bytes v = DataWord.of(28).getData();
+        Bytes v = DataWord.of(0).getData();
         Bytes r = Bytes.fromHexString("9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac8038825608");
         Bytes s = Bytes.fromHexString("4f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada");
         Bytes data = Bytes.concatenate(method, hash, v, r, s);
@@ -71,7 +71,7 @@ public class PrecompiledContractCallTest extends TestTransactionBase {
         TransactionReceipt receipt = executor.run();
 
         assertTrue(receipt.isSuccess());
-        assertEquals(DataWord.of("7156526fbd7a3c72969b54f64e42c10fbb768c8a"), DataWord.of(receipt.getReturnData()));
+        assertEquals(DataWord.of("e077fd3c958303e36309b9ee20ae9d3d59817232"), DataWord.of(receipt.getReturnData()));
     }
 
     @Test
