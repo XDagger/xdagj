@@ -34,6 +34,7 @@ import io.xdag.wallet.Wallet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Setter;
@@ -41,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;
@@ -310,7 +312,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
+            MutableBytes32 key = MutableBytes32.create();
+            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
+            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(key), false) == null) {
 //            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("Incorrect address");
                 return;
