@@ -111,6 +111,7 @@ public class XdagCliTest {
                     --importprivatekey <key>          import hex key
                     --loadsnapshot <filename>         load snapshot
                     --makesnapshot                    make snapshot
+                    --password <password>             wallet password
                     --version                         show version
                 """;
         assertEquals(helpStr, outRule.getLog());

@@ -46,7 +46,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.rocksdb.BackupEngine;
-import org.rocksdb.BackupableDBOptions;
+import org.rocksdb.BackupEngineOptions;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
 import org.rocksdb.CompressionType;
@@ -144,7 +144,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
                     if (config.getNodeSpec().isStoreFromBackup() && backupPath().toFile().canWrite()) {
                         log.debug("Restoring database from backup: '{}'", name);
-                        try (BackupableDBOptions backupOptions = new BackupableDBOptions(backupPath().toString());
+                        try (BackupEngineOptions backupOptions = new BackupEngineOptions(backupPath().toString());
                                 RestoreOptions restoreOptions = new RestoreOptions(false);
                                 BackupEngine backups = BackupEngine.open(Env.getDefault(), backupOptions)) {
 
@@ -186,7 +186,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         }
         Path path = backupPath();
         path.toFile().mkdirs();
-        try (BackupableDBOptions backupOptions = new BackupableDBOptions(path.toString());
+        try (BackupEngineOptions backupOptions = new BackupEngineOptions(path.toString());
                 BackupEngine backups = BackupEngine.open(Env.getDefault(), backupOptions)) {
 
             backups.createNewBackup(db, true);
