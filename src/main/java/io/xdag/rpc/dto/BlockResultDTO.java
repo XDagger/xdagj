@@ -55,7 +55,7 @@ import lombok.Data;
 public class BlockResultDTO {
 
     private long height;
-    private long balance;
+    private String balance;
     private long blockTime;
     private String state;
     private String hash;
@@ -71,10 +71,10 @@ public class BlockResultDTO {
     @Builder
     public static class TxLink {
 
-        private int direction; // 0 input 1 output
+        private int direction; // 0 input 1 output 2 earning
         private String hashlow;
         private String address;
-        private long amount;
+        private String amount;
         private long time;
         private String remark;
     }
@@ -86,7 +86,7 @@ public class BlockResultDTO {
         private int direction; // 0 input 1 output
         private String address;
         private String hashlow;
-        private long amount;
+        private String amount;
     }
 
 

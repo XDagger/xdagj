@@ -24,12 +24,11 @@
 
 package io.xdag.rpc.dto;
 
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-
-import java.math.BigInteger;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 //TODO: return xdag status
 public class StatusDTO {
 
@@ -52,17 +51,17 @@ public class StatusDTO {
 //        this.supply = toQuantityJsonHex(supply);
 //    }
 
-
-    public StatusDTO(long nblock, long totalNblocks, long nmain, long totalNnmain, BigInteger curDiff,
-            BigInteger netDiff, double hashrateOurs, double hashrateTotal, double supply) {
-        this.nblock = toQuantityJsonHex(nblock);
-        this.totalNblocks = toQuantityJsonHex(totalNblocks);
-        this.nmain = toQuantityJsonHex(nmain);
-        this.totalNnmain = toQuantityJsonHex(totalNnmain);
-        this.curDiff = toQuantityJsonHex(curDiff);
-        this.netDiff = toQuantityJsonHex(netDiff);
-        this.hashRateOurs = toQuantityJsonHex(hashrateOurs);
-        this.hashRateTotal = toQuantityJsonHex(hashrateTotal);
-        this.supply = toQuantityJsonHex(supply);
-    }
+//
+//    public StatusDTO(long nblock, long totalNblocks, long nmain, long totalNnmain, BigInteger curDiff,
+//            BigInteger netDiff, double hashrateOurs, double hashrateTotal, double supply) {
+//        this.nblock = toQuantityJsonHex(nblock);
+//        this.totalNblocks = toQuantityJsonHex(totalNblocks);
+//        this.nmain = toQuantityJsonHex(nmain);
+//        this.totalNnmain = toQuantityJsonHex(totalNnmain);
+//        this.curDiff = toQuantityJsonHex(curDiff);
+//        this.netDiff = toQuantityJsonHex(netDiff);
+//        this.hashRateOurs = toQuantityJsonHex(hashrateOurs);
+//        this.hashRateTotal = toQuantityJsonHex(hashrateTotal);
+//        this.supply = toQuantityJsonHex(supply);
+//    }
 }

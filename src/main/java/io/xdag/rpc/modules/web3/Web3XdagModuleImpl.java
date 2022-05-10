@@ -92,8 +92,8 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         }
 
         try {
-            s.currentBlock = toQuantityJsonHex(currentBlock);
-            s.highestBlock = toQuantityJsonHex(highestBlock);
+            s.currentBlock = Long.toString(currentBlock);
+            s.highestBlock = Long.toString(highestBlock);
             s.isSyncDone = true;
 
             return s;
@@ -112,8 +112,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     public String xdag_blockNumber() {
         long b = blockchain.getXdagStats().nmain;
         logger.debug("xdag_blockNumber(): {}", b);
-
-        return toQuantityJsonHex(b);
+        return Long.toString(b);
     }
 
     @Override
@@ -129,30 +128,37 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 //        System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
         key.set(8, hash.slice(8, 24));
         Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-        double balance = amount2xdag(block.getInfo().getAmount());
-        return toQuantityJsonHex(balance);
+        String balance = String.format("%.9f", amount2xdag(block.getInfo().getAmount()));
+
+//        double balance = amount2xdag(block.getInfo().getAmount());
+        return balance;
     }
 
     @Override
     public String xdag_getTotalBalance() {
-        double balance = amount2xdag(kernel.getBlockchain().getXdagStats().getBalance());
-        return toQuantityJsonHex(balance);
+        String balance = String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance()));
+        return balance;
     }
 
 
     @Override
     public StatusDTO xdag_getStatus() {
         XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
-//        long nblocks = Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks());
-//        long nmain = Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain());
-//        BigInteger diff = xdagStats.getMaxdifficulty();
-        double supply = amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)));
-
         double hashrateOurs = BasicUtils.xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateOurs());
         double hashrateTotal = BasicUtils.xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal());
-        return new StatusDTO(xdagStats.getNblocks(), xdagStats.getTotalnblocks(), xdagStats.getNmain(),
-                xdagStats.getTotalnblocks(), xdagStats.getDifficulty(), xdagStats.getMaxdifficulty(), hashrateOurs,
-                hashrateTotal, supply);
+        StatusDTO.StatusDTOBuilder builder = StatusDTO.builder();
+        builder.nblock(Long.toString(xdagStats.getNblocks()))
+                .totalNblocks(Long.toString(xdagStats.getTotalnblocks()))
+                .nmain(Long.toString(xdagStats.getNmain()))
+                .totalNnmain(Long.toString(xdagStats.getTotalnmain()))
+                .curDiff(toQuantityJsonHex(xdagStats.getDifficulty()))
+                .netDiff(toQuantityJsonHex(xdagStats.getMaxdifficulty()))
+                .hashRateOurs(toQuantityJsonHex(hashrateOurs))
+                .hashRateTotal(toQuantityJsonHex(hashrateTotal))
+                .supply(String.format("%.9f",
+                        amount2xdag(
+                                kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))));
+        return builder.build();
     }
 
     static class SyncingResult {

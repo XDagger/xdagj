@@ -31,6 +31,7 @@ import static io.xdag.config.BlockType.TRANSACTION;
 import static io.xdag.config.BlockType.WALLET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 
 import io.xdag.core.Address;
@@ -92,7 +93,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
         BlockResultDTOBuilder.address(hash2Address(block.getHash()))
                 .hash(block.getHash().toUnprefixedHexString())
-                .balance(block.getInfo().getAmount())
+                .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
                 .blockTime(block.getTimestamp())
                 .diff(block.getInfo().getDifficulty().toString(16))
                 .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
@@ -113,7 +114,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             Link.LinkBuilder linkBuilder = Link.builder();
             linkBuilder.address(hash2Address(input.getHashLow()))
                     .hashlow(input.getHashLow().toUnprefixedHexString())
-                    .amount(input.getAmount().longValue())
+                    .amount(String.format("%.9f", amount2xdag(input.getAmount().longValue())))
                     .direction(0);
             links.add(linkBuilder.build());
         }
@@ -122,7 +123,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             Link.LinkBuilder linkBuilder = Link.builder();
             linkBuilder.address(hash2Address(output.getHashLow()))
                     .hashlow(output.getHashLow().toUnprefixedHexString())
-                    .amount(output.getAmount().longValue())
+                    .amount(String.format("%.9f", amount2xdag(output.getAmount().longValue())))
                     .direction(1);
             links.add(linkBuilder.build());
         }
@@ -133,11 +134,26 @@ public class XdagModuleChainBase implements XdagModuleChain {
     private List<TxLink> getTxLinks(Block block) {
         List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(block.getHashLow());
         List<TxLink> txLinks = new ArrayList<>();
+        // 1. earning info
+        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
+            TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
+            String remark = "";
+            if (block.getInfo().getRemark().length != 0) {
+                remark = new String(block.getInfo().getRemark(), StandardCharsets.UTF_8).trim();
+            }
+            txLinkBuilder.address(hash2Address(block.getHashLow()))
+                    .hashlow(block.getHashLow().toUnprefixedHexString())
+                    .amount(String.format("%.9f", amount2xdag(blockchain.getReward(block.getInfo().getHeight()))))
+                    .direction(2)
+                    .time(block.getTimestamp())
+                    .remark(remark);
+        }
+        // 2. tx history info
         for (TxHistory txHistory : txHistories) {
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
             txLinkBuilder.address(hash2Address(txHistory.getAddress().getHashLow()))
                     .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
-                    .amount(txHistory.getAddress().getAmount().longValue())
+                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount().longValue())))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 : 1)
                     .time(txHistory.getTimeStamp())
                     .remark(txHistory.getRemark());
