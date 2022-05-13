@@ -6,7 +6,7 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.4.7</version>
+    <version>0.4.8</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -801,7 +801,7 @@
         <dependency>
             <groupId>tech.pegasys.discovery</groupId>
             <artifactId>discovery</artifactId>
-            <version>0.4.7</version>
+            <version>0.4.8</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-api</artifactId>

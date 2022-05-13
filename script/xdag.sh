@@ -1,6 +1,6 @@
 #!/bin/sh
 
-XDAG_VERSION="0.4.7"
+XDAG_VERSION="0.4.8"
 XDAG_JARNAME="xdagj-${XDAG_VERSION}-shaded.jar"
 XDAG_OPTS="-t"
 
