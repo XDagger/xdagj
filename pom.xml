@@ -801,7 +801,7 @@
         <dependency>
             <groupId>tech.pegasys.discovery</groupId>
             <artifactId>discovery</artifactId>
-            <version>0.4.8</version>
+            <version>0.4.7</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-api</artifactId>
