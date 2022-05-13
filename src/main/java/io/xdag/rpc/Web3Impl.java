@@ -110,7 +110,7 @@ public class Web3Impl implements Web3 {
 
     @Override
     public String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
-        return null;
+        return web3XdagModule.xdag_personal_sendTransaction(transactionArgs, passphrase);
     }
 
     @Override

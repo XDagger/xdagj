@@ -75,6 +75,10 @@ public interface Web3XdagModule {
         return getXdagModule().sendTransaction(args);
     }
 
+    default String xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
+        return getXdagModule().personalSendTransaction(args, passphrase);
+    }
+
     default BlockResultDTO xdag_getBlockByHash(String blockHash) {
         return getXdagModule().getBlockByHash(blockHash);
     }

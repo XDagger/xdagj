@@ -239,7 +239,7 @@ public class Kernel {
         // randomX loading
         // TODO: paulochen randomx 需要恢复
         // 初次快照启动
-        if(config.getSnapshotSpec().isSnapshotJ()){
+        if (config.getSnapshotSpec().isSnapshotJ()) {
             randomXUtils.randomXLoadingSnapshot();
             blockStore.setSnapshotBoot();
         } else {
@@ -360,7 +360,7 @@ public class Kernel {
     private Web3 buildWeb3() {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
-                        new XdagModuleTransactionEnabled(this.getBlockchain()),
+                        new XdagModuleTransactionEnabled(this.getBlockchain(), this),
                         new XdagModuleChainBase(this.getBlockchain())), this);
         return new Web3Impl(web3XdagModule);
     }

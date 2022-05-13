@@ -76,9 +76,9 @@ public interface Web3 extends Web3XdagModule {
         public String value;
         //        public String data; // compiledCode
         public String remark;
-        public String netType;
+//        public String netType;
         //        public String nonce;
-        public String chainId; //NOSONAR
+//        public String chainId; //NOSONAR
 
         @Override
         public String toString() {
@@ -89,10 +89,10 @@ public interface Web3 extends Web3XdagModule {
 //                    ", gasPrice='" + gasPrice + '\'' +
                     ", value='" + value + '\'' +
                     ", remark='" + remark + '\'' +
-                    ", netType='" + netType + '\'' +
+//                    ", netType='" + netType + '\'' +
 //                    ", data='" + data + '\'' +
 //                    ", nonce='" + nonce + '\'' +
-                    ", chainId='" + chainId + '\'' +
+//                    ", chainId='" + chainId + '\'' +
                     '}';
         }
     }

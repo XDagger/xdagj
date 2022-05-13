@@ -67,6 +67,11 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     }
 
     @Override
+    public String personalSendTransaction(Web3.CallArguments args, String passphrase) {
+        return xdagModuleTransaction.personalSendTransaction(args, passphrase);
+    }
+
+    @Override
     public String sendRawTransaction(String rawData) {
         return xdagModuleTransaction.sendRawTransaction(rawData);
     }
