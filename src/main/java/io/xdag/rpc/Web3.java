@@ -24,6 +24,7 @@
 
 package io.xdag.rpc;
 
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import java.util.Arrays;
 import java.util.Map;
@@ -59,7 +60,7 @@ public interface Web3 extends Web3XdagModule {
 
     String personal_importRawKey(String key, String passphrase);
 
-    String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
+    ProcessResult personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
 
     boolean personal_unlockAccount(String key, String passphrase, String duration);
 

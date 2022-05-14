@@ -159,8 +159,7 @@ public class SyncManager {
                     makeSyncDone();
                 }
             }
-        } else if(importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-            // 如果是自己产生的区块则在pow的时候已经广播 这里不需要重复
+
             if (blockWrapper.getRemoteNode() == null
                     || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
                 if (blockWrapper.getTtl() > 0) {

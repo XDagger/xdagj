@@ -26,6 +26,7 @@ package io.xdag.rpc.modules.web3;
 
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 
@@ -75,7 +76,7 @@ public interface Web3XdagModule {
         return getXdagModule().sendTransaction(args);
     }
 
-    default String xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
+    default ProcessResult xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
         return getXdagModule().personalSendTransaction(args, passphrase);
     }
 

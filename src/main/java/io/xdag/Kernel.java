@@ -360,7 +360,7 @@ public class Kernel {
     private Web3 buildWeb3() {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
-                        new XdagModuleTransactionEnabled(this.getBlockchain(), this),
+                        new XdagModuleTransactionEnabled(this),
                         new XdagModuleChainBase(this.getBlockchain())), this);
         return new Web3Impl(web3XdagModule);
     }

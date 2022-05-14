@@ -26,6 +26,7 @@ package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.utils.TypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     }
 
     @Override
-    public String personalSendTransaction(Web3.CallArguments args, String passphrase) {
+    public ProcessResult personalSendTransaction(Web3.CallArguments args, String passphrase) {
         return xdagModuleTransaction.personalSendTransaction(args, passphrase);
     }
 

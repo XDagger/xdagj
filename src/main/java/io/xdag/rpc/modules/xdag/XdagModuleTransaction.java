@@ -25,6 +25,7 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.dto.ProcessResult;
 
 public interface XdagModuleTransaction {
 
@@ -32,5 +33,5 @@ public interface XdagModuleTransaction {
 
     String sendRawTransaction(String rawData);
 
-    String personalSendTransaction(Web3.CallArguments args, String passphrase);
+    ProcessResult personalSendTransaction(Web3.CallArguments args, String passphrase);
 }

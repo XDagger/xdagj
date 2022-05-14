@@ -26,6 +26,7 @@ package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
 
+import io.xdag.Kernel;
 import io.xdag.core.Blockchain;
 import io.xdag.rpc.Web3;
 import org.slf4j.Logger;
@@ -35,8 +36,8 @@ public class XdagModuleTransactionDisabled extends XdagModuleTransactionBase {
 
     private static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionDisabled.class);
 
-    public XdagModuleTransactionDisabled(Blockchain blockchain) {
-        super(blockchain);
+    public XdagModuleTransactionDisabled(Kernel kernel) {
+        super(kernel);
     }
 
     @Override

@@ -24,12 +24,18 @@
 
 package io.xdag.wallet;
 
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
+import com.google.common.collect.Lists;
 import io.xdag.config.Config;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
 import io.xdag.core.SimpleEncoder;
+import io.xdag.core.XdagField;
 import io.xdag.crypto.Aes;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
@@ -38,6 +44,7 @@ import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SystemUtil;
+import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,10 +52,14 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
@@ -56,9 +67,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.SECP256K1.KeyPair;
 
 @Slf4j
 @Getter
@@ -464,5 +477,131 @@ public class Wallet {
             throw new IllegalArgumentException("HD Seed is not initialized");
         }
     }
+
+    public List<BlockWrapper> createTransactionBlock(Map<Address, SECP256K1.KeyPair> ourKeys, Bytes32 to, String remark) {
+        // 判断是否有remark
+        int hasRemark = remark == null ? 0 : 1;
+
+        List<BlockWrapper> res = new ArrayList<>();
+
+        // 遍历ourKeys 计算每个区块最多能放多少个
+        // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
+        LinkedList<Entry<Address, KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
+
+        // 每次创建区块用到的keys
+        Map<Address, SECP256K1.KeyPair> keys = new HashMap<>();
+        // 保证key的唯一性
+        Set<SECP256K1.KeyPair> keysPerBlock = new HashSet<>();
+        // 放入defkey
+        keysPerBlock.add(getDefKey());
+
+        // base count a block <header + send address + defKey signature>
+        int base = 1 + 1 + 2 + hasRemark;
+        long amount = 0;
+
+        while (stack.size() > 0) {
+            Map.Entry<Address, SECP256K1.KeyPair> key = stack.peek();
+            base += 1;
+            int originSize = keysPerBlock.size();
+            keysPerBlock.add(key.getValue());
+            // 说明新增加的key没有重复
+            if (keysPerBlock.size() > originSize) {
+                // 一个字段公钥加两个字段签名
+                base += 3;
+            }
+            // 可以将该输入 放进一个区块
+            if (base < 16) {
+                amount += key.getKey().getAmount().longValue();
+                keys.put(key.getKey(), key.getValue());
+                stack.poll();
+            } else {
+                res.add(createTransaction(to, amount, keys, remark));
+                // 清空keys，准备下一个
+                keys = new HashMap<>();
+                keysPerBlock = new HashSet<>();
+                keysPerBlock.add(getDefKey());
+                base = 1 + 1 + 2 + hasRemark;
+                amount = 0;
+            }
+        }
+        if (keys.size() != 0) {
+            res.add(createTransaction(to, amount, keys, remark));
+        }
+
+        return res;
+    }
+
+    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, SECP256K1.KeyPair> keys, String remark) {
+
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
+
+        Block block = createNewBlock(new HashMap<>(keys), tos, remark);
+
+        if (block == null) {
+            return null;
+        }
+
+        SECP256K1.KeyPair defaultKey = getDefKey();
+
+        boolean isdefaultKey = false;
+        // 签名
+        for (SECP256K1.KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+            if (ecKey.equals(defaultKey)) {
+                isdefaultKey = true;
+                block.signOut(ecKey);
+            } else {
+                block.signIn(ecKey);
+            }
+        }
+        // 如果默认密钥被更改，需要重新对输出签名签属
+        if (!isdefaultKey) {
+            block.signOut(getDefKey());
+        }
+
+        return new BlockWrapper(block, getConfig().getNodeSpec().getTTL());
+    }
+
+    private Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to,
+            String remark) {
+        int hasRemark = remark == null ? 0 : 1;
+
+        int defKeyIndex = -1;
+
+        // if no input, return null
+        if (pairs == null || pairs.size() == 0) {
+            return null;
+        }
+
+        // if no output, return null
+        if (to == null || to.size() == 0) {
+            return null;
+        }
+
+        // 遍历所有key 判断是否有defKey
+        List<SECP256K1.KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
+        for (int i = 0; i < keys.size(); i++) {
+            if (keys.get(i).equals(getDefKey())) {
+                defKeyIndex = i;
+            }
+        }
+
+        List<Address> all = Lists.newArrayList();
+        all.addAll(pairs.keySet());
+        all.addAll(to);
+
+        // TODO: 判断pair是否有重复
+        int res = 1 + pairs.size() + to.size() + 3 * keys.size() + (defKeyIndex == -1 ? 2 : 0) + hasRemark;
+
+        // TODO : 如果区块字段不足
+        if (res > 16) {
+            return null;
+        }
+
+        long sendTime = XdagTime.getCurrentTimestamp();
+
+        return new Block(getConfig(), sendTime, all, null, false, keys, remark, defKeyIndex);
+    }
+
+
 
 }

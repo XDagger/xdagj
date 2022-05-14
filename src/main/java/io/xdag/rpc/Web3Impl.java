@@ -25,6 +25,7 @@
 package io.xdag.rpc;
 
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModule;
@@ -109,7 +110,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
+    public ProcessResult personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
         return web3XdagModule.xdag_personal_sendTransaction(transactionArgs, passphrase);
     }
 
