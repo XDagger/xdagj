@@ -27,6 +27,7 @@ package io.xdag.rpc.modules.web3;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.hash2Address;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -105,7 +106,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_coinbase() {
-        return kernel.getPoolMiner().getAddressHash().toHexString();
+        return hash2Address(kernel.getPoolMiner().getAddressHash());
     }
 
     @Override
