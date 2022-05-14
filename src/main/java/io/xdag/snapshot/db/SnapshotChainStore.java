@@ -26,7 +26,8 @@ package io.xdag.snapshot.db;
 import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import java.util.List;
-import org.hyperledger.besu.crypto.SECP256K1;
+
+import org.hyperledger.besu.crypto.KeyPair;
 
 public interface SnapshotChainStore {
 
@@ -54,6 +55,6 @@ public interface SnapshotChainStore {
 
     StatsBlock getStatsBlockByIndex(int i);
 
-    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<SECP256K1.KeyPair> publicKeys);
+    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<KeyPair> publicKeys);
 
 }

@@ -31,7 +31,7 @@ import java.util.Map;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public interface Blockchain {
 
@@ -40,7 +40,7 @@ public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, SECP256K1.KeyPair> pairs, List<Address> to, boolean mining, String remark);
+    Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark);
 
     Block getBlockByHash(Bytes32 hash, boolean isRaw);
 

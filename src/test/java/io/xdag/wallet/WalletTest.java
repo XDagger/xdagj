@@ -32,14 +32,19 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +61,7 @@ public class WalletTest {
         config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
         wallet.lock();
@@ -86,15 +91,16 @@ public class WalletTest {
     }
 
     @Test
-    public void testAddAccounts() {
+    public void testAddAccounts()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         wallet.unlock(pwd);
         wallet.setAccounts(Collections.emptyList());
-        SECP256K1.KeyPair key1 = Keys.createEcKeyPair();
-        SECP256K1.KeyPair key2 = Keys.createEcKeyPair();
+        KeyPair key1 = Keys.createEcKeyPair();
+        KeyPair key2 = Keys.createEcKeyPair();
         wallet.addAccounts(Arrays.asList(key1, key2));
-        List<SECP256K1.KeyPair> accounts = wallet.getAccounts();
-        SECP256K1.KeyPair k1 = accounts.get(0);
-        SECP256K1.KeyPair k2 = accounts.get(1);
+        List<KeyPair> accounts = wallet.getAccounts();
+        KeyPair k1 = accounts.get(0);
+        KeyPair k2 = accounts.get(1);
         assertEquals(k1, key1);
         assertEquals(k2, key2);
     }
@@ -127,7 +133,8 @@ public class WalletTest {
     }
 
     @Test
-    public void testAddAccountRandom() {
+    public void testAddAccountRandom()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         wallet.unlock(pwd);
         int oldAccountSize = wallet.getAccounts().size();
         wallet.addAccountRandom();
@@ -135,10 +142,11 @@ public class WalletTest {
     }
 
     @Test
-    public void testRemoveAccount() {
+    public void testRemoveAccount()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         wallet.unlock(pwd);
         int oldAccountSize = wallet.getAccounts().size();
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        KeyPair key = Keys.createEcKeyPair();
         wallet.addAccount(key);
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
         wallet.removeAccount(key);
@@ -171,10 +179,10 @@ public class WalletTest {
     public void testHDKeyRecover() {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<SECP256K1.KeyPair> keyPairList1 = new ArrayList<>();
+        List<KeyPair> keyPairList1 = new ArrayList<>();
         int hdkeyCount = 5;
         for (int i = 0; i < hdkeyCount; i++) {
-            SECP256K1.KeyPair key = wallet.addAccountWithNextHdKey();
+            KeyPair key = wallet.addAccountWithNextHdKey();
             keyPairList1.add(key);
         }
 
@@ -183,9 +191,9 @@ public class WalletTest {
         // use different password and same mnemonic
         wallet2.unlock(pwd + pwd);
         wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<SECP256K1.KeyPair> keyPairList2 = new ArrayList<>();
+        List<KeyPair> keyPairList2 = new ArrayList<>();
         for (int i = 0; i < hdkeyCount; i++) {
-            SECP256K1.KeyPair key = wallet2.addAccountWithNextHdKey();
+            KeyPair key = wallet2.addAccountWithNextHdKey();
             keyPairList2.add(key);
         }
         assertTrue(CollectionUtils.isEqualCollection(keyPairList1, keyPairList2));

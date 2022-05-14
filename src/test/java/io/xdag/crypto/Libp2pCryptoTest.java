@@ -59,6 +59,6 @@ public class Libp2pCryptoTest {
 
     @Test
     public void testUnmarshalSecp256k1PublicKey() {
-        assertArrayEquals(libp2pPubKey.raw(), SampleKeys.KEY_PAIR.getPublicKey().asEcPoint().getEncoded(true));
+        assertArrayEquals(libp2pPubKey.raw(), SampleKeys.KEY_PAIR.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true));
     }
 }

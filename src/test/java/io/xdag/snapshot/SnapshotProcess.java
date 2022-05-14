@@ -32,7 +32,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import com.google.common.collect.Lists;
+
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -43,6 +59,7 @@ import io.xdag.core.BlockchainImpl;
 import io.xdag.core.ImportResult;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
@@ -55,23 +72,9 @@ import io.xdag.snapshot.core.SnapshotUnit;
 import io.xdag.snapshot.core.StatsBlock;
 import io.xdag.snapshot.db.SnapshotChainStore;
 import io.xdag.snapshot.db.SnapshotChainStoreImpl;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 @Slf4j
 public class SnapshotProcess {
@@ -113,7 +116,7 @@ public class SnapshotProcess {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config);
@@ -162,7 +165,7 @@ public class SnapshotProcess {
     public void createTestBlockchain(SnapshotChainStore snapshotChainStore, Kernel kernel) {
         long generateTime = 1600616700000L;
         long starttime = generateTime;
-        SECP256K1.KeyPair key = SECP256K1.KeyPair.create(SampleKeys.SRIVATE_KEY);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -205,7 +208,7 @@ public class SnapshotProcess {
         List<Block> blocks = blockchain.getBlocksByTime(starttime, endTime);
         List<Block> mains = blockchain.listMainBlocks(10);
 
-        saveBlocks(snapshotChainStore, blocks, key.getPublicKey().asEcPoint().getEncoded(true));
+        saveBlocks(snapshotChainStore, blocks, key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true));
 
         saveStatsBlock(mains);
     }

@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.*;
 
 import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.db.rocksdb.RocksdbKVSource;
@@ -40,8 +41,9 @@ import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.rocksdb.*;
 
 import java.io.ByteArrayInputStream;
@@ -112,7 +114,7 @@ public class SnapshotJ extends RocksdbKVSource {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<SECP256K1.KeyPair> keys) {
+    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys) {
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {
@@ -134,8 +136,8 @@ public class SnapshotJ extends RocksdbKVSource {
                             if (snapshotInfo.getType()) {
                                 byte[] ecKeyPair = snapshotInfo.getData();
                                 for (int i = 0; i < keys.size(); i++) {
-                                    SECP256K1.KeyPair key = keys.get(i);
-                                    if (Bytes.wrap(key.getPublicKey().asEcPoint().getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                                    KeyPair key = keys.get(i);
+                                    if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();
@@ -144,14 +146,14 @@ public class SnapshotJ extends RocksdbKVSource {
                                 }
                             } else {    //Verify signature
                                 Block block = new Block(new XdagBlock(snapshotInfo.getData()));
-                                SECP256K1.Signature outSig = block.getOutsig();
+                                SECPSignature outSig = block.getOutsig();
                                 for (int i = 0; i < keys.size(); i++) {
-                                    SECP256K1.KeyPair keyPair = keys.get(i);
-                                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint().getEncoded(true);
+                                    KeyPair keyPair = keys.get(i);
+                                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                                     Bytes digest = Bytes
                                             .wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                                    if (SECP256K1.verify(hash, outSig, keyPair.getPublicKey())) {
+                                    if (Sign.SECP256K1.verify(hash, outSig, keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();

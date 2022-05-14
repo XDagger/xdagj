@@ -26,11 +26,11 @@ Maven : v3.8.3
 XDAGJ Testnet Tutorial can help you quickly access XDAGJ testnet by using wallets and mining functions.
 The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
 
-[XDAGJ Testnet Access Tutorial](./docs/XDAGJ_TestNet_Access_Tutorial_eng.md)
+[XDAGJ_TestNet_Tutorial](./docs/XDAGJ_TestNet_Tutorial_en.md)
 
-[XDAGJ Private Chain Construction Tutorial](./docs/XDAGJ_Private_Chain_Tutorial_eng.md)
+[XDAGJ_Devnet_Tutorial](./docs/XDAGJ_Devnet_Tutorial_en.md)
 
-[Explorer](http://146.56.240.230/)
+[XDAGJ TestNet Explorer](http://146.56.240.230/)
 
 ## Develop
 
@@ -142,7 +142,7 @@ XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## Other
 
-[XDAGJ Libp2P Introduction](./docs/XDAGJ_Networking_Specification.md)
+[XDAGJ Libp2p Introduction](./docs/XDAGJ_Networking_Specification.md)
 
 [XDAG WIKI](https://github.com/XDagger/xdag/wiki)
 

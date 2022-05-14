@@ -36,19 +36,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
 
 public class BlockBuilder {
 
-    public static Block generateAddressBlock(Config config, SECP256K1.KeyPair key, long xdagTime) {
+    public static Block generateAddressBlock(Config config, KeyPair key, long xdagTime) {
         Block b = new Block(config, xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
         return b;
     }
 
     // TODO:set nonce means this block is a mining block, the mining param need to set true
-    public static Block generateExtraBlock(Config config, SECP256K1.KeyPair key, long xdagTime, List<Address> pendings) {
+    public static Block generateExtraBlock(Config config, KeyPair key, long xdagTime, List<Address> pendings) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
         b.signOut(key);
         Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode("1234")));
@@ -57,7 +57,7 @@ public class BlockBuilder {
     }
 
     // TODO:set nonce means this block is a mining block, the mining param need to set true
-    public static Block generateExtraBlockGivenRandom(Config config, SECP256K1.KeyPair key, long xdagTime,
+    public static Block generateExtraBlockGivenRandom(Config config, KeyPair key, long xdagTime,
             List<Address> pendings, String randomS) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
         b.signOut(key);
@@ -66,12 +66,12 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateTransactionBlock(Config config, SECP256K1.KeyPair key, long xdagTime, Address from, Address to,
+    public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
             long amount) {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XDAG_FIELD_IN, amount)); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
-        List<SECP256K1.KeyPair> keys = new ArrayList<>();
+        List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
         b.signOut(key);
