@@ -33,5 +33,5 @@ public interface XdagModuleTransaction {
 
     String sendRawTransaction(String rawData);
 
-    ProcessResult personalSendTransaction(Web3.CallArguments args, String passphrase);
+    String personalSendTransaction(Web3.CallArguments args, String passphrase);
 }

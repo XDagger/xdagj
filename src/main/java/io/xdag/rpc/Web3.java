@@ -60,7 +60,7 @@ public interface Web3 extends Web3XdagModule {
 
     String personal_importRawKey(String key, String passphrase);
 
-    ProcessResult personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
+    String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
 
     boolean personal_unlockAccount(String key, String passphrase, String duration);
 

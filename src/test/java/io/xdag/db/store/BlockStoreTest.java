@@ -31,6 +31,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.List;
+
+import org.apache.tuweni.bytes.MutableBytes;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.core.Block;
@@ -41,14 +54,6 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import java.util.List;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.hyperledger.besu.crypto.SECP256K1;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class BlockStoreTest {
 
@@ -103,11 +108,12 @@ public class BlockStoreTest {
     }
 
     @Test
-    public void testSaveBlock() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+    public void testSaveBlock()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource,txHistory);
         bs.init();
         long time = System.currentTimeMillis();
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        KeyPair key = Keys.createEcKeyPair();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         Block storedBlock = bs.getBlockByHash(block.getHashLow(), true);
@@ -116,11 +122,12 @@ public class BlockStoreTest {
     }
 
     @Test
-    public void testSaveOurBlock() {
+    public void testSaveOurBlock()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        KeyPair key = Keys.createEcKeyPair();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow().toArray());
@@ -128,11 +135,12 @@ public class BlockStoreTest {
     }
 
     @Test
-    public void testRemoveOurBlock() {
+    public void testRemoveOurBlock()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        KeyPair key = Keys.createEcKeyPair();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow().toArray());
@@ -142,11 +150,12 @@ public class BlockStoreTest {
     }
 
     @Test
-    public void testSaveBlockSums() {
+    public void testSaveBlockSums()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = 1602951025307L;
-        SECP256K1.KeyPair key = Keys.createEcKeyPair();
+        KeyPair key = Keys.createEcKeyPair();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
 //        byte[] sums = new byte[256];

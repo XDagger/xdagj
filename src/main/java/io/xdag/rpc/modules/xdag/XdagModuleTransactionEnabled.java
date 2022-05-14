@@ -25,7 +25,14 @@
 package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.rpc.ErrorCode.ERR_BALANCE_NOT_ENOUGH;
+import static io.xdag.rpc.ErrorCode.ERR_PARAM_INVALID;
+import static io.xdag.rpc.ErrorCode.ERR_TO_ADDRESS_INVALID;
+import static io.xdag.rpc.ErrorCode.ERR_VALUE_INVALID;
+import static io.xdag.rpc.ErrorCode.ERR_WALLET_UNLOCK;
+import static io.xdag.rpc.ErrorCode.SUCCESS;
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import com.google.common.collect.Maps;
@@ -37,6 +44,7 @@ import io.xdag.core.ImportResult;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.exception.XdagOverFlowException;
 import io.xdag.wallet.Wallet;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +52,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.SECP256K1;
-import org.hyperledger.besu.crypto.SECP256K1.KeyPair;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
@@ -63,34 +70,41 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
     }
 
     @Override
-    public ProcessResult personalSendTransaction(CallArguments args, String passphrase) {
+    public String personalSendTransaction(CallArguments args, String passphrase) {
 
         String from = args.from;
         String to = args.to;
         String value = args.value;
         String remark = args.remark;
 
-        ProcessResult result = ProcessResult.builder().res(true).build();
+        ProcessResult result = ProcessResult.builder().code(SUCCESS.code()).build();
 
         Bytes32 hash = checkParam(from, to, value, remark,result);
-        if (!result.getRes()) {
-            return result;
+        if (result.getCode() != SUCCESS.code()) {
+            return result.getResInfo();
         }
         checkPassword(passphrase,result);
-        if (!result.getRes()) {
-            return result;
+        if (result.getCode() != SUCCESS.code()) {
+            return result.getResInfo();
         }
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
         doXfer(amount,hash,remark,result);
 
-        return result;
+        return result.getResInfo();
     }
 
 
     public void doXfer(double sendValue, Bytes32 toAddress,String remark, ProcessResult processResult) {
-        long amount = xdag2amount(sendValue);
+        long amount = 0;
+        try {
+            amount = xdag2amount(sendValue);
+        } catch (XdagOverFlowException e){
+            processResult.setCode(ERR_PARAM_INVALID.code());
+            processResult.setResInfo(ERR_PARAM_INVALID.msg());
+            return;
+        }
         MutableBytes32 to = MutableBytes32.create();
 //        System.arraycopy(address, 8, to, 8, 24);
         to.set(8, toAddress.slice(8, 24));
@@ -122,18 +136,22 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         // 余额不足
         if (remain.get() > 0) {
-            processResult.setRes(false);
-            processResult.setResInfo("No enough input");
+            processResult.setCode(ERR_BALANCE_NOT_ENOUGH.code());
+            processResult.setResInfo(ERR_BALANCE_NOT_ENOUGH.msg());
+            return;
         }
         List<String> resInfo = new ArrayList<>();
         // create transaction
         List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourBlocks, to, remark);
         for (BlockWrapper blockWrapper : txs) {
-            kernel.getSyncMgr().syncPushBlock(blockWrapper,blockWrapper.getBlock().getHashLow());
-            resInfo.add(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
+            ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
+            if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
+                kernel.getChannelMgr().sendNewBlock(blockWrapper);
+                resInfo.add(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
+            }
         }
 
-        processResult.setRes(true);
+        processResult.setCode(SUCCESS.code());
         processResult.setResInfo(resInfo.toString());
     }
 
@@ -142,8 +160,9 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         try {
             double amount = BasicUtils.getDouble(value);
             if (amount < 0) {
-                processResult.setRes(false);
-                processResult.setResInfo("The transfer amount must be greater than 0");
+                processResult.setCode(ERR_VALUE_INVALID.code());
+                processResult.setResInfo(ERR_VALUE_INVALID.msg());
+                return null;
             }
 
             // check whether to is exist in blockchain
@@ -153,17 +172,17 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                 hash = Bytes32.wrap(BasicUtils.getHash(to));
             }
             if (hash == null) {
-                processResult.setRes(false);
-                processResult.setResInfo("To address is illegal");
+                processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+                processResult.setResInfo(ERR_TO_ADDRESS_INVALID.msg());
             } else {
                 if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
-                    processResult.setRes(false);
-                    processResult.setResInfo("To address is illegal");
+                    processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+                    processResult.setResInfo(ERR_TO_ADDRESS_INVALID.msg());
                 }
             }
 
         } catch (NumberFormatException e) {
-            processResult.setRes(false);
+            processResult.setCode(e.hashCode());
             processResult.setResInfo(e.getMessage());
         }
         return hash;
@@ -173,9 +192,12 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         Wallet wallet = new Wallet(kernel.getConfig());
         try {
             boolean res = wallet.unlock(passphrase);
-            result.setRes(res);
+            if (!res) {
+                result.setCode(ERR_WALLET_UNLOCK.code());
+                result.setResInfo(ERR_WALLET_UNLOCK.msg());
+            }
         } catch (Exception e) {
-            result.setRes(false);
+            result.setCode(e.hashCode());
             result.setResInfo(e.getMessage());
         }
     }

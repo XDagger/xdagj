@@ -103,7 +103,11 @@ public class BasicUtils {
         input -= amount; // 小数部分
         input = input * Math.pow(2, 32);
         double tmp = Math.ceil(input);
-        return (long) (res + tmp);
+        long result =  (long) (res + tmp);
+        if (result < 0) {
+            throw new XdagOverFlowException();
+        }
+        return result;
     }
 
     public static String formatDouble(double d) {

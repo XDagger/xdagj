@@ -76,7 +76,7 @@ public interface Web3XdagModule {
         return getXdagModule().sendTransaction(args);
     }
 
-    default ProcessResult xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
+    default String xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
         return getXdagModule().personalSendTransaction(args, passphrase);
     }
 

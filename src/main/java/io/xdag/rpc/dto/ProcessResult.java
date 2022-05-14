@@ -7,15 +7,15 @@ import lombok.Data;
 @Data
 public class ProcessResult {
 
-    private boolean res; // success:true failed:false
+    private int code; // success:0 failed:err code
     private String resInfo; // if success return tx hash, else return errMsg
 
-    public boolean getRes() {
-        return res;
+    public int getCode() {
+        return code;
     }
 
-    public void setRes(boolean res) {
-        this.res = res;
+    public void setCode(int code) {
+        this.code = code;
     }
 
     public String getResInfo() {

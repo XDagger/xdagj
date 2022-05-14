@@ -30,6 +30,7 @@ import static io.xdag.config.BlockType.MAIN_BLOCK;
 import static io.xdag.config.BlockType.TRANSACTION;
 import static io.xdag.config.BlockType.WALLET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
@@ -95,7 +96,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .hash(block.getHash().toUnprefixedHexString())
                 .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
                 .blockTime(block.getTimestamp())
-                .diff(block.getInfo().getDifficulty().toString(16))
+                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
                 .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
                         StandardCharsets.UTF_8).trim())
                 .state(getStateByFlags(block.getInfo().getFlags()))
@@ -138,7 +139,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
             String remark = "";
-            if (block.getInfo().getRemark().length != 0) {
+            if (block.getInfo().getRemark()!=null && block.getInfo().getRemark().length != 0) {
                 remark = new String(block.getInfo().getRemark(), StandardCharsets.UTF_8).trim();
             }
             txLinkBuilder.address(hash2Address(block.getHashLow()))
@@ -147,6 +148,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                     .direction(2)
                     .time(block.getTimestamp())
                     .remark(remark);
+            txLinks.add(txLinkBuilder.build());
         }
         // 2. tx history info
         for (TxHistory txHistory : txHistories) {
