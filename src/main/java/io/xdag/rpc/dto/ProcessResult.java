@@ -1,5 +1,6 @@
 package io.xdag.rpc.dto;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,7 +9,8 @@ import lombok.Data;
 public class ProcessResult {
 
     private int code; // success:0 failed:err code
-    private String resInfo; // if success return tx hash, else return errMsg
+    private List<String> result; // if success return tx hash, else return errMsg
+    private String errMsg;
 
     public int getCode() {
         return code;
@@ -18,11 +20,11 @@ public class ProcessResult {
         this.code = code;
     }
 
-    public String getResInfo() {
-        return resInfo;
+    public List<String> getResInfo() {
+        return result;
     }
 
-    public void setResInfo(String resInfo) {
-        this.resInfo = resInfo;
+    public void setResInfo(List<String> result) {
+        this.result = result;
     }
 }

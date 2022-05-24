@@ -45,6 +45,9 @@ public interface Web3XdagModule {
         return getXdagModule().chainId();
     }
 
+    default String xdag_version() {
+        return getXdagModule().version();
+    }
 
     XdagModule getXdagModule();
 
@@ -76,7 +79,7 @@ public interface Web3XdagModule {
         return getXdagModule().sendTransaction(args);
     }
 
-    default String xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
+    default Object xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
         return getXdagModule().personalSendTransaction(args, passphrase);
     }
 

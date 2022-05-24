@@ -73,7 +73,7 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
     }
 
     @Override
-    public String personalSendTransaction(CallArguments args, String passphrase) {
+    public Object personalSendTransaction(CallArguments args, String passphrase) {
         return null;
     }
 }

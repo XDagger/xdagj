@@ -34,6 +34,7 @@ import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -46,6 +47,7 @@ import io.xdag.utils.BasicUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -76,6 +78,35 @@ public class XdagModuleChainBase implements XdagModuleChain {
         return transferBlockToBlockResultDTO(blockchain.getBlockByHash(block.getHash(), true));
     }
 
+    @Override
+    public String getRewardByNumber(String bnOrId) {
+        try {
+            long reward = blockchain.getReward(Long.parseLong(bnOrId));
+            return String.valueOf(reward);
+        }catch (Exception e) {
+            return e.getMessage();
+        }
+
+    }
+
+    @Override
+    public Object getBlocksByNumber(String numberReq) {
+        try {
+            int number = numberReq == null?20:Integer.parseInt(numberReq);// default 20
+            List<Block> blocks = blockchain.listMainBlocks(number);
+            List<BlockResultDTO> resultDTOS = new ArrayList<>();
+            for (Block block : blocks) {
+                BlockResultDTO dto = transferBlockToBlockResultDTO(blockchain.getBlockByHash(block.getHash(), true));
+                if (dto != null) {
+                    resultDTOS.add(dto);
+                }
+            }
+            return resultDTOS;
+        }catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
     public BlockResultDTO getBlockDTOByHash(String hash) {
         Bytes32 blockHash;
         if (StringUtils.length(hash) == 32) {
@@ -95,15 +126,15 @@ public class XdagModuleChainBase implements XdagModuleChain {
         BlockResultDTOBuilder.address(hash2Address(block.getHash()))
                 .hash(block.getHash().toUnprefixedHexString())
                 .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
-                .blockTime(block.getTimestamp())
+                .blockTime(xdagTimestampToMs(block.getTimestamp()))
                 .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
                 .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
                         StandardCharsets.UTF_8).trim())
                 .state(getStateByFlags(block.getInfo().getFlags()))
                 .type(getType(block))
-                .addresses(getLinks(block))
+                .refs(getLinks(block))
                 .height(block.getInfo().getHeight())
-                .txLinks(getTxLinks(block));
+                .transactions(getTxLinks(block));
         return BlockResultDTOBuilder.build();
     }
 
@@ -146,7 +177,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                     .hashlow(block.getHashLow().toUnprefixedHexString())
                     .amount(String.format("%.9f", amount2xdag(blockchain.getReward(block.getInfo().getHeight()))))
                     .direction(2)
-                    .time(block.getTimestamp())
+                    .time(xdagTimestampToMs(block.getTimestamp()))
                     .remark(remark);
             txLinks.add(txLinkBuilder.build());
         }
@@ -157,7 +188,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                     .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
                     .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount().longValue())))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 : 1)
-                    .time(txHistory.getTimeStamp())
+                    .time(xdagTimestampToMs(txHistory.getTimeStamp()))
                     .remark(txHistory.getRemark());
             txLinks.add(txLinkBuilder.build());
         }
@@ -168,7 +199,11 @@ public class XdagModuleChainBase implements XdagModuleChain {
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
             return MAIN_BLOCK.getDesc();
         } else if (block.getInsigs() == null || block.getInsigs().isEmpty()) {
-            return WALLET.getDesc();
+            if (CollectionUtils.isEmpty(block.getInputs()) && CollectionUtils.isEmpty(block.getOutputs())) {
+                return WALLET.getDesc();
+            } else {
+                return TRANSACTION.getDesc();
+            }
         } else {
             return TRANSACTION.getDesc();
         }

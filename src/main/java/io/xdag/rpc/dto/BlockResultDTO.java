@@ -63,8 +63,8 @@ public class BlockResultDTO {
     private String remark;
     private String diff;
     private String type;
-    private List<Link> addresses;
-    private List<TxLink> txLinks;
+    private List<Link> refs; // means all the ref block
+    private List<TxLink> transactions; // means transaction a wallet have
 
 
     @Data

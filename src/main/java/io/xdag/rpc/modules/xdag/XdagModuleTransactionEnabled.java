@@ -70,7 +70,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
     }
 
     @Override
-    public String personalSendTransaction(CallArguments args, String passphrase) {
+    public Object personalSendTransaction(CallArguments args, String passphrase) {
 
         String from = args.from;
         String to = args.to;
@@ -81,18 +81,22 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         Bytes32 hash = checkParam(from, to, value, remark,result);
         if (result.getCode() != SUCCESS.code()) {
-            return result.getResInfo();
+            return result.getErrMsg();
         }
         checkPassword(passphrase,result);
         if (result.getCode() != SUCCESS.code()) {
-            return result.getResInfo();
+            return result.getErrMsg();
         }
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
         doXfer(amount,hash,remark,result);
 
-        return result.getResInfo();
+        if (result.getCode() != SUCCESS.code()) {
+            return result.getErrMsg();
+        } else {
+            return result.getResInfo();
+        }
     }
 
 
@@ -102,7 +106,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             amount = xdag2amount(sendValue);
         } catch (XdagOverFlowException e){
             processResult.setCode(ERR_PARAM_INVALID.code());
-            processResult.setResInfo(ERR_PARAM_INVALID.msg());
+            processResult.setErrMsg(ERR_PARAM_INVALID.msg());
             return;
         }
         MutableBytes32 to = MutableBytes32.create();
@@ -137,7 +141,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         // 余额不足
         if (remain.get() > 0) {
             processResult.setCode(ERR_BALANCE_NOT_ENOUGH.code());
-            processResult.setResInfo(ERR_BALANCE_NOT_ENOUGH.msg());
+            processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;
         }
         List<String> resInfo = new ArrayList<>();
@@ -152,7 +156,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         }
 
         processResult.setCode(SUCCESS.code());
-        processResult.setResInfo(resInfo.toString());
+        processResult.setResInfo(resInfo);
     }
 
     private Bytes32 checkParam(String from, String to, String value, String remark,ProcessResult processResult) {
@@ -161,7 +165,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             double amount = BasicUtils.getDouble(value);
             if (amount < 0) {
                 processResult.setCode(ERR_VALUE_INVALID.code());
-                processResult.setResInfo(ERR_VALUE_INVALID.msg());
+                processResult.setErrMsg(ERR_VALUE_INVALID.msg());
                 return null;
             }
 
@@ -173,17 +177,17 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             }
             if (hash == null) {
                 processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-                processResult.setResInfo(ERR_TO_ADDRESS_INVALID.msg());
+                processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
             } else {
                 if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
                     processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-                    processResult.setResInfo(ERR_TO_ADDRESS_INVALID.msg());
+                    processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
                 }
             }
 
         } catch (NumberFormatException e) {
             processResult.setCode(e.hashCode());
-            processResult.setResInfo(e.getMessage());
+            processResult.setErrMsg(e.getMessage());
         }
         return hash;
     }
@@ -194,11 +198,11 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             boolean res = wallet.unlock(passphrase);
             if (!res) {
                 result.setCode(ERR_WALLET_UNLOCK.code());
-                result.setResInfo(ERR_WALLET_UNLOCK.msg());
+                result.setErrMsg(ERR_WALLET_UNLOCK.msg());
             }
         } catch (Exception e) {
             result.setCode(e.hashCode());
-            result.setResInfo(e.getMessage());
+            result.setErrMsg(e.getMessage());
         }
     }
 }

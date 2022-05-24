@@ -25,6 +25,7 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.dto.BlockResultDTO;
+import java.util.List;
 
 public interface XdagModuleChain {
 
@@ -33,4 +34,8 @@ public interface XdagModuleChain {
     BlockResultDTO getBlockByHash(String hash);
 
     BlockResultDTO getBlockByNumber(String bnOrId);
+
+    String getRewardByNumber(String bnOrId);
+
+    Object getBlocksByNumber(String number);
 }

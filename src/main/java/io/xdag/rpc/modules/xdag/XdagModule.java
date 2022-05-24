@@ -24,10 +24,13 @@
 
 package io.xdag.rpc.modules.xdag;
 
+import static io.xdag.config.Constants.CLIENT_VERSION;
+
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.utils.TypeConverter;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,13 +65,17 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
         return TypeConverter.toJsonHex(new byte[]{chainId});
     }
 
+    public String version() {
+        return CLIENT_VERSION;
+    }
+
     @Override
     public String sendTransaction(Web3.CallArguments args) {
         return xdagModuleTransaction.sendTransaction(args);
     }
 
     @Override
-    public String personalSendTransaction(Web3.CallArguments args, String passphrase) {
+    public Object personalSendTransaction(Web3.CallArguments args, String passphrase) {
         return xdagModuleTransaction.personalSendTransaction(args, passphrase);
     }
 
@@ -100,5 +107,15 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     @Override
     public BlockResultDTO getBlockByNumber(String bnOrId) {
         return xdagModuleChain.getBlockByNumber(bnOrId);
+    }
+
+    @Override
+    public String getRewardByNumber(String bnOrId) {
+        return xdagModuleChain.getRewardByNumber(bnOrId);
+    }
+
+    @Override
+    public Object getBlocksByNumber(String number) {
+        return xdagModuleChain.getBlocksByNumber(number);
     }
 }
