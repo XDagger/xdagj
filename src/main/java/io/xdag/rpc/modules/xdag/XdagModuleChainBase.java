@@ -142,6 +142,18 @@ public class XdagModuleChainBase implements XdagModuleChain {
         List<Address> inputs = block.getInputs();
         List<Address> outputs = block.getOutputs();
         List<Link> links = new ArrayList<>();
+
+        // fee update
+        Link.LinkBuilder fee = Link.builder();
+        fee.address(block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        : hash2Address(Bytes32.wrap(block.getInfo().getRef())))
+                .hashlow(block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                        : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
+                .amount(String.format("%.9f", amount2xdag(0))) // current fee is 0
+                .direction(2);
+        links.add(fee.build());
+
+
         for (Address input : inputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
             linkBuilder.address(hash2Address(input.getHashLow()))
