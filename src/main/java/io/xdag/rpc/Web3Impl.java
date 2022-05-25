@@ -170,6 +170,16 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
+    public String xdag_getRewardByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getRewardByNumber(bnOrId);
+    }
+
+    @Override
+    public Object xdag_getBlocksByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getBlocksByNumber(bnOrId);
+    }
+
+    @Override
     public BlockResultDTO xdag_getBlockByHash(String blockHash) {
         return web3XdagModule.xdag_getBlockByHash(blockHash);
     }

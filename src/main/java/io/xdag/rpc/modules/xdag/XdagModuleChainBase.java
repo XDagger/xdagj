@@ -82,7 +82,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
     public String getRewardByNumber(String bnOrId) {
         try {
             long reward = blockchain.getReward(Long.parseLong(bnOrId));
-            return String.valueOf(reward);
+            return String.format("%.9f", amount2xdag(reward));
         }catch (Exception e) {
             return e.getMessage();
         }
@@ -96,7 +96,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             List<Block> blocks = blockchain.listMainBlocks(number);
             List<BlockResultDTO> resultDTOS = new ArrayList<>();
             for (Block block : blocks) {
-                BlockResultDTO dto = transferBlockToBlockResultDTO(blockchain.getBlockByHash(block.getHash(), true));
+                BlockResultDTO dto = transferBlockToBriefBlockResultDTO(blockchain.getBlockByHash(block.getHash(), true));
                 if (dto != null) {
                     resultDTOS.add(dto);
                 }
@@ -116,6 +116,24 @@ public class XdagModuleChainBase implements XdagModuleChain {
         }
         Block block = blockchain.getBlockByHash(blockHash, true);
         return transferBlockToBlockResultDTO(block);
+    }
+
+    private BlockResultDTO transferBlockToBriefBlockResultDTO(Block block) {
+        if (null == block) {
+            return null;
+        }
+        BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
+        BlockResultDTOBuilder.address(hash2Address(block.getHash()))
+                .hash(block.getHash().toUnprefixedHexString())
+                .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
+                .blockTime(xdagTimestampToMs(block.getTimestamp()))
+                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
+                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
+                        StandardCharsets.UTF_8).trim())
+                .state(getStateByFlags(block.getInfo().getFlags()))
+                .type(getType(block))
+                .height(block.getInfo().getHeight());
+        return BlockResultDTOBuilder.build();
     }
 
     private BlockResultDTO transferBlockToBlockResultDTO(Block block) {

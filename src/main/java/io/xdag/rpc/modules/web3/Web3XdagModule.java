@@ -45,10 +45,6 @@ public interface Web3XdagModule {
         return getXdagModule().chainId();
     }
 
-    default String xdag_version() {
-        return getXdagModule().version();
-    }
-
     XdagModule getXdagModule();
 
     String xdag_protocolVersion();
@@ -69,6 +65,14 @@ public interface Web3XdagModule {
 
     default BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
         return getXdagModule().getBlockByNumber(bnOrId);
+    }
+
+    default String xdag_getRewardByNumber(String bnOrId) {
+        return getXdagModule().getRewardByNumber(bnOrId);
+    }
+
+    default Object xdag_getBlocksByNumber(String bnOrId) {
+        return getXdagModule().getBlocksByNumber(bnOrId);
     }
 
     default String xdag_sendRawTransaction(String rawData) {

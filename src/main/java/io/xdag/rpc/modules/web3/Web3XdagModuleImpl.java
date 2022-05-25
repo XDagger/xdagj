@@ -24,6 +24,7 @@
 
 package io.xdag.rpc.modules.web3;
 
+import static io.xdag.config.Constants.CLIENT_VERSION;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
@@ -67,7 +68,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_protocolVersion() {
-        return null;
+        return CLIENT_VERSION;
     }
 
     @Override

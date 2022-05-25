@@ -65,10 +65,6 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
         return TypeConverter.toJsonHex(new byte[]{chainId});
     }
 
-    public String version() {
-        return CLIENT_VERSION;
-    }
-
     @Override
     public String sendTransaction(Web3.CallArguments args) {
         return xdagModuleTransaction.sendTransaction(args);
