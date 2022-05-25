@@ -90,6 +90,15 @@ public class XdagModuleChainBase implements XdagModuleChain {
     }
 
     @Override
+    public String getBalanceByNumber(String bnOrId) {
+        Block block = blockchain.getBlockByHeight(Long.parseLong(bnOrId));
+        if (null == block) {
+            return null;
+        }
+        return String.format("%.9f", amount2xdag(block.getInfo().getAmount()));
+    }
+
+    @Override
     public Object getBlocksByNumber(String numberReq) {
         try {
             int number = numberReq == null?20:Integer.parseInt(numberReq);// default 20

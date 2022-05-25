@@ -111,6 +111,11 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     }
 
     @Override
+    public String getBalanceByNumber(String number) {
+        return xdagModuleChain.getBalanceByNumber(number);
+    }
+
+    @Override
     public Object getBlocksByNumber(String number) {
         return xdagModuleChain.getBlocksByNumber(number);
     }

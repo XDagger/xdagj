@@ -37,5 +37,7 @@ public interface XdagModuleChain {
 
     String getRewardByNumber(String bnOrId);
 
+    String getBalanceByNumber(String bnOrId);
+
     Object getBlocksByNumber(String number);
 }

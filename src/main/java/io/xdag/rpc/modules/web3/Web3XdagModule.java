@@ -71,6 +71,10 @@ public interface Web3XdagModule {
         return getXdagModule().getRewardByNumber(bnOrId);
     }
 
+    default String xdag_getBalanceByNumber(String bnOrId) {
+        return getXdagModule().getBalanceByNumber(bnOrId);
+    }
+
     default Object xdag_getBlocksByNumber(String bnOrId) {
         return getXdagModule().getBlocksByNumber(bnOrId);
     }

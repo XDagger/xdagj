@@ -175,6 +175,11 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
+    public String xdag_getBalanceByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getBalanceByNumber(bnOrId);
+    }
+
+    @Override
     public Object xdag_getBlocksByNumber(String bnOrId) {
         return web3XdagModule.xdag_getBlocksByNumber(bnOrId);
     }
