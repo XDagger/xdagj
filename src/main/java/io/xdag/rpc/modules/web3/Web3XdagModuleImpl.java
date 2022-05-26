@@ -39,9 +39,14 @@ import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
+import io.xdag.net.node.Node;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.XdagTime;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -164,6 +169,37 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
                         amount2xdag(
                                 kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))));
         return builder.build();
+    }
+
+    @Override
+    public Object xdag_netType() throws Exception {
+        return kernel.getConfig().getRootDir();
+    }
+
+    @Override
+    public Object xdag_poolConfig() throws Exception {
+        return null;
+    }
+
+    @Override
+    public Object xdag_netConnectionList() throws Exception {
+        return null;
+//        Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
+//        StringBuilder stringBuilder = new StringBuilder();
+//        for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
+//            Node node = it.next();
+//            stringBuilder
+//                    .append(node.getAddress())
+//                    .append(" ")
+//                    .append(map.get(node) == null ? null : XdagTime.format(new Date(map.get(node))))
+//                    .append(" ")
+//                    .append(node.getStat().Inbound.get())
+//                    .append(" in/")
+//                    .append(node.getStat().Outbound.get())
+//                    .append(" out").append(System.getProperty("line.separator"));
+//        }
+//
+//        return stringBuilder.toString();
     }
 
     static class SyncingResult {

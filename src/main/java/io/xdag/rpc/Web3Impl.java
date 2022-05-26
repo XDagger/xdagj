@@ -193,4 +193,19 @@ public class Web3Impl implements Web3 {
     public StatusDTO xdag_getStatus() throws Exception {
         return web3XdagModule.xdag_getStatus();
     }
+
+    @Override
+    public Object xdag_netType() throws Exception {
+        return web3XdagModule.xdag_netType();
+    }
+
+    @Override
+    public Object xdag_poolConfig() throws Exception {
+        return web3XdagModule.xdag_poolConfig();
+    }
+
+    @Override
+    public Object xdag_netConnectionList() throws Exception {
+        return web3XdagModule.xdag_netConnectionList();
+    }
 }
