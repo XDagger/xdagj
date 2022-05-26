@@ -36,13 +36,14 @@ public class StatusDTO {
     private final String nblock;
     private final String totalNblocks;
     private final String nmain;
-    private final String totalNnmain;
+    private final String totalNmain;
     private final String curDiff;
     private final String netDiff;
     private final String hashRateOurs;
     private final String hashRateTotal;
 
-    private final String supply;
+    private final String ourSupply;
+    private final String netSupply;
 
 //    public StatusDTO(long nblocks, long nmain, BigInteger diff, double supply) {
 //        this.nblock = toQuantityJsonHex(nblocks);

@@ -152,12 +152,15 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         builder.nblock(Long.toString(xdagStats.getNblocks()))
                 .totalNblocks(Long.toString(xdagStats.getTotalnblocks()))
                 .nmain(Long.toString(xdagStats.getNmain()))
-                .totalNnmain(Long.toString(xdagStats.getTotalnmain()))
+                .totalNmain(Long.toString(Math.max(xdagStats.getTotalnmain(),xdagStats.getNmain())))
                 .curDiff(toQuantityJsonHex(xdagStats.getDifficulty()))
                 .netDiff(toQuantityJsonHex(xdagStats.getMaxdifficulty()))
                 .hashRateOurs(toQuantityJsonHex(hashrateOurs))
                 .hashRateTotal(toQuantityJsonHex(hashrateTotal))
-                .supply(String.format("%.9f",
+                .ourSupply(String.format("%.9f",
+                        amount2xdag(
+                                kernel.getBlockchain().getSupply(xdagStats.nmain))))
+                .netSupply(String.format("%.9f",
                         amount2xdag(
                                 kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))));
         return builder.build();
