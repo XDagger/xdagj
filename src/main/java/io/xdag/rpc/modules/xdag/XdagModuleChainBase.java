@@ -136,6 +136,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .hash(block.getHash().toUnprefixedHexString())
                 .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
                 .blockTime(xdagTimestampToMs(block.getTimestamp()))
+                .timeStamp(block.getTimestamp())
+                .flags(Integer.toHexString(block.getInfo().getFlags()))
                 .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
                 .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
                         StandardCharsets.UTF_8).trim())
@@ -154,6 +156,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .hash(block.getHash().toUnprefixedHexString())
                 .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
                 .blockTime(xdagTimestampToMs(block.getTimestamp()))
+                .timeStamp(block.getTimestamp())
+                .flags(Integer.toHexString(block.getInfo().getFlags()))
                 .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
                 .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
                         StandardCharsets.UTF_8).trim())
