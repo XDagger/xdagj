@@ -236,6 +236,10 @@ public class NodeManager {
         for (Channel address : activeAddress) {
             Node node = address.getNode();
             Long time = lastConnect.getIfPresent(node);
+            if (time == null) {
+                // 尝试在channel管理器中查询
+                time = channelMgr.getChannelLastConnect().getIfPresent(node);
+            }
             nodes.put(node, time);
         }
         return nodes;
