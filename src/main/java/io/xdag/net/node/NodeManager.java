@@ -238,7 +238,7 @@ public class NodeManager {
             Long time = lastConnect.getIfPresent(node);
             if (time == null) {
                 // 尝试在channel管理器中查询
-                time = channelMgr.getChannelLastConnect().getIfPresent(node);
+                time = channelMgr.getChannelLastConnect().getIfPresent(node.getAddress());
             }
             nodes.put(node, time);
         }

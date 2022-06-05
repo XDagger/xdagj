@@ -58,7 +58,7 @@ public class XdagChannelManager {
     private static final int LRU_CACHE_SIZE = 1024;
 
     @Getter
-    private final Cache<Node, Long> channelLastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
+    private final Cache<InetSocketAddress, Long> channelLastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
 
 
     public XdagChannelManager(Kernel kernel) {
@@ -75,7 +75,7 @@ public class XdagChannelManager {
     public void add(Channel ch) {
         log.debug("xdag channel manager->Channel added: remoteAddress = {}", ch.getInetSocketAddress());
         channels.put(ch.getInetSocketAddress(), ch);
-        channelLastConnect.put(ch.getNode(),System.currentTimeMillis());
+        channelLastConnect.put(ch.getInetSocketAddress(),System.currentTimeMillis());
     }
 
     public void notifyDisconnect(Channel channel) {
