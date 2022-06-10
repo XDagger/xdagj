@@ -58,4 +58,6 @@ public interface KVSource<K, V> {
 
     List<V> prefixValueLookup(byte[] key);
 
+    List<Pair<byte[], byte[]>> prefixKeyAndValueLookup(byte[] key);
+
 }

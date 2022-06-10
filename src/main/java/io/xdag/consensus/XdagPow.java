@@ -312,7 +312,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             //update miner state
             MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
             MinerCalculate.calculateNopaidShares(kernel.getConfig(), channel, hash, currentTask.getTaskTime());
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }

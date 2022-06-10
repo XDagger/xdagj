@@ -30,8 +30,10 @@ import io.xdag.core.XdagField;
 import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -62,7 +64,7 @@ public class OrphanPool {
         this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
     }
 
-    public List<Address> getOrphan(long num, long sendtime) {
+    public List<Address> getOrphan(long num, long[] sendtime) {
         List<Address> res = new ArrayList<>();
         if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
             return null;
@@ -70,21 +72,24 @@ public class OrphanPool {
             long orphanSize = getOrphanSize();
             long addNum = Math.min(orphanSize, num);
             byte[] key = BytesUtils.of(ORPHAN_PREFEX);
-            List<byte[]> ans = orphanSource.prefixKeyLookup(key);
-            for (byte[] an : ans) {
+            List<Pair<byte[],byte[]>> ans = orphanSource.prefixKeyAndValueLookup(key);
+            ans.sort(Comparator.comparingLong(a -> BytesUtils.bytesToLong(a.getValue(), 0, true)));
+            for (Pair<byte[],byte[]> an : ans) {
                 if (addNum == 0) {
                     break;
                 }
                 // TODO:判断时间，这里出现过orphanSource获取key时为空的情况
-                if (orphanSource.get(an) == null) {
+                if (an.getValue() == null) {
                     continue;
                 }
-                long time = BytesUtils.bytesToLong(orphanSource.get(an), 0, true);
-                if (time <= sendtime) {
+                long time =  BytesUtils.bytesToLong(an.getValue(), 0, true);
+                if (time <= sendtime[0]) {
                     addNum--;
-                    res.add(new Address(Bytes32.wrap(an, 1), XdagField.FieldType.XDAG_FIELD_OUT));
+                    res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT));
+                    sendtime[1] = Math.max(sendtime[1],time);
                 }
             }
+            sendtime[1] = Math.min(sendtime[1]+1,sendtime[0]);
             return res;
         }
     }

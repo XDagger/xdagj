@@ -871,41 +871,20 @@ public class BlockchainImpl implements Blockchain {
         if (res > 16) {
             return null;
         }
-
-        long sendTime = XdagTime.getCurrentTimestamp();
-
+        long[] sendTime = new long[2];
+        sendTime[0] = XdagTime.getCurrentTimestamp();
         List<Address> refs = Lists.newArrayList();
 
-        Address preTop = null;
-        Bytes32 pretopHash = getPreTopMainBlockForLink(sendTime);
-        if (pretopHash != null) {
-            if (getBlockByHash(pretopHash, false).getTimestamp() < sendTime) {
-                preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT);
-                res++;
-            }
-        }
-
-        if (res < 16) {
-            if (preTop != null) {
-                refs.add(preTop);
-            }
-            List<Address> orphan = getBlockFromOrphanPool(16 - res, sendTime);
-            if (orphan != null && orphan.size() != 0) {
-                refs.addAll(orphan);
-            }
-            return new Block(kernel.getConfig(), sendTime, all, refs, mining, keys, remark, defKeyIndex);
-        }
-
-        return new Block(kernel.getConfig(), sendTime, all, refs, mining, keys, remark, defKeyIndex);
+        return new Block(kernel.getConfig(), sendTime[0], all, refs, mining, keys, remark, defKeyIndex);
     }
 
     public Block createMainBlock() {
         // <header + remark + outsig + nonce>
         int res = 1 + 1 + 2 + 1;
-
-        long sendTime = XdagTime.getMainTime();
+        long[] sendTime = new long[2];
+        sendTime[0] = XdagTime.getMainTime();
         Address preTop = null;
-        Bytes32 pretopHash = getPreTopMainBlockForLink(sendTime);
+        Bytes32 pretopHash = getPreTopMainBlockForLink(sendTime[0]);
         if (pretopHash != null) {
             preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT);
             res++;
@@ -918,7 +897,7 @@ public class BlockchainImpl implements Blockchain {
         if (CollectionUtils.isNotEmpty(orphans)) {
             refs.addAll(orphans);
         }
-        return new Block(kernel.getConfig(), sendTime, null, refs, true, null,
+        return new Block(kernel.getConfig(), sendTime[0], null, refs, true, null,
                 kernel.getConfig().getPoolSpec().getPoolTag(), -1);
     }
 
@@ -926,23 +905,15 @@ public class BlockchainImpl implements Blockchain {
         // <header + remark + outsig + nonce>
         int hasRemark = remark == null ? 0 : 1;
         int res = 1 + hasRemark + 2;
+        long[] sendTime = new long[2];
+        sendTime[0] = XdagTime.getCurrentTimestamp();
 
-        long sendTime = XdagTime.getCurrentTimestamp();
-        Address preTop = null;
-        Bytes32 pretopHash = getPreTopMainBlockForLink(sendTime);
-        if (pretopHash != null) {
-            preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT);
-            res++;
-        }
         List<Address> refs = Lists.newArrayList();
-        if (preTop != null) {
-            refs.add(preTop);
-        }
         List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
         if (CollectionUtils.isNotEmpty(orphans)) {
             refs.addAll(orphans);
         }
-        return new Block(kernel.getConfig(), sendTime, null, refs, false, null,
+        return new Block(kernel.getConfig(), sendTime[1], null, refs, false, null,
                 remark, -1);
     }
 
@@ -951,7 +922,7 @@ public class BlockchainImpl implements Blockchain {
      * @Description 从orphan中获取一定数量的orphan块用来link
      * @Param [num]
      **/
-    public List<Address> getBlockFromOrphanPool(int num, long sendtime) {
+    public List<Address> getBlockFromOrphanPool(int num, long[] sendtime) {
         return orphanPool.getOrphan(num, sendtime);
     }
 

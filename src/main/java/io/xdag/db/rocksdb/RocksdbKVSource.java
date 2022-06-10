@@ -337,6 +337,17 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         return retList;
     }
 
+    public List<Pair<byte[], byte[]>> prefixKeyAndValueLookup(byte[] key) {
+        List<Pair<byte[], byte[]>> retList = Lists.newLinkedList();
+        fetchPrefix(key, pair -> {
+            if(pair.getValue()!=null){
+                retList.add(pair);
+            }
+            return Boolean.FALSE;
+        });
+        return retList;
+    }
+
     @Override
     public void fetchPrefix(byte[] key, Function<Pair<byte[], byte[]>, Boolean> func) {
         resetDbLock.readLock().lock();
