@@ -87,7 +87,10 @@ public class SyncManager {
      * Queue for the link block don't exist
      */
     private ConcurrentHashMap<Bytes32, Queue<BlockWrapper>> syncMap = new ConcurrentHashMap<>();
-
+    /***
+     * Queue for poll oldest block
+     */
+    private ConcurrentLinkedQueue<Bytes32> queue = new ConcurrentLinkedQueue<>();
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
@@ -213,6 +216,15 @@ public class SyncManager {
      * @param hashLow 缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
+        if(syncMap.size() >= 50000){
+            for (int i = 0; i < 200; i++) {
+                Bytes32 last = queue.poll();
+                if(syncMap.containsKey(last)){
+                    syncMap.remove(last);
+                    blockchain.getXdagStats().nwaitsync--;
+                }
+            }
+        }
         AtomicBoolean r = new AtomicBoolean(true);
         long now = System.currentTimeMillis();
 //        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
@@ -240,6 +252,9 @@ public class SyncManager {
                     r.set(true);
                     return oldQ;
                 });
+        if(!queue.contains(hashLow)){
+            queue.offer(hashLow);
+        }
         return r.get();
     }
 
