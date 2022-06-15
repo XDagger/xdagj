@@ -24,13 +24,7 @@
 
 package io.xdag.cli;
 
-import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.BI_MAIN;
-import static io.xdag.config.Constants.BI_MAIN_CHAIN;
-import static io.xdag.config.Constants.BI_MAIN_REF;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.config.Constants.BI_REMARK;
+import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.address2Hash;
@@ -242,6 +236,10 @@ public class Commands {
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             int index = pair.getKey();
             Block block = pair.getValue();
+            if(XdagTime.getCurrentEpoch()<XdagTime.getEpoch(block.getTimestamp())+2*CONFIRMATIONS_COUNT){
+                System.out.println(BasicUtils.hash2Address(block.getHash()));
+                return false;
+            }
             if (remain.get() <= block.getInfo().getAmount()) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
                         kernel.getWallet().getAccounts().get(index));

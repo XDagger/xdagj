@@ -100,7 +100,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public void handlerRemoved(ChannelHandlerContext ctx) {
         log.info("Close miner at time:{}", XdagTime.format(new Date()));
         ctx.channel().closeFuture();
-        channel.onDisconnect();
+        channel.setActive(false);
     }
 
     /**
