@@ -26,6 +26,7 @@ package io.xdag.rpc.modules.web3;
 
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 
@@ -44,7 +45,6 @@ public interface Web3XdagModule {
         return getXdagModule().chainId();
     }
 
-
     XdagModule getXdagModule();
 
     String xdag_protocolVersion();
@@ -59,11 +59,25 @@ public interface Web3XdagModule {
 
     String xdag_getTotalBalance() throws Exception;
 
-    default BlockResultDTO xdag_getTransactionByHash(String hash, Boolean full) throws Exception {
-        return xdag_getBlockByHash(hash, full);
+    default BlockResultDTO xdag_getTransactionByHash(String hash) throws Exception {
+        return xdag_getBlockByHash(hash);
     }
 
-    BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception;
+    default BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
+        return getXdagModule().getBlockByNumber(bnOrId);
+    }
+
+    default String xdag_getRewardByNumber(String bnOrId) {
+        return getXdagModule().getRewardByNumber(bnOrId);
+    }
+
+    default String xdag_getBalanceByNumber(String bnOrId) {
+        return getXdagModule().getBalanceByNumber(bnOrId);
+    }
+
+    default Object xdag_getBlocksByNumber(String bnOrId) {
+        return getXdagModule().getBlocksByNumber(bnOrId);
+    }
 
     default String xdag_sendRawTransaction(String rawData) {
         return getXdagModule().sendRawTransaction(rawData);
@@ -73,7 +87,17 @@ public interface Web3XdagModule {
         return getXdagModule().sendTransaction(args);
     }
 
-    BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception;
+    default Object xdag_personal_sendTransaction(Web3.CallArguments args, String passphrase) {
+        return getXdagModule().personalSendTransaction(args, passphrase);
+    }
+
+    default BlockResultDTO xdag_getBlockByHash(String blockHash) {
+        return getXdagModule().getBlockByHash(blockHash);
+    }
 
     StatusDTO xdag_getStatus() throws Exception;
+
+    Object xdag_netType() throws Exception;
+    Object xdag_poolConfig() throws Exception;
+    Object xdag_netConnectionList() throws Exception;
 }

@@ -41,6 +41,8 @@ public enum DatabaseName {
      */
     TIME,
 
+    TXHISTORY,
+
     /**
      * Orphan block index
      */

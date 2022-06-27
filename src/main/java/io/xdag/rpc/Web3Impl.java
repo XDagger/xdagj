@@ -25,6 +25,7 @@
 package io.xdag.rpc;
 
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModule;
@@ -109,8 +110,8 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
-        return null;
+    public Object personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
+        return web3XdagModule.xdag_personal_sendTransaction(transactionArgs, passphrase);
     }
 
     @Override
@@ -164,17 +165,47 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByNumber(String bnOrId, Boolean full) throws Exception {
-        return web3XdagModule.xdag_getBlockByNumber(bnOrId, full);
+    public BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getBlockByNumber(bnOrId);
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByHash(String blockHash, Boolean full) throws Exception {
-        return web3XdagModule.xdag_getBlockByHash(blockHash, full);
+    public String xdag_getRewardByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getRewardByNumber(bnOrId);
+    }
+
+    @Override
+    public String xdag_getBalanceByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getBalanceByNumber(bnOrId);
+    }
+
+    @Override
+    public Object xdag_getBlocksByNumber(String bnOrId) {
+        return web3XdagModule.xdag_getBlocksByNumber(bnOrId);
+    }
+
+    @Override
+    public BlockResultDTO xdag_getBlockByHash(String blockHash) {
+        return web3XdagModule.xdag_getBlockByHash(blockHash);
     }
 
     @Override
     public StatusDTO xdag_getStatus() throws Exception {
         return web3XdagModule.xdag_getStatus();
+    }
+
+    @Override
+    public Object xdag_netType() throws Exception {
+        return web3XdagModule.xdag_netType();
+    }
+
+    @Override
+    public Object xdag_poolConfig() throws Exception {
+        return web3XdagModule.xdag_poolConfig();
+    }
+
+    @Override
+    public Object xdag_netConnectionList() throws Exception {
+        return web3XdagModule.xdag_netConnectionList();
     }
 }

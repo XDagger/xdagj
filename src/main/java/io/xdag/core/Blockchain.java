@@ -58,6 +58,8 @@ public interface Blockchain {
 
     XdagTopStatus getXdagTopStatus();
 
+    long getReward(long nmain);
+
     long getSupply(long nmain);
 
     List<Block> getBlocksByTime(long starttime, long endtime);
@@ -71,6 +73,8 @@ public interface Blockchain {
 
     // 注册监听器
     void registerListener(Listener listener);
+
+    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow);
 
     XdagExtStats getXdagExtStats();
 }

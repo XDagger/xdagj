@@ -32,6 +32,7 @@ import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.node.Node;
+import io.xdag.net.node.NodeManager;
 import java.net.InetSocketAddress;
 import lombok.extern.slf4j.Slf4j;
 

@@ -107,6 +107,12 @@ public class XdagStats {
         }
     }
 
+    public void updateDiff(BigInteger difficulty) {
+        if (this.difficulty.compareTo(difficulty) <0) {
+            this.difficulty = difficulty;
+        }
+    }
+
     @Override
     public String toString() {
         return "XdagStatus[nmain:" +

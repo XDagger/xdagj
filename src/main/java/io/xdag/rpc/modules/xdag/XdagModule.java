@@ -24,26 +24,40 @@
 
 package io.xdag.rpc.modules.xdag;
 
+import static io.xdag.config.Constants.CLIENT_VERSION;
+
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.utils.TypeConverter;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-public class XdagModule implements XdagModuleTransaction, XdagModuleWallet {
+public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, XdagModuleChain {
 
     private static final Logger logger = LoggerFactory.getLogger(XdagModule.class);
 
     private final XdagModuleWallet xdagModuleWallet;
     private final XdagModuleTransaction xdagModuleTransaction;
+    private final XdagModuleChain xdagModuleChain;
     private final byte chainId;
 
+//    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction) {
+//        this.chainId = chainId;
+//        this.xdagModuleWallet = xdagModuleWallet;
+//        this.xdagModuleTransaction = xdagModuleTransaction;
+//        this.xdagModuleChain = null;
+//    }
 
-    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction) {
+    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction,
+            XdagModuleChain xdagModuleChain) {
         this.chainId = chainId;
         this.xdagModuleWallet = xdagModuleWallet;
         this.xdagModuleTransaction = xdagModuleTransaction;
+        this.xdagModuleChain = xdagModuleChain;
     }
 
 
@@ -54,6 +68,11 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet {
     @Override
     public String sendTransaction(Web3.CallArguments args) {
         return xdagModuleTransaction.sendTransaction(args);
+    }
+
+    @Override
+    public Object personalSendTransaction(Web3.CallArguments args, String passphrase) {
+        return xdagModuleTransaction.personalSendTransaction(args, passphrase);
     }
 
     @Override
@@ -69,5 +88,35 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet {
     @Override
     public String sign(String addr, String data) {
         return xdagModuleWallet.sign(addr, data);
+    }
+
+    @Override
+    public String getCoinBase() {
+        return null;
+    }
+
+    @Override
+    public BlockResultDTO getBlockByHash(String hash) {
+        return xdagModuleChain.getBlockByHash(hash);
+    }
+
+    @Override
+    public BlockResultDTO getBlockByNumber(String bnOrId) {
+        return xdagModuleChain.getBlockByNumber(bnOrId);
+    }
+
+    @Override
+    public String getRewardByNumber(String bnOrId) {
+        return xdagModuleChain.getRewardByNumber(bnOrId);
+    }
+
+    @Override
+    public String getBalanceByNumber(String number) {
+        return xdagModuleChain.getBalanceByNumber(number);
+    }
+
+    @Override
+    public Object getBlocksByNumber(String number) {
+        return xdagModuleChain.getBlocksByNumber(number);
     }
 }

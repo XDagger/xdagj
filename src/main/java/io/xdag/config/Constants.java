@@ -84,6 +84,7 @@ public class Constants {
     public static final int HASH_RATE_LAST_MAX_TIME = 64 * 4;
 
     public enum MessageType {
+        UPDATE,
         PRE_TOP,
         NEW_LINK;
     }

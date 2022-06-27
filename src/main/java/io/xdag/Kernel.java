@@ -68,6 +68,7 @@ import io.xdag.rpc.cors.CorsConfiguration;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
+import io.xdag.rpc.modules.xdag.XdagModuleChainBase;
 import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
 import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
 import io.xdag.rpc.netty.JsonRpcWeb3FilterHandler;
@@ -191,7 +192,8 @@ public class Kernel {
         blockStore = new BlockStore(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TIME));
+                dbFactory.getDB(DatabaseName.TIME),
+                dbFactory.getDB(DatabaseName.TXHISTORY));
         log.info("Block Store init.");
         blockStore.init();
 
@@ -237,7 +239,7 @@ public class Kernel {
         // randomX loading
         // TODO: paulochen randomx 需要恢复
         // 初次快照启动
-        if(config.getSnapshotSpec().isSnapshotJ()){
+        if (config.getSnapshotSpec().isSnapshotJ()) {
             randomXUtils.randomXLoadingSnapshot();
             blockStore.setSnapshotBoot();
         } else {
@@ -358,7 +360,8 @@ public class Kernel {
     private Web3 buildWeb3() {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
-                        new XdagModuleTransactionEnabled(this.getBlockchain())), this);
+                        new XdagModuleTransactionEnabled(this),
+                        new XdagModuleChainBase(this.getBlockchain())), this);
         return new Web3Impl(web3XdagModule);
     }
 

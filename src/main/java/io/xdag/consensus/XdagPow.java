@@ -36,7 +36,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagState;
 import io.xdag.crypto.Hash;
+import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
+import io.xdag.listener.PretopMessage;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.MinerManager;
@@ -430,13 +432,16 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     @Override
-    public void onMessage(io.xdag.listener.Message message, MessageType type) {
-        if (type == MessageType.PRE_TOP) {
-            receiveNewPretop(message.getData());
-        } else if (type == MessageType.NEW_LINK) {
+    public void onMessage(io.xdag.listener.Message msg) {
+        if (msg instanceof BlockMessage) {
+            BlockMessage message = (BlockMessage) msg;
             BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(message.getData().toArray())),
                     kernel.getConfig().getNodeSpec().getTTL());
             broadcaster.broadcast(bw);
+        }
+        if (msg instanceof PretopMessage) {
+            PretopMessage message = (PretopMessage) msg;
+            receiveNewPretop(message.getData());
         }
     }
 
@@ -502,13 +507,14 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     // TODO: change to scheduleAtFixRate
     public class Timer implements Runnable {
+
         private long timeout;
-        private volatile boolean isRunning = false;
+        private boolean isRunning = false;
 
         @Override
         public void run() {
-            isRunning = true;
-            while (isRunning) {
+            this.isRunning = true;
+            while (this.isRunning) {
                 if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
                     events.add(new Event(Event.Type.TIMEOUT));
                     timeout = -1;
