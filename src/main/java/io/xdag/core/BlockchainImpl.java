@@ -46,6 +46,7 @@ import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
+import io.xdag.core.XdagField.FieldType;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -69,6 +70,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
@@ -87,8 +89,9 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
+import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
-import io.xdag.listener.Message;
+import io.xdag.listener.PretopMessage;
 import io.xdag.randomx.RandomX;
 import io.xdag.snapshot.SnapshotJ;
 import io.xdag.snapshot.core.SnapshotInfo;
@@ -389,6 +392,7 @@ public class BlockchainImpl implements Blockchain {
                 }
             }
 
+            int id = 0;
             // remove links
             for (Address ref : all) {
                 removeOrphan(ref.getHashLow(),
@@ -399,6 +403,16 @@ public class BlockchainImpl implements Blockchain {
                 // if(!all.get(i).getAmount().equals(BigInteger.ZERO)){
                 // Block blockRef = getBlockByHash(all.get(i).getHashLow(),false);
                 // }
+                if (!ref.getAmount().equals(BigInteger.ZERO)) {
+                    if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
+                        onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
+                                block.getTimestamp(), id, block.getInfo().getRemark());
+                    } else {
+                        onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
+                                block.getTimestamp(), id, block.getInfo().getRemark());
+                    }
+                }
+                id++;
             }
 
             // 检查当前主链
@@ -452,6 +466,7 @@ public class BlockchainImpl implements Blockchain {
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
                 xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
+                xdagStats.updateDiff(xdagTopStatus.getTopDiff());
             }
 
             // 新增区块
@@ -516,6 +531,16 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+
+    private void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
+            BigInteger amount, long time, int id, byte[] remark) {
+        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id, remark);
+    }
+
+
+    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow) {
+        return blockStore.getTxHistoryByAddress(addressHashlow);
+    }
 
     /**
      * 用于判断是否切换到修复同步问题的分支
@@ -599,13 +624,13 @@ public class BlockchainImpl implements Blockchain {
 
     protected void onNewPretop() {
         for (Listener listener : listeners) {
-            listener.onMessage(new Message(Bytes.wrap(xdagTopStatus.getPreTop())), PRE_TOP);
+            listener.onMessage(new PretopMessage(Bytes.wrap(xdagTopStatus.getPreTop()), PRE_TOP));
         }
     }
 
     protected void onNewBlock(Block block) {
         for (Listener listener : listeners) {
-            listener.onMessage(new Message(Bytes.wrap(block.getXdagBlock().getData())), NEW_LINK);
+            listener.onMessage(new BlockMessage(Bytes.wrap(block.getXdagBlock().getData()), NEW_LINK));
         }
     }
 
@@ -1102,9 +1127,13 @@ public class BlockchainImpl implements Blockchain {
         if (hashlow == null) {
             return null;
         }
-        Block b = memOrphanPool.get(hashlow);
+        // ensure that hashlow is hashlow
+        MutableBytes32 keyHashlow = MutableBytes32.create();
+        keyHashlow.set(8, Objects.requireNonNull(hashlow).slice(8, 24));
+
+        Block b = memOrphanPool.get(Bytes32.wrap(keyHashlow));
         if (b == null) {
-            b = blockStore.getBlockByHash(hashlow, isRaw);
+            b = blockStore.getBlockByHash(keyHashlow, isRaw);
         }
         return b;
     }

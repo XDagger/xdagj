@@ -25,10 +25,13 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.dto.ProcessResult;
 
 public interface XdagModuleTransaction {
 
     String sendTransaction(Web3.CallArguments args);
 
     String sendRawTransaction(String rawData);
+
+    Object personalSendTransaction(Web3.CallArguments args, String passphrase);
 }

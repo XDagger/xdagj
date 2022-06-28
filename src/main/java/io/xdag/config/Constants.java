@@ -74,7 +74,7 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
-    public static final String CLIENT_VERSION = "0.4.8";
+    public static final String CLIENT_VERSION = "0.4.9";
 
     /**
      * 同步问题 分叉高度
@@ -84,6 +84,7 @@ public class Constants {
     public static final int HASH_RATE_LAST_MAX_TIME = 64 * 4;
 
     public enum MessageType {
+        UPDATE,
         PRE_TOP,
         NEW_LINK;
     }

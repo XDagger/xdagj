@@ -24,15 +24,11 @@
 
 package io.xdag.listener;
 
-import lombok.Data;
-import org.apache.tuweni.bytes.Bytes;
+import io.xdag.config.Constants.MessageType;
 
-@Data
-public class Message {
+public interface Message {
 
-    Bytes data;
+    MessageType getType();
 
-    public Message(Bytes data) {
-        this.data = data;
-    }
+    Object getData();
 }

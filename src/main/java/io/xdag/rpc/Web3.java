@@ -24,6 +24,7 @@
 
 package io.xdag.rpc;
 
+import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import java.util.Arrays;
 import java.util.Map;
@@ -59,7 +60,7 @@ public interface Web3 extends Web3XdagModule {
 
     String personal_importRawKey(String key, String passphrase);
 
-    String personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
+    Object personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception;
 
     boolean personal_unlockAccount(String key, String passphrase, String duration);
 
@@ -76,9 +77,9 @@ public interface Web3 extends Web3XdagModule {
         public String value;
         //        public String data; // compiledCode
         public String remark;
-        public String netType;
+//        public String netType;
         //        public String nonce;
-        public String chainId; //NOSONAR
+//        public String chainId; //NOSONAR
 
         @Override
         public String toString() {
@@ -89,10 +90,10 @@ public interface Web3 extends Web3XdagModule {
 //                    ", gasPrice='" + gasPrice + '\'' +
                     ", value='" + value + '\'' +
                     ", remark='" + remark + '\'' +
-                    ", netType='" + netType + '\'' +
+//                    ", netType='" + netType + '\'' +
 //                    ", data='" + data + '\'' +
 //                    ", nonce='" + nonce + '\'' +
-                    ", chainId='" + chainId + '\'' +
+//                    ", chainId='" + chainId + '\'' +
                     '}';
         }
     }

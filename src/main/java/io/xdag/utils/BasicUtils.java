@@ -103,7 +103,11 @@ public class BasicUtils {
         input -= amount; // 小数部分
         input = input * Math.pow(2, 32);
         double tmp = Math.ceil(input);
-        return (long) (res + tmp);
+        long result =  (long) (res + tmp);
+        if (result < 0) {
+            throw new XdagOverFlowException();
+        }
+        return result;
     }
 
     public static String formatDouble(double d) {
@@ -196,10 +200,14 @@ public class BasicUtils {
     }
     public static double xdagHashRate(BigInteger[] diffs){
         double sum = 0;
-        for (BigInteger diff : diffs) {
-            sum += xdag_diff2log(diff);
+//        for (BigInteger diff : diffs) {
+//            sum += xdag_diff2log(diff);
+//        }
+        int length = Math.min(diffs.length,HASH_RATE_LAST_MAX_TIME);
+        for (int i = 0; i < length; i++) {
+            sum += xdag_diff2log(diffs[i]);
         }
         sum /= HASH_RATE_LAST_MAX_TIME;
-        return Math.exp(sum) * Math.pow(2, -58);
+        return Math.exp(sum) * Math.pow(2, -48);
     }
 }

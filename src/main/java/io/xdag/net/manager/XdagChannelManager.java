@@ -24,6 +24,8 @@
 
 package io.xdag.net.manager;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.Channel;
@@ -36,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -52,6 +55,12 @@ public class XdagChannelManager {
     protected ConcurrentHashMap<InetSocketAddress, Channel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, Channel> activeChannels = new ConcurrentHashMap<>();
 
+    private static final int LRU_CACHE_SIZE = 1024;
+
+    @Getter
+    private final Cache<InetSocketAddress, Long> channelLastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
+
+
     public XdagChannelManager(Kernel kernel) {
         this.kernel = kernel;
         // Resending new blocks to network in loop
@@ -66,6 +75,7 @@ public class XdagChannelManager {
     public void add(Channel ch) {
         log.debug("xdag channel manager->Channel added: remoteAddress = {}", ch.getInetSocketAddress());
         channels.put(ch.getInetSocketAddress(), ch);
+        channelLastConnect.put(ch.getInetSocketAddress(),System.currentTimeMillis());
     }
 
     public void notifyDisconnect(Channel channel) {

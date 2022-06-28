@@ -137,7 +137,8 @@ public class SnapshotJTest {
         BlockStore blockStore = new BlockStore(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK));
+                dbFactory.getDB(DatabaseName.BLOCK),
+                dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
         OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
@@ -196,7 +197,8 @@ public class SnapshotJTest {
         BlockStore blockStore = new BlockStore(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK));
+                dbFactory.getDB(DatabaseName.BLOCK),
+                dbFactory.getDB(DatabaseName.TXHISTORY));
         blockStore.reset();
 
         List<KeyPair> keys = new ArrayList<>();

@@ -25,26 +25,73 @@
 package io.xdag.rpc.dto;
 
 
-import io.xdag.core.Block;
+import java.util.List;
+import lombok.Builder;
 import lombok.Data;
 
+//@Data
+////TODO: Return xdagblock info
+//public class BlockResultDTO {
+//
+//    // blockInfo
+//    // rawData
+//    String height;
+//    String data;
+//
+//    public BlockResultDTO(long height) {
+//        this.height = Long.toHexString(height);
+//        this.data = "0x";
+//    }
+//
+//
+//    public static BlockResultDTO fromBlock(Block b, boolean raw) {
+//
+//        return null;
+//    }
+//}
+
 @Data
-//TODO: Return xdagblock info
+@Builder
 public class BlockResultDTO {
 
-    // blockInfo
-    // rawData
-    String height;
-    String data;
+    private long height;
+    private String balance;
+    private long blockTime;
+    private long timeStamp; // xdagTime
+    private String state;
+    private String hash;
+    private String address;
+    private String remark;
+    private String diff;
+    private String type;
+    private String flags;
+    private List<Link> refs; // means all the ref block
+    private List<TxLink> transactions; // means transaction a wallet have
 
-    public BlockResultDTO(long height) {
-        this.height = Long.toHexString(height);
-        this.data = "0x";
+
+    @Data
+    @Builder
+    public static class TxLink {
+
+        private int direction; // 0 input 1 output 2 earning
+        private String hashlow;
+        private String address;
+        private String amount;
+        private long time;
+        private String remark;
+    }
+
+    @Data
+    @Builder
+    public static class Link {
+
+        private int direction; // 0 input 1 output 2 fee
+        private String address;
+        private String hashlow;
+        private String amount;
     }
 
 
-    public static BlockResultDTO fromBlock(Block b, boolean raw) {
-
-        return null;
-    }
 }
+
+

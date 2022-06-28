@@ -25,12 +25,19 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.dto.BlockResultDTO;
+import java.util.List;
 
 public interface XdagModuleChain {
 
     String getCoinBase();
 
-    BlockResultDTO getBlockByHash(String hash, boolean full);
+    BlockResultDTO getBlockByHash(String hash);
 
-    BlockResultDTO getBlockByNumber(String bnOrId, boolean full);
+    BlockResultDTO getBlockByNumber(String bnOrId);
+
+    String getRewardByNumber(String bnOrId);
+
+    String getBalanceByNumber(String bnOrId);
+
+    Object getBlocksByNumber(String number);
 }
