@@ -153,7 +153,7 @@ public class SnapshotJ extends RocksdbKVSource {
                                     Bytes digest = Bytes
                                             .wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                                    if (Sign.SECP256K1.verify(hash, outSig, keyPair.getPublicKey())) {
+                                    if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();
