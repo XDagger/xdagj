@@ -435,7 +435,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                     Bytes digest = Bytes
                             .wrap(tmpBlock.getSubRawData(tmpBlock.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                    if (Sign.SECP256K1.verify(hash, outsig, keyPair.getPublicKey())) {
+                    if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outsig), keyPair.getPublicKey())) {
                         //int flag = balanceData.getFlags();
                         flag |= BI_OURS;
                         //balanceData.setFlags(flag);

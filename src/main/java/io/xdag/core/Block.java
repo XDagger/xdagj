@@ -405,7 +405,7 @@ public class Block implements Cloneable {
                 // TODO： paulochen 是不是可以替换
                 byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
                 hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
-                if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
+                if (Sign.SECP256K1.verify(hash, Sign.toCanonical(sig), publicKey)) {
                     res.add(publicKey);
                 }
             }
@@ -415,7 +415,7 @@ public class Block implements Cloneable {
             // TODO： paulochen 是不是可以替换
             byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
             hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
-            if (Sign.SECP256K1.verify(hash, this.getOutsig(), publicKey)) {
+            if (Sign.SECP256K1.verify(hash, Sign.toCanonical(this.getOutsig()), publicKey)) {
                 res.add(publicKey);
             }
         }
