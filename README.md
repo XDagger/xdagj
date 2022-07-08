@@ -40,7 +40,7 @@ XDAGJ has the basic functions as a pool. Follow-up works will improve the stabil
 
 Four stages：
 
-#### - [x] Exploration phase: XDAGJ testnet is online (online, in beta)
+#### Exploration phase: XDAGJ testnet is online (online, in beta)
 
 - [x] Deploy XDAGJ test network environment, open beta
 
@@ -53,7 +53,7 @@ Four stages：
 - [x] Test coin acquisition
 
 
-#### - [ ] Landing phase: XDAGJ mainnet is online
+#### Landing phase: XDAGJ mainnet is online
 
 - [x] Add test cases: write test cases for existing functions
 
@@ -71,7 +71,7 @@ Four stages：
 
 - [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
-#### - [ ] Expansion phase: XDAGJ & EVM 
+#### Expansion phase: XDAGJ & EVM 
 
 - [ ] Improve the address block structure and increase the handling fee
 
@@ -81,7 +81,7 @@ Four stages：
 
 - [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete decentralization
 
-#### - [ ] Prosperity phase: XDAGJ & DeFi
+#### Prosperity phase: XDAGJ & DeFi
 
 - [ ] Implement cross-chain protocols, compatible with access to multiple blockchain systems, to achieve intercommunication between XDAG and other chain worlds
 
