@@ -27,6 +27,7 @@ package io.xdag.rpc.modules.xdag;
 import static io.xdag.cli.Commands.getStateByFlags;
 import static io.xdag.config.BlockState.MAIN;
 import static io.xdag.config.BlockType.MAIN_BLOCK;
+import static io.xdag.config.BlockType.Snapshot;
 import static io.xdag.config.BlockType.TRANSACTION;
 import static io.xdag.config.BlockType.WALLET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
@@ -124,6 +125,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
             blockHash = BasicUtils.getHash(hash);
         }
         Block block = blockchain.getBlockByHash(blockHash, true);
+        if (block == null) {
+            block = blockchain.getBlockByHash(blockHash,false);
+            return transferBlockInfoToBlockResultDTO(block);
+        }
         return transferBlockToBlockResultDTO(block);
     }
 
@@ -144,6 +149,29 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .state(getStateByFlags(block.getInfo().getFlags()))
                 .type(getType(block))
                 .height(block.getInfo().getHeight());
+        return BlockResultDTOBuilder.build();
+    }
+
+    private BlockResultDTO transferBlockInfoToBlockResultDTO(Block block) {
+        if (null == block) {
+            return null;
+        }
+        BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
+        BlockResultDTOBuilder.address(hash2Address(block.getHash()))
+                .hash(block.getHash().toUnprefixedHexString())
+                .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
+                .type(Snapshot.getDesc())
+//                .blockTime(xdagTimestampToMs(block.getTimestamp()))
+//                .timeStamp(block.getTimestamp())
+//                .flags(Integer.toHexString(block.getInfo().getFlags()))
+//                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
+//                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
+//                        StandardCharsets.UTF_8).trim())
+//                .state(getStateByFlags(block.getInfo().getFlags()))
+//                .type(getType(block))
+//                .refs(getLinks(block))
+//                .height(block.getInfo().getHeight())
+                .transactions(getTxLinks(block));
         return BlockResultDTOBuilder.build();
     }
 

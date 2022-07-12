@@ -25,6 +25,7 @@
 package io.xdag.mine.manager;
 
 import io.xdag.consensus.Task;
+import io.xdag.core.PoolConfig;
 import io.xdag.mine.miner.Miner;
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -57,4 +58,8 @@ public interface AwardManager {
     void stop();
 
     void addAwardBlock(Bytes32 share, Bytes32 hash, long generateTime);
+
+    void updatePoolConfig(double poolFeeRation,double poolRewardRation,double poolDirectRation, double poolFundRation);
+
+    PoolConfig getPoolConfig();
 }

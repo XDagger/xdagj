@@ -25,6 +25,7 @@
 package io.xdag.rpc;
 
 import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ConfigDTO;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
@@ -208,4 +209,10 @@ public class Web3Impl implements Web3 {
     public Object xdag_netConnectionList() throws Exception {
         return web3XdagModule.xdag_netConnectionList();
     }
+
+    @Override
+    public Object xdag_updatePoolConfig(ConfigDTO configDTO,String passphrase) throws Exception {
+        return web3XdagModule.xdag_updatePoolConfig(configDTO,passphrase);
+    }
+
 }

@@ -3,7 +3,8 @@ package io.xdag.config;
 public enum BlockType {
     MAIN_BLOCK(0, "Main"),
     WALLET(1, "Wallet"),
-    TRANSACTION(2, "Transaction");
+    TRANSACTION(2, "Transaction"),
+    Snapshot(3, "Snapshot");
 
     private final int code;
     private final String desc;
