@@ -67,6 +67,7 @@ import org.apache.tuweni.bytes.Bytes32;
 @Getter
 @Setter
 public class SyncManager {
+    public static final int MAX_SIZE = 100000;
     private Kernel kernel;
     private Blockchain blockchain;
     private long importStart;
@@ -90,7 +91,7 @@ public class SyncManager {
     /***
      * Queue for poll oldest block
      */
-    private ConcurrentLinkedQueue<Bytes32> queue = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
@@ -215,13 +216,10 @@ public class SyncManager {
      * @param hashLow 缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
-        if(syncMap.size() >= 50000){
+        if(syncMap.size() >= MAX_SIZE){
             for (int i = 0; i < 200; i++) {
-                Bytes32 last = queue.poll();
-                if(syncMap.containsKey(last)){
-                    syncMap.remove(last);
-                    blockchain.getXdagStats().nwaitsync--;
-                }
+                Bytes32 last = syncQueue.poll();
+                if(syncMap.remove(last) != null) blockchain.getXdagStats().nwaitsync--;
             }
         }
         AtomicBoolean r = new AtomicBoolean(true);
@@ -231,6 +229,9 @@ public class SyncManager {
         blockWrapper.setTime(now);
         newQueue.add(blockWrapper);
         blockchain.getXdagStats().nwaitsync++;
+        if(!syncMap.containsKey(hashLow)){
+            syncQueue.offer(hashLow);
+        }
         syncMap.merge(hashLow, newQueue,
                 (oldQ, newQ) -> {
                     blockchain.getXdagStats().nwaitsync--;
@@ -251,9 +252,6 @@ public class SyncManager {
                     r.set(true);
                     return oldQ;
                 });
-        if(!queue.contains(hashLow)){
-            queue.offer(hashLow);
-        }
         return r.get();
     }
 
@@ -268,6 +266,7 @@ public class SyncManager {
         Queue<BlockWrapper> queue = syncMap.getOrDefault(block.getHashLow(), null);
         if (queue != null) {
             syncMap.remove(block.getHashLow());
+            syncQueue.remove(hadConnectnode);
             blockchain.getXdagStats().nwaitsync--;
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);

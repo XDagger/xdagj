@@ -67,8 +67,8 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
         // 2. try to add blockchain
         System.out.println(rawData);
         Block block = new Block(new XdagBlock(Hex.decode(rawData)));
-        kernel.getSyncMgr().syncPushBlock(
-                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()),block.getHashLow());
+        kernel.getSyncMgr().importBlock(
+                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         return BasicUtils.hash2Address(block.getHash());
     }
 
