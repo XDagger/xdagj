@@ -1299,7 +1299,7 @@ public class BlockchainImpl implements Blockchain {
             block.parse();
             MutableBytes subdata = block.getSubRawData(block.getOutsigIndex() - 2);
             SECPSignature sig = block.getOutsig();
-            return verifySignature(subdata, sig, publicKeys, blockInfo);
+            return verifySignature(subdata, Sign.toCanonical(sig), publicKeys, blockInfo);
         }
 
 
@@ -1311,7 +1311,7 @@ public class BlockchainImpl implements Blockchain {
             Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));
 //            log.debug("verify encoded:{}", Hex.toHexString(digest));
             Bytes32 hash = Hash.hashTwice(digest);
-            if (Sign.SECP256K1.verify(hash, Sign.toCanonical(sig), publicKey)) {
+            if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
                 SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
                 byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
                 if (snapshotInfo != null) {
@@ -1339,7 +1339,7 @@ public class BlockchainImpl implements Blockchain {
             Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
             // use hyperledger besu crypto native secp256k1
-            if (Sign.SECP256K1.verify(hash, Sign.toCanonical(signature), ecKey.getPublicKey())) {
+            if (Sign.SECP256K1.verify(hash, signature, ecKey.getPublicKey())) {
                 log.debug("Validate Success");
                 addOurBlock(i, block);
                 return true;
