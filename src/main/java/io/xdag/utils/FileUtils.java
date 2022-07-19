@@ -72,10 +72,10 @@ public class FileUtils {
 
     public static boolean recursiveDelete(String fileName) {
         File file = new File(fileName);
-        if (file.exists()) {
+        if (file != null && file.exists()) {
             // check if the file is a directory
-            if (file.isDirectory()) {
-                if ((file.list()).length > 0) {
+            if (file != null && file.isDirectory()) {
+                if (file != null && (file.list()).length > 0) {
                     for (String s : file.list()) {
                         // call deletion of file individually
                         recursiveDelete(fileName + System.getProperty("file.separator") + s);

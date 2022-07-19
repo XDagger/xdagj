@@ -136,9 +136,9 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 readOpts = readOpts.setPrefixSameAsStart(true).setVerifyChecksums(false);
 
                 try {
-                    log.info("Opening database");
+                    log.debug("Opening database");
                     final Path dbPath = getPath();
-                    if (!Files.isSymbolicLink(dbPath.getParent())) {
+                    if (dbPath != null && !Files.isSymbolicLink(dbPath.getParent())) {
                         Files.createDirectories(dbPath.getParent());
                     }
 
