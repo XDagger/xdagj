@@ -33,6 +33,8 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
 import io.xdag.db.store.BlockStore;
+
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -84,8 +86,8 @@ public class RocksdbKVSourceTest {
         KVSource<byte[], byte[]> indexSource = factory.getDB(DatabaseName.TIME);
         indexSource.reset();
 
-        Bytes32 hashlow1 = Hash.hashTwice(Bytes.wrap("1".getBytes()));
-        Bytes32 hashlow2 = Hash.hashTwice(Bytes.wrap("2".getBytes()));
+        Bytes32 hashlow1 = Hash.hashTwice(Bytes.wrap("1".getBytes(StandardCharsets.UTF_8)));
+        Bytes32 hashlow2 = Hash.hashTwice(Bytes.wrap("2".getBytes(StandardCharsets.UTF_8)));
 
         long time1 = 1602226304712L;
         byte[] value1 = Hex.decode("1234");

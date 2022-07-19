@@ -26,6 +26,7 @@ package io.xdag.crypto;
 
 import static org.junit.Assert.*;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -44,7 +45,7 @@ import org.junit.Test;
 
 public class SignTest {
 
-    private static final byte[] TEST_MESSAGE = "A test message".getBytes();
+    private static final byte[] TEST_MESSAGE = "A test message".getBytes(StandardCharsets.UTF_8);
 
     @Before
     public void setup() {

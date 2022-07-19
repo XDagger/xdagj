@@ -46,6 +46,7 @@ import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
@@ -176,7 +177,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     private void processWorkerName(WorkerNameMessage msg) {
         log.debug("Pool Receive Worker Name");
         byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
-        String workerName = new String(workerNameByte).trim();
+        String workerName = new String(workerNameByte, StandardCharsets.UTF_8).trim();
         channel.setWorkerName(workerName);
     }
 
