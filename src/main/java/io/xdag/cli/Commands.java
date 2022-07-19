@@ -434,8 +434,8 @@ public class Commands {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            return e.getMessage();
         }
+        return "error, please check log";
     }
 
     public String block(String address) {
@@ -470,7 +470,7 @@ public class Commands {
             if (block.getInputs().size() != 0) {
                 inputs = new StringBuilder();
                 for (int i = 0; i < block.getInputs().size(); i++) {
-                    inputs.append(String.format("     input: %s           %.9f\n",
+                    inputs.append(String.format("     input: %s           %.9f%n",
                             hash2Address(Bytes32.wrap(
                                     kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false)
                                             .getInfo().getHash())),
@@ -481,7 +481,7 @@ public class Commands {
             if (block.getOutputs().size() != 0) {
                 outputs = new StringBuilder();
                 for (int i = 0; i < block.getOutputs().size(); i++) {
-                    outputs.append(String.format("    output: %s           %.9f\n",
+                    outputs.append(String.format("    output: %s           %.9f%n",
                             hash2Address(Bytes32.wrap(
                                     kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false)
                                             .getInfo().getHash())),
@@ -498,7 +498,7 @@ public class Commands {
                        """;
         StringBuilder tx = new StringBuilder();
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
-            tx.append(String.format("    earn: %s           %.9f   %s\n", hash2Address(block.getHashLow()),
+            tx.append(String.format("    earn: %s           %.9f   %s%n", hash2Address(block.getHashLow()),
                     amount2xdag(kernel.getBlockchain().getReward(block.getInfo().getHeight())),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
@@ -506,12 +506,12 @@ public class Commands {
         for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow())) {
             Address address = txHistory.getAddress();
             if (address.getType().equals(XDAG_FIELD_IN)) {
-                tx.append(String.format("    input: %s           %.9f   %s\n", hash2Address(address.getHashLow()),
+                tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
                         amount2xdag(address.getAmount().longValue()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else {
-                tx.append(String.format("    output: %s           %.9f   %s\n", hash2Address(address.getHashLow()),
+                tx.append(String.format("    output: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
                         amount2xdag(address.getAmount().longValue()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
