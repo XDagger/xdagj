@@ -107,7 +107,7 @@ public class SnapshotJ extends RocksdbKVSource {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
 
         byte[] preSeed = this.get(new byte[]{SNAPSHOT_PRESEED});
@@ -173,7 +173,7 @@ public class SnapshotJ extends RocksdbKVSource {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 
