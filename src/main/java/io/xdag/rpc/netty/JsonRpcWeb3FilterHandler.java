@@ -98,8 +98,8 @@ public class JsonRpcWeb3FilterHandler extends SimpleChannelInboundHandler<FullHt
         // when a request has multiple host fields declared it would be equivalent to a comma separated list
         // the request will be inmediately rejected since it won't be parsed as a valid URI
         // and won't work to match an item on rpc.host
-        String hostHeader = headers.get(HttpHeaderNames.HOST);
-        String parsedHeader = parseHostHeader(hostHeader);
+//        String hostHeader = headers.get(HttpHeaderNames.HOST);
+//        String parsedHeader = parseHostHeader(hostHeader);
 
         // TODO:暂时让所有人都可以调用
 //        if (!acceptedHosts.contains(parsedHeader)) {
