@@ -111,8 +111,8 @@ public class RandomXSyncTest {
 //        System.out.println("第二次同步");
         assertEquals(expected, kernel2Diff);
 
-        kernel1.getRandomXUtils().randomXPoolReleaseMem();
-        kernel2.getRandomXUtils().randomXPoolReleaseMem();
+        kernel1.getRandomx().randomXPoolReleaseMem();
+        kernel2.getRandomx().randomXPoolReleaseMem();
     }
 
     public void sync(Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
@@ -224,7 +224,7 @@ public class RandomXSyncTest {
         kernel.setWallet(wallet);
 
         RandomX randomX = new RandomX(config);
-        kernel.setRandomXUtils(randomX);
+        kernel.setRandomx(randomX);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setBlockchain(blockchain);

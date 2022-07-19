@@ -46,7 +46,6 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.store.BlockStore;
 import io.xdag.db.store.OrphanPool;
 import io.xdag.randomx.RandomX;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;
@@ -126,7 +125,7 @@ public class RewardTest {
 
         RandomX randomXUtils = new RandomX(config);
         randomXUtils.init();
-        kernel.setRandomXUtils(randomXUtils);
+        kernel.setRandomx(randomXUtils);
 
         Bytes32 targetBlock = Bytes32.ZERO;
 

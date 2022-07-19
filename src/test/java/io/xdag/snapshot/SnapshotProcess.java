@@ -137,7 +137,7 @@ public class SnapshotProcess {
         kernel.setWallet(wallet);
 
         RandomX randomX = new RandomX(config);
-        kernel.setRandomXUtils(randomX);
+        kernel.setRandomx(randomX);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setBlockchain(blockchain);

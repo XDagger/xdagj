@@ -96,57 +96,56 @@ import org.apache.tuweni.bytes.Bytes32;
 @Setter
 public class Kernel {
 
-    protected Status status = Status.STOPPED;
-    protected Config config;
-    protected Wallet wallet;
-    protected DatabaseFactory dbFactory;
-    protected BlockStore blockStore;
-    protected OrphanPool orphanPool;
-    protected Blockchain blockchain;
-    protected NetDB netDB;
-    protected XdagClient client;
-    protected XdagChannelManager channelMgr;
-    protected NodeManager nodeMgr;
-    protected NetDBManager netDBMgr;
-    protected XdagServer p2p;
-    protected XdagSync sync;
-    protected XdagPow pow;
-    protected SyncManager syncMgr;
+    private Status status = Status.STOPPED;
+    private Config config;
+    private Wallet wallet;
+    private DatabaseFactory dbFactory;
+    private BlockStore blockStore;
+    private OrphanPool orphanPool;
+    private Blockchain blockchain;
+    private NetDB netDB;
+    private XdagClient client;
+    private XdagChannelManager channelMgr;
+    private NodeManager nodeMgr;
+    private NetDBManager netDBMgr;
+    private XdagServer p2p;
+    private XdagSync sync;
+    private XdagPow pow;
+    private SyncManager syncMgr;
 
-    protected Block firstAccount;
-    protected Miner poolMiner;
-    protected AwardManager awardManager;
-    protected MinerManager minerManager;
-    protected MinerServer minerServer;
-    protected XdagState xdagState;
-    protected Libp2pNetwork libp2pNetwork;
+    private Block firstAccount;
+    private Miner poolMiner;
+    private AwardManager awardManager;
+    private MinerManager minerManager;
+    private MinerServer minerServer;
+    private XdagState xdagState;
+    private Libp2pNetwork libp2pNetwork;
     //    protected DiscoveryController discoveryController;
-    protected AtomicInteger channelsAccount = new AtomicInteger(0);
-    protected PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
+    private AtomicInteger channelsAccount = new AtomicInteger(0);
+    private PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
 
-    protected TelnetServer telnetServer;
+    private TelnetServer telnetServer;
 
-    protected RandomX randomXUtils;
+    private RandomX randomx;
 
     // 记录运行状态
-    protected AtomicBoolean isRunning = new AtomicBoolean(false);
+    private AtomicBoolean isRunning = new AtomicBoolean(false);
     // 记录启动时间片
     @Getter
-    protected long startEpoch;
+    private long startEpoch;
 
 
     // rpc
-    protected JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
-    protected Web3 web3;
-    protected Web3WebSocketServer web3WebSocketServer;
-    protected Web3HttpServer web3HttpServer;
-    protected JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
-    protected JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
+    private JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
+    private Web3 web3;
+    private Web3WebSocketServer web3WebSocketServer;
+    private Web3HttpServer web3HttpServer;
+    private JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
+    private JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
 
     public Kernel(Config config, Wallet wallet) {
         this.config = config;
         this.wallet = wallet;
-        // 启动的时候就是在初始化
         this.xdagState = XdagState.INIT;
         this.telnetServer = new TelnetServer(config.getAdminSpec().getTelnetIp(), config.getAdminSpec().getTelnetPort(),
                 this);
@@ -210,9 +209,8 @@ public class Kernel {
         // ====================================
         // randomX init
         // ====================================
-        // TODO: paulochen randomx 需要恢复
-        randomXUtils = new RandomX(config);
-        randomXUtils.init();
+        randomx = new RandomX(config);
+        randomx.init();
 //        randomXUtils.randomXLoadingForkTime();
         log.info("RandomX init");
 
@@ -240,20 +238,20 @@ public class Kernel {
         // TODO: paulochen randomx 需要恢复
         // 初次快照启动
         if (config.getSnapshotSpec().isSnapshotJ()) {
-            randomXUtils.randomXLoadingSnapshot();
+            randomx.randomXLoadingSnapshot();
             blockStore.setSnapshotBoot();
         } else {
             if (config.getSnapshotSpec().isSnapshotEnabled() && !blockStore.isSnapshotBoot()) {
                 // TODO: forkTime 怎么获得
                 System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
-                randomXUtils.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
+                randomx.randomXLoadingSnapshot(blockchain.getPreSeed(), 0);
                 // 设置为已通过快照启动
                 blockStore.setSnapshotBoot();
             } else if (config.getSnapshotSpec().isSnapshotEnabled() && blockStore.isSnapshotBoot()) { // 快照加载后重启
                 System.out.println("pre seed:" + Bytes.wrap(blockchain.getPreSeed()).toHexString());
-                randomXUtils.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
+                randomx.randomXLoadingForkTimeSnapshot(blockchain.getPreSeed(), 0);
             } else {
-                randomXUtils.randomXLoadingForkTime();
+                randomx.randomXLoadingForkTime();
             }
         }
 
@@ -490,7 +488,7 @@ public class Kernel {
         }
 
         // release
-        randomXUtils.randomXPoolReleaseMem();
+        randomx.randomXPoolReleaseMem();
         log.info("Release randomx");
 
     }
