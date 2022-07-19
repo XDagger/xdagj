@@ -191,7 +191,7 @@ public class BlockchainImpl implements Blockchain {
         }
 
         // add randomx utils
-        randomXUtils = kernel.getRandomXUtils();
+        randomXUtils = kernel.getRandomx();
         if (randomXUtils != null) {
             randomXUtils.setBlockchain(this);
         }
@@ -1148,7 +1148,7 @@ public class BlockchainImpl implements Blockchain {
     public void removeOrphan(Bytes32 hashlow, OrphanRemoveActions action) {
         Block b = getBlockByHash(hashlow, false);
         // TODO: snapshot
-        if (b.getInfo().isSnapshot()) {
+        if (b != null && b.getInfo() != null && b.getInfo().isSnapshot()) {
             return;
         }
         if (b != null && ((b.getInfo().flags & BI_REF) == 0) && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
