@@ -28,7 +28,6 @@ import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
 import io.xdag.Kernel;
-import io.xdag.config.Constants.MessageType;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
@@ -58,6 +57,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -80,7 +81,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected Blockchain blockchain;
     protected volatile Bytes32 globalPretop;
     protected volatile Task currentTask;
-    protected volatile long taskIndex = 0;
+    protected AtomicLong taskIndex = new AtomicLong(0L);
 
 
     private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
@@ -118,7 +119,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         this.broadcaster = new Broadcaster();
         this.minerManager = kernel.getMinerManager();
         this.awardManager = kernel.getAwardManager();
-        this.randomXUtils = kernel.getRandomXUtils();
+        this.randomXUtils = kernel.getRandomx();
     }
 
     @Override
@@ -196,7 +197,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     public Block generateRandomXBlock(long sendTime) {
         // 新增任务
         log.debug("Generate RandomX block...");
-        taskIndex++;
+        taskIndex.incrementAndGet();
 
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey());
@@ -220,7 +221,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     public Block generateBlock(long sendTime) {
         // 新增任务
-        taskIndex++;
+        taskIndex.incrementAndGet();
 
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey());
@@ -279,13 +280,13 @@ public class XdagPow implements PoW, Listener, Runnable {
         try {
             Bytes32 hash;
             // if randomx fork
-            if (kernel.getRandomXUtils().isRandomxFork(currentTask.getTaskTime())) {
+            if (kernel.getRandomx().isRandomxFork(currentTask.getTaskTime())) {
                 MutableBytes taskData = MutableBytes.create(64);
 //                currentTask.getTask()[0].getData().copyTo(taskData, 0);
                 taskData.set(0, currentTask.getTask()[0].getData());
 //                shareInfo.getData().reverse().copyTo(taskData, 32);
                 taskData.set(32, shareInfo.getData().reverse());
-                hash = Bytes32.wrap(kernel.getRandomXUtils()
+                hash = Bytes32.wrap(kernel.getRandomx()
                         .randomXPoolCalcHash(taskData, taskData.size(), currentTask.getTaskTime()).reverse());
             } else {
                 XdagSha256Digest digest = new XdagSha256Digest(currentTask.getDigest());
@@ -357,7 +358,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         newTask.setTask(task);
         newTask.setTaskTime(XdagTime.getEpoch(sendTime));
-        newTask.setTaskIndex(taskIndex);
+        newTask.setTaskIndex(taskIndex.get());
 
         return newTask;
     }
@@ -387,7 +388,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
         newTask.setTask(task);
         newTask.setTaskTime(XdagTime.getEpoch(sendTime));
-        newTask.setTaskIndex(taskIndex);
+        newTask.setTaskIndex(taskIndex.get());
         newTask.setDigest(currentTaskDigest);
         return newTask;
     }
