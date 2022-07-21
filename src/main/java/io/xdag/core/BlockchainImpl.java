@@ -1092,16 +1092,11 @@ public class BlockchainImpl implements Blockchain {
         data.set(32, block.getXdagBlock().getField(15).getData());
 //        byte[] hash = Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch));
         // Fix: paulochen 调整 210729
-        if (randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch) != null) {
-            Bytes32 hash = Bytes32
-                    .wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
+        byte[] blockHash = randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch);
+        if (blockHash != null) {
+            Bytes32 hash = Bytes32.wrap(Arrays.reverse(blockHash));
             return getDiffByRawHash(hash);
-
         }
-//        Bytes32 hash = Bytes32.wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
-//        if (hash != null) {
-//            return getDiffByRawHash(hash);
-//        }
         return getDiffByRawHash(block.getHash());
     }
 
