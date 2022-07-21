@@ -21,45 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.rpc.dto;
 
-package io.xdag.mine.manager;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import io.xdag.consensus.Task;
-import io.xdag.core.PoolConfig;
-import io.xdag.mine.miner.Miner;
-import org.apache.tuweni.bytes.Bytes32;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ConfigDTO {
 
-public interface AwardManager {
+    String poolIp;
+    int poolPort;
+    String nodeIp;
+    int nodePort;
+    int globalMinerLimit;
+    int maxConnectMinerPerIp;
+    int maxMinerPerAccount;
 
-    /**
-     * 获取poolminer
-     */
-    Miner getPoolMiner();
+    String poolFeeRation;
+    String poolRewardRation;
+    String poolDirectRation;
+    String poolFundRation;
 
-    /**
-     * 根据地址块的hash 设置矿池自身对象
-     *
-     * @param hash 地址块hash
-     */
-    void setPoolMiner(Bytes32 hash);
-
-    /**
-     * 接受到一个新的任务
-     */
-    void onNewTask(Task task);
-
-    /**
-     * 挖矿收益支付及生成交易块
-     */
-    //void payAndaddNewAwardBlock(byte[] share, byte[] hash, long generateTime);
-
-    void start();
-
-    void stop();
-
-    void addAwardBlock(Bytes32 share, Bytes32 hash, long generateTime);
-
-    void updatePoolConfig(double poolFeeRation,double poolRewardRation,double poolDirectRation, double poolFundRation);
-
-    PoolConfig getPoolConfig();
 }
