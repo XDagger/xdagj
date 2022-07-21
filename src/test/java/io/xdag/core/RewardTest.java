@@ -24,14 +24,6 @@
 
 package io.xdag.core;
 
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static io.xdag.BlockBuilder.generateExtraBlock;
-import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -43,16 +35,11 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.randomx.RandomX;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
+import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.text.ParseException;
-import java.util.Collections;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -61,6 +48,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+
+import static io.xdag.BlockBuilder.*;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class RewardTest {
 
@@ -117,7 +115,7 @@ public class RewardTest {
     }
 
     @Test
-    public void testReward() throws ParseException {
+    public void testReward() {
 
         RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 16000;
         RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
@@ -138,7 +136,7 @@ public class RewardTest {
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
-        assertTrue(result == IMPORTED_BEST);
+        assertSame(result, IMPORTED_BEST);
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
@@ -154,7 +152,7 @@ public class RewardTest {
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
-            assertTrue(result == IMPORTED_BEST);
+            assertSame(result, IMPORTED_BEST);
             ref = extraBlock.getHashLow();
             if (i == 10) {
                 unwindRef = ref;
@@ -186,7 +184,7 @@ public class RewardTest {
         assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount());
     }
 
-    class MockBlockchain extends BlockchainImpl {
+    static class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {
             super(kernel);

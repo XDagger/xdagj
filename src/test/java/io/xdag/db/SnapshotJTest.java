@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot;
+package io.xdag.db;
 
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
@@ -32,13 +32,10 @@ import io.xdag.core.*;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
+import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.randomx.RandomX;
+import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -68,7 +65,7 @@ import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.db.store.BlockStore.HASH_BLOCK_INFO;
+import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.*;

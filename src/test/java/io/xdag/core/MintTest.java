@@ -57,13 +57,12 @@ public class MintTest {
 
     public long getReward(long time, long num) {
         long start = getStartAmount(time, num);
-        long amount = start >> (num >> MAIN_BIG_PERIOD_LOG);
-        return amount;
+        return start >> (num >> MAIN_BIG_PERIOD_LOG);
     }
 
     private long getStartAmount(long time, long num) {
         long forkHeight = config.getApolloForkHeight();
-        long startAmount = 0;
+        long startAmount;
         if (num >= forkHeight) {
             startAmount = config.getApolloForkAmount();
         } else {

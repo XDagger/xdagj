@@ -32,7 +32,7 @@ import io.xdag.crypto.Hash;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
-import io.xdag.db.store.BlockStore;
+import io.xdag.db.BlockStore;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
