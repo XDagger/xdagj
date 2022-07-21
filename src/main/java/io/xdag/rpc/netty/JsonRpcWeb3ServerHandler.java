@@ -28,17 +28,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.googlecode.jsonrpc4j.AnnotationsErrorResolver;
-import com.googlecode.jsonrpc4j.DefaultErrorResolver;
-import com.googlecode.jsonrpc4j.ErrorResolver;
-import com.googlecode.jsonrpc4j.JsonRpcBasicServer;
-import com.googlecode.jsonrpc4j.MultipleErrorResolver;
-import com.googlecode.jsonrpc4j.StreamServer;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufHolder;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.Unpooled;
+import com.googlecode.jsonrpc4j.*;
+import io.netty.buffer.*;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -46,11 +37,12 @@ import io.xdag.rpc.Web3;
 import io.xdag.rpc.exception.XdagErrorResolver;
 import io.xdag.rpc.filter.JsonRpcMethodFilter;
 import io.xdag.rpc.modules.ModuleDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ChannelHandler.Sharable
 public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBufHolder> {

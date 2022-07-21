@@ -21,36 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot.core;
+package io.xdag.core;
 
-import lombok.Data;
+public enum BlockType {
+    MAIN_BLOCK(0, "Main"),
+    WALLET(1, "Wallet"),
+    TRANSACTION(2, "Transaction"),
+    SNAPSHOT(3, "Snapshot");
 
-import java.util.Arrays;
+    private final int code;
+    private final String desc;
 
-@Data
-public class SnapshotInfo {
-
-    protected boolean type; // true PUBKEY false BLOCK_DATA
-    protected byte[] data;// 区块数据 / pubkey
-
-    public SnapshotInfo() {
-
+    BlockType(int code, String desc) {
+        this.code = code;
+        this.desc = desc;
     }
 
-    public SnapshotInfo(boolean type, byte[] data) {
-        this.type = type;
-        this.data = data;
+    public int getCode() {
+        return this.code;
     }
 
-    public boolean getType() {
-        return type;
-    }
-
-    @Override
-    public String toString() {
-        return "SnapshotInfo{" +
-                "type=" + type +
-                ", data=" + Arrays.toString(data) +
-                '}';
+    public String getDesc() {
+        return this.desc;
     }
 }

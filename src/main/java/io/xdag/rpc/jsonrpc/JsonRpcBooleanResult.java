@@ -50,11 +50,10 @@ public class JsonRpcBooleanResult extends JsonRpcResult {
             return true;
         }
 
-        if (!(o instanceof JsonRpcBooleanResult)) {
+        if (!(o instanceof JsonRpcBooleanResult other)) {
             return false;
         }
 
-        JsonRpcBooleanResult other = (JsonRpcBooleanResult) o;
         return this.result == other.result;
     }
 }

@@ -24,13 +24,9 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import static io.xdag.config.Constants.CLIENT_VERSION;
-
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.dto.BlockResultDTO;
-import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.utils.TypeConverter;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +40,6 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     private final XdagModuleTransaction xdagModuleTransaction;
     private final XdagModuleChain xdagModuleChain;
     private final byte chainId;
-
-//    public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction) {
-//        this.chainId = chainId;
-//        this.xdagModuleWallet = xdagModuleWallet;
-//        this.xdagModuleTransaction = xdagModuleTransaction;
-//        this.xdagModuleChain = null;
-//    }
 
     public XdagModule(byte chainId, XdagModuleWallet xdagModuleWallet, XdagModuleTransaction xdagModuleTransaction,
             XdagModuleChain xdagModuleChain) {

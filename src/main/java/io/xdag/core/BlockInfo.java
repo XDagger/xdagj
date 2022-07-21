@@ -26,7 +26,6 @@ package io.xdag.core;
 
 import static io.xdag.utils.BasicUtils.amount2xdag;
 
-import io.xdag.snapshot.core.SnapshotInfo;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;

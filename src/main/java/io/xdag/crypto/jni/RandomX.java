@@ -25,16 +25,12 @@
 package io.xdag.crypto.jni;
 
 import io.xdag.utils.SystemUtil;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-
-import org.hyperledger.besu.crypto.SECP256K1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.util.Objects;
 
 public class RandomX {
 
@@ -59,23 +55,17 @@ public class RandomX {
 
         SystemUtil.OsName os = SystemUtil.getOsName();
         switch (os) {
-            case LINUX: {
+            case LINUX -> {
                 if (SystemUtil.getOsArch().equals("aarch64")) {
                     enabled = loadLibrary("/native/Linux-aarch64/librandomx.so");
                 } else {
                     enabled = loadLibrary("/native/Linux-x86_64/librandomx.so");
                 }
-                break;
             }
-            case MACOS: {
-                enabled = loadLibrary("/native/Darwin-x86_64/librandomx.dylib");
-                break;
+            case MACOS -> enabled = loadLibrary("/native/Darwin-x86_64/librandomx.dylib");
+            case WINDOWS -> enabled = loadLibrary("/native/Windows-x86_64/librandomx.dll");
+            default -> {
             }
-            case WINDOWS:
-                enabled = loadLibrary("/native/Windows-x86_64/librandomx.dll");
-                break;
-            default:
-                break;
         }
     }
 
@@ -95,7 +85,7 @@ public class RandomX {
             if (!file.exists()) {
                 InputStream in = Native.class.getResourceAsStream(resource); // null pointer exception
                 OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                for (int c; (c = in.read()) != -1; ) {
+                for (int c; (c = Objects.requireNonNull(in).read()) != -1; ) {
                     out.write(c);
                 }
                 out.close();

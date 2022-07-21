@@ -172,8 +172,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         try {
             Channel nettyChannel = ctx.channel();
-            if (evt instanceof IdleStateEvent) {
-                IdleStateEvent e = (IdleStateEvent) evt;
+            if (evt instanceof IdleStateEvent e) {
                 if (e.state() == IdleState.READER_IDLE) {
                     nettyChannel.closeFuture();
                     if (log.isDebugEnabled()) {

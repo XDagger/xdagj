@@ -21,28 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.db;
 
-package io.xdag.randomx;
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
+import java.util.List;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.hyperledger.besu.crypto.KeyPair;
 
-@Getter
-@Setter
-public class RandomXMemory {
+public interface SnapshotChainStore {
 
-    protected byte[] seed;
-    protected long seedHeight;
-    protected long seedTime;
-    protected long switchTime;
-    protected int isSwitched;
-    protected long rxCache;
-    protected long rxDataset;
-    protected long poolVm;
-    protected long blockVm;
+    void init();
 
-    public RandomXMemory() {
-        this.switchTime = -1;
-        this.isSwitched = -1;
-    }
+    void reset();
+
+    void saveSnapshotUnit(byte[] key, SnapshotUnit snapshotUnit);
+
+    SnapshotUnit getSnapshotUnit(byte[] key);
+
+    List<SnapshotUnit> getAllSnapshotUnit();
+
+    List<StatsBlock> getSnapshotStatsBlock();
+
+    StatsBlock getLatestStatsBlock();
+
+    byte[] getSnapshotPreSeed();
+
+    void saveSnaptshotStatsBlock(int i, StatsBlock statsBlock);
+
+    void saveGlobalBalance(long balance);
+
+    long getGlobalBalance();
+
+    StatsBlock getStatsBlockByIndex(int i);
+
+    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<KeyPair> publicKeys);
+
 }

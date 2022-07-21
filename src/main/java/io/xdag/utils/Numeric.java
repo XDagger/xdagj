@@ -24,9 +24,9 @@
 
 package io.xdag.utils;
 
-import java.math.BigInteger;
-import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
+
+import java.math.BigInteger;
 
 public class Numeric {
 
@@ -49,10 +49,6 @@ public class Numeric {
                 && input.length() > 1
                 && input.charAt(0) == '0'
                 && input.charAt(1) == 'x';
-    }
-
-    public static BigInteger toBigInt(byte[] value, int offset, int length) {
-        return toBigInt((Arrays.copyOfRange(value, offset, offset + length)));
     }
 
     public static BigInteger toBigInt(byte[] value) {
@@ -173,16 +169,4 @@ public class Numeric {
         return (byte) ((m << 4) | n);
     }
 
-    public static byte[] bigIntegerToBytes32(BigInteger b) {
-        final int numBytes = 32;
-
-        byte[] src = b.toByteArray();
-        byte[] dest = new byte[numBytes];
-        boolean isFirstByteOnlyForSign = src[0] == 0;
-        int length = isFirstByteOnlyForSign ? src.length - 1 : src.length;
-        int srcPos = isFirstByteOnlyForSign ? 1 : 0;
-        int destPos = numBytes - length;
-        System.arraycopy(src, srcPos, dest, destPos, length);
-        return dest;
-    }
 }

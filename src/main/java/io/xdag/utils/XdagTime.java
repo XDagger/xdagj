@@ -81,14 +81,6 @@ public class XdagTime {
         return getEpoch(getCurrentTimestamp());
     }
 
-    public static int compareEpoch(long time1, long time2) {
-        return Long.compare(getEpoch(time1), getEpoch(time2));
-    }
-
-    public static boolean isStartOfEpoch(long timestamp) {
-        return (timestamp & 0xff) == 0x00;
-    }
-
     public static String format(Date date) {
         return FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss").format(date);
     }

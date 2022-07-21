@@ -29,7 +29,7 @@ import static io.xdag.config.Constants.REQUEST_WAIT;
 
 import com.google.common.util.concurrent.SettableFuture;
 import io.xdag.Kernel;
-import io.xdag.db.store.BlockStore;
+import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.manager.XdagChannelManager;
 import java.nio.ByteOrder;

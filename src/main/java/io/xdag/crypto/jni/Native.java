@@ -32,6 +32,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.Objects;
+
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +106,7 @@ public class Native {
             if (!file.exists()) {
                 InputStream in = Native.class.getResourceAsStream(resource); // null pointer exception
                 OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                for (int c; (c = in.read()) != -1; ) {
+                for (int c; (c = Objects.requireNonNull(in).read()) != -1; ) {
                     out.write(c);
                 }
                 out.close();
@@ -118,49 +120,6 @@ public class Native {
             return false;
         }
     }
-
-//    public static String loadlib(String root, String fileName, String sourcePath) throws Exception {
-//        InputStream in = Native.class.getResourceAsStream(sourcePath);
-//        byte[] buffer = new byte[1024];
-//        File temp = new File(root);
-//        if (!temp.exists()) {
-//            if (!temp.mkdirs()) {
-//                log.debug("Create Dir Failed..");
-//                throw new Exception();
-//            }
-//        }
-//        temp = new File(root + fileName);
-//        if (!temp.exists()) {
-//            if (!temp.createNewFile()) {
-//                log.debug("Create File Failed..");
-//                throw new Exception();
-//            }
-//        }
-//        FileOutputStream fos = new FileOutputStream(temp);
-//        int read = -1;
-//        while ((read = in.read(buffer)) != -1) {
-//            fos.write(buffer, 0, read);
-//        }
-//        fos.close();
-//        in.close();
-//        String abPath = temp.getAbsolutePath();
-//        return abPath;
-//    }
-//
-//    public static String loadlib(String fileName, String sourcePath) throws IOException {
-//        InputStream in = Native.class.getResourceAsStream(sourcePath);
-//        byte[] buffer = new byte[1024];
-//        File temp = new File(fileName);
-//        FileOutputStream fos = new FileOutputStream(temp);
-//        int read = -1;
-//        while ((read = in.read(buffer)) != -1) {
-//            fos.write(buffer, 0, read);
-//        }
-//        fos.close();
-//        in.close();
-//        String abPath = temp.getAbsolutePath();
-//        return abPath;
-//    }
 
     public static native int crypt_start();
 

@@ -122,8 +122,8 @@ public class MinerManagerImpl implements MinerManager, Runnable{
 
     private void updataBalance() {
         activateMinerChannels.values().parallelStream()
-                .filter( c -> c.isActive())
-                .forEach( c -> c.sendBalance());
+                .filter(MinerChannel::isActive)
+                .forEach(MinerChannel::sendBalance);
     }
 
     @Override
@@ -150,7 +150,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     }
 
     private void closeMiners() {
-        activateMinerChannels.values().parallelStream().forEach( c -> c.dropConnection());
+        activateMinerChannels.values().parallelStream().forEach(MinerChannel::dropConnection);
     }
 
     @Override
@@ -173,7 +173,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
      * 清除当前所有不活跃的channel
      */
     public void cleanUnactivateChannel() {
-        activateMinerChannels.values().parallelStream().forEach( c -> removeUnactivateChannel(c));
+        activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
     }
 
     /**
@@ -209,7 +209,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
         if(task != null) {
             currentTask = task;
             activateMinerChannels.values().parallelStream()
-                    .filter( c -> c.isActive())
+                    .filter(MinerChannel::isActive)
                     .forEach( c -> {
                         c.setTaskIndex(currentTask.getTaskIndex());
                         c.sendTaskToMiner(currentTask.getTask());

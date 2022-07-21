@@ -115,11 +115,6 @@ public class BlockRequestMessage extends AbstractMessage {
 
         // field 0 and field1
         MutableBytes32 first = MutableBytes32.create();
-//                BytesUtils.merge(
-//                BytesUtils.longToBytes(transportheader, true),
-//                BytesUtils.longToBytes(type, true),
-//                BytesUtils.longToBytes(starttime, true),
-//                BytesUtils.longToBytes(endtime, true));
         first.set(0, Bytes.wrap(BytesUtils.longToBytes(transportheader, true)));
         first.set(8, Bytes.wrap(BytesUtils.longToBytes(type, true)));
         first.set(16, Bytes.wrap(BytesUtils.longToBytes(starttime, true)));
@@ -127,8 +122,6 @@ public class BlockRequestMessage extends AbstractMessage {
 
 //        System.arraycopy(first, 0, encoded, 0, 32);
         encoded.set(0, first);
-//        this.hash = Arrays.reverse(hash);
-//        System.arraycopy(hash, 0, encoded, 32, 32);
         encoded.set(32, hash.reverse());
 
         // field2 diff and maxdiff
@@ -146,8 +139,6 @@ public class BlockRequestMessage extends AbstractMessage {
         encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain, true)));
 //        System.arraycopy(BytesUtils.longToBytes(totalMainNumber, true), 0, encoded, 120, 8);
         encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber, true)));
-//        System.arraycopy(tmpbyte, 0, encoded, 128, tmpbyte.length);
-//        encoded.set(128, Bytes.wrap(tmpbyte));
         encoded.set(128, Bytes.wrap(mutableBytes));
         updateCrc();
     }
@@ -172,8 +163,6 @@ public class BlockRequestMessage extends AbstractMessage {
 //        long maintime = BytesUtils.bytesToLong(encoded, 136, true);
         long maintime = encoded.getLong(136, ByteOrder.LITTLE_ENDIAN);
         xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
-//        hash = new byte[32];
-//        System.arraycopy(encoded, 32, hash, 0, 24);
         MutableBytes32 hash = MutableBytes32.create();
         hash.set(0, encoded.slice(32, 24));
         this.hash = hash.copy();

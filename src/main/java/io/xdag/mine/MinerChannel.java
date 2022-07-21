@@ -32,7 +32,7 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
-import io.xdag.db.store.BlockStore;
+import io.xdag.db.BlockStore;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.handler.Miner03;
 import io.xdag.mine.handler.MinerHandShakeHandler;

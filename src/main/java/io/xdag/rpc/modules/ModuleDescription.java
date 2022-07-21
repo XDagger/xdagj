@@ -29,12 +29,12 @@ import java.util.List;
 
 public class ModuleDescription {
 
-    private String name;
-    private String version;
-    private boolean enabled;
+    private final String name;
+    private final String version;
+    private final boolean enabled;
 
-    private List<String> enabledMethods;
-    private List<String> disabledMethods;
+    private final List<String> enabledMethods;
+    private final List<String> disabledMethods;
 
     public ModuleDescription(String name, String version, boolean enabled, List<String> enabledMethods,
             List<String> disabledMethods) {

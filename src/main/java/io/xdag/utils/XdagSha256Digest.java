@@ -49,10 +49,6 @@ public class XdagSha256Digest {
         outputStream = new DigestOutputStream(sha256Digest);
     }
 
-    public void sha256Update(byte in) throws IOException {
-        outputStream.write(in);
-    }
-
     public void sha256Update(Bytes in) throws IOException {
         outputStream.write(in.toArray());
     }
@@ -84,16 +80,8 @@ public class XdagSha256Digest {
         return state;
     }
 
-    public byte[] getDigest(byte[] in) throws IOException {
-        outputStream.write(in);
-        return outputStream.getDigest();
-    }
-
     public byte[] getDigest() {
         return outputStream.getDigest();
     }
 
-    public byte[] getSha256d(Bytes in) throws IOException {
-        return sha256Final(in);
-    }
 }

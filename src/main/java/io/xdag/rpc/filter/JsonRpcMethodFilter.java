@@ -33,7 +33,7 @@ import java.util.List;
 
 public class JsonRpcMethodFilter implements RequestInterceptor {
 
-    private List<ModuleDescription> modules;
+    private final List<ModuleDescription> modules;
 
     /**
      * This checks the JSON RPC invoked method against the received list of modules

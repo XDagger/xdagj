@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.db.store;
+package io.xdag.db;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -117,7 +117,4 @@ public class OrphanPool {
         return currentsize;
     }
 
-    public boolean containsKey(byte[] hashlow) {
-        return orphanSource.get(BytesUtils.merge(ORPHAN_PREFEX, hashlow)) != null;
-    }
 }

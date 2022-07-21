@@ -129,7 +129,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 tableCfg.setBlockCache(new LRUCache(32 * 1024 * 1024));
                 tableCfg.setCacheIndexAndFilterBlocks(true);
                 tableCfg.setPinL0FilterAndIndexBlocksInCache(true);
-                tableCfg.setFilter(new BloomFilter(10, false));
+                tableCfg.setFilterPolicy(new BloomFilter(10, false));
 
                 // read options
                 readOpts = new ReadOptions();
@@ -138,7 +138,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 try {
                     log.debug("Opening database");
                     final Path dbPath = getPath();
-                    if (dbPath != null && !Files.isSymbolicLink(dbPath.getParent())) {
+                    if (!Files.isSymbolicLink(dbPath.getParent())) {
                         Files.createDirectories(dbPath.getParent());
                     }
 

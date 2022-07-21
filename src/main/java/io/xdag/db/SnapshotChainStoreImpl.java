@@ -21,16 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot.db;
+package io.xdag.db;
 
-import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.BI_MAIN_REF;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.snapshot.config.SnapShotKeys.SNAPSHOT_KEY_STATS_MAIN;
-import static io.xdag.snapshot.config.SnapShotKeys.SNAPSHOT_PRE_SEED;
-import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey;
-import static io.xdag.snapshot.config.SnapShotKeys.getMutableBytesByKey_;
+import static io.xdag.config.Constants.*;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -48,12 +41,11 @@ import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
-import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.snapshot.core.BalanceData;
-import io.xdag.snapshot.core.SnapshotUnit;
-import io.xdag.snapshot.core.StatsBlock;
+import io.xdag.core.SnapshotBalanceData;
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FileUtils;
 import io.xdag.utils.Numeric;
@@ -63,6 +55,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -114,7 +107,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
 
     private void kryoRegister() {
         kryo.register(SnapshotUnit.class);
-        kryo.register(BalanceData.class);
+        kryo.register(SnapshotBalanceData.class);
         kryo.register(StatsBlock.class);
         kryo.register(byte[].class);
         kryo.register(BigInteger.class);
@@ -270,14 +263,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
     /**
      * 从lmdb文件中加载到rocksdb
      *
-     * @param filePath
      * @param mainLag  用于判断是主网的randomx lag还是测试网的randomx_lag 暂时固定128
-     * @return
      */
     public boolean loadFromSnapshotData(String filePath, boolean mainLag, List<KeyPair> keys) {
         // 1. 初始保存
         Set<Bytes32> set = new HashSet<>();
-        Map<Bytes32, BalanceData> balanceDataMap = new HashMap<>();
+        Map<Bytes32, SnapshotBalanceData> balanceDataMap = new HashMap<>();
         Map<Bytes32, byte[]> ecKeyPairHashMap = new HashMap<>();
         Map<Bytes32, SECPSignature> signatureHashMap = new HashMap<>();
         Map<Bytes32, Block> blockHashMap = new HashMap<>();
@@ -305,13 +296,13 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
                 .open(pubFile, MDB_NOSYNC);
 
         final Dbi<ByteBuffer> balance_db = env.openDbi(BALACNE_KEY, MDB_CREATE, MDB_INTEGERKEY);
-        Txn<ByteBuffer> balance_txn = env.txnRead();
 
         // balance
-        try (CursorIterable<ByteBuffer> ci = balance_db.iterate(balance_txn, KeyRange.all())) {
+        try (Txn<ByteBuffer> balance_txn = env.txnRead(); CursorIterable<ByteBuffer> ci = balance_db.iterate(balance_txn, KeyRange.all())) {
             for (final KeyVal<ByteBuffer> kv : ci) {
-                BalanceData data = BalanceData.parse(Bytes.wrapByteBuffer(kv.key()), Bytes.wrapByteBuffer(kv.val()));
+                SnapshotBalanceData data = SnapshotBalanceData.parse(Bytes.wrapByteBuffer(kv.key()), Bytes.wrapByteBuffer(kv.val()));
                 //
+                assert data != null;
                 set.add(Bytes32.wrap(data.getHash()));
                 balanceDataMap.put(Bytes32.wrap(data.getHash()), data);
             }
@@ -319,14 +310,11 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             env.close();
             env_pub.close();
             return false;
-        } finally {
-            balance_txn.close();
         }
 
         // pub
         final Dbi<ByteBuffer> pub_db = env_pub.openDbi(PUB_KEY, MDB_CREATE);
-        Txn<ByteBuffer> pub_txn = env_pub.txnRead();
-        try (CursorIterable<ByteBuffer> ci = pub_db.iterate(pub_txn, KeyRange.all())) {
+        try (Txn<ByteBuffer> pub_txn = env_pub.txnRead(); CursorIterable<ByteBuffer> ci = pub_db.iterate(pub_txn, KeyRange.all())) {
 
             for (final KeyVal<ByteBuffer> kv : ci) {
                 Bytes ecKeyPair = Bytes.wrapByteBuffer(kv.val());
@@ -338,20 +326,17 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             env.close();
             env_pub.close();
             return false;
-        } finally {
-            pub_txn.close();
         }
 
         final Dbi<ByteBuffer> sig_db = env_pub.openDbi(SIG_KEY, MDB_CREATE);
-        Txn<ByteBuffer> sig_txn = env_pub.txnRead();
-        try (CursorIterable<ByteBuffer> ci = sig_db.iterate(sig_txn, KeyRange.all())) {
+        try (Txn<ByteBuffer> sig_txn = env_pub.txnRead(); CursorIterable<ByteBuffer> ci = sig_db.iterate(sig_txn, KeyRange.all())) {
             for (final KeyVal<ByteBuffer> kv : ci) {
                 BigInteger r;
                 BigInteger s;
                 r = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(0, 32).toArray());
                 s = Numeric.toBigInt(Bytes.wrapByteBuffer(kv.val()).slice(32, 32).toArray());
 
-                if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
+                if (r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0) {
                     r = BigInteger.ONE;
                     s = BigInteger.ONE;
                 }
@@ -365,13 +350,10 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             env.close();
             env_pub.close();
             return false;
-        } finally {
-            sig_txn.close();
         }
 
         final Dbi<ByteBuffer> block_db = env_pub.openDbi(BLOCK_KEY, MDB_CREATE);
-        Txn<ByteBuffer> block_txn = env_pub.txnRead();
-        try (CursorIterable<ByteBuffer> ci = block_db.iterate(block_txn, KeyRange.all())) {
+        try (Txn<ByteBuffer> block_txn = env_pub.txnRead(); CursorIterable<ByteBuffer> ci = block_db.iterate(block_txn, KeyRange.all())) {
             for (final KeyVal<ByteBuffer> kv : ci) {
                 Bytes bytes = Bytes.wrapByteBuffer(kv.val());
                 byte[] uncompress = Snappy.uncompress(bytes.toArray());
@@ -384,18 +366,16 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             env.close();
             env_pub.close();
             return false;
-        } finally {
-            block_txn.close();
         }
 
         // 4. 组装
         for (Bytes32 bytes32 : set) {
-            BalanceData balanceData = balanceDataMap.get(bytes32);
+            SnapshotBalanceData balanceData = balanceDataMap.get(bytes32);
             byte[] ecKeyPair = ecKeyPairHashMap.get(bytes32);
             SECPSignature signature = signatureHashMap.get(bytes32);
             Block block = blockHashMap.get(bytes32);
             if (balanceData == null) {
-                balanceData = new BalanceData();
+                balanceData = new SnapshotBalanceData();
                 // 没钱有交易的区块认为已经被accepted
                 balanceData.setFlags(BI_REF | BI_MAIN_REF | BI_APPLIED);
                 if (ecKeyPair != null) {
@@ -490,12 +470,12 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         return true;
     }
 
-    private byte[] createXdagBlock(SECPSignature signature, BalanceData balanceData, boolean mainLag) {
+    private byte[] createXdagBlock(SECPSignature signature, SnapshotBalanceData snapshotBalanceData, boolean mainLag) {
         long blockType = mainLag ? 1361L : 1368L;
         MutableBytes mutableBytes = MutableBytes.create(512);
         byte[] transportHeader = BytesUtils.longToBytes(0, true);
         byte[] type = BytesUtils.longToBytes(blockType, true);
-        byte[] time = BytesUtils.longToBytes(balanceData.getTime(), true);
+        byte[] time = BytesUtils.longToBytes(snapshotBalanceData.getTime(), true);
         byte[] fee = BytesUtils.longToBytes(0, true);
         byte[] sig = BytesUtils.subArray(signature.encodedBytes().toArray(), 0, 64);
         mutableBytes.set(0, Bytes.wrap(transportHeader));
@@ -505,4 +485,19 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         mutableBytes.set(32, Bytes.wrap(sig));
         return mutableBytes.toArray();
     }
+
+    public static MutableBytes getMutableBytesByKey(String key) {
+        byte[] bytes = key.getBytes(StandardCharsets.UTF_8);
+        MutableBytes resKey = MutableBytes.create(bytes.length + 1);
+        resKey.set(0, Bytes.wrap(bytes));
+        return resKey;
+    }
+
+    public static MutableBytes getMutableBytesByKey_(String key) {
+        byte[] bytes = key.getBytes(StandardCharsets.UTF_8);
+        MutableBytes resKey = MutableBytes.create(bytes.length);
+        resKey.set(0, Bytes.wrap(bytes));
+        return resKey;
+    }
+
 }

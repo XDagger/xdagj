@@ -25,7 +25,6 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.dto.BlockResultDTO;
-import java.util.List;
 
 public interface XdagModuleChain {
 

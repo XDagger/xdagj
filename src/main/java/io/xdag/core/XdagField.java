@@ -44,22 +44,13 @@ public class XdagField {
     @Setter
     private long sum;
 
-//    public XdagField(byte[] data) {
-//        this.data = Bytes32.wrap(data);
-//    }
-
     public XdagField(MutableBytes data) {
         this.data = data;
     }
 
-//    public XdagField() {
-//        this.data = MutableBytes.ZERO.copy();
-//    }
-
     public long getSum() {
         if (sum == 0) {
             for (int i = 0; i < 4; i++) {
-//                sum += BytesUtils.bytesToLong(getData(), i * 8, true);
                 sum += getData().getLong(i * 8, ByteOrder.LITTLE_ENDIAN);
             }
         }

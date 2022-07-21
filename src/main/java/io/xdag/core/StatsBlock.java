@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot.core;
+package io.xdag.core;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
 

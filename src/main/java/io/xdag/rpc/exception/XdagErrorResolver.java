@@ -38,7 +38,7 @@ public class XdagErrorResolver implements ErrorResolver {
 
     @Override
     public ErrorResolver.JsonError resolveError(Throwable t, Method method, List<JsonNode> arguments) {
-        ErrorResolver.JsonError error = null;
+        ErrorResolver.JsonError error;
         if (t instanceof XdagJsonRpcRequestException) {
             error = new ErrorResolver.JsonError(((XdagJsonRpcRequestException) t).getCode(), t.getMessage(), null);
         } else if (t instanceof InvalidFormatException) {

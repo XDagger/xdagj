@@ -43,8 +43,8 @@ import io.xdag.core.XdagStats;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
 import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
@@ -61,7 +61,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
-import io.xdag.randomx.RandomX;
+import io.xdag.mine.randomx.RandomX;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
@@ -493,13 +493,6 @@ public class Kernel {
 
     }
 
-
-    public void onSyncDone() {
-        status = Status.SYNCDONE;
-    }
-
-    public void resetStore() {
-    }
 
     public enum Status {
         STOPPED, SYNCING, BLOCK_PRODUCTION_ON, SYNCDONE

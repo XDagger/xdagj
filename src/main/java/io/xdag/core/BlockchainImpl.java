@@ -24,47 +24,30 @@
 
 package io.xdag.core;
 
-import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.BI_EXTRA;
-import static io.xdag.config.Constants.BI_MAIN;
-import static io.xdag.config.Constants.BI_MAIN_CHAIN;
-import static io.xdag.config.Constants.BI_MAIN_REF;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
-import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
-import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
-import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
-import static io.xdag.config.Constants.MessageType.NEW_LINK;
-import static io.xdag.config.Constants.MessageType.PRE_TOP;
-import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
-import static io.xdag.utils.BytesUtils.equalBytes;
-
+import com.google.common.collect.Lists;
+import com.google.common.primitives.UnsignedLong;
+import io.xdag.Kernel;
+import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nonnull;
-
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
+import io.xdag.listener.BlockMessage;
+import io.xdag.listener.Listener;
+import io.xdag.listener.PretopMessage;
+import io.xdag.mine.randomx.RandomX;
+import io.xdag.db.SnapshotJ;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.SnapshotChainStoreImpl;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.XdagTime;
+import io.xdag.wallet.Wallet;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -78,34 +61,22 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 
-import com.google.common.collect.Lists;
-import com.google.common.primitives.UnsignedLong;
+import javax.annotation.Nonnull;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import io.xdag.Kernel;
-import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.listener.BlockMessage;
-import io.xdag.listener.Listener;
-import io.xdag.listener.PretopMessage;
-import io.xdag.randomx.RandomX;
-import io.xdag.snapshot.SnapshotJ;
-import io.xdag.snapshot.core.SnapshotInfo;
-import io.xdag.snapshot.core.SnapshotUnit;
-import io.xdag.snapshot.core.StatsBlock;
-import io.xdag.snapshot.db.SnapshotChainStore;
-import io.xdag.snapshot.db.SnapshotChainStoreImpl;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.MessageType.NEW_LINK;
+import static io.xdag.config.Constants.MessageType.PRE_TOP;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.BasicUtils.getHashlowByHash;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 @Getter
@@ -303,24 +274,6 @@ public class BlockchainImpl implements Blockchain {
         blockStore.savePreSeed(preSeed);
     }
 
-    public List<String> getFileName(long time) {
-        List<String> file = new ArrayList<>();
-        file.add("");
-        StringBuilder stringBuffer = new StringBuilder(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        stringBuffer.append(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        stringBuffer.append(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        return file;
-    }
-
     /**
      * 尝试去连接这个块
      */
@@ -364,7 +317,7 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(block, BI_EXTRA, true);
             }
 
-            List<Address> all = block.getLinks().stream().distinct().collect(Collectors.toList());
+            List<Address> all = block.getLinks().stream().distinct().toList();
             // 检查区块的引用区块是否都存在,对所有input和output放入block（可能在pending或db中取出
             for (Address ref : all) {
                 if (ref != null) {
@@ -384,9 +337,6 @@ public class BlockchainImpl implements Blockchain {
                             return result;
                         }
 
-//                        if (!ref.getAmount().equals(BigInteger.ZERO)) {
-//                            updateBlockFlag(block, BI_EXTRA, false);
-//                        }
                     }
 
                 }
@@ -400,9 +350,6 @@ public class BlockchainImpl implements Blockchain {
                                 ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                                 : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
                 // TODO:add backref
-                // if(!all.get(i).getAmount().equals(BigInteger.ZERO)){
-                // Block blockRef = getBlockByHash(all.get(i).getHashLow(),false);
-                // }
                 if (!ref.getAmount().equals(BigInteger.ZERO)) {
                     if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
                         onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
@@ -545,7 +492,6 @@ public class BlockchainImpl implements Blockchain {
     /**
      * 用于判断是否切换到修复同步问题的分支
      *
-     * @return
      */
     // TODO: 目前syncFixHeight 写死 后续需要修改
     // TODO: paulochen 同步问题改进，切换高度未定
@@ -976,20 +922,19 @@ public class BlockchainImpl implements Blockchain {
         if (XdagTime.getEpoch(block.getTimestamp()) > XdagTime.getCurrentEpoch()) {
             return;
         }
-        BigInteger blockDiff = diff;
         if (xdagTopStatus.getPreTop() == null) {
             xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(blockDiff);
+            xdagTopStatus.setPreTopDiff(diff);
             block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(blockDiff);
+            block.setPretopCandidateDiff(diff);
             return;
         }
 
-        if (blockDiff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
+        if (diff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
             xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(blockDiff);
+            xdagTopStatus.setPreTopDiff(diff);
             block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(blockDiff);
+            block.setPretopCandidateDiff(diff);
         }
     }
 
@@ -1092,10 +1037,6 @@ public class BlockchainImpl implements Blockchain {
             return getDiffByRawHash(hash);
 
         }
-//        Bytes32 hash = Bytes32.wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
-//        if (hash != null) {
-//            return getDiffByRawHash(hash);
-//        }
         return getDiffByRawHash(block.getHash());
     }
 
@@ -1510,33 +1451,9 @@ public class BlockchainImpl implements Blockchain {
     }
 
 
-    public List<Block> listMainBlocksByOrigin(int count) {
-        Block temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
-        if (temp == null) {
-            temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
-        }
-        List<Block> res = new ArrayList<>();
-        while (count > 0) {
-            if (temp == null) {
-                break;
-            }
-            if ((temp.getInfo().flags & BI_MAIN) != 0) {
-                count--;
-                res.add((Block) temp.clone());
-            }
-            // 获取maxdifflink
-            if (temp.getInfo().getMaxDiffLink() == null) {
-                break;
-            }
-            temp = getBlockByHash(Bytes32.wrap(temp.getInfo().getMaxDiffLink()), false);
-        }
-        return res;
-    }
-
     @Override
     public List<Block> listMainBlocks(int count) {
         return listMainBlocksByHeight(count);
-//        return listMainBlocksByOrigin(count);
     }
 
     // TODO: 列出本矿池生成的主块，如果本矿池只在前期产块或者从未产块，会导致需要遍历所有的区块数据，这部分应该需要优化
@@ -1545,7 +1462,6 @@ public class BlockchainImpl implements Blockchain {
         Block temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
         if (temp == null) {
             temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
-            //                log.error("Pretop is null");
         }
         List<Block> res = new ArrayList<>();
         while (count > 0) {

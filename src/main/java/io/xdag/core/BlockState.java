@@ -21,18 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.config;
+package io.xdag.core;
 
-public enum BlockType {
-    MAIN_BLOCK(0, "Main"),
-    WALLET(1, "Wallet"),
-    TRANSACTION(2, "Transaction"),
-    Snapshot(3, "Snapshot");
+public enum BlockState {
+    MAIN(0, "Main"),
+    REJECTED(1, "Rejected"),
+    ACCEPTED(2, "Accepted"),
+    PENDING(3, "Pending");
 
     private final int code;
     private final String desc;
 
-    BlockType(int code, String desc) {
+    BlockState(int code, String desc) {
         this.code = code;
         this.desc = desc;
     }

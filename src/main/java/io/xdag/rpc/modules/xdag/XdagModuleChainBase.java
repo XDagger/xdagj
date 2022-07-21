@@ -25,11 +25,11 @@
 package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.cli.Commands.getStateByFlags;
-import static io.xdag.config.BlockState.MAIN;
-import static io.xdag.config.BlockType.MAIN_BLOCK;
-import static io.xdag.config.BlockType.Snapshot;
-import static io.xdag.config.BlockType.TRANSACTION;
-import static io.xdag.config.BlockType.WALLET;
+import static io.xdag.core.BlockState.MAIN;
+import static io.xdag.core.BlockType.MAIN_BLOCK;
+import static io.xdag.core.BlockType.SNAPSHOT;
+import static io.xdag.core.BlockType.TRANSACTION;
+import static io.xdag.core.BlockType.WALLET;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.address2Hash;
@@ -160,7 +160,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         BlockResultDTOBuilder.address(hash2Address(block.getHash()))
                 .hash(block.getHash().toUnprefixedHexString())
                 .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
-                .type(Snapshot.getDesc())
+                .type(SNAPSHOT.getDesc())
 //                .blockTime(xdagTimestampToMs(block.getTimestamp()))
 //                .timeStamp(block.getTimestamp())
 //                .flags(Integer.toHexString(block.getInfo().getFlags()))

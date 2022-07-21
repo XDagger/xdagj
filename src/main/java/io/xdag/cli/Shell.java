@@ -25,7 +25,6 @@
 package io.xdag.cli;
 
 import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 import io.xdag.Kernel;
 import io.xdag.crypto.jni.Native;
@@ -321,7 +320,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             Wallet wallet = new Wallet(kernel.getConfig());
-            if (!wallet.unlock(readPassword(WALLET_PASSWORD_PROMPT))) {
+            if (!wallet.unlock(readPassword())) {
                 println("The password is incorrect");
                 return;
             }
@@ -482,11 +481,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         } while (StringUtils.isEmpty(line));
 
         if (isTelnet) {
-            if (line.equals(kernel.getConfig().getAdminSpec().getTelnetPassword())) {
-                return true;
-            } else {
-                return false;
-            }
+            return line.equals(kernel.getConfig().getAdminSpec().getTelnetPassword());
         } else {
             int err = Native.verify_dnet_key(line, kernel.getConfig().getNodeSpec().getDnetKeyBytes());
             if (err < 0) {
@@ -497,11 +492,11 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         return true;
     }
 
-    private String readPassword(String prompt) {
+    private String readPassword() {
         Character mask = '*';
         String line;
         do {
-            line = reader.readLine(prompt, mask);
+            line = reader.readLine(io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT, mask);
         } while (StringUtils.isEmpty(line));
         return line;
     }

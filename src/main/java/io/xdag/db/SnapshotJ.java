@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot;
+package io.xdag.db;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -34,8 +34,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.store.BlockStore;
-import io.xdag.snapshot.core.SnapshotInfo;
+import io.xdag.core.SnapshotInfo;
 
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.db.store.BlockStore.*;
+import static io.xdag.db.BlockStore.*;
 
 @Slf4j
 public class SnapshotJ extends RocksdbKVSource {

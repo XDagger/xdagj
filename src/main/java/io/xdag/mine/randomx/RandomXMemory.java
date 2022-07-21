@@ -21,27 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.config;
 
-public enum BlockState {
-    MAIN(0, "Main"),
-    REJECTED(1, "Rejected"),
-    ACCEPTED(2, "Accepted"),
-    PENDING(3, "Pending");
+package io.xdag.mine.randomx;
 
-    private final int code;
-    private final String desc;
+import lombok.Getter;
+import lombok.Setter;
 
-    BlockState(int code, String desc) {
-        this.code = code;
-        this.desc = desc;
-    }
+@Getter
+@Setter
+public class RandomXMemory {
 
-    public int getCode() {
-        return this.code;
-    }
+    protected byte[] seed;
+    protected long seedHeight;
+    protected long seedTime;
+    protected long switchTime;
+    protected int isSwitched;
+    protected long rxCache;
+    protected long rxDataset;
+    protected long poolVm;
+    protected long blockVm;
 
-    public String getDesc() {
-        return this.desc;
+    public RandomXMemory() {
+        this.switchTime = -1;
+        this.isSwitched = -1;
     }
 }

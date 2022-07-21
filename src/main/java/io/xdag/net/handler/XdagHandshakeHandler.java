@@ -112,7 +112,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
                     ctx.pipeline().remove(this);
                     channel.activateXdag(ctx, XdagVersion.V03);
 
-                    // test connect whether send a address
+                    // test connect whether send an address
                     byte[] remoteAddress = new byte[512];
                     if (in.isReadable() && in.readableBytes() == 512) {
                         log.debug("有地址块发送");

@@ -24,17 +24,6 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.rpc.ErrorCode.ERR_BALANCE_NOT_ENOUGH;
-import static io.xdag.rpc.ErrorCode.ERR_PARAM_INVALID;
-import static io.xdag.rpc.ErrorCode.ERR_TO_ADDRESS_INVALID;
-import static io.xdag.rpc.ErrorCode.ERR_VALUE_INVALID;
-import static io.xdag.rpc.ErrorCode.ERR_WALLET_UNLOCK;
-import static io.xdag.rpc.ErrorCode.SUCCESS;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.xdag2amount;
-
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.Address;
@@ -46,13 +35,19 @@ import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.exception.XdagOverFlowException;
 import io.xdag.wallet.Wallet;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.hyperledger.besu.crypto.KeyPair;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
+
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.rpc.ErrorCode.*;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.xdag2amount;
 
 public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
@@ -65,8 +60,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
     @Override
     public String sendRawTransaction(String rawData) {
-        String result = super.sendRawTransaction(rawData);
-        return result;
+        return super.sendRawTransaction(rawData);
     }
 
     @Override
@@ -101,7 +95,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
 
     public void doXfer(double sendValue, Bytes32 toAddress,String remark, ProcessResult processResult) {
-        long amount = 0;
+        long amount;
         try {
             amount = xdag2amount(sendValue);
         } catch (XdagOverFlowException e){
