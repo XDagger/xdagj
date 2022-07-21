@@ -433,7 +433,8 @@ public class BlockchainImpl implements Blockchain {
             }
 
             // 更新区块难度和maxDiffLink
-            BigInteger diff = calculateBlockDiff(block);
+            BigInteger cuDiff = calculateCurrentBlockDiff(block);
+            BigInteger diff = calculateBlockDiff(block,cuDiff);
 
             // 更新preTop
             setPreTop(block, diff);
@@ -497,15 +498,6 @@ public class BlockchainImpl implements Blockchain {
                 }
             }
 
-            BigInteger diff0;
-            // 初始区块自身难度设置
-            if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
-                    && XdagTime.isEndOfEpoch(block.getTimestamp())) {
-                diff0 = getDiffByRandomXHash(block);
-            } else {
-                diff0 = getDiffByRawHash(block.getHash());
-            }
-
             //把过去四个小时每个时间片的diff都记录下来，后面会用这些diff去转换出一个全局hashrate
             int i = (int)(XdagTime.getEpoch(block.getTimestamp())& (HASH_RATE_LAST_MAX_TIME - 1));
             if(XdagTime.getEpoch(block.getTimestamp())>XdagTime.getEpoch(xdagExtStats.getHashrate_last_time())){
@@ -514,13 +506,13 @@ public class BlockchainImpl implements Blockchain {
                 xdagExtStats.setHashrate_last_time(block.getTimestamp());
             }
 
-            if(diff0.compareTo(xdagExtStats.getHashRateTotal()[i])>0){
-                xdagExtStats.getHashRateTotal()[i] = diff0;
+            if(cuDiff.compareTo(xdagExtStats.getHashRateTotal()[i])>0){
+                xdagExtStats.getHashRateTotal()[i] = cuDiff;
             }
 
             if((block.getInfo().getFlags()&BI_OURS)!=0
-                    &&diff0.compareTo(xdagExtStats.getHashRateOurs()[i])>0){
-                xdagExtStats.getHashRateOurs()[i] = diff0;
+                    &&cuDiff.compareTo(xdagExtStats.getHashRateOurs()[i])>0){
+                xdagExtStats.getHashRateOurs()[i] = cuDiff;
 
             }
 
@@ -565,7 +557,7 @@ public class BlockchainImpl implements Blockchain {
             Block tmpRef = getMaxDiffLink(blockRef, false);
             if (
                     (tmpRef == null
-                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef,calculateCurrentBlockDiff(tmpRef))) > 0) &&
                             (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
                                     .getEpoch(blockRef.getTimestamp()))
             ) {
@@ -598,7 +590,7 @@ public class BlockchainImpl implements Blockchain {
             Block tmpRef = getMaxDiffLink(blockRef, false);
             if (
                     (tmpRef == null
-                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef,calculateCurrentBlockDiff(tmpRef))) > 0) &&
                             (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
                                     .getEpoch(blockRef.getTimestamp()))
             ) {
@@ -992,33 +984,47 @@ public class BlockchainImpl implements Blockchain {
             block.setPretopCandidateDiff(blockDiff);
         }
     }
-
     /**
-     * 计算区块在链上的难度 同时设置难度 和最大难度连接 并返回区块难度 *
+     * 计算当前区块难度
      */
-    public BigInteger calculateBlockDiff(Block block) {
+    public BigInteger calculateCurrentBlockDiff(Block block){
+        if (block == null){
+            return BigInteger.ZERO;
+        }
+        if (block.getInfo().getDifficulty() != null) {
+            return block.getInfo().getDifficulty();
+        }
+        BigInteger blockDiff;
+        // 初始区块自身难度设置
+        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
+                && XdagTime.isEndOfEpoch(block.getTimestamp())) {
+            blockDiff = getDiffByRandomXHash(block);
+        } else {
+            blockDiff = getDiffByRawHash(block.getHash());
+        }
 
+        return blockDiff;
+    }
+    /**
+     * 设置区块难度 和 最大难度连接 并返回区块难度 *
+     */
+    public BigInteger calculateBlockDiff(Block block,BigInteger cuDiff) {
+        if (block == null){
+            return BigInteger.ZERO;
+        }
         if (block.getInfo().getDifficulty() != null) {
             return block.getInfo().getDifficulty();
         }
 
-        BigInteger diff0;
-        // 初始区块自身难度设置
-        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
-                && XdagTime.isEndOfEpoch(block.getTimestamp())) {
-            diff0 = getDiffByRandomXHash(block);
-        } else {
-            diff0 = getDiffByRawHash(block.getHash());
-        }
-        block.getInfo().setDifficulty(diff0);
+        block.getInfo().setDifficulty(cuDiff);
 
-        BigInteger maxDiff = diff0;
+        BigInteger maxDiff = cuDiff;
         Address maxDiffLink = null;
 
         // 临时区块
         Block tmpBlock;
         if (block.getLinks().size() == 0) {
-            return diff0;
+            return cuDiff;
         }
 
         // 遍历所有link 找maxLink
@@ -1035,7 +1041,7 @@ public class BlockchainImpl implements Blockchain {
                 if (refDifficulty == null) {
                     refDifficulty = BigInteger.ZERO;
                 }
-                BigInteger curDiff = refDifficulty.add(diff0);
+                BigInteger curDiff = refDifficulty.add(cuDiff);
                 if (curDiff.compareTo(maxDiff) > 0) {
                     maxDiff = curDiff;
                     maxDiffLink = ref;
@@ -1052,9 +1058,9 @@ public class BlockchainImpl implements Blockchain {
                 }
                 if (tmpBlock != null
                         && (XdagTime.getEpoch(tmpBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp()))
-                        && tmpBlock.getInfo().getDifficulty().add(diff0).compareTo(curDiff) > 0
+                        && tmpBlock.getInfo().getDifficulty().add(cuDiff).compareTo(curDiff) > 0
                 ) {
-                    curDiff = tmpBlock.getInfo().getDifficulty().add(diff0);
+                    curDiff = tmpBlock.getInfo().getDifficulty().add(cuDiff);
                 }
                 if (curDiff == null) {
                     curDiff = BigInteger.ZERO;
