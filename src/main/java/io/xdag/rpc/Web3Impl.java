@@ -215,4 +215,8 @@ public class Web3Impl implements Web3 {
         return web3XdagModule.xdag_updatePoolConfig(configDTO,passphrase);
     }
 
+    @Override
+    public Object xdag_getPoolWorkers() throws Exception {
+        return web3XdagModule.xdag_getPoolWorkers();
+    }
 }
