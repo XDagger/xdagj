@@ -257,7 +257,9 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         List<PoolWorkerDTO> poolWorkerDTOList = new ArrayList<>();
         PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder = PoolWorkerDTO.builder();
         Collection<Miner> miners = kernel.getMinerManager().getActivateMiners().values();
-        poolWorkerDTOList.add(getPoolWorkerDTO(poolWorkerDTOBuilder,kernel.getPoolMiner()));
+        PoolWorkerDTO poolWorker = getPoolWorkerDTO(poolWorkerDTOBuilder, kernel.getPoolMiner());
+        poolWorker.setStatus("fee");
+        poolWorkerDTOList.add(poolWorker);
         for (Miner miner : miners) {
             poolWorkerDTOList.add(getPoolWorkerDTO(poolWorkerDTOBuilder,miner));
         }
