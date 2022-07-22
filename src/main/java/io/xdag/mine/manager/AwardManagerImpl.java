@@ -452,7 +452,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 说明需要支付给基金会
         if (fundRation != 0) {
             payData.fundIncome = BigDecimalUtils.mul(payData.balance ,fundRation);
-            payData.unusedBalance -= payData.minerReward;
+            payData.unusedBalance -= payData.fundIncome;
         }
 
 
@@ -617,6 +617,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         if (fundRation!=0) {
             if (blockchain.getBlockByHash(address2Hash(FUND_ADDRESS),false)!=null) {
+                payAmount += payData.fundIncome;
                 receipt.add(new Address(address2Hash(FUND_ADDRESS), XDAG_FIELD_OUT, payData.fundIncome));
                 transaction(hash, receipt, payAmount,keyPos);
             }
