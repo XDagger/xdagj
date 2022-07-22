@@ -25,8 +25,6 @@
 package io.xdag.rpc.modules.web3;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
-import static io.xdag.rpc.ErrorCode.ERR_WALLET_UNLOCK;
-import static io.xdag.rpc.ErrorCode.SUCCESS;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
