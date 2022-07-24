@@ -359,7 +359,7 @@ public class Kernel {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
                         new XdagModuleTransactionEnabled(this),
-                        new XdagModuleChainBase(this.getBlockchain())), this);
+                        new XdagModuleChainBase(this.getBlockchain(),config)), this);
         return new Web3Impl(web3XdagModule);
     }
 
