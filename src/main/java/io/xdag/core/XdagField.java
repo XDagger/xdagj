@@ -74,7 +74,8 @@ public class XdagField {
         XDAG_FIELD_PUBLIC_KEY_1(0x07),
         XDAG_FIELD_HEAD_TEST(0x08),
         XDAG_FIELD_REMARK(0x09),
-        XDAG_FIELD_RESERVE1(0x0A),
+        XDAG_FIELD_SNAPSHOT(0x0A),
+        // 快照
         XDAG_FIELD_RESERVE2(0x0B),
         XDAG_FIELD_RESERVE3(0x0C),
         XDAG_FIELD_RESERVE4(0x0D),

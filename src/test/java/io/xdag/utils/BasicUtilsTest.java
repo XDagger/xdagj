@@ -63,10 +63,9 @@ public class BasicUtilsTest {
 
 //        long c = 4398046511104L;
         // 400 0000 0000?
-        assertEquals(1.49, BasicUtils.amount2xdag(6400000000L), 0.0);
-
-        // Xfer:transferred   44796588980   10.430000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10.43
-        assertEquals(10.43, BasicUtils.amount2xdag(44796588980L), 0.0);
+        assertEquals(1.49, BasicUtils.amount2xdag(6399501272L), 0.0);
+        // Xfer:transferred   44796508898   10.430000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10.43
+        assertEquals(10.43, BasicUtils.amount2xdag(44796508898L), 0.0);
 
         // Xfer:transferred   42949672960   10.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10
         assertEquals(10.0, BasicUtils.amount2xdag(42949672960L), 0.0);

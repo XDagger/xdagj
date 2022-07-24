@@ -254,6 +254,10 @@ public class BlockchainImpl implements Blockchain {
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         for (SnapshotUnit snapshotUnit : snapshotUnits) {
             BlockInfo blockInfo = SnapshotUnit.trasferToBlockInfo(snapshotUnit);
+            onNewTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
+                    FieldType.XDAG_FIELD_SNAPSHOT,BigInteger.valueOf(blockInfo.getAmount()),
+                    kernel.getConfig().getSnapshotSpec().getSnapshotTime(),0,
+                    blockInfo.getRemark());
             blockStore.saveBlockInfo(blockInfo);
             if (snapshotUnit.getKeyIndex() > -1) {
                 blockStore.saveOurBlock(snapshotUnit.getKeyIndex(), blockInfo.getHashlow());
@@ -341,6 +345,13 @@ public class BlockchainImpl implements Blockchain {
 
                 }
             }
+            // 检查区块合法性 检查input是否能使用
+            if (!canUseInput(block)) {
+                result = ImportResult.INVALID_BLOCK;
+                result.setHashlow(block.getHashLow());
+                result.setErrorInfo("Block's input can't be used");
+                return ImportResult.INVALID_BLOCK;
+            }
 
             int id = 0;
             // remove links
@@ -364,14 +375,6 @@ public class BlockchainImpl implements Blockchain {
 
             // 检查当前主链
             checkNewMain();
-
-            // 检查区块合法性 检查input是否能使用
-            if (!canUseInput(block)) {
-                result = ImportResult.INVALID_BLOCK;
-                result.setHashlow(block.getHashLow());
-                result.setErrorInfo("Block's input can't be used");
-                return ImportResult.INVALID_BLOCK;
-            }
 
             // 如果是自己的区块
             if (checkMineAndAdd(block)) {
@@ -471,7 +474,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
 
-    private void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
+    public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
             BigInteger amount, long time, int id, byte[] remark) {
         blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id, remark);
     }

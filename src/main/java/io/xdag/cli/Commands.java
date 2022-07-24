@@ -58,8 +58,7 @@ import java.util.stream.Collectors;
 
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.config.Constants.*;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
 
 @Slf4j
@@ -199,7 +198,7 @@ public class Commands {
      * Real make a transaction for given amount and address
      *
      * @param sendAmount amount
-     * @param address receiver address
+     * @param address    receiver address
      * @return Transaction hash
      */
     public String xfer(double sendAmount, Bytes32 address, String remark) {
@@ -221,7 +220,7 @@ public class Commands {
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             int index = pair.getKey();
             Block block = pair.getValue();
-            if(XdagTime.getCurrentEpoch()<XdagTime.getEpoch(block.getTimestamp())+2*CONFIRMATIONS_COUNT){
+            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                 System.out.println(BasicUtils.hash2Address(block.getHash()));
                 return false;
             }
@@ -473,7 +472,7 @@ public class Commands {
                  direction  address                                    amount                 time
                        """;
         StringBuilder tx = new StringBuilder();
-        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())) {
+        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
             tx.append(String.format("    earn: %s           %.9f   %s%n", hash2Address(block.getHashLow()),
                     amount2xdag(kernel.getBlockchain().getReward(block.getInfo().getHeight())),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
@@ -486,8 +485,13 @@ public class Commands {
                         amount2xdag(address.getAmount().longValue()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            } else if (address.getType().equals(XDAG_FIELD_OUT)) {
+                tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
+                        amount2xdag(address.getAmount().longValue()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else {
-                tx.append(String.format("    output: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
+                tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
                         amount2xdag(address.getAmount().longValue()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
