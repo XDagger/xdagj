@@ -17,7 +17,7 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.77.Final</netty.version>
+        <netty.version>4.1.79.Final</netty.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java</surefire.test.excludes>
     </properties>
 
