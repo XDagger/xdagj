@@ -32,7 +32,6 @@ import io.xdag.core.*;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
-import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.mine.randomx.RandomX;
@@ -107,9 +106,9 @@ public class SnapshotJTest {
 
     @Before
     public void setUp() throws Exception {
-        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 16;
-        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 32;
-        RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 1;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS = 64;
+        RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT = 128;
+        RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG = 4;
 
         config.getNodeSpec().setStoreDir(root1.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root1.newFolder().getAbsolutePath());
@@ -183,8 +182,8 @@ public class SnapshotJTest {
         assertArrayEquals(addrKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true), blockInfo2.getSnapshotInfo().getData());
 
         //Compare 512 bytes of data
-        assertArrayEquals(extraBlockList.get(55).getXdagBlock().getData().toArray(), blockInfo3.getSnapshotInfo().getData());
-        assertArrayEquals(extraBlockList.get(60).getXdagBlock().getData().toArray(), blockInfo4.getSnapshotInfo().getData());
+        assertArrayEquals(extraBlockList.get(220).getXdagBlock().getData().toArray(), blockInfo3.getSnapshotInfo().getData());
+        assertArrayEquals(extraBlockList.get(240).getXdagBlock().getData().toArray(), blockInfo4.getSnapshotInfo().getData());
     }
 
     @Test
@@ -204,9 +203,9 @@ public class SnapshotJTest {
         snapshotSource.saveSnapshotToIndex(blockStore, keys);
 
         //Verify the total balance of the current account
-        assertEquals("75776.0", String.valueOf(BasicUtils.amount2xdag(snapshotSource.getOurBalance())));
+        assertEquals("254976.0", String.valueOf(BasicUtils.amount2xdag(snapshotSource.getOurBalance())));
         //Verify height
-        assertEquals(74,height);
+        assertEquals(249,height);
 
         XdagStats xdagStats = new XdagStats();
         xdagStats.balance = snapshotSource.getOurBalance();
@@ -219,6 +218,7 @@ public class SnapshotJTest {
     }
 
     public void makeSnapshot() throws IOException {
+
         dataConfig.getNodeSpec().setStoreDir(backup.getAbsolutePath());
         dataConfig.getNodeSpec().setStoreBackupDir(root2.newFolder().getAbsolutePath());
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.BLOCK.toString());
@@ -245,7 +245,10 @@ public class SnapshotJTest {
         long generateTime = 1600616700000L;
         // 1. add one address block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+
         MockBlockchain blockchain = (MockBlockchain) kernel.getBlockchain();
+
+
 
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -253,7 +256,7 @@ public class SnapshotJTest {
         List<Address> pending = Lists.newArrayList();
         Bytes32 ref = addressBlock.getHashLow();
         // 2. create 100 mainblocks
-        for (int i = 1; i <= 25; i++) {
+        for (int i = 1; i <= 100; i++) {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
@@ -291,7 +294,7 @@ public class SnapshotJTest {
         pending.add(new Address(txBlock.getHashLow()));
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
         // 4. confirm transaction block with 100 mainblocks
-        for (int i = 1; i <= 25; i++) {
+        for (int i = 1; i <= 100; i++) {
             generateTime += 64000L;
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
@@ -341,7 +344,7 @@ public class SnapshotJTest {
         pending.add(new Address(txBlock.getHashLow()));
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
         // 4. confirm transaction block with 100 mainblocks
-        for (int i = 1; i <= 25; i++) {
+        for (int i = 1; i <= 50; i++) {
             generateTime += 64000L;
             pending.add(new Address(ref, XDAG_FIELD_OUT));
             long time = XdagTime.msToXdagtimestamp(generateTime);
@@ -357,8 +360,8 @@ public class SnapshotJTest {
         fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
         address1 = to.getHashLow();
         address2 = from.getHashLow();
-        address3 = extraBlockList.get(55).getHashLow();
-        address4 = extraBlockList.get(60).getHashLow();
+        address3 = extraBlockList.get(220).getHashLow();
+        address4 = extraBlockList.get(240).getHashLow();
         assertEquals("2048.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
         assertEquals("0.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount())));
         topStatus =blockchain.getXdagTopStatus();
