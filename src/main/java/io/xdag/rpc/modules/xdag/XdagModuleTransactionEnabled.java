@@ -33,6 +33,7 @@ import io.xdag.core.ImportResult;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.XdagTime;
 import io.xdag.utils.exception.XdagOverFlowException;
 import io.xdag.wallet.Wallet;
 import org.apache.tuweni.bytes.Bytes32;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.rpc.ErrorCode.*;
 import static io.xdag.utils.BasicUtils.address2Hash;
@@ -116,6 +118,9 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             int index = pair.getKey();
             Block block = pair.getValue();
+            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
+                return false;
+            }
             if (remain.get() <= block.getInfo().getAmount()) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
                         kernel.getWallet().getAccounts().get(index));

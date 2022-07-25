@@ -221,7 +221,6 @@ public class Commands {
             int index = pair.getKey();
             Block block = pair.getValue();
             if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
-                System.out.println(BasicUtils.hash2Address(block.getHash()));
                 return false;
             }
             if (remain.get() <= block.getInfo().getAmount()) {
