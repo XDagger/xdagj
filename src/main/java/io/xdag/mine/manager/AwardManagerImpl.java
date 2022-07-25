@@ -24,7 +24,6 @@
 
 package io.xdag.mine.manager;
 
-import static io.xdag.config.Constants.FUND_ADDRESS;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.address2Hash;
@@ -109,7 +108,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private MinerManager minerManager;
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
-
+    private String fundAddress;
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("AwardManager-work-thread")
             .daemon(true)
@@ -126,6 +125,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         this.minerManager = kernel.getMinerManager();
         init();
         setPoolConfig();
+        this.fundAddress = config.getPoolSpec().getFundAddress();
+        System.out.println(this.fundAddress);
     }
 
     /**
@@ -616,9 +617,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         if (fundRation!=0) {
-            if (blockchain.getBlockByHash(address2Hash(FUND_ADDRESS),false)!=null) {
+            if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
                 payAmount += payData.fundIncome;
-                receipt.add(new Address(address2Hash(FUND_ADDRESS), XDAG_FIELD_OUT, payData.fundIncome));
+                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
                 transaction(hash, receipt, payAmount,keyPos);
             }
         }

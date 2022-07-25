@@ -80,6 +80,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected double rewardRation;
     protected double fundRation;
     protected double directRation;
+    protected String fundAddress;
 
     protected int globalMinerLimit;
     protected int globalMinerChannelLimit;
@@ -257,6 +258,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             rewardRation = config.getInt("pool.rewardRation");
             fundRation = config.getInt("pool.fundRation");
             directRation = config.getInt("pool.directRation");
+            fundAddress = config.getString("pool.fundAddress","FQglVQtb60vQv2DOWEUL7yh3smtj7g1s");
 
             nodeIp = config.getString("node.ip", "127.0.0.1");
             nodePort = config.getInt("node.port", 8001);

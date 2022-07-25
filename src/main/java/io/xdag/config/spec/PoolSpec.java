@@ -81,4 +81,8 @@ public interface PoolSpec {
      */
     int getWaitEpoch();
 
+    /**
+     * 基金会地址
+     */
+    String getFundAddress();
 }
