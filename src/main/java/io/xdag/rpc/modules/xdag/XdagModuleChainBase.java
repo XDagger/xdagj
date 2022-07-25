@@ -40,6 +40,7 @@ import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
 import io.xdag.Kernel;
+import io.xdag.cli.Commands;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
@@ -132,19 +133,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
     @Override
     public String getMaxXferBalance() {
-        final Long[] balance = {0L};
-
-        kernel.getBlockStore().fetchOurBlocks(pair -> {
-            Block block = pair.getValue();
-            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
-                return false;
-            }
-            if(block.getInfo().getAmount()>0){
-                balance[0] +=block.getInfo().getAmount();
-            }
-            return false;
-        });
-        return String.format("%.9f", amount2xdag(balance[0]));
+        return Commands.getBalanceMaxXfer(kernel);
     }
 
     public BlockResultDTO getBlockDTOByHash(String hash) {

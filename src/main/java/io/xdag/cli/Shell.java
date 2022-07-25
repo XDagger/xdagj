@@ -85,7 +85,26 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
+        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
         registerCommands(commandExecute);
+    }
+
+    private void processBalanceMaxXfer(CommandInput input) {
+        final String[] usage = {
+                "balancemaxxfer -  print max balance we can transfer \n",
+                "Usage: balance balancemaxxfer",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+            println(commands.balanceMaxXfer());
+
+        } catch (Exception e) {
+            saveException(e);
+        }
     }
 
     public void setReader(LineReader reader) {

@@ -635,4 +635,23 @@ public class Commands {
         }
     }
 
+    public String balanceMaxXfer() {
+        return getBalanceMaxXfer(kernel);
+    }
+
+    public static String getBalanceMaxXfer(Kernel kernel){
+        final Long[] balance = {0L};
+
+        kernel.getBlockStore().fetchOurBlocks(pair -> {
+            Block block = pair.getValue();
+            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
+                return false;
+            }
+            if(block.getInfo().getAmount()>0){
+                balance[0] +=block.getInfo().getAmount();
+            }
+            return false;
+        });
+        return String.format("%.9f", amount2xdag(balance[0]));
+    }
 }
