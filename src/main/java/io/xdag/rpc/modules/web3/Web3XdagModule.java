@@ -107,4 +107,6 @@ public interface Web3XdagModule {
     Object xdag_updatePoolConfig(ConfigDTO args, String passphrase) throws Exception;
 
     Object xdag_getPoolWorkers() throws Exception;
+
+    String xdag_getMaxXferBalance() throws Exception;
 }

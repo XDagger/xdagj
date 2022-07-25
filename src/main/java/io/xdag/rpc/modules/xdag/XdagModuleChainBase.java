@@ -25,6 +25,7 @@
 package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.cli.Commands.getStateByFlags;
+import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.BlockType.MAIN_BLOCK;
 import static io.xdag.core.BlockType.SNAPSHOT;
@@ -38,7 +39,8 @@ import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
-import io.xdag.config.Config;
+import io.xdag.Kernel;
+import io.xdag.cli.Commands;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
@@ -51,7 +53,9 @@ import io.xdag.utils.BasicUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
+import io.xdag.utils.XdagTime;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
@@ -59,11 +63,11 @@ import org.apache.tuweni.bytes.Bytes32;
 public class XdagModuleChainBase implements XdagModuleChain {
 
     private final Blockchain blockchain;
-    private final Config config;
+    private final Kernel kernel;
 
-    public XdagModuleChainBase(Blockchain blockchain, Config config) {
+    public XdagModuleChainBase(Blockchain blockchain, Kernel kernel) {
         this.blockchain = blockchain;
-        this.config = config;
+        this.kernel = kernel;
     }
 
     @Override
@@ -127,6 +131,11 @@ public class XdagModuleChainBase implements XdagModuleChain {
         }
     }
 
+    @Override
+    public String getMaxXferBalance() {
+        return Commands.getBalanceMaxXfer(kernel);
+    }
+
     public BlockResultDTO getBlockDTOByHash(String hash) {
         Bytes32 blockHash;
         if (StringUtils.length(hash) == 32) {
@@ -171,8 +180,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .hash(block.getHash().toUnprefixedHexString())
                 .balance(String.format("%.9f", amount2xdag(block.getInfo().getAmount())))
                 .type(SNAPSHOT.getDesc())
-                .blockTime(xdagTimestampToMs(config.getSnapshotSpec().getSnapshotTime()))
-                .timeStamp(config.getSnapshotSpec().getSnapshotTime())
+                .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
+                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
 //                .flags(Integer.toHexString(block.getInfo().getFlags()))
 //                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
 //                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
@@ -248,7 +257,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(block.getHashLow());
         List<TxLink> txLinks = new ArrayList<>();
         // 1. earning info
-        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > config.getSnapshotSpec().getSnapshotHeight()) {
+        if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
             String remark = "";
             if (block.getInfo().getRemark() != null && block.getInfo().getRemark().length != 0) {
