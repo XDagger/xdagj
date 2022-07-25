@@ -264,6 +264,11 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         return poolWorkerDTOList;
     }
 
+    @Override
+    public String xdag_getMaxXferBalance() throws Exception {
+        return xdagModule.getMaxXferBalance();
+    }
+
     private PoolWorkerDTO getPoolWorkerDTO(PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder,Miner miner){
         poolWorkerDTOBuilder.address(BasicUtils.hash2Address(miner.getAddressHash()))
                 .status(miner.getMinerStates().toString())

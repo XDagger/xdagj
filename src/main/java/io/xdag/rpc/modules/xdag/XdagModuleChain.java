@@ -39,4 +39,6 @@ public interface XdagModuleChain {
     String getBalanceByNumber(String bnOrId);
 
     Object getBlocksByNumber(String number);
+
+    String getMaxXferBalance();
 }

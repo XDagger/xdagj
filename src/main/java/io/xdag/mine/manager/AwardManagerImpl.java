@@ -126,7 +126,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         init();
         setPoolConfig();
         this.fundAddress = config.getPoolSpec().getFundAddress();
-        System.out.println(this.fundAddress);
     }
 
     /**

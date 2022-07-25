@@ -108,4 +108,9 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     public Object getBlocksByNumber(String number) {
         return xdagModuleChain.getBlocksByNumber(number);
     }
+
+    @Override
+    public String getMaxXferBalance() {
+        return xdagModuleChain.getMaxXferBalance();
+    }
 }
