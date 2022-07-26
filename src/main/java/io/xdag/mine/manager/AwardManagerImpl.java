@@ -620,6 +620,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 payAmount += payData.fundIncome;
                 receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
                 transaction(hash, receipt, payAmount,keyPos);
+                receipt.clear();
             }
         }
 
