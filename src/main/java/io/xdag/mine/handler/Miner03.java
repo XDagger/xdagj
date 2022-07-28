@@ -196,7 +196,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         ctx.close();
         this.channel.setActive(false);
         kernel.getChannelsAccount().getAndDecrement();
-        minerManager.removeUnactivateChannel(this.channel);
+        //minerManager.removeUnactivateChannel(this.channel);
         log.info("XDAG:channel close. channel {} with wallet-address {} close",
                 this.channel.getInetAddress().toString(), this.channel.getMiner().getAddressHash().toHexString());
     }

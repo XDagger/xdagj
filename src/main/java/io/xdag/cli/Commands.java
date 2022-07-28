@@ -479,6 +479,10 @@ public class Commands {
         }
         for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow())) {
             Address address = txHistory.getAddress();
+            BlockInfo blockInfo = kernel.getBlockchain().getBlockByHash(address.getHashLow(), false).getInfo();
+            if((blockInfo.flags&BI_APPLIED)==0){
+                continue;
+            }
             if (address.getType().equals(XDAG_FIELD_IN)) {
                 tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
                         amount2xdag(address.getAmount().longValue()),
