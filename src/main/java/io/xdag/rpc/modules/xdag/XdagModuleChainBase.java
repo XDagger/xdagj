@@ -25,6 +25,7 @@
 package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.cli.Commands.getStateByFlags;
+import static io.xdag.config.Constants.BI_APPLIED;
 import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.BlockType.MAIN_BLOCK;
@@ -41,10 +42,7 @@ import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
 import io.xdag.Kernel;
 import io.xdag.cli.Commands;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.TxHistory;
+import io.xdag.core.*;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
@@ -273,6 +271,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
         }
         // 2. tx history info
         for (TxHistory txHistory : txHistories) {
+            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getHashLow(), false).getInfo();
+            if((blockInfo.flags&BI_APPLIED)==0){
+                continue;
+            }
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
             txLinkBuilder.address(hash2Address(txHistory.getAddress().getHashLow()))
                     .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
