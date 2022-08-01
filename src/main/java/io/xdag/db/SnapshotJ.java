@@ -113,7 +113,7 @@ public class SnapshotJ extends RocksdbKVSource {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys) {
+    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {
@@ -165,6 +165,10 @@ public class SnapshotJ extends RocksdbKVSource {
                         if ((flag & BI_OURS) != 0 && keyIndex > -1) {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
+                        blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
+                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT,BigInteger.valueOf(blockInfo.getAmount()),
+                                snapshotTime,0,
+                                blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
                     }
                 } else if (iter.key()[0] == (byte) 0x90) {
