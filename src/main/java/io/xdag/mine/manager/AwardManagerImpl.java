@@ -602,7 +602,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                     && compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0) {
                 paymentSum += payData.minerReward;
             }
-            if (paymentSum < 0.000000001) {
+            if (paymentSum < 42950) {
                 continue;
             }
             payAmount += paymentSum;
