@@ -49,12 +49,12 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
         AtomicInteger channelsAccount = kernel.getChannelsAccount();
         if (channelsAccount.get() >= kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit()) {
             ch.close();
-            System.out.println("too many channels in this pool");
+            log.warn("too many channels in this pool");
             return;
         }
         log.info("init a new MinerChannel...... isServer：{}", isServer);
         // 如果是服务器 就会获取到的是外部的地址 否则获取到自己本地的地址
-        channelsAccount.getAndIncrement();
+
         InetSocketAddress channelAddress = isServer
                 ? ch.remoteAddress()
                 : new InetSocketAddress(

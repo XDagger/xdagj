@@ -162,11 +162,11 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void removeUnactivateChannel(MinerChannel channel) {
         if (!channel.isActive()) {
             log.debug("remove a channel");
+            kernel.getChannelsAccount().getAndDecrement();
             activateMinerChannels.remove(channel.getInetAddress(), channel);
             Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
             miner.removeChannel(channel.getInetAddress());
             miner.subChannelCounts();
-            kernel.getChannelsAccount().getAndDecrement();
             if (miner.getChannels().size() == 0) {
                 log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ", miner.getAddressHash().toHexString());
                 miner.setMinerStates(MinerStates.MINER_ARCHIVE);
