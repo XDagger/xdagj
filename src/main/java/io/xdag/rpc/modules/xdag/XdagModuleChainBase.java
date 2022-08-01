@@ -26,7 +26,6 @@ package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.cli.Commands.getStateByFlags;
 import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.BlockType.MAIN_BLOCK;
 import static io.xdag.core.BlockType.SNAPSHOT;
@@ -51,9 +50,7 @@ import io.xdag.utils.BasicUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
-import io.xdag.utils.XdagTime;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
