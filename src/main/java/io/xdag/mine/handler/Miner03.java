@@ -94,14 +94,14 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         } else {
             cause.printStackTrace();
         }
-        channel.onDisconnect();
+        channel.setActive(false);
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
         log.info("Close miner at time:{}", XdagTime.format(new Date()));
         ctx.channel().closeFuture();
-        channel.setActive(false);
+        channel.onDisconnect();
     }
 
     /**
@@ -195,7 +195,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public void disconnect() {
         ctx.close();
         this.channel.setActive(false);
-        kernel.getChannelsAccount().getAndDecrement();
+        //kernel.getChannelsAccount().getAndDecrement();
         //minerManager.removeUnactivateChannel(this.channel);
         log.info("XDAG:channel close. channel {} with wallet-address {} close",
                 this.channel.getInetAddress().toString(), this.channel.getMiner().getAddressHash().toHexString());

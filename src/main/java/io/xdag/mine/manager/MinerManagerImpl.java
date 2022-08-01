@@ -43,13 +43,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 
 @Slf4j
-public class MinerManagerImpl implements MinerManager, Runnable{
+public class MinerManagerImpl implements MinerManager, Runnable {
 
     /**
      * 存放任务的阻塞队列
@@ -121,9 +122,13 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     }
 
     private void updataBalance() {
-        activateMinerChannels.values().parallelStream()
-                .filter(MinerChannel::isActive)
-                .forEach(MinerChannel::sendBalance);
+        try {
+            activateMinerChannels.values().parallelStream()
+                    .filter(MinerChannel::isActive)
+                    .forEach(MinerChannel::sendBalance);
+        } catch (Exception e) {
+            log.error("An exception occurred in updataBalance: Exception->{}", e.toString());
+        }
     }
 
     @Override
@@ -162,7 +167,7 @@ public class MinerManagerImpl implements MinerManager, Runnable{
             miner.removeChannel(channel.getInetAddress());
             miner.subChannelCounts();
             kernel.getChannelsAccount().getAndDecrement();
-            if (miner.getChannels().size()==0) {
+            if (miner.getChannels().size() == 0) {
                 log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ", miner.getAddressHash().toHexString());
                 miner.setMinerStates(MinerStates.MINER_ARCHIVE);
             }
@@ -173,14 +178,23 @@ public class MinerManagerImpl implements MinerManager, Runnable{
      * 清除当前所有不活跃的channel
      */
     public void cleanUnactivateChannel() {
-        activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
+        try {
+            activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
+        } catch (Exception e) {
+            log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.toString());
+        }
     }
 
     /**
      * 清理minger
      */
     public void cleanUnactivateMiner() {
-        activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
+        try {
+            activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
+        } catch (Exception e) {
+            log.error("An exception occurred in cleanUnactivateMiner: Exception->{}", e.toString());
+        }
+
     }
 
 
@@ -206,11 +220,11 @@ public class MinerManagerImpl implements MinerManager, Runnable{
         } catch (InterruptedException e) {
             log.error(" can not take the task from taskQueue" + e.getMessage(), e);
         }
-        if(task != null) {
+        if (task != null) {
             currentTask = task;
             activateMinerChannels.values().parallelStream()
                     .filter(MinerChannel::isActive)
-                    .forEach( c -> {
+                    .forEach(c -> {
                         c.setTaskIndex(currentTask.getTaskIndex());
                         c.sendTaskToMiner(currentTask.getTask());
                         c.setSharesCounts(0);
