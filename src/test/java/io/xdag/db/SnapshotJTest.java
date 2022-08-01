@@ -200,7 +200,7 @@ public class SnapshotJTest {
         List<KeyPair> keys = new ArrayList<>();
         keys.add(poolKey);
 
-        snapshotSource.saveSnapshotToIndex(blockStore, keys);
+        snapshotSource.saveSnapshotToIndex(blockStore, keys,0);
 
         //Verify the total balance of the current account
         assertEquals("254976.0", String.valueOf(BasicUtils.amount2xdag(snapshotSource.getOurBalance())));

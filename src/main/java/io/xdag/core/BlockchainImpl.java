@@ -177,7 +177,7 @@ public class BlockchainImpl implements Blockchain {
         System.out.println("init snapshot...");
         snapshotJ.setConfig(kernel.getConfig());
         snapshotJ.init();
-        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts());
+        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
 
         xdagStats.balance = snapshotJ.getOurBalance();

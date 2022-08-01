@@ -49,6 +49,8 @@ import io.xdag.utils.XdagTime;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -109,7 +111,14 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                     ctx.close();
                     return;
                 }
+                AtomicInteger channelsAccount = kernel.getChannelsAccount();
+                if (channelsAccount.get() >= kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit()) {
+                    ctx.close();
+                    log.warn("too many channels in this pool");
+                    return;
+                }
 
+                kernel.getChannelsAccount().getAndIncrement();
                 // 如果是新增的地址块
                 if (importResult != ImportResult.EXIST) {
                     log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}",

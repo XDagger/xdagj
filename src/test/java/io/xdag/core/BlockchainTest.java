@@ -364,9 +364,9 @@ public class BlockchainTest {
     public void testXdagAmount() {
         assertEquals(47201690584L, xdag2amount(10.99));
         assertEquals(4398046511104L, xdag2amount(1024));
-        assertEquals(10.99, amount2xdag(xdag2amount(10.99)), 0);
+        assertEquals(10.990000000224, amount2xdag(xdag2amount(10.99)), 0);
         assertEquals(1024.0, amount2xdag(xdag2amount(1024)), 0);
-        assertEquals(0.93, amount2xdag(xdag2amount(0.93)), 0);
+        assertEquals(0.930000000168, amount2xdag(xdag2amount(0.93)), 0);
     }
 
     @Test
