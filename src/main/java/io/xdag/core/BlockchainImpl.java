@@ -801,6 +801,9 @@ public class BlockchainImpl implements Blockchain {
         }
         // 非主块不需要高度
         block.getInfo().setHeight(0);
+//      Add the rolled back block to the orphanPool for processing again
+        orphanPool.addOrphan(block);
+        xdagStats.nnoref++;
     }
 
     @Override
