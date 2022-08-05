@@ -38,9 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 @ChannelHandler.Sharable
 public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
 
-    /**
-     * 这里保存了一个地址和对应的数量
-     */
     private static final Map<String, AtomicInteger> connectionCount = new ConcurrentHashMap<>();
 
     private final int maxInboundConnectionsPerIp;

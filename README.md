@@ -118,6 +118,12 @@ Four stages：
 
   We value the quality and accuracy of the code. Therefore, we will review all the code that needs to be changed.
 
+## FAQ
+
+- Time Synchronization Question
+
+[XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)
+
 ## Contribution
 
 - Security Question

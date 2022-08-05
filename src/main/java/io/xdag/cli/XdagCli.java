@@ -24,8 +24,6 @@
 
 package io.xdag.cli;
 
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
-
 import io.xdag.Kernel;
 import io.xdag.Launcher;
 import io.xdag.config.Config;
@@ -40,27 +38,13 @@ import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.snapshot.SnapshotJ;
-import io.xdag.snapshot.db.SnapshotChainStore;
-import io.xdag.snapshot.db.SnapshotChainStoreImpl;
+import io.xdag.db.SnapshotJ;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.SnapshotChainStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-
-import java.io.Console;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -69,6 +53,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
+
+import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 public class XdagCli extends Launcher {
 
@@ -184,6 +177,7 @@ public class XdagCli extends Launcher {
             System.err.println("Parsing Failed:" + exception.getMessage());
         }
 
+        assert cmd != null;
         if (cmd.hasOption(XdagOption.HELP.toString())) {
             printHelp();
         } else if (cmd.hasOption(XdagOption.VERSION.toString())) {
@@ -429,10 +423,7 @@ public class XdagCli extends Launcher {
         DatabaseFactory dbFactory = new RocksdbFactory(config);
         SnapshotChainStore snapshotChainStore = new SnapshotChainStoreImpl(dbFactory.getDB(DatabaseName.SNAPSHOT));
         snapshotChainStore.reset();
-        boolean mainLag = false;
-        if (config instanceof MainnetConfig) {
-            mainLag = true;
-        }
+        boolean mainLag = config instanceof MainnetConfig;
         Wallet wallet = loadAndUnlockWallet();
         long start = System.currentTimeMillis();
         boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag, wallet.getAccounts());
@@ -454,8 +445,6 @@ public class XdagCli extends Launcher {
                 KeyPair ecKey = KeyPair.create(SECPPrivateKey.create(Numeric.toBigInt(priv32), Sign.CURVE_NAME), Sign.CURVE, Sign.CURVE_NAME);
                 keyList.add(ecKey);
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

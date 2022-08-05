@@ -45,8 +45,8 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;
@@ -199,8 +199,7 @@ public class ExtraBlockTest {
         for (int i = 10; i <= 40; i++) {
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT));
-            long time = XdagTime.msToXdagtimestamp(generateTime);
-            long xdagTime = time;
+            long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "01" + i);
             blockchain.tryToConnect(extraBlock);
             blockchain.checkOrphan();

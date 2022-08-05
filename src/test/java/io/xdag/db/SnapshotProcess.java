@@ -21,23 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot;
+package io.xdag.db;
 
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static io.xdag.BlockBuilder.generateExtraBlock;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import com.google.common.collect.Lists;
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
+import io.xdag.config.RandomXConstants;
+import io.xdag.core.*;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+import io.xdag.crypto.jni.Native;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
+import io.xdag.mine.randomx.RandomX;
+import io.xdag.core.SnapshotBalanceData;
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.SnapshotChainStoreImpl;
+import io.xdag.utils.XdagTime;
+import io.xdag.wallet.Wallet;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
@@ -47,34 +55,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.collect.Lists;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.config.RandomXConstants;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockchainImpl;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagTopStatus;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.randomx.RandomX;
-import io.xdag.snapshot.core.BalanceData;
-import io.xdag.snapshot.core.SnapshotUnit;
-import io.xdag.snapshot.core.StatsBlock;
-import io.xdag.snapshot.db.SnapshotChainStore;
-import io.xdag.snapshot.db.SnapshotChainStoreImpl;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import lombok.extern.slf4j.Slf4j;
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class SnapshotProcess {
@@ -137,7 +126,7 @@ public class SnapshotProcess {
         kernel.setWallet(wallet);
 
         RandomX randomX = new RandomX(config);
-        kernel.setRandomXUtils(randomX);
+        kernel.setRandomx(randomX);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setBlockchain(blockchain);
@@ -156,7 +145,7 @@ public class SnapshotProcess {
         createSnapshotStore(snapshotChainStore, kernel);
     }
 
-    public void createSnapshotStore(SnapshotChainStore snapshotChainStore, Kernel kernel) throws IOException {
+    public void createSnapshotStore(SnapshotChainStore snapshotChainStore, Kernel kernel) {
         createTestBlockchain(snapshotChainStore, kernel);
 //        createSnapshotData(snapshotChainStore, kernel);
     }
@@ -227,7 +216,7 @@ public class SnapshotProcess {
         int i = 0;
         for (Block block : blocks) {
 
-            BalanceData balanceData = new BalanceData(block.getInfo().getAmount(), block.getTimestamp(),
+            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount(), block.getTimestamp(),
                     block.getHash().toArray(), block.getInfo().getFlags());
             if (i < 30) {
                 snapshotChainStore
@@ -279,19 +268,8 @@ public class SnapshotProcess {
         System.out.println(Hex.toHexString(blockchain.getXdagTopStatus().getTop()));
         System.out.println(blockchain.getXdagTopStatus().getTopDiff().toString(16));
         // add new block
-//        ImportResult result = blockchain.tryToConnect(this.extrablock);
-//        assertEquals(IMPORTED_BEST, result);
-//        assertEquals(blockchain.getXdagTopStatus().getTopDiff(), endDiff);
     }
 
-
-    public void createSnapshotData(SnapshotChainStore snapshotChainStore, Kernel kernel) throws IOException {
-        if (snapshotChainStore
-                .loadFromSnapshotData("/Users/paulochen/Documents/projects/self/xdag/build/snapshot", false,
-                        new ArrayList<>())) {
-            System.out.println("load success");
-        }
-    }
 
     static class MockBlockchain extends BlockchainImpl {
 

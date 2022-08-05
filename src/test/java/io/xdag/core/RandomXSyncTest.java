@@ -24,15 +24,6 @@
 
 package io.xdag.core;
 
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static io.xdag.BlockBuilder.generateExtraBlock;
-import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -44,16 +35,11 @@ import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.randomx.RandomX;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
+import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
-import java.math.BigInteger;
-import java.text.ParseException;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
@@ -63,6 +49,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
+import static io.xdag.BlockBuilder.*;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class RandomXSyncTest {
@@ -111,8 +107,8 @@ public class RandomXSyncTest {
 //        System.out.println("第二次同步");
         assertEquals(expected, kernel2Diff);
 
-        kernel1.getRandomXUtils().randomXPoolReleaseMem();
-        kernel2.getRandomXUtils().randomXPoolReleaseMem();
+        kernel1.getRandomx().randomXPoolReleaseMem();
+        kernel2.getRandomx().randomXPoolReleaseMem();
     }
 
     public void sync(Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
@@ -125,7 +121,7 @@ public class RandomXSyncTest {
     }
 
     // return endTime
-    public long addBlocks(Kernel kernel, int number) throws ParseException {
+    public long addBlocks(Kernel kernel, int number) {
         XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
 
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
@@ -224,7 +220,7 @@ public class RandomXSyncTest {
         kernel.setWallet(wallet);
 
         RandomX randomX = new RandomX(config);
-        kernel.setRandomXUtils(randomX);
+        kernel.setRandomx(randomX);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setBlockchain(blockchain);
@@ -233,7 +229,7 @@ public class RandomXSyncTest {
         return kernel;
     }
 
-    class MockBlockchain extends BlockchainImpl {
+    static class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {
             super(kernel);
@@ -247,12 +243,12 @@ public class RandomXSyncTest {
 
     public class SyncThread extends Thread {
 
-        private CountDownLatch latch;
-        private Kernel kernel1;
-        private Kernel kernel2;
-        private long startTime;
-        private long endTime;
-        private String syncName;
+        private final CountDownLatch latch;
+        private final Kernel kernel1;
+        private final Kernel kernel2;
+        private final long startTime;
+        private final long endTime;
+        private final String syncName;
 
         public SyncThread(CountDownLatch latch, Kernel kernel1, Kernel kernel2, long startTime, long endTime,
                 String syncName) {

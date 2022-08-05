@@ -24,7 +24,7 @@
 
 package io.xdag.core;
 
-//import static io.xdag.db.store.BlockStore.BLOCK_AMOUNT;
+//import static io.xdag.db.BlockStore.BLOCK_AMOUNT;
 
 public class BlockTest {
     /**

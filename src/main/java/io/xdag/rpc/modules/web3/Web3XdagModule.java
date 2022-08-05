@@ -99,9 +99,14 @@ public interface Web3XdagModule {
     StatusDTO xdag_getStatus() throws Exception;
 
     Object xdag_netType() throws Exception;
+
     Object xdag_poolConfig() throws Exception;
+
     Object xdag_netConnectionList() throws Exception;
 
-    Object xdag_updatePoolConfig(ConfigDTO args,String passphrase) throws Exception;
+    Object xdag_updatePoolConfig(ConfigDTO args, String passphrase) throws Exception;
 
+    Object xdag_getPoolWorkers() throws Exception;
+
+    String xdag_getMaxXferBalance() throws Exception;
 }

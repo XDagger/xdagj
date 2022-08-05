@@ -45,24 +45,4 @@ public class StatusDTO {
     private final String ourSupply;
     private final String netSupply;
 
-//    public StatusDTO(long nblocks, long nmain, BigInteger diff, double supply) {
-//        this.nblock = toQuantityJsonHex(nblocks);
-//        this.nmain = toQuantityJsonHex(nmain);
-//        this.curDiff = toQuantityJsonHex(diff);
-//        this.supply = toQuantityJsonHex(supply);
-//    }
-
-//
-//    public StatusDTO(long nblock, long totalNblocks, long nmain, long totalNnmain, BigInteger curDiff,
-//            BigInteger netDiff, double hashrateOurs, double hashrateTotal, double supply) {
-//        this.nblock = toQuantityJsonHex(nblock);
-//        this.totalNblocks = toQuantityJsonHex(totalNblocks);
-//        this.nmain = toQuantityJsonHex(nmain);
-//        this.totalNnmain = toQuantityJsonHex(totalNnmain);
-//        this.curDiff = toQuantityJsonHex(curDiff);
-//        this.netDiff = toQuantityJsonHex(netDiff);
-//        this.hashRateOurs = toQuantityJsonHex(hashrateOurs);
-//        this.hashRateTotal = toQuantityJsonHex(hashrateTotal);
-//        this.supply = toQuantityJsonHex(supply);
-//    }
 }

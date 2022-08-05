@@ -123,15 +123,6 @@ public class BytesUtils {
         return bytes;
     }
 
-    public static BigInteger bytesToBigInteger(byte[] input, int offset, boolean littleEndian) {
-        byte[] bb = new byte[16];
-        System.arraycopy(input, offset, bb, 0, 16);
-        if (littleEndian) {
-            arrayReverse(bb);
-        }
-        return Numeric.toBigInt(bb);
-    }
-
     /**
      * @param arrays - arrays to merge
      * @return - merged array
@@ -205,11 +196,6 @@ public class BytesUtils {
         return (byte) "0123456789ABCDEF".indexOf(c);
     }
 
-    // TODO:比较字节数组
-    public static int bytesCompare(byte[] ans, byte[] minHash) {
-        return 0;
-    }
-
     /**
      * 数组逆序
      */
@@ -252,20 +238,6 @@ public class BytesUtils {
             }
         }
         return true;
-    }
-
-    /**
-     * 输入长度 然后根据长度来把前面的字段填充为0
-     *
-     * @param bytes 要分割的字符串
-     * @param index 分割的起点
-     * @param length 起点往后的字符串
-     * @return 填充0 后的字符串
-     */
-    public static byte[] fixBytes(byte[] bytes, int index, int length) {
-        byte[] temp = new byte[index];
-        Arrays.fill(temp, (byte) 0x0);
-        return merge(temp, subArray(bytes, index, length));
     }
 
     /**

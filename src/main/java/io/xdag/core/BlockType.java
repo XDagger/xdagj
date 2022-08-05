@@ -21,30 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.rpc.dto;
+package io.xdag.core;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public enum BlockType {
+    MAIN_BLOCK(0, "Main"),
+    WALLET(1, "Wallet"),
+    TRANSACTION(2, "Transaction"),
+    SNAPSHOT(3, "Snapshot");
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ConfigDTO {
+    private final int code;
+    private final String desc;
 
-    String poolIp;
-    int poolPort;
-    String nodeIp;
-    int nodePort;
-    int globalMinerLimit;
-    int maxConnectMinerPerIp;
-    int maxMinerPerAccount;
+    BlockType(int code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
 
-    String poolFeeRation;
-    String poolRewardRation;
-    String poolDirectRation;
-    String poolFundRation;
+    public int getCode() {
+        return this.code;
+    }
 
+    public String getDesc() {
+        return this.desc;
+    }
 }

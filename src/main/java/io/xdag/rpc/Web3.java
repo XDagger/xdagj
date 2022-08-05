@@ -24,8 +24,8 @@
 
 package io.xdag.rpc;
 
-import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
+
 import java.util.Arrays;
 import java.util.Map;
 

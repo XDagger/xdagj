@@ -24,19 +24,17 @@
 
 package io.xdag.crypto;
 
-import java.math.BigInteger;
-import java.security.SignatureException;
-import java.util.Arrays;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.SECP256K1;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
-import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
+import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECPSignature;
+
+import java.math.BigInteger;
+import java.util.Arrays;
 
 /**
  * Transaction signing logic.
@@ -58,6 +56,7 @@ public class Sign {
                     CURVE_PARAMS.getH());
 
     public static final SECP256K1 SECP256K1 = new SECP256K1();
+    static final BigInteger HALF_CURVE_ORDER = CURVE_PARAMS.getN().shiftRight(1);
 
     /**
      * Decompress a compressed public key (x co-ord and low-bit of y-coord).
@@ -123,5 +122,11 @@ public class Sign {
         if (!assertionResult) {
             throw new RuntimeException(errorMessage);
         }
+    }
+    public static SECPSignature toCanonical(SECPSignature signature) {
+        if(signature.getS().compareTo(HALF_CURVE_ORDER)>0){
+            return SECPSignature.create(signature.getR(), CURVE.getN().subtract(signature.getS()), (byte) 0, CURVE.getN());
+        }
+        return signature;
     }
 }

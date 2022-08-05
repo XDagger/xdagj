@@ -24,12 +24,12 @@
 
 package io.xdag.basic;
 
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static org.junit.Assert.assertTrue;
-
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.Test;
+
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.hash2Address;
+import static org.junit.Assert.assertEquals;
 
 public class Address2Hash {
 
@@ -38,7 +38,7 @@ public class Address2Hash {
         String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
         String originhash = "4aa1ab5742feb010a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
         Bytes32 hash1 = Bytes32.fromHexString(originhash);
-        assertTrue(hash2Address(hash1).equals(news));
+        assertEquals(hash2Address(hash1), news);
     }
 
     @Test
@@ -46,6 +46,6 @@ public class Address2Hash {
         String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
         String originhashlow = "0000000000000000a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
         Bytes32 hashlow = address2Hash(news);
-        assertTrue(hashlow.toUnprefixedHexString().equals(originhashlow));
+        assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
     }
 }

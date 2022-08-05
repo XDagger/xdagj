@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot;
+package io.xdag.db;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -34,8 +34,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.store.BlockStore;
-import io.xdag.snapshot.core.SnapshotInfo;
+import io.xdag.core.SnapshotInfo;
 
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +51,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.db.store.BlockStore.*;
+import static io.xdag.db.BlockStore.*;
 
 @Slf4j
 public class SnapshotJ extends RocksdbKVSource {
@@ -107,14 +106,14 @@ public class SnapshotJ extends RocksdbKVSource {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
 
         byte[] preSeed = this.get(new byte[]{SNAPSHOT_PRESEED});
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys) {
+    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {
@@ -153,7 +152,7 @@ public class SnapshotJ extends RocksdbKVSource {
                                     Bytes digest = Bytes
                                             .wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
                                     Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                                    if (Sign.SECP256K1.verify(hash, outSig, keyPair.getPublicKey())) {
+                                    if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance += blockInfo.getAmount();
@@ -166,6 +165,10 @@ public class SnapshotJ extends RocksdbKVSource {
                         if ((flag & BI_OURS) != 0 && keyIndex > -1) {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
+                        blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
+                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT,BigInteger.valueOf(blockInfo.getAmount()),
+                                snapshotTime,0,
+                                blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
                     }
                 } else if (iter.key()[0] == (byte) 0x90) {
@@ -173,7 +176,7 @@ public class SnapshotJ extends RocksdbKVSource {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 

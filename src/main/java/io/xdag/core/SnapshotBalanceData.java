@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot.core;
+package io.xdag.core;
 
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
@@ -38,7 +38,7 @@ import org.bouncycastle.util.Arrays;
 import org.xerial.snappy.Snappy;
 
 @Data
-public class BalanceData {
+public class SnapshotBalanceData {
 
     protected long amount;
     protected long time;
@@ -48,25 +48,25 @@ public class BalanceData {
 
     protected int flags;
 
-    public BalanceData() {
+    public SnapshotBalanceData() {
 
     }
 
-    public BalanceData(long amount, long time, byte[] hash, int flags) {
+    public SnapshotBalanceData(long amount, long time, byte[] hash, int flags) {
         this.amount = amount;
         this.time = time;
         this.hash = Arrays.reverse(hash);
         this.flags = flags;
     }
 
-    public static BalanceData parse(Bytes key, Bytes value) {
+    public static SnapshotBalanceData parse(Bytes key, Bytes value) {
         // 未压缩
         if (key.size() == 32) {
             long flags = value.getLong(0, ByteOrder.LITTLE_ENDIAN);
             long amount = value.getLong(8, ByteOrder.LITTLE_ENDIAN);
             long time = value.getLong(16, ByteOrder.LITTLE_ENDIAN);
             Bytes32 hash = Bytes32.wrap(key.reverse());
-            return new BalanceData(amount, time, hash.toArray(), (int) flags);
+            return new SnapshotBalanceData(amount, time, hash.toArray(), (int) flags);
         } else if (key.size() == 4) {
             // 1. 解压缩
             try {
@@ -75,7 +75,7 @@ public class BalanceData {
                 long amount = uncompressed.getLong(8, ByteOrder.LITTLE_ENDIAN);
                 long time = uncompressed.getLong(16, ByteOrder.LITTLE_ENDIAN);
                 Bytes32 hash = Bytes32.wrap(uncompressed.slice(24));
-                return new BalanceData(amount, time, hash.toArray(), flags);
+                return new SnapshotBalanceData(amount, time, hash.toArray(), flags);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -102,7 +102,7 @@ public class BalanceData {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        BalanceData that = (BalanceData) o;
+        SnapshotBalanceData that = (SnapshotBalanceData) o;
         return amount == that.amount &&
                 time == that.time &&
                 storage_pos == that.storage_pos &&

@@ -24,7 +24,6 @@
 
 package io.xdag.mine.manager;
 
-import static io.xdag.config.Constants.FUND_ADDRESS;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.address2Hash;
@@ -109,7 +108,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private MinerManager minerManager;
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
-
+    private String fundAddress;
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("AwardManager-work-thread")
             .daemon(true)
@@ -126,6 +125,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         this.minerManager = kernel.getMinerManager();
         init();
         setPoolConfig();
+        this.fundAddress = config.getPoolSpec().getFundAddress();
     }
 
     /**
@@ -293,16 +293,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
     @Override
-    public Miner getPoolMiner() {
-        return poolMiner;
-    }
-
-    @Override
-    public void setPoolMiner(Bytes32 hash) {
-        this.poolMiner = new Miner(hash);
-    }
-
-    @Override
     public void onNewTask(Task task) {
         currentTaskTime = task.getTaskTime();
         currentTaskIndex = task.getTaskIndex();
@@ -329,8 +319,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 miners.add(miner);
                 minerCounts++;
-                log.debug("矿工的数量为[{}]", minerCounts);
-                //log.debug("添加的矿工地址为[{}],共计[{}]个矿工",Hex.toHexString(miner.getAddressHash()), minerCounts);
+                log.debug("The number of miners is[{}]", minerCounts);
             }
         }
 
@@ -452,7 +441,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 说明需要支付给基金会
         if (fundRation != 0) {
             payData.fundIncome = BigDecimalUtils.mul(payData.balance ,fundRation);
-            payData.unusedBalance -= payData.minerReward;
+            payData.unusedBalance -= payData.fundIncome;
         }
 
 
@@ -602,7 +591,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                     && compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0) {
                 paymentSum += payData.minerReward;
             }
-            if (paymentSum < 0.000000001) {
+            if (paymentSum < 42950) {
                 continue;
             }
             payAmount += paymentSum;
@@ -616,9 +605,11 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         if (fundRation!=0) {
-            if (blockchain.getBlockByHash(address2Hash(FUND_ADDRESS),false)!=null) {
-                receipt.add(new Address(address2Hash(FUND_ADDRESS), XDAG_FIELD_OUT, payData.fundIncome));
+            if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
+                payAmount += payData.fundIncome;
+                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
                 transaction(hash, receipt, payAmount,keyPos);
+                receipt.clear();
             }
         }
 

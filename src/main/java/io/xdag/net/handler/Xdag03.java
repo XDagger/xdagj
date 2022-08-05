@@ -67,29 +67,15 @@ public class Xdag03 extends XdagHandler {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         switch (msg.getCommand()) {
-            case NEW_BLOCK:
-                processNewBlock((NewBlockMessage) msg);
-                break;
-            case BLOCK_REQUEST:
-                processBlockRequest((BlockRequestMessage) msg);
-                break;
-            case BLOCKS_REQUEST:
-                processBlocksRequest((BlocksRequestMessage) msg);
-                break;
-            case BLOCKS_REPLY:
-                processBlocksReply((BlocksReplyMessage) msg);
-                break;
-            case SUMS_REQUEST:
-                processSumsRequest((SumRequestMessage) msg);
-                break;
-            case SUMS_REPLY:
-                processSumsReply((SumReplyMessage) msg);
-                break;
-            case BLOCKEXT_REQUEST:
-                processBlockExtRequest((BlockExtRequestMessage) msg);
-                break;
-            default:
-                break;
+            case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
+            case BLOCK_REQUEST -> processBlockRequest((BlockRequestMessage) msg);
+            case BLOCKS_REQUEST -> processBlocksRequest((BlocksRequestMessage) msg);
+            case BLOCKS_REPLY -> processBlocksReply((BlocksReplyMessage) msg);
+            case SUMS_REQUEST -> processSumsRequest((SumRequestMessage) msg);
+            case SUMS_REPLY -> processSumsReply((SumReplyMessage) msg);
+            case BLOCKEXT_REQUEST -> processBlockExtRequest((BlockExtRequestMessage) msg);
+            default -> {
+            }
         }
     }
 
@@ -193,11 +179,7 @@ public class Xdag03 extends XdagHandler {
     }
 
     protected void processBlockRequest(BlockRequestMessage msg) {
-//        log.debug("processBlockRequest: hash:{}" + Hex.toHexString(msg.getHash()));
-//        Bytes32 find = new byte[32];
         Bytes32 hash = msg.getHash();
-//        hash = Arrays.reverse(hash);
-//        System.arraycopy(hash, 8, find, 8, 24);
         MutableBytes32 find = MutableBytes32.create();
         find.set(8, hash.reverse().slice(8, 24));
         Block block = blockchain.getBlockByHash(find, true);

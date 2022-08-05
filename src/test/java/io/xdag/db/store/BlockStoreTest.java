@@ -36,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.List;
 
+import io.xdag.db.BlockStore;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.KeyPair;

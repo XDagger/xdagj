@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.BlockInfo;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.snapshot.core.BalanceData;
+import io.xdag.core.SnapshotBalanceData;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
@@ -53,7 +53,7 @@ public class KryoTest {
         kryo.register(BlockInfo.class);
         kryo.register(long.class);
         kryo.register(int.class);
-        kryo.register(BalanceData.class);
+        kryo.register(SnapshotBalanceData.class);
     }
 
     @Test
@@ -79,17 +79,17 @@ public class KryoTest {
             BlockInfo blockInfo1 = (BlockInfo) deserialize(data, BlockInfo.class);
             assertEquals(blockInfo, blockInfo1);
 //            System.out.println(blockInfo1);
-        } catch (SerializationException e) {
+        } catch (SerializationException ignored) {
         } catch (DeserializationException e) {
             e.printStackTrace();
         }
 
-        BalanceData b = new BalanceData();
+        SnapshotBalanceData b = new SnapshotBalanceData();
         try {
             byte[] data = serialize(b);
-            BalanceData b2 = (BalanceData) deserialize(data, BalanceData.class);
+            SnapshotBalanceData b2 = (SnapshotBalanceData) deserialize(data, SnapshotBalanceData.class);
             assertEquals(b, b2);
-        } catch (SerializationException e) {
+        } catch (SerializationException ignored) {
         } catch (DeserializationException e) {
             e.printStackTrace();
         }

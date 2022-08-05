@@ -52,4 +52,12 @@ public class BlockWrapper implements Cloneable {
         this.ttl = ttl;
     }
 
+    @Override
+    public BlockWrapper clone() {
+        try {
+            return (BlockWrapper) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }

@@ -24,16 +24,18 @@
 
 package io.xdag.crypto;
 
-import static org.junit.Assert.assertTrue;
-
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.jni.Native;
-import java.io.File;
-import java.io.FileInputStream;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Objects;
+
+import static org.junit.Assert.assertEquals;
 
 public class DnetKeysTest {
 
@@ -46,9 +48,7 @@ public class DnetKeysTest {
     public void setUp() throws Exception {
         config = new DevnetConfig();
         config.initKeys();
-        // Resource resource = new ClassPathResource("dnet_keys.bin");
-        // File keyFile = resource.getFile();
-        String absolutePath = Native.class.getClassLoader().getResource("dnet_keys.bin").getPath();
+        String absolutePath = Objects.requireNonNull(Native.class.getClassLoader().getResource("dnet_keys.bin")).getPath();
         File keyFile = new File(absolutePath);
 
         dnetKeys = new byte[3072];
@@ -67,17 +67,17 @@ public class DnetKeysTest {
     }
 
     @Test
-    public void testInitKeys() throws Exception {
+    public void testInitKeys() {
 
         for (int i = 0; i < 3072; i++) {
             if (i < 1024) {
-                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().prv[i]);
+                assertEquals(dnetKeys[i], config.getNodeSpec().getXKeys().prv[i]);
             } else if (i < 2048) {
-                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().pub[i - 1024]);
+                assertEquals(dnetKeys[i], config.getNodeSpec().getXKeys().pub[i - 1024]);
             } else if (i < 2560) {
-                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().sect0_encoded[i - 2048]);
-            } else if (i < 3072) {
-                assertTrue(dnetKeys[i] == config.getNodeSpec().getXKeys().sect0[i - 2560]);
+                assertEquals(dnetKeys[i], config.getNodeSpec().getXKeys().sect0_encoded[i - 2048]);
+            } else {
+                assertEquals(dnetKeys[i], config.getNodeSpec().getXKeys().sect0[i - 2560]);
             }
         }
     }

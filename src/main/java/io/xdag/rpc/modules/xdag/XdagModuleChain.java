@@ -25,7 +25,6 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.dto.BlockResultDTO;
-import java.util.List;
 
 public interface XdagModuleChain {
 
@@ -40,4 +39,6 @@ public interface XdagModuleChain {
     String getBalanceByNumber(String bnOrId);
 
     Object getBlocksByNumber(String number);
+
+    String getMaxXferBalance();
 }

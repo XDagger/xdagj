@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot.core;
+package io.xdag.core;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
 
-import io.xdag.core.BlockInfo;
 import java.math.BigInteger;
+
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
@@ -37,7 +37,7 @@ import org.apache.tuweni.bytes.Bytes32;
 public class SnapshotUnit {
 
     protected byte[] pubkey;
-    protected BalanceData balanceData;
+    protected SnapshotBalanceData balanceData;
     // data means block data
     protected byte[] data;
     protected boolean hasPubkey = false;
@@ -49,7 +49,7 @@ public class SnapshotUnit {
 
     }
 
-    public SnapshotUnit(byte[] pubkey, BalanceData balanceData, byte[] data, byte[] hash) {
+    public SnapshotUnit(byte[] pubkey, SnapshotBalanceData balanceData, byte[] data, byte[] hash) {
         if (pubkey == null && data != null) {
             this.type = 0; //BI_DATA_BALANCE;
         } else if (pubkey != null && balanceData != null) {
@@ -63,7 +63,7 @@ public class SnapshotUnit {
         this.hash = hash;
     }
 
-    public SnapshotUnit(byte[] pubkey, BalanceData balanceData, byte[] data, byte[] hash,int keyIndex) {
+    public SnapshotUnit(byte[] pubkey, SnapshotBalanceData balanceData, byte[] data, byte[] hash, int keyIndex) {
         if (pubkey == null && data != null) {
             this.type = 0; //BI_DATA_BALANCE;
         } else if (pubkey != null && balanceData != null) {

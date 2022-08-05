@@ -27,12 +27,9 @@ package io.xdag.rpc.modules.xdag;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
-import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
@@ -65,10 +62,10 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
 
         // 1. build transaction
         // 2. try to add blockchain
-        System.out.println(rawData);
+
         Block block = new Block(new XdagBlock(Hex.decode(rawData)));
-        kernel.getSyncMgr().syncPushBlock(
-                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()),block.getHashLow());
+        kernel.getSyncMgr().importBlock(
+                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         return BasicUtils.hash2Address(block.getHash());
     }
 

@@ -10,7 +10,7 @@ xdagj.iml
 .idea
 logs
 
-
+de
 #for project
 devnet
 xdagj.jar
@@ -24,5 +24,5 @@ dist
 src/c/
 src/main/resources/native
 src/main/resources/xdag-mainnet.config
-
+dependency-reduced-pom.xml
 pool

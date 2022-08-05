@@ -43,13 +43,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 
 @Slf4j
-public class MinerManagerImpl implements MinerManager, Runnable{
+public class MinerManagerImpl implements MinerManager, Runnable {
 
     /**
      * 存放任务的阻塞队列
@@ -114,23 +115,29 @@ public class MinerManagerImpl implements MinerManager, Runnable{
      * 启动 函数 开启遍历和server
      */
     public void init() {
-        log.debug("start futulre");
         updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
         cleanChannelFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
     }
 
     private void updataBalance() {
-        activateMinerChannels.values().parallelStream()
-                .filter( c -> c.isActive())
-                .forEach( c -> c.sendBalance());
+        synchronized (activateMinerChannels) {
+            try {
+                activateMinerChannels.values().parallelStream()
+                        .filter(MinerChannel::isActive)
+                        .forEach(MinerChannel::sendBalance);
+            } catch (Exception e) {
+                log.error("An exception occurred in updataBalance: Exception->{}", e.toString());
+            }
+        }
     }
 
     @Override
     public void addActivateChannel(MinerChannel channel) {
         log.debug("add a new active channel");
-        // 一般来讲 地址可能相同 但是端口不同
-        activateMinerChannels.put(channel.getInetAddress(), channel);
+        synchronized (activateMinerChannels) {
+            activateMinerChannels.put(channel.getInetAddress(), channel);
+        }
     }
 
 
@@ -150,37 +157,48 @@ public class MinerManagerImpl implements MinerManager, Runnable{
     }
 
     private void closeMiners() {
-        activateMinerChannels.values().parallelStream().forEach( c -> c.dropConnection());
+        synchronized (activateMinerChannels) {
+            activateMinerChannels.values().parallelStream().forEach(MinerChannel::dropConnection);
+        }
     }
 
     @Override
     public void removeUnactivateChannel(MinerChannel channel) {
-        if (!channel.isActive()) {
+        if (channel != null && !channel.isActive()) {
             log.debug("remove a channel");
-            activateMinerChannels.remove(channel.getInetAddress(), channel);
-            Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
-            miner.removeChannel(channel.getInetAddress());
-            miner.subChannelCounts();
-            kernel.getChannelsAccount().getAndDecrement();
-            if (miner.getConnChannelCounts() == 0) {
-                log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ", miner.getAddressHash().toHexString());
-                miner.setMinerStates(MinerStates.MINER_ARCHIVE);
+            synchronized (activateMinerChannels) {
+                kernel.getChannelsAccount().getAndDecrement();
+                activateMinerChannels.remove(channel.getInetAddress(), channel);
+            }
+            synchronized (activateMiners) {
+                Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
+                miner.removeChannel(channel.getInetAddress());
+                if (miner.getChannels().size() == 0) {
+                    log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ", miner.getAddressHash().toHexString());
+                    miner.setMinerStates(MinerStates.MINER_ARCHIVE);
+                }
             }
         }
     }
 
-    /**
-     * 清除当前所有不活跃的channel
-     */
     public void cleanUnactivateChannel() {
-        activateMinerChannels.values().parallelStream().forEach( c -> removeUnactivateChannel(c));
+        synchronized (activateMinerChannels) {
+            try {
+                activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
+            } catch (Exception e) {
+                log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.toString());
+            }
+        }
     }
 
-    /**
-     * 清理minger
-     */
     public void cleanUnactivateMiner() {
-        activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
+        synchronized (activateMiners) {
+            try {
+                activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
+            } catch (Exception e) {
+                log.error("An exception occurred in cleanUnactivateMiner: Exception->{}", e.toString());
+            }
+        }
     }
 
 
@@ -193,11 +211,13 @@ public class MinerManagerImpl implements MinerManager, Runnable{
 
     @Override
     public void addActiveMiner(Miner miner) {
-        activateMiners.put(miner.getAddressHash(), miner);
+        synchronized (activateMiners) {
+            activateMiners.put(miner.getAddressHash(), miner);
+        }
     }
 
     /**
-     * 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况
+     * When each round of tasks is just sent out, this will be used to update all miner's status
      */
     public void updateNewTaskandBroadcast() {
         Task task = null;
@@ -206,15 +226,17 @@ public class MinerManagerImpl implements MinerManager, Runnable{
         } catch (InterruptedException e) {
             log.error(" can not take the task from taskQueue" + e.getMessage(), e);
         }
-        if(task != null) {
+        if (task != null) {
             currentTask = task;
-            activateMinerChannels.values().parallelStream()
-                    .filter( c -> c.isActive())
-                    .forEach( c -> {
-                        c.setTaskIndex(currentTask.getTaskIndex());
-                        c.sendTaskToMiner(currentTask.getTask());
-                        c.setSharesCounts(0);
-                    });
+            synchronized (activateMinerChannels) {
+                activateMinerChannels.values().parallelStream()
+                        .filter(MinerChannel::isActive)
+                        .forEach(c -> {
+                            c.setTaskIndex(currentTask.getTaskIndex());
+                            c.sendTaskToMiner(currentTask.getTask());
+                            c.setSharesCounts(0);
+                        });
+            }
         }
     }
 

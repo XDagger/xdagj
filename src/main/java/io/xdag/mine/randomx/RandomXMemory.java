@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.randomx;
+package io.xdag.mine.randomx;
 
 import lombok.Getter;
 import lombok.Setter;

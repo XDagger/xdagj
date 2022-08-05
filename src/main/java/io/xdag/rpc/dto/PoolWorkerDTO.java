@@ -23,28 +23,30 @@
  */
 package io.xdag.rpc.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import java.net.InetSocketAddress;
+import java.util.List;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ConfigDTO {
+public class PoolWorkerDTO {
+    String address;
+    String status;
+    double unpaidShares;
+    double hashrate;
+    List<Worker> workers;
 
-    String poolIp;
-    int poolPort;
-    String nodeIp;
-    int nodePort;
-    int globalMinerLimit;
-    int maxConnectMinerPerIp;
-    int maxMinerPerAccount;
-
-    String poolFeeRation;
-    String poolRewardRation;
-    String poolDirectRation;
-    String poolFundRation;
+    @Data
+    @Builder
+    public static class Worker {
+        InetSocketAddress address;
+        Long inBound;
+        Long outBound;
+        double unpaidShares;
+        String name;
+        double hashrate;
+    }
 
 }

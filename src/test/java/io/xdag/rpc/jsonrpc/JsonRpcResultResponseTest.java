@@ -32,7 +32,7 @@ import org.junit.Test;
 
 public class JsonRpcResultResponseTest {
 
-    private ObjectMapper serializer = new ObjectMapper();
+    private final ObjectMapper serializer = new ObjectMapper();
 
     @Test
     public void serializeResponseWithResult() throws IOException {

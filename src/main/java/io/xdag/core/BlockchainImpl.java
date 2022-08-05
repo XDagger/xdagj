@@ -24,47 +24,30 @@
 
 package io.xdag.core;
 
-import static io.xdag.config.Constants.BI_APPLIED;
-import static io.xdag.config.Constants.BI_EXTRA;
-import static io.xdag.config.Constants.BI_MAIN;
-import static io.xdag.config.Constants.BI_MAIN_CHAIN;
-import static io.xdag.config.Constants.BI_MAIN_REF;
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.config.Constants.BI_REF;
-import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
-import static io.xdag.config.Constants.MAIN_BIG_PERIOD_LOG;
-import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
-import static io.xdag.config.Constants.MAX_ALLOWED_EXTRA;
-import static io.xdag.config.Constants.MessageType.NEW_LINK;
-import static io.xdag.config.Constants.MessageType.PRE_TOP;
-import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
-import static io.xdag.utils.BytesUtils.equalBytes;
-
+import com.google.common.collect.Lists;
+import com.google.common.primitives.UnsignedLong;
+import io.xdag.Kernel;
+import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nonnull;
-
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
+import io.xdag.listener.BlockMessage;
+import io.xdag.listener.Listener;
+import io.xdag.listener.PretopMessage;
+import io.xdag.mine.randomx.RandomX;
+import io.xdag.db.SnapshotJ;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.SnapshotChainStoreImpl;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.XdagTime;
+import io.xdag.wallet.Wallet;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -78,34 +61,22 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 
-import com.google.common.collect.Lists;
-import com.google.common.primitives.UnsignedLong;
+import javax.annotation.Nonnull;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import io.xdag.Kernel;
-import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.store.BlockStore;
-import io.xdag.db.store.OrphanPool;
-import io.xdag.listener.BlockMessage;
-import io.xdag.listener.Listener;
-import io.xdag.listener.PretopMessage;
-import io.xdag.randomx.RandomX;
-import io.xdag.snapshot.SnapshotJ;
-import io.xdag.snapshot.core.SnapshotInfo;
-import io.xdag.snapshot.core.SnapshotUnit;
-import io.xdag.snapshot.core.StatsBlock;
-import io.xdag.snapshot.db.SnapshotChainStore;
-import io.xdag.snapshot.db.SnapshotChainStoreImpl;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.MessageType.NEW_LINK;
+import static io.xdag.config.Constants.MessageType.PRE_TOP;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.BasicUtils.getHashlowByHash;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 @Getter
@@ -191,7 +162,7 @@ public class BlockchainImpl implements Blockchain {
         }
 
         // add randomx utils
-        randomXUtils = kernel.getRandomXUtils();
+        randomXUtils = kernel.getRandomx();
         if (randomXUtils != null) {
             randomXUtils.setBlockchain(this);
         }
@@ -206,7 +177,7 @@ public class BlockchainImpl implements Blockchain {
         System.out.println("init snapshot...");
         snapshotJ.setConfig(kernel.getConfig());
         snapshotJ.init();
-        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts());
+        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
 
         xdagStats.balance = snapshotJ.getOurBalance();
@@ -283,6 +254,10 @@ public class BlockchainImpl implements Blockchain {
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         for (SnapshotUnit snapshotUnit : snapshotUnits) {
             BlockInfo blockInfo = SnapshotUnit.trasferToBlockInfo(snapshotUnit);
+            onNewTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
+                    FieldType.XDAG_FIELD_SNAPSHOT,BigInteger.valueOf(blockInfo.getAmount()),
+                    kernel.getConfig().getSnapshotSpec().getSnapshotTime(),0,
+                    blockInfo.getRemark());
             blockStore.saveBlockInfo(blockInfo);
             if (snapshotUnit.getKeyIndex() > -1) {
                 blockStore.saveOurBlock(snapshotUnit.getKeyIndex(), blockInfo.getHashlow());
@@ -301,24 +276,6 @@ public class BlockchainImpl implements Blockchain {
         }
         preSeed = snapshotChainStore.getSnapshotPreSeed();
         blockStore.savePreSeed(preSeed);
-    }
-
-    public List<String> getFileName(long time) {
-        List<String> file = new ArrayList<>();
-        file.add("");
-        StringBuilder stringBuffer = new StringBuilder(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        stringBuffer.append(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        stringBuffer.append(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
-        stringBuffer.append("/");
-        file.add(String.valueOf(stringBuffer));
-        return file;
     }
 
     /**
@@ -364,7 +321,7 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(block, BI_EXTRA, true);
             }
 
-            List<Address> all = block.getLinks().stream().distinct().collect(Collectors.toList());
+            List<Address> all = block.getLinks().stream().distinct().toList();
             // 检查区块的引用区块是否都存在,对所有input和output放入block（可能在pending或db中取出
             for (Address ref : all) {
                 if (ref != null) {
@@ -384,12 +341,16 @@ public class BlockchainImpl implements Blockchain {
                             return result;
                         }
 
-//                        if (!ref.getAmount().equals(BigInteger.ZERO)) {
-//                            updateBlockFlag(block, BI_EXTRA, false);
-//                        }
                     }
 
                 }
+            }
+            // 检查区块合法性 检查input是否能使用
+            if (!canUseInput(block)) {
+                result = ImportResult.INVALID_BLOCK;
+                result.setHashlow(block.getHashLow());
+                result.setErrorInfo("Block's input can't be used");
+                return ImportResult.INVALID_BLOCK;
             }
 
             int id = 0;
@@ -400,9 +361,6 @@ public class BlockchainImpl implements Blockchain {
                                 ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                                 : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
                 // TODO:add backref
-                // if(!all.get(i).getAmount().equals(BigInteger.ZERO)){
-                // Block blockRef = getBlockByHash(all.get(i).getHashLow(),false);
-                // }
                 if (!ref.getAmount().equals(BigInteger.ZERO)) {
                     if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
                         onNewTxHistory(ref.getHashLow(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
@@ -418,14 +376,6 @@ public class BlockchainImpl implements Blockchain {
             // 检查当前主链
             checkNewMain();
 
-            // 检查区块合法性 检查input是否能使用
-            if (!canUseInput(block)) {
-                result = ImportResult.INVALID_BLOCK;
-                result.setHashlow(block.getHashLow());
-                result.setErrorInfo("Block's input can't be used");
-                return ImportResult.INVALID_BLOCK;
-            }
-
             // 如果是自己的区块
             if (checkMineAndAdd(block)) {
                 log.debug("A block hash:" + block.getHashLow().toHexString() + " become mine");
@@ -433,7 +383,8 @@ public class BlockchainImpl implements Blockchain {
             }
 
             // 更新区块难度和maxDiffLink
-            BigInteger diff = calculateBlockDiff(block);
+            BigInteger cuDiff = calculateCurrentBlockDiff(block);
+            BigInteger diff = calculateBlockDiff(block,cuDiff);
 
             // 更新preTop
             setPreTop(block, diff);
@@ -497,15 +448,6 @@ public class BlockchainImpl implements Blockchain {
                 }
             }
 
-            BigInteger diff0;
-            // 初始区块自身难度设置
-            if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
-                    && XdagTime.isEndOfEpoch(block.getTimestamp())) {
-                diff0 = getDiffByRandomXHash(block);
-            } else {
-                diff0 = getDiffByRawHash(block.getHash());
-            }
-
             //把过去四个小时每个时间片的diff都记录下来，后面会用这些diff去转换出一个全局hashrate
             int i = (int)(XdagTime.getEpoch(block.getTimestamp())& (HASH_RATE_LAST_MAX_TIME - 1));
             if(XdagTime.getEpoch(block.getTimestamp())>XdagTime.getEpoch(xdagExtStats.getHashrate_last_time())){
@@ -514,13 +456,13 @@ public class BlockchainImpl implements Blockchain {
                 xdagExtStats.setHashrate_last_time(block.getTimestamp());
             }
 
-            if(diff0.compareTo(xdagExtStats.getHashRateTotal()[i])>0){
-                xdagExtStats.getHashRateTotal()[i] = diff0;
+            if(cuDiff.compareTo(xdagExtStats.getHashRateTotal()[i])>0){
+                xdagExtStats.getHashRateTotal()[i] = cuDiff;
             }
 
             if((block.getInfo().getFlags()&BI_OURS)!=0
-                    &&diff0.compareTo(xdagExtStats.getHashRateOurs()[i])>0){
-                xdagExtStats.getHashRateOurs()[i] = diff0;
+                    &&cuDiff.compareTo(xdagExtStats.getHashRateOurs()[i])>0){
+                xdagExtStats.getHashRateOurs()[i] = cuDiff;
 
             }
 
@@ -532,7 +474,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
 
-    private void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
+    public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
             BigInteger amount, long time, int id, byte[] remark) {
         blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id, remark);
     }
@@ -545,7 +487,6 @@ public class BlockchainImpl implements Blockchain {
     /**
      * 用于判断是否切换到修复同步问题的分支
      *
-     * @return
      */
     // TODO: 目前syncFixHeight 写死 后续需要修改
     // TODO: paulochen 同步问题改进，切换高度未定
@@ -565,7 +506,7 @@ public class BlockchainImpl implements Blockchain {
             Block tmpRef = getMaxDiffLink(blockRef, false);
             if (
                     (tmpRef == null
-                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef,calculateCurrentBlockDiff(tmpRef))) > 0) &&
                             (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
                                     .getEpoch(blockRef.getTimestamp()))
             ) {
@@ -598,7 +539,7 @@ public class BlockchainImpl implements Blockchain {
             Block tmpRef = getMaxDiffLink(blockRef, false);
             if (
                     (tmpRef == null
-                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef)) > 0) &&
+                            || blockRef.getInfo().getDifficulty().compareTo(calculateBlockDiff(tmpRef,calculateCurrentBlockDiff(tmpRef))) > 0) &&
                             (blockRef0 == null || XdagTime.getEpoch(blockRef0.getTimestamp()) > XdagTime
                                     .getEpoch(blockRef.getTimestamp()))
             ) {
@@ -860,6 +801,9 @@ public class BlockchainImpl implements Blockchain {
         }
         // 非主块不需要高度
         block.getInfo().setHeight(0);
+//      Add the rolled back block to the orphanPool for processing again
+//        orphanPool.addOrphan(block);
+//        xdagStats.nnoref++;
     }
 
     @Override
@@ -976,49 +920,62 @@ public class BlockchainImpl implements Blockchain {
         if (XdagTime.getEpoch(block.getTimestamp()) > XdagTime.getCurrentEpoch()) {
             return;
         }
-        BigInteger blockDiff = diff;
         if (xdagTopStatus.getPreTop() == null) {
             xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(blockDiff);
+            xdagTopStatus.setPreTopDiff(diff);
             block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(blockDiff);
+            block.setPretopCandidateDiff(diff);
             return;
         }
 
-        if (blockDiff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
+        if (diff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
             xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(blockDiff);
+            xdagTopStatus.setPreTopDiff(diff);
             block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(blockDiff);
+            block.setPretopCandidateDiff(diff);
         }
     }
-
     /**
-     * 计算区块在链上的难度 同时设置难度 和最大难度连接 并返回区块难度 *
+     * 计算当前区块难度
      */
-    public BigInteger calculateBlockDiff(Block block) {
+    public BigInteger calculateCurrentBlockDiff(Block block){
+        if (block == null){
+            return BigInteger.ZERO;
+        }
+        if (block.getInfo().getDifficulty() != null) {
+            return block.getInfo().getDifficulty();
+        }
+        BigInteger blockDiff;
+        // 初始区块自身难度设置
+        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
+                && XdagTime.isEndOfEpoch(block.getTimestamp())) {
+            blockDiff = getDiffByRandomXHash(block);
+        } else {
+            blockDiff = getDiffByRawHash(block.getHash());
+        }
 
+        return blockDiff;
+    }
+    /**
+     * 设置区块难度 和 最大难度连接 并返回区块难度 *
+     */
+    public BigInteger calculateBlockDiff(Block block,BigInteger cuDiff) {
+        if (block == null){
+            return BigInteger.ZERO;
+        }
         if (block.getInfo().getDifficulty() != null) {
             return block.getInfo().getDifficulty();
         }
 
-        BigInteger diff0;
-        // 初始区块自身难度设置
-        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
-                && XdagTime.isEndOfEpoch(block.getTimestamp())) {
-            diff0 = getDiffByRandomXHash(block);
-        } else {
-            diff0 = getDiffByRawHash(block.getHash());
-        }
-        block.getInfo().setDifficulty(diff0);
+        block.getInfo().setDifficulty(cuDiff);
 
-        BigInteger maxDiff = diff0;
+        BigInteger maxDiff = cuDiff;
         Address maxDiffLink = null;
 
         // 临时区块
         Block tmpBlock;
         if (block.getLinks().size() == 0) {
-            return diff0;
+            return cuDiff;
         }
 
         // 遍历所有link 找maxLink
@@ -1035,7 +992,7 @@ public class BlockchainImpl implements Blockchain {
                 if (refDifficulty == null) {
                     refDifficulty = BigInteger.ZERO;
                 }
-                BigInteger curDiff = refDifficulty.add(diff0);
+                BigInteger curDiff = refDifficulty.add(cuDiff);
                 if (curDiff.compareTo(maxDiff) > 0) {
                     maxDiff = curDiff;
                     maxDiffLink = ref;
@@ -1052,9 +1009,9 @@ public class BlockchainImpl implements Blockchain {
                 }
                 if (tmpBlock != null
                         && (XdagTime.getEpoch(tmpBlock.getTimestamp()) < XdagTime.getEpoch(block.getTimestamp()))
-                        && tmpBlock.getInfo().getDifficulty().add(diff0).compareTo(curDiff) > 0
+                        && tmpBlock.getInfo().getDifficulty().add(cuDiff).compareTo(curDiff) > 0
                 ) {
-                    curDiff = tmpBlock.getInfo().getDifficulty().add(diff0);
+                    curDiff = tmpBlock.getInfo().getDifficulty().add(cuDiff);
                 }
                 if (curDiff == null) {
                     curDiff = BigInteger.ZERO;
@@ -1086,16 +1043,11 @@ public class BlockchainImpl implements Blockchain {
         data.set(32, block.getXdagBlock().getField(15).getData());
 //        byte[] hash = Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch));
         // Fix: paulochen 调整 210729
-        if (randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch) != null) {
-            Bytes32 hash = Bytes32
-                    .wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
+        byte[] blockHash = randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch);
+        if (blockHash != null) {
+            Bytes32 hash = Bytes32.wrap(Arrays.reverse(blockHash));
             return getDiffByRawHash(hash);
-
         }
-//        Bytes32 hash = Bytes32.wrap(Arrays.reverse(randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch)));
-//        if (hash != null) {
-//            return getDiffByRawHash(hash);
-//        }
         return getDiffByRawHash(block.getHash());
     }
 
@@ -1148,7 +1100,7 @@ public class BlockchainImpl implements Blockchain {
     public void removeOrphan(Bytes32 hashlow, OrphanRemoveActions action) {
         Block b = getBlockByHash(hashlow, false);
         // TODO: snapshot
-        if (b.getInfo().isSnapshot()) {
+        if (b != null && b.getInfo() != null && b.getInfo().isSnapshot()) {
             return;
         }
         if (b != null && ((b.getInfo().flags & BI_REF) == 0) && (action != OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
@@ -1299,7 +1251,7 @@ public class BlockchainImpl implements Blockchain {
             block.parse();
             MutableBytes subdata = block.getSubRawData(block.getOutsigIndex() - 2);
             SECPSignature sig = block.getOutsig();
-            return verifySignature(subdata, sig, publicKeys, blockInfo);
+            return verifySignature(subdata, Sign.toCanonical(sig), publicKeys, blockInfo);
         }
 
 
@@ -1510,33 +1462,9 @@ public class BlockchainImpl implements Blockchain {
     }
 
 
-    public List<Block> listMainBlocksByOrigin(int count) {
-        Block temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
-        if (temp == null) {
-            temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
-        }
-        List<Block> res = new ArrayList<>();
-        while (count > 0) {
-            if (temp == null) {
-                break;
-            }
-            if ((temp.getInfo().flags & BI_MAIN) != 0) {
-                count--;
-                res.add((Block) temp.clone());
-            }
-            // 获取maxdifflink
-            if (temp.getInfo().getMaxDiffLink() == null) {
-                break;
-            }
-            temp = getBlockByHash(Bytes32.wrap(temp.getInfo().getMaxDiffLink()), false);
-        }
-        return res;
-    }
-
     @Override
     public List<Block> listMainBlocks(int count) {
         return listMainBlocksByHeight(count);
-//        return listMainBlocksByOrigin(count);
     }
 
     // TODO: 列出本矿池生成的主块，如果本矿池只在前期产块或者从未产块，会导致需要遍历所有的区块数据，这部分应该需要优化
@@ -1545,7 +1473,6 @@ public class BlockchainImpl implements Blockchain {
         Block temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false);
         if (temp == null) {
             temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
-            //                log.error("Pretop is null");
         }
         List<Block> res = new ArrayList<>();
         while (count > 0) {

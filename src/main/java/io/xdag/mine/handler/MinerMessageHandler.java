@@ -50,10 +50,7 @@ import org.apache.tuweni.bytes.MutableBytes;
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     private final MinerChannel channel;
-    /**
-     * 每一个字段的长度
-     */
-    private final int DATA_SIZE = 32;
+    private final int DATA_SIZE = 32;// length of each field
     private static final long WORKERNAME_HEADER_WORD = 0xf46b9853;
     private MessageFactory messageFactory;
 
@@ -70,25 +67,24 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         int len = bytes.length;
         long sectorNo = channel.getOutBound().get();
         if (len == DATA_SIZE) {
-            log.debug("发送一个字段的消息");
+            log.debug("Send a message with one field");
             BytesUtils.arrayReverse(bytes);
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 1, sectorNo));
             channel.getOutBound().add();
         } else if (len == 2 * DATA_SIZE) {
-            log.debug("发送一个任务消息，消息内容为[{}]", Hex.encodeHexString(bytes));
+            log.debug("Send a task message, the message content hex is[{}]", Hex.encodeHexString(bytes));
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 2, sectorNo));
             channel.getOutBound().add(2);
         } else if (len == 16 * DATA_SIZE) {
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 16, sectorNo));
             channel.getOutBound().add(16);
         } else {
-            log.debug("没有该长度字段类型的消息");
+            log.debug("no message of this length:{} field type.", len);
         }
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        // 处理接收到的消息
         Message msg = null;
         long sectorNo = channel.getInBound().get();
         int len = in.readableBytes();
@@ -104,14 +100,14 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 msg = messageFactory.create(WORKER_NAME.asByte(),MutableBytes.wrap(unCryptData));
             }else {
                 if (channel.isServer()) {
-                    // 如果是服务端 那么收到的一个字节的消息只能是task——share
+                    // If it is the server, the one-byte message received can only be task-share
                     msg = messageFactory.create(TASK_SHARE.asByte(), MutableBytes.wrap(unCryptData));
                 } else {
                     msg = messageFactory.create(NEW_BALANCE.asByte(), MutableBytes.wrap(unCryptData));
                 }
             }
             channel.getInBound().add();
-            // 两个字段 说明收到的是一个任务字段 只有可能是矿工收到新的任务
+            // The two fields indicate that a task was received. Only the miner may receive a new task.
         } else if (len == 2 * DATA_SIZE) {
             log.debug("Received a message from the miner,msg len == 64");
             byte[] encryptData = new byte[64];
@@ -120,7 +116,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
             msg = messageFactory.create(TASK_SHARE.asByte(), MutableBytes.wrap(unCryptData));
             channel.getInBound().add(2);
-            // 收到512个字节的消息 那就说明是收到一个区块 矿工发上来的一笔交易
+            // When a message of 512 bytes is received, it means that a transaction is sent from a miner after receiving a block.
         } else if (len == 16 * DATA_SIZE) {
             byte[] encryptData = new byte[512];
             in.readBytes(encryptData);
@@ -129,7 +125,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             int ttl = (int) ((transportHeader >> 8) & 0xff);
             int crc = BytesUtils.bytesToInt(unCryptData, 4, true);
             System.arraycopy(BytesUtils.longToBytes(0, true), 0, unCryptData, 4, 4);
-            // 验证长度和crc校验
+            // Verify length and crc checksum
             if (!crc32Verify(unCryptData, crc)) {
                 log.debug("receive not block");
             } else {
@@ -150,14 +146,14 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         if (msg != null) {
             out.add(msg);
         } else {
-            log.error("receive unknown block, msg len = [{}]",0);
+            log.error("Receive unknown block, msg len = [{}]",0);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
-            log.debug("远程主机关闭了一个连接");
+            log.debug("The remote host closed a connection.");
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();

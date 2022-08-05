@@ -21,36 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.snapshot.core;
+package io.xdag.db;
 
-import lombok.Data;
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
+import java.util.List;
 
-import java.util.Arrays;
+import org.hyperledger.besu.crypto.KeyPair;
 
-@Data
-public class SnapshotInfo {
+public interface SnapshotChainStore {
 
-    protected boolean type; // true PUBKEY false BLOCK_DATA
-    protected byte[] data;// 区块数据 / pubkey
+    void init();
 
-    public SnapshotInfo() {
+    void reset();
 
-    }
+    void saveSnapshotUnit(byte[] key, SnapshotUnit snapshotUnit);
 
-    public SnapshotInfo(boolean type, byte[] data) {
-        this.type = type;
-        this.data = data;
-    }
+    SnapshotUnit getSnapshotUnit(byte[] key);
 
-    public boolean getType() {
-        return type;
-    }
+    List<SnapshotUnit> getAllSnapshotUnit();
 
-    @Override
-    public String toString() {
-        return "SnapshotInfo{" +
-                "type=" + type +
-                ", data=" + Arrays.toString(data) +
-                '}';
-    }
+    List<StatsBlock> getSnapshotStatsBlock();
+
+    StatsBlock getLatestStatsBlock();
+
+    byte[] getSnapshotPreSeed();
+
+    void saveSnaptshotStatsBlock(int i, StatsBlock statsBlock);
+
+    void saveGlobalBalance(long balance);
+
+    long getGlobalBalance();
+
+    StatsBlock getStatsBlockByIndex(int i);
+
+    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<KeyPair> publicKeys);
+
 }

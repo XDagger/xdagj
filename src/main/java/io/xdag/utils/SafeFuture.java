@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 public class SafeFuture<T> extends CompletableFuture<T> {
 
-    public static SafeFuture<Void> COMPLETE = SafeFuture.completedFuture(null);
+    public final static SafeFuture<Void> COMPLETE = SafeFuture.completedFuture(null);
 
     public static void reportExceptions(final CompletionStage<?> future) {
         future.exceptionally(

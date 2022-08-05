@@ -65,7 +65,6 @@ public class Constants {
     public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
     public static final long REQUEST_WAIT = 64;
     public static final long MAX_ALLOWED_EXTRA = 65536;
-    public static final String FUND_ADDRESS = "FQglVQtb60vQv2DOWEUL7yh3smtj7g1s";
     /**
      * 每一轮的确认数是16
      */
@@ -74,7 +73,7 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
-    public static final String CLIENT_VERSION = "0.4.9";
+    public static final String CLIENT_VERSION = "0.5.0";
 
     /**
      * 同步问题 分叉高度
@@ -86,6 +85,14 @@ public class Constants {
     public enum MessageType {
         UPDATE,
         PRE_TOP,
-        NEW_LINK;
+        NEW_LINK
     }
+
+    public final static String SNAPTSHOT_KEY_TIME = "g_snapshot_time";
+    public final static String SNAPTSHOT_KEY_STATE = "g_xdag_state";
+    public final static String SNAPTSHOT_KEY_STATS = "g_xdag_stats";
+    public final static String SNAPTSHOT_KEY_EXTSTATS = "g_xdag_extstats";
+
+    public final static String SNAPSHOT_KEY_STATS_MAIN = "g_snapshot_main";
+    public final static String SNAPSHOT_PRE_SEED = "pre_seed";
 }

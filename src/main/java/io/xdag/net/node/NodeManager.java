@@ -24,8 +24,6 @@
 
 package io.xdag.net.node;
 
-import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
-
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.xdag.Kernel;
@@ -38,25 +36,15 @@ import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.annotation.Nonnull;
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
 
 
 @Slf4j
@@ -220,7 +208,7 @@ public class NodeManager {
     public void doConnectlibp2p() {
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
         List<DiscoveryPeer> discoveryPeerList =
-                libp2pNetwork.getDiscV5Service().streamKnownPeers().collect(Collectors.toList());
+                libp2pNetwork.getDiscV5Service().streamKnownPeers().toList();
         for (DiscoveryPeer p : discoveryPeerList) {
             Node node = new Node(p.getNodeAddress().getHostName(), p.getNodeAddress().getPort());
             if (!myself.equals(node) && !activeAddress.contains(p.getNodeAddress()) && !hadConnected.contains(node)) {

@@ -48,10 +48,6 @@ public class XdagJsonRpcHandler extends SimpleChannelInboundHandler<ByteBufHolde
     public XdagJsonRpcHandler(JsonRpcSerializer serializer) {
         this.serializer = serializer;
     }
-//    public XdagJsonRpcHandler(EthSubscriptionNotificationEmitter emitter, JsonRpcSerializer serializer) {
-//        this.emitter = emitter;
-//        this.serializer = serializer;
-//    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBufHolder msg) {
@@ -75,20 +71,7 @@ public class XdagJsonRpcHandler extends SimpleChannelInboundHandler<ByteBufHolde
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-//        emitter.unsubscribe(ctx.channel());
         super.channelInactive(ctx);
     }
 
-//    @Override
-//    public JsonRpcResultOrError visit(XDAGUnsubscribeRequest request, ChannelHandlerContext ctx) {
-////        boolean unsubscribed = emitter.unsubscribe(request.getParams().getSubscriptionId());
-////        return new JsonRpcBooleanResult(unsubscribed);
-//        return null;
-//    }
-//
-//    @Override
-//    public JsonRpcResultOrError visit(XDAGSubscribeRequest request, ChannelHandlerContext ctx) {
-////        return request.getParams().accept(emitter, ctx.channel());
-//        return null;
-//    }
 }

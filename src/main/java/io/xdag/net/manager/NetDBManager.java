@@ -53,7 +53,7 @@ public class NetDBManager {
     @Getter
     private NetDB whiteDB;
 
-    private Config config;
+    private final Config config;
 
     public NetDBManager(Config config) {
         this.config = config;

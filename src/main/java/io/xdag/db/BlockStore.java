@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.db.store;
+package io.xdag.db;
 
 import static io.xdag.utils.BytesUtils.equalBytes;
 
@@ -40,10 +40,9 @@ import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
-import io.xdag.db.KVSource;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.snapshot.core.SnapshotInfo;
+import io.xdag.core.SnapshotInfo;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -345,6 +344,7 @@ public class BlockStore {
         indexSource.fetchPrefix(new byte[]{OURS_BLOCK_INFO}, pair -> {
             int index = getOurIndex(pair.getKey());
 //            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
+            assert getOurHash(pair.getKey()) != null;
             Block block = getBlockInfoByHash(Bytes32.wrap(getOurHash(pair.getKey())));
             if (function.apply(Pair.of(index, block))) {
                 return Boolean.TRUE;
@@ -427,7 +427,6 @@ public class BlockStore {
 //        if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFL) != 0) return -1;
 
         for (level = -6; endtime != 0; level++, endtime >>= 4) {
-            ;
         }
 
         List<String> files = getFileName((starttime) & 0xffffff000000L);
@@ -616,7 +615,7 @@ public class BlockStore {
                 BytesUtils.merge(addressHashlow.toArray(), BytesUtils.merge(txHashlow.toArray(),
                         BytesUtils.intToBytes(id, true)))); // key 0xa0 + address hash + tx hash + id
 
-        byte[] value = null;
+        byte[] value;
         value = BytesUtils.merge(type.asByte(),
                 BytesUtils.merge(txHashlow.toArray(),
                         BytesUtils.merge(BytesUtils.bigIntegerToBytes(amount, 8, true),

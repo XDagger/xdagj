@@ -24,49 +24,38 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.core.ImportResult.EXIST;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagState;
+import io.xdag.core.*;
 import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.XdagTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
+
 import java.math.BigInteger;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes32;
+import static io.xdag.core.ImportResult.*;
 
 @Slf4j
 @Getter
 @Setter
 public class SyncManager {
+    public static final int MAX_SIZE = 100000;
     private Kernel kernel;
     private Blockchain blockchain;
     private long importStart;
@@ -90,7 +79,7 @@ public class SyncManager {
     /***
      * Queue for poll oldest block
      */
-    private ConcurrentLinkedQueue<Bytes32> queue = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
@@ -178,12 +167,8 @@ public class SyncManager {
         ImportResult result = importBlock(blockWrapper);
         log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow().toHexString(), result);
         switch (result) {
-            case EXIST:
-            case IMPORTED_BEST:
-            case IMPORTED_NOT_BEST:
-                syncPopBlock(blockWrapper);
-                break;
-            case NO_PARENT: {
+            case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST -> syncPopBlock(blockWrapper);
+            case NO_PARENT -> {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow().toHexString(),
                             result.getHashlow().toHexString());
@@ -196,14 +181,12 @@ public class SyncManager {
                     }
 
                 }
-                break;
             }
-            case INVALID_BLOCK: {
+            case INVALID_BLOCK -> {
 //                log.error("invalid block:{}", Hex.toHexString(blockWrapper.getBlock().getHashLow()));
-                break;
             }
-            default:
-                break;
+            default -> {
+            }
         }
         return result;
     }
@@ -215,13 +198,11 @@ public class SyncManager {
      * @param hashLow 缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
-        if(syncMap.size() >= 50000){
+        if(syncMap.size() >= MAX_SIZE){
             for (int i = 0; i < 200; i++) {
-                Bytes32 last = queue.poll();
-                if(syncMap.containsKey(last)){
-                    syncMap.remove(last);
-                    blockchain.getXdagStats().nwaitsync--;
-                }
+                Bytes32 last = syncQueue.poll();
+                assert last != null;
+                if(syncMap.remove(last) != null) blockchain.getXdagStats().nwaitsync--;
             }
         }
         AtomicBoolean r = new AtomicBoolean(true);
@@ -231,6 +212,9 @@ public class SyncManager {
         blockWrapper.setTime(now);
         newQueue.add(blockWrapper);
         blockchain.getXdagStats().nwaitsync++;
+        if(!syncMap.containsKey(hashLow)){
+            syncQueue.offer(hashLow);
+        }
         syncMap.merge(hashLow, newQueue,
                 (oldQ, newQ) -> {
                     blockchain.getXdagStats().nwaitsync--;
@@ -251,9 +235,6 @@ public class SyncManager {
                     r.set(true);
                     return oldQ;
                 });
-        if(!queue.contains(hashLow)){
-            queue.offer(hashLow);
-        }
         return r.get();
     }
 
@@ -268,6 +249,7 @@ public class SyncManager {
         Queue<BlockWrapper> queue = syncMap.getOrDefault(block.getHashLow(), null);
         if (queue != null) {
             syncMap.remove(block.getHashLow());
+            syncQueue.remove(block.getHashLow());
             blockchain.getXdagStats().nwaitsync--;
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);

@@ -39,9 +39,6 @@ public interface MinerManager {
 
     Map<Bytes, Miner> getActivateMiners();
 
-    /**
-     * 接收到share
-     */
     void onNewShare(MinerChannel channel, Message msg);
 
     void setPoW(PoW pow);
