@@ -71,6 +71,7 @@ import static io.xdag.config.Constants.*;
 import static io.xdag.config.Constants.MessageType.NEW_LINK;
 import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_EXTRA;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
@@ -433,6 +434,8 @@ public class BlockchainImpl implements Blockchain {
 //                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 memOrphanPool.put(block.getHashLow(), block);
                 xdagStats.nextra++;
+                // TODO：设置为返回 IMPORTED_EXTRA
+                result = ImportResult.IMPORTED_EXTRA;
             } else {
 //                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
@@ -1116,7 +1119,6 @@ public class BlockchainImpl implements Blockchain {
                 if (action != OrphanRemoveActions.ORPHAN_REMOVE_REUSE) {
                     // 将区块保存
                     saveBlock(removeBlockRaw);
-                    memOrphanPool.remove(key);
                     // 移除所有EXTRA块链接的块
                     if (removeBlockRaw != null) {
                         List<Address> all = removeBlockRaw.getLinks();
@@ -1370,7 +1372,7 @@ public class BlockchainImpl implements Blockchain {
             Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
             linkBlock.signOut(kernel.getWallet().getDefKey());
             ImportResult result = this.tryToConnect(linkBlock);
-            if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
+            if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST || result == IMPORTED_EXTRA) {
                 onNewBlock(linkBlock);
             }
         }

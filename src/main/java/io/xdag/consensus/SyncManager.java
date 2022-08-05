@@ -24,6 +24,11 @@
 
 package io.xdag.consensus;
 
+import static io.xdag.core.ImportResult.EXIST;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_EXTRA;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -132,7 +137,7 @@ public class SyncManager {
             log.debug("Block have exist:" + blockWrapper.getBlock().getHash().toHexString());
         }
 
-        if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
+        if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST || importResult == IMPORTED_EXTRA) {
             BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
 
             Config config = kernel.getConfig();
@@ -152,10 +157,13 @@ public class SyncManager {
                 }
             }
 
-            if (blockWrapper.getRemoteNode() == null
-                    || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
-                if (blockWrapper.getTtl() > 0) {
-                    distributeBlock(blockWrapper);
+            // TODO:extra区块不广播
+            if (importResult != IMPORTED_EXTRA) {
+                if (blockWrapper.getRemoteNode() == null
+                        || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
+                    if (blockWrapper.getTtl() > 0) {
+                        distributeBlock(blockWrapper);
+                    }
                 }
             }
         }
@@ -167,7 +175,7 @@ public class SyncManager {
         ImportResult result = importBlock(blockWrapper);
         log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow().toHexString(), result);
         switch (result) {
-            case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST -> syncPopBlock(blockWrapper);
+            case EXIST,IMPORTED_EXTRA,IMPORTED_BEST, IMPORTED_NOT_BEST -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow().toHexString(),
@@ -255,6 +263,7 @@ public class SyncManager {
                 ImportResult importResult = importBlock(bw);
                 switch (importResult) {
                     case EXIST:
+                    case IMPORTED_EXTRA:
                     case IMPORTED_BEST:
                     case IMPORTED_NOT_BEST:
                         // TODO import成功后都需要移除
