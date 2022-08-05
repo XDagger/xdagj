@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -169,7 +170,6 @@ public class MinerChannel {
     private MinerHandShakeHandler minerHandShakeHandler;
     private MinerMessageHandler minerMessageHandler;
     private Miner03 miner03;
-    private ConnectionLimitHandler connectionLimitHandler;
 
     @Getter
     private boolean isMill = false;
@@ -179,7 +179,7 @@ public class MinerChannel {
      */
     @Getter
     @Setter
-    private String workerName = "";
+    private String workerName = StringUtils.EMPTY;
 
     /**
      * 初始化 同时需要判断是服务器端还是客户端
@@ -222,13 +222,8 @@ public class MinerChannel {
         pipeline.addLast("MinerHandShake", minerHandShakeHandler);
     }
 
-    // 初始化这个channel
-
     /**
      * 根据版本创建一个信息工厂
-     *
-     * @param version 对应的版本
-     * @return 工厂
      */
     private MessageFactory createMinerMessageFactory(XdagVersion version) {
         return switch (version) {
@@ -237,13 +232,10 @@ public class MinerChannel {
     }
 
     /**
-     * 激活这个channel的各种handler 为管道添加各种处理器
-     *
-     * @param ctx 上下文
-     * @param version 版本号
+     * Active Channel and Add Handler 为管道添加各种处理器
      */
-    public void activateHadnler(ChannelHandlerContext ctx, XdagVersion version) {
-        log.debug("activate handler");
+    public void activateHandler(ChannelHandlerContext ctx, XdagVersion version) {
+        log.debug("Activate Handler");
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
@@ -252,11 +244,11 @@ public class MinerChannel {
 
     public boolean initMiner(Bytes32 accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        log.debug("init a Miner:" + accountAddressHash.toHexString());
+        String addrHexStr = accountAddressHash.toHexString();
+        log.debug("Init A Miner:" + addrHexStr);
         // 判断这个矿工是否已经存在了
         if (minerManager !=null && minerManager.getActivateMiners().containsKey(accountAddressHash)) {
-            // 存在 但是会不会超过限制数
-            log.debug("已经存在一个对应的矿工了");
+            log.debug("Miner:{} already exists", addrHexStr);
             this.miner = minerManager.getActivateMiners().get(accountAddressHash);
             if (miner !=null && miner.getConnChannelCounts() < config.getPoolSpec().getMaxMinerPerAccount()) {
                 this.miner = minerManager.getActivateMiners().get(accountAddressHash);
@@ -264,7 +256,7 @@ public class MinerChannel {
                 this.miner.setMinerStates(MINER_ACTIVE);
                 return true;
             } else {
-                log.debug("同一个矿工连接了太多");
+                log.debug("Too many connections to the same miner:{}", addrHexStr);
                 return false;
             }
         } else {

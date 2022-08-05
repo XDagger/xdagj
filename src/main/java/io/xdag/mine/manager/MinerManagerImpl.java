@@ -115,7 +115,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
      * 启动 函数 开启遍历和server
      */
     public void init() {
-        log.debug("start futulre");
         updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
         cleanChannelFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
@@ -136,7 +135,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     @Override
     public void addActivateChannel(MinerChannel channel) {
         log.debug("add a new active channel");
-        // 一般来讲 地址可能相同 但是端口不同
         synchronized (activateMinerChannels) {
             activateMinerChannels.put(channel.getInetAddress(), channel);
         }
@@ -183,9 +181,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         }
     }
 
-    /**
-     * 清除当前所有不活跃的channel
-     */
     public void cleanUnactivateChannel() {
         synchronized (activateMinerChannels) {
             try {
@@ -196,9 +191,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         }
     }
 
-    /**
-     * 清理minger
-     */
     public void cleanUnactivateMiner() {
         synchronized (activateMiners) {
             try {
@@ -225,7 +217,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     }
 
     /**
-     * 每一轮任务刚发出去的时候 会用这个跟新所有miner的额情况
+     * When each round of tasks is just sent out, this will be used to update all miner's status
      */
     public void updateNewTaskandBroadcast() {
         Task task = null;

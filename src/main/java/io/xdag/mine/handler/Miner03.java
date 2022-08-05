@@ -76,7 +76,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             case NEW_TASK -> processNewTask((NewTaskMessage) msg);
             case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
             case WORKER_NAME ->processWorkerName((WorkerNameMessage) msg);
-            default -> log.warn("没有这种对应数据的消息类型，内容为【{}】", msg.getEncoded());
+            default -> log.warn("There is no message type for this corresponding data, the content HEX is {}", msg.getEncoded().toHexString());
         }
     }
 
@@ -118,17 +118,17 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     }
 
     protected void processNewBalance(NewBalanceMessage msg) {
-        // TODO: 2020/5/9 处理矿工接受到的余额信息 矿工功能
+        // TODO: 2020/5/9 Process the balance information received by the miner Miner function
         log.debug("Receive New Balance [{}]", msg.getEncoded().toHexString());
     }
 
     protected void processNewTask(NewTaskMessage msg) {
-        // TODO: 2020/5/9 处理矿工收到的新任务 矿工功能
+        // TODO: 2020/5/9 Handle new tasks received by miners Miner functions
         log.debug("Miner Receive New Task [{}]", msg.getEncoded().toHexString());
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
-        log.debug("Pool Receive Share");
+        log.debug("Pool Receive Share.");
 
         //share地址不一致，修改对应的miner地址
         if (compareTo(msg.getEncoded().toArray(), 8, 24, channel.getAccountAddressHash().toArray(), 8, 24) != 0) {
@@ -140,19 +140,19 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                     .wrap(BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded().toArray(), 8, 24)));
             Block block = kernel.getBlockchain().getBlockByHash(hashLow, false);
             Miner oldMiner = channel.getMiner();
-            //不为空，表示可以找到对应的区块，地址存在
+            // Not empty, it means that the corresponding block can be found and the address exists
             if (block != null) {
                 blockHash = block.getHash();
                 Miner miner = kernel.getMinerManager().getActivateMiners()
                         .get(blockHash);
                 if (miner == null) {
-                    log.debug("creat a new miner");
+                    log.debug("create a new miner");
                     miner = new Miner(blockHash);
                     minerManager.addActiveMiner(miner);
                 }
-                //改变channel对应的地址，并替换新的miner连接
+                // Change the address corresponding to the channel and replace the new miner connection
                 channel.updateMiner(miner);
-                log.info("XDAG:randomXminer. channel {} with wallet-address {} is randomXminer",
+                log.info("XDAG:randomx miner. channel {} with wallet-address {} is randomx miner.",
                         channel.getInetAddress().toString(), blockHash.toHexString());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
@@ -175,14 +175,14 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     }
 
     private void processWorkerName(WorkerNameMessage msg) {
-        log.debug("Pool Receive Worker Name");
         byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
         String workerName = new String(workerNameByte, StandardCharsets.UTF_8).trim();
+        log.debug("Pool Receive Worker Name {}.", workerName);
         channel.setWorkerName(workerName);
     }
 
     /**
-     * 发送任务消息
+     * Send Task Message
      */
     public void sendMessage(Bytes bytes) {
         ctx.channel().writeAndFlush(bytes.toArray());

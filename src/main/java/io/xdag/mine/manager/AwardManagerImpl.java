@@ -293,16 +293,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     }
 
     @Override
-    public Miner getPoolMiner() {
-        return poolMiner;
-    }
-
-    @Override
-    public void setPoolMiner(Bytes32 hash) {
-        this.poolMiner = new Miner(hash);
-    }
-
-    @Override
     public void onNewTask(Task task) {
         currentTaskTime = task.getTaskTime();
         currentTaskIndex = task.getTaskIndex();
@@ -329,8 +319,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 miners.add(miner);
                 minerCounts++;
-                log.debug("矿工的数量为[{}]", minerCounts);
-                //log.debug("添加的矿工地址为[{}],共计[{}]个矿工",Hex.toHexString(miner.getAddressHash()), minerCounts);
+                log.debug("The number of miners is[{}]", minerCounts);
             }
         }
 

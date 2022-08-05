@@ -41,24 +41,13 @@ public class MinerServer {
     protected Kernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
-
-    /**
-     * 用来接受监听的fuyire
-     */
     private ChannelFuture channelFuture;
-
-    /**
-     * 是否正在监听
-     */
     private boolean isListening = false;
 
     public MinerServer(Kernel kernel) {
         this.kernel = kernel;
     }
 
-    /**
-     * 开启监听的事件
-     */
     public void start() {
         start(kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
     }
@@ -79,27 +68,24 @@ public class MinerServer {
             bootstrap.childHandler(new MinerChannelInitializer(kernel, true));
             channelFuture = bootstrap.bind(ip, port).sync();
             isListening = true;
-            log.info("start listening the pool,host:[{}:{}]", ip, port);
+            log.info("Start Listening The Pool, Host:[{}:{}]", ip, port);
         } catch (Exception e) {
-            log.error("miner server error: {} ({})", e.getMessage(), e.getClass().getName());
-            throw new Error("minerServer Disconnected");
+            log.error("Miner Server Error: {} ({})", e.getMessage(), e.getClass().getName());
+            throw new Error("Miner Server Disconnected.");
         }
     }
 
-    /**
-     * 关闭连接
-     */
     public void close() {
         if (isListening && channelFuture != null && channelFuture.channel().isOpen()) {
             try {
-                log.debug("Closing MinerServer...");
+                log.debug("Closing Miner Server...");
                 channelFuture.channel().close().sync();
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
                 isListening = false;
-                log.info("MinerServer closed.");
+                log.info("Miner Server Closed.");
             } catch (Exception e) {
-                log.warn("Problems closing server channel", e);
+                log.warn("Problems Closing Miner Server Channel", e);
             }
         }
     }
