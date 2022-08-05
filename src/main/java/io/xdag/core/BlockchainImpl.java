@@ -345,6 +345,11 @@ public class BlockchainImpl implements Blockchain {
                     }
 
                 }
+
+                // TODO: 如果是交易块 不设置extra
+                if (!ref.getAmount().equals(BigInteger.ZERO)) {
+                    updateBlockFlag(block, BI_EXTRA, false);
+                }
             }
             // 检查区块合法性 检查input是否能使用
             if (!canUseInput(block)) {
