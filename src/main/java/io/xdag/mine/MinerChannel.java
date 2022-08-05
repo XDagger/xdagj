@@ -254,13 +254,12 @@ public class MinerChannel {
         this.accountAddressHash = accountAddressHash;
         log.debug("init a Miner:" + accountAddressHash.toHexString());
         // 判断这个矿工是否已经存在了
-        if (minerManager.getActivateMiners().containsKey(accountAddressHash)) {
+        if (minerManager !=null && minerManager.getActivateMiners().containsKey(accountAddressHash)) {
             // 存在 但是会不会超过限制数
             log.debug("已经存在一个对应的矿工了");
             this.miner = minerManager.getActivateMiners().get(accountAddressHash);
-            if (miner.getConnChannelCounts() < config.getPoolSpec().getMaxMinerPerAccount()) {
+            if (miner !=null && miner.getConnChannelCounts() < config.getPoolSpec().getMaxMinerPerAccount()) {
                 this.miner = minerManager.getActivateMiners().get(accountAddressHash);
-                this.miner.addChannelCounts(1);
                 this.miner.putChannel(this.inetAddress, this);
                 this.miner.setMinerStates(MINER_ACTIVE);
                 return true;
@@ -271,7 +270,6 @@ public class MinerChannel {
         } else {
             this.miner = new Miner(accountAddressHash);
             minerManager.getActivateMiners().put(accountAddressHash, miner);
-            miner.addChannelCounts(1);
             this.miner.putChannel(this.inetAddress, this);
             this.miner.setMinerStates(MINER_ACTIVE);
             return true;
@@ -380,7 +378,6 @@ public class MinerChannel {
         this.miner = miner;
         this.accountAddressHash = miner.getAddressHash();
         miner.putChannel(this.getInetAddress(), this);
-        miner.addChannelCounts(1);
         miner.setMinerStates(MinerStates.MINER_ACTIVE);
         isMill = true;
     }
