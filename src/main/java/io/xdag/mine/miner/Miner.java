@@ -148,7 +148,7 @@ public class Miner {
      * maxdiff 全部为0
      */
     public boolean canRemove() {
-        if (minerStates == MinerStates.MINER_ARCHIVE && connChannelCounts.get() == 0) {
+        if (minerStates == MinerStates.MINER_ARCHIVE && channels.size() == 0) {
             for (Double maxDiff : maxDiffs) {
                 if (maxDiff.compareTo((double) 0) > 0) {
                     return false;
