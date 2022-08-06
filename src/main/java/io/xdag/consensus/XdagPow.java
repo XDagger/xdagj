@@ -285,7 +285,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 //                currentTask.getTask()[0].getData().copyTo(taskData, 0);
                 taskData.set(0, currentTask.getTask()[0].getData());
 //                shareInfo.getData().reverse().copyTo(taskData, 32);
-                taskData.set(32, shareInfo.getData().reverse());
+                taskData.set(32, shareInfo.getData().mutableSlice(0,32).reverse());
                 hash = Bytes32.wrap(kernel.getRandomx()
                         .randomXPoolCalcHash(taskData, taskData.size(), currentTask.getTaskTime()).reverse());
             } else {

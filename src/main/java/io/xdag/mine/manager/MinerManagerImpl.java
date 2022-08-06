@@ -87,6 +87,8 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         this.kernel = kernel;
     }
 
+    private final Object obj1 = new Object();
+    private final Object obj2 = new Object();
 
     @Override
     public void run() {
@@ -121,7 +123,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     }
 
     private void updataBalance() {
-        synchronized (activateMinerChannels) {
+        synchronized (obj1) {
             try {
                 activateMinerChannels.values().parallelStream()
                         .filter(MinerChannel::isActive)
@@ -135,7 +137,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     @Override
     public void addActivateChannel(MinerChannel channel) {
         log.debug("add a new active channel");
-        synchronized (activateMinerChannels) {
+        synchronized (obj1) {
             activateMinerChannels.put(channel.getInetAddress(), channel);
         }
     }
@@ -157,7 +159,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     }
 
     private void closeMiners() {
-        synchronized (activateMinerChannels) {
+        synchronized (obj1) {
             activateMinerChannels.values().parallelStream().forEach(MinerChannel::dropConnection);
         }
     }
@@ -166,12 +168,14 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void removeUnactivateChannel(MinerChannel channel) {
         if (channel != null && !channel.isActive()) {
             log.debug("remove a channel");
-            synchronized (activateMinerChannels) {
-                kernel.getChannelsAccount().getAndDecrement();
-                activateMinerChannels.remove(channel.getInetAddress(), channel);
-            }
-            synchronized (activateMiners) {
+            kernel.getChannelsAccount().getAndDecrement();
+            activateMinerChannels.remove(channel.getInetAddress(), channel);
+
+            synchronized (obj2) {
                 Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
+                if (miner == null) {
+                    return;
+                }
                 miner.removeChannel(channel.getInetAddress());
                 if (miner.getChannels().size() == 0) {
                     log.debug("a mine remark MINER_ARCHIVE，miner Address=[{}] ", miner.getAddressHash().toHexString());
@@ -182,7 +186,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     }
 
     public void cleanUnactivateChannel() {
-        synchronized (activateMinerChannels) {
+        synchronized (obj1) {
             try {
                 activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
             } catch (Exception e) {
@@ -192,7 +196,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     }
 
     public void cleanUnactivateMiner() {
-        synchronized (activateMiners) {
+        synchronized (obj2) {
             try {
                 activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
             } catch (Exception e) {
@@ -228,7 +232,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         }
         if (task != null) {
             currentTask = task;
-            synchronized (activateMinerChannels) {
+            synchronized (obj1) {
                 activateMinerChannels.values().parallelStream()
                         .filter(MinerChannel::isActive)
                         .forEach(c -> {
