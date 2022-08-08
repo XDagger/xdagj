@@ -21,7 +21,7 @@
             <Policies>
                 <!-- 按天递计算频率 -->
                 <TimeBasedTriggeringPolicy interval="1"/>
-                <SizeBasedTriggeringPolicy size="1 MB"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
                 <!--                <OnStartupTriggeringPolicy/>-->
             </Policies>
             <!-- 删除策略配置 -->
@@ -42,7 +42,7 @@
             <Policies>
                 <!-- 按天递计算频率 -->
                 <TimeBasedTriggeringPolicy interval="1"/>
-                <SizeBasedTriggeringPolicy size="1 MB"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
                 <!--                <OnStartupTriggeringPolicy/>-->
             </Policies>
             <!-- 删除策略配置 -->
