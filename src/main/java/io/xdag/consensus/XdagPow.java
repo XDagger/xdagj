@@ -210,6 +210,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         currentTask = createTaskByRandomXBlock(block, sendTime);
 
+        log.info("current task seed is {}",currentTask.getTask()[1].getData().toHexString());
         // 更新poolminer的贡献
 
         minerManager.updateTask(currentTask);
