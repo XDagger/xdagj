@@ -32,6 +32,7 @@ import io.xdag.Kernel;
 import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.manager.XdagChannelManager;
+
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
@@ -69,8 +71,7 @@ public class XdagSync {
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> sumsRequestMap;
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> blocksRequestMap;
-    // TODO: paulochen 开始同步的时间点/快照时间点
-    private final long startSyncTime;
+
     private Status status;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
@@ -81,7 +82,6 @@ public class XdagSync {
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
         sumsRequestMap = new ConcurrentHashMap<>();
         blocksRequestMap = new ConcurrentHashMap<>();
-        this.startSyncTime = kernel.getConfig().getSnapshotSpec().getSnapshotTime();
     }
 
     /**
@@ -101,7 +101,7 @@ public class XdagSync {
         log.debug("SyncLoop...");
         try {
             // TODO: paulochen 开始同步的时间点/快照时间点
-            requestBlocks(startSyncTime, 1L << 48);
+            requestBlocks(0, 1L << 48);
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
         }
