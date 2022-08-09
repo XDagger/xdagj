@@ -2,41 +2,39 @@
 
 ------
 
-#### Linux（Ubuntu）：在root权限下操作
+#### Linux（Ubuntu）
 
 ##### 1.下载 ntp
 
 ```
-apt install ntp ntpdate
+sudo apt install ntp ntpdate
 ```
 
-##### 2. 修改配置文件（etc/ntp.conf）
+##### 2. 关闭ntp服务并取消开机启动
 
 ```
-echo server time.nist.gov perfer iburst>>/etc/ntp.conf 
+systemctl stop ntp
+sudo systemctl disable ntp
 ```
 
-##### 3. 设置防火墙
+##### 3. 开启定时任务同步
 
 ```
-firewall-cmd --zone=public --add-port=123/udp --permanent 
-firewall-cmd --reload  
+sudo crontab -e			
 ```
 
-##### 4. 重启ntp服务并设置开机启动
+输入以下语句并保存：
 
 ```
-systemctl restart ntp    					
-systemctl enable ntp    			
+*/5 * * * * /usr/sbin/ntpdate time.nist.gov 
 ```
 
-##### 5. 将系统时间写入到主板
+##### 4. 将系统时间写入到主板
 
 ```
-hwclock -w 
+sudo hwclock -w 
 ```
 
-##### 6. 验证
+##### 5. 验证
 
-修改本机时间，几分钟后会自动同步正确的时间。
-
+修改本机时间，5分钟后会自动同步正确的时间。

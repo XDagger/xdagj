@@ -2,41 +2,40 @@
 
 ------
 
-#### Linux（Ubuntu）：Operate with root privileges
+#### Linux（Ubuntu）
 
 ##### 1.Install ntp
 
 ```
-apt install ntp ntpdate
+sudo apt install ntp ntpdate
 ```
 
-##### 2. Modify the configuration file（etc/ntp.conf）
+##### 2. Stop the npt service and cancel the startup
 
 ```
-echo server time.nist.gov perfer iburst>>/etc/ntp.conf 
+systemctl stop ntp
+sudo systemctl disable ntp
 ```
 
-##### 3. Set up firewall
+##### 3. Enable scheduled task synchronization
 
 ```
-firewall-cmd --zone=public --add-port=123/udp --permanent 
-firewall-cmd --reload  
+sudo crontab -e
 ```
 
-##### 4. Enable ntp service and set ntp to start automatically
+Enter the following statement and save:
 
 ```
-systemctl restart ntp    					
-systemctl enable ntp    			
+*/5 * * * * /usr/sbin/ntpdate time.nist.gov 			
 ```
 
-##### 5. Write the system time to the BIOS
+##### 4. Write the system time to the BIOS
 
 ```
-hwclock -w 
+sudo hwclock -w 
 ```
 
-##### 6. Verify
+##### 5. Verify
 
-Modify the local time, and automatically synchronize the correct time after a few minutes.
+Modify the local time, and automatically synchronize the correct time after five minutes.
 
