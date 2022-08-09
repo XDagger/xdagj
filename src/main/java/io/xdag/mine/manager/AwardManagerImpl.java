@@ -458,7 +458,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             payData.prevDiffSums += prev_diff.get(i);
 
             if (payData.rewardMiner == null
-                    && (compareTo(nonce.toArray(), 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0)) {
+                    && (compareTo(nonce.reverse().toArray(), 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0)) {
                 payData.rewardMiner = new byte[32];
                 payData.rewardMiner = miner.getAddressHash().toArray();
                 // 有可以出块的矿工 分配矿工的奖励
