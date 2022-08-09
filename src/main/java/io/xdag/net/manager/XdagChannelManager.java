@@ -111,7 +111,7 @@ public class XdagChannelManager {
                 break;
             } catch (Throwable e) {
                 if (wrapper != null) {
-                    log.error("Block dump: {}", wrapper.getBlock());
+                    log.error("Block dump: {}", wrapper.getBlock(),e);
                 } else {
                     log.error("Error broadcasting unknown block", e);
                 }

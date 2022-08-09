@@ -139,14 +139,12 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 channel.getInBound().add(16);
             }
         } else {
-            log.error("There is no type message of corresponding length, please check");
+            log.error("There is no type message of corresponding length:{}, please check",len);
             return;
         }
 
         if (msg != null) {
             out.add(msg);
-        } else {
-            log.error("Receive unknown block, msg len = [{}]",0);
         }
     }
 

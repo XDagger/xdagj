@@ -148,7 +148,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourBlocks, to, remark);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
-            if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST || result == ImportResult.IMPORTED_EXTRA) {
+            if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
                 resInfo.add(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
             }

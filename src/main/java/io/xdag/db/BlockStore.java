@@ -554,7 +554,7 @@ public class BlockStore {
 //        log.debug("Data:{}",Hex.toHexString(blockSource.get(hashlow)));
         // 没有源数据
         if (blockSource.get(hashlow.toArray()) == null) {
-            log.error("No block origin data");
+//            log.error("No block origin data");
             return null;
         }
         block.setXdagBlock(new XdagBlock(blockSource.get(hashlow.toArray())));

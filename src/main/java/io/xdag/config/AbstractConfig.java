@@ -341,7 +341,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                     // only devnet or testnet
                     break;
                 default:
-                    log.error("Illegal instruction");
+//                    log.error("Illegal instruction");
             }
         }
     }
