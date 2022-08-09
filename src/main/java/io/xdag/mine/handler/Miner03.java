@@ -88,11 +88,10 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.error(cause.getMessage(), cause);
         if (cause instanceof IOException) {
-            log.debug("Close miner at time:{}", XdagTime.format(new Date()));
             ctx.channel().closeFuture();
-        } else {
-            cause.printStackTrace();
+            log.debug("Close miner at time:{}", XdagTime.format(new Date()));
         }
         channel.setActive(false);
     }
