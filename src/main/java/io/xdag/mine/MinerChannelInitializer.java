@@ -53,9 +53,6 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
             log.warn("Pool Miner Channel Limit {}, Too Many Channels In This Pool.", channelLimit);
             return;
         }
-        log.info("Init A New Miner Channel isServer：{}", isServer);
-        // 如果是服务器 就会获取到的是外部的地址 否则获取到自己本地的地址
-
         InetSocketAddress channelAddress = isServer
                 ? ch.remoteAddress()
                 : new InetSocketAddress(

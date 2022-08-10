@@ -112,20 +112,18 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 AtomicInteger channelsAccount = kernel.getChannelsAccount();
                 if (channelsAccount.get() >= kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit()) {
                     ctx.close();
-                    log.warn("too many channels in this pool");
+                    log.warn("Too many channels in this pool");
                     return;
                 }
 
                 kernel.getChannelsAccount().getAndIncrement();
                 //If it is a new address block
                 if (importResult != ImportResult.EXIST) {
-                    log.info("XDAG:new wallet connect. New wallet-address {} with channel {} connect, connect-Time {}",
-                            addressBlock.getHash().toHexString(), channel.getInetAddress().toString(),
-                            XdagTime.format(new Date()));
+                    log.info("XDAG:new wallet connect. New Address {} with channel {} connect.",
+                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
                 } else {
-                    log.info("XDAG:old wallet connect. Wallet-address {} with channel {} connect, connect-Time {}",
-                            addressBlock.getHash().toHexString(), channel.getInetAddress().toString(),
-                            XdagTime.format(new Date()));
+                    log.info("XDAG:old wallet connect. Address {} with channel {} connect.",
+                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
                 }
 
                 channel.getInBound().add(16L);

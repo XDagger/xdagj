@@ -43,11 +43,10 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -91,14 +90,14 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         log.error(cause.getMessage(), cause);
         if (cause instanceof IOException) {
             ctx.channel().closeFuture();
-            log.debug("Close miner at time:{}", XdagTime.format(new Date()));
+            log.debug("ExceptionCaught:{},  Close Miner Channel:{}, Address:{}, workName:{}", cause.getMessage(), channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()), channel.getWorkerName());
         }
         channel.setActive(false);
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        log.info("Close miner at time:{}", XdagTime.format(new Date()));
+        log.info("Close Miner Channel:{}, Address:{}, workName:{}", channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()), channel.getWorkerName());
         ctx.channel().closeFuture();
         channel.onDisconnect();
     }
@@ -127,8 +126,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
-        log.debug("Pool Receive Share.");
-
         //share地址不一致，修改对应的miner地址
         if (compareTo(msg.getEncoded().toArray(), 8, 24, channel.getAccountAddressHash().toArray(), 8, 24) != 0) {
             byte[] zero = new byte[8];
@@ -145,14 +142,14 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 Miner miner = kernel.getMinerManager().getActivateMiners()
                         .get(blockHash);
                 if (miner == null) {
-                    log.debug("create a new miner");
+                    log.debug("Create New Miner Channel:{}, Address:{}, WorkerName:{}.", channel.getInetAddress().toString(), BasicUtils.hash2Address(miner.getAddressHash()), channel.getWorkerName());
                     miner = new Miner(blockHash);
                     minerManager.addActiveMiner(miner);
                 }
                 // Change the address corresponding to the channel and replace the new miner connection
                 channel.updateMiner(miner);
-                log.info("XDAG:randomx miner. channel {} with wallet-address {} is randomx miner.",
-                        channel.getInetAddress().toString(), blockHash.toHexString());
+                log.info("RandomX Miner Channel:{}, Address:{}, WorkerName:{}",
+                        channel.getInetAddress().toString(), BasicUtils.hash2Address(miner.getAddressHash()), channel.getWorkerName());
 
                 oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
                 minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
@@ -176,7 +173,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     private void processWorkerName(WorkerNameMessage msg) {
         byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
         String workerName = new String(workerNameByte, StandardCharsets.UTF_8).trim();
-        log.debug("Pool Receive Worker Name {}.", workerName);
+        log.debug("Pool Receive Miner WorkerName:{}.", workerName);
         channel.setWorkerName(workerName);
     }
 
@@ -196,7 +193,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         this.channel.setActive(false);
         //kernel.getChannelsAccount().getAndDecrement();
         //minerManager.removeUnactivateChannel(this.channel);
-        log.info("XDAG:channel close. channel {} with wallet-address {} close",
-                this.channel.getInetAddress().toString(), this.channel.getMiner().getAddressHash().toHexString());
+        log.info("Disconnect channel {} with address {}.",
+                this.channel.getInetAddress().toString(), BasicUtils.hash2Address(this.channel.getMiner().getAddressHash()));
     }
 }
