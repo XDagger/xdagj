@@ -96,13 +96,25 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             } else {
                 System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
                 Block addressBlock = new Block(new XdagBlock(uncryptData));
-                ImportResult importResult = tryToConnect(addressBlock);
 
-                if (importResult == ImportResult.ERROR) {
-                    log.debug("ErrorInfo:{}", importResult.getErrorInfo());
-                    ctx.close();
-                    return;
-                }
+                // TODO:
+                checkProtocol(ctx,addressBlock);
+
+//                ImportResult importResult = tryToConnect(addressBlock);
+//
+//                if (importResult == ImportResult.ERROR) {
+//                    log.debug("ErrorInfo:{}", importResult.getErrorInfo());
+//                    ctx.close();
+//                    return;
+//                }
+//                //If it is a new address block
+//                if (importResult != ImportResult.EXIST) {
+//                    log.info("XDAG:new wallet connect. New Address {} with channel {} connect.",
+//                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
+//                } else {
+//                    log.info("XDAG:old wallet connect. Address {} with channel {} connect.",
+//                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
+//                }
 
                 if (!initMiner(addressBlock.getHash())) {
                     log.debug("too many connect for a miner");
@@ -117,15 +129,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 }
 
                 kernel.getChannelsAccount().getAndIncrement();
-                //If it is a new address block
-                if (importResult != ImportResult.EXIST) {
-                    log.info("XDAG:new wallet connect. New Address {} with channel {} connect.",
-                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
-                } else {
-                    log.info("XDAG:old wallet connect. Address {} with channel {} connect.",
-                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
-                }
-
                 channel.getInBound().add(16L);
                 minerManager.addActivateChannel(channel);
                 channel.setIsActivate(true);
@@ -139,6 +142,31 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         } else {
             log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
         }
+    }
+
+    public void checkProtocol(ChannelHandlerContext ctx,Block addressBlock) {
+        if (addressBlock.getXdagBlock().getField(addressBlock.getOutsigIndex()).getData().isZero()) {
+            // pseudo block
+            log.debug("pseudo block, addressblock {}",addressBlock.getHashLow());
+
+        } else {
+            ImportResult importResult = tryToConnect(addressBlock);
+
+            if (importResult == ImportResult.ERROR) {
+                log.debug("ErrorInfo:{}", importResult.getErrorInfo());
+                ctx.close();
+                return;
+            }
+            //If it is a new address block
+            if (importResult != ImportResult.EXIST) {
+                log.info("XDAG:new wallet connect. New Address {} with channel {} connect.",
+                        BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
+            } else {
+                log.info("XDAG:old wallet connect. Address {} with channel {} connect.",
+                        BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
+            }
+        }
+
     }
 
     public boolean isDataIllegal(byte[] uncryptData) {
