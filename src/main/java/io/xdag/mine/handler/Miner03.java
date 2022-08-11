@@ -142,8 +142,8 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 Miner miner = kernel.getMinerManager().getActivateMiners()
                         .get(blockHash);
                 if (miner == null) {
-                    log.debug("Create New Miner Channel:{}, Address:{}, WorkerName:{}.", channel.getInetAddress().toString(), BasicUtils.hash2Address(miner.getAddressHash()), channel.getWorkerName());
                     miner = new Miner(blockHash);
+                    log.debug("Create New Miner Channel:{}, Address:{}, WorkerName:{}.", channel.getInetAddress().toString(), BasicUtils.hash2Address(miner.getAddressHash()), channel.getWorkerName());
                     minerManager.addActiveMiner(miner);
                 }
                 // Change the address corresponding to the channel and replace the new miner connection
