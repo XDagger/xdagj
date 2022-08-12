@@ -93,6 +93,7 @@ public class XdagClient {
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
         b.option(ChannelOption.TCP_NODELAY, true);
+        b.option(ChannelOption.SO_KEEPALIVE, true);
         b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
         b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getPoolSpec().getConnectionTimeout());
         b.remoteAddress(host, port);
