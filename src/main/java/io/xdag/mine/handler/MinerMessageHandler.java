@@ -107,15 +107,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 }
             }
             channel.getInBound().add();
-            // The two fields indicate that a task was received. Only the miner may receive a new task.
-        } else if (len == 2 * DATA_SIZE) {
-            log.debug("Received a message from the miner,msg len == 64");
-            byte[] encryptData = new byte[64];
-            in.readBytes(encryptData);
-            byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 2, sectorNo);
-
-            msg = messageFactory.create(TASK_SHARE.asByte(), MutableBytes.wrap(unCryptData));
-            channel.getInBound().add(2);
             // When a message of 512 bytes is received, it means that a transaction is sent from a miner after receiving a block.
         } else if (len == 16 * DATA_SIZE) {
             byte[] encryptData = new byte[512];
