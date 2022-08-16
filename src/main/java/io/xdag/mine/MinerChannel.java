@@ -28,6 +28,7 @@ import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
@@ -45,6 +46,7 @@ import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteOrder;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -219,6 +221,7 @@ public class MinerChannel {
 
         // 仅服务器端需要这个握手协议 接受
         this.minerHandShakeHandler = new MinerHandShakeHandler(this, kernel);
+        pipeline.addLast("LengthFieldBasedFrameDecoder",new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN,1024*1024,0,4,0,4,true));
         pipeline.addLast("MinerHandShake", minerHandShakeHandler);
     }
 
