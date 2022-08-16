@@ -193,11 +193,19 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     }
 
     public void disconnect() {
-        ctx.close();
-        this.channel.setActive(false);
+        if(ctx != null ) {
+            ctx.close();
+        }
+
+        if(channel != null) {
+            channel.setActive(false);
+        }
         //kernel.getChannelsAccount().getAndDecrement();
         //minerManager.removeUnactivateChannel(this.channel);
-        log.info("Disconnect channel {} with address {}.",
-                this.channel.getInetAddress().toString(), BasicUtils.hash2Address(this.channel.getMiner().getAddressHash()));
+
+        if(channel != null) {
+            log.info("Disconnect channel {} with address {}.",
+                    channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+        }
     }
 }

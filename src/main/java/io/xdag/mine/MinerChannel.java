@@ -318,11 +318,13 @@ public class MinerChannel {
         hashlow.set(8, accountAddressHash.slice(8, 24));
 //        System.arraycopy(accountAddressHash,8,hashlow,8,24);
         Block block = blockStore.getBlockByHash(hashlow, false);
+
+        long amount = 0;
         if (block == null) {
             log.debug("Can't found block,{}", hashlow.toHexString());
-            return;
+        } else {
+            amount = block.getInfo().getAmount();
         }
-        long amount = block.getInfo().getAmount();
 //        byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false), BytesUtils.subArray(accountAddressHash.toArray(), 8, 24));
         MutableBytes32 data = MutableBytes32.create();
 //        Bytes data = Bytes.wrap(Bytes.ofUnsignedLong(amount), accountAddressHash.slice(8, 24));

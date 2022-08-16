@@ -67,12 +67,12 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         int len = bytes.length;
         long sectorNo = channel.getOutBound().get();
         if (len == DATA_SIZE) {
-            log.debug("Send a message with one field");
+            log.debug("Send a message with sectorNo={},length={}", sectorNo, len);
             BytesUtils.arrayReverse(bytes);
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 1, sectorNo));
             channel.getOutBound().add();
         } else if (len == 2 * DATA_SIZE) {
-            log.debug("Send a task message, the message content hex is[{}]", Hex.encodeHexString(bytes));
+            log.debug("Send a message with sectorNo={},length={}, hex is[{}]", sectorNo, len, Hex.encodeHexString(bytes));
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 2, sectorNo));
             channel.getOutBound().add(2);
         } else if (len == 16 * DATA_SIZE) {
