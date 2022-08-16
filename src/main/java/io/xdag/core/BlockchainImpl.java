@@ -1301,7 +1301,7 @@ public class BlockchainImpl implements Blockchain {
             Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
             // use hyperledger besu crypto native secp256k1
             if (Sign.SECP256K1.verify(hash, signature, ecKey.getPublicKey())) {
-                log.debug("Validate Success");
+                log.debug("verify block success hash={}.", hash.toHexString());
                 addOurBlock(i, block);
                 return true;
             }

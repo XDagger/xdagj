@@ -149,9 +149,8 @@ public class MinerCalculate {
         // 不可能出现大于的情况 防止对老的任务重复计算
         long minerTaskTime = miner.getTaskTime();
         long channelTaskTime = channel.getTaskTime();
-        log.debug(
-                "channer = [{}],calculateNopaidShares,currentTaskTime = [{}],miner tasktime = [{}],channelTaskTime = [{}]",
-                channel.getAccountAddressHash().toHexString(), currentTaskTime, minerTaskTime, channelTaskTime);
+        log.debug("Channel={}, CalculateNopaidShares, CurrentTaskTime={}, Miner tasktime={},ChannelTaskTime={}",
+               BasicUtils.hash2Address(channel.getAccountAddressHash()), currentTaskTime, minerTaskTime, channelTaskTime);
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
             int i = (int) (((currentTaskTime >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
@@ -164,13 +163,13 @@ public class MinerCalculate {
                 diff = 1;
             }
             diff = 46 - Math.log(diff);
-            log.debug("address [{}] calculateNopaidShares, 最新难度的diff为[{}]",
-                    channel.getAccountAddressHash().toHexString(), diff);
+            log.debug("Address={}, CalculateNopaidShares, latest difficulty diff={}",
+                    BasicUtils.hash2Address(channel.getAccountAddressHash()), diff);
             if (channelTaskTime < currentTaskTime) {
                 channel.setTaskTime(currentTaskTime);
                 double maxDiff = channel.getMaxDiffs(i);
-                log.debug("address [{}] calculateNopaidShares,首次channel获取到的maxdiff[{}] = [{}]",
-                        channel.getAccountAddressHash().toHexString(), i, maxDiff);
+                log.debug("Address={}, CalculateNopaidShares,first channel maxdiff[{}] = [{}]",
+                        BasicUtils.hash2Address(channel.getAccountAddressHash()), i, maxDiff);
                 if (maxDiff > 0) {
 
                     channel.addPrevDiff(maxDiff);
@@ -178,7 +177,7 @@ public class MinerCalculate {
                 }
                 channel.addMaxDiffs(i, diff);
             } else if (diff > channel.getMaxDiffs(i)) {
-                log.debug("address [{}] calculateNopaidShares,channel获取到的maxdiff[{}] = [{}]",
+                log.debug("Address [{}] calculateNopaidShares,channel get maxdiff[{}] = [{}]",
                         channel.getAccountAddressHash().toHexString(), i, diff);
                 channel.addMaxDiffs(i, diff);
             }
@@ -186,7 +185,7 @@ public class MinerCalculate {
             if (minerTaskTime < currentTaskTime) {
                 miner.setTaskTime(currentTaskTime);
                 double maxDiff = miner.getMaxDiffs(i);
-                log.debug("calculateNopaidShares, channel获取到的maxdiff[{}] = [{}]", i, maxDiff);
+                log.debug("calculateNopaidShares, channel get maxdiff[{}] = [{}]", i, maxDiff);
                 if (maxDiff > 0) {
                     miner.addPrevDiff(maxDiff);
                     miner.addPrevDiffCounts();
@@ -226,8 +225,7 @@ public class MinerCalculate {
      * @param hash 接收到矿工发送的share后计算的hash
      */
     public static void updateMeanLogDiff(MinerChannel channel, Task task, Bytes32 hash) {
-        log.debug("接收到一个Share消息，更新对应channel 的消息");
-        log.debug("对应计算的哈希为[{}]", hash.toHexString());
+        log.debug("Receive Channel={}, share message hash={}.", BasicUtils.hash2Address(channel.getAccountAddressHash()), hash.toHexString());
         long taskTime = task.getTaskTime();
         long channelTime = channel.getTaskTime();
         if (channelTime < taskTime) {
@@ -236,9 +234,8 @@ public class MinerCalculate {
                         channel.getMeanLogDiff(),
                         BasicUtils.xdag_diff2log(BasicUtils.getDiffByHash(channel.getMinHash())),
                         channel.getBoundedTaskCounter());
-                log.debug("channel updateMeanLogDiff [{}]", meanLogDiff);
                 channel.setMeanLogDiff(meanLogDiff);
-                log.debug("channel updateMeanLogDiff [{}]", channel.getMeanLogDiff());
+                log.debug("Update Channel={}, MeanLogDiff={}.", BasicUtils.hash2Address(channel.getAccountAddressHash()),channel.getMeanLogDiff());
                 if (channel.getBoundedTaskCounter() < NSAMPLES_MAX) {
                     channel.addBoundedTaskCounter();
                 }
