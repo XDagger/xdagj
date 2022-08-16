@@ -116,6 +116,9 @@ public class SyncManager {
         } else {
             throw new IllegalStateException("error xdag network type." + config.toString());
         }
+        if(res == true){
+            log.debug("Waiting time exceeded,starting pow");
+        }
         return res;
     }
 
@@ -148,6 +151,7 @@ public class SyncManager {
 
                 if((blockchain.getXdagStats().getMaxdifficulty().compareTo(BigInteger.ZERO) > 0) &&
                         (currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)) {
+                    log.debug("StatusDiff:{},StatsDiff:{},StatusDiff >= StatsDiff starting pow.",currentDiff,blockchain.getXdagStats().getMaxdifficulty());
                     makeSyncDone();
                 }
             }
