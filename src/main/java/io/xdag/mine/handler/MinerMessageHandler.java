@@ -38,6 +38,7 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -67,7 +68,8 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         int len = bytes.length;
         long sectorNo = channel.getOutBound().get();
         if (len == DATA_SIZE) {
-            log.debug("Send a message with sectorNo={},length={}", sectorNo, len);
+            log.debug("Send a message for miner: {} with sectorNo={},length={}",
+                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()),sectorNo, len);
             BytesUtils.arrayReverse(bytes);
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 1, sectorNo));
             channel.getOutBound().add();
@@ -79,7 +81,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 16, sectorNo));
             channel.getOutBound().add(16);
         } else {
-            log.debug("no message of this length:{} field type.", len);
+            log.debug("No message of this length:{} field type.", len);
         }
     }
 
@@ -90,7 +92,8 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         int len = in.readableBytes();
         // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {
-            log.debug("Received a message from the miner,msg len == 32");
+            log.debug("Received a message from the miner:{},msg len == 32",
+                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
             byte[] encryptData = new byte[DATA_SIZE];
             in.readBytes(encryptData);
             byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 1, sectorNo);
@@ -109,6 +112,8 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             channel.getInBound().add();
             // When a message of 512 bytes is received, it means that a transaction is sent from a miner after receiving a block.
         } else if (len == 16 * DATA_SIZE) {
+            log.debug("Received a message from the miner:{},msg len == 512",
+                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
             byte[] encryptData = new byte[512];
             in.readBytes(encryptData);
             byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 16, sectorNo);
@@ -130,7 +135,8 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                 channel.getInBound().add(16);
             }
         } else {
-            log.error("There is no type message of corresponding length:{}, please check",len);
+            log.error("There is no type information from the message with length:{} from Address:{}",
+                    len,BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
             return;
         }
 
@@ -142,7 +148,8 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
-            log.debug("The remote host closed a connection.");
+            log.debug("The remote host closed a connection,whose address is : {} ",
+                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();

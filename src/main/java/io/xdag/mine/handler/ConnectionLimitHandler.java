@@ -82,7 +82,7 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
         InetAddress address = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress();
         AtomicInteger cnt = connectionCount.computeIfAbsent(address.getHostAddress(), k -> new AtomicInteger(0));
         if (cnt.incrementAndGet() > maxInboundConnectionsPerIp) {
-            log.debug("Too many connections from {}", address.getHostAddress());
+            log.debug("Too many connections from: {}", address.getHostAddress());
             ctx.close();
         } else {
             super.channelActive(ctx);
@@ -96,7 +96,7 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
         if (cnt.decrementAndGet() <= 0) {
             connectionCount.remove(address.getHostAddress());
         }
-
+        log.debug("Inactive channel with Address:{}",address.getHostAddress());
         super.channelInactive(ctx);
     }
 }

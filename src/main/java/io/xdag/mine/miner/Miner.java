@@ -108,7 +108,7 @@ public class Miner {
     private Date registeredTime;
 
     public Miner(Bytes32 addressHash) {
-        log.debug("init a new miner {}", addressHash.toHexString());
+        log.debug("init the new miner:{}", addressHash.toHexString());
         this.addressHash = addressHash;
 //        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
         addressHash.mutableCopy();
