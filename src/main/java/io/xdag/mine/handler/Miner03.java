@@ -216,7 +216,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
         if(channel != null) {
             log.info("Disconnect channel: {} with address: {}",
-                    this.channel.getInetAddress().toString(), BasicUtils.hash2Address(this.channel.getMiner().getAddressHash()));
+                    channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
         }
     }
 }
