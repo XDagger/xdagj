@@ -270,7 +270,7 @@ public class BlockchainImpl implements Blockchain {
                 BlockInfo blockInfo = blockStore
                         .getBlockInfoByHash(Bytes32.wrap(getHashlowByHash(statsBlock.getHash()))).getInfo();
                 blockInfo.setDifficulty(statsBlock.getDifficulty());
-                blockInfo.setHeight(statsBlock.getHeight());
+                blockInfo.setHeight(kernel.getConfig().getSnapshotSpec().getSnapshotHeight()-statsBlock.getHeight());
                 blockStore.saveBlockInfo(blockInfo);
             }
         }

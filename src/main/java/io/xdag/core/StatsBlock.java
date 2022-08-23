@@ -51,13 +51,12 @@ public class StatsBlock {
         this.difficulty = difficulty;
     }
 
-    public static StatsBlock parse(Bytes key, Bytes value) {
+    public static StatsBlock parse(Bytes key, Bytes value,int offset) {
         Bytes uncompressed = value;
-        long height = uncompressed.getLong(0, ByteOrder.LITTLE_ENDIAN);
         long time = uncompressed.getLong(8, ByteOrder.LITTLE_ENDIAN);
         Bytes32 hash = Bytes32.wrap(uncompressed.slice(16, 32));
         BigInteger diff = uncompressed.slice(48, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
-        return new StatsBlock(height, time, hash.toArray(), diff);
+        return new StatsBlock(offset, time, hash.toArray(), diff);
     }
 
 

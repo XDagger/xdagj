@@ -445,7 +445,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
         ByteBuffer snapshotHeight = stats_db.get(stats_txn, snapshotHeightKey);
 
         StatsBlock snapshotHeightBlock = StatsBlock
-                .parse(Bytes.wrapByteBuffer(snapshotHeightKey), Bytes.wrapByteBuffer(snapshotHeight));
+                .parse(Bytes.wrapByteBuffer(snapshotHeightKey), Bytes.wrapByteBuffer(snapshotHeight),0);
         saveSnaptshotStatsBlock(0, snapshotHeightBlock);
 
         for (int i = 1; i <= 128; i++) {
@@ -455,7 +455,7 @@ public class SnapshotChainStoreImpl implements SnapshotChainStore {
             ByteBuffer snapshot = stats_db.get(stats_txn, snapshotey);
             // 4.2 保存statsblock用于randomx
             saveSnaptshotStatsBlock(i, StatsBlock
-                    .parse(Bytes.wrapByteBuffer(snapshotey), Bytes.wrapByteBuffer(snapshot)));
+                    .parse(Bytes.wrapByteBuffer(snapshotey), Bytes.wrapByteBuffer(snapshot),i));
         }
 
         String key = SNAPSHOT_PRE_SEED;
