@@ -58,8 +58,9 @@ int crypt_start(void)
     struct dfslib_string str;
     uint32_t sector0[128];
     int i;
-
-    g_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+    if(g_crypt == 0){
+        g_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+    }
     if(!g_crypt) return -1;
     dfslib_crypt_set_password(g_crypt, dfslib_utf8_string(&str, MINERS_PWD, strlen(MINERS_PWD)));
 
@@ -186,9 +187,15 @@ JNIEXPORT jint JNICALL Java_io_xdag_crypto_jni_Native_dnet_1crypt_1init(
 
     char password[PWDLEN + 1];
     struct dfslib_string str;
-    g_test_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
-    g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
-    g_dnet_keys = (struct dnet_keys*)malloc(sizeof(struct dnet_keys));
+     if(g_test_crypt == 0) {
+            g_test_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+        }
+     if(g_dnet_user_crypt == 0) {
+            g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+        }
+     if(g_dnet_keys == 0) {
+            g_dnet_keys = (struct dnet_keys*)malloc(sizeof(struct dnet_keys));
+        }
 
     memset(g_test_crypt,0,sizeof(struct dfslib_crypt));
     memset(g_dnet_user_crypt,0,sizeof(struct dfslib_crypt));
@@ -291,6 +298,7 @@ JNIEXPORT jint JNICALL Java_io_xdag_crypto_jni_Native_set_1user_1dnet_1crypt(
         dfslib_encrypt_sector(g_dnet_user_crypt, sector0, 0x3e9c1d624a8b570full + i * 0x9d2e61fc538704abull);
     }
 
+    env -> ReleaseStringUTFChars(input_pwd, pwd);
     return 0;
 }
 
@@ -305,7 +313,7 @@ JNIEXPORT void JNICALL Java_io_xdag_crypto_jni_Native_set_1user_1random(
 
     const char* random_keys = env->GetStringUTFChars(input_random_keys,&isCopy);
     dfslib_random_fill(g_dnet_keys->pub.key, DNET_KEYLEN * sizeof(dfsrsa_t), 0, dfslib_utf8_string(&str, random_keys, strlen(random_keys)));
-
+    env -> ReleaseStringUTFChars(input_random_keys, random_keys);
 }
 
 extern "C"
@@ -548,6 +556,8 @@ JNIEXPORT jint JNICALL Java_io_xdag_crypto_jni_Native_verify_1dnet_1key(
         g_keylen = 0;
         g_keylen = dnet_detect_keylen(g_dnet_keys->pub.key, DNET_KEYLEN);
 
+        env -> ReleaseStringUTFChars(password, pwd);
+
         }
 
         return -dnet_test_keys();
@@ -604,6 +614,8 @@ JNIEXPORT jbyteArray JNICALL Java_io_xdag_crypto_jni_Native_general_1dnet_1key(
             }
         }
 
+        env -> ReleaseStringUTFChars(password, pwd);
+        env -> ReleaseStringUTFChars(random, random_keys);
 
         return jba;
   }
