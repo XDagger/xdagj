@@ -153,7 +153,7 @@ public class MinerCalculate {
         long channelTaskTime = channel.getTaskTime();
         log.debug(
                 "CalculateNoPaidShares for miner: {},currentTaskTime = [{}],miner tasktime = [{}],channelTaskTime = [{}]",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()), currentTaskTime, minerTaskTime, channelTaskTime);
+                channel.getAddressHash(), currentTaskTime, minerTaskTime, channelTaskTime);
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
             int i = (int) (((currentTaskTime >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
@@ -167,7 +167,7 @@ public class MinerCalculate {
             }
             diff = 46 - Math.log(diff);
             log.debug("CalculateNoPaidShares for miner: {}, latest diff is [{}]",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()), diff);
+                    channel.getAddressHash(), diff);
             if (channelTaskTime < currentTaskTime) {
                 channel.setTaskTime(currentTaskTime);
                 double maxDiff = channel.getMaxDiffs(i);
@@ -181,7 +181,7 @@ public class MinerCalculate {
                 channel.addMaxDiffs(i, diff);
             } else if (diff > channel.getMaxDiffs(i)) {
                 log.debug("CalculateNoPaidShares for miner: {},channel get the maxDiff[{}] = [{}]",
-                        BasicUtils.hash2Address(channel.getMiner().getAddressHash()), i, diff);
+                        channel.getAddressHash(), i, diff);
                 channel.addMaxDiffs(i, diff);
             }
             // 给对应的矿工设置
@@ -189,7 +189,7 @@ public class MinerCalculate {
                 miner.setTaskTime(currentTaskTime);
                 double maxDiff = miner.getMaxDiffs(i);
                 log.debug("CalculateNoPaidShares for miner: {}, channel get the maxdiff[{}] = [{}]",
-                        BasicUtils.hash2Address(channel.getMiner().getAddressHash()), i, maxDiff);
+                        channel.getAddressHash(), i, maxDiff);
                 if (maxDiff > 0) {
                     miner.addPrevDiff(maxDiff);
                     miner.addPrevDiffCounts();
@@ -230,9 +230,9 @@ public class MinerCalculate {
      */
     public static void updateMeanLogDiff(MinerChannel channel, Task task, Bytes32 hash) {
         log.debug("Receive a Share message from miner : {} and update the message of the corresponding channel",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                channel.getAddressHash());
         log.debug("The hash calculated by miner:{} is [{}]",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()),hash.toHexString());
+                channel.getAddressHash(),hash.toHexString());
         long taskTime = task.getTaskTime();
         long channelTime = channel.getTaskTime();
         if (channelTime < taskTime) {
@@ -243,7 +243,7 @@ public class MinerCalculate {
                         channel.getBoundedTaskCounter());
                 channel.setMeanLogDiff(meanLogDiff);
                 log.debug("channel updateMeanLogDiff [{}] for miner: {}",
-                        channel.getMeanLogDiff(),BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                        channel.getMeanLogDiff(),channel.getAddressHash());
                 if (channel.getBoundedTaskCounter() < NSAMPLES_MAX) {
                     channel.addBoundedTaskCounter();
                 }
