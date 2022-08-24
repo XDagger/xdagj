@@ -73,7 +73,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
             log.debug("Receive a address block");
-            Native.crypt_start();
             byte[] address = new byte[512];
             in.readBytes(address);
 
