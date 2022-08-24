@@ -138,7 +138,9 @@ static int dnet_detect_keylen(dfsrsa_t *key, int keylen) {
 static int set_user_crypt(struct dfslib_string *pwd) {
 	uint32_t sector0[128];
 	int i;
-	g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+	if(g_dnet_user_crypt == 0){
+	    g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+	}
 	if (!g_dnet_user_crypt) return -1;
 	//置0
 	memset(g_dnet_user_crypt->pwd, 0, sizeof(g_dnet_user_crypt->pwd));

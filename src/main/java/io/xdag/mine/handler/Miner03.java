@@ -83,7 +83,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public void handlerAdded(ChannelHandlerContext ctx) {
         channel.setCtx(ctx);
         this.ctx = ctx;
-        log.debug("Address:{} add handler",BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+        log.debug("Address:{} add handler",channel.getAddressHash());
     }
 
     @Override
@@ -92,7 +92,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         if (cause instanceof IOException) {
             ctx.channel().closeFuture();
             log.debug("ExceptionCaught:{},  Close miner channel:{}, address:{}, workName:{}",
-                    cause.getMessage(), channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()), channel.getWorkerName());
+                    cause.getMessage(), channel.getInetAddress().toString(), channel.getAddressHash(), channel.getWorkerName());
         }
         channel.setActive(false);
     }
@@ -100,7 +100,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
         log.debug("Close miner channel:{}, address:{}, workName:{}",
-                channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()), channel.getWorkerName());
+                channel.getInetAddress().toString(), channel.getAddressHash(), channel.getWorkerName());
         ctx.channel().closeFuture();
         channel.onDisconnect();
     }
@@ -114,7 +114,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 .validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         if (importResult.isNormal()) {
             log.debug("XDAG:receive transaction. A transaction from wallet/miner: {}, block hash: {}",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()),block.getHash().toHexString());
+                    channel.getAddressHash(),block.getHash().toHexString());
         }
     }
 
@@ -127,7 +127,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     protected void processNewTask(NewTaskMessage msg) {
         // TODO: 2020/5/9 Handle new tasks received by miners Miner functions
         log.debug("Address:{} receive new task: [{}]",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()),msg.getEncoded().toHexString());
+                channel.getAddressHash(),msg.getEncoded().toHexString());
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
@@ -164,7 +164,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             } else {
                 //to do nothing
                 log.debug("Can not receive the share, No such Address:{} exists,close channel with Address:{}",
-                        BasicUtils.hash2Address(channel.getMiner().getAddressHash()),BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                        BasicUtils.hash2Address(channel.getMiner().getAddressHash()),channel.getAddressHash());
                 ctx.close();
                 if(oldMiner != null) {
                     minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
@@ -177,7 +177,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             minerManager.onNewShare(channel, msg);
         } else {
             log.debug("Too many Shares from address: {},Reject...",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    channel.getAddressHash());
         }
 
     }
@@ -186,7 +186,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
         String workerName = new String(workerNameByte, StandardCharsets.UTF_8).trim();
         log.debug("Pool receive miner address:{},workerName:{}",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()) ,workerName);
+                channel.getAddressHash() ,workerName);
         channel.setWorkerName(workerName);
     }
 
@@ -196,7 +196,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public void sendMessage(Bytes bytes) {
         ctx.channel().writeAndFlush(bytes.toArray());
         log.debug("Send task:{}, to address: {}",
-                bytes.toHexString(),BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                bytes.toHexString(),channel.getAddressHash());
     }
 
     public void dropConnection() {
@@ -216,7 +216,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
         if(channel != null) {
             log.info("Disconnect channel: {} with address: {}",
-                    channel.getInetAddress().toString(), BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    channel.getInetAddress().toString(), channel.getAddressHash());
         }
     }
 }

@@ -51,6 +51,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+
+import io.xdag.utils.BasicUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -378,7 +380,13 @@ public class MinerChannel {
         miner.setMinerStates(MinerStates.MINER_ACTIVE);
         isMill = true;
     }
-
+    public String getAddressHash(){
+        if(this.miner == null){
+            return StringUtils.EMPTY;
+        }else {
+            return BasicUtils.hash2Address(this.miner.getAddressHash());
+        }
+    }
     /**
      * 内部类 用于计算这个channel 的入栈和出战信息
      */

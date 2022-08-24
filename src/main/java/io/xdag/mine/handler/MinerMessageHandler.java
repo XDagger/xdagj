@@ -69,7 +69,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         long sectorNo = channel.getOutBound().get();
         if (len == DATA_SIZE) {
             log.debug("Send a message for miner: {} with sectorNo={},length={}",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()),sectorNo, len);
+                    channel.getAddressHash(),sectorNo, len);
             BytesUtils.arrayReverse(bytes);
             out.writeBytes(Native.dfslib_encrypt_array(bytes, 1, sectorNo));
             channel.getOutBound().add();
@@ -93,7 +93,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {
             log.debug("Received a message from the miner:{},msg len == 32",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    channel.getAddressHash());
             byte[] encryptData = new byte[DATA_SIZE];
             in.readBytes(encryptData);
             byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 1, sectorNo);
@@ -113,7 +113,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             // When a message of 512 bytes is received, it means that a transaction is sent from a miner after receiving a block.
         } else if (len == 16 * DATA_SIZE) {
             log.debug("Received a message from the miner:{},msg len == 512",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    channel.getAddressHash());
             byte[] encryptData = new byte[512];
             in.readBytes(encryptData);
             byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 16, sectorNo);
@@ -136,7 +136,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             }
         } else {
             log.error("There is no type information from the message with length:{} from Address:{}",
-                    len,BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    len,channel.getAddressHash());
             return;
         }
 
@@ -149,7 +149,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
             log.debug("The remote host closed a connection,whose address is : {} ",
-                    BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    channel.getAddressHash());
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();
