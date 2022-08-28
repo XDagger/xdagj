@@ -120,9 +120,9 @@ Four stages：
 
 ## FAQ
 
-- Time Synchronization Question
+- Time Synchronization Method with NTP
 
-[XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)
+  [XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)
 
 ## Contribution
 
