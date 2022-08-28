@@ -58,9 +58,9 @@ int crypt_start(void)
     struct dfslib_string str;
     uint32_t sector0[128];
     int i;
-    if(g_crypt == 0){
-        g_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
-    }
+
+    g_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+
     if(!g_crypt) return -1;
     dfslib_crypt_set_password(g_crypt, dfslib_utf8_string(&str, MINERS_PWD, strlen(MINERS_PWD)));
 
@@ -138,9 +138,9 @@ static int dnet_detect_keylen(dfsrsa_t *key, int keylen) {
 static int set_user_crypt(struct dfslib_string *pwd) {
 	uint32_t sector0[128];
 	int i;
-	if(g_dnet_user_crypt == 0){
-	    g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
-	}
+
+	g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+
 	if (!g_dnet_user_crypt) return -1;
 	//置0
 	memset(g_dnet_user_crypt->pwd, 0, sizeof(g_dnet_user_crypt->pwd));
@@ -189,15 +189,9 @@ JNIEXPORT jint JNICALL Java_io_xdag_crypto_jni_Native_dnet_1crypt_1init(
 
     char password[PWDLEN + 1];
     struct dfslib_string str;
-     if(g_test_crypt == 0) {
-            g_test_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
-        }
-     if(g_dnet_user_crypt == 0) {
-            g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
-        }
-     if(g_dnet_keys == 0) {
-            g_dnet_keys = (struct dnet_keys*)malloc(sizeof(struct dnet_keys));
-        }
+    g_test_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+    g_dnet_user_crypt = (struct dfslib_crypt*)malloc(sizeof(struct dfslib_crypt));
+    g_dnet_keys = (struct dnet_keys*)malloc(sizeof(struct dnet_keys));
 
     memset(g_test_crypt,0,sizeof(struct dfslib_crypt));
     memset(g_dnet_user_crypt,0,sizeof(struct dfslib_crypt));

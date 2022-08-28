@@ -164,7 +164,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             } else {
                 //to do nothing
                 log.debug("Can not receive the share, No such Address:{} exists,close channel with Address:{}",
-                        BasicUtils.hash2Address(channel.getMiner().getAddressHash()),channel.getAddressHash());
+                        channel.getAddressHash(),channel.getAddressHash());
                 ctx.close();
                 if(oldMiner != null) {
                     minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
