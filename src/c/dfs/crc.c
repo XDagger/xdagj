@@ -16,6 +16,7 @@
 
 #include <stdlib.h> /* T5.245 */
 #include <stdio.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
