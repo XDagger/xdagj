@@ -46,6 +46,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.Message;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.mine.randomx.RandomXMemory;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import java.io.IOException;
@@ -151,9 +152,9 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     public void newBlock() {
-        log.debug("Start new block generate....");
         long sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
+        log.debug("Start new block generate....,sendTime:{}",sendTime);
 
         if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
             if (randomXUtils.getRandomXPoolMemIndex() == 0) {
@@ -188,15 +189,16 @@ public class XdagPow implements PoW, Listener, Runnable {
                 memory.setIsSwitched(1);
             }
             generateBlock = generateRandomXBlock(sendTime);
+
         } else {
             generateBlock = generateBlock(sendTime);
+
         }
     }
 
 
     public Block generateRandomXBlock(long sendTime) {
         // 新增任务
-        log.debug("Generate RandomX block...");
         taskIndex.incrementAndGet();
 
         Block block = blockchain.createNewBlock(null, null, true, null);
@@ -216,7 +218,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
         log.debug("send randomx task to miners");
-
+        log.debug("Generate RandomX block :{}", BasicUtils.hash2Address(block.getHash()));
         return block;
     }
 
@@ -239,7 +241,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask);
         awardManager.onNewTask(currentTask);
         log.debug("send origin task to Miners");
-
+        log.debug("Generate block :{}", BasicUtils.hash2Address(block.getHash()));
         return block;
     }
 
@@ -279,6 +281,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
         try {
+            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.getHash()));
             Bytes32 hash;
             // if randomx fork
             if (kernel.getRandomx().isRandomxFork(currentTask.getTaskTime())) {
@@ -301,7 +304,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
                 // put minshare into nonce
                 generateBlock.setNonce(minShare);
-
+                log.debug("Update nonce:{} for block:{}",minShare,BasicUtils.hash2Address(generateBlock.getHash()));
                 //myron
                 int index = (int) ((currentTask.getTaskTime() >> 16) & kernel.getConfig().getPoolSpec()
                         .getAwardEpoch());
@@ -309,8 +312,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                 minShares.set(index, minShare);
                 blockHashs.set(index, generateBlock.recalcHash());
 
-                log.debug("New MinHash :" + minHash.toHexString());
-                log.debug("New MinShare :" + minShare.toHexString());
+                log.debug("New MinShare:{} & New MinHash:{} from miner:{}",minHash.toHexString(),minShare.toHexString(),channel.getAddressHash());
 
             }
             //update miner state
@@ -324,7 +326,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected void onTimeout() {
         if (generateBlock != null) {
             log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
-                    generateBlock.getHash().toHexString());
+                    BasicUtils.hash2Address(generateBlock.getHash()));
             // 发送区块 如果有的话 然后开始生成新区块
             kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
             awardManager.addAwardBlock(minShare, generateBlock.getHash(), generateBlock.getTimestamp());
@@ -397,7 +399,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     @Override
     public void run() {
         log.info("Main PoW start ....");
- //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
+        //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
         globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
@@ -518,6 +520,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             this.isRunning = true;
             while (this.isRunning) {
                 if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
+                    log.debug("CurrentTimestamp:{},sendTime:{} Timeout!",XdagTime.getCurrentTimestamp(),timeout);
                     events.add(new Event(Event.Type.TIMEOUT));
                     timeout = -1;
                     continue;
