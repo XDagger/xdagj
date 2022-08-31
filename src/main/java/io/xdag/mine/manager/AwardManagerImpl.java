@@ -27,6 +27,7 @@ package io.xdag.mine.manager;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
@@ -167,6 +168,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
                 if(awardBlock != null) {
+                    log.debug("award block:{}", hash2Address(Bytes32.fromHexString(awardBlock.hash.toHexString())));
                     payAndaddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {

@@ -24,6 +24,7 @@
 
 package io.xdag.consensus;
 
+import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
@@ -553,6 +554,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                     log.error(e.getMessage(), e);
                 }
                 if (bw != null) {
+                    log.debug("send new PoW block:{}",hash2Address(Bytes32.fromHexString(bw.getBlock().getHash().toHexString())));
                     channelMgr.sendNewBlock(bw);
                 }
             }
