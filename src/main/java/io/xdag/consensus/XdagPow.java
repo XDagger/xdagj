@@ -557,7 +557,7 @@ public class XdagPow implements PoW, Listener, Runnable {
                     log.error(e.getMessage(), e);
                 }
                 if (bw != null) {
-                    log.debug("send new PoW block:{}",hash2Address(Bytes32.fromHexString(bw.getBlock().getHash().toHexString())));
+                    log.debug("send new PoW block:{}",BasicUtils.hash2Address(bw.getBlock().getHash()));
                     channelMgr.sendNewBlock(bw);
                 }
             }

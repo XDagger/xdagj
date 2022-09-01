@@ -34,6 +34,7 @@ import io.xdag.core.*;
 import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -128,13 +129,12 @@ public class SyncManager {
      */
     //todo:修改共识
     public ImportResult importBlock(BlockWrapper blockWrapper) {
-        log.debug("importBlock:{} from remote node:{}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())),
-                blockWrapper.getRemoteNode().getAddress().toString());
+        log.debug("importBlock:{}", BasicUtils.hash2Address(blockWrapper.getBlock().getHash()));
         ImportResult importResult = blockchain
                 .tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData().toArray())));
 
         if (importResult == EXIST) {
-            log.debug("Block have exist:" + hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())));
+            log.debug("Block have exist:" + BasicUtils.hash2Address(blockWrapper.getBlock().getHash()));
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
@@ -272,7 +272,7 @@ public class SyncManager {
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashlow())) {
-                            log.debug("push block:{}, NO_PARENT {}", hash2Address(Bytes32.fromHexString(bw.getBlock().getHash().toHexString())),
+                            log.debug("push block:{}, NO_PARENT {}", BasicUtils.hash2Address(bw.getBlock().getHash()),
                                     importResult.getHashlow().toHexString());
                             List<Channel> channels = channelMgr.getActiveChannels();
                             for (Channel channel : channels) {
