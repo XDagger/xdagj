@@ -217,7 +217,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask.get());
         awardManager.onNewTask(currentTask.get());
         log.debug("send randomx task to miners");
-        log.debug("Generate RandomX block :{}", BasicUtils.hash2Address(block.getHash()));
+//        log.debug("Generate RandomX block :{}", BasicUtils.hash2Address(block.getHash()));
         return block;
     }
 
@@ -240,7 +240,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask.get());
         awardManager.onNewTask(currentTask.get());
         log.debug("send origin task to Miners");
-        log.debug("Generate block :{}", BasicUtils.hash2Address(block.getHash()));
+//        log.debug("Generate block :{}", BasicUtils.hash2Address(block.getHash()));
         return block;
     }
 
@@ -281,7 +281,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
         Task task = currentTask.get();
         try {
-            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.get().getHash()));
+//            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.get().getHash()));
             Bytes32 hash;
             // if randomx fork
             if (kernel.getRandomx().isRandomxFork(task.getTaskTime())) {
