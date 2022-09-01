@@ -135,8 +135,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         if (compareTo(msg.getEncoded().toArray(), 8, 24, channel.getAccountAddressHash().toArray(), 8, 24) != 0) {
             byte[] zero = new byte[8];
             Bytes32 blockHash;
-            BytesUtils.isFullZero(zero);
-
             Bytes32 hashLow = Bytes32
                     .wrap(BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded().toArray(), 8, 24)));
             Block block = kernel.getBlockchain().getBlockByHash(hashLow, false);

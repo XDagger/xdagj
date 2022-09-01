@@ -58,6 +58,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
@@ -74,13 +75,13 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected Timer timer;
     protected Broadcaster broadcaster;
     // 当前区块
-    protected volatile Block generateBlock;
-    protected volatile Bytes32 minShare;
-    protected volatile Bytes32 minHash;
+    protected AtomicReference<Block> generateBlock;
+    protected AtomicReference<Bytes32> minShare;
+    protected AtomicReference<Bytes32> minHash;
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
     protected volatile Bytes32 globalPretop;
-    protected volatile Task currentTask;
+    protected AtomicReference<Task> currentTask;
     protected AtomicLong taskIndex = new AtomicLong(0L);
 
 
@@ -187,9 +188,9 @@ public class XdagPow implements PoW, Listener, Runnable {
                 randomXUtils.setRandomXPoolMemIndex(randomXUtils.getRandomXPoolMemIndex() + 1);
                 memory.setIsSwitched(1);
             }
-            generateBlock = generateRandomXBlock(sendTime);
+            generateBlock.set(generateRandomXBlock(sendTime));
         } else {
-            generateBlock = generateBlock(sendTime);
+            generateBlock.set(generateBlock(sendTime));
         }
     }
 
@@ -202,19 +203,19 @@ public class XdagPow implements PoW, Listener, Runnable {
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey());
 
-        minShare = Bytes32.wrap(RandomUtils.nextBytes(32));
-        block.setNonce(minShare);
+        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
+        block.setNonce(minShare.get());
 
 //        minHash = Hex.decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        minHash = Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
 
-        currentTask = createTaskByRandomXBlock(block, sendTime);
+        currentTask.set(createTaskByRandomXBlock(block, sendTime));
 
-        log.info("current task seed is {}",currentTask.getTask()[1].getData().toHexString());
+        log.info("current task seed is {}",currentTask.get().getTask()[1].getData().toHexString());
         // 更新poolminer的贡献
 
-        minerManager.updateTask(currentTask);
-        awardManager.onNewTask(currentTask);
+        minerManager.updateTask(currentTask.get());
+        awardManager.onNewTask(currentTask.get());
         log.debug("send randomx task to miners");
 
         return block;
@@ -227,17 +228,17 @@ public class XdagPow implements PoW, Listener, Runnable {
         Block block = blockchain.createNewBlock(null, null, true, null);
         block.signOut(kernel.getWallet().getDefKey());
 
-        minShare = Bytes32.wrap(RandomUtils.nextBytes(32));
-        block.setNonce(minShare);
+        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
+        block.setNonce(minShare.get());
         // 初始nonce, 计算minhash但不作为最终hash
-        minHash = block.recalcHash();
+        minHash.set(block.recalcHash());
 
-        currentTask = createTaskByNewBlock(block, sendTime);
+        currentTask.set(createTaskByNewBlock(block, sendTime));
         // 发送给矿工
 
         // 更新poolminer的贡献
-        minerManager.updateTask(currentTask);
-        awardManager.onNewTask(currentTask);
+        minerManager.updateTask(currentTask.get());
+        awardManager.onNewTask(currentTask.get());
         log.debug("send origin task to Miners");
 
         return block;
@@ -264,7 +265,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         XdagField shareInfo = new XdagField(msg.getEncoded().mutableCopy());
         log.debug("Receive share From PoolChannel, Shareinfo:{}", shareInfo.getData().toHexString());
-        events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
+        onNewShare(shareInfo, channel);
     }
 
     public void receiveNewPretop(Bytes pretop) {
@@ -278,57 +279,62 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
+        Task task = currentTask.get();
         try {
             Bytes32 hash;
             // if randomx fork
-            if (kernel.getRandomx().isRandomxFork(currentTask.getTaskTime())) {
+            if (kernel.getRandomx().isRandomxFork(task.getTaskTime())) {
                 MutableBytes taskData = MutableBytes.create(64);
 //                currentTask.getTask()[0].getData().copyTo(taskData, 0);
-                taskData.set(0, currentTask.getTask()[0].getData());
+                taskData.set(0, task.getTask()[0].getData());
 //                shareInfo.getData().reverse().copyTo(taskData, 32);
                 taskData.set(32, shareInfo.getData().mutableSlice(0,32).reverse());
                 hash = Bytes32.wrap(kernel.getRandomx()
-                        .randomXPoolCalcHash(taskData, taskData.size(), currentTask.getTaskTime()).reverse());
+                        .randomXPoolCalcHash(taskData, taskData.size(), task.getTaskTime()).reverse());
             } else {
-                XdagSha256Digest digest = new XdagSha256Digest(currentTask.getDigest());
+                XdagSha256Digest digest = new XdagSha256Digest(task.getDigest());
 //                hash = Bytes32.wrap(digest.sha256Final(Arrays.reverse(shareInfo.getData().toArray())));
                 hash = Bytes32.wrap(digest.sha256Final(shareInfo.getData().reverse()));
             }
 
-            if (compareTo(hash.toArray(), 0, 32, minHash.toArray(), 0, 32) < 0) {
-                minHash = hash;
-                minShare = Bytes32.wrap(shareInfo.getData().reverse());
+            synchronized (minHash) {
+                Bytes32 mh = minHash.get();
+                if (compareTo(hash.toArray(), 0, 32, mh.toArray(), 0, 32) < 0) {
+                    minHash.set(hash);
+                    minShare.set(Bytes32.wrap(shareInfo.getData().reverse()));
 
-                // put minshare into nonce
-                generateBlock.setNonce(minShare);
+                    // put minshare into nonce
+                    Block b = generateBlock.get();
+                    b.setNonce(minShare.get());
 
-                //myron
-                int index = (int) ((currentTask.getTaskTime() >> 16) & kernel.getConfig().getPoolSpec()
-                        .getAwardEpoch());
-                // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
-                minShares.set(index, minShare);
-                blockHashs.set(index, generateBlock.recalcHash());
+                    //myron
+                    int index = (int) ((currentTask.get().getTaskTime() >> 16) & kernel.getConfig().getPoolSpec()
+                            .getAwardEpoch());
+                    // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
+                    minShares.set(index, minShare.get());
+                    blockHashs.set(index, b.recalcHash());
 
-                log.debug("New MinHash :" + minHash.toHexString());
-                log.debug("New MinShare :" + minShare.toHexString());
-
+                    log.debug("New MinHash :" + mh.toHexString());
+                    log.debug("New MinShare :" + minShare.get().toHexString());
+                }
             }
             //update miner state
-            MinerCalculate.updateMeanLogDiff(channel, currentTask, hash);
-            MinerCalculate.calculateNopaidShares(kernel.getConfig(), channel, hash, currentTask.getTaskTime());
+            MinerCalculate.updateMeanLogDiff(channel, currentTask.get(), hash);
+            MinerCalculate.calculateNopaidShares(kernel.getConfig(), channel, hash, currentTask.get().getTaskTime());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
     protected void onTimeout() {
-        if (generateBlock != null) {
+        Block b  = generateBlock.get();
+        if (b != null) {
             log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
-                    generateBlock.getHash().toHexString());
+                    b.getHash().toHexString());
             // 发送区块 如果有的话 然后开始生成新区块
-            kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(generateBlock.toBytes())));
-            awardManager.addAwardBlock(minShare, generateBlock.getHash(), generateBlock.getTimestamp());
-            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(generateBlock.toBytes())),
+            kernel.getBlockchain().tryToConnect(new Block(new XdagBlock(b.toBytes())));
+            awardManager.addAwardBlock(minShare.get(), b.getHash(), b.getTimestamp());
+            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(b.toBytes())),
                     kernel.getConfig().getNodeSpec().getTTL());
 
             broadcaster.broadcast(bw);
@@ -410,9 +416,6 @@ public class XdagPow implements PoW, Listener, Runnable {
                 switch (ev.getType()) {
                     case NEW_DIFF:
                         break;
-                    case NEW_SHARE:
-                        onNewShare(ev.getData(), ev.getChannel());
-                        break;
                     case TIMEOUT:
                         // TODO : 判断当前是否可以进行产块
                         if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
@@ -492,10 +495,6 @@ public class XdagPow implements PoW, Listener, Runnable {
              * Received a timeout signal.
              */
             TIMEOUT,
-            /**
-             * Received a new share message.
-             */
-            NEW_SHARE,
             /**
              * Received a new pretop message.
              */
