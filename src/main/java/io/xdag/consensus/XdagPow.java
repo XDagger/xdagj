@@ -24,7 +24,6 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
@@ -47,6 +46,7 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.Message;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.mine.randomx.RandomXMemory;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import java.io.IOException;
@@ -265,7 +265,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         XdagField shareInfo = new XdagField(msg.getEncoded().mutableCopy());
         log.debug("Receive share From PoolChannel, Shareinfo:{}", shareInfo.getData().toHexString());
-        events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
+        onNewShare(shareInfo, channel);
     }
 
     public void receiveNewPretop(Bytes pretop) {
@@ -281,7 +281,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
         Task task = currentTask.get();
         try {
-            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.getHash()));
+            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.get().getHash()));
             Bytes32 hash;
             // if randomx fork
             if (kernel.getRandomx().isRandomxFork(task.getTaskTime())) {
