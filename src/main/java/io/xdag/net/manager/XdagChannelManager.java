@@ -40,6 +40,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
+
+import static io.xdag.utils.BasicUtils.hash2Address;
 
 @Slf4j
 public class XdagChannelManager {
@@ -79,7 +82,7 @@ public class XdagChannelManager {
     }
 
     public void notifyDisconnect(Channel channel) {
-        log.debug("xdag channel manager-> node {}: notifies about disconnect", channel);
+        log.debug("xdag channel manager-> node {}: notifies about disconnect", channel.getInetSocketAddress());
         remove(channel);
         channel.onDisconnect();
     }
@@ -135,7 +138,8 @@ public class XdagChannelManager {
                 log.debug("not send to sender node");
                 continue;
             }
-            log.debug("send to other node exclude sender node");
+            log.debug("send block:{} to node:{}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())),
+                    channel.getInetSocketAddress());
             channel.sendNewBlock(blockWrapper);
         }
     }
@@ -159,7 +163,7 @@ public class XdagChannelManager {
     }
 
     public void remove(Channel ch) {
-//        log.debug("Channel removed: remoteAddress = {}:{}", ch.getIp(), ch.getPort());
+        log.debug("Channel removed: remoteAddress = {}", ch.getInetSocketAddress());
         channels.remove(ch.getInetSocketAddress());
         if (ch.isActive()) {
             activeChannels.remove(ch.getNode().getHexId());

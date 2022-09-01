@@ -34,6 +34,7 @@ import io.xdag.core.*;
 import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,6 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.xdag.core.ImportResult.*;
+import static io.xdag.utils.BasicUtils.hash2Address;
 
 @Slf4j
 @Getter
@@ -127,12 +129,12 @@ public class SyncManager {
      */
     //todo:修改共识
     public ImportResult importBlock(BlockWrapper blockWrapper) {
-        log.debug("importBlock:{}", blockWrapper.getBlock().getHash().toHexString());
+        log.debug("importBlock:{}", BasicUtils.hash2Address(blockWrapper.getBlock().getHash()));
         ImportResult importResult = blockchain
                 .tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData().toArray())));
 
         if (importResult == EXIST) {
-            log.debug("Block have exist:" + blockWrapper.getBlock().getHash().toHexString());
+            log.debug("Block have exist:" + BasicUtils.hash2Address(blockWrapper.getBlock().getHash()));
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
@@ -172,12 +174,12 @@ public class SyncManager {
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
-        log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow().toHexString(), result);
+        log.debug("validateAndAddNewBlock:{}, {}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())), result);
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
-                    log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow().toHexString(),
+                    log.debug("push block:{}, NO_PARENT {}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())),
                             result.getHashlow().toHexString());
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
@@ -270,7 +272,7 @@ public class SyncManager {
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashlow())) {
-                            log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow().toHexString(),
+                            log.debug("push block:{}, NO_PARENT {}", BasicUtils.hash2Address(bw.getBlock().getHash()),
                                     importResult.getHashlow().toHexString());
                             List<Channel> channels = channelMgr.getActiveChannels();
                             for (Channel channel : channels) {

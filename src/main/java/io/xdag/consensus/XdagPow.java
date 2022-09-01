@@ -24,6 +24,7 @@
 
 package io.xdag.consensus;
 
+import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
@@ -197,7 +198,6 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     public Block generateRandomXBlock(long sendTime) {
         // 新增任务
-        log.debug("Generate RandomX block...");
         taskIndex.incrementAndGet();
 
         Block block = blockchain.createNewBlock(null, null, true, null);
@@ -217,7 +217,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask.get());
         awardManager.onNewTask(currentTask.get());
         log.debug("send randomx task to miners");
-
+        log.debug("Generate RandomX block :{}", BasicUtils.hash2Address(block.getHash()));
         return block;
     }
 
@@ -240,7 +240,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         minerManager.updateTask(currentTask.get());
         awardManager.onNewTask(currentTask.get());
         log.debug("send origin task to Miners");
-
+        log.debug("Generate block :{}", BasicUtils.hash2Address(block.getHash()));
         return block;
     }
 
@@ -265,7 +265,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         XdagField shareInfo = new XdagField(msg.getEncoded().mutableCopy());
         log.debug("Receive share From PoolChannel, Shareinfo:{}", shareInfo.getData().toHexString());
-        onNewShare(shareInfo, channel);
+        events.add(new Event(Event.Type.NEW_SHARE, shareInfo, channel));
     }
 
     public void receiveNewPretop(Bytes pretop) {
@@ -281,6 +281,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
         Task task = currentTask.get();
         try {
+            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.getHash()));
             Bytes32 hash;
             // if randomx fork
             if (kernel.getRandomx().isRandomxFork(task.getTaskTime())) {
@@ -517,6 +518,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             this.isRunning = true;
             while (this.isRunning) {
                 if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
+                    log.debug("CurrentTimestamp:{},sendTime:{} Timeout!",XdagTime.getCurrentTimestamp(),timeout);
                     events.add(new Event(Event.Type.TIMEOUT));
                     timeout = -1;
                     continue;
