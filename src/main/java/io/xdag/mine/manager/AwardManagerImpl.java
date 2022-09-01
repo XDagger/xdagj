@@ -42,6 +42,7 @@ import io.xdag.core.PoolConfig;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
@@ -168,7 +169,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
                 if(awardBlock != null) {
-                    log.debug("award block:{}", hash2Address(Bytes32.fromHexString(awardBlock.hash.toHexString())));
+                    log.debug("award block:{}", BasicUtils.hash2Address(awardBlock.hash));
                     payAndaddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {

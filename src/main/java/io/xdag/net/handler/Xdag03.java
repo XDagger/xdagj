@@ -42,6 +42,8 @@ import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.net.message.impl.SumRequestMessage;
 import java.util.List;
+
+import io.xdag.utils.BasicUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
+
+import static io.xdag.utils.BasicUtils.hash2Address;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -115,7 +119,7 @@ public class Xdag03 extends XdagHandler {
      */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.debug("processNewBlock:{}", block.getHashLow().toHexString());
+        log.debug("processNewBlock:{}", BasicUtils.hash2Address(block.getHash()));
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
     }
