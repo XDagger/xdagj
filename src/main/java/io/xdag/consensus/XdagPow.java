@@ -76,13 +76,13 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected Timer timer;
     protected Broadcaster broadcaster;
     // 当前区块
-    protected AtomicReference<Block> generateBlock;
-    protected AtomicReference<Bytes32> minShare;
-    protected AtomicReference<Bytes32> minHash;
+    protected AtomicReference<Block> generateBlock = new AtomicReference<>();
+    protected AtomicReference<Bytes32> minShare = new AtomicReference<>();
+    protected AtomicReference<Bytes32> minHash = new AtomicReference<>();
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
     protected volatile Bytes32 globalPretop;
-    protected AtomicReference<Task> currentTask;
+    protected AtomicReference<Task> currentTask = new AtomicReference<>();
     protected AtomicLong taskIndex = new AtomicLong(0L);
 
 
