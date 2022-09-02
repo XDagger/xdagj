@@ -24,17 +24,17 @@
 
 package io.xdag.mine;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel> {
+public class MinerChannelInitializer extends ChannelInitializer<Channel> {
 
     private final Kernel kernel;
     private final boolean isServer;
@@ -45,7 +45,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
     }
 
     @Override
-    protected void initChannel(NioSocketChannel ch) {
+    protected void initChannel(Channel ch) {
         AtomicInteger channelsAccount = kernel.getChannelsAccount();
         int channelLimit = kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit();
         if (channelsAccount.get() >= channelLimit) {
@@ -54,7 +54,7 @@ public class MinerChannelInitializer extends ChannelInitializer<NioSocketChannel
             return;
         }
         InetSocketAddress channelAddress = isServer
-                ? ch.remoteAddress()
+                ? (InetSocketAddress)ch.remoteAddress()
                 : new InetSocketAddress(
                         kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
         MinerChannel minerChannel = new MinerChannel(kernel, isServer);

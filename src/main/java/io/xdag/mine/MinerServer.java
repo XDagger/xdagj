@@ -29,18 +29,22 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import io.xdag.Kernel;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class MinerServer {
-
     protected Kernel kernel;
-    private EventLoopGroup bossGroup;
-    private EventLoopGroup workerGroup;
+    protected EventLoopGroup bossGroup;
+    protected EventLoopGroup workerGroup;
     private ChannelFuture channelFuture;
     private boolean isListening = false;
 
@@ -52,19 +56,32 @@ public class MinerServer {
         start(kernel.getConfig().getPoolSpec().getPoolIp(), kernel.getConfig().getPoolSpec().getPoolPort());
     }
 
-    public void start(String ip, int port) {
-        bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
-        try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group(bossGroup, workerGroup);
+    public ServerBootstrap nativeEventLoopGroup() {
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        if(SystemUtils.IS_OS_LINUX) {
+            bossGroup = new EpollEventLoopGroup(1);
+            workerGroup = new EpollEventLoopGroup();
+            bootstrap.channel(EpollServerSocketChannel.class);
+        } if(SystemUtils.IS_OS_MAC) {
+            bossGroup = new KQueueEventLoopGroup(1);
+            workerGroup = new KQueueEventLoopGroup();
+            bootstrap.channel(KQueueServerSocketChannel.class);
+        } else {
+            bossGroup = new NioEventLoopGroup(1);
+            workerGroup = new NioEventLoopGroup();
             bootstrap.channel(NioServerSocketChannel.class);
+        }
+        bootstrap.group(bossGroup, workerGroup);
+        return bootstrap;
+    }
+
+    public void start(String ip, int port) {
+        try {
+            ServerBootstrap bootstrap = nativeEventLoopGroup();
             bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
             bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-            bootstrap.childOption(
-                    ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
-            bootstrap.childOption(
-                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
+            bootstrap.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
+            bootstrap.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
             bootstrap.handler(new LoggingHandler());
             bootstrap.childHandler(new MinerChannelInitializer(kernel, true));
             channelFuture = bootstrap.bind(ip, port).sync();
