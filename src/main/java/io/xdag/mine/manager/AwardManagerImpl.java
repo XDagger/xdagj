@@ -320,6 +320,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 统计矿工的数量
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
+                //Filter fake blocks
                 if(blockchain.getBlockByHash(miner.getAddressHashLow(),false) != null) {
                     miners.add(miner);
                     minerCounts++;
@@ -573,6 +574,14 @@ public class AwardManagerImpl implements AwardManager, Runnable {
          * Address(poolMiner.getAddressLow(),XDAG_FIELD_OUT,payData.poolFee)); payAmount
          * += payData.poolFee;
          */
+
+        if (fundRation!=0) {
+            if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
+                payAmount += payData.fundIncome;
+                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
+            }
+        }
+
         // 不断循环 支付给矿工
         //// TODO: 2021/4/19  打印矿工的数据
         for (int i = 0; i < miners.size(); i++) {
@@ -605,15 +614,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
                 transaction(hash, receipt, payAmount, keyPos);
                 payAmount = 0L;
-                receipt.clear();
-            }
-        }
-
-        if (fundRation!=0) {
-            if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
-                payAmount += payData.fundIncome;
-                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
-                transaction(hash, receipt, payAmount,keyPos);
                 receipt.clear();
             }
         }
