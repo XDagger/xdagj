@@ -320,9 +320,11 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 统计矿工的数量
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
-                miners.add(miner);
-                minerCounts++;
-                log.debug("The number of miners is[{}]", minerCounts);
+                if(blockchain.getBlockByHash(miner.getAddressHashLow(),false) != null) {
+                    miners.add(miner);
+                    minerCounts++;
+                    log.debug("The number of miners is[{}]", minerCounts);
+                }
             }
         }
 
