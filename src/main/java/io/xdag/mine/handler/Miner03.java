@@ -193,8 +193,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
      */
     public void sendMessage(Bytes bytes) {
         ctx.channel().writeAndFlush(bytes.toArray());
-        log.debug("Send task:{}, to address: {}",
-                bytes.toHexString(),channel.getAddressHash());
     }
 
     public void dropConnection() {
