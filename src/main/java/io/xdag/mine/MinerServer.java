@@ -88,7 +88,7 @@ public class MinerServer {
             isListening = true;
             log.info("Start Listening The Pool, Host:[{}:{}]", ip, port);
         } catch (Exception e) {
-            log.error("Miner Server Error: {} ({})", e.getMessage(), e.getClass().getName());
+            log.error("Miner Server Error: {}.", e.getMessage(), e);
             throw new Error("Miner Server Disconnected.");
         }
     }
