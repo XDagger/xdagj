@@ -61,17 +61,25 @@ public class MinerServer {
         if(SystemUtils.IS_OS_LINUX) {
             bossGroup = new EpollEventLoopGroup(1);
             workerGroup = new EpollEventLoopGroup();
-            bootstrap.channel(EpollServerSocketChannel.class);
-        } if(SystemUtils.IS_OS_MAC) {
+        } else if(SystemUtils.IS_OS_MAC) {
             bossGroup = new KQueueEventLoopGroup(1);
             workerGroup = new KQueueEventLoopGroup();
-            bootstrap.channel(KQueueServerSocketChannel.class);
+
         } else {
             bossGroup = new NioEventLoopGroup(1);
             workerGroup = new NioEventLoopGroup();
+        }
+
+        bootstrap.group(bossGroup, workerGroup);
+
+        if(SystemUtils.IS_OS_LINUX) {
+            bootstrap.channel(EpollServerSocketChannel.class);
+        } else if(SystemUtils.IS_OS_MAC) {
+            bootstrap.channel(KQueueServerSocketChannel.class);
+        } else {
             bootstrap.channel(NioServerSocketChannel.class);
         }
-        bootstrap.group(bossGroup, workerGroup);
+
         return bootstrap;
     }
 
