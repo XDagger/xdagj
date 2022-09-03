@@ -62,8 +62,13 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             .daemon(true)
             .build());
 
-    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
-            .namingPattern("MinerManager-update-thread")
+    private final ExecutorService mainExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("MinerManager-Main-Thread-%d")
+            .daemon(true)
+            .build());
+
+    private final ExecutorService workerExecutor = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+            .namingPattern("MinerManager-Worker-Thread-%d")
             .daemon(true)
             .build());
 
@@ -75,7 +80,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     /**
      * 根据miner的地址保存的数组 activate 代表的是一个已经注册的矿工
      */
-    protected Map<Bytes, Miner> activateMiners = new ConcurrentHashMap<>(200);
+    protected final Map<Bytes, Miner> activateMiners = new ConcurrentHashMap<>(200);
     private volatile Task currentTask;
     @Setter
     private PoW poW;
@@ -101,7 +106,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void start() {
         isRunning = true;
         init();
-        workExecutor.execute(this);
+        mainExecutor.execute(this);
         log.debug("MinerManager started.");
     }
 
@@ -125,9 +130,9 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     private void updataBalance() {
         synchronized (obj1) {
             try {
-                activateMinerChannels.values().parallelStream()
+                activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
-                        .forEach(MinerChannel::sendBalance);
+                        .forEach(mc -> workerExecutor.submit(mc::sendBalance));
             } catch (Exception e) {
                 log.error("An exception occurred in updataBalance: Exception->{}", e.toString());
             }
@@ -153,14 +158,16 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (cleanMinerFuture != null) {
             cleanMinerFuture.cancel(true);
         }
-        workExecutor.shutdown();
+        mainExecutor.shutdown();
         scheduledExecutor.shutdown();
         closeMiners();
     }
 
     private void closeMiners() {
         synchronized (obj1) {
-            activateMinerChannels.values().parallelStream().forEach(MinerChannel::dropConnection);
+            activateMinerChannels.values().forEach(
+                    mc -> workerExecutor.submit(mc::dropConnection)
+            );
         }
     }
 
@@ -188,7 +195,9 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void cleanUnactivateChannel() {
         synchronized (obj1) {
             try {
-                activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
+                activateMinerChannels.values().forEach(
+                        mc -> workerExecutor.submit(() -> removeUnactivateChannel(mc))
+                );
             } catch (Exception e) {
                 log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.toString());
             }
@@ -233,13 +242,13 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (task != null) {
             currentTask = task;
             synchronized (obj1) {
-                activateMinerChannels.values().parallelStream()
+                activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
-                        .forEach(c -> {
+                        .forEach(c -> workerExecutor.submit(() -> {
                             c.setTaskIndex(currentTask.getTaskIndex());
                             c.sendTaskToMiner(currentTask.getTask());
                             c.setSharesCounts(0);
-                        });
+                        }));
             }
         }
     }
