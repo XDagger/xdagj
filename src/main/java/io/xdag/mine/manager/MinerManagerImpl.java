@@ -122,7 +122,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
      * 启动 函数 开启遍历和server
      */
     public void init() {
-        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
+        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updataBalance, 64, 32, TimeUnit.SECONDS);
         cleanChannelFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
     }
@@ -248,6 +248,8 @@ public class MinerManagerImpl implements MinerManager, Runnable {
                             c.setTaskIndex(currentTask.getTaskIndex());
                             c.sendTaskToMiner(currentTask.getTask());
                             c.setSharesCounts(0);
+                            log.debug("Send task:{},task time:{},task index:{}, to address: {}",
+                                    currentTask.getTask().toString(),currentTask.getTaskIndex(),currentTask.getTaskIndex(),c.getAddressHash());
                         }));
             }
         }
