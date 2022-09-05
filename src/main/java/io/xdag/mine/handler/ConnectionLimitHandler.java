@@ -96,7 +96,7 @@ public class ConnectionLimitHandler extends ChannelInboundHandlerAdapter {
         if (cnt.decrementAndGet() <= 0) {
             connectionCount.remove(address.getHostAddress());
         }
-        log.debug("Inactive channel with {}:{}",address.getHostAddress(),address.getHostName());
+        log.debug("Inactive channel with {}",address.getHostAddress());
         super.channelInactive(ctx);
     }
 }
