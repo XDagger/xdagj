@@ -36,15 +36,17 @@ import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.NettyRuntime;
 import io.xdag.Kernel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class MinerServer {
-    protected Kernel kernel;
-    protected EventLoopGroup bossGroup;
-    protected EventLoopGroup workerGroup;
+    private Kernel kernel;
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+    private final int workerThreadPoolSize = NettyRuntime.availableProcessors() * 4;
     private ChannelFuture channelFuture;
     private boolean isListening = false;
 
@@ -58,16 +60,17 @@ public class MinerServer {
 
     public ServerBootstrap nativeEventLoopGroup() {
         ServerBootstrap bootstrap = new ServerBootstrap();
+
         if(SystemUtils.IS_OS_LINUX) {
-            bossGroup = new EpollEventLoopGroup(1);
-            workerGroup = new EpollEventLoopGroup();
+            bossGroup = new EpollEventLoopGroup();
+            workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
         } else if(SystemUtils.IS_OS_MAC) {
-            bossGroup = new KQueueEventLoopGroup(1);
-            workerGroup = new KQueueEventLoopGroup();
+            bossGroup = new KQueueEventLoopGroup();
+            workerGroup = new KQueueEventLoopGroup(workerThreadPoolSize);
 
         } else {
-            bossGroup = new NioEventLoopGroup(1);
-            workerGroup = new NioEventLoopGroup();
+            bossGroup = new NioEventLoopGroup();
+            workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
         }
 
         bootstrap.group(bossGroup, workerGroup);
@@ -97,7 +100,6 @@ public class MinerServer {
             log.info("Start Listening The Pool, Host:[{}:{}]", ip, port);
         } catch (Exception e) {
             log.error("Miner Server Error: {}.", e.getMessage(), e);
-            throw new Error("Miner Server Disconnected.");
         }
     }
 
@@ -111,7 +113,7 @@ public class MinerServer {
                 isListening = false;
                 log.info("Miner Server Closed.");
             } catch (Exception e) {
-                log.warn("Problems Closing Miner Server Channel", e);
+                log.error("Problems Closing Miner Server Channel: {}", e.getMessage(), e);
             }
         }
     }

@@ -117,24 +117,23 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         log.debug("MinerManager closed.");
     }
 
-
     /**
      * 启动 函数 开启遍历和server
      */
     public void init() {
-        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updataBalance, 64, 32, TimeUnit.SECONDS);
+        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updateBalance, 64, 64, TimeUnit.SECONDS);
         cleanChannelFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
     }
 
-    private void updataBalance() {
+    private void updateBalance() {
         synchronized (obj1) {
             try {
                 activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
                         .forEach(mc -> workerExecutor.submit(mc::sendBalance));
             } catch (Exception e) {
-                log.error("An exception occurred in updataBalance: Exception->{}", e.toString());
+                log.error("An exception occurred in updateBalance: Exception->{}", e.getMessage(), e);
             }
         }
     }
@@ -146,7 +145,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             activateMinerChannels.put(channel.getInetAddress(), channel);
         }
     }
-
 
     public void close() {
         if (updateFuture != null) {
@@ -199,7 +197,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
                         mc -> workerExecutor.submit(() -> removeUnactivateChannel(mc))
                 );
             } catch (Exception e) {
-                log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.toString());
+                log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.getMessage(), e);
             }
         }
     }
@@ -209,11 +207,10 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             try {
                 activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
             } catch (Exception e) {
-                log.error("An exception occurred in cleanUnactivateMiner: Exception->{}", e.toString());
+                log.error("An exception occurred in cleanUnactivateMiner: Exception->{}", e.getMessage(), e);
             }
         }
     }
-
 
     @Override
     public void updateTask(Task task) {
