@@ -113,7 +113,7 @@ public class MinerServer {
                 isListening = false;
                 log.info("Miner Server Closed.");
             } catch (Exception e) {
-                log.error("Problems Closing Miner Server Channel", e.getMessage(), e);
+                log.error("Problems Closing Miner Server Channel: {}", e.getMessage(), e);
             }
         }
     }
