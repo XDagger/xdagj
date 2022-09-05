@@ -72,7 +72,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
-            log.debug("Receive a address block");
+            log.debug("Receive a address block from ip&port:{}",channel.getInetAddress().toString());
             byte[] address = new byte[512];
             in.readBytes(address);
 
@@ -90,7 +90,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 //                System.out.println(head != BLOCK_HEAD_WORD);
 
             if (isDataIllegal(uncryptData.clone())) {
-                log.debug(" not a block from miner: {}",channel.getAddressHash());
+                log.debug(" not a block from miner: {},ip&port",channel.getAddressHash(),channel.getInetAddress().toString());
                 ctx.channel().closeFuture();
             } else {
                 System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
@@ -116,8 +116,8 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 //                }
 
                 if (!initMiner(addressBlock.getHash())) {
-                    log.debug("too many connect for the miner: {}",
-                            channel.getAddressHash());
+                    log.debug("too many connect for the miner: {},ip&port:{}",
+                            channel.getAddressHash(),channel.getInetAddress().toString());
                     ctx.close();
                     return;
                 }
@@ -137,7 +137,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 channel.activateHandler(ctx, V03);
                 ctx.pipeline().remove(this);
                 // TODO: 2020/5/8 There may be a bug here. If you join infinitely, won't it be created wirelessly?
-                log.debug("add a new miner,miner's address: [" + channel.getAddressHash() + "]");
+                log.debug("add a new miner from ip&port:{},miner's address: [" + channel.getAddressHash() + "]",channel.getInetAddress().toString());
             }
         } else {
             log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
@@ -147,14 +147,14 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     public void checkProtocol(ChannelHandlerContext ctx,Block addressBlock) {
         if (addressBlock.getXdagBlock().getField(addressBlock.getOutsigIndex()).getData().isZero()) {
             // pseudo block
-            log.debug("Pseudo block, addressBlockHashLow: {}",addressBlock.getHashLow());
+            log.debug("Pseudo block, addressBlockHashLow: {},ip&port:{}",addressBlock.getHashLow(),channel.getInetAddress().toString());
 
         } else {
             ImportResult importResult = tryToConnect(addressBlock);
 
             if (importResult == ImportResult.ERROR) {
-                log.debug("Block from address:{} type error ",
-                        channel.getAddressHash());
+                log.debug("Block from address:{},ip&port:{} type error ",
+                        channel.getAddressHash(),channel.getInetAddress().toString());
                 ctx.close();
                 return;
             }
@@ -191,8 +191,8 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException) {
-            log.debug("The miner of the remote host is: {} closed a connection.",
-                    channel.getAddressHash());
+            log.debug("The miner of the remote host is: {} closed ip&port:{} connection.",
+                    channel.getAddressHash(),channel.getInetAddress().toString());
             ctx.channel().closeFuture();
         } else {
             cause.printStackTrace();

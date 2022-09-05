@@ -248,9 +248,9 @@ public class MinerManagerImpl implements MinerManager, Runnable {
                             c.setTaskIndex(currentTask.getTaskIndex());
                             c.sendTaskToMiner(currentTask.getTask());
                             c.setSharesCounts(0);
-                            log.debug("Send task:{},task time:{},task index:{}, to address: {}",
+                            log.debug("Send task:{},task time:{},task index:{}, to address: {} ip&port:{}",
                                     Bytes.wrap(currentTask.getTask()[0].getData(), currentTask.getTask()[1].getData()).toHexString(),
-                                    currentTask.getTaskTime(),currentTask.getTaskIndex(),c.getAddressHash());
+                                    currentTask.getTaskTime(),currentTask.getTaskIndex(),c.getAddressHash(),c.getInetAddress().toString());
                         }));
             }
         }
