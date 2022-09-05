@@ -100,7 +100,6 @@ public class MinerServer {
             log.info("Start Listening The Pool, Host:[{}:{}]", ip, port);
         } catch (Exception e) {
             log.error("Miner Server Error: {}.", e.getMessage(), e);
-            throw new Error("Miner Server Disconnected.");
         }
     }
 
@@ -114,7 +113,7 @@ public class MinerServer {
                 isListening = false;
                 log.info("Miner Server Closed.");
             } catch (Exception e) {
-                log.warn("Problems Closing Miner Server Channel", e);
+                log.error("Problems Closing Miner Server Channel", e.getMessage(), e);
             }
         }
     }
