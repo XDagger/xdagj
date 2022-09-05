@@ -27,7 +27,7 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_allocCache(
         JNIEnv *env,
         jobject *obj) {
     randomx_flags flags = randomx_get_flags();
-    randomx_cache* cache=randomx_alloc_cache(flags);
+    randomx_cache* cache=randomx_alloc_cache(flags | RANDOMX_FLAG_LARGE_PAGES | RANDOMX_FLAG_FULL_MEM);
 //    std::cout << "alloc randomx cache " << cache << std::endl;
     return (jlong)cache;
 }
@@ -64,7 +64,7 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_allocDataSet(
         JNIEnv *env,
         jobject *obj) {
     randomx_flags flags = randomx_get_flags();
-    randomx_dataset* dataset=randomx_alloc_dataset(flags);
+    randomx_dataset* dataset=randomx_alloc_dataset(flags | RANDOMX_FLAG_LARGE_PAGES | RANDOMX_FLAG_FULL_MEM);
 //    std::cout << "alloc randomx dataset " << dataset << std::endl;
     return (jlong)dataset;
 }
@@ -155,10 +155,10 @@ JNIEXPORT jlong JNICALL Java_io_xdag_crypto_jni_RandomX_createVm(
     randomx_cache* rs_cache=(randomx_cache*)jcache;
     randomx_dataset* rx_dataset=(randomx_dataset*)jdataset;
     randomx_flags flags = randomx_get_flags();
-    randomx_vm *rx_vm = randomx_create_vm(flags | RANDOMX_FLAG_LARGE_PAGES, rs_cache, rx_dataset);
+    randomx_vm *rx_vm = randomx_create_vm(flags | RANDOMX_FLAG_LARGE_PAGES | RANDOMX_FLAG_FULL_MEM, rs_cache, rx_dataset);
     if(rx_vm == NULL) {
 //        std::cout <<"Couldn't use largePages for RandomX VM" << std::endl;
-        rx_vm = randomx_create_vm(flags, rs_cache, rx_dataset);
+        rx_vm = randomx_create_vm(flags | RANDOMX_FLAG_LARGE_PAGES | RANDOMX_FLAG_FULL_MEM, rs_cache, rx_dataset);
     }
     if(rx_vm == NULL) {
         //TODO: try full memory flag

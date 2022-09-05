@@ -77,6 +77,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
      * 保存活跃的channel
      */
     protected Map<InetSocketAddress, MinerChannel> activateMinerChannels = new ConcurrentHashMap<>();
+    private int activateMinerChannelsSize;
     /**
      * 根据miner的地址保存的数组 activate 代表的是一个已经注册的矿工
      */
@@ -143,6 +144,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         log.debug("add a new active channel");
         synchronized (obj1) {
             activateMinerChannels.put(channel.getInetAddress(), channel);
+            activateMinerChannelsSize ++;
         }
     }
 
@@ -175,7 +177,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             log.debug("remove a channel");
             kernel.getChannelsAccount().getAndDecrement();
             activateMinerChannels.remove(channel.getInetAddress(), channel);
-
+            activateMinerChannelsSize --;
             synchronized (obj2) {
                 Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
                 if (miner == null) {
@@ -239,6 +241,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (task != null) {
             currentTask = task;
             synchronized (obj1) {
+                log.debug("the size of active miner channels:{}", activateMinerChannelsSize);
                 activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
                         .forEach(c -> workerExecutor.submit(() -> {
