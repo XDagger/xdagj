@@ -183,6 +183,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         } else {
             log.debug("Too many Shares from address:{},ip&port:{},Reject...",
                     channel.getAddressHash(),channel.getInetAddress().toString());
+            ctx.close();
         }
 
     }
@@ -239,6 +240,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             log.debug("socket:{}, xdag address:{}, timeout with:{}", channel.getInetAddress().toString(), channel.getAddressHash(),((IdleStateEvent)evt).state().toString());
             if (readIdleTimes > 3) {
                 log.warn("close channel, socket:{}, xdag address:{}.", channel.getInetAddress().toString(), channel.getAddressHash());
+                channel.setActive(false);
                 nettyChannel.close();
             }
         } catch (Exception e) {
