@@ -29,6 +29,7 @@ import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
@@ -244,6 +245,7 @@ public class MinerChannel {
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
+        ctx.pipeline().addLast(new IdleStateHandler(64, 0, 0));
         ctx.pipeline().addLast("Miner03Handler", miner03);
     }
 

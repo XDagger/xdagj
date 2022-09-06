@@ -26,8 +26,11 @@ package io.xdag.mine.handler;
 
 import static io.xdag.utils.BytesUtils.compareTo;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
@@ -59,6 +62,10 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     private final MinerManager minerManager;
     private final SyncManager syncManager;
     private ChannelHandlerContext ctx;
+
+    private int readIdleTimes;
+    private int writeIdleTimes;
+    private int allIdleTimes;
 
     public Miner03(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
@@ -215,4 +222,28 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                     channel.getInetAddress().toString(), channel.getAddressHash());
         }
     }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        try {
+            Channel nettyChannel = ctx.channel();
+            if (evt instanceof IdleStateEvent e) {
+                if (e.state() == IdleState.READER_IDLE) {
+                    readIdleTimes++;
+                } else if (e.state() == IdleState.WRITER_IDLE) {
+                    writeIdleTimes++;
+                } else if (e.state() == IdleState.ALL_IDLE) {
+                    allIdleTimes++;
+                }
+            }
+            log.debug("socket:{}, xdag address:{}, timeout with:{}", channel.getInetAddress().toString(), channel.getAddressHash(),((IdleStateEvent)evt).state().toString());
+            if (readIdleTimes > 3) {
+                log.warn("close channel, socket:{}, xdag address:{}.", channel.getInetAddress().toString(), channel.getAddressHash());
+                nettyChannel.close();
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
 }

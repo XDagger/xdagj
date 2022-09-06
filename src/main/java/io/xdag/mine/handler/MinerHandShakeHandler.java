@@ -195,7 +195,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                     channel.getAddressHash(),channel.getInetAddress().toString());
             ctx.channel().closeFuture();
         } else {
-            cause.printStackTrace();
+            log.error(cause.getMessage(), cause);
         }
         channel.onDisconnect();
     }
