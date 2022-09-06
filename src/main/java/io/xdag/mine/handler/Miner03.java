@@ -183,6 +183,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         } else {
             log.debug("Too many Shares from address:{},ip&port:{},Reject...",
                     channel.getAddressHash(),channel.getInetAddress().toString());
+            ctx.close();
         }
 
     }
