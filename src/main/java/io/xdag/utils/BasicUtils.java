@@ -141,8 +141,8 @@ public class BasicUtils {
     }
 
     public static double xdag_diff2log(BigInteger diff) {
-        if (res.compareTo(BigInteger.ZERO) > 0) {
-            return Math.log(res.doubleValue());
+        if (diff.compareTo(BigInteger.ZERO) > 0) {
+            return Math.log(diff.doubleValue());
         } else {
             return 0.0;
         }
