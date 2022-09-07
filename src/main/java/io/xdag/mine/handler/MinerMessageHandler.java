@@ -24,10 +24,6 @@
 
 package io.xdag.mine.handler;
 
-import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
-import static io.xdag.net.message.XdagMessageCodes.*;
-import static io.xdag.utils.BasicUtils.crc32Verify;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -38,14 +34,18 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.MutableBytes;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.List;
+
+import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
+import static io.xdag.net.message.XdagMessageCodes.*;
+import static io.xdag.utils.BasicUtils.crc32Verify;
 
 @Slf4j
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {

@@ -1,7 +1,7 @@
 package io.xdag.err;
 
 public class BusinessException extends Exception{
-    private int code;
+    private final int code;
 
     public BusinessException(int code, String msg) {
         super(msg);

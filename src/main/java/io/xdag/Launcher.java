@@ -94,7 +94,7 @@ public class Launcher {
                 log.info("Shutting down {}", r.getLeft());
                 r.getRight().run();
             } catch (Exception e) {
-                log.debug("Failed to shutdown {}", r.getLeft(), e);
+                log.error("Failed to shutdown {}", r.getLeft(), e);
             }
         }
         LogManager.shutdown();

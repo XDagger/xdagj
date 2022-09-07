@@ -35,13 +35,12 @@ import io.xdag.rpc.modules.XdagJsonRpcRequest;
 import io.xdag.rpc.modules.XdagJsonRpcRequestVisitor;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class XdagJsonRpcHandler extends SimpleChannelInboundHandler<ByteBufHolder>
         implements XdagJsonRpcRequestVisitor {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(XdagJsonRpcHandler.class);
 
     private final JsonRpcSerializer serializer;
 
@@ -62,7 +61,7 @@ public class XdagJsonRpcHandler extends SimpleChannelInboundHandler<ByteBufHolde
             ctx.writeAndFlush(new TextWebSocketFrame(serializer.serializeMessage(response)));
             return;
         } catch (IOException e) {
-            LOGGER.trace("Not a known or valid JsonRpcRequest", e);
+            log.error("Not a known or valid JsonRpcRequest:{}", e.getMessage(), e);
         }
 
         // delegate to the next handler if the message can't be matched to a known JSON-RPC request

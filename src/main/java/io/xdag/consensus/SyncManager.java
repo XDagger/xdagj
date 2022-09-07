@@ -118,7 +118,7 @@ public class SyncManager {
         } else {
             throw new IllegalStateException("error xdag network type." + config.toString());
         }
-        if(res == true){
+        if(res){
             log.debug("Waiting time exceeded,starting pow");
         }
         return res;

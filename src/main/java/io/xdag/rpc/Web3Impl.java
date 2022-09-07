@@ -26,10 +26,10 @@ package io.xdag.rpc;
 
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.ConfigDTO;
-import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModule;
+
 import java.util.Map;
 
 public class Web3Impl implements Web3 {
@@ -46,7 +46,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String web3_sha3(String data) throws Exception {
+    public String web3_sha3(String data) {
         return null;
     }
 
@@ -111,7 +111,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public Object personal_sendTransaction(CallArguments transactionArgs, String passphrase) throws Exception {
+    public Object personal_sendTransaction(CallArguments transactionArgs, String passphrase) {
         return web3XdagModule.xdag_personal_sendTransaction(transactionArgs, passphrase);
     }
 
@@ -126,7 +126,7 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String personal_dumpRawKey(String address) throws Exception {
+    public String personal_dumpRawKey(String address) {
         return null;
     }
 

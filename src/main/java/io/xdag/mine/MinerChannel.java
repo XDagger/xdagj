@@ -50,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -268,7 +269,7 @@ public class MinerChannel {
             }
         } else {
             this.miner = new Miner(accountAddressHash);
-            minerManager.getActivateMiners().put(accountAddressHash, miner);
+            Objects.requireNonNull(minerManager).getActivateMiners().put(accountAddressHash, miner);
             this.miner.putChannel(this.inetAddress, this);
             this.miner.setMinerStates(MINER_ACTIVE);
             return true;

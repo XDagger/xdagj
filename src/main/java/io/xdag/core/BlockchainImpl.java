@@ -346,7 +346,7 @@ public class BlockchainImpl implements Blockchain {
                 }
 
                 // TODO: 如果是交易块 不设置extra
-                if (!ref.getAmount().equals(BigInteger.ZERO)) {
+                if (ref != null && !ref.getAmount().equals(BigInteger.ZERO)) {
                     updateBlockFlag(block, BI_EXTRA, false);
                 }
             }
@@ -806,11 +806,7 @@ public class BlockchainImpl implements Blockchain {
         if (randomXUtils != null) {
             randomXUtils.randomXUnsetForkTime(block);
         }
-        // 非主块不需要高度
         block.getInfo().setHeight(0);
-//      Add the rolled back block to the orphanPool for processing again
-//        orphanPool.addOrphan(block);
-//        xdagStats.nnoref++;
     }
 
     @Override
@@ -1050,7 +1046,7 @@ public class BlockchainImpl implements Blockchain {
         data.set(0, rxHash);
         data.set(32, block.getXdagBlock().getField(15).getData());
         byte[] blockHash = randomXUtils.randomXBlockHash(data.toArray(), data.size(), epoch);
-        BigInteger diff = BigInteger.ZERO;
+        BigInteger diff;
         if (blockHash != null) {
             Bytes32 hash = Bytes32.wrap(Arrays.reverse(blockHash));
             diff =  getDiffByRawHash(hash);

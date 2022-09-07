@@ -25,11 +25,11 @@
 package io.xdag.utils;
 
 import com.google.common.io.BaseEncoding;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import org.apache.commons.lang3.ArrayUtils;
 
 public class BytesUtils {
 

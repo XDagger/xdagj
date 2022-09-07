@@ -24,10 +24,6 @@
 
 package io.xdag.mine.handler;
 
-import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
-import static io.xdag.net.XdagVersion.V03;
-import static io.xdag.utils.BasicUtils.crc32Verify;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -43,16 +39,18 @@ import io.xdag.core.XdagBlock;
 import io.xdag.crypto.jni.Native;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes32;
+import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
+import static io.xdag.net.XdagVersion.V03;
+import static io.xdag.utils.BasicUtils.crc32Verify;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
@@ -90,7 +88,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 //                System.out.println(head != BLOCK_HEAD_WORD);
 
             if (isDataIllegal(uncryptData.clone())) {
-                log.debug(" not a block from miner: {},ip&port",channel.getAddressHash(),channel.getInetAddress().toString());
+                log.debug("not a block from miner: {}, host:{}.",channel.getAddressHash(),channel.getInetAddress().toString());
                 ctx.channel().closeFuture();
             } else {
                 System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
@@ -98,22 +96,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // TODO:
                 checkProtocol(ctx,addressBlock);
-
-//                ImportResult importResult = tryToConnect(addressBlock);
-//
-//                if (importResult == ImportResult.ERROR) {
-//                    log.debug("ErrorInfo:{}", importResult.getErrorInfo());
-//                    ctx.close();
-//                    return;
-//                }
-//                //If it is a new address block
-//                if (importResult != ImportResult.EXIST) {
-//                    log.info("XDAG:new wallet connect. New Address {} with channel {} connect.",
-//                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
-//                } else {
-//                    log.info("XDAG:old wallet connect. Address {} with channel {} connect.",
-//                            BasicUtils.hash2Address(addressBlock.getHash()), channel.getInetAddress().toString());
-//                }
 
                 if (!initMiner(addressBlock.getHash())) {
                     log.debug("too many connect for the miner: {},ip&port:{}",

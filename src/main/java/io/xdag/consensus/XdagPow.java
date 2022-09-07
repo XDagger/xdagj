@@ -24,16 +24,8 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.utils.BytesUtils.compareTo;
-import static io.xdag.utils.BytesUtils.equalBytes;
-
 import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagState;
+import io.xdag.core.*;
 import io.xdag.crypto.Hash;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
@@ -42,31 +34,28 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.Message;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.mine.randomx.RandomXMemory;
-import io.xdag.utils.BasicUtils;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.message.Message;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.xdag.utils.BytesUtils.compareTo;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {
@@ -78,7 +67,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     // 当前区块
     protected AtomicReference<Block> generateBlock = new AtomicReference<>();
     protected AtomicReference<Bytes32> minShare = new AtomicReference<>();
-    protected AtomicReference<Bytes32> minHash = new AtomicReference<>();
+    protected final AtomicReference<Bytes32> minHash = new AtomicReference<>();
     protected XdagChannelManager channelMgr;
     protected Blockchain blockchain;
     protected volatile Bytes32 globalPretop;
@@ -415,8 +404,6 @@ public class XdagPow implements PoW, Listener, Runnable {
                     continue;
                 }
                 switch (ev.getType()) {
-                    case NEW_DIFF:
-                        break;
                     case TIMEOUT:
                         // TODO : 判断当前是否可以进行产块
                         if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
@@ -439,14 +426,12 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     @Override
     public void onMessage(io.xdag.listener.Message msg) {
-        if (msg instanceof BlockMessage) {
-            BlockMessage message = (BlockMessage) msg;
+        if (msg instanceof BlockMessage message) {
             BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(message.getData().toArray())),
                     kernel.getConfig().getNodeSpec().getTTL());
             broadcaster.broadcast(bw);
         }
-        if (msg instanceof PretopMessage) {
-            PretopMessage message = (PretopMessage) msg;
+        if (msg instanceof PretopMessage message) {
             receiveNewPretop(message.getData());
         }
     }

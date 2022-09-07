@@ -52,10 +52,9 @@ public class StatsBlock {
     }
 
     public static StatsBlock parse(Bytes key, Bytes value,int offset) {
-        Bytes uncompressed = value;
-        long time = uncompressed.getLong(8, ByteOrder.LITTLE_ENDIAN);
-        Bytes32 hash = Bytes32.wrap(uncompressed.slice(16, 32));
-        BigInteger diff = uncompressed.slice(48, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
+        long time = value.getLong(8, ByteOrder.LITTLE_ENDIAN);
+        Bytes32 hash = Bytes32.wrap(value.slice(16, 32));
+        BigInteger diff = value.slice(48, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
         return new StatsBlock(offset, time, hash.toArray(), diff);
     }
 
