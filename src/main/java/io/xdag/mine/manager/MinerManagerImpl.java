@@ -223,7 +223,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
 
     @Override
     public void addActiveMiner(Miner miner) {
-        synchronized (activateMiners) {
+        synchronized (obj2) {
             activateMiners.put(miner.getAddressHash(), miner);
         }
     }
