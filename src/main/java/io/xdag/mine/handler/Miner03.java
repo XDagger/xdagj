@@ -26,7 +26,6 @@ package io.xdag.mine.handler;
 
 import static io.xdag.utils.BytesUtils.compareTo;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -215,8 +214,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         if(channel != null) {
             channel.setActive(false);
         }
-        //kernel.getChannelsAccount().getAndDecrement();
-        //minerManager.removeUnactivateChannel(this.channel);
 
         if(channel != null) {
             log.info("Disconnect channel: {} with address: {}",
@@ -227,7 +224,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         try {
-            Channel nettyChannel = ctx.channel();
             if (evt instanceof IdleStateEvent e) {
                 if (e.state() == IdleState.READER_IDLE) {
                     readIdleTimes++;
@@ -236,11 +232,11 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 } else if (e.state() == IdleState.ALL_IDLE) {
                     allIdleTimes++;
                 }
+                log.debug("socket:{}, xdag address:{}, timeout with:{}", channel.getInetAddress().toString(), channel.getAddressHash(),((IdleStateEvent)evt).state().toString());
             }
-            log.debug("socket:{}, xdag address:{}, timeout with:{}", channel.getInetAddress().toString(), channel.getAddressHash(),((IdleStateEvent)evt).state().toString());
+
             if (readIdleTimes > 3) {
                 log.warn("close channel, socket:{}, xdag address:{}.", channel.getInetAddress().toString(), channel.getAddressHash());
-//                channel.setActive(false);
                 channel.onDisconnect();
             }
         } catch (Exception e) {

@@ -1406,7 +1406,7 @@ public class BlockchainImpl implements Blockchain {
             checkLoop.shutdownNow();
             checkLoop.awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 

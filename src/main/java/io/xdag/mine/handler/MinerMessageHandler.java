@@ -152,10 +152,10 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         if (cause instanceof IOException) {
             log.debug("The remote host closed a connection,whose address is : {} ",
                     channel.getAddressHash());
-            ctx.channel().closeFuture();
         } else {
-            cause.printStackTrace();
+            log.error(cause.getMessage(), cause);
         }
         channel.onDisconnect();
+
     }
 }

@@ -89,7 +89,7 @@ public class NetDB {
             }
 
         } catch (UnknownHostException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -199,7 +199,7 @@ public class NetDB {
                 this.ip = InetAddress.getByName(ip);
                 this.port = port;
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }
 

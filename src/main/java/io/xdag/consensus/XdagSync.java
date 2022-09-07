@@ -180,7 +180,7 @@ public class XdagSync {
                 sendTask.shutdownNow();
                 sendTask.awaitTermination(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
             isRunning = false;
             log.debug("Sync Stop");

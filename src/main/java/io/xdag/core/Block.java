@@ -552,7 +552,7 @@ public class Block implements Cloneable {
         try {
             ano = (Block) super.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
         return ano;
     }

@@ -25,6 +25,7 @@
 package io.xdag.core;
 
 import io.xdag.utils.exception.SimpleCodecException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +42,7 @@ public class SimpleEncoder {
         try {
             out.write(field);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new SimpleCodecException(e);
         }
     }
 
@@ -49,7 +50,7 @@ public class SimpleEncoder {
         try {
             out.write(sig);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new SimpleCodecException(e);
         }
     }
 
@@ -57,7 +58,7 @@ public class SimpleEncoder {
         try {
             out.write(input);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new SimpleCodecException(e);
         }
     }
 
