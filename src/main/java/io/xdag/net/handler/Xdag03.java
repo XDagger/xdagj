@@ -240,24 +240,6 @@ public class Xdag03 extends XdagHandler {
         //// xdagListener.trace("Xdag protocol activate");
     }
 
-    @Override
-    public void disableBlocks() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void enableBlocks() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onSyncDone(boolean done) {
-        // TODO Auto-generated method stub
-
-    }
-
     public void updateXdagStats(AbstractMessage message) {
         XdagStats remoteXdagStats = message.getXdagStats();
         kernel.getBlockchain().getXdagStats().update(remoteXdagStats);

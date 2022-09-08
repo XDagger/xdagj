@@ -59,9 +59,7 @@ public class XdagBlock {
         if (data != null && data.size() == 512) {
             fields = new XdagField[XDAG_BLOCK_FIELDS];
             for (int i = 0; i < XDAG_BLOCK_FIELDS; i++) {
-//                byte[] fieldBytes = new byte[32];
                 MutableBytes32 fieldBytes = MutableBytes32.create();
-//                System.arraycopy(data, i * 32, fieldBytes, 0, 32);
                 fieldBytes.set(0, data.slice(i * 32, 32));
                 fields[i] = new XdagField(fieldBytes);
                 fields[i].setType(fromByte(getMsgCode(i)));
@@ -74,7 +72,6 @@ public class XdagBlock {
     }
 
     public byte getMsgCode(int n) {
-//        long type = BytesUtils.bytesToLong(this.data.toArray(), 8, true);
         long type = this.data.getLong(8, ByteOrder.LITTLE_ENDIAN);
         return (byte) (type >> (n << 2) & 0xf);
     }
@@ -94,12 +91,10 @@ public class XdagBlock {
 
     public MutableBytes getData() {
         if (this.data == null) {
-//            this.data = new byte[512];
             this.data = MutableBytes.create(512);
             for (int i = 0; i < XDAG_BLOCK_FIELDS; i++) {
                 sum += fields[i].getSum();
                 int index = i * 32;
-//                System.arraycopy(Arrays.reverse(fields[i].getData().toArray()), 0, this.data, index, 32);
                 this.data.set(index, fields[i].getData().reverse());
             }
         }

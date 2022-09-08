@@ -45,23 +45,5 @@ public interface Xdag {
 
     void activate();
 
-    /**
-     * Disables pending block processing
-     */
-    void disableBlocks();
-
-    /**
-     * Enables pending block processing
-     */
-    void enableBlocks();
-
-    /**
-     * Fires inner logic related to long sync done or undone event
-     *
-     * @param done true notifies that long sync is finished, false notifies that it's
-     *         enabled again
-     */
-    void onSyncDone(boolean done);
-
     void sendMessage(Message message);
 }

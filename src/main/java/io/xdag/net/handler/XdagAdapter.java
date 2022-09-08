@@ -71,21 +71,6 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public void disableBlocks() {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void enableBlocks() {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void onSyncDone(boolean done) {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
     public void sendMessage(Message message) {
         // TODO Auto-generated method stub
     }
