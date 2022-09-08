@@ -62,8 +62,8 @@
   ```shell
   $mkdir run 
 
-  #Please copy xdag-devnet.config, xdag.sh & xdagj-0.5.0-shaded.jar into /run
-  # xdag-devnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.5.0-shaded.jar is in /target
+  #Please copy xdag-devnet.config, xdag.sh & xdagj-0.5.1-shaded.jar into /run
+  # xdag-devnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.5.1-shaded.jar is in /target
 
   $cd run
   $sh xdag.sh -d
