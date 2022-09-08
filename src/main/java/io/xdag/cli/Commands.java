@@ -360,7 +360,7 @@ public class Commands {
                          wait sync blocks: %d
                          chain difficulty: %s of %s
                               XDAG supply: %.9f of %.9f
-                        4 hr hashrate MHs: %.9f of %.9f""",
+                        4 hr hashrate KHs: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
