@@ -594,6 +594,10 @@
                     <artifactId>kotlin-stdlib-common</artifactId>
                     <groupId>org.jetbrains.kotlin</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib-jdk8</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -628,6 +632,12 @@
             <artifactId>assertj-core</artifactId>
             <version>3.23.1</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>byte-buddy</artifactId>
+                    <groupId>net.bytebuddy</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -966,6 +976,24 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <version>3.0.0-M7</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-io</artifactId>
+                    <groupId>commons-io</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>plexus-classworlds</artifactId>
+                    <groupId>org.codehaus.plexus</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>plexus-utils</artifactId>
+                    <groupId>org.codehaus.plexus</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>

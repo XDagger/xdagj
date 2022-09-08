@@ -27,7 +27,7 @@ package io.xdag.net.handler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.SocketChannel;
 import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 
 @Slf4j
-public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel> {
+public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final Node remoteNode;
     private final XdagChannelManager channelMgr;
@@ -52,7 +52,7 @@ public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel>
     }
 
     @Override
-    protected void initChannel(NioSocketChannel ch) {
+    protected void initChannel(SocketChannel ch) {
         try {
             // log.debug("new input channel");
             InetSocketAddress address = isServer ? ch.remoteAddress() : remoteNode.getAddress();

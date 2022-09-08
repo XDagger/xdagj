@@ -27,7 +27,6 @@ package io.xdag.net;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.mine.handler.ConnectionLimitHandler;
@@ -79,8 +78,8 @@ public class XdagChannel extends Channel {
     // TODO：记录该连接发送错误消息的次数，一旦超过某个值将断开连接
     private int failTimes;
 
-    public XdagChannel(NioSocketChannel socketChannel) {
-        this.socket = socketChannel;
+    public XdagChannel(io.netty.channel.socket.SocketChannel socketChannel) {
+        this.socketChannel = socketChannel;
     }
 
     public void init(
