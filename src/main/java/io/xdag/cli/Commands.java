@@ -349,6 +349,10 @@ public class Commands {
         BigInteger currentDiff = xdagTopStatus.getTopDiff() != null ? xdagTopStatus.getTopDiff() : BigInteger.ZERO;
         BigInteger netDiff = xdagStats.getMaxdifficulty() != null ? xdagStats.getMaxdifficulty() : BigInteger.ZERO;
         BigInteger maxDiff = netDiff.max(currentDiff);
+        for (int i = 0; i < 256; i++) {
+            log.debug("全局{} : {}" ,i,kernel.getBlockchain().getXdagExtStats().getHashRateTotal()[i]);
+            log.debug("本地{} : {}" ,i,kernel.getBlockchain().getXdagExtStats().getHashRateOurs()[i]);
+        }
 
         return String.format("""
                         Statistics for ours and maximum known parameters:
@@ -360,7 +364,7 @@ public class Commands {
                          wait sync blocks: %d
                          chain difficulty: %s of %s
                               XDAG supply: %.9f of %.9f
-                        4 hr hashrate MHs: %.9f of %.9f""",
+                        4 hr hashrate KHs: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
