@@ -138,8 +138,6 @@ public class XdagChannelManager {
                 log.debug("not send to sender node");
                 continue;
             }
-            log.debug("send block:{} to node:{}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())),
-                    channel.getInetSocketAddress());
             channel.sendNewBlock(blockWrapper);
         }
     }

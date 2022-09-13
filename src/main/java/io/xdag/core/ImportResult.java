@@ -31,6 +31,7 @@ public enum ImportResult {
     EXIST,
     NO_PARENT,
     INVALID_BLOCK,
+    IN_MEM,
 
     IMPORTED_EXTRA,
     IMPORTED_NOT_BEST,
@@ -57,6 +58,6 @@ public enum ImportResult {
     }
 
     public boolean isNormal() {
-        return this == IMPORTED_NOT_BEST || this == IMPORTED_BEST || this == EXIST || this == IMPORTED_EXTRA;
+        return this == IMPORTED_NOT_BEST || this == IMPORTED_BEST || this == EXIST || this == IMPORTED_EXTRA || this == IN_MEM;
     }
 }
