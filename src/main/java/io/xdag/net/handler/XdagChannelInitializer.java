@@ -63,7 +63,6 @@ public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
                 ch.disconnect();
                 return;
             }
-            log.debug("Init channel :{}",ch.remoteAddress().toString());
             XdagChannel channel = new XdagChannel(ch);
             channel.init(ch.pipeline(), kernel, isServer, address);
             ch.config().setOption(ChannelOption.TCP_NODELAY, true);
