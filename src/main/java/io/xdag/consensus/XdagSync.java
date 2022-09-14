@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -72,6 +73,7 @@ public class XdagSync {
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> blocksRequestMap;
 
+    @Getter@Setter
     private Status status;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
@@ -101,6 +103,7 @@ public class XdagSync {
         log.debug("SyncLoop...");
         try {
             // TODO: paulochen 开始同步的时间点/快照时间点
+            log.debug("sync status:{}", status);
             requestBlocks(0, 1L << 48);
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
