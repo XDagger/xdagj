@@ -220,7 +220,6 @@ public class Kernel {
         // ====================================
         blockchain = new BlockchainImpl(this);
         XdagStats xdagStats = blockchain.getXdagStats();
-        xdagStats.setMaxdifficulty(blockStore.getBlockByHeight(xdagStats.nmain).getInfo().getDifficulty());
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);

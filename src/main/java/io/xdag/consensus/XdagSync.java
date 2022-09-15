@@ -103,7 +103,6 @@ public class XdagSync {
         log.debug("SyncLoop...");
         try {
             // TODO: paulochen 开始同步的时间点/快照时间点
-            log.debug("sync status:{}", status);
             requestBlocks(0, 1L << 48);
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
