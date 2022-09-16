@@ -207,6 +207,7 @@ public class XdagChannel extends Channel {
 
     @Override
     public void dropConnection() {
+        log.debug("Disconnect with node:{}",socketChannel.remoteAddress());
         xdag.dropConnection();
     }
 }

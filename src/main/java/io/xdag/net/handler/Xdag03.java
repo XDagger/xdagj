@@ -36,9 +36,11 @@ import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.*;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.XdagTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -111,7 +113,7 @@ public class Xdag03 extends XdagHandler {
      */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.debug("processNewBlock:{}", BasicUtils.hash2Address(block.getHash()));
+        log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getInetSocketAddress());
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
         syncMgr.validateAndAddNewBlock(bw);
     }
@@ -131,6 +133,10 @@ public class Xdag03 extends XdagHandler {
 //        // 如果大于快照点的话 我可以发送
 //        if (startTime > 1658318225407L) {
 //            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
+        log.debug("Send blocks between {} and {} to node {}",
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
+                channel.getInetSocketAddress());
         List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
             sendNewBlock(block, 1);
@@ -192,12 +198,17 @@ public class Xdag03 extends XdagHandler {
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
 //        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
+        log.debug("send block:{} to node:{}", newBlock.getHashLow(), channel.getInetSocketAddress());
         NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
         sendMessage(msg);
     }
 
     @Override
     public long sendGetBlocks(long startTime, long endTime) {
+        log.debug("Request blocks between {} and {} from node {}",
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
+                channel.getInetSocketAddress());
         BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, kernel.getBlockchain().getXdagStats(),
                 netDBManager.getNetDB());
         sendMessage(msg);
@@ -209,6 +220,7 @@ public class Xdag03 extends XdagHandler {
 //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(),
                 netDBManager.getNetDB());
+        log.debug("Request block {} from node {}", hash, channel.getInetSocketAddress());
         sendMessage(msg);
         return msg.getRandom();
     }

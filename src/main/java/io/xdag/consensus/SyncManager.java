@@ -129,12 +129,12 @@ public class SyncManager {
      */
     //todo:修改共识
     public ImportResult importBlock(BlockWrapper blockWrapper) {
-        log.debug("importBlock:{}", BasicUtils.hash2Address(blockWrapper.getBlock().getHash()));
+        log.debug("importBlock:{}", blockWrapper.getBlock().getHashLow());
         ImportResult importResult = blockchain
                 .tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData().toArray())));
 
         if (importResult == EXIST) {
-            log.debug("Block have exist:" + BasicUtils.hash2Address(blockWrapper.getBlock().getHash()));
+            log.debug("Block have exist:" + blockWrapper.getBlock().getHashLow());
         }
 
         if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
@@ -174,13 +174,12 @@ public class SyncManager {
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
-        log.debug("validateAndAddNewBlock:{}, {}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())), result);
+        log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow(), result);
         switch (result) {
-            case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST -> syncPopBlock(blockWrapper);
+            case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {
-                    log.debug("push block:{}, NO_PARENT {}", hash2Address(Bytes32.fromHexString(blockWrapper.getBlock().getHash().toHexString())),
-                            result.getHashlow().toHexString());
+                    log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
                         if (channel.getNode().equals(blockWrapper.getRemoteNode())) {
@@ -264,6 +263,7 @@ public class SyncManager {
                 ImportResult importResult = importBlock(bw);
                 switch (importResult) {
                     case EXIST:
+                    case IN_MEM:
                     case IMPORTED_BEST:
                     case IMPORTED_NOT_BEST:
                         // TODO import成功后都需要移除
@@ -272,7 +272,7 @@ public class SyncManager {
                         break;
                     case NO_PARENT:
                         if (syncPushBlock(bw, importResult.getHashlow())) {
-                            log.debug("push block:{}, NO_PARENT {}", BasicUtils.hash2Address(bw.getBlock().getHash()),
+                            log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow(),
                                     importResult.getHashlow().toHexString());
                             List<Channel> channels = channelMgr.getActiveChannels();
                             for (Channel channel : channels) {
@@ -310,6 +310,7 @@ public class SyncManager {
             }
 
             log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
+            kernel.getSync().setStatus(XdagSync.Status.SYNC_DONE);
             log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
 
             // 检查主块链

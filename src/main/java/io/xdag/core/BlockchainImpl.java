@@ -317,6 +317,10 @@ public class BlockchainImpl implements Blockchain {
                 return ImportResult.EXIST;
             }
 
+            if (isExistInMem(block.getHashLow())){
+                return ImportResult.IN_MEM;
+            }
+
             if (isExtraBlock(block)) {
                 updateBlockFlag(block, BI_EXTRA, true);
             }
@@ -1436,8 +1440,11 @@ public class BlockchainImpl implements Blockchain {
      * 判断是否已经接收过区块 *
      */
     public boolean isExist(Bytes32 hashlow) {
-        return memOrphanPool.containsKey(hashlow) ||
-                blockStore.hasBlock(hashlow) || isExitInSnapshot(hashlow);
+        return blockStore.hasBlock(hashlow) || isExitInSnapshot(hashlow);
+    }
+
+    public boolean isExistInMem (Bytes32 hashlow) {
+        return memOrphanPool.containsKey(hashlow);
     }
 
     /**
