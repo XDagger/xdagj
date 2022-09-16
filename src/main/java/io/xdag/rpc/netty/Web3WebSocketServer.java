@@ -36,21 +36,20 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import java.net.InetAddress;
+import java.util.Objects;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class Web3WebSocketServer {
-
-    private static final Logger logger = LoggerFactory.getLogger(Web3WebSocketServer.class);
     private final InetAddress host;
     private final int port;
     private final XdagJsonRpcHandler jsonRpcHandler;
     private final JsonRpcWeb3ServerHandler web3ServerHandler;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
-    private @Nullable
-    ChannelFuture webSocketChannel;
+    private @Nullable ChannelFuture webSocketChannel;
 
     public Web3WebSocketServer(
             InetAddress host,
@@ -66,13 +65,13 @@ public class Web3WebSocketServer {
     }
 
     public void start() {
-        logger.info("RPC WebSocket enabled");
+        log.info("RPC WebSocket enabled");
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
+                    protected void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new HttpServerCodec());
                         p.addLast(new HttpObjectAggregator(1024 * 1024 * 5));
@@ -86,16 +85,16 @@ public class Web3WebSocketServer {
         try {
             webSocketChannel.sync();
         } catch (InterruptedException e) {
-            logger.error("The RPC WebSocket server couldn't be started", e);
+            log.error("The RPC WebSocket server couldn't be started", e);
             Thread.currentThread().interrupt();
         }
     }
 
     public void stop() {
         try {
-            webSocketChannel.channel().close().sync();
+            Objects.requireNonNull(webSocketChannel).channel().close().sync();
         } catch (InterruptedException e) {
-            logger.error("Couldn't stop the RPC WebSocket server", e);
+            log.error("Couldn't stop the RPC WebSocket server", e);
             Thread.currentThread().interrupt();
         }
         this.bossGroup.shutdownGracefully();

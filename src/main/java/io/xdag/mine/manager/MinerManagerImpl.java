@@ -62,8 +62,13 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             .daemon(true)
             .build());
 
-    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
-            .namingPattern("MinerManager-update-thread")
+    private final ExecutorService mainExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("MinerManager-Main-Thread-%d")
+            .daemon(true)
+            .build());
+
+    private final ExecutorService workerExecutor = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+            .namingPattern("MinerManager-Worker-Thread-%d")
             .daemon(true)
             .build());
 
@@ -72,10 +77,11 @@ public class MinerManagerImpl implements MinerManager, Runnable {
      * 保存活跃的channel
      */
     protected Map<InetSocketAddress, MinerChannel> activateMinerChannels = new ConcurrentHashMap<>();
+    private int activateMinerChannelsSize;
     /**
      * 根据miner的地址保存的数组 activate 代表的是一个已经注册的矿工
      */
-    protected Map<Bytes, Miner> activateMiners = new ConcurrentHashMap<>(200);
+    protected final Map<Bytes, Miner> activateMiners = new ConcurrentHashMap<>(200);
     private volatile Task currentTask;
     @Setter
     private PoW poW;
@@ -101,7 +107,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void start() {
         isRunning = true;
         init();
-        workExecutor.execute(this);
+        mainExecutor.execute(this);
         log.debug("MinerManager started.");
     }
 
@@ -112,24 +118,23 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         log.debug("MinerManager closed.");
     }
 
-
     /**
      * 启动 函数 开启遍历和server
      */
     public void init() {
-        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updataBalance, 10, 10, TimeUnit.SECONDS);
+        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updateBalance, 64, 64, TimeUnit.SECONDS);
         cleanChannelFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
     }
 
-    private void updataBalance() {
+    private void updateBalance() {
         synchronized (obj1) {
             try {
-                activateMinerChannels.values().parallelStream()
+                activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
-                        .forEach(MinerChannel::sendBalance);
+                        .forEach(mc -> workerExecutor.submit(mc::sendBalance));
             } catch (Exception e) {
-                log.error("An exception occurred in updataBalance: Exception->{}", e.toString());
+                log.error("An exception occurred in updateBalance: Exception->{}", e.getMessage(), e);
             }
         }
     }
@@ -139,9 +144,9 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         log.debug("add a new active channel");
         synchronized (obj1) {
             activateMinerChannels.put(channel.getInetAddress(), channel);
+            activateMinerChannelsSize ++;
         }
     }
-
 
     public void close() {
         if (updateFuture != null) {
@@ -153,14 +158,16 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (cleanMinerFuture != null) {
             cleanMinerFuture.cancel(true);
         }
-        workExecutor.shutdown();
+        mainExecutor.shutdown();
         scheduledExecutor.shutdown();
         closeMiners();
     }
 
     private void closeMiners() {
         synchronized (obj1) {
-            activateMinerChannels.values().parallelStream().forEach(MinerChannel::dropConnection);
+            activateMinerChannels.values().forEach(
+                    mc -> workerExecutor.submit(mc::dropConnection)
+            );
         }
     }
 
@@ -170,7 +177,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             log.debug("remove a channel");
             kernel.getChannelsAccount().getAndDecrement();
             activateMinerChannels.remove(channel.getInetAddress(), channel);
-
+            activateMinerChannelsSize --;
             synchronized (obj2) {
                 Miner miner = activateMiners.get(Bytes.of(channel.getAccountAddressHash().toArray()));
                 if (miner == null) {
@@ -188,9 +195,11 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     public void cleanUnactivateChannel() {
         synchronized (obj1) {
             try {
-                activateMinerChannels.values().parallelStream().forEach(this::removeUnactivateChannel);
+                activateMinerChannels.values().forEach(
+                        mc -> workerExecutor.submit(() -> removeUnactivateChannel(mc))
+                );
             } catch (Exception e) {
-                log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.toString());
+                log.error("An exception occurred in cleanUnactivateChannel: Exception->{}", e.getMessage(), e);
             }
         }
     }
@@ -200,11 +209,10 @@ public class MinerManagerImpl implements MinerManager, Runnable {
             try {
                 activateMiners.entrySet().removeIf(entry -> entry.getValue().canRemove());
             } catch (Exception e) {
-                log.error("An exception occurred in cleanUnactivateMiner: Exception->{}", e.toString());
+                log.error("An exception occurred in cleanUnactivateMiner: Exception->{}", e.getMessage(), e);
             }
         }
     }
-
 
     @Override
     public void updateTask(Task task) {
@@ -215,7 +223,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
 
     @Override
     public void addActiveMiner(Miner miner) {
-        synchronized (activateMiners) {
+        synchronized (obj2) {
             activateMiners.put(miner.getAddressHash(), miner);
         }
     }
@@ -233,13 +241,17 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (task != null) {
             currentTask = task;
             synchronized (obj1) {
-                activateMinerChannels.values().parallelStream()
+                log.debug("the size of active miner channels:{}", activateMinerChannelsSize);
+                activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
-                        .forEach(c -> {
+                        .forEach(c -> workerExecutor.submit(() -> {
                             c.setTaskIndex(currentTask.getTaskIndex());
                             c.sendTaskToMiner(currentTask.getTask());
                             c.setSharesCounts(0);
-                        });
+                            log.debug("Send task:{},task time:{},task index:{}, to address: {} ip&port:{}",
+                                    Bytes.wrap(currentTask.getTask()[0].getData(), currentTask.getTask()[1].getData()).toHexString(),
+                                    currentTask.getTaskTime(),currentTask.getTaskIndex(),c.getAddressHash(),c.getInetAddress().toString());
+                        }));
             }
         }
     }

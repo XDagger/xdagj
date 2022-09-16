@@ -28,6 +28,8 @@ import static io.xdag.utils.BytesUtils.compareTo;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
@@ -60,6 +62,10 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     private final SyncManager syncManager;
     private ChannelHandlerContext ctx;
 
+    private int readIdleTimes;
+    private int writeIdleTimes;
+    private int allIdleTimes;
+
     public Miner03(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
         this.kernel = kernel;
@@ -83,7 +89,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public void handlerAdded(ChannelHandlerContext ctx) {
         channel.setCtx(ctx);
         this.ctx = ctx;
-        log.debug("Address:{} add handler",channel.getAddressHash());
+        log.debug("ip&port:{},Address:{} add handler",channel.getInetAddress().toString(),channel.getAddressHash());
     }
 
     @Override
@@ -113,15 +119,15 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         ImportResult importResult = syncManager
                 .validateAndAddNewBlock(new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         if (importResult.isNormal()) {
-            log.debug("XDAG:receive transaction. A transaction from wallet/miner: {}, block hash: {}",
-                    channel.getAddressHash(),block.getHash().toHexString());
+            log.debug("XDAG:receive transaction. A transaction from ip&port:{},wallet/miner: {}, block hash: {}",
+                    channel.getInetAddress().toString(),channel.getAddressHash(),block.getHash().toHexString());
         }
     }
 
     protected void processNewBalance(NewBalanceMessage msg) {
         // TODO: 2020/5/9 Process the balance information received by the miner Miner function
-        log.debug("Address:{} receive new balance: [{}]",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()),msg.getEncoded().toHexString());
+        log.debug("ip&port:{},Address:{} receive new balance: [{}]",
+                channel.getInetAddress().toString(),BasicUtils.hash2Address(channel.getMiner().getAddressHash()),msg.getEncoded().toHexString());
     }
 
     protected void processNewTask(NewTaskMessage msg) {
@@ -135,8 +141,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         if (compareTo(msg.getEncoded().toArray(), 8, 24, channel.getAccountAddressHash().toArray(), 8, 24) != 0) {
             byte[] zero = new byte[8];
             Bytes32 blockHash;
-            BytesUtils.isFullZero(zero);
-
             Bytes32 hashLow = Bytes32
                     .wrap(BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded().toArray(), 8, 24)));
             Block block = kernel.getBlockchain().getBlockByHash(hashLow, false);
@@ -163,8 +167,8 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                 }
             } else {
                 //to do nothing
-                log.debug("Can not receive the share, No such Address:{} exists,close channel with Address:{}",
-                        channel.getAddressHash(),channel.getAddressHash());
+                log.debug("Can not receive the share from ip&port:{}, No such Address:{} exists,close channel with Address:{}",
+                        channel.getInetAddress().toString(),channel.getAddressHash(),channel.getAddressHash());
                 ctx.close();
                 if(oldMiner != null) {
                     minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
@@ -176,8 +180,9 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             channel.addShareCounts(1);
             minerManager.onNewShare(channel, msg);
         } else {
-            log.debug("Too many Shares from address: {},Reject...",
-                    channel.getAddressHash());
+            log.debug("Too many Shares from address:{},ip&port:{},Reject...",
+                    channel.getAddressHash(),channel.getInetAddress().toString());
+            channel.onDisconnect();
         }
 
     }
@@ -185,8 +190,8 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     private void processWorkerName(WorkerNameMessage msg) {
         byte[] workerNameByte = msg.getEncoded().reverse().slice(4).toArray();
         String workerName = new String(workerNameByte, StandardCharsets.UTF_8).trim();
-        log.debug("Pool receive miner address:{},workerName:{}",
-                channel.getAddressHash() ,workerName);
+        log.debug("Pool receive miner address:{},workerName:{},ip&port:{}",
+                channel.getAddressHash() ,workerName,channel.getInetAddress().toString());
         channel.setWorkerName(workerName);
     }
 
@@ -195,8 +200,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
      */
     public void sendMessage(Bytes bytes) {
         ctx.channel().writeAndFlush(bytes.toArray());
-        log.debug("Send task:{}, to address: {}",
-                bytes.toHexString(),channel.getAddressHash());
     }
 
     public void dropConnection() {
@@ -211,12 +214,34 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         if(channel != null) {
             channel.setActive(false);
         }
-        //kernel.getChannelsAccount().getAndDecrement();
-        //minerManager.removeUnactivateChannel(this.channel);
 
         if(channel != null) {
             log.info("Disconnect channel: {} with address: {}",
                     channel.getInetAddress().toString(), channel.getAddressHash());
         }
     }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        try {
+            if (evt instanceof IdleStateEvent e) {
+                if (e.state() == IdleState.READER_IDLE) {
+                    readIdleTimes++;
+                } else if (e.state() == IdleState.WRITER_IDLE) {
+                    writeIdleTimes++;
+                } else if (e.state() == IdleState.ALL_IDLE) {
+                    allIdleTimes++;
+                }
+                log.debug("socket:{}, xdag address:{}, timeout with:{}", channel.getInetAddress().toString(), channel.getAddressHash(),((IdleStateEvent)evt).state().toString());
+            }
+
+            if (readIdleTimes > 3) {
+                log.warn("close channel, socket:{}, xdag address:{}.", channel.getInetAddress().toString(), channel.getAddressHash());
+                channel.onDisconnect();
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
 }

@@ -29,12 +29,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class OriginValidator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger("jsonrpc");
 
     private URI[] origins;
     private boolean allowAllOrigins;
@@ -52,7 +51,7 @@ public class OriginValidator {
             try {
                 this.origins = toUris(uriList);
             } catch (URISyntaxException e) {
-                LOGGER.error("Error creating OriginValidator, origins {}, {}", uriList, e);
+                log.error("Error creating OriginValidator, origins {}, {}", uriList, e.getMessage(), e);
 
                 // no origin
                 this.origins = new URI[0];
@@ -75,8 +74,7 @@ public class OriginValidator {
         if (this.allowAllOrigins) {
             return true;
         }
-
-        URI originUri = null;
+        URI originUri;
 
         try {
             originUri = new URI(origin);
@@ -98,7 +96,7 @@ public class OriginValidator {
             return true;
         }
 
-        URL refererUrl = null;
+        URL refererUrl;
 
         try {
             refererUrl = new URL(referer);

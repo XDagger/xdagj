@@ -24,7 +24,7 @@
 
 package io.xdag.net;
 
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.SocketChannel;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.handler.Xdag;
@@ -41,7 +41,7 @@ import lombok.Setter;
 @Setter
 public abstract class Channel {
 
-    protected NioSocketChannel socket;
+    protected SocketChannel socketChannel;
     protected InetSocketAddress inetSocketAddress;
     protected Node node;
     protected MessageQueue messageQueue;

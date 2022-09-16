@@ -148,9 +148,8 @@ public class Block implements Cloneable {
 
         if (CollectionUtils.isNotEmpty(keys)) {
             for (KeyPair key : keys) {
-                // TODO： paulochen 是不是可以替换
-                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), true); //耗时长
-//                byte[] keydata = key.getCompressPubKeyBytes(); //耗时短
+                byte[] keydata = Sign.publicKeyBytesFromPrivate(key.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), true); //poor performance
+//                byte[] keydata = key.getCompressPubKeyBytes(); //good performance
                 boolean yBit = BytesUtils.toByte(BytesUtils.subArray(keydata, 0, 1)) == 0x03;
                 XdagField.FieldType type = yBit ? XDAG_FIELD_PUBLIC_KEY_1 : XDAG_FIELD_PUBLIC_KEY_0;
                 setType(type, lenghth++);
@@ -187,7 +186,7 @@ public class Block implements Cloneable {
     }
 
     /**
-     * 从512字节读取*
+     * Read from raw block of 512 bytes
      */
     public Block(XdagBlock xdagBlock) {
         this.xdagBlock = xdagBlock;
@@ -232,13 +231,9 @@ public class Block implements Cloneable {
         }
         this.info.setHash(calcHash());
         Bytes32 header = Bytes32.wrap(xdagBlock.getField(0).getData());
-//        this.transportHeader = BytesUtils.bytesToLong(header, 0, true);
         this.transportHeader = header.getLong(0, ByteOrder.LITTLE_ENDIAN);
-//        this.info.type = BytesUtils.bytesToLong(header, 8, true);
         this.info.type = header.getLong(8, ByteOrder.LITTLE_ENDIAN);
-//        this.info.setTimestamp(BytesUtils.bytesToLong(header, 16, true));
         this.info.setTimestamp(header.getLong(16, ByteOrder.LITTLE_ENDIAN));
-//        this.info.setFee(BytesUtils.bytesToLong(BytesUtils.subArray(header, 24, 8), 0, true));
         this.info.setFee(header.getLong(24, ByteOrder.LITTLE_ENDIAN));
         for (int i = 1; i < XdagBlock.XDAG_BLOCK_FIELDS; i++) {
             XdagField field = xdagBlock.getField(i);
@@ -377,7 +372,6 @@ public class Block implements Cloneable {
     private void sign(KeyPair ecKey, XdagField.FieldType type) {
         byte[] encoded = toBytes();
         // log.debug("sign encoded:{}", Hex.toHexString(encoded));
-        // TODO： paulochen 是不是可以替换
         byte[] pubkeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
         byte[] digest = BytesUtils.merge(encoded, pubkeyBytes);
         //log.debug("sign digest:{}", Hex.toHexString(digest));
@@ -445,7 +439,6 @@ public class Block implements Cloneable {
     public MutableBytes32 getHashLow() {
         if (info.getHashlow() == null) {
             MutableBytes32 hashLow = MutableBytes32.create();
-//            System.arraycopy(getHash(), 8, hashLow, 8, 24);
             hashLow.set(8, getHash().slice(8, 24));
             info.setHashlow(hashLow.toArray());
         }
@@ -517,18 +510,14 @@ public class Block implements Cloneable {
      */
     public MutableBytes getSubRawData(int length) {
         Bytes data = getXdagBlock().getData();
-//        byte[] res = new byte[512];
         MutableBytes res = MutableBytes.create(512);
-//        System.arraycopy(data, 0, res, 0, (length + 1) * 32);
         res.set(0, data.slice(0, (length + 1) * 32));
         for (int i = length + 1; i < 16; i++) {
-//            long type = BytesUtils.bytesToLong(data, 8, true);
             long type = data.getLong(8, ByteOrder.LITTLE_ENDIAN);
             byte typeB = (byte) (type >> (i << 2) & 0xf);
             if (XDAG_FIELD_SIGN_IN.asByte() == typeB || XDAG_FIELD_SIGN_OUT.asByte() == typeB) {
                 continue;
             }
-//            System.arraycopy(data, (i) * 32, res, (i) * 32, 32);
             res.set((i) * 32, data.slice((i) * 32, 32));
         }
         return res;
@@ -552,7 +541,7 @@ public class Block implements Cloneable {
         try {
             ano = (Block) super.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
         return ano;
     }

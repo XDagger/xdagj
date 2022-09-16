@@ -53,7 +53,7 @@ public class Native {
         try {
             rootInit(config);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
         if (SystemUtil.is32bitJvm()) {
             // No more support for 32-bit systems

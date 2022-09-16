@@ -29,20 +29,19 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.NettyRuntime;
 import io.xdag.Kernel;
+import io.xdag.utils.NettyUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MinerServer {
-
-    protected Kernel kernel;
+    private Kernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private ChannelFuture channelFuture;
-    private boolean isListening = false;
+    private final int workerThreadPoolSize = NettyRuntime.availableProcessors() * 4;
 
     public MinerServer(Kernel kernel) {
         this.kernel = kernel;
@@ -53,40 +52,30 @@ public class MinerServer {
     }
 
     public void start(String ip, int port) {
-        bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
         try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group(bossGroup, workerGroup);
-            bootstrap.channel(NioServerSocketChannel.class);
-            bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
-            bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-            bootstrap.childOption(
-                    ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
-            bootstrap.childOption(
-                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
-            bootstrap.handler(new LoggingHandler());
-            bootstrap.childHandler(new MinerChannelInitializer(kernel, true));
-            channelFuture = bootstrap.bind(ip, port).sync();
-            isListening = true;
-            log.info("Start Listening The Pool, Host:[{}:{}]", ip, port);
+            ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup, workerThreadPoolSize);
+            b.childOption(ChannelOption.TCP_NODELAY, true);
+            b.childOption(ChannelOption.SO_KEEPALIVE, true);
+            b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
+            b.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
+            b.handler(new LoggingHandler());
+            b.childHandler(new MinerChannelInitializer(kernel, true));
+            channelFuture = b.bind(ip, port).sync();
+            log.info("Xdag Pool start host:[{}:{}]", ip, port);
         } catch (Exception e) {
-            log.error("Miner Server Error: {} ({})", e.getMessage(), e.getClass().getName());
-            throw new Error("Miner Server Disconnected.");
+            log.error("Xdag Pool start error:{}.", e.getMessage(), e);
         }
     }
 
     public void close() {
-        if (isListening && channelFuture != null && channelFuture.channel().isOpen()) {
+        if (channelFuture != null && channelFuture.channel().isOpen()) {
             try {
-                log.debug("Closing Miner Server...");
                 channelFuture.channel().close().sync();
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
-                isListening = false;
-                log.info("Miner Server Closed.");
+                log.info("Xdag Pool closed.");
             } catch (Exception e) {
-                log.warn("Problems Closing Miner Server Channel", e);
+                log.error("Xdag Pool close error:{}", e.getMessage(), e);
             }
         }
     }

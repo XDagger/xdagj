@@ -29,7 +29,7 @@ import io.xdag.utils.XdagSha256Digest;
 import lombok.Getter;
 import lombok.Setter;
 
-public class Task {
+public class Task implements Cloneable {
 
     @Getter
     @Setter
@@ -49,6 +49,20 @@ public class Task {
 
     @Override
     public String toString() {
-        return "Task:{ tasktime:" + taskTime + "}";
+        return "Task:{ tasktime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + digest.toString() +"}";
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        Task t = (Task)super.clone();
+        if(task != null && task.length > 0) {
+            XdagField[] xfArray = new XdagField[task.length];
+            for(int i = 0; i < t.getTask().length; i++) {
+                xfArray[i] = (XdagField)(t.getTask()[i]).clone();
+            }
+            t.setTask(xfArray);
+        }
+        t.digest = new XdagSha256Digest(digest);
+        return t;
     }
 }

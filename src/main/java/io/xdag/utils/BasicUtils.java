@@ -141,22 +141,8 @@ public class BasicUtils {
     }
 
     public static double xdag_diff2log(BigInteger diff) {
-        byte[] bytes = BytesUtils.bigIntegerToBytes(diff, 16, false);
-        byte[] resByte = new byte[8];
-        System.arraycopy(bytes, 8, resByte, 0, 8);
-
-        BigInteger res =  Bytes.wrap(resByte).toBigInteger();
-        byte[] data = new byte[16];
-        Arrays.fill(data, (byte) 0);
-        System.arraycopy(bytes, 0, data, 0, 8);
-        BigInteger diffI = Bytes.wrap(data).toBigInteger();
-        if (diffI.compareTo(BigInteger.ZERO) > 0) {
-            BigInteger temp = BigInteger.valueOf(2 ^ 64);
-            res = res.add(diffI.multiply(temp));
-        }
-
-        if (res.compareTo(BigInteger.ZERO) > 0) {
-            return Math.log(res.doubleValue());
+        if (diff.compareTo(BigInteger.ZERO) > 0) {
+            return Math.log(diff.doubleValue());
         } else {
             return 0.0;
         }
@@ -200,8 +186,7 @@ public class BasicUtils {
     }
     public static double xdagHashRate(BigInteger[] diffs){
         double sum = 0;
-        int length = Math.min(diffs.length,HASH_RATE_LAST_MAX_TIME);
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < HASH_RATE_LAST_MAX_TIME; i++) {
             sum += xdag_diff2log(diffs[i]);
         }
         sum /= HASH_RATE_LAST_MAX_TIME;

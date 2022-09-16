@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.net;
+package io.xdag.mine.handler;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,7 +34,6 @@ import org.junit.Test;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.xdag.mine.handler.ConnectionLimitHandler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

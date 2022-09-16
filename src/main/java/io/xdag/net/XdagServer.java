@@ -29,20 +29,20 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.NettyRuntime;
 import io.xdag.Kernel;
 import io.xdag.net.handler.XdagChannelInitializer;
+import io.xdag.utils.NettyUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagServer {
-
-    protected Kernel kernel;
+    private Kernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private ChannelFuture channelFuture;
-    private boolean listening;
+    private final int workerThreadPoolSize = NettyRuntime.availableProcessors() * 2;
 
     public XdagServer(final Kernel kernel) {
         this.kernel = kernel;
@@ -53,39 +53,32 @@ public class XdagServer {
     }
 
     public void start(String ip, int port) {
-        bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
         try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup);
-            b.channel(NioServerSocketChannel.class);
+            ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup, workerThreadPoolSize);
+            b.childOption(ChannelOption.TCP_NODELAY, true);
             b.childOption(ChannelOption.SO_KEEPALIVE, true);
             b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
-            b.childOption(
-                    ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
+            b.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getPoolSpec().getConnectionTimeout());
+            b.handler(new LoggingHandler());
             b.childHandler(new XdagChannelInitializer(kernel, true, null));
-            log.debug("Listening for incoming connections, address: {}:{} ", ip, port);
+            log.debug("Xdag Node start host:[{}:{}].", ip, port);
             channelFuture = b.bind(ip, port).sync();
-            listening = true;
-            log.debug("Connection listen true");
         } catch (Exception e) {
-            log.error("Peer server error: {} ({})", e.getMessage(), e.getClass().getName());
-            throw new Error("XdagServer Disconnected");
+            log.error("Xdag Node start error:{}.", e.getMessage(), e);
         }
     }
 
     public void close() {
-        if (listening && channelFuture != null && channelFuture.channel().isOpen()) {
+        if (channelFuture != null && channelFuture.channel().isOpen()) {
             try {
-                log.debug("Closing XdagServer...");
                 channelFuture.channel().close().sync();
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
                 workerGroup.terminationFuture().sync();
                 bossGroup.terminationFuture().sync();
-                log.debug("XdagServer closed.");
+                log.debug("Xdag Node closed.");
             } catch (Exception e) {
-                log.warn("Problems closing server channel", e);
+                log.error("Xdag Node close error:{}", e.getMessage(), e);
             }
         }
     }

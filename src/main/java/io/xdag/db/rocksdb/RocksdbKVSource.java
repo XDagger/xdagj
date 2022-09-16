@@ -397,7 +397,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         try {
             FileUtils.deleteDirectory(new File(getPath().toString()));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
         init();
     }

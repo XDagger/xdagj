@@ -179,7 +179,6 @@ public class Commands {
             return "Balance:" + String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance()))
                     + " XDAG";
         } else {
-//            byte[] key = new byte[32];
             Bytes32 hash;
             MutableBytes32 key = MutableBytes32.create();
             if (StringUtils.length(address) == 32) {
@@ -187,7 +186,6 @@ public class Commands {
             } else {
                 hash = BasicUtils.getHash(address);
             }
-//            System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
             key.set(8, Objects.requireNonNull(hash).slice(8, 24));
             Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
             return "Balance:" + String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
@@ -208,7 +206,6 @@ public class Commands {
 
         long amount = xdag2amount(sendAmount);
         MutableBytes32 to = MutableBytes32.create();
-//        System.arraycopy(address, 8, to, 8, 24);
         to.set(8, address.slice(8, 24));
 
         // 待转账余额
@@ -363,7 +360,7 @@ public class Commands {
                          wait sync blocks: %d
                          chain difficulty: %s of %s
                               XDAG supply: %.9f of %.9f
-                        4 hr hashrate MHs: %.9f of %.9f""",
+                        4 hr hashrate KHs: %.9f of %.9f""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),

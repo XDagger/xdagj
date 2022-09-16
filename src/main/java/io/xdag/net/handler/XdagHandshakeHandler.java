@@ -59,6 +59,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         channel.initWithNode(
                 // 连接到对方的channel 并将对方记录为node
                 remoteAddress.getHostName(), remoteAddress.getPort());
+        log.debug("connect with node:{}",remoteAddress.toString());
         // TODO:如果为服务器端 发送pubKey
         if (isServer) {
             channel.sendPubkey(ctx);
@@ -79,7 +80,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
                 // 发送过pubkey后加2
                 channel.getNode().getStat().Inbound.add(2);
                 if (!checkDnetPubkey(remotePubKey)) {
-                    log.debug("illegal address");
+                    log.debug("illegal address from node:{}",channel.getInetSocketAddress().toString());
                     return;
                 }
                 // 发送pubkey
@@ -105,7 +106,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
                 }
                 if (channel.getNode().getStat().Inbound.get() >= 3) {
 
-                    log.info("connect a new pool,host[{}]", channel.getInetSocketAddress().toString());
+                    log.info("connect a new pool with node:{}", channel.getInetSocketAddress().toString());
 
                     // handshake ok
                     kernel.getChannelMgr().onChannelActive(channel, channel.getNode());
@@ -115,9 +116,8 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
                     // test connect whether send an address
                     byte[] remoteAddress = new byte[512];
                     if (in.isReadable() && in.readableBytes() == 512) {
-                        log.debug("有地址块发送");
+                        log.debug("hava address blocks need to send to:{}",Hex.encodeHexString(remoteAddress));
                         in.readBytes(remoteAddress);
-                        log.debug("Hex :" + Hex.encodeHexString(remoteAddress));
                     }
                 }
             }

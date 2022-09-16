@@ -29,6 +29,7 @@ import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
@@ -49,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -244,6 +246,7 @@ public class MinerChannel {
         MessageFactory messageFactory = createMinerMessageFactory(version);
         minerMessageHandler.setMessageFactory(messageFactory);
         ctx.pipeline().addLast("MinerMessageHandler", minerMessageHandler);
+        ctx.pipeline().addLast(new IdleStateHandler(64, 0, 0));
         ctx.pipeline().addLast("Miner03Handler", miner03);
     }
 
@@ -266,7 +269,7 @@ public class MinerChannel {
             }
         } else {
             this.miner = new Miner(accountAddressHash);
-            minerManager.getActivateMiners().put(accountAddressHash, miner);
+            Objects.requireNonNull(minerManager).getActivateMiners().put(accountAddressHash, miner);
             this.miner.putChannel(this.inetAddress, this);
             this.miner.setMinerStates(MINER_ACTIVE);
             return true;

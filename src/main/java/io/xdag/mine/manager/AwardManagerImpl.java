@@ -37,10 +37,11 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
-import io.xdag.core.PoolConfig;
+import io.xdag.config.PoolConfig;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
@@ -108,7 +109,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private MinerManager minerManager;
     private ArrayList<Double> diff = new ArrayList<>();
     private ArrayList<Double> prev_diff = new ArrayList<>();
-    private String fundAddress;
+    private final String fundAddress;
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("AwardManager-work-thread")
             .daemon(true)
@@ -167,6 +168,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
                 if(awardBlock != null) {
+                    log.debug("award block:{}", BasicUtils.hash2Address(awardBlock.hash));
                     payAndaddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {
@@ -317,9 +319,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 统计矿工的数量
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
-                miners.add(miner);
-                minerCounts++;
-                log.debug("The number of miners is[{}]", minerCounts);
+                //Filter fake blocks
+                if(blockchain.getBlockByHash(miner.getAddressHashLow(),false) != null) {
+                    miners.add(miner);
+                    minerCounts++;
+                    log.debug("The number of miners is[{}]", minerCounts);
+                }
             }
         }
 
@@ -568,6 +573,14 @@ public class AwardManagerImpl implements AwardManager, Runnable {
          * Address(poolMiner.getAddressLow(),XDAG_FIELD_OUT,payData.poolFee)); payAmount
          * += payData.poolFee;
          */
+
+        if (fundRation!=0) {
+            if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
+                payAmount += payData.fundIncome;
+                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
+            }
+        }
+
         // 不断循环 支付给矿工
         //// TODO: 2021/4/19  打印矿工的数据
         for (int i = 0; i < miners.size(); i++) {
@@ -600,15 +613,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
                 transaction(hash, receipt, payAmount, keyPos);
                 payAmount = 0L;
-                receipt.clear();
-            }
-        }
-
-        if (fundRation!=0) {
-            if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
-                payAmount += payData.fundIncome;
-                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
-                transaction(hash, receipt, payAmount,keyPos);
                 receipt.clear();
             }
         }

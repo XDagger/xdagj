@@ -31,7 +31,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.MutableBytes;
 
-public class XdagField {
+public class XdagField implements Cloneable {
 
     @Getter
     @Setter
@@ -55,6 +55,15 @@ public class XdagField {
             }
         }
         return sum;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        XdagField xf = (XdagField)super.clone();
+        xf.setData(data.mutableCopy());
+        xf.setSum(sum);
+        xf.setType(type);
+        return xf;
     }
 
     public enum FieldType {

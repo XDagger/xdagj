@@ -51,6 +51,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -345,7 +346,7 @@ public class BlockStore {
             int index = getOurIndex(pair.getKey());
 //            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
             assert getOurHash(pair.getKey()) != null;
-            Block block = getBlockInfoByHash(Bytes32.wrap(getOurHash(pair.getKey())));
+            Block block = getBlockInfoByHash(Bytes32.wrap(Objects.requireNonNull(getOurHash(pair.getKey()))));
             if (function.apply(Pair.of(index, block))) {
                 return Boolean.TRUE;
             }
