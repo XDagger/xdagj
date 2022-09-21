@@ -35,8 +35,8 @@ public class MultiaddrTest {
     @Test
     public void testGetIpAndPort() {
         Multiaddr multiaddr = Multiaddr.fromString("/ip4/127.0.0.1/tcp/40002");
-        String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
-        String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
+        String ip = Protocol.IP4.bytesToAddress(multiaddr.getFirstComponent(Protocol.IP4).getValue());
+        String port = Protocol.TCP.bytesToAddress(multiaddr.getFirstComponent(Protocol.TCP).getValue());
         assertEquals("127.0.0.1", ip);
         assertEquals("40002", port);
     }

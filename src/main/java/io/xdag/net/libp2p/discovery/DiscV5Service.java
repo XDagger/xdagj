@@ -27,6 +27,8 @@ package io.xdag.net.libp2p.discovery;
 import io.xdag.net.libp2p.Libp2pUtils;
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -35,8 +37,6 @@ import org.ethereum.beacon.discovery.DiscoverySystem;
 import org.ethereum.beacon.discovery.DiscoverySystemBuilder;
 import org.ethereum.beacon.discovery.schema.NodeRecord;
 import org.ethereum.beacon.discovery.schema.NodeRecordBuilder;
-import org.ethereum.beacon.discovery.schema.NodeRecordInfo;
-import org.ethereum.beacon.discovery.schema.NodeStatus;
 
 /**
  * @author wawa
@@ -77,7 +77,7 @@ public class DiscV5Service extends Service {
         return activeNodes().map(Libp2pUtils::convertToDiscoveryPeer).flatMap(Optional::stream);
     }
 
-    public SafeFuture<Void> searchForPeers() {
+    public SafeFuture<Collection<NodeRecord>> searchForPeers() {
         return SafeFuture.of(discoverySystem.searchForNewPeers());
     }
 
@@ -86,9 +86,6 @@ public class DiscV5Service extends Service {
     }
 
     private Stream<NodeRecord> activeNodes() {
-        return discoverySystem
-                .streamKnownNodes()
-                .filter(record -> record.getStatus() == NodeStatus.ACTIVE)
-                .map(NodeRecordInfo::getNode);
+        return discoverySystem.streamLiveNodes();
     }
 }

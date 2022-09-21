@@ -86,7 +86,8 @@ public class Libp2pUtils {
     }
 
     public static Multiaddr addPeerId(final Multiaddr addr, final NodeId nodeId) {
-        return new Multiaddr(addr, Multiaddr.fromString("/p2p/" + nodeId.toBase58()));
+//        return new Multiaddr(addr, Multiaddr.fromString("/p2p/" + nodeId.toBase58()));
+        return addr.withP2P(PeerId.fromBase58(nodeId.toBase58()));
     }
 
 
