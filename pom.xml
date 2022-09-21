@@ -894,10 +894,6 @@
                     <groupId>org.apache.tuweni</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>reactive-streams</artifactId>
-                    <groupId>org.reactivestreams</groupId>
-                </exclusion>
-                <exclusion>
                     <artifactId>slf4j-api</artifactId>
                     <groupId>org.slf4j</groupId>
                 </exclusion>
