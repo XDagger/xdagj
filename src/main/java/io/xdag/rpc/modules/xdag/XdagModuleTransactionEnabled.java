@@ -82,13 +82,16 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         }
 
         Bytes32 toHash = checkTo(to,result);
-
-        checkPassword(passphrase,result);
         if (result.getCode() != SUCCESS.code()) {
             return result.getErrMsg();
         }
 
         Bytes32 fromHash = checkFrom(from,result);
+        if (result.getCode() != SUCCESS.code()) {
+            return result.getErrMsg();
+        }
+
+        checkPassword(passphrase,result);
         if (result.getCode() != SUCCESS.code()) {
             return result.getErrMsg();
         }
@@ -148,9 +151,16 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                 }
             });
         } else {
-            Block block =
-            ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()));
-
+            MutableBytes32 from = MutableBytes32.create();
+            from.set(8, toAddress.slice(8, 24));
+            Block fromBlock = kernel.getBlockStore().getBlockInfoByHash(from);
+            // 如果余额足够
+            if (fromBlock.getInfo().getAmount() >= remain.get()) {
+                int keyIndex = kernel.getBlockStore().getKeyIndexByHash(from);
+                ourBlocks.put(new Address(from, XDAG_FIELD_IN, remain.get()),
+                        kernel.getWallet().getAccounts().get(keyIndex));
+                remain.set(0);
+            }
         }
 
         // 余额不足
