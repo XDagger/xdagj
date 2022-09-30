@@ -768,25 +768,28 @@ public class BlockchainImpl implements Blockchain {
      * 设置以block为主块的主链 要么分叉 要么延长 *
      */
     public void setMain(Block block) {
-        // 设置奖励
-        long mainNumber = xdagStats.nmain + 1;
-        log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
-        long reward = getReward(mainNumber);
-        block.getInfo().setHeight(mainNumber);
-        updateBlockFlag(block, BI_MAIN, true);
 
-        // 接收奖励
-        acceptAmount(block, UnsignedLong.valueOf(reward));
-        xdagStats.nmain++;
+        synchronized (this) {
+            // 设置奖励
+            long mainNumber = xdagStats.nmain + 1;
+            log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
+            long reward = getReward(mainNumber);
+            block.getInfo().setHeight(mainNumber);
+            updateBlockFlag(block, BI_MAIN, true);
 
-        // 递归执行主块引用的区块 并获取手续费
-        acceptAmount(block, applyBlock(block));
-        // 主块REF指向自身
-        // TODO:补充手续费
-        updateBlockRef(block, new Address(block));
+            // 接收奖励
+            acceptAmount(block, UnsignedLong.valueOf(reward));
+            xdagStats.nmain++;
 
-        if (randomXUtils != null) {
-            randomXUtils.randomXSetForkTime(block);
+            // 递归执行主块引用的区块 并获取手续费
+            acceptAmount(block, applyBlock(block));
+            // 主块REF指向自身
+            // TODO:补充手续费
+            updateBlockRef(block, new Address(block));
+
+            if (randomXUtils != null) {
+                randomXUtils.randomXSetForkTime(block);
+            }
         }
 
     }
@@ -796,21 +799,24 @@ public class BlockchainImpl implements Blockchain {
      */
     public void unSetMain(Block block) {
 
-        log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
+        synchronized (this) {
 
-        long amount = getReward(xdagStats.nmain);
-        updateBlockFlag(block, BI_MAIN, false);
+            log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
-        xdagStats.nmain--;
+            long amount = getReward(xdagStats.nmain);
+            updateBlockFlag(block, BI_MAIN, false);
 
-        // 去掉奖励和引用块的手续费
-        acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
-        acceptAmount(block, unApplyBlock(block));
+            xdagStats.nmain--;
 
-        if (randomXUtils != null) {
-            randomXUtils.randomXUnsetForkTime(block);
+            // 去掉奖励和引用块的手续费
+            acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
+            acceptAmount(block, unApplyBlock(block));
+
+            if (randomXUtils != null) {
+                randomXUtils.randomXUnsetForkTime(block);
+            }
+            block.getInfo().setHeight(0);
         }
-        block.getInfo().setHeight(0);
     }
 
     @Override

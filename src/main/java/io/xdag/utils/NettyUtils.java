@@ -15,18 +15,6 @@ public final class NettyUtils {
     public static ServerBootstrap nativeEventLoopGroup(EventLoopGroup bossGroup, EventLoopGroup workerGroup, int workerThreadPoolSize) {
         ServerBootstrap bootstrap = new ServerBootstrap();
 
-        if(SystemUtils.IS_OS_LINUX) {
-            bossGroup = new EpollEventLoopGroup();
-            workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
-        } else if(SystemUtils.IS_OS_MAC) {
-            bossGroup = new KQueueEventLoopGroup();
-            workerGroup = new KQueueEventLoopGroup(workerThreadPoolSize);
-
-        } else {
-            bossGroup = new NioEventLoopGroup();
-            workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
-        }
-
         bootstrap.group(bossGroup, workerGroup);
 
         if(SystemUtils.IS_OS_LINUX) {
