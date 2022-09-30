@@ -69,6 +69,8 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
     @Override
     public Object personalSendTransaction(CallArguments args, String passphrase) {
 
+        logger.debug("personalSendTransaction args:{}",args);
+
         String from = args.from;
         String to = args.to;
         String value = args.value;
@@ -128,6 +130,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         // 如果没有from则从节点账户里搜索
         if (fromAddress == null) {
+            logger.debug("fromAddress is null, search all our blocks");
             // our block select
             kernel.getBlockStore().fetchOurBlocks(pair -> {
                 int index = pair.getKey();
@@ -152,7 +155,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             });
         } else {
             MutableBytes32 from = MutableBytes32.create();
-            from.set(8, toAddress.slice(8, 24));
+            from.set(8, fromAddress.slice(8, 24));
             Block fromBlock = kernel.getBlockStore().getBlockInfoByHash(from);
             // 如果余额足够
             if (fromBlock.getInfo().getAmount() >= remain.get()) {
