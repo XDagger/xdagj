@@ -681,8 +681,8 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (long2UnsignedLong(block.getInfo().getAmount()).plus(ret)
-                    .compareTo(long2UnsignedLong(block.getInfo().getAmount())) >= 0) {
+            if (compareAmountTo(long2UnsignedLong(block.getInfo().getAmount()).plus(ret),
+                    long2UnsignedLong(block.getInfo().getAmount())) >= 0) {
 //            }
 //            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
 //                    block.getInfo().getAmount()) {
@@ -720,10 +720,8 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        if (long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn).compareTo(
-                long2UnsignedLong(sumOut.longValue())) < 0 ||
-                long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn).compareTo(
-                        long2UnsignedLong(sumIn.longValue())) < 0
+        if (compareAmountTo(long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn),long2UnsignedLong(sumOut.longValue())) < 0
+                || compareAmountTo(long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn),long2UnsignedLong(sumIn.longValue())) < 0
         ) {
 //        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
 //                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {

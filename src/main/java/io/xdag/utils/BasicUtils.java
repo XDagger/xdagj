@@ -28,6 +28,7 @@ import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
+import com.google.common.primitives.UnsignedLong;
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -192,5 +193,9 @@ public class BasicUtils {
 
     public static int compareAmountTo(long amount1, long amount2) {
         return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
+    }
+
+    public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {
+        return amount1.compareTo(amount2);
     }
 }
