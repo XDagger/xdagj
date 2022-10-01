@@ -82,18 +82,19 @@ public class XdagServer {
             channelFuture = b.bind(ip, port).sync();
         } catch (Exception e) {
             log.error("Xdag Node start error:{}.", e.getMessage(), e);
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
         }
+//        finally {
+//            workerGroup.shutdownGracefully();
+//            bossGroup.shutdownGracefully();
+//        }
     }
 
     public void close() {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
             try {
                 channelFuture.channel().close().sync();
-//                workerGroup.shutdownGracefully();
-//                bossGroup.shutdownGracefully();
+                workerGroup.shutdownGracefully();
+                bossGroup.shutdownGracefully();
 //                workerGroup.terminationFuture().sync();
 //                bossGroup.terminationFuture().sync();
                 log.debug("Xdag Node closed.");
