@@ -701,17 +701,22 @@ public class BlockchainImpl implements Blockchain {
                             link.getAmount().longValue());
                     return UnsignedLong.ZERO;
                 }
-                if (sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumIn.longValue()) {
+
+                if (sumIn.plus(long2UnsignedLong(link.getAmount().longValue())).compareTo(sumIn) < 0) {
+//                if (sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumIn.longValue()) {
                     log.debug("This input ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
-                sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
+                sumIn = sumIn.plus(long2UnsignedLong(link.getAmount().longValue()));
+//                sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
             } else {
-                if (sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumOut.longValue()) {
+                if (sumOut.plus(long2UnsignedLong(link.getAmount().longValue())).compareTo(sumOut) < 0) {
+//                if (sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumOut.longValue()) {
                     log.debug("This output ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
-                sumOut = sumOut.plus(UnsignedLong.valueOf(link.getAmount()));
+                sumOut = sumOut.plus(long2UnsignedLong(link.getAmount().longValue()));
+//                sumOut = sumOut.plus(UnsignedLong.valueOf(link.getAmount()));
             }
         }
 
@@ -729,9 +734,9 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             Block ref = getBlockByHash(link.getHashLow(), false);
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                acceptAmount(ref, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(link.getAmount())));
+                acceptAmount(ref, UnsignedLong.ZERO.minus(long2UnsignedLong(link.getAmount().longValue())));
             } else {
-                acceptAmount(ref, UnsignedLong.valueOf(link.getAmount()));
+                acceptAmount(ref, long2UnsignedLong(link.getAmount().longValue()));
             }
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
         }
@@ -751,11 +756,11 @@ public class BlockchainImpl implements Blockchain {
             for (Address link : links) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                    acceptAmount(ref, UnsignedLong.valueOf(link.getAmount()));
-                    sum = sum.minus(UnsignedLong.valueOf(link.getAmount()));
+                    acceptAmount(ref, long2UnsignedLong(link.getAmount().longValue()));
+                    sum = sum.minus(long2UnsignedLong(link.getAmount().longValue()));
                 } else {
-                    acceptAmount(ref, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(link.getAmount())));
-                    sum = sum.plus(UnsignedLong.valueOf(link.getAmount()));
+                    acceptAmount(ref, UnsignedLong.ZERO.minus(long2UnsignedLong(link.getAmount().longValue())));
+                    sum = sum.plus(long2UnsignedLong(link.getAmount().longValue()));
                 }
             }
             acceptAmount(block, sum);
@@ -789,7 +794,7 @@ public class BlockchainImpl implements Blockchain {
             updateBlockFlag(block, BI_MAIN, true);
 
             // 接收奖励
-            acceptAmount(block, UnsignedLong.valueOf(reward));
+            acceptAmount(block, long2UnsignedLong(reward));
             xdagStats.nmain++;
 
             // 递归执行主块引用的区块 并获取手续费
@@ -820,7 +825,7 @@ public class BlockchainImpl implements Blockchain {
             xdagStats.nmain--;
 
             // 去掉奖励和引用块的手续费
-            acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
+            acceptAmount(block, UnsignedLong.ZERO.minus(long2UnsignedLong(amount)));
             acceptAmount(block, unApplyBlock(block));
 
             if (randomXUtils != null) {
@@ -1350,20 +1355,20 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public long getSupply(long nmain) {
-        UnsignedLong res = UnsignedLong.valueOf(0L);
+        UnsignedLong res = UnsignedLong.ZERO;
         long amount = getStartAmount(nmain);
         long current_nmain = nmain;
         while ((current_nmain >> MAIN_BIG_PERIOD_LOG) > 0) {
-            res = res.plus(UnsignedLong.fromLongBits(1L << MAIN_BIG_PERIOD_LOG).times(UnsignedLong.valueOf(amount)));
+            res = res.plus(UnsignedLong.fromLongBits(1L << MAIN_BIG_PERIOD_LOG).times(long2UnsignedLong(amount)));
             current_nmain -= 1L << MAIN_BIG_PERIOD_LOG;
             amount >>= 1;
         }
-        res = res.plus(UnsignedLong.valueOf(current_nmain).times(UnsignedLong.valueOf(amount)));
+        res = res.plus(long2UnsignedLong(current_nmain).times(long2UnsignedLong(amount)));
         long fork_height = kernel.getConfig().getApolloForkHeight();
         if (nmain >= fork_height) {
             // add before apollo amount
             long diff = kernel.getConfig().getMainStartAmount() - kernel.getConfig().getApolloForkAmount();
-            res = res.plus(UnsignedLong.valueOf(fork_height - 1).times(UnsignedLong.valueOf(diff)));
+            res = res.plus(long2UnsignedLong(fork_height - 1).times(long2UnsignedLong(diff)));
         }
         return res.longValue();
     }
@@ -1449,7 +1454,7 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
         }
         if ((block.getInfo().flags & BI_OURS) != 0) {
-            xdagStats.setBalance(amount.plus(UnsignedLong.valueOf(xdagStats.getBalance())).longValue());
+            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
         }
     }
 
