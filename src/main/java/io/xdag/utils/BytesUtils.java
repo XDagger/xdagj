@@ -25,6 +25,7 @@
 package io.xdag.utils;
 
 import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.UnsignedLong;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.math.BigInteger;
@@ -108,7 +109,7 @@ public class BytesUtils {
             return null;
         }
         byte[] bytes = new byte[numBytes];
-        byte[] biBytes = b.toByteArray();
+        byte[] biBytes = long2UnsignedLong(b.longValue()).bigIntegerValue().toByteArray();
         int start = (biBytes.length == numBytes + 1) ? 1 : 0;
         int length = Math.min(biBytes.length, numBytes);
         System.arraycopy(biBytes, start, bytes, numBytes - length, length);
@@ -367,5 +368,11 @@ public class BytesUtils {
                 return length1 - length2;
             }
         }
+    }
+
+
+
+    public static UnsignedLong long2UnsignedLong(long number) {
+        return UnsignedLong.valueOf(toHexString((ByteBuffer.allocate(8).putLong(number).array())),16);
     }
 }

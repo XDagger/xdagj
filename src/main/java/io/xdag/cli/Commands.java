@@ -26,6 +26,7 @@ package io.xdag.cli;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
 import io.xdag.core.BlockState;
 import io.xdag.core.*;
@@ -60,6 +61,7 @@ import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 @Slf4j
 public class Commands {
@@ -141,10 +143,12 @@ public class Commands {
 
         // 按balance降序排序，按key index降序排序
         list.sort((o1, o2) -> {
+            int compareResult = compareAmountTo(o2.getKey().getInfo().getAmount(),o1.getKey().getInfo().getAmount());
+//            int compareResult = long2UnsignedLong(o2.getKey().getInfo().getAmount()).compareTo(long2UnsignedLong(o1.getKey().getInfo().getAmount()));
             // TODO
-            if (o2.getKey().getInfo().getAmount() > o1.getKey().getInfo().getAmount()) {
+            if (compareResult > 0) {
                 return 1;
-            } else if (o2.getKey().getInfo().getAmount() == o1.getKey().getInfo().getAmount()) {
+            } else if (compareResult == 0) {
                 return o2.getValue().compareTo(o1.getValue());
             } else {
                 return -1;
@@ -220,13 +224,15 @@ public class Commands {
             if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                 return false;
             }
-            if (remain.get() <= block.getInfo().getAmount()) {
+            if (compareAmountTo(remain.get(),block.getInfo().getAmount()) <= 0) {
+//            if (remain.get() <= block.getInfo().getAmount()) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
                         kernel.getWallet().getAccounts().get(index));
                 remain.set(0);
                 return true;
             } else {
-                if (block.getInfo().getAmount() > 0) {
+                if (compareAmountTo(block.getInfo().getAmount(),0) > 0) {
+//                if (block.getInfo().getAmount() > 0) {
                     remain.set(remain.get() - block.getInfo().getAmount());
                     ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
                             kernel.getWallet().getAccounts().get(index));
@@ -237,7 +243,8 @@ public class Commands {
         });
 
         // 余额不足
-        if (remain.get() > 0) {
+        if (compareAmountTo(remain.get(),0) > 0) {
+//        if (remain.get() > 0) {
             return "Balance not enough.";
         }
 
@@ -648,7 +655,7 @@ public class Commands {
             if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                 return false;
             }
-            if(block.getInfo().getAmount()>0){
+            if(long2UnsignedLong(block.getInfo().getAmount()).compareTo(UnsignedLong.ZERO)>0){
                 balance[0] +=block.getInfo().getAmount();
             }
             return false;

@@ -27,7 +27,9 @@ package io.xdag.mine.manager;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BytesUtils.compareTo;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 import static java.lang.Math.E;
 
 import io.xdag.Kernel;
@@ -370,7 +372,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         payData.balance = block.getInfo().getAmount();
 
-        if (payData.balance <= 0) {
+        if (compareAmountTo(payData.balance,0) <= 0) {
             log.debug("no main block,can't pay");
             return -4;
         }
@@ -380,7 +382,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         payData.unusedBalance = payData.balance - payData.poolFee;
 
         // 进行各部分奖励的计算
-        if (payData.unusedBalance <= 0) {
+        if (compareAmountTo(payData.unusedBalance,0) <= 0) {
             log.debug("Balance no enough");
             return -5;
         }

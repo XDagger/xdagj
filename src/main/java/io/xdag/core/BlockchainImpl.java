@@ -74,9 +74,11 @@ import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static io.xdag.utils.BytesUtils.equalBytes;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 @Slf4j
 @Getter
@@ -679,8 +681,11 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
-                    block.getInfo().getAmount()) {
+            if (long2UnsignedLong(block.getInfo().getAmount()).plus(ret)
+                    .compareTo(long2UnsignedLong(block.getInfo().getAmount())) >= 0) {
+//            }
+//            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
+//                    block.getInfo().getAmount()) {
                 acceptAmount(block, ret);
             }
         }
@@ -689,7 +694,8 @@ public class BlockchainImpl implements Blockchain {
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
-                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
+                if (compareAmountTo(ref.getInfo().getAmount(),link.getAmount().longValue())<=0) {
+//                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",
                             Hex.toHexString(ref.getInfo().getHashlow()), ref.getInfo().getAmount(),
                             link.getAmount().longValue());
@@ -709,8 +715,13 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
-                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {
+        if (long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn).compareTo(
+                long2UnsignedLong(sumOut.longValue())) < 0 ||
+                long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn).compareTo(
+                        long2UnsignedLong(sumIn.longValue())) < 0
+        ) {
+//        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
+//                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {
             log.debug("exec fail!");
             return UnsignedLong.ZERO;
         }
@@ -1433,7 +1444,7 @@ public class BlockchainImpl implements Blockchain {
      */
     // TODO : accept amount to block which in snapshot
     private void acceptAmount(Block block, UnsignedLong amount) {
-        block.getInfo().setAmount(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(amount).longValue());
+        block.getInfo().setAmount(long2UnsignedLong(block.getInfo().getAmount()).plus(amount).longValue());
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
