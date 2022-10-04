@@ -694,7 +694,7 @@ public class BlockchainImpl implements Blockchain {
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
-                if (compareAmountTo(ref.getInfo().getAmount(),link.getAmount().longValue())<=0) {
+                if (compareAmountTo(ref.getInfo().getAmount(),link.getAmount().longValue())<0) {
 //                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",
                             Hex.toHexString(ref.getInfo().getHashlow()), ref.getInfo().getAmount(),
