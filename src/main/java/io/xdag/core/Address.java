@@ -96,7 +96,7 @@ public class Address {
         if (this.data == null) {
             this.data = MutableBytes32.create();
             this.data.set(8, this.hashLow.slice(8, 24));
-            this.data.set(0, Bytes.wrap(BytesUtils.bigIntegerToBytes(amount, 8)));
+            this.data.set(0, Bytes.wrap(BytesUtils.longToBytes(amount.longValue(), 8)));
         }
         return this.data;
     }

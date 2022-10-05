@@ -80,18 +80,19 @@ public class MinerServer {
             log.info("Xdag Pool start host:[{}:{}]", ip, port);
         } catch (Exception e) {
             log.error("Xdag Pool start error:{}.", e.getMessage(), e);
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
         }
+//        finally {
+//            workerGroup.shutdownGracefully();
+//            bossGroup.shutdownGracefully();
+//        }
     }
 
     public void close() {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
             try {
                 channelFuture.channel().close().sync();
-//                workerGroup.shutdownGracefully();
-//                bossGroup.shutdownGracefully();
+                workerGroup.shutdownGracefully();
+                bossGroup.shutdownGracefully();
                 log.info("Xdag Pool closed.");
             } catch (Exception e) {
                 log.error("Xdag Pool close error:{}", e.getMessage(), e);

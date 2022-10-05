@@ -50,6 +50,7 @@ import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.rpc.ErrorCode.*;
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
 public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
@@ -138,13 +139,15 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                 if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                     return false;
                 }
-                if (remain.get() <= block.getInfo().getAmount()) {
+                if (compareAmountTo(remain.get(),block.getInfo().getAmount()) <= 0) {
+//                if (remain.get() <= block.getInfo().getAmount()) {
                     ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
                             kernel.getWallet().getAccounts().get(index));
                     remain.set(0);
                     return true;
                 } else {
-                    if (block.getInfo().getAmount() > 0) {
+                    if (compareAmountTo(block.getInfo().getAmount(),0) > 0) {
+//                    if (block.getInfo().getAmount() > 0) {
                         remain.set(remain.get() - block.getInfo().getAmount());
                         ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
                                 kernel.getWallet().getAccounts().get(index));
@@ -158,7 +161,8 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             from.set(8, fromAddress.slice(8, 24));
             Block fromBlock = kernel.getBlockStore().getBlockInfoByHash(from);
             // 如果余额足够
-            if (fromBlock.getInfo().getAmount() >= remain.get()) {
+            if (compareAmountTo(fromBlock.getInfo().getAmount(),remain.get()) >= 0) {
+                // if (fromBlock.getInfo().getAmount() >= remain.get()) {
                 int keyIndex = kernel.getBlockStore().getKeyIndexByHash(from);
                 ourBlocks.put(new Address(from, XDAG_FIELD_IN, remain.get()),
                         kernel.getWallet().getAccounts().get(keyIndex));
@@ -167,7 +171,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         }
 
         // 余额不足
-        if (remain.get() > 0) {
+        if (compareAmountTo(remain.get(),0) > 0) {
             processResult.setCode(ERR_BALANCE_NOT_ENOUGH.code());
             processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;
