@@ -74,11 +74,11 @@ public class BasicUtilsTest {
         assertEquals(1024.0, BasicUtils.amount2xdag(4398046511104L), 0.0);
     }
 
-    @Test(expected = XdagOverFlowException.class)
-    public void TestAmount2xdagOverflow() {
-        long a = -1;
-        BasicUtils.amount2xdag(a);
-    }
+//    @Test(expected = XdagOverFlowException.class)
+//    public void TestAmount2xdagOverflow() {
+//        long a = -1;
+//        BasicUtils.amount2xdag(a);
+//    }
 
     @Test
     public void xdag_diff2logTest() {
