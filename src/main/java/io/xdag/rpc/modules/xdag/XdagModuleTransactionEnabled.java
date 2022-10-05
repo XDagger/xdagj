@@ -36,6 +36,7 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.utils.exception.XdagOverFlowException;
 import io.xdag.wallet.Wallet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -49,6 +50,7 @@ import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.rpc.ErrorCode.*;
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
 public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
@@ -68,6 +70,8 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
     @Override
     public Object personalSendTransaction(CallArguments args, String passphrase) {
 
+        logger.debug("personalSendTransaction args:{}",args);
+
         String from = args.from;
         String to = args.to;
         String value = args.value;
@@ -75,10 +79,21 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         ProcessResult result = ProcessResult.builder().code(SUCCESS.code()).build();
 
-        Bytes32 hash = checkParam(from, to, value, remark,result);
+        checkParam(value, remark,result);
         if (result.getCode() != SUCCESS.code()) {
             return result.getErrMsg();
         }
+
+        Bytes32 toHash = checkTo(to,result);
+        if (result.getCode() != SUCCESS.code()) {
+            return result.getErrMsg();
+        }
+
+        Bytes32 fromHash = checkFrom(from,result);
+        if (result.getCode() != SUCCESS.code()) {
+            return result.getErrMsg();
+        }
+
         checkPassword(passphrase,result);
         if (result.getCode() != SUCCESS.code()) {
             return result.getErrMsg();
@@ -86,7 +101,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
-        doXfer(amount,hash,remark,result);
+        doXfer(amount,fromHash,toHash,remark,result);
 
         if (result.getCode() != SUCCESS.code()) {
             return result.getErrMsg();
@@ -96,7 +111,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
     }
 
 
-    public void doXfer(double sendValue, Bytes32 toAddress,String remark, ProcessResult processResult) {
+    public void doXfer(double sendValue,Bytes32 fromAddress, Bytes32 toAddress,String remark, ProcessResult processResult) {
         long amount;
         try {
             amount = xdag2amount(sendValue);
@@ -114,31 +129,49 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         // 转账输入
         Map<Address, KeyPair> ourBlocks = Maps.newHashMap();
 
-        // our block select
-        kernel.getBlockStore().fetchOurBlocks(pair -> {
-            int index = pair.getKey();
-            Block block = pair.getValue();
-            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
-                return false;
-            }
-            if (remain.get() <= block.getInfo().getAmount()) {
-                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
-                        kernel.getWallet().getAccounts().get(index));
-                remain.set(0);
-                return true;
-            } else {
-                if (block.getInfo().getAmount() > 0) {
-                    remain.set(remain.get() - block.getInfo().getAmount());
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
-                            kernel.getWallet().getAccounts().get(index));
+        // 如果没有from则从节点账户里搜索
+        if (fromAddress == null) {
+            logger.debug("fromAddress is null, search all our blocks");
+            // our block select
+            kernel.getBlockStore().fetchOurBlocks(pair -> {
+                int index = pair.getKey();
+                Block block = pair.getValue();
+                if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                     return false;
                 }
-                return false;
+                if (compareAmountTo(remain.get(),block.getInfo().getAmount()) <= 0) {
+//                if (remain.get() <= block.getInfo().getAmount()) {
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
+                            kernel.getWallet().getAccounts().get(index));
+                    remain.set(0);
+                    return true;
+                } else {
+                    if (compareAmountTo(block.getInfo().getAmount(),0) > 0) {
+//                    if (block.getInfo().getAmount() > 0) {
+                        remain.set(remain.get() - block.getInfo().getAmount());
+                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
+                                kernel.getWallet().getAccounts().get(index));
+                        return false;
+                    }
+                    return false;
+                }
+            });
+        } else {
+            MutableBytes32 from = MutableBytes32.create();
+            from.set(8, fromAddress.slice(8, 24));
+            Block fromBlock = kernel.getBlockStore().getBlockInfoByHash(from);
+            // 如果余额足够
+            if (compareAmountTo(fromBlock.getInfo().getAmount(),remain.get()) >= 0) {
+                // if (fromBlock.getInfo().getAmount() >= remain.get()) {
+                int keyIndex = kernel.getBlockStore().getKeyIndexByHash(from);
+                ourBlocks.put(new Address(from, XDAG_FIELD_IN, remain.get()),
+                        kernel.getWallet().getAccounts().get(keyIndex));
+                remain.set(0);
             }
-        });
+        }
 
         // 余额不足
-        if (remain.get() > 0) {
+        if (compareAmountTo(remain.get(),0) > 0) {
             processResult.setCode(ERR_BALANCE_NOT_ENOUGH.code());
             processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;
@@ -158,37 +191,59 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         processResult.setResInfo(resInfo);
     }
 
-    private Bytes32 checkParam(String from, String to, String value, String remark,ProcessResult processResult) {
+    private Bytes32 checkFrom(String fromAddress, ProcessResult processResult) {
+        if (StringUtils.isBlank(fromAddress)) {
+            return null;
+        } else {
+            return checkAddress(fromAddress,processResult);
+        }
+    }
+
+    private Bytes32 checkTo(String toAddress, ProcessResult processResult) {
+        if (StringUtils.isBlank(toAddress)) {
+            processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+            processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
+            return null;
+        } else {
+            return checkAddress(toAddress,processResult);
+        }
+    }
+
+    private Bytes32 checkAddress(String address,ProcessResult processResult) {
+
         Bytes32 hash = null;
+
+        // check whether to is exist in blockchain
+        if (address.length() == 32) {
+            hash = Bytes32.wrap(address2Hash(address));
+        } else {
+            hash = Bytes32.wrap(BasicUtils.getHash(address));
+        }
+        if (hash == null) {
+            processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+            processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
+        } else {
+            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
+                processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+                processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
+            }
+        }
+
+        return hash;
+    }
+
+    private void checkParam(String value, String remark,ProcessResult processResult) {
         try {
             double amount = BasicUtils.getDouble(value);
             if (amount < 0) {
                 processResult.setCode(ERR_VALUE_INVALID.code());
                 processResult.setErrMsg(ERR_VALUE_INVALID.msg());
-                return null;
-            }
-
-            // check whether to is exist in blockchain
-            if (to.length() == 32) {
-                hash = Bytes32.wrap(address2Hash(to));
-            } else {
-                hash = Bytes32.wrap(BasicUtils.getHash(to));
-            }
-            if (hash == null) {
-                processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-                processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
-            } else {
-                if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
-                    processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-                    processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
-                }
             }
 
         } catch (NumberFormatException e) {
             processResult.setCode(e.hashCode());
             processResult.setErrMsg(e.getMessage());
         }
-        return hash;
     }
 
     private void checkPassword(String passphrase,ProcessResult result) {

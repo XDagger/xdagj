@@ -74,9 +74,11 @@ import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static io.xdag.utils.BytesUtils.equalBytes;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 @Slf4j
 @Getter
@@ -679,8 +681,11 @@ public class BlockchainImpl implements Blockchain {
                 continue;
             }
             updateBlockRef(ref, new Address(block));
-            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
-                    block.getInfo().getAmount()) {
+            if (compareAmountTo(long2UnsignedLong(block.getInfo().getAmount()).plus(ret),
+                    long2UnsignedLong(block.getInfo().getAmount())) >= 0) {
+//            }
+//            if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(ret).longValue() >=
+//                    block.getInfo().getAmount()) {
                 acceptAmount(block, ret);
             }
         }
@@ -689,28 +694,37 @@ public class BlockchainImpl implements Blockchain {
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
 
-                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
+                if (compareAmountTo(ref.getInfo().getAmount(),link.getAmount().longValue())<0) {
+//                if (ref.getInfo().getAmount() < link.getAmount().longValue()) {
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",
                             Hex.toHexString(ref.getInfo().getHashlow()), ref.getInfo().getAmount(),
                             link.getAmount().longValue());
                     return UnsignedLong.ZERO;
                 }
-                if (sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumIn.longValue()) {
+
+                if (sumIn.plus(long2UnsignedLong(link.getAmount().longValue())).compareTo(sumIn) < 0) {
+//                if (sumIn.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumIn.longValue()) {
                     log.debug("This input ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
-                sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
+                sumIn = sumIn.plus(long2UnsignedLong(link.getAmount().longValue()));
+//                sumIn = sumIn.plus(UnsignedLong.valueOf(link.getAmount()));
             } else {
-                if (sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumOut.longValue()) {
+                if (sumOut.plus(long2UnsignedLong(link.getAmount().longValue())).compareTo(sumOut) < 0) {
+//                if (sumOut.plus(UnsignedLong.valueOf(link.getAmount())).longValue() < sumOut.longValue()) {
                     log.debug("This output ref's amount less than 0");
                     return UnsignedLong.ZERO;
                 }
-                sumOut = sumOut.plus(UnsignedLong.valueOf(link.getAmount()));
+                sumOut = sumOut.plus(long2UnsignedLong(link.getAmount().longValue()));
+//                sumOut = sumOut.plus(UnsignedLong.valueOf(link.getAmount()));
             }
         }
 
-        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
-                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {
+        if (compareAmountTo(long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn),long2UnsignedLong(sumOut.longValue())) < 0
+                || compareAmountTo(long2UnsignedLong(block.getInfo().getAmount()).plus(sumIn),long2UnsignedLong(sumIn.longValue())) < 0
+        ) {
+//        if (UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumOut.longValue()
+//                || UnsignedLong.valueOf(block.getInfo().getAmount()).plus(sumIn).longValue() < sumIn.longValue()) {
             log.debug("exec fail!");
             return UnsignedLong.ZERO;
         }
@@ -718,9 +732,9 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             Block ref = getBlockByHash(link.getHashLow(), false);
             if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                acceptAmount(ref, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(link.getAmount())));
+                acceptAmount(ref, UnsignedLong.ZERO.minus(long2UnsignedLong(link.getAmount().longValue())));
             } else {
-                acceptAmount(ref, UnsignedLong.valueOf(link.getAmount()));
+                acceptAmount(ref, long2UnsignedLong(link.getAmount().longValue()));
             }
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
         }
@@ -740,11 +754,11 @@ public class BlockchainImpl implements Blockchain {
             for (Address link : links) {
                 Block ref = getBlockByHash(link.getHashLow(), false);
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                    acceptAmount(ref, UnsignedLong.valueOf(link.getAmount()));
-                    sum = sum.minus(UnsignedLong.valueOf(link.getAmount()));
+                    acceptAmount(ref, long2UnsignedLong(link.getAmount().longValue()));
+                    sum = sum.minus(long2UnsignedLong(link.getAmount().longValue()));
                 } else {
-                    acceptAmount(ref, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(link.getAmount())));
-                    sum = sum.plus(UnsignedLong.valueOf(link.getAmount()));
+                    acceptAmount(ref, UnsignedLong.ZERO.minus(long2UnsignedLong(link.getAmount().longValue())));
+                    sum = sum.plus(long2UnsignedLong(link.getAmount().longValue()));
                 }
             }
             acceptAmount(block, sum);
@@ -768,25 +782,28 @@ public class BlockchainImpl implements Blockchain {
      * 设置以block为主块的主链 要么分叉 要么延长 *
      */
     public void setMain(Block block) {
-        // 设置奖励
-        long mainNumber = xdagStats.nmain + 1;
-        log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
-        long reward = getReward(mainNumber);
-        block.getInfo().setHeight(mainNumber);
-        updateBlockFlag(block, BI_MAIN, true);
 
-        // 接收奖励
-        acceptAmount(block, UnsignedLong.valueOf(reward));
-        xdagStats.nmain++;
+        synchronized (this) {
+            // 设置奖励
+            long mainNumber = xdagStats.nmain + 1;
+            log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
+            long reward = getReward(mainNumber);
+            block.getInfo().setHeight(mainNumber);
+            updateBlockFlag(block, BI_MAIN, true);
 
-        // 递归执行主块引用的区块 并获取手续费
-        acceptAmount(block, applyBlock(block));
-        // 主块REF指向自身
-        // TODO:补充手续费
-        updateBlockRef(block, new Address(block));
+            // 接收奖励
+            acceptAmount(block, long2UnsignedLong(reward));
+            xdagStats.nmain++;
 
-        if (randomXUtils != null) {
-            randomXUtils.randomXSetForkTime(block);
+            // 递归执行主块引用的区块 并获取手续费
+            acceptAmount(block, applyBlock(block));
+            // 主块REF指向自身
+            // TODO:补充手续费
+            updateBlockRef(block, new Address(block));
+
+            if (randomXUtils != null) {
+                randomXUtils.randomXSetForkTime(block);
+            }
         }
 
     }
@@ -796,21 +813,24 @@ public class BlockchainImpl implements Blockchain {
      */
     public void unSetMain(Block block) {
 
-        log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
+        synchronized (this) {
 
-        long amount = getReward(xdagStats.nmain);
-        updateBlockFlag(block, BI_MAIN, false);
+            log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
-        xdagStats.nmain--;
+            long amount = getReward(xdagStats.nmain);
+            updateBlockFlag(block, BI_MAIN, false);
 
-        // 去掉奖励和引用块的手续费
-        acceptAmount(block, UnsignedLong.ZERO.minus(UnsignedLong.valueOf(amount)));
-        acceptAmount(block, unApplyBlock(block));
+            xdagStats.nmain--;
 
-        if (randomXUtils != null) {
-            randomXUtils.randomXUnsetForkTime(block);
+            // 去掉奖励和引用块的手续费
+            acceptAmount(block, UnsignedLong.ZERO.minus(long2UnsignedLong(amount)));
+            acceptAmount(block, unApplyBlock(block));
+
+            if (randomXUtils != null) {
+                randomXUtils.randomXUnsetForkTime(block);
+            }
+            block.getInfo().setHeight(0);
         }
-        block.getInfo().setHeight(0);
     }
 
     @Override
@@ -1333,20 +1353,20 @@ public class BlockchainImpl implements Blockchain {
 
     @Override
     public long getSupply(long nmain) {
-        UnsignedLong res = UnsignedLong.valueOf(0L);
+        UnsignedLong res = UnsignedLong.ZERO;
         long amount = getStartAmount(nmain);
         long current_nmain = nmain;
         while ((current_nmain >> MAIN_BIG_PERIOD_LOG) > 0) {
-            res = res.plus(UnsignedLong.fromLongBits(1L << MAIN_BIG_PERIOD_LOG).times(UnsignedLong.valueOf(amount)));
+            res = res.plus(UnsignedLong.fromLongBits(1L << MAIN_BIG_PERIOD_LOG).times(long2UnsignedLong(amount)));
             current_nmain -= 1L << MAIN_BIG_PERIOD_LOG;
             amount >>= 1;
         }
-        res = res.plus(UnsignedLong.valueOf(current_nmain).times(UnsignedLong.valueOf(amount)));
+        res = res.plus(long2UnsignedLong(current_nmain).times(long2UnsignedLong(amount)));
         long fork_height = kernel.getConfig().getApolloForkHeight();
         if (nmain >= fork_height) {
             // add before apollo amount
             long diff = kernel.getConfig().getMainStartAmount() - kernel.getConfig().getApolloForkAmount();
-            res = res.plus(UnsignedLong.valueOf(fork_height - 1).times(UnsignedLong.valueOf(diff)));
+            res = res.plus(long2UnsignedLong(fork_height - 1).times(long2UnsignedLong(diff)));
         }
         return res.longValue();
     }
@@ -1427,12 +1447,12 @@ public class BlockchainImpl implements Blockchain {
      */
     // TODO : accept amount to block which in snapshot
     private void acceptAmount(Block block, UnsignedLong amount) {
-        block.getInfo().setAmount(UnsignedLong.valueOf(block.getInfo().getAmount()).plus(amount).longValue());
+        block.getInfo().setAmount(long2UnsignedLong(block.getInfo().getAmount()).plus(amount).longValue());
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
         if ((block.getInfo().flags & BI_OURS) != 0) {
-            xdagStats.setBalance(amount.plus(UnsignedLong.valueOf(xdagStats.getBalance())).longValue());
+            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
         }
     }
 

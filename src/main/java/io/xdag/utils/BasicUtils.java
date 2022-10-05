@@ -26,7 +26,9 @@ package io.xdag.utils;
 
 import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 import static io.xdag.utils.BytesUtils.equalBytes;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
+import com.google.common.primitives.UnsignedLong;
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,7 +37,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
@@ -104,9 +105,9 @@ public class BasicUtils {
         input = input * Math.pow(2, 32);
         double tmp = Math.ceil(input);
         long result =  (long) (res + tmp);
-        if (result < 0) {
-            throw new XdagOverFlowException();
-        }
+//        if (result < 0) {
+//            throw new XdagOverFlowException();
+//        }
         return result;
     }
 
@@ -123,10 +124,7 @@ public class BasicUtils {
      * Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
      */
     public static double amount2xdag(long xdag) {
-        if (xdag < 0) {
-            throw new XdagOverFlowException();
-        }
-        long first = xdag >> 32;
+        long first = xdag >>> 32;
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
         BigDecimal bigDecimal = new BigDecimal(first + tem);
@@ -191,5 +189,13 @@ public class BasicUtils {
         }
         sum /= HASH_RATE_LAST_MAX_TIME;
         return Math.exp(sum) * Math.pow(2, -48);
+    }
+
+    public static int compareAmountTo(long amount1, long amount2) {
+        return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
+    }
+
+    public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {
+        return amount1.compareTo(amount2);
     }
 }

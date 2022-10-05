@@ -54,8 +54,8 @@ public class Libp2pChannel extends Channel {
         this.kernel = kernel;
 
         Multiaddr multiaddr = connection.remoteAddress();
-        String ip = Protocol.IP4.bytesToAddress(multiaddr.getComponent(Protocol.IP4));
-        String port = Protocol.TCP.bytesToAddress(multiaddr.getComponent(Protocol.TCP));
+        String ip = Protocol.IP4.bytesToAddress(multiaddr.getFirstComponent(Protocol.IP4).getValue());
+        String port = Protocol.TCP.bytesToAddress(multiaddr.getFirstComponent(Protocol.TCP).getValue());
         this.inetSocketAddress = new InetSocketAddress(ip, NumberUtils.toInt(port));
         this.node = new Node(connection.secureSession().getRemoteId().getBytes(), ip, NumberUtils.toInt(port));
         this.messageQueue = new MessageQueue(this);

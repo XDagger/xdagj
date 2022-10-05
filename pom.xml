@@ -17,7 +17,7 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.80.Final</netty.version>
+        <netty.version>4.1.81.Final</netty.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -497,7 +497,7 @@
         <dependency>
             <groupId>io.libp2p</groupId>
             <artifactId>jvm-libp2p-minimal</artifactId>
-            <version>0.8.3-RELEASE</version>
+            <version>0.9.2-RELEASE</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jetbrains</groupId>
@@ -831,7 +831,7 @@
         <dependency>
             <groupId>tech.pegasys.discovery</groupId>
             <artifactId>discovery</artifactId>
-            <version>0.4.7</version>
+            <version>22.2.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-api</artifactId>
@@ -891,6 +891,22 @@
                 </exclusion>
                 <exclusion>
                     <artifactId>units</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-bytes</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-io</artifactId>
+                    <groupId>org.apache.tuweni</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tuweni-units</artifactId>
                     <groupId>org.apache.tuweni</groupId>
                 </exclusion>
             </exclusions>

@@ -29,12 +29,16 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.NettyRuntime;
 import io.xdag.Kernel;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.utils.NettyUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class XdagServer {
@@ -54,6 +58,19 @@ public class XdagServer {
 
     public void start(String ip, int port) {
         try {
+
+            if(SystemUtils.IS_OS_LINUX) {
+                bossGroup = new EpollEventLoopGroup();
+                workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
+            } else if(SystemUtils.IS_OS_MAC) {
+                bossGroup = new KQueueEventLoopGroup();
+                workerGroup = new KQueueEventLoopGroup(workerThreadPoolSize);
+
+            } else {
+                bossGroup = new NioEventLoopGroup();
+                workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
+            }
+
             ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup, workerThreadPoolSize);
             b.childOption(ChannelOption.TCP_NODELAY, true);
             b.childOption(ChannelOption.SO_KEEPALIVE, true);
@@ -66,6 +83,10 @@ public class XdagServer {
         } catch (Exception e) {
             log.error("Xdag Node start error:{}.", e.getMessage(), e);
         }
+//        finally {
+//            workerGroup.shutdownGracefully();
+//            bossGroup.shutdownGracefully();
+//        }
     }
 
     public void close() {
@@ -74,8 +95,8 @@ public class XdagServer {
                 channelFuture.channel().close().sync();
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
-                workerGroup.terminationFuture().sync();
-                bossGroup.terminationFuture().sync();
+//                workerGroup.terminationFuture().sync();
+//                bossGroup.terminationFuture().sync();
                 log.debug("Xdag Node closed.");
             } catch (Exception e) {
                 log.error("Xdag Node close error:{}", e.getMessage(), e);
