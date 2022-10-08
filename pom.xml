@@ -17,7 +17,7 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.81.Final</netty.version>
+        <netty.version>4.1.82.Final</netty.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -357,19 +357,19 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.18.0</version>
+            <version>2.19.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.18.0</version>
+            <version>2.19.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.18.0</version>
+            <version>2.19.0</version>
         </dependency>
 
         <!-- Apache Commons -->
@@ -479,7 +479,7 @@
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
-            <version>7.5.3</version>
+            <version>7.6.0</version>
         </dependency>
 
         <dependency>
@@ -604,7 +604,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.7.0</version>
+            <version>4.8.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -739,7 +739,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>4.3.1</version>
+            <version>4.3.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -977,7 +977,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.15.1</version>
+            <version>1.17.1</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
