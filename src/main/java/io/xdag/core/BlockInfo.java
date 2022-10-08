@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Getter
 @Setter
@@ -46,7 +47,7 @@ public class BlockInfo {
     private byte[] remark;
     private byte[] hash;
     private byte[] hashlow;
-    private long amount;
+    private UInt64 amount = UInt64.ZERO;
     private long timestamp;
 
     // snapshot
@@ -85,14 +86,13 @@ public class BlockInfo {
         return type == blockInfo.type &&
                 flags == blockInfo.flags &&
                 height == blockInfo.height &&
-                amount == blockInfo.amount &&
                 timestamp == blockInfo.timestamp &&
                 Arrays.equals(hash, blockInfo.hash);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(type, flags, height, amount, timestamp);
+        int result = Objects.hash(type, flags, height, timestamp);
         result = 31 * result + Arrays.hashCode(hash);
         return result;
     }

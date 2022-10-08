@@ -36,13 +36,13 @@ public class BasicUtilsTest {
     public void TestXdag2amount() {
 
         BigDecimal a = BigDecimal.valueOf(972.8);
-        assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()));
+        assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()).toLong());
 
         BigDecimal b = BigDecimal.valueOf(51.2);
-        assertEquals(219902325556L, BasicUtils.xdag2amount(b.doubleValue()));
+        assertEquals(219902325556L, BasicUtils.xdag2amount(b.doubleValue()).toLong());
 
         BigDecimal c = BigDecimal.valueOf(100);
-        assertEquals(429496729600L, BasicUtils.xdag2amount(c.doubleValue()));
+        assertEquals(429496729600L, BasicUtils.xdag2amount(c.doubleValue()).toLong());
     }
 
     @Test(expected = XdagOverFlowException.class)
