@@ -62,6 +62,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
 @Getter
@@ -324,7 +325,7 @@ public class MinerChannel {
 //        System.arraycopy(accountAddressHash,8,hashlow,8,24);
         Block block = blockStore.getBlockByHash(hashlow, false);
 
-        long amount = 0;
+        UInt64 amount = UInt64.ZERO;
         if (block == null) {
             log.debug("Can't found block,{}", hashlow.toHexString());
         } else {
@@ -333,7 +334,7 @@ public class MinerChannel {
 //        byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false), BytesUtils.subArray(accountAddressHash.toArray(), 8, 24));
         MutableBytes32 data = MutableBytes32.create();
 //        Bytes data = Bytes.wrap(Bytes.ofUnsignedLong(amount), accountAddressHash.slice(8, 24));
-        data.setLong(0, amount);
+        data.set(0,amount.toBytes());
         data.set(8, accountAddressHash.slice(8, 24));
         log.debug("update miner balance {}", data.toHexString());
         miner03.sendMessage(data);

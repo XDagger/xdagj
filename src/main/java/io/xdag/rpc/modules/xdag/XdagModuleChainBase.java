@@ -231,7 +231,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             Link.LinkBuilder linkBuilder = Link.builder();
             linkBuilder.address(hash2Address(input.getHashLow()))
                     .hashlow(input.getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(input.getAmount().longValue())))
+                    .amount(String.format("%.9f", amount2xdag(input.getAmount())))
                     .direction(0);
             links.add(linkBuilder.build());
         }
@@ -240,7 +240,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             Link.LinkBuilder linkBuilder = Link.builder();
             linkBuilder.address(hash2Address(output.getHashLow()))
                     .hashlow(output.getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(output.getAmount().longValue())))
+                    .amount(String.format("%.9f", amount2xdag(output.getAmount())))
                     .direction(1);
             links.add(linkBuilder.build());
         }
@@ -275,7 +275,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
             txLinkBuilder.address(hash2Address(txHistory.getAddress().getHashLow()))
                     .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount().longValue())))
+                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
                             txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)
                     .time(xdagTimestampToMs(txHistory.getTimeStamp()))

@@ -216,7 +216,7 @@ public class SnapshotProcess {
         int i = 0;
         for (Block block : blocks) {
 
-            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount(), block.getTimestamp(),
+            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount().toLong(), block.getTimestamp(),
                     block.getHash().toArray(), block.getInfo().getFlags());
             if (i < 30) {
                 snapshotChainStore

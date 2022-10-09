@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import io.xdag.core.*;
 
 import io.xdag.crypto.Hash;
@@ -40,9 +41,11 @@ import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.SECPSignature;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.rocksdb.*;
 
 import java.io.ByteArrayInputStream;
@@ -52,6 +55,7 @@ import java.util.List;
 
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.db.BlockStore.*;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 
 @Slf4j
 public class SnapshotJ extends RocksdbKVSource {
@@ -90,7 +94,8 @@ public class SnapshotJ extends RocksdbKVSource {
                         blockInfo.setSnapshot(true);
                         save(iter, blockInfo, snapshotSource);
                     } else { //Storage block data without public key and balance
-                        if (blockInfo.getAmount() != 0) {
+                        if (compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0) {
+//                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
                             blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(BytesUtils.subArray(iter.key(), 1, 32))));
                             int flag = blockInfo.getFlags();
@@ -139,7 +144,7 @@ public class SnapshotJ extends RocksdbKVSource {
                                     if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
-                                        ourBalance += blockInfo.getAmount();
+                                        ourBalance += blockInfo.getAmount().toLong();
                                         break;
                                     }
                                 }
@@ -155,7 +160,7 @@ public class SnapshotJ extends RocksdbKVSource {
                                     if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
-                                        ourBalance += blockInfo.getAmount();
+                                        ourBalance += blockInfo.getAmount().toLong();
                                         break;
                                     }
                                 }
@@ -166,7 +171,7 @@ public class SnapshotJ extends RocksdbKVSource {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
                         blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
-                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT,BigInteger.valueOf(blockInfo.getAmount()),
+                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT,blockInfo.getAmount(),
                                 snapshotTime,0,
                                 blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
@@ -231,11 +236,14 @@ public class SnapshotJ extends RocksdbKVSource {
     }
 
     public static void kryoRegister() {
+        kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+//        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
         kryo.register(XdagStats.class);
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
+        kryo.register(UInt64.class);
     }
 }

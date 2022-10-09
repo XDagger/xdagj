@@ -67,6 +67,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
@@ -77,6 +78,7 @@ import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.xerial.snappy.Snappy;
 
 @Slf4j

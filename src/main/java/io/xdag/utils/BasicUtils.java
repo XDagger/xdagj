@@ -43,6 +43,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 public class BasicUtils {
 
@@ -95,19 +96,33 @@ public class BasicUtils {
     }
 
     // convert xdag to cheato
-    public static long xdag2amount(double input) {
+//    public static long xdag2amount(double input) {
+//        if (input < 0) {
+//            throw new XdagOverFlowException();
+//        }
+//        double amount = Math.floor(input);
+//        long res = (long) amount << 32;
+//        input -= amount; // 小数部分
+//        input = input * Math.pow(2, 32);
+//        double tmp = Math.ceil(input);
+//        long result =  (long) (res + tmp);
+////        if (result < 0) {
+////            throw new XdagOverFlowException();
+////        }
+//        return result;
+//    }
+
+    public static UInt64 xdag2amount(double input) {
         if (input < 0) {
             throw new XdagOverFlowException();
         }
-        double amount = Math.floor(input);
-        long res = (long) amount << 32;
+        long amount = (long) Math.floor(input);
+
+        UInt64 res = UInt64.valueOf(amount).shiftLeft(32);
         input -= amount; // 小数部分
         input = input * Math.pow(2, 32);
-        double tmp = Math.ceil(input);
-        long result =  (long) (res + tmp);
-//        if (result < 0) {
-//            throw new XdagOverFlowException();
-//        }
+        long tmp = (long) Math.ceil(input);
+        UInt64 result = res.add(tmp);
         return result;
     }
 
@@ -124,10 +139,21 @@ public class BasicUtils {
      * Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
      */
     public static double amount2xdag(long xdag) {
+        if (xdag < 0) {
+            throw new XdagOverFlowException();
+        }
         long first = xdag >>> 32;
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
         BigDecimal bigDecimal = new BigDecimal(first + tem);
+        return bigDecimal.setScale(12, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    public static double amount2xdag(UInt64 xdag) {
+        UInt64 first = xdag.shiftRight(32);
+        UInt64 temp = xdag.subtract(first.shiftLeft(32));
+        double tem = 1.0*temp.toLong()/Math.pow(2, 32);
+        BigDecimal bigDecimal = new BigDecimal(first.toLong() + tem);
         return bigDecimal.setScale(12, RoundingMode.HALF_UP).doubleValue();
     }
 
@@ -193,6 +219,10 @@ public class BasicUtils {
 
     public static int compareAmountTo(long amount1, long amount2) {
         return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
+    }
+
+    public static int compareAmountTo(UInt64 amount1, UInt64 amount2) {
+        return amount1.compareTo(amount2);
     }
 
     public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {
