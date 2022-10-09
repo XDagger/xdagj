@@ -31,6 +31,7 @@ import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 public class Address {
 
@@ -47,7 +48,7 @@ public class Address {
     /**
      * 转账金额（输入or输出）
      */
-    protected BigInteger amount;
+    protected UInt64 amount = UInt64.ZERO;
     /**
      * 地址hash低192bit
      */
@@ -66,7 +67,7 @@ public class Address {
      */
     public Address(Bytes32 hashLow) {
         this.hashLow = hashLow.mutableCopy();
-        this.amount = BigInteger.valueOf(0);
+        this.amount = UInt64.ZERO;
         parsed = true;
     }
 
@@ -75,7 +76,7 @@ public class Address {
      */
     public Address(Block block) {
         this.hashLow = block.getHashLow().mutableCopy();
-        this.amount = BigInteger.valueOf(0);
+        this.amount = UInt64.ZERO;
         parsed = true;
     }
 
@@ -85,10 +86,10 @@ public class Address {
         parse();
     }
 
-    public Address(Bytes32 blockHashLow, XdagField.FieldType type, long amount) {
+    public Address(Bytes32 blockHashLow, XdagField.FieldType type, UInt64 amount) {
         this.type = type;
         this.hashLow = blockHashLow.mutableCopy();
-        this.amount = BigInteger.valueOf(amount);
+        this.amount = amount;
         parsed = true;
     }
 
@@ -96,7 +97,7 @@ public class Address {
         if (this.data == null) {
             this.data = MutableBytes32.create();
             this.data.set(8, this.hashLow.slice(8, 24));
-            this.data.set(0, Bytes.wrap(BytesUtils.longToBytes(amount.longValue(), 8)));
+            this.data.set(0, amount.toBytes());
         }
         return this.data;
     }
@@ -105,12 +106,12 @@ public class Address {
         if (!parsed) {
             this.hashLow = MutableBytes32.create();
             this.hashLow.set(8, this.data.slice(8, 24));
-            this.amount = this.data.slice(0, 8).toBigInteger();
+            this.amount = UInt64.fromBytes(this.data.slice(0, 8));
             this.parsed = true;
         }
     }
 
-    public BigInteger getAmount() {
+    public UInt64 getAmount() {
         parse();
         return this.amount;
     }

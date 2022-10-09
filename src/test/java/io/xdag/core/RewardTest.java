@@ -181,7 +181,7 @@ public class RewardTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount());
+        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount().toLong());
     }
 
     static class MockBlockchain extends BlockchainImpl {

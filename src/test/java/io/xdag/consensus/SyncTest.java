@@ -144,6 +144,8 @@ public class SyncTest {
         long fourthTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime + 64000L + 64000L));
 
         Block addressBlock = generateAddressBlock(config, key, generateTime);
+//        Address address = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
+//        System.out.println(address.getAmount());
         pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT));
 
         Block secondBlock = generateExtraBlock(config, key, secondTime, pending);

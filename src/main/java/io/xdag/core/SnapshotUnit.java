@@ -31,6 +31,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Data
 @Slf4j
@@ -83,10 +84,10 @@ public class SnapshotUnit {
         blockInfo.setDifficulty(BigInteger.ZERO);
         blockInfo.setFlags(snapshotUnit.getBalanceData().flags);
         if (snapshotUnit.type == 2) {
-            blockInfo.setAmount(0);
+            blockInfo.setAmount(UInt64.ZERO);
             blockInfo.setTimestamp(0);
         } else {
-            blockInfo.setAmount(snapshotUnit.getBalanceData().getAmount());
+            blockInfo.setAmount(UInt64.valueOf(snapshotUnit.getBalanceData().getAmount()));
             blockInfo.setTimestamp(snapshotUnit.getBalanceData().getTime());
         }
         blockInfo.setHash(snapshotUnit.getHash());

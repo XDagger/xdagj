@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -67,7 +68,7 @@ public class BlockBuilder {
     }
 
     public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-            long amount) {
+            UInt64 amount) {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getHashLow(), XDAG_FIELD_IN, amount)); // key1
         refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));

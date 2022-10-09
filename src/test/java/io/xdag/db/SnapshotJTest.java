@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -208,7 +209,7 @@ public class SnapshotJTest {
         assertEquals(249,height);
 
         XdagStats xdagStats = new XdagStats();
-        xdagStats.balance = snapshotSource.getOurBalance();
+        xdagStats.balance = UInt64.valueOf(snapshotSource.getOurBalance());
         xdagStats.setTotalnmain(height);
         xdagStats.setNmain(height);
 
