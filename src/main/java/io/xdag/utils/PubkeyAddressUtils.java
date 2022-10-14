@@ -9,7 +9,7 @@ public class PubkeyAddressUtils {
         return Base58.encodeChecked(hash160);
     }
 
-    public static byte[] formBase58(String base58) throws AddressFormatException {
+    public static byte[] fromBase58(String base58) throws AddressFormatException {
         byte[] bytes = Base58.decodeChecked(base58);
         if (bytes.length != 20)
             throw new AddressFormatException.InvalidDataLength("Wrong number of bytes: " + bytes.length);

@@ -18,14 +18,13 @@ public class PubkeyAddressUtilsTest {
         KeyPair key = Keys.createEcKeyPair();
         byte[] hash160 = Keys.toBytesAddress(key);
         String base58 = PubkeyAddressUtils.toBase58(hash160);
-        System.out.println(base58);
-        assertArrayEquals(PubkeyAddressUtils.formBase58(base58), hash160);
+        assertArrayEquals(PubkeyAddressUtils.fromBase58(base58), hash160);
     }
 
     @Test(expected = AddressFormatException.class)
     public void testAddressFormatException() {
         //the correct base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"
         String base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a";
-        PubkeyAddressUtils.formBase58(base58);
+        PubkeyAddressUtils.fromBase58(base58);
     }
 }
