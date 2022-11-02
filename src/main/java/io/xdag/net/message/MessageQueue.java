@@ -44,7 +44,7 @@ public class MessageQueue {
 
     private static final AtomicInteger cnt = new AtomicInteger(0);
     public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
-            4,
+            Runtime.getRuntime().availableProcessors(),
             new BasicThreadFactory.Builder()
                     .namingPattern("MessageQueueTimer-" + cnt.getAndIncrement())
                     .daemon(true)
@@ -72,15 +72,12 @@ public class MessageQueue {
                     }
                 },
                 10,
-                // TODO: 发送周期缩短会不会有影响，但能有效加快同步速度
                 SEND_PERIOD,
-                // 2毫秒执行一次
+                // 10 MILLISECONDS
                 TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * 每2毫秒执行一次
-     */
+
     private void nudgeQueue() {
         int n = Math.min(5, size());
         if (n == 0) {
