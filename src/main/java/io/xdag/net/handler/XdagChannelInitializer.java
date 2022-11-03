@@ -64,9 +64,6 @@ public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
                 return;
             }
             XdagChannel channel = new XdagChannel(ch);
-            if (!isServer) { // if not running as server, init the node by ip+port (real ip, not hostname)
-                channel.initWithNode(address.getHostName(),address.getPort());
-            }
             channel.init(ch.pipeline(), kernel, isServer, address);
             ch.config().setOption(ChannelOption.TCP_NODELAY, true);
             channelMgr.add(channel);
