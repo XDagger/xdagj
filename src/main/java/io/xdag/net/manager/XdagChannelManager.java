@@ -78,7 +78,7 @@ public class XdagChannelManager {
     public void add(Channel ch) {
         log.debug("xdag channel manager->Channel added: remoteAddress = {}", ch.getInetSocketAddress());
         channels.put(ch.getInetSocketAddress(), ch);
-        channelLastConnect.put(ch.getInetSocketAddress(),System.currentTimeMillis());
+//        channelLastConnect.put(ch.getInetSocketAddress(),System.currentTimeMillis());
     }
 
     public void notifyDisconnect(Channel channel) {
@@ -145,6 +145,7 @@ public class XdagChannelManager {
     public void onChannelActive(Channel channel, Node node) {
         channel.setActive(true);
         activeChannels.put(node.getHexId(), channel);
+        channelLastConnect.put(node.getAddress(),System.currentTimeMillis()); // use node to get address(conclude hostname)
         log.debug("activeChannel size:" + activeChannels.size());
     }
 
