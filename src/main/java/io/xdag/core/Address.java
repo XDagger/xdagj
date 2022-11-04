@@ -24,8 +24,6 @@
 
 package io.xdag.core;
 
-import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
@@ -52,11 +50,16 @@ public class Address {
     /**
      * 地址hash低192bit
      */
-    protected MutableBytes32 hashLow;
+    protected MutableBytes32 blockHashLow;
+
+    protected MutableBytes32 addressHash;
+
+    protected boolean isAddress = false;
 
     protected boolean parsed = false;
 
-    public Address(XdagField field) {
+    public Address(XdagField field,Boolean isAddress) {
+        this.isAddress = isAddress;
         this.type = field.getType();
         this.data = MutableBytes32.wrap(field.getData().reverse().mutableCopy());
         parse();
@@ -66,7 +69,7 @@ public class Address {
      * 只用于ref 跟 maxdifflink
      */
     public Address(Bytes32 hashLow) {
-        this.hashLow = hashLow.mutableCopy();
+        this.blockHashLow = hashLow.mutableCopy();
         this.amount = UInt64.ZERO;
         parsed = true;
     }
@@ -75,37 +78,57 @@ public class Address {
      * 只用于ref 跟 maxdifflink
      */
     public Address(Block block) {
-        this.hashLow = block.getHashLow().mutableCopy();
+        this.blockHashLow = block.getHashLow().mutableCopy();
         this.amount = UInt64.ZERO;
         parsed = true;
     }
 
-    public Address(Bytes32 blockHashlow, XdagField.FieldType type) {
+    public Address(Bytes32 blockHashlow, XdagField.FieldType type,Boolean isAddress) {
+        this.isAddress = isAddress;
+        if(isAddress == false){
+            this.data = blockHashlow.mutableCopy();
+        }else {
+            this.data = addressHash.mutableCopy();
+        }
         this.type = type;
-        this.data = blockHashlow.mutableCopy();
         parse();
     }
 
-    public Address(Bytes32 blockHashLow, XdagField.FieldType type, UInt64 amount) {
+    public Address(Bytes32 hash, XdagField.FieldType type, UInt64 amount,Boolean isAddress) {
+        this.isAddress = isAddress;
         this.type = type;
-        this.hashLow = blockHashLow.mutableCopy();
+        if(isAddress == false){
+            this.blockHashLow = hash.mutableCopy();
+        }else {
+            this.addressHash = hash.mutableCopy();
+        }
         this.amount = amount;
         parsed = true;
     }
 
+
     public Bytes getData() {
         if (this.data == null) {
             this.data = MutableBytes32.create();
-            this.data.set(8, this.hashLow.slice(8, 24));
-            this.data.set(0, amount.toBytes());
+            if(this.addressHash == null){
+                this.data.set(8, this.blockHashLow.slice(8, 24));
+            }else {
+                this.data.set(8, Bytes.wrap(this.addressHash));
+            }
+
         }
         return this.data;
     }
 
     public void parse() {
         if (!parsed) {
-            this.hashLow = MutableBytes32.create();
-            this.hashLow.set(8, this.data.slice(8, 24));
+            if(isAddress == false){
+                this.blockHashLow = MutableBytes32.create();
+                this.blockHashLow.set(8, this.data.slice(8, 24));
+            }else {
+                this.addressHash = MutableBytes32.create();
+                this.addressHash.set(8,this.data.slice(8,20));
+            }
             this.amount = UInt64.fromBytes(this.data.slice(0, 8));
             this.parsed = true;
         }
@@ -116,13 +139,18 @@ public class Address {
         return this.amount;
     }
 
-    public MutableBytes32 getHashLow() {
+    public MutableBytes32 getAddress() {
         parse();
-        return this.hashLow;
+        if(this.blockHashLow != null){
+            return this.blockHashLow;
+        }else if(this.addressHash != null){
+            return this.addressHash;
+        }
+        return null;
     }
 
     @Override
     public String toString() {
-        return "Block Hash[" + hashLow.toHexString() + "]";
+        return "Block Hash[" + blockHashLow.toHexString() + "]";
     }
 }

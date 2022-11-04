@@ -123,7 +123,7 @@ public class SnapshotJ extends RocksdbKVSource {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime,AddressStore addressStore) {
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {
@@ -144,6 +144,7 @@ public class SnapshotJ extends RocksdbKVSource {
                             //public key exists
                             if (snapshotInfo.getType()) {
                                 byte[] ecKeyPair = snapshotInfo.getData();
+                                byte[] pubKey = Hash.sha256hash160(Bytes.wrap(ecKeyPair));
                                 for (int i = 0; i < keys.size(); i++) {
                                     KeyPair key = keys.get(i);
                                     if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
@@ -153,6 +154,8 @@ public class SnapshotJ extends RocksdbKVSource {
                                         break;
                                     }
                                 }
+                                addressStore.addBalance(pubKey,blockInfo.getAmount());
+                                blockInfo.setAmount(UInt64.ZERO);
                             } else {    //Verify signature
                                 Block block = new Block(new XdagBlock(snapshotInfo.getData()));
                                 SECPSignature outSig = block.getOutsig();

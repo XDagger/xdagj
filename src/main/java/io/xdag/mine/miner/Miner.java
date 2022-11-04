@@ -48,10 +48,6 @@ public class Miner {
      */
     private final Bytes32 addressHash;
     /**
-     * 这个保存的是前8位为0 的地址 主要用于查询
-     */
-    private final Bytes32 addressHashLow;
-    /**
      * 相同账户地址的channel数量
      */
     private final AtomicInteger connChannelCounts = new AtomicInteger(0);
@@ -112,8 +108,6 @@ public class Miner {
         this.addressHash = addressHash;
 //        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
         addressHash.mutableCopy();
-        this.addressHashLow = addressHash.mutableCopy();
-        ((MutableBytes32) this.addressHashLow).setLong(0, 0);
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
         this.meanLogDiff = 0.0;
@@ -232,10 +226,6 @@ public class Miner {
 
     public double getPrevDiffSum(long key) {
         return prevDiffSum.get(key);
-    }
-
-    public Bytes32 getAddressHashLow() {
-        return this.addressHashLow;
     }
 
     public Map<InetSocketAddress, MinerChannel> getChannels() {

@@ -41,11 +41,8 @@ import io.xdag.core.BlockchainImpl;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
+import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
-import io.xdag.db.OrphanPool;
 import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
@@ -91,6 +88,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.checkerframework.checker.units.qual.A;
 
 @Slf4j
 @Getter
@@ -101,6 +99,7 @@ public class Kernel {
     private Config config;
     private Wallet wallet;
     private DatabaseFactory dbFactory;
+    private AddressStore addressStore;
     private BlockStore blockStore;
     private OrphanPool orphanPool;
     private Blockchain blockchain;
@@ -196,6 +195,10 @@ public class Kernel {
                 dbFactory.getDB(DatabaseName.TXHISTORY));
         log.info("Block Store init.");
         blockStore.init();
+
+        addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        addressStore.init();
+        log.info("Address Store init");
 
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");

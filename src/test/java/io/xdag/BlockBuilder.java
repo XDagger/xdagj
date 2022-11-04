@@ -70,8 +70,8 @@ public class BlockBuilder {
     public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
             UInt64 amount) {
         List<Address> refs = Lists.newArrayList();
-        refs.add(new Address(from.getHashLow(), XDAG_FIELD_IN, amount)); // key1
-        refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,true)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, amount,true));
         List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan

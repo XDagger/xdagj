@@ -54,6 +54,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.checkerframework.checker.units.qual.A;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.SECPPublicKey;
@@ -69,6 +70,7 @@ public class Block implements Cloneable {
      * 区块是否存在于本地*
      */
     public boolean isSaved;
+    private Address coinBase;
     private BlockInfo info;
     private long transportHeader;
     /**
@@ -241,8 +243,10 @@ public class Block implements Cloneable {
                 throw new IllegalArgumentException("xdagBlock field:" + i + " is null");
             }
             switch (field.getType()) {
-            case XDAG_FIELD_IN -> inputs.add(new Address(xdagBlock.getField(i)));
-            case XDAG_FIELD_OUT -> outputs.add(new Address(field));
+            case XDAG_FIELD_IN -> inputs.add(new Address(xdagBlock.getField(i),false));
+            case XDAG_FIELD_NIN -> inputs.add(new Address(xdagBlock.getField(i),true));
+            case XDAG_FIELD_OUT -> outputs.add(new Address(field,true));
+            case XDAG_FIELD_COINBASE -> coinBase = new Address(field,true);
             case XDAG_FIELD_REMARK -> this.info.setRemark(field.getData().toArray());
             case XDAG_FIELD_SIGN_IN, XDAG_FIELD_SIGN_OUT -> {
                 BigInteger r;
@@ -328,6 +332,9 @@ public class Block implements Cloneable {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.writeField(getEncodedHeader());
         List<Address> all = new ArrayList<>();
+        if(this.coinBase != null){
+            all.add(coinBase);
+        }
         all.addAll(inputs);
         all.addAll(outputs);
         for (Address link : all) {
