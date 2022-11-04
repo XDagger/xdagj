@@ -229,8 +229,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
         for (Address input : inputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
-            linkBuilder.address(hash2Address(input.getHashLow()))
-                    .hashlow(input.getHashLow().toUnprefixedHexString())
+            linkBuilder.address(hash2Address(input.getAddress()))
+                    .hashlow(input.getAddress().toUnprefixedHexString())
                     .amount(String.format("%.9f", amount2xdag(input.getAmount())))
                     .direction(0);
             links.add(linkBuilder.build());
@@ -238,8 +238,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
         for (Address output : outputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
-            linkBuilder.address(hash2Address(output.getHashLow()))
-                    .hashlow(output.getHashLow().toUnprefixedHexString())
+            linkBuilder.address(hash2Address(output.getAddress()))
+                    .hashlow(output.getAddress().toUnprefixedHexString())
                     .amount(String.format("%.9f", amount2xdag(output.getAmount())))
                     .direction(1);
             links.add(linkBuilder.build());
@@ -268,13 +268,13 @@ public class XdagModuleChainBase implements XdagModuleChain {
         }
         // 2. tx history info
         for (TxHistory txHistory : txHistories) {
-            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getHashLow(), false).getInfo();
+            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false).getInfo();
             if((blockInfo.flags&BI_APPLIED)==0){
                 continue;
             }
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
-            txLinkBuilder.address(hash2Address(txHistory.getAddress().getHashLow()))
-                    .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
+            txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
+                    .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
                     .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
                             txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)

@@ -26,7 +26,6 @@ package io.xdag.cli;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
 import io.xdag.core.BlockState;
 import io.xdag.core.*;
@@ -56,14 +55,12 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 @Slf4j
 public class Commands {
@@ -198,6 +195,13 @@ public class Commands {
         }
     }
 
+    public String addressBalance(String address){
+        byte[] hash;
+        hash = Hex.decode(address);
+        UInt64 balance = kernel.getAddressStore().getBalanceByAddress(hash);
+        return "Balance:" + String.format("%.9f",amount2xdag(balance.toLong())) + " XDAG";
+    }
+
     /**
      * Real make a transaction for given amount and address
      *
@@ -229,14 +233,15 @@ public class Commands {
             }
             if (compareAmountTo(remain.get(),block.getInfo().getAmount()) <= 0) {
 //            if (remain.get() <= block.getInfo().getAmount()) {
-                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get(),true),
                         kernel.getWallet().getAccounts().get(index));
                 remain.set(UInt64.ZERO);
                 return true;
             } else {
                 if (compareAmountTo(block.getInfo().getAmount(),UInt64.ZERO) > 0){
                     remain.set(remain.get().subtract(block.getInfo().getAmount()));
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN,
+                                    true),
                             kernel.getWallet().getAccounts().get(index));
                     return false;
                 }
@@ -318,7 +323,7 @@ public class Commands {
 
     private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
 
-        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount,true));
 
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark);
 
@@ -451,7 +456,7 @@ public class Commands {
                 for (int i = 0; i < block.getInputs().size(); i++) {
                     inputs.append(String.format("     input: %s           %.9f%n",
                             hash2Address(Bytes32.wrap(
-                                    kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getHashLow(), false)
+                                    kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getAddress(), false)
                                             .getInfo().getHash())),
                             amount2xdag(block.getInputs().get(i).getAmount())
                     ));
@@ -462,7 +467,7 @@ public class Commands {
                 for (int i = 0; i < block.getOutputs().size(); i++) {
                     outputs.append(String.format("    output: %s           %.9f%n",
                             hash2Address(Bytes32.wrap(
-                                    kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getHashLow(), false)
+                                    kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getAddress(), false)
                                             .getInfo().getHash())),
                             amount2xdag(block.getOutputs().get(i).getAmount())
                     ));
@@ -484,22 +489,22 @@ public class Commands {
         }
         for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow())) {
             Address address = txHistory.getAddress();
-            BlockInfo blockInfo = kernel.getBlockchain().getBlockByHash(address.getHashLow(), false).getInfo();
+            BlockInfo blockInfo = kernel.getBlockchain().getBlockByHash(address.getAddress(), false).getInfo();
             if((blockInfo.flags&BI_APPLIED)==0){
                 continue;
             }
             if (address.getType().equals(XDAG_FIELD_IN)) {
-                tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
+                tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getAddress()),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else if (address.getType().equals(XDAG_FIELD_OUT)) {
-                tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
+                tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else {
-                tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getHashLow()),
+                tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getAddress()),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
