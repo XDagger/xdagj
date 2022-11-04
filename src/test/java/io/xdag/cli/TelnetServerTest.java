@@ -21,31 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.cli;
 
-package io.xdag.basic;
+public class TelnetServerTest {
 
-import org.apache.tuweni.bytes.Bytes32;
-import org.junit.Test;
-
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static org.junit.Assert.assertEquals;
-
-public class Address2Hash {
-
-    @Test
-    public void testHash2Address() {
-        String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
-        String originhash = "4aa1ab5742feb010a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
-        Bytes32 hash1 = Bytes32.fromHexString(originhash);
-        assertEquals(hash2Address(hash1), news);
-    }
-
-    @Test
-    public void testAddress2Hash() {
-        String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
-        String originhashlow = "0000000000000000a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
-        Bytes32 hashlow = address2Hash(news);
-        assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
-    }
 }
