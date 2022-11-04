@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class PubkeyAddressUtilsTest {
     @Test
@@ -26,5 +27,10 @@ public class PubkeyAddressUtilsTest {
         //the correct base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"
         String base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a";
         PubkeyAddressUtils.fromBase58(base58);
+    }
+    @Test
+    public void testCheckAddress() {
+        assertEquals(true, PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"));
+        assertEquals(false, PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a"));
     }
 }

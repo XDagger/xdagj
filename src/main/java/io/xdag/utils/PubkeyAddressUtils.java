@@ -16,4 +16,8 @@ public class PubkeyAddressUtils {
         return bytes;
     }
 
+    public static boolean checkAddress(String base58) {
+        return Base58.checkAddress(base58);
+    }
+
 }
