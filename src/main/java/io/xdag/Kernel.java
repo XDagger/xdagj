@@ -46,7 +46,6 @@ import io.xdag.db.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
-import io.xdag.event.EventProcesser;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
@@ -165,8 +164,6 @@ public class Kernel {
         }
         isRunning.set(true);
         startEpoch = XdagTime.getCurrentEpoch();
-
-        EventProcesser.getEventBus().register(this);
 
         // ====================================
         // start channel manager
