@@ -35,18 +35,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class MessageQueue {
-
-    private static final AtomicInteger cnt = new AtomicInteger(0);
     public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             new BasicThreadFactory.Builder()
-                    .namingPattern("MessageQueueTimer-" + cnt.getAndIncrement())
+                    .namingPattern("MessageQueueTimer-thread-%d")
                     .daemon(true)
                     .build());
     private final Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();

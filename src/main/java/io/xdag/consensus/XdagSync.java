@@ -43,27 +43,22 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.Nonnull;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
 @Slf4j
 public class XdagSync {
 
-    private static final ThreadFactory factory = new ThreadFactory() {
-        private final AtomicInteger cnt = new AtomicInteger(0);
-
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "sync(request)-" + cnt.getAndIncrement());
-        }
-    };
+    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+            .namingPattern("XdagSync-thread-%d")
+            .daemon(true)
+            .build();
 
     private final XdagChannelManager channelMgr;
     private final BlockStore blockStore;
