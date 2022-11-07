@@ -238,8 +238,8 @@ public class SnapshotJTest {
         snapshotSource = new SnapshotJ("SNAPSHOTJ");
         snapshotSource.setConfig(dataConfig);
         snapshotSource.init();
-
-        index.makeSnapshot(blockSource, snapshotSource);
+        boolean b = false;
+        index.makeSnapshot(blockSource, snapshotSource, b);
 
         height = index.getHeight();
     }

@@ -73,16 +73,21 @@ public class SnapshotJ extends RocksdbKVSource {
         super(name);
     }
 
-    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource snapshotSource) {
+    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource snapshotSource, boolean b) {
 
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.key()[0] < 0x40; iter.next()) {
+                PreBlockInfo preBlockInfo = new PreBlockInfo();
                 BlockInfo blockInfo = new BlockInfo();
                 if (iter.value() != null) {
                     try {
                         blockInfo = (BlockInfo) deserialize(iter.value(), BlockInfo.class);
+                        if (b) {
+                            preBlockInfo = (PreBlockInfo) deserialize(iter.value(), PreBlockInfo.class);
+                            blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
+                        }
                     } catch (DeserializationException e) {
-                        log.error("hash low:" + Hex.toHexString(blockInfo.getHashlow()));
+                        log.error("hash low:{}", Hex.toHexString(blockInfo.getHashlow()));
                         log.error("can't deserialize data:{}", Hex.toHexString(iter.value()));
                         log.error(e.getMessage(), e);
                     }
@@ -248,5 +253,6 @@ public class SnapshotJ extends RocksdbKVSource {
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
         kryo.register(UInt64.class);
+        kryo.register(PreBlockInfo.class);
     }
 }

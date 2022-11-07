@@ -107,6 +107,17 @@ public class Base58 {
         return data;
     }
 
+    public static boolean checkAddress(String input) {
+        byte[] decoded  = decode(input);
+        if (decoded.length < 4) {
+            return false;
+        }
+        byte[] data = Arrays.copyOfRange(decoded, 0, decoded.length - 4);
+        byte[] checksum = Arrays.copyOfRange(decoded, decoded.length - 4, decoded.length);
+        byte[] actualChecksum = Arrays.copyOfRange(Hash.hashTwice(data), 0, 4);
+        return Arrays.equals(checksum, actualChecksum);
+    }
+
 
     private static byte divmod(byte[] number, int firstDigit, int base, int divisor) {
         // this is just long division which accounts for the base of the input digits
