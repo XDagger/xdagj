@@ -55,6 +55,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -253,7 +254,7 @@ public class MinerChannel {
 
     public boolean initMiner(Bytes32 accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        String addrHexStr = accountAddressHash.toHexString();
+        String addrHexStr = PubkeyAddressUtils.toBase58(accountAddressHash.toArray());
         log.debug("Init A Miner:" + addrHexStr);
         // 判断这个矿工是否已经存在了
         if (minerManager !=null && minerManager.getActivateMiners().containsKey(accountAddressHash)) {

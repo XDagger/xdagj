@@ -138,6 +138,9 @@ public class SnapshotJTest {
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
+        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        addressStore.reset();
+
         OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanPool.reset();
 
@@ -197,11 +200,13 @@ public class SnapshotJTest {
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
         blockStore.reset();
+        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        addressStore.reset();
 
         List<KeyPair> keys = new ArrayList<>();
         keys.add(poolKey);
 
-        snapshotSource.saveSnapshotToIndex(blockStore, keys,0);
+        snapshotSource.saveSnapshotToIndex(blockStore, keys,0,addressStore);
 
         //Verify the total balance of the current account
         assertEquals("254976.0", String.valueOf(BasicUtils.amount2xdag(snapshotSource.getOurBalance())));
@@ -233,8 +238,8 @@ public class SnapshotJTest {
         snapshotSource = new SnapshotJ("SNAPSHOTJ");
         snapshotSource.setConfig(dataConfig);
         snapshotSource.init();
-
-        index.makeSnapshot(blockSource, snapshotSource);
+        boolean b = false;
+        index.makeSnapshot(blockSource, snapshotSource, b);
 
         height = index.getHeight();
     }
@@ -261,7 +266,7 @@ public class SnapshotJTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -273,8 +278,8 @@ public class SnapshotJTest {
         }
 
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN);
-        Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
+        Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
+        Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
@@ -297,7 +302,7 @@ public class SnapshotJTest {
         // 4. confirm transaction block with 100 mainblocks
         for (int i = 1; i <= 100; i++) {
             generateTime += 64000L;
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -307,8 +312,8 @@ public class SnapshotJTest {
             pending.clear();
         }
 
-        Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getHashLow());
-        Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
+        Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getAddress());
+        Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
         // block reword 1024 + 100 = 1124.0
         assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
         // block reword 1024 - 100 = 924.0
@@ -316,13 +321,13 @@ public class SnapshotJTest {
 
         // test two key to use
         // 4. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        to = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN);
-        from = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
+        to = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
+        from = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false);
         xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
 
         List<Address> refs = Lists.newArrayList();
-        refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, xdag2amount(1124.00))); // key1
-        refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, xdag2amount(1124.00)));
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, xdag2amount(1124.00),false)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, xdag2amount(1124.00),false));
         List<KeyPair> keys = new ArrayList<>();
         keys.add(addrKey);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, -1); // orphan
@@ -347,7 +352,7 @@ public class SnapshotJTest {
         // 4. confirm transaction block with 100 mainblocks
         for (int i = 1; i <= 50; i++) {
             generateTime += 64000L;
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -357,10 +362,10 @@ public class SnapshotJTest {
             pending.clear();
         }
 
-        toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getHashLow());
-        fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
-        address1 = to.getHashLow();
-        address2 = from.getHashLow();
+        toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getAddress());
+        fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
+        address1 = to.getAddress();
+        address2 = from.getAddress();
         address3 = extraBlockList.get(220).getHashLow();
         address4 = extraBlockList.get(240).getHashLow();
         assertEquals("2048.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));

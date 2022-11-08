@@ -73,6 +73,7 @@ public class XdagField implements Cloneable {
         XDAG_FIELD_HEAD(0x01),
         // 输入
         XDAG_FIELD_IN(0x02),
+        XDAG_FIELD_NIN(0x11),
         // 输入
         XDAG_FIELD_OUT(0x03),
         // 输入签名
@@ -89,7 +90,8 @@ public class XdagField implements Cloneable {
         XDAG_FIELD_RESERVE3(0x0C),
         XDAG_FIELD_RESERVE4(0x0D),
         XDAG_FIELD_RESERVE5(0x0E),
-        XDAG_FIELD_RESERVE6(0x0F);
+        XDAG_FIELD_RESERVE6(0x0F),
+        XDAG_FIELD_COINBASE(0x010);
 
         private static final Map<Integer, FieldType> intToTypeMap = new HashMap<>();
 

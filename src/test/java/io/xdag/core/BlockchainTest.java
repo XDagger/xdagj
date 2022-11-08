@@ -183,7 +183,7 @@ public class BlockchainTest {
             log.debug("create No." + i + " extra block");
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
@@ -225,7 +225,7 @@ public class BlockchainTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -235,10 +235,10 @@ public class BlockchainTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-
+        //TODO 两种不同的交易模式的测试
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN);
-        Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
+        Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
+        Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
@@ -261,7 +261,7 @@ public class BlockchainTest {
         // 4. confirm transaction block with 3 mainblocks
         for (int i = 1; i <= 3; i++) {
             generateTime += 64000L;
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -271,8 +271,8 @@ public class BlockchainTest {
             pending.clear();
         }
 
-        Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getHashLow());
-        Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
+        Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getAddress());
+        Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
         // block reword 1024 + 100 = 1124.0
         assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
         // block reword 1024 - 100 = 924.0
@@ -280,13 +280,13 @@ public class BlockchainTest {
 
         // test two key to use
         // 4. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        to = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN);
-        from = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
+        to = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
+        from = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,true);
         xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
 
         List<Address> refs = Lists.newArrayList();
-        refs.add(new Address(from.getHashLow(), XdagField.FieldType.XDAG_FIELD_IN, xdag2amount(50.00))); // key1
-        refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, xdag2amount(50.00)));
+        refs.add(new Address(from.getAddress(), XdagField.FieldType.XDAG_FIELD_IN, xdag2amount(50.00),true)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, xdag2amount(50.00),true));
         List<KeyPair> keys = new ArrayList<>();
         keys.add(addrKey);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, -1); // orphan
@@ -312,7 +312,7 @@ public class BlockchainTest {
         // 4. confirm transaction block with 3 mainblocks
         for (int i = 1; i <= 3; i++) {
             generateTime += 64000L;
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -322,8 +322,8 @@ public class BlockchainTest {
             pending.clear();
         }
 
-        toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getHashLow());
-        fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getHashLow());
+        toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getAddress());
+        fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
         assertEquals("974.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
         assertEquals("1074.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount())));
     }
@@ -337,7 +337,7 @@ public class BlockchainTest {
         Block fromAddrBlock = generateAddressBlock(config, fromKey, generateTime);
         Block toAddrBlock = generateAddressBlock(config, toKey, generateTime);
 
-        Address from = new Address(fromAddrBlock.getHashLow(), XDAG_FIELD_IN);
+        Address from = new Address(fromAddrBlock.getHashLow(), XDAG_FIELD_IN,true);
         Address to = new Address(toAddrBlock);
 
 //        MockBlockchain blockchain = new MockBlockchain(kernel);
@@ -349,8 +349,8 @@ public class BlockchainTest {
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateTransactionBlock(config, fromKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
-        when(blockchain.getBlockByHash(from.getHashLow(), false)).thenReturn(fromAddrBlock);
-        when(blockchain.getBlockByHash(from.getHashLow(), true)).thenReturn(fromAddrBlock);
+        when(blockchain.getBlockByHash(from.getAddress(), false)).thenReturn(fromAddrBlock);
+        when(blockchain.getBlockByHash(from.getAddress(), true)).thenReturn(fromAddrBlock);
 
         // 1. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -411,7 +411,7 @@ public class BlockchainTest {
         for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -434,7 +434,7 @@ public class BlockchainTest {
         for (int i = 0; i < 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "3456");
@@ -464,7 +464,7 @@ public class BlockchainTest {
         for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -485,7 +485,7 @@ public class BlockchainTest {
         for (int i = 0; i < 40; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "3456");

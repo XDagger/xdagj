@@ -48,5 +48,7 @@ public enum DatabaseName {
      */
     ORPHANIND,
 
-    SNAPSHOT
+    SNAPSHOT,
+
+    ADDRESS
 }
