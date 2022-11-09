@@ -70,9 +70,7 @@ import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
@@ -925,10 +923,7 @@ public class BlockchainImpl implements Blockchain {
             preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT,false);
             res++;
         }
-        Address coinbase = new Address(Bytes32.wrap(Hash.sha256hash160(
-                Bytes.wrap(wallet.getDefKey().getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)))),
-                FieldType.XDAG_FIELD_COINBASE,
-                true);
+        Address coinbase = new Address(keyPair2Hash(wallet.getDefKey()), FieldType.XDAG_FIELD_COINBASE, true);
         List<Address> refs = Lists.newArrayList();
         if (preTop != null) {
             refs.add(preTop);

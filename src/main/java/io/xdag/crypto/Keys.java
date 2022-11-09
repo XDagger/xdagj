@@ -95,7 +95,7 @@ public class Keys {
     }
 
     public static byte[] toBytesAddress(KeyPair key) {
-        return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().getEncoded()));
+        return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)));
     }
 
 }
