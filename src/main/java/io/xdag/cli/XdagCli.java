@@ -203,7 +203,6 @@ public class XdagCli extends Launcher {
             File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
             convertOldWallet(file);
         } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
-            System.out.println(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
         } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {

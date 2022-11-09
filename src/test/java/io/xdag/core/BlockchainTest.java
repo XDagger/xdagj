@@ -375,6 +375,7 @@ public class BlockchainTest {
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
         assertEquals(String.valueOf(amount2xdag(blockchain.getStartAmount(1L))), "1024.0");
         assertEquals(String.valueOf(amount2xdag(blockchain.getStartAmount(config.getApolloForkHeight()))), "128.0");
+        System.out.println(blockchain.getReward(2325768));
     }
 
     @Test

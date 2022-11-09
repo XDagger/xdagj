@@ -25,10 +25,12 @@
 package io.xdag.cli;
 
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
 import io.xdag.Kernel;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
 import java.util.HashMap;
 import java.util.List;
@@ -340,20 +342,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            if (argv.get(1).length() == 32) {
-                hash = Bytes32.wrap(address2Hash(argv.get(1)));
+            if (PubkeyAddressUtils.checkAddress(argv.get(1))) {
+                hash = pubAddress2Hash(argv.get(1));
             } else {
-                hash = Bytes32.wrap(BasicUtils.getHash(argv.get(1)));
-            }
-            if (hash == null) {
-                println("No Address");
-                return;
-            }
-
-            MutableBytes32 key = MutableBytes32.create();
-            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
-            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(key), false) == null) {
-//            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("Incorrect address");
                 return;
             }

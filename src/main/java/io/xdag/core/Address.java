@@ -65,6 +65,10 @@ public class Address {
         parse();
     }
 
+    public Address(XdagField field) {
+
+    }
+
     /**
      * 只用于ref 跟 maxdifflink
      */
@@ -94,6 +98,10 @@ public class Address {
         parse();
     }
 
+    public Address(Bytes32 blockHashlow, XdagField.FieldType type) {
+
+    }
+
     public Address(Bytes32 hash, XdagField.FieldType type, UInt64 amount,Boolean isAddress) {
         this.isAddress = isAddress;
         this.type = type;
@@ -104,6 +112,10 @@ public class Address {
         }
         this.amount = amount;
         parsed = true;
+    }
+
+    public Address(Bytes32 hash, XdagField.FieldType type, UInt64 amount) {
+
     }
 
 

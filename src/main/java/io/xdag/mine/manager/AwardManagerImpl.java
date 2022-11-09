@@ -324,7 +324,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 //Filter fake blocks
-                if(blockchain.getBlockByHash(miner.getAddressHashLow(),false) != null) {
+                if(blockchain.getBlockByHash(miner.getAddressHash(),false) != null) {
                     miners.add(miner);
                     minerCounts++;
                     log.debug("The number of miners is[{}]", minerCounts);
@@ -612,7 +612,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 continue;
             }
             payAmount = payAmount.add(paymentSum);
-            receipt.add(new Address(miner.getAddressHashLow(), XDAG_FIELD_OUT, paymentSum));
+            receipt.add(new Address(miner.getAddressHash(), XDAG_FIELD_OUT, paymentSum));
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hash, receipt, payAmount, keyPos);
