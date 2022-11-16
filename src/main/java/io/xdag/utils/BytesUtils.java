@@ -27,6 +27,7 @@ package io.xdag.utils;
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.tuweni.units.bigints.UInt64;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -110,6 +111,18 @@ public class BytesUtils {
         }
         byte[] bytes = new byte[numBytes];
         byte[] biBytes = b.toByteArray();
+        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
+        int length = Math.min(biBytes.length, numBytes);
+        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
+        return bytes;
+    }
+
+    public static byte[] bigIntegerToBytes(UInt64 b, int numBytes) {
+        if (b == null) {
+            return null;
+        }
+        byte[] bytes = new byte[numBytes];
+        byte[] biBytes = b.toBytes().toArray();
         int start = (biBytes.length == numBytes + 1) ? 1 : 0;
         int length = Math.min(biBytes.length, numBytes);
         System.arraycopy(biBytes, start, bytes, numBytes - length, length);

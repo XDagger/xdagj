@@ -24,9 +24,6 @@
 
 package io.xdag;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.core.Address;
@@ -39,6 +36,8 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
+
+import static io.xdag.core.XdagField.FieldType.*;
 
 public class BlockBuilder {
 
@@ -67,10 +66,10 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-            UInt64 amount) {
+    public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+                                                 UInt64 amount) {
         List<Address> refs = Lists.newArrayList();
-        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,true)); // key1
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, amount,true));
         List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
@@ -78,5 +77,17 @@ public class BlockBuilder {
         b.signOut(key);
         return b;
     }
+    public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+                                                    UInt64 amount) {
+        List<Address> refs = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
+        List<KeyPair> keys = new ArrayList<>();
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
+        b.signOut(key);
+        return b;
+    }
+
 
 }

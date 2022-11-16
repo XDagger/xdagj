@@ -46,7 +46,6 @@ import org.hyperledger.besu.crypto.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
@@ -112,7 +111,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         }
     }
 
-
+    //TODO:need change
     public void doXfer(double sendValue,Bytes32 fromAddress, Bytes32 toAddress,String remark, ProcessResult processResult) {
         UInt64 amount = UInt64.ZERO;
         try {
@@ -143,7 +142,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                 }
                 if (compareAmountTo(remain.get(),block.getInfo().getAmount()) <= 0) {
 //                if (remain.get() <= block.getInfo().getAmount()) {
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
+                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get(),true),
                             kernel.getWallet().getAccounts().get(index));
                     remain.set(UInt64.ZERO);
                     return true;
@@ -151,7 +150,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                     if (compareAmountTo(block.getInfo().getAmount(),UInt64.ZERO) > 0) {
 //                    if (block.getInfo().getAmount() > 0) {
                         remain.set(remain.get().subtract(block.getInfo().getAmount()));
-                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
+                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(),true),
                                 kernel.getWallet().getAccounts().get(index));
                         return false;
                     }
@@ -166,7 +165,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             if (compareAmountTo(fromBlock.getInfo().getAmount(),remain.get()) >= 0) {
                 // if (fromBlock.getInfo().getAmount() >= remain.get()) {
                 int keyIndex = kernel.getBlockStore().getKeyIndexByHash(from);
-                ourBlocks.put(new Address(from, XDAG_FIELD_IN, remain.get()),
+                ourBlocks.put(new Address(from, XDAG_FIELD_IN, remain.get(),true),
                         kernel.getWallet().getAccounts().get(keyIndex));
                 remain.set(UInt64.ZERO);
             }

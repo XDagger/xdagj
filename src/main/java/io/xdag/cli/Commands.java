@@ -234,14 +234,14 @@ public class Commands {
             UInt64 addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
             if (compareAmountTo(freeze, addrBalance) < 0) {
                 if (compareAmountTo(remain.get(), addrBalance.subtract(freeze)) < 0) {
-                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_IN, remain.get(),true), account);
+                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(),true), account);
                     remain.set(UInt64.ZERO);
                     break;
                 } else {
                     if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
                         remain.set(remain.get().subtract(addrBalance.subtract(freeze)));
                         freeze = UInt64.ZERO;
-                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_IN, remain.get(), true), account);
+                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance.subtract(freeze), true), account);
                     }
                 }
             } else {

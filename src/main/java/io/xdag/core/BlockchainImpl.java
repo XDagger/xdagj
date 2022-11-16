@@ -30,6 +30,7 @@ import io.xdag.Kernel;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
 import io.xdag.crypto.Hash;
+import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbFactory;
@@ -37,8 +38,9 @@ import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
 import io.xdag.mine.randomx.RandomX;
-import io.xdag.net.handler.Xdag;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import lombok.Getter;
@@ -325,7 +327,8 @@ public class BlockchainImpl implements Blockchain {
             }
 
             List<Address> all = block.getLinks().stream().distinct().toList();
-            // 检查区块的引用区块是否都存在,对所有input和output放入block（可能在pending或db中取出
+            //TODO：新地址转账判断inputs的地址余额是否足够
+            // 检查区块的引用区块是否都存在,对所有input和output放入block（可能在pending或db中取出）
             for (Address ref : all) {
                 /***
                  * Now transactionBlock's outputs are new address so ref.isAddress == false which means no blocks
@@ -352,12 +355,17 @@ public class BlockchainImpl implements Blockchain {
                         }
 
                     }
+                }else {
+                    if(addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
+                        result = ImportResult.INVALID_BLOCK;
+                        result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
+                    }
                 }
                 /***
                  * Determine if ref is a block
                  */
                 // TODO: 如果是交易块 不设置extra
-                if (ref != null && ref.isAddress == false && compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
+                if (ref != null && compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
 //                if (ref != null && !ref.getAmount().equals(BigInteger.ZERO)) {
                     updateBlockFlag(block, BI_EXTRA, false);
                 }
@@ -715,21 +723,30 @@ public class BlockchainImpl implements Blockchain {
                                 link.getAmount());
                         return UInt64.ZERO;
                     }
-                }else {
-                    UInt64 balance = addressStore.getBalanceByAddress(link.getAddress().toArray());
-                    if(compareAmountTo(balance,link.amount) < 0){
-                        log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",
-                                Hex.toHexString(link.getAddress().toArray()), balance,
-                                link.getAmount());
-                        return UInt64.ZERO;
-                    }
                 }
+
+                //Verify in advance that Address amount is not negative
+                if (compareAmountTo(sumIn.add(link.getAmount()),sumIn) < 0 ){
+                    log.debug("This input ref's amount less than 0");
+                    return UInt64.ZERO;
+                }
+                sumIn = sumIn.add(link.getAmount());
+            } else if(link.getType() == XDAG_FIELD_INPUT){
+                UInt64 balance = addressStore.getBalanceByAddress(Hash2byte(link.getAddress()));
+                if(compareAmountTo(balance,link.amount) < 0){
+                    log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",
+                            Hex.toHexString(Hash2byte(link.getAddress())), balance,
+                            link.getAmount());
+                    return UInt64.ZERO;
+                }
+                //Verify in advance that Address amount is not negative
                 if (compareAmountTo(sumIn.add(link.getAmount()),sumIn) < 0 ){
                     log.debug("This input ref's amount less than 0");
                     return UInt64.ZERO;
                 }
                 sumIn = sumIn.add(link.getAmount());
             } else {
+                ////Verify in advance that Address amount is not negative
                 if (compareAmountTo(sumOut.add(link.getAmount()),sumOut) < 0 ){
                     log.debug("This output ref's amount less than 0");
                     return UInt64.ZERO;
@@ -755,17 +772,20 @@ public class BlockchainImpl implements Blockchain {
                 }
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
             }else {
-                if(link.getType() == XdagField.FieldType.XDAG_FIELD_NIN){
-                    subtractAmount(link.getAddress().toArray(),link.getAmount());
+                if(link.getType() == XDAG_FIELD_INPUT){
+                    subtractAmount(BasicUtils.Hash2byte(link.addressHash),link.getAmount());
                 }else {
-                    addAmount(link.getAddress().toArray(),link.getAmount());
+                    addAmount(BasicUtils.Hash2byte(link.addressHash),link.getAmount());
                 }
             }
         }
 
         // 不一定大于0 因为可能部分金额扣除
         UInt64 remain = sumIn.subtract(sumOut);
-        addAmount(block.getInfo().getSnapshotInfo().getData(),remain);
+        //TODO:need determine what is data;
+        if(!remain.isZero()){
+            addAmount(block.getInfo().getSnapshotInfo().getData(),remain);
+        }
         block.getInfo().setAmount(UInt64.ZERO);
         updateBlockFlag(block, BI_APPLIED, true);
         return UInt64.ZERO;
@@ -787,17 +807,17 @@ public class BlockchainImpl implements Blockchain {
                         sum = sum.add(link.getAmount());
                     }
                 }else {
-                    if (link.getType() == XdagField.FieldType.XDAG_FIELD_NIN){
-                        addAmount(link.getAddress().toArray(),link.getAmount());
+                    if (link.getType() == XDAG_FIELD_INPUT){
+                        addAmount(BasicUtils.Hash2byte(link.getAddress()),link.getAmount());
                         sum = sum.subtract(link.getAmount());
                     }else {
-                        subtractAmount(link.getAddress().toArray(),link.getAmount());
+                        subtractAmount(BasicUtils.Hash2byte(link.getAddress()),link.getAmount());
                         sum = sum.add(link.getAmount());
                     }
                 }
 
             }
-            acceptAmount(block, sum);
+            subtractAmount(block.getInfo().getSnapshotInfo().getData(), sum);
             updateBlockFlag(block, BI_APPLIED, false);
         }
         updateBlockFlag(block, BI_MAIN_REF, false);
@@ -829,7 +849,7 @@ public class BlockchainImpl implements Blockchain {
             block.getInfo().setHeight(mainNumber);
             updateBlockFlag(block, BI_MAIN, true);
 
-            // 接收奖励
+            //Give out rewards
             reward(block, UInt64.valueOf(reward));
             xdagStats.nmain++;
 
@@ -849,6 +869,7 @@ public class BlockchainImpl implements Blockchain {
     /**
      * 取消Block主块身份 *
      */
+    //TODO:改为新的撤销主块奖励
     public void unSetMain(Block block) {
 
         synchronized (this) {
@@ -860,8 +881,9 @@ public class BlockchainImpl implements Blockchain {
 
             xdagStats.nmain--;
 
-            // 去掉奖励和引用块的手续费
-            acceptAmount(block, UInt64.ZERO.subtract(amount));
+            // Withdraw the reward
+            cancelReward(block, UInt64.ZERO.subtract(amount));
+
             acceptAmount(block, unApplyBlock(block));
 
             if (randomXUtils != null) {
@@ -923,15 +945,20 @@ public class BlockchainImpl implements Blockchain {
             preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT,false);
             res++;
         }
-        Address coinbase = new Address(keyPair2Hash(wallet.getDefKey()), FieldType.XDAG_FIELD_COINBASE, true);
+        //TODO:add comments
+        Address coinbase = new Address(keyPair2Hash(wallet.getDefKey()),
+                FieldType.XDAG_FIELD_COINBASE,
+                true);
         List<Address> refs = Lists.newArrayList();
         if (preTop != null) {
             refs.add(preTop);
         }
-        if(coinbase != null){
-            refs.add(coinbase);
-            res++;
+
+        if(coinbase == null){
+            throw new ArithmeticException("Invalidate main block!");
         }
+        refs.add(coinbase);
+        res++;
         List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
         if (CollectionUtils.isNotEmpty(orphans)) {
             refs.addAll(orphans);
@@ -1284,12 +1311,25 @@ public class BlockchainImpl implements Blockchain {
         /***
          * while "in" isn't address , need to verifySignature.
          */
+        //TODO：
         for (Address in : inputs) {
             if(in.isAddress == false){
                 if (!verifySignature(in, keys)) {
                     return false;
                 }
+            }else {
+                if(!verifyBlockSignature(in,keys)){
+                    return false;
+                }
             }
+        }
+        return true;
+    }
+
+    private boolean verifyBlockSignature(Address in, List<SECPPublicKey> keys) {
+        Bytes pubHash = in.getAddress().mutableCopy().slice(8,20);
+        for (SECPPublicKey key : keys) {
+            if(!Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return false;
         }
         return true;
     }
@@ -1511,17 +1551,35 @@ public class BlockchainImpl implements Blockchain {
     }
 
     private void subtractAmount(byte[] addressHash,UInt64 amount){
-        addressStore.subtractBalance(addressHash,amount);
+        UInt64 balance = addressStore.getBalanceByAddress(addressHash);
+        balance = balance.subtractExact(amount);
+        addressStore.updateBalance(addressHash,balance);
     }
     private void addAmount(byte[] addressHash,UInt64 amount){
-        addressStore.addBalance(addressHash,amount);
+        UInt64 balance = addressStore.getBalanceByAddress(addressHash);
+        balance = balance.addExact(amount);
+        addressStore.updateBalance(addressHash,balance);
     }
 
     private void reward(Block block,UInt64 amount){
         List<Address> outputs = block.getOutputs();
         for (Address output: outputs) {
             if(output.type.equals(FieldType.XDAG_FIELD_COINBASE)){
-                addressStore.addBalance(output.addressHash.toArray(),amount);
+                addAmount(BasicUtils.Hash2byte(output.getAddress()),amount);
+                UInt64 allBalance = addressStore.getAllBalance();
+                allBalance = allBalance.addExact(amount);
+                addressStore.updateAllBalance(allBalance);
+            }
+        }
+    }
+    private void cancelReward(Block block,UInt64 amount){
+        List<Address> outputs = block.getOutputs();
+        for (Address output: outputs){
+            if(output.type.equals(FieldType.XDAG_FIELD_COINBASE)){
+                subtractAmount(Hash2byte(output.getAddress()),amount);
+                UInt64 allBalance = addressStore.getAllBalance();
+                allBalance = allBalance.subtractExact(amount);
+                addressStore.updateAllBalance(allBalance);
             }
         }
     }
