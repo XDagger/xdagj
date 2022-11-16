@@ -540,7 +540,7 @@ public class Wallet {
 
     private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
 
-        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount,true));
 
         Block block = createNewBlock(new HashMap<>(keys), tos, remark);
 

@@ -33,17 +33,9 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
+import io.xdag.core.*;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.core.SnapshotInfo;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -645,7 +637,7 @@ public class BlockStore {
             UInt64 amount = UInt64.fromBytes(Bytes.wrap(BytesUtils.subArray(value, 33, 8)).reverse());
 //            long amount = BytesUtils.bytesToLong(, 0, true);
             long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
-            Address address = new Address(hashlow, fieldType, amount);
+            Address address = new Address(hashlow, fieldType, amount,false);
 
             long remarkLength = BytesUtils.bytesToLong(BytesUtils.subArray(value, 49, 8), 0, true);
 

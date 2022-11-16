@@ -105,6 +105,11 @@ public class BasicUtils {
         return res;
     }
 
+    public static byte[] Hash2byte(MutableBytes32 hash){
+        Bytes bytes = hash.slice(8,20);
+        return bytes.toArray();
+    }
+
     public static byte[] getHashlowByHash(byte[] hash) {
         byte[] hashLow = new byte[32];
         System.arraycopy(hash, 8, hashLow, 8, 24);
