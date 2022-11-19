@@ -78,7 +78,7 @@ public class Address {
         this.isAddress = isAddress;
         this.type = XdagField.FieldType.XDAG_FIELD_OUT;
         addressHash = MutableBytes32.create();
-        if(isAddress == false){
+        if(!isAddress){
             this.addressHash = hashLow.mutableCopy();
         }else {
             this.addressHash.set(8,hashLow.mutableCopy().slice(8,20));
@@ -99,7 +99,7 @@ public class Address {
 
     public Address(Bytes32 blockHashlow, XdagField.FieldType type, Boolean isAddress) {
         this.isAddress = isAddress;
-        if(isAddress == false){
+        if(!isAddress){
             this.data = blockHashlow.mutableCopy();
         }else {
             this.data = MutableBytes32.create();
@@ -113,7 +113,7 @@ public class Address {
     public Address(Bytes32 hash, XdagField.FieldType type, UInt64 amount, Boolean isAddress) {
         this.isAddress = isAddress;
         this.type = type;
-        if(isAddress == false){
+        if(!isAddress){
             this.addressHash = hash.mutableCopy();
         }else {
             this.addressHash = MutableBytes32.create();
@@ -127,7 +127,7 @@ public class Address {
     public Bytes getData() {
         if (this.data == null) {
             this.data = MutableBytes32.create();
-            if(this.isAddress == false){
+            if(!this.isAddress){
                 this.data.set(8, this.addressHash.slice(8, 24));
             }else {
                 this.data.set(8, this.addressHash.slice(8,20));
@@ -139,7 +139,7 @@ public class Address {
 
     public void parse() {
         if (!parsed) {
-            if(isAddress == false){
+            if(!isAddress){
                 this.addressHash = MutableBytes32.create();
                 this.addressHash.set(8, this.data.slice(8, 24));
             }else {
@@ -163,7 +163,7 @@ public class Address {
 
     @Override
     public String toString() {
-        if(isAddress == true){
+        if(isAddress){
             return "Address [" + PubkeyAddressUtils.toBase58(addressHash.slice(8,20).toArray()) + "]";
         }else {
             return "Block Hash[" + addressHash.toHexString() + "]";

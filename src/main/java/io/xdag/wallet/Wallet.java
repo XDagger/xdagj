@@ -25,6 +25,7 @@
 package io.xdag.wallet;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
@@ -540,7 +541,7 @@ public class Wallet {
 
     private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
 
-        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount,true));
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 
         Block block = createNewBlock(new HashMap<>(keys), tos, remark);
 
