@@ -2,7 +2,7 @@
 <Configuration status="warn" shutdownHook="disable">
     <Properties>
         <property name="Logs_Dir">./logs</property>
-        <Property name="log_level">debug</Property>
+        <Property name="log_level">info</Property>
         <Property name="error_level">error</Property>
     </Properties>
     <Appenders>
