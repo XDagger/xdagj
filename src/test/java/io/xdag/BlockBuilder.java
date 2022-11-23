@@ -31,6 +31,8 @@ import io.xdag.core.Block;
 import io.xdag.crypto.Hash;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.xdag.utils.BasicUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -44,6 +46,7 @@ public class BlockBuilder {
     public static Block generateAddressBlock(Config config, KeyPair key, long xdagTime) {
         Block b = new Block(config, xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
+        b.getInfo().setAmount(BasicUtils.xdag2amount(1000));
         return b;
     }
 
@@ -70,7 +73,7 @@ public class BlockBuilder {
                                                  UInt64 amount) {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
-        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, amount,true));
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan

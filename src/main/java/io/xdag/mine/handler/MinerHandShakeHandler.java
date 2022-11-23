@@ -32,18 +32,20 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagBlock;
+import io.xdag.core.*;
 import io.xdag.crypto.jni.Native;
+import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
+import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,26 +60,28 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     private final MinerChannel channel;
     private final Kernel kernel;
     private final MinerManager minerManager;
+    private final AddressStore addressStore;
     private final SyncManager syncManager;
+    public static final int MESSAGE_SIZE = 20;
 
     public MinerHandShakeHandler(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
         this.kernel = kernel;
         minerManager = kernel.getMinerManager();
+        addressStore = kernel.getAddressStore();
         syncManager = kernel.getSyncMgr();
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        if (in.readableBytes() >= XdagBlock.XDAG_BLOCK_SIZE) {
-            log.debug("Receive a address block from ip&port:{}",channel.getInetAddress().toString());
-            byte[] address = new byte[512];
-            in.readBytes(address);
-
-            long sectorNo = channel.getInBound().get();
+        if (in.readableBytes() >= MESSAGE_SIZE) {
+            log.debug("Receive a address from ip&port:{}",channel.getInetAddress().toString());
+            byte[] message = new byte[MESSAGE_SIZE];
+            in.readBytes(message);
+//            long sectorNo = channel.getInBound().get();
 
             /* decrypt data */
-            byte[] uncryptData = Native.dfslib_uncrypt_array(address, 16, sectorNo);
+//            byte[] uncryptData = Native.dfslib_uncrypt_array(message, 1, sectorNo);
 //            int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
 //            int head = BytesUtils.bytesToInt(uncryptData, 0, true);
 //
@@ -86,20 +90,16 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 //            System.out.println(Hex.toHexString(uncryptData));
 //            if (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc)) {
 //                System.out.println(head != BLOCK_HEAD_WORD);
-
-            if (isDataIllegal(uncryptData.clone())) {
-                log.debug("not a block from miner: {}, host:{}.",channel.getAddressHash(),channel.getInetAddress().toString());
-                ctx.channel().closeFuture();
-            } else {
-                System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
-                Block addressBlock = new Block(new XdagBlock(uncryptData));
+//                byte[] address = ByteArrayToByte32.byte32ToArray(Bytes32.wrap(message).mutableCopy());
+//                System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
+//                Block addressBlock = new Block(new XdagBlock(uncryptData));
 
                 // TODO:
-                checkProtocol(ctx,addressBlock);
+                checkProtocol(ctx,message);
 
-                if (!initMiner(addressBlock.getHash())) {
+                if (!initMiner(ByteArrayToByte32.arrayToByte32(message))) {
                     log.debug("too many connect for the miner: {},ip&port:{}",
-                            channel.getAddressHash(),channel.getInetAddress().toString());
+                            PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
                     ctx.close();
                     return;
                 }
@@ -111,64 +111,59 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
                 }
 
                 kernel.getChannelsAccount().getAndIncrement();
-                channel.getInBound().add(16L);
+                channel.getInBound().add(1L);
                 minerManager.addActivateChannel(channel);
                 channel.setIsActivate(true);
                 channel.setConnectTime(new Date(System.currentTimeMillis()));
-                channel.setAccountAddressHash(addressBlock.getHash());
+                channel.setAccountAddressHash(ByteArrayToByte32.arrayToByte32(message));
+                channel.setAccountAddressHashByte(message);
                 channel.activateHandler(ctx, V03);
                 ctx.pipeline().remove(this);
                 // TODO: 2020/5/8 There may be a bug here. If you join infinitely, won't it be created wirelessly?
-                log.debug("add a new miner from ip&port:{},miner's address: [" + channel.getAddressHash() + "]",channel.getInetAddress().toString());
-            }
+                log.debug("add a new miner from ip&port:{},miner's address: [" + PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress().toString());
         } else {
-            log.debug("length less than " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
+            log.debug("length less than " + MESSAGE_SIZE + " bytes");
         }
     }
 
-    public void checkProtocol(ChannelHandlerContext ctx,Block addressBlock) {
-        if (addressBlock.getXdagBlock().getField(addressBlock.getOutsigIndex()).getData().isZero()) {
-            // pseudo block
-            log.debug("Pseudo block, addressBlockHashLow: {},ip&port:{}",addressBlock.getHashLow(),channel.getInetAddress().toString());
+    public void checkProtocol(ChannelHandlerContext ctx, byte[] address) {
+//        if (addressBlock.getXdagBlock().getField(addressBlock.getOutsigIndex()).getData().isZero()) {
+//            // pseudo block
+//            log.debug("Pseudo block, addressBlockHashLow: {},ip&port:{}",addressBlock.getHashLow(),channel.getInetAddress().toString());
+//
+//        } else {
+            boolean importResult = addressStore.addressIsExist(address);
 
-        } else {
-            ImportResult importResult = tryToConnect(addressBlock);
-
-            if (importResult == ImportResult.ERROR) {
-                log.debug("Block from address:{},ip&port:{} type error ",
-                        channel.getAddressHash(),channel.getInetAddress().toString());
-                ctx.close();
-                return;
-            }
             //If it is a new address block
-            if (importResult != ImportResult.EXIST) {
+            if (!importResult) {
+                addressStore.addAddress(address);
                 log.info("XDAG:new wallet connect. New address: {} with channel: {} connect.",
-                        channel.getAddressHash(), channel.getInetAddress().toString());
+                        PubkeyAddressUtils.toBase58(address), channel.getInetAddress().toString());
             } else {
                 log.info("XDAG:old wallet connect. Address: {} with channel {} connect.",
-                        channel.getAddressHash(), channel.getInetAddress().toString());
+                        PubkeyAddressUtils.toBase58(address), channel.getInetAddress().toString());
             }
-        }
+//        }
 
     }
 
-    public boolean isDataIllegal(byte[] uncryptData) {
-        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-        int head = BytesUtils.bytesToInt(uncryptData, 0, true);
-        // clean transport header
-        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-        return (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc));
-
-    }
+//    public boolean isDataIllegal(byte[] uncryptData) {
+//        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+//        int head = BytesUtils.bytesToInt(uncryptData, 0, true);
+//        // clean transport header
+//        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+//        return (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc));
+//
+//    }
 
     public boolean initMiner(Bytes32 hash) {
         return channel.initMiner(hash);
     }
 
-    public ImportResult tryToConnect(Block addressBlock) {
-        return syncManager
-                .validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getNodeSpec().getTTL()));
-    }
+//    public ImportResult tryToConnect(Block addressBlock) {
+//        return syncManager
+//                .validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getNodeSpec().getTTL()));
+//    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {

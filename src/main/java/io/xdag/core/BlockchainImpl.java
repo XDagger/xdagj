@@ -382,7 +382,7 @@ public class BlockchainImpl implements Blockchain {
             int id = 0;
             // remove links
             for (Address ref : all) {
-                if(ref.isAddress == false){
+                if(!ref.isAddress){
                     removeOrphan(ref.getAddress(),
                             (block.getInfo().flags & BI_EXTRA) != 0
                                     ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
@@ -703,7 +703,7 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockRef(ref, new Address(block));
 
                 if (compareAmountTo(block.getInfo().getAmount().add(ret),block.getInfo().getAmount()) >= 0) {
-                    acceptAmount(block, ret);
+                    addAndAccept(block, ret);
                 }
             }
         }
@@ -767,9 +767,9 @@ public class BlockchainImpl implements Blockchain {
             if(link.isAddress == false){
                 Block ref = getBlockByHash(link.getAddress(), false);
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                    acceptAmount(ref,UInt64.ZERO.subtract(link.getAmount()));
+                    subtractAndAccept(ref,link.getAmount());
                 } else {
-                    acceptAmount(ref,link.getAmount());
+                    addAndAccept(ref,link.getAmount());
                 }
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
             }else {
@@ -801,10 +801,10 @@ public class BlockchainImpl implements Blockchain {
                 if(link.isAddress == false){
                     Block ref = getBlockByHash(link.getAddress(), false);
                     if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
-                        acceptAmount(ref,link.getAmount());
+                        addAndAccept(ref,link.getAmount());
                         sum = sum.subtract(link.getAmount());
                     } else {
-                        acceptAmount(ref,UInt64.ZERO.subtract(link.getAmount()));
+                        subtractAndAccept(ref,link.getAmount());
                         sum = sum.add(link.getAmount());
                     }
                 }else {
@@ -830,7 +830,7 @@ public class BlockchainImpl implements Blockchain {
                 if (ref.getInfo().getRef() != null
                         && equalBytes(ref.getInfo().getRef(), block.getHashLow().toArray())
                         && ((ref.getInfo().flags & BI_MAIN_REF) != 0)) {
-                    acceptAmount(block, unApplyBlock(getBlockByHash(ref.getHashLow(), true)));
+                    addAndAccept(block, unApplyBlock(getBlockByHash(ref.getHashLow(), true)));
                 }
             }
         }
@@ -860,7 +860,7 @@ public class BlockchainImpl implements Blockchain {
             xdagStats.nmain++;
 
             // 递归执行主块引用的区块 并获取手续费
-            acceptAmount(block, applyBlock(block));
+            addAndAccept(block, applyBlock(block));
             // 主块REF指向自身
             // TODO:补充手续费
             updateBlockRef(block, new Address(block));
@@ -894,7 +894,7 @@ public class BlockchainImpl implements Blockchain {
 
             xdagStats.nmain--;
 
-            acceptAmount(block, unApplyBlock(block));
+            addAndAccept(block, unApplyBlock(block));
 
             if (randomXUtils != null) {
                 randomXUtils.randomXUnsetForkTime(block);
@@ -955,9 +955,11 @@ public class BlockchainImpl implements Blockchain {
             preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT,false);
             res++;
         }
+
         //TODO:add comments
         Address coinbase = new Address(keyPair2Hash(wallet.getDefKey()),
                 FieldType.XDAG_FIELD_COINBASE,
+                UInt64.valueOf(getReward(getXdagStats().nmain)),
                 true);
         List<Address> refs = Lists.newArrayList();
         if (preTop != null) {
@@ -1549,8 +1551,19 @@ public class BlockchainImpl implements Blockchain {
      * 为区块block添加amount金额 *
      */
     // TODO : accept amount to block which in snapshot
-    private void acceptAmount(Block block, UInt64 amount) {
+    private void addAndAccept(Block block, UInt64 amount) {
         block.getInfo().setAmount(block.getInfo().getAmount().add(amount));
+        if (block.isSaved) {
+            blockStore.saveBlockInfo(block.getInfo());
+        }
+        if ((block.getInfo().flags & BI_OURS) != 0) {
+            xdagStats.setBalance(amount.add(xdagStats.getBalance()));
+//            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
+        }
+    }
+
+    private void subtractAndAccept(Block block,UInt64 amount){
+        block.getInfo().setAmount(block.getInfo().getAmount().subtract(amount));
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }

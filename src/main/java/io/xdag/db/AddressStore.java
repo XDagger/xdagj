@@ -55,7 +55,7 @@ public class AddressStore {
         return AddressSource.get(Address) == null ? false : true;
     }
 
-    private void addAddress(byte[] Address){
+    public void addAddress(byte[] Address){
         AddressSource.put(Address,UInt64.ZERO.toBytes().toArray());
         long currentSize = BytesUtils.bytesToLong(AddressSource.get(new byte[]{ADDRESS_SIZE}),0,false);
         AddressSource.put(new byte[] {ADDRESS_SIZE},BytesUtils.longToBytes(currentSize + 1,false));
@@ -70,15 +70,15 @@ public class AddressStore {
         AddressSource.put(new byte[]{AMOUNT_SUM},value.toBytes().toArray());
     }
     //TODO：计算上移到应用层
-    public void updateBalance(byte[] Address,UInt64 value){
-//        if(Address.length != AddressSize){
-//            log.debug("The Address type is wrong");
-//            return;
-//        }
-//        if(AddressSource.get(Address) == null){
-//            log.debug("This address don't exist");
-//            return;
-//        }
-        AddressSource.put(Address,value.toBytes().toArray());
+    public void updateBalance(byte[] address,UInt64 value){
+        if(address.length != AddressSize){
+            log.debug("The Address type is wrong");
+            return;
+        }
+        if(AddressSource.get(address) == null){
+            log.debug("This address don't exist");
+            addAddress(address);
+        }
+        AddressSource.put(address,value.toBytes().toArray());
     }
 }
