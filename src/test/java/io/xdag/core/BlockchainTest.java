@@ -376,7 +376,88 @@ public class BlockchainTest {
 
     @Test
     public void testOld2NewTransaction(){
+        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. first block
+        Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
+//        kernel.getAddressStore().updateBalance(Keys.toBytesAddress(addrKey), UInt64.valueOf(0));
+        System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+//        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(1000));
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = addressBlock.getHashLow();
+        // 2. create 10 mainblocks
+        for (int i = 1; i <= 10; i++) {
+//            date = DateUtils.addSeconds(date, 64);
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+//            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+        //TODO 两种不同的交易模式的测试
+        // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
+        Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN,false);
+        System.out.println(PubkeyAddressUtils.toBase58(from.getAddress().slice(8,20).toArray()));
+        Address to = new Address(ByteArrayToByte32.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
+        System.out.println(PubkeyAddressUtils.toBase58(to.getAddress().slice(8,20).toArray()));
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
+        // 4. local check
+        assertTrue(blockchain.canUseInput(txBlock));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+        // 5. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+
+        result = blockchain.tryToConnect(txBlock);
+        Block c = blockchain.getBlockByHash(txBlock.getHashLow(),true);
+        // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        // there is 12 blocks and 10 mainblocks
+        assertChainStatus(12, 10, 1, 1, blockchain);
+
+        pending.clear();
+        pending.add(new Address(txBlock.getHashLow(),false));
+        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        // 4. confirm transaction block with 3 mainblocks
+        for (int i = 1; i <= 4; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+        }
+
+        UInt64 poolBalance = UInt64.valueOf((long)amount2xdag(blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount()));
+        UInt64 addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+//        assertEquals(12288,(long)amount2xdag(kernel.getAddressStore().getAllBalance()));
+        assertEquals(900,poolBalance.toLong());
+        assertEquals(100,(long)amount2xdag(addressBalance.toLong()));
     }
 
     @Test
