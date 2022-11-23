@@ -334,7 +334,8 @@ public class BlockchainImpl implements Blockchain {
                  * Now transactionBlock's outputs are new address so ref.isAddress == false which means no blocks
                  * mainBlocks and linkBlocks are same as original
                  */
-                if(ref.isAddress == false){
+//                System.out.println(ref.getAddress().toHexString() + " isaddress ==" + ref.isAddress);
+                if(!ref.isAddress){
                     if (ref != null) {
                         Block refBlock = getBlockByHash(ref.getAddress(), false);
                         if (refBlock == null) {
@@ -845,12 +846,17 @@ public class BlockchainImpl implements Blockchain {
             // 设置奖励
             long mainNumber = xdagStats.nmain + 1;
             log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
-            long reward = getReward(mainNumber);
             block.getInfo().setHeight(mainNumber);
             updateBlockFlag(block, BI_MAIN, true);
 
-            //Give out rewards
-            reward(block, UInt64.valueOf(reward));
+            long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
+            long rewardHeight = mainNumber > awardEpoch ? mainNumber - awardEpoch : -1;
+            log.debug("rewardHeight: {}", rewardHeight);
+            long reward = getReward(rewardHeight);
+            // 接收奖励
+            if (rewardHeight > 0) {
+                reward(UInt64.valueOf(reward), rewardHeight);
+            }
             xdagStats.nmain++;
 
             // 递归执行主块引用的区块 并获取手续费
@@ -878,11 +884,15 @@ public class BlockchainImpl implements Blockchain {
 
             long amount = getReward(xdagStats.nmain);
             updateBlockFlag(block, BI_MAIN, false);
+            long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
+            long withdrawHeight = xdagStats.nmain > awardEpoch ? xdagStats.nmain - awardEpoch : -1;
+            if (withdrawHeight > 0) {
+                Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
+                // Withdraw the reward
+                cancelReward(withdrawBlock, UInt64.ZERO.subtract(amount));
+            }
 
             xdagStats.nmain--;
-
-            // Withdraw the reward
-            cancelReward(block, UInt64.ZERO.subtract(amount));
 
             acceptAmount(block, unApplyBlock(block));
 
@@ -1561,8 +1571,9 @@ public class BlockchainImpl implements Blockchain {
         addressStore.updateBalance(addressHash,balance);
     }
 
-    private void reward(Block block,UInt64 amount){
-        List<Address> outputs = block.getOutputs();
+    private void reward(UInt64 amount, long height){
+        Block rewardBlock = blockStore.getBlockByHash(getBlockByHeight(height).getHashLow(),true);
+        List<Address> outputs = rewardBlock.getOutputs();
         for (Address output: outputs) {
             if(output.type.equals(FieldType.XDAG_FIELD_COINBASE)){
                 addAmount(BasicUtils.Hash2byte(output.getAddress()),amount);
