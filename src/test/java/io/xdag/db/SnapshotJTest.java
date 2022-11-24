@@ -281,7 +281,7 @@ public class SnapshotJTest {
         Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
         Address to = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
+        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
         // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -297,7 +297,7 @@ public class SnapshotJTest {
         //assertChainStatus(12, 10, 1, 1, blockchain);
 
         pending.clear();
-        pending.add(new Address(txBlock.getHashLow()));
+        pending.add(new Address(txBlock.getHashLow(),false));
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
         // 4. confirm transaction block with 100 mainblocks
         for (int i = 1; i <= 100; i++) {
@@ -347,7 +347,7 @@ public class SnapshotJTest {
 //        assertChainStatus(12, 10, 1,1, blockchain);
 
         pending.clear();
-        pending.add(new Address(txBlock.getHashLow()));
+        pending.add(new Address(txBlock.getHashLow(),false));
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
         // 4. confirm transaction block with 100 mainblocks
         for (int i = 1; i <= 50; i++) {

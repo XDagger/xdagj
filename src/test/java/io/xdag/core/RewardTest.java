@@ -147,7 +147,7 @@ public class RewardTest {
         for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -173,7 +173,7 @@ public class RewardTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "3456");

@@ -154,7 +154,9 @@ public class SnapshotJ extends RocksdbKVSource {
                                         break;
                                     }
                                 }
-                                addressStore.addBalance(pubKey,blockInfo.getAmount());
+                                UInt64 balance = addressStore.getBalanceByAddress(pubKey);
+                                balance = balance.add(blockInfo.getAmount());
+                                addressStore.updateBalance(pubKey,balance);
                                 blockInfo.setAmount(UInt64.ZERO);
                             } else {    //Verify signature
                                 Block block = new Block(new XdagBlock(snapshotInfo.getData()));
