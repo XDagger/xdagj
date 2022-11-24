@@ -36,6 +36,7 @@ import java.security.spec.ECGenParameterSpec;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 
 /**
@@ -96,6 +97,10 @@ public class Keys {
 
     public static byte[] toBytesAddress(KeyPair key) {
         return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)));
+    }
+
+    public static byte[] Pub2Byte(SECPPublicKey publicKey){
+        return Hash.sha256hash160(Bytes.wrap(publicKey.asEcPoint(Sign.CURVE).getEncoded(true)));
     }
 
 }

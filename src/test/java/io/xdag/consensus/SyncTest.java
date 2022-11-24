@@ -38,11 +38,7 @@ import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.BlockchainImpl;
-import io.xdag.core.ImportResult;
+import io.xdag.core.*;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
@@ -146,15 +142,15 @@ public class SyncTest {
         Block addressBlock = generateAddressBlock(config, key, generateTime);
 //        Address address = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
 //        System.out.println(address.getAmount());
-        pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block secondBlock = generateExtraBlock(config, key, secondTime, pending);
         pending.clear();
-        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block thirdBlock = generateExtraBlock(config, key, thirdTime, pending);
         pending.clear();
-        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block fourthBlock = generateExtraBlock(config, key, fourthTime, pending);
 
@@ -178,7 +174,7 @@ public class SyncTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
@@ -210,7 +206,7 @@ public class SyncTest {
         for (int i = 1; i <= 10; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
@@ -225,22 +221,22 @@ public class SyncTest {
         long tempTime = XdagTime.msToXdagtimestamp(generateTime);
         long firstTime = XdagTime.getEndOfEpoch(tempTime);
         pending.clear();
-        pending.add(new Address(ref, XDAG_FIELD_OUT));
+        pending.add(new Address(ref, XDAG_FIELD_OUT,false));
         Block A = generateExtraBlock(config, key, firstTime, pending);
         pending.clear();
-        pending.add(new Address(A.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(A.getHashLow(), XDAG_FIELD_OUT,false));
 
         long secondTime = XdagTime.getEndOfEpoch(tempTime) + 1;
         Block B = generateExtraBlock(config, key, secondTime, pending);
         pending.clear();
-        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
         long thirdTime = XdagTime.getEndOfEpoch(tempTime);
         Block C = generateExtraBlock(config, key, thirdTime, pending);
         pending.clear();
-        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
@@ -267,7 +263,7 @@ public class SyncTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
 //            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
@@ -280,22 +276,22 @@ public class SyncTest {
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
         firstTime = XdagTime.getEndOfEpoch(tempTime);
         pending.clear();
-        pending.add(new Address(ref, XDAG_FIELD_OUT));
+        pending.add(new Address(ref, XDAG_FIELD_OUT,false));
         Block A2 = generateExtraBlock(config, key, firstTime, pending);
         pending.clear();
-        pending.add(new Address(A2.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(A2.getHashLow(), XDAG_FIELD_OUT,false));
 
         secondTime = XdagTime.getEndOfEpoch(tempTime) + 1;
         Block B2 = generateExtraBlock(config, key, secondTime, pending);
         pending.clear();
-        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
         thirdTime = XdagTime.getEndOfEpoch(tempTime);
         Block C2 = generateExtraBlockGivenRandom(config, key, thirdTime, pending, "1235");
         pending.clear();
-        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
@@ -322,7 +318,7 @@ public class SyncTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
 //            long xdagTime = XdagTime.getEndOfEpoch(generateTime);

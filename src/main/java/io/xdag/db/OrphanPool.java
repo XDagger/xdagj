@@ -85,7 +85,7 @@ public class OrphanPool {
                 long time =  BytesUtils.bytesToLong(an.getValue(), 0, true);
                 if (time <= sendtime[0]) {
                     addNum--;
-                    res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT));
+                    res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT,false));
                     sendtime[1] = Math.max(sendtime[1],time);
                 }
             }

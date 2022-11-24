@@ -63,6 +63,7 @@ import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.crypto.Keys.toBytesAddress;
 import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.PubkeyAddressUtils.*;
 
 @Slf4j
 public class Commands {
@@ -132,41 +133,33 @@ public class Commands {
         // account in memory, do not store in rocksdb, do not show in terminal
         StringBuilder str = new StringBuilder();
 
-        Map<Block, Integer> ours = new HashMap<>();
-        kernel.getBlockStore().fetchOurBlocks(pair -> {
-            Integer index = pair.getKey();
-            Block block = pair.getValue();
-            ours.putIfAbsent(block, index);
-            return false;
-        });
+        List<KeyPair> list = kernel.getWallet().getAccounts();
 
-        List<Map.Entry<Block, Integer>> list = new ArrayList<>(ours.entrySet());
+//        List<Map.Entry<Block, Integer>> list = new ArrayList<>(ours.entrySet());
 
         // 按balance降序排序，按key index降序排序
         list.sort((o1, o2) -> {
-            int compareResult = compareAmountTo(o2.getKey().getInfo().getAmount(),o1.getKey().getInfo().getAmount());
+            int compareResult = compareAmountTo(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o2)),
+                    kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o1)));
 //            int compareResult = long2UnsignedLong(o2.getKey().getInfo().getAmount()).compareTo(long2UnsignedLong(o1.getKey().getInfo().getAmount()));
             // TODO
-            if (compareResult > 0) {
+            if (compareResult >= 0) {
                 return 1;
-            } else if (compareResult == 0) {
-                return o2.getValue().compareTo(o1.getValue());
             } else {
                 return -1;
             }
 
         });
 
-        for (Map.Entry<Block, Integer> mapping : list) {
+        for (KeyPair keyPair : list) {
             if (num == 0) {
                 break;
             }
-            str.append(hash2Address(mapping.getKey().getHash()))
+            str.append(toBase58(toBytesAddress(keyPair)))
                     .append(" ")
-                    .append(String.format("%.9f", amount2xdag(mapping.getKey().getInfo().getAmount())))
+                    .append(String.format("%.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(keyPair)))))
                     .append(" XDAG")
-                    .append(" key ")
-                    .append(mapping.getValue()).append("\n");
+                    .append("\n");
             num--;
         }
 
@@ -181,28 +174,35 @@ public class Commands {
      */
     public String balance(String address) {
         if (StringUtils.isEmpty(address)) {
-            return "Balance:" + String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance()))
+            UInt64 ourbalance = UInt64.ZERO;
+            List<KeyPair> list = kernel.getWallet().getAccounts();
+            for (KeyPair k : list) {
+                ourbalance = ourbalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
+            }
+            return "Balance: " + String.format("%.9f", amount2xdag(ourbalance))
                     + " XDAG";
         } else {
             Bytes32 hash;
             MutableBytes32 key = MutableBytes32.create();
-            if (StringUtils.length(address) == 32) {
-                hash = address2Hash(address);
+            if (checkAddress(address)) {
+                hash = pubAddress2Hash(address);
+                key.set(8, Objects.requireNonNull(hash).slice(8, 20));
+                UInt64 balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address));
+                return "Account balance: " + String.format("%.9f", amount2xdag(balance)) + " XDAG";
             } else {
-                hash = getHash(address);
+                if (StringUtils.length(address) == 32) {
+                    hash = address2Hash(address);
+                } else {
+                    hash = getHash(address);
+                }
+                key.set(8, Objects.requireNonNull(hash).slice(8, 24));
+                Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
+                return "Block balance: " + String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
             }
-            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
-            Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-            return "Balance:" + String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
+
         }
     }
 
-    public String addressBalance(String address){
-        byte[] hash;
-        hash = Hex.decode(address);
-        UInt64 balance = kernel.getAddressStore().getBalanceByAddress(hash);
-        return "Balance:" + String.format("%.9f",amount2xdag(balance.toLong())) + " XDAG";
-    }
 
     /**
      * Real make a transaction for given amount and address
@@ -223,7 +223,7 @@ public class Commands {
         // 待转账余额
         AtomicReference<UInt64> remain = new AtomicReference<>(amount);
 
-        UInt64 freeze = getFreeze();
+
 //        AtomicLong remain = new AtomicLong(amount);
         // 转账输入
         Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
@@ -232,24 +232,19 @@ public class Commands {
         for (KeyPair account : accounts) {
             byte[] addr = toBytesAddress(account);
             UInt64 addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
-            if (compareAmountTo(freeze, addrBalance) < 0) {
-                if (compareAmountTo(remain.get(), addrBalance.subtract(freeze)) < 0) {
-                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_IN, remain.get(),true), account);
-                    remain.set(UInt64.ZERO);
-                    break;
-                } else {
-                    if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
-                        remain.set(remain.get().subtract(addrBalance.subtract(freeze)));
-                        freeze = UInt64.ZERO;
-                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_IN, remain.get(), true), account);
-                    }
-                }
+
+            if (compareAmountTo(remain.get(), addrBalance) <= 0) {
+                ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(),true), account);
+                remain.set(UInt64.ZERO);
+                break;
             } else {
-                freeze = freeze.subtract(addrBalance);
+                if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
+                    remain.set(remain.get().subtract(addrBalance));
+                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get().subtract(addrBalance), true), account);
+                }
             }
+
         }
-
-
 
         // 余额不足
         if (compareAmountTo(remain.get(),UInt64.ZERO) > 0) {
@@ -270,25 +265,6 @@ public class Commands {
 
     }
 
-    public UInt64 getFreeze() {
-        AtomicInteger mainBlockNums = new AtomicInteger();
-
-        kernel.getBlockStore().fetchOurBlocks(pair -> {
-            Block block = pair.getValue();
-            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT
-                    && ((block.getInfo().getFlags() & BI_MAIN) != 0)) {
-                mainBlockNums.getAndIncrement();
-                return false;
-            }
-            return false;
-        });
-
-        XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
-        UInt64 blokReward = UInt64.valueOf(kernel.getBlockchain().getReward(xdagStats.getNmain()));
-        UInt64 freeze = blokReward.multiply(mainBlockNums.longValue());
-
-        return freeze;
-    }
 
     private List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark) {
         // 判断是否有remark
@@ -345,7 +321,7 @@ public class Commands {
 
     private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
 
-        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount,true));
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark);
 
@@ -621,6 +597,7 @@ public class Commands {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         kernel.getXdagState().tempSet(XdagState.KEYS);
         kernel.getWallet().addAccountRandom();
+        kernel.getWallet().flush();
         int size = kernel.getWallet().getAccounts().size();
         kernel.getXdagState().rollback();
         return "Key " + (size - 1) + " generated and set as default,now key size is:" + size;

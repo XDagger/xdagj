@@ -108,7 +108,13 @@ public class Base58 {
     }
 
     public static boolean checkAddress(String input) {
-        byte[] decoded  = decode(input);
+        byte[] decoded;
+        try {
+            decoded  = decode(input);
+        } catch (Exception e) {
+            return false;
+        }
+
         if (decoded.length < 4) {
             return false;
         }

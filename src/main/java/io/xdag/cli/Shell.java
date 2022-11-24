@@ -73,7 +73,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         super();
         commandExecute.put("account", new CommandMethods(this::processAccount, this::defaultCompleter));
         commandExecute.put("balance", new CommandMethods(this::processBalance, this::defaultCompleter));
-        commandExecute.put("nbalance",new CommandMethods(this::processNbalance,this::defaultCompleter));
         commandExecute.put("block", new CommandMethods(this::processBlock, this::defaultCompleter));
         commandExecute.put("lastblocks", new CommandMethods(this::processLastBlocks, this::defaultCompleter));
         commandExecute.put("mainblocks", new CommandMethods(this::processMainBlocks, this::defaultCompleter));
@@ -88,7 +87,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
-        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
+//        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
         registerCommands(commandExecute);
     }
 
@@ -159,24 +158,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private void processNbalance(CommandInput input){
-        final String[] usage = {
-                "balance -  print balance of the address [ADDRESS] or total balance for all our addresses\n",
-                "Usage: balance [ADDRESS]",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            List<String> argv = opt.args();
-            String address = argv.get(0);
-            println(commands.addressBalance( address));
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
 
     private void processBlock(CommandInput input) {
         final String[] usage = {

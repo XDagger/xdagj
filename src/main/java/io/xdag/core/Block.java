@@ -24,13 +24,6 @@
 
 package io.xdag.core;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
-
 import io.xdag.config.Config;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
@@ -54,11 +47,12 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.checkerframework.checker.units.qual.A;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
+
+import static io.xdag.core.XdagField.FieldType.*;
 
 @Slf4j
 @Getter
@@ -124,9 +118,9 @@ public class Block implements Cloneable {
             for (Address link : links) {
                 XdagField.FieldType type = link.getType();
                 setType(type, lenghth++);
-                if (type == XDAG_FIELD_OUT) {
+                if (type == XDAG_FIELD_OUT || type == XDAG_FIELD_OUTPUT || type == XDAG_FIELD_COINBASE) {
                     outputs.add(link);
-                } else {
+                } else if(type == XDAG_FIELD_IN || type == XDAG_FIELD_INPUT){
                     inputs.add(link);
                 }
             }
@@ -134,8 +128,13 @@ public class Block implements Cloneable {
 
         if (CollectionUtils.isNotEmpty(pendings)) {
             for (Address pending : pendings) {
-                setType(XDAG_FIELD_OUT, lenghth++);
-                outputs.add(pending);
+                XdagField.FieldType type = pending.getType();
+                setType(type, lenghth++);
+                if (type == XDAG_FIELD_OUT || type == XDAG_FIELD_OUTPUT || type == XDAG_FIELD_COINBASE) {
+                    outputs.add(pending);
+                } else if(type == XDAG_FIELD_IN || type == XDAG_FIELD_INPUT){
+                    inputs.add(pending);
+                }
             }
         }
 
@@ -243,10 +242,10 @@ public class Block implements Cloneable {
                 throw new IllegalArgumentException("xdagBlock field:" + i + " is null");
             }
             switch (field.getType()) {
-            case XDAG_FIELD_IN -> inputs.add(new Address(xdagBlock.getField(i),false));
-            case XDAG_FIELD_NIN -> inputs.add(new Address(xdagBlock.getField(i),true));
-            case XDAG_FIELD_OUT -> outputs.add(new Address(field,true));
-            case XDAG_FIELD_COINBASE -> coinBase = new Address(field,true);
+            case XDAG_FIELD_IN -> inputs.add(new Address(field,false));
+            case XDAG_FIELD_INPUT -> inputs.add(new Address(field,true));
+            case XDAG_FIELD_OUT -> outputs.add(new Address(field,false));
+            case XDAG_FIELD_OUTPUT, XDAG_FIELD_COINBASE -> outputs.add(new Address(field,true));
             case XDAG_FIELD_REMARK -> this.info.setRemark(field.getData().toArray());
             case XDAG_FIELD_SIGN_IN, XDAG_FIELD_SIGN_OUT -> {
                 BigInteger r;
@@ -332,9 +331,9 @@ public class Block implements Cloneable {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.writeField(getEncodedHeader());
         List<Address> all = new ArrayList<>();
-        if(this.coinBase != null){
-            all.add(coinBase);
-        }
+//        if(coinBase != null){
+//            all.add(coinBase);
+//        }
         all.addAll(inputs);
         all.addAll(outputs);
         for (Address link : all) {

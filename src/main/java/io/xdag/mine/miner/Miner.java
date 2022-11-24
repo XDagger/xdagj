@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.xdag.utils.ByteArrayToByte32;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +49,9 @@ public class Miner {
      * 保存这个矿工的地址
      */
     private final Bytes32 addressHash;
+    @Getter
+    @Setter
+    private final byte[] addressHashByte;
     /**
      * 相同账户地址的channel数量
      */
@@ -107,7 +112,7 @@ public class Miner {
         log.debug("init the new miner:{}", addressHash.toHexString());
         this.addressHash = addressHash;
 //        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
-        addressHash.mutableCopy();
+        addressHashByte = ByteArrayToByte32.byte32ToArray(addressHash.mutableCopy());
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
         this.meanLogDiff = 0.0;
