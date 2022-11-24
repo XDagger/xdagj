@@ -89,6 +89,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.checkerframework.checker.units.qual.A;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
 
 @Slf4j
 @Getter
@@ -223,14 +224,17 @@ public class Kernel {
         // ====================================
         blockchain = new BlockchainImpl(this);
         XdagStats xdagStats = blockchain.getXdagStats();
+        // TODO:2022/11/11
         // 如果是第一次启动，则新建第一个地址块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
             firstAccount.signOut(wallet.getDefKey());
-            poolMiner = new Miner(firstAccount.getHash());
+//            poolMiner = new Miner(firstAccount.getHash());
+            poolMiner = new Miner(keyPair2Hash(wallet.getDefKey()));
             xdagStats.setOurLastBlockHash(firstAccount.getHashLow().toArray());
             if (xdagStats.getGlobalMiner() == null) {
-                xdagStats.setGlobalMiner(firstAccount.getHash().toArray());
+//                xdagStats.setGlobalMiner(firstAccount.getHash().toArray());
+                xdagStats.setGlobalMiner(keyPair2Hash(wallet.getDefKey()).toArray());
             }
             blockchain.tryToConnect(firstAccount);
         } else {
