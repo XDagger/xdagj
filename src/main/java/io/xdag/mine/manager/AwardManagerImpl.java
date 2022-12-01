@@ -24,8 +24,7 @@
 
 package io.xdag.mine.manager;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
@@ -578,7 +577,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         if (fundRation!=0) {
             if (blockchain.getBlockByHash(pubAddress2Hash(fundAddress),false)!=null) {
                 payAmount = payAmount.add(payData.fundIncome);
-                receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
+                receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, payData.fundIncome,true));
             }
         }
 
@@ -609,7 +608,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 continue;
             }
             payAmount = payAmount.add(paymentSum);
-            receipt.add(new Address(miner.getAddressHash(), XDAG_FIELD_OUT, paymentSum));
+            receipt.add(new Address(miner.getAddressHash(), XDAG_FIELD_OUTPUT, paymentSum,true));
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hash, receipt, payAmount, keyPos);
@@ -631,7 +630,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             log.debug("pay data: {}", address.getData().toHexString());
         }
         Map<Address, KeyPair> inputMap = new HashMap<>();
-        Address input = blockchain.getBlockByHash(hashLow,false).getCoinBase();
+        Address input = new Address(blockchain.getBlockByHash(hashLow,false).getCoinBase().getAddress(), XDAG_FIELD_INPUT, payAmount,true);// blockchain.getBlockByHash(hashLow,false).getCoinBase()
         KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
