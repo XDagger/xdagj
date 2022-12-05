@@ -368,7 +368,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             return -3;
         }
 
-        payData.balance = block.getInfo().getAmount();
+        payData.balance = UInt64.valueOf(kernel.getBlockchain().getReward(block.getInfo().getHeight()));
 
         if (compareAmountTo(payData.balance,UInt64.ZERO) <= 0) {
             log.debug("no main block,can't pay");
@@ -630,7 +630,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             log.debug("pay data: {}", address.getData().toHexString());
         }
         Map<Address, KeyPair> inputMap = new HashMap<>();
-        Address input = new Address(blockchain.getBlockByHash(hashLow,false).getCoinBase().getAddress(), XDAG_FIELD_INPUT, payAmount,true);// blockchain.getBlockByHash(hashLow,false).getCoinBase()
+        Address input = new Address(blockchain.getBlockByHash(hashLow,false).getCoinBase().getAddress(), XDAG_FIELD_INPUT, payAmount,true);
         KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
