@@ -161,6 +161,11 @@ public class Address {
         return this.addressHash;
     }
 
+    public boolean getIsAddress() {
+        parse();
+        return this.isAddress;
+    }
+
     @Override
     public String toString() {
         if(isAddress){

@@ -24,6 +24,9 @@
 
 package io.xdag.config;
 
+import io.xdag.crypto.randomx.RandomXJNA;
+import io.xdag.crypto.randomx.RandomXWrapper;
+
 public class RandomXConstants {
 
     /**
@@ -33,6 +36,8 @@ public class RandomXConstants {
     public static final long SEEDHASH_EPOCH_LAG = 128;
     public static final long RANDOMX_FORK_HEIGHT = 1540096;
     public static final int XDAG_RANDOMX = 2;
+
+    public static final int RANDOMX_FLAGS = RandomXJNA.INSTANCE.randomx_get_flags() + RandomXWrapper.Flag.LARGE_PAGES.getValue() + RandomXWrapper.Flag.FULL_MEM.getValue();
     public static long SEEDHASH_EPOCH_TESTNET_BLOCKS = 2048;
     public static long SEEDHASH_EPOCH_TESTNET_LAG = 64;
     public static long RANDOMX_TESTNET_FORK_HEIGHT = 4096;// 196288

@@ -87,8 +87,45 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
+        commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
 //        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
         registerCommands(commandExecute);
+    }
+
+    private void processAddress(CommandInput input) {
+        final String[] usage = {
+                "address-  print extended info for the account corresponding to the address",
+                "Usage: address [PUBLIC ADDRESS]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+
+            if (argv.size() == 0) {
+                println("Need hash or address");
+                return;
+            }
+
+            String address = argv.get(0);
+            try {
+                Bytes32 hash;
+                if (PubkeyAddressUtils.checkAddress(address)) {
+                    hash = pubAddress2Hash(address);
+                } else {
+                    println("Incorrect address");
+                    return;
+                }
+                println(commands.address(hash));
+            } catch (Exception e) {
+                println("Argument is incorrect.");
+            }
+        } catch (Exception e) {
+            saveException(e);
+        }
     }
 
     private void processBalanceMaxXfer(CommandInput input) {

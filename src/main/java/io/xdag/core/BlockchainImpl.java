@@ -400,6 +400,17 @@ public class BlockchainImpl implements Blockchain {
                         }
                     }
                     id++;
+                } else {
+                    if (compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
+                        if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                            onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_OUTPUT, ref.getAmount(),
+                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                        } else {
+                            onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_INPUT, ref.getAmount(),
+                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                        }
+                    }
+                    id++;
                 }
             }
 
@@ -882,10 +893,10 @@ public class BlockchainImpl implements Blockchain {
 
             log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
-            long amount = getReward(xdagStats.nmain);
             updateBlockFlag(block, BI_MAIN, false);
             long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
             long withdrawHeight = xdagStats.nmain > awardEpoch ? xdagStats.nmain - awardEpoch : -1;
+            long amount = getReward(withdrawHeight);
             if (withdrawHeight > 0) {
                 Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
                 // Withdraw the reward

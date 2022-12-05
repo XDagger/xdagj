@@ -347,6 +347,14 @@
     </build>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.xdag/xdagj-native-randomx -->
+        <dependency>
+            <groupId>io.xdag</groupId>
+            <artifactId>xdagj-native-randomx</artifactId>
+            <version>0.1.3</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
