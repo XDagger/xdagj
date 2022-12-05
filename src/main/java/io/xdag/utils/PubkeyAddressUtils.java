@@ -20,4 +20,8 @@ public class PubkeyAddressUtils {
         return Base58.checkAddress(base58);
     }
 
+    public static boolean checkBytes24(byte[] data) {
+        return Base58.checkBytes24(data);
+    }
+
 }
