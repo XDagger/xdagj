@@ -59,7 +59,7 @@ public class Constants {
      */
     public static final byte BI_EXTRA = 0x40;
     public static final byte BI_REMARK = (byte) 0x80;
-    public static final Long SEND_PERIOD = 2L;
+    public static final Long SEND_PERIOD = 10L;
     public static final int DNET_PKT_XDAG = 0x8B;
     public static final int BLOCK_HEAD_WORD = 0x3fca9e2b;
     public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
@@ -73,7 +73,7 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
-    public static final String CLIENT_VERSION = "0.5.2";
+    public static final String CLIENT_VERSION = "0.5.3";
 
     /**
      * 同步问题 分叉高度

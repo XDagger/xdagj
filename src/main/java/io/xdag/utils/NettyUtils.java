@@ -35,7 +35,7 @@ import org.apache.commons.lang3.SystemUtils;
 
 public final class NettyUtils {
 
-    public static ServerBootstrap nativeEventLoopGroup(EventLoopGroup bossGroup, EventLoopGroup workerGroup, int workerThreadPoolSize) {
+    public static ServerBootstrap nativeEventLoopGroup(EventLoopGroup bossGroup, EventLoopGroup workerGroup) {
         ServerBootstrap bootstrap = new ServerBootstrap();
 
         bootstrap.group(bossGroup, workerGroup);

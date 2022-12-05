@@ -35,18 +35,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class MessageQueue {
-
-    private static final AtomicInteger cnt = new AtomicInteger(0);
     public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
-            4,
+            Runtime.getRuntime().availableProcessors(),
             new BasicThreadFactory.Builder()
-                    .namingPattern("MessageQueueTimer-" + cnt.getAndIncrement())
+                    .namingPattern("MessageQueueTimer-thread-%d")
                     .daemon(true)
                     .build());
     private final Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();
@@ -72,15 +69,12 @@ public class MessageQueue {
                     }
                 },
                 10,
-                // TODO: 发送周期缩短会不会有影响，但能有效加快同步速度
                 SEND_PERIOD,
-                // 2毫秒执行一次
+                // 10 MILLISECONDS
                 TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * 每2毫秒执行一次
-     */
+
     private void nudgeQueue() {
         int n = Math.min(5, size());
         if (n == 0) {

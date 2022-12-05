@@ -329,17 +329,19 @@ public class Commands {
         KeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isdefaultKey = false;
-        // 签名
+        // signature
         for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
-                block.signOut(ecKey);
+//                block.signOut(ecKey);
             } else {
                 block.signIn(ecKey);
             }
         }
-        // 如果默认密钥被更改，需要重新对输出签名签属
-        if (!isdefaultKey) {
+        // signOut. If the default key is changed, the output signature needs to be re-signed.
+        if (isdefaultKey) {
+            block.signOut(defaultKey);
+        } else {
             block.signOut(kernel.getWallet().getDefKey());
         }
 

@@ -211,7 +211,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
         for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
             Node node = it.next();
-            netConnDTOBuilder.connectTime(map.get(node) == null ? null : map.get(node))
+            netConnDTOBuilder.connectTime(map.get(node) == null ? 0 : map.get(node)) // use default "0"
                     .inBound(node.getStat().Inbound.get())
                     .outBound(node.getStat().Outbound.get())
                     .nodeAddress(node.getAddress());
