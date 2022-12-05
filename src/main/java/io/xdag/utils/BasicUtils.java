@@ -29,6 +29,7 @@ import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
+import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,6 +45,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class BasicUtils {
 
@@ -87,6 +89,25 @@ public class BasicUtils {
 //        System.arraycopy(Arrays.reverse(ret),0,res,8,24);
         res.set(8, ret.reverse().slice(0, 24));
         return res;
+    }
+
+    public static Bytes32 pubAddress2Hash(String address) {
+        Bytes ret = Bytes.wrap(PubkeyAddressUtils.fromBase58(address));
+        MutableBytes32 res = MutableBytes32.create();
+        res.set(8, ret);
+        return res;
+    }
+
+    public static Bytes32 keyPair2Hash(KeyPair keyPair) {
+        Bytes ret = Bytes.wrap(Keys.toBytesAddress(keyPair));
+        MutableBytes32 res = MutableBytes32.create();
+        res.set(8, ret);
+        return res;
+    }
+
+    public static byte[] Hash2byte(MutableBytes32 hash){
+        Bytes bytes = hash.slice(8,20);
+        return bytes.toArray();
     }
 
     public static byte[] getHashlowByHash(byte[] hash) {

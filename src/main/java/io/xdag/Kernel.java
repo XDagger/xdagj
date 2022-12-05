@@ -40,9 +40,9 @@ import io.xdag.core.Blockchain;
 import io.xdag.core.BlockchainImpl;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
+import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
+import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
@@ -78,6 +78,7 @@ import io.xdag.rpc.netty.Web3WebSocketServer;
 import io.xdag.rpc.netty.XdagJsonRpcHandler;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
+import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.net.InetAddress;
@@ -100,6 +101,7 @@ public class Kernel {
     private Config config;
     private Wallet wallet;
     private DatabaseFactory dbFactory;
+    private AddressStore addressStore;
     private BlockStore blockStore;
     private OrphanPool orphanPool;
     private Blockchain blockchain;
@@ -113,7 +115,8 @@ public class Kernel {
     private XdagPow pow;
     private SyncManager syncMgr;
 
-    private Block firstAccount;
+    private byte[] firstAccount;
+    private Block firstBlock;
     private Miner poolMiner;
     private AwardManager awardManager;
     private MinerManager minerManager;
@@ -194,6 +197,10 @@ public class Kernel {
         log.info("Block Store init.");
         blockStore.init();
 
+        addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        addressStore.init();
+        log.info("Address Store init");
+
         orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");
         orphanPool.init();
@@ -217,16 +224,18 @@ public class Kernel {
         // ====================================
         blockchain = new BlockchainImpl(this);
         XdagStats xdagStats = blockchain.getXdagStats();
-        // 如果是第一次启动，则新建第一个地址块
+        // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
-            firstAccount = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
-            firstAccount.signOut(wallet.getDefKey());
-            poolMiner = new Miner(firstAccount.getHash());
-            xdagStats.setOurLastBlockHash(firstAccount.getHashLow().toArray());
+            firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
+            addressStore.addAddress(firstAccount);
+            poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
+            firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
+            firstBlock.signOut(wallet.getDefKey());
+            xdagStats.setOurLastBlockHash(firstBlock.getHashLow().toArray());
             if (xdagStats.getGlobalMiner() == null) {
-                xdagStats.setGlobalMiner(firstAccount.getHash().toArray());
+                xdagStats.setGlobalMiner(firstAccount);
             }
-            blockchain.tryToConnect(firstAccount);
+            blockchain.tryToConnect(firstBlock);
         } else {
             poolMiner = new Miner(Bytes32.wrap(xdagStats.getGlobalMiner()));
         }

@@ -35,6 +35,7 @@ import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
+import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.NewBalanceMessage;
@@ -46,18 +47,23 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.BytesUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     private final Kernel kernel;
     private final MinerChannel channel;
+    private final AddressStore addressStore;
     private final MinerManager minerManager;
     private final SyncManager syncManager;
     private ChannelHandlerContext ctx;
@@ -69,6 +75,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     public Miner03(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
         this.kernel = kernel;
+        addressStore = kernel.getAddressStore();
         minerManager = kernel.getMinerManager();
         syncManager = kernel.getSyncMgr();
     }
@@ -127,39 +134,35 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     protected void processNewBalance(NewBalanceMessage msg) {
         // TODO: 2020/5/9 Process the balance information received by the miner Miner function
         log.debug("ip&port:{},Address:{} receive new balance: [{}]",
-                channel.getInetAddress().toString(),BasicUtils.hash2Address(channel.getMiner().getAddressHash()),msg.getEncoded().toHexString());
+                channel.getInetAddress().toString(),PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),BasicUtils.amount2xdag(UInt64.fromBytes(msg.getEncoded().slice(0,8))));
     }
 
     protected void processNewTask(NewTaskMessage msg) {
         // TODO: 2020/5/9 Handle new tasks received by miners Miner functions
         log.debug("Address:{} receive new task: [{}]",
-                channel.getAddressHash(),msg.getEncoded().toHexString());
+                PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),BasicUtils.amount2xdag(UInt64.fromBytes(msg.getEncoded().slice(0,8))));
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
         //share地址不一致，修改对应的miner地址
-        if (compareTo(msg.getEncoded().toArray(), 8, 24, channel.getAccountAddressHash().toArray(), 8, 24) != 0) {
+        if (compareTo(msg.getEncoded().toArray(), 8, 20, channel.getAccountAddressHash().toArray(),8,20) != 0) {
             byte[] zero = new byte[8];
-            Bytes32 blockHash;
-            Bytes32 hashLow = Bytes32
-                    .wrap(BytesUtils.merge(zero, BytesUtils.subArray(msg.getEncoded().toArray(), 8, 24)));
-            Block block = kernel.getBlockchain().getBlockByHash(hashLow, false);
+            //TODO: 确定矿机协议，不再获取区块，直接获取Base58或者公钥的hash
             Miner oldMiner = channel.getMiner();
             // Not empty, it means that the corresponding block can be found and the address exists
-            if (block != null) {
-                blockHash = block.getHash();
+            if (addressStore.addressIsExist(channel.getAccountAddressHashByte())) {
                 Miner miner = kernel.getMinerManager().getActivateMiners()
-                        .get(blockHash);
+                        .get(channel.getAccountAddressHash());
                 if (miner == null) {
-                    miner = new Miner(blockHash);
+                    miner = new Miner(channel.getAccountAddressHash());
                     log.debug("Create new miner channel:{}, address:{}, workerName:{}.",
-                            channel.getInetAddress().toString(), BasicUtils.hash2Address(miner.getAddressHash()), channel.getWorkerName());
+                            channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
                     minerManager.addActiveMiner(miner);
                 }
                 // Change the address corresponding to the channel and replace the new miner connection
                 channel.updateMiner(miner);
                 log.debug("RandomX miner channel:{}, address:{}, workerName:{}",
-                        channel.getInetAddress().toString(), BasicUtils.hash2Address(miner.getAddressHash()), channel.getWorkerName());
+                        channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
 
                 if(oldMiner != null) {
                     oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
@@ -168,7 +171,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             } else {
                 //to do nothing
                 log.debug("Can not receive the share from ip&port:{}, No such Address:{} exists,close channel with Address:{}",
-                        channel.getInetAddress().toString(),channel.getAddressHash(),channel.getAddressHash());
+                        channel.getInetAddress().toString(),PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()));
                 ctx.close();
                 if(oldMiner != null) {
                     minerManager.getActivateMiners().remove(oldMiner.getAddressHash());

@@ -24,8 +24,10 @@
 
 package io.xdag.core;
 
+import io.xdag.crypto.Hash;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
@@ -52,21 +54,35 @@ public class Address {
     /**
      * 地址hash低192bit
      */
-    protected MutableBytes32 hashLow;
+    protected MutableBytes32 addressHash;
+
+    protected boolean isAddress = false;
 
     protected boolean parsed = false;
 
-    public Address(XdagField field) {
+    public Address(XdagField field, Boolean isAddress) {
+        this.isAddress = isAddress;
         this.type = field.getType();
         this.data = MutableBytes32.wrap(field.getData().reverse().mutableCopy());
         parse();
     }
 
+    public Address(XdagField field) {
+
+    }
+
     /**
      * 只用于ref 跟 maxdifflink
      */
-    public Address(Bytes32 hashLow) {
-        this.hashLow = hashLow.mutableCopy();
+    public Address(Bytes32 hashLow,boolean isAddress) {
+        this.isAddress = isAddress;
+        this.type = XdagField.FieldType.XDAG_FIELD_OUT;
+        addressHash = MutableBytes32.create();
+        if(!isAddress){
+            this.addressHash = hashLow.mutableCopy();
+        }else {
+            this.addressHash.set(8,hashLow.mutableCopy().slice(8,20));
+        }
         this.amount = UInt64.ZERO;
         parsed = true;
     }
@@ -75,37 +91,61 @@ public class Address {
      * 只用于ref 跟 maxdifflink
      */
     public Address(Block block) {
-        this.hashLow = block.getHashLow().mutableCopy();
+        this.isAddress = false;
+        this.addressHash = block.getHashLow().mutableCopy();
         this.amount = UInt64.ZERO;
         parsed = true;
     }
 
-    public Address(Bytes32 blockHashlow, XdagField.FieldType type) {
+    public Address(Bytes32 blockHashlow, XdagField.FieldType type, Boolean isAddress) {
+        this.isAddress = isAddress;
+        if(!isAddress){
+            this.data = blockHashlow.mutableCopy();
+        }else {
+            this.data = MutableBytes32.create();
+            data.set(8,blockHashlow.mutableCopy().slice(8,20));
+        }
         this.type = type;
-        this.data = blockHashlow.mutableCopy();
         parse();
     }
 
-    public Address(Bytes32 blockHashLow, XdagField.FieldType type, UInt64 amount) {
+
+    public Address(Bytes32 hash, XdagField.FieldType type, UInt64 amount, Boolean isAddress) {
+        this.isAddress = isAddress;
         this.type = type;
-        this.hashLow = blockHashLow.mutableCopy();
+        if(!isAddress){
+            this.addressHash = hash.mutableCopy();
+        }else {
+            this.addressHash = MutableBytes32.create();
+            this.addressHash.set(8,hash.mutableCopy().slice(8,20));
+        }
         this.amount = amount;
         parsed = true;
     }
 
+
     public Bytes getData() {
         if (this.data == null) {
             this.data = MutableBytes32.create();
-            this.data.set(8, this.hashLow.slice(8, 24));
-            this.data.set(0, amount.toBytes());
+            if(!this.isAddress){
+                this.data.set(8, this.addressHash.slice(8, 24));
+            }else {
+                this.data.set(8, this.addressHash.slice(8,20));
+            }
+            this.data.set(0, Bytes.wrap(BytesUtils.bigIntegerToBytes(amount,8)));
         }
         return this.data;
     }
 
     public void parse() {
         if (!parsed) {
-            this.hashLow = MutableBytes32.create();
-            this.hashLow.set(8, this.data.slice(8, 24));
+            if(!isAddress){
+                this.addressHash = MutableBytes32.create();
+                this.addressHash.set(8, this.data.slice(8, 24));
+            }else {
+                this.addressHash = MutableBytes32.create();
+                this.addressHash.set(8,this.data.slice(8,20));
+            }
             this.amount = UInt64.fromBytes(this.data.slice(0, 8));
             this.parsed = true;
         }
@@ -116,13 +156,22 @@ public class Address {
         return this.amount;
     }
 
-    public MutableBytes32 getHashLow() {
+    public MutableBytes32 getAddress() {
         parse();
-        return this.hashLow;
+        return this.addressHash;
+    }
+
+    public boolean getIsAddress() {
+        parse();
+        return this.isAddress;
     }
 
     @Override
     public String toString() {
-        return "Block Hash[" + hashLow.toHexString() + "]";
+        if(isAddress){
+            return "Address [" + PubkeyAddressUtils.toBase58(addressHash.slice(8,20).toArray()) + "]";
+        }else {
+            return "Block Hash[" + addressHash.toHexString() + "]";
+        }
     }
 }

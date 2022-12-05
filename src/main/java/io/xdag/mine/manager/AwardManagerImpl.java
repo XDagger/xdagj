@@ -29,7 +29,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BytesUtils.compareTo;
-import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 import static java.lang.Math.E;
 
 import io.xdag.Kernel;
@@ -45,8 +44,9 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
-import java.math.BigDecimal;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -324,7 +324,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 //Filter fake blocks
-                if(blockchain.getBlockByHash(miner.getAddressHashLow(),false) != null) {
+                if(blockchain.getBlockByHash(miner.getAddressHash(),false) != null) {
                     miners.add(miner);
                     minerCounts++;
                     log.debug("The number of miners is[{}]", minerCounts);
@@ -558,7 +558,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
         HashMap<Address, KeyPair> inputMap = new HashMap<>();
-        Address input = new Address(hash, XDAG_FIELD_IN);
+        Address input = new Address(hash, XDAG_FIELD_IN,true);
         KeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         UInt64 payAmount = UInt64.ZERO;
@@ -581,7 +581,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         if (fundRation!=0) {
             if (blockchain.getBlockByHash(address2Hash(fundAddress),false)!=null) {
                 payAmount = payAmount.add(payData.fundIncome);
-                receipt.add(new Address(address2Hash(fundAddress), XDAG_FIELD_OUT, payData.fundIncome));
+                receipt.add(new Address(Bytes32.wrap(PubkeyAddressUtils.fromBase58(fundAddress)), XDAG_FIELD_OUT, payData.fundIncome,true));
             }
         }
 
@@ -612,7 +612,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 continue;
             }
             payAmount = payAmount.add(paymentSum);
-            receipt.add(new Address(miner.getAddressHashLow(), XDAG_FIELD_OUT, paymentSum));
+            receipt.add(new Address(miner.getAddressHash(), XDAG_FIELD_OUT, paymentSum,true));
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hash, receipt, payAmount, keyPos);
@@ -634,7 +634,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             log.debug("pay data: {}", address.getData().toHexString());
         }
         Map<Address, KeyPair> inputMap = new HashMap<>();
-        Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount);
+        Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount,false);
         KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);

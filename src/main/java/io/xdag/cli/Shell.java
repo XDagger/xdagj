@@ -25,10 +25,12 @@
 package io.xdag.cli;
 
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
 import io.xdag.Kernel;
 import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
 import java.util.HashMap;
 import java.util.List;
@@ -85,8 +87,45 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
-        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
+        commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
+//        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
         registerCommands(commandExecute);
+    }
+
+    private void processAddress(CommandInput input) {
+        final String[] usage = {
+                "address-  print extended info for the account corresponding to the address",
+                "Usage: address [PUBLIC ADDRESS]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+
+            if (argv.size() == 0) {
+                println("Need hash or address");
+                return;
+            }
+
+            String address = argv.get(0);
+            try {
+                Bytes32 hash;
+                if (PubkeyAddressUtils.checkAddress(address)) {
+                    hash = pubAddress2Hash(address);
+                } else {
+                    println("Incorrect address");
+                    return;
+                }
+                println(commands.address(hash));
+            } catch (Exception e) {
+                println("Argument is incorrect.");
+            }
+        } catch (Exception e) {
+            saveException(e);
+        }
     }
 
     private void processBalanceMaxXfer(CommandInput input) {
@@ -155,6 +194,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             saveException(e);
         }
     }
+
 
     private void processBlock(CommandInput input) {
         final String[] usage = {
@@ -320,20 +360,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            if (argv.get(1).length() == 32) {
-                hash = Bytes32.wrap(address2Hash(argv.get(1)));
+            if (PubkeyAddressUtils.checkAddress(argv.get(1))) {
+                hash = pubAddress2Hash(argv.get(1));
             } else {
-                hash = Bytes32.wrap(BasicUtils.getHash(argv.get(1)));
-            }
-            if (hash == null) {
-                println("No Address");
-                return;
-            }
-
-            MutableBytes32 key = MutableBytes32.create();
-            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
-            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(key), false) == null) {
-//            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("Incorrect address");
                 return;
             }
