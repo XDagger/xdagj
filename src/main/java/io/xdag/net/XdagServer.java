@@ -71,7 +71,7 @@ public class XdagServer {
                 workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
             }
 
-            ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup, workerThreadPoolSize);
+            ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup);
             b.childOption(ChannelOption.TCP_NODELAY, true);
             b.childOption(ChannelOption.SO_KEEPALIVE, true);
             b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);

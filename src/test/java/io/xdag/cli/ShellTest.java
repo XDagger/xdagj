@@ -21,28 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.err;
+package io.xdag.cli;
 
-public class BusinessException extends Exception{
-    private final int code;
+public class ShellTest {
 
-    public BusinessException(int code, String msg) {
-        super(msg);
-        this.code = code;
-    }
-
-    public BusinessException(int code, String msg, Throwable throwable) {
-        super(msg, throwable);
-        this.code = code;
-    }
-
-    public int getCode() {
-        return this.code;
-    }
-
-    /** @deprecated */
-    @Deprecated
-    public String getMsg() {
-        return this.getMessage();
-    }
 }

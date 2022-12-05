@@ -38,26 +38,22 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Nonnull;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class NodeManager {
 
-    private static final ThreadFactory factory = new ThreadFactory() {
-        private final AtomicInteger cnt = new AtomicInteger(0);
+    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+            .namingPattern("NodeManager-thread-%d")
+            .daemon(true)
+            .build();
 
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "node-" + cnt.getAndIncrement());
-        }
-    };
     private static final long MAX_QUEUE_SIZE = 1024;
     private static final int LRU_CACHE_SIZE = 1024;
     private static final long RECONNECT_WAIT = 60L * 1000L;

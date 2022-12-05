@@ -58,7 +58,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
         channel.initWithNode(
                 // 连接到对方的channel 并将对方记录为node
-                remoteAddress.getHostName(), remoteAddress.getPort());
+                remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort());
         log.debug("connect with node:{}",remoteAddress.toString());
         // TODO:如果为服务器端 发送pubKey
         if (isServer) {

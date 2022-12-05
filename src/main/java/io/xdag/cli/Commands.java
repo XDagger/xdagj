@@ -332,17 +332,19 @@ public class Commands {
         KeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isdefaultKey = false;
-        // 签名
+        // signature
         for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
-                block.signOut(ecKey);
+//                block.signOut(ecKey);
             } else {
                 block.signIn(ecKey);
             }
         }
-        // 如果默认密钥被更改，需要重新对输出签名签属
-        if (!isdefaultKey) {
+        // signOut. If the default key is changed, the output signature needs to be re-signed.
+        if (isdefaultKey) {
+            block.signOut(defaultKey);
+        } else {
             block.signOut(kernel.getWallet().getDefKey());
         }
 
@@ -453,7 +455,8 @@ public class Commands {
                 inputs = new StringBuilder();
                 for (int i = 0; i < block.getInputs().size(); i++) {
                     inputs.append(String.format("     input: %s           %.9f%n",
-                            hash2Address(Bytes32.wrap(
+                            block.getInputs().get(i).getIsAddress() ? toBase58(Hash2byte(block.getInputs().get(i).getAddress())) :
+                                    hash2Address(Bytes32.wrap(
                                     kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getAddress(), false)
                                             .getInfo().getHash())),
                             amount2xdag(block.getInputs().get(i).getAmount())
@@ -464,7 +467,8 @@ public class Commands {
                 outputs = new StringBuilder();
                 for (int i = 0; i < block.getOutputs().size(); i++) {
                     outputs.append(String.format("    output: %s           %.9f%n",
-                            hash2Address(Bytes32.wrap(
+                            block.getOutputs().get(i).getIsAddress() ? toBase58(Hash2byte(block.getOutputs().get(i).getAddress())) :
+                                    hash2Address(Bytes32.wrap(
                                     kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getAddress(), false)
                                             .getInfo().getHash())),
                             amount2xdag(block.getOutputs().get(i).getAmount())
@@ -668,5 +672,40 @@ public class Commands {
             return false;
         });
         return String.format("%.9f", amount2xdag(balance[0]));
+    }
+
+    public String address(Bytes32 wrap) {
+
+        String txHisFormat = """
+                -----------------------------------------------------------------------------------------------------------------------------
+                                               block as address: details
+                 direction  address                                    amount                 time
+                       """;
+        StringBuilder tx = new StringBuilder();
+
+        for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(wrap)) {
+            Address address = txHistory.getAddress();
+            BlockInfo blockInfo = kernel.getBlockchain().getBlockByHash(address.getAddress(), false).getInfo();
+            if((blockInfo.flags&BI_APPLIED)==0){
+                continue;
+            }
+            if (address.getType().equals(XDAG_FIELD_INPUT)) {
+                tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                        amount2xdag(address.getAmount()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
+                tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                        amount2xdag(address.getAmount()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            } else {
+                tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                        amount2xdag(address.getAmount()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            }
+        }
+        return txHisFormat + "\n" + tx;
     }
 }

@@ -26,6 +26,8 @@ package io.xdag.utils;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
+import com.sun.jna.Memory;
+import com.sun.jna.Pointer;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.units.bigints.UInt64;
 
@@ -99,6 +101,12 @@ public class BytesUtils {
             buffer.order(ByteOrder.LITTLE_ENDIAN);
         }
         return buffer.getShort();
+    }
+
+    public static Pointer bytesToPointer(byte[] bytes) {
+        Pointer pointer = new Memory(bytes.length);
+        pointer.write(0, bytes, 0, bytes.length);
+        return pointer;
     }
 
     public static String toHexString(byte[] data) {

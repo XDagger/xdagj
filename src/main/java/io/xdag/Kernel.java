@@ -40,12 +40,12 @@ import io.xdag.core.Blockchain;
 import io.xdag.core.BlockchainImpl;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
-import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.event.EventProcesser;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanPool;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
@@ -78,9 +78,7 @@ import io.xdag.rpc.netty.Web3WebSocketServer;
 import io.xdag.rpc.netty.XdagJsonRpcHandler;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.net.InetAddress;
@@ -93,7 +91,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.checkerframework.checker.units.qual.A;
 
 @Slf4j
 @Getter
@@ -170,8 +167,6 @@ public class Kernel {
         }
         isRunning.set(true);
         startEpoch = XdagTime.getCurrentEpoch();
-
-        EventProcesser.getEventBus().register(this);
 
         // ====================================
         // start channel manager

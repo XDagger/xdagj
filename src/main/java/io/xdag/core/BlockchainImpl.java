@@ -48,6 +48,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -60,11 +61,9 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 
-import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.xdag.config.Constants.*;
 import static io.xdag.config.Constants.MessageType.NEW_LINK;
@@ -80,14 +79,10 @@ import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 @Getter
 public class BlockchainImpl implements Blockchain {
 
-    private static final ThreadFactory factory = new ThreadFactory() {
-        private final AtomicInteger cnt = new AtomicInteger(0);
-
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "check main-" + cnt.getAndIncrement());
-        }
-    };
+    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+            .namingPattern("check-main-%d")
+            .daemon(true)
+            .build();
 
     private final Wallet wallet;
 
@@ -402,6 +397,17 @@ public class BlockchainImpl implements Blockchain {
                                     block.getTimestamp(), id, block.getInfo().getRemark());
                         } else {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
+                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                        }
+                    }
+                    id++;
+                } else {
+                    if (compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
+                        if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                            onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_OUTPUT, ref.getAmount(),
+                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                        } else {
+                            onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_INPUT, ref.getAmount(),
                                     block.getTimestamp(), id, block.getInfo().getRemark());
                         }
                     }
@@ -888,10 +894,10 @@ public class BlockchainImpl implements Blockchain {
 
             log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
-            long amount = getReward(xdagStats.nmain);
             updateBlockFlag(block, BI_MAIN, false);
             long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
             long withdrawHeight = xdagStats.nmain > awardEpoch ? xdagStats.nmain - awardEpoch : -1;
+            long amount = getReward(withdrawHeight);
             if (withdrawHeight > 0) {
                 Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
                 // Withdraw the reward

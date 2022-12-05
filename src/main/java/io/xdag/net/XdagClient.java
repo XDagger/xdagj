@@ -36,24 +36,20 @@ import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Nonnull;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class XdagClient {
 
-    private static final ThreadFactory factory = new ThreadFactory() {
-        final AtomicInteger cnt = new AtomicInteger(0);
-
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, "client-" + cnt.getAndIncrement());
-        }
-    };
+    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+            .namingPattern("XdagClient-thread-%d")
+            .daemon(true)
+            .build();
 
     private final EventLoopGroup workerGroup;
     private final int port;

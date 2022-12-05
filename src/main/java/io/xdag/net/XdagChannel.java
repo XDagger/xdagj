@@ -102,7 +102,9 @@ public class XdagChannel extends Channel {
     }
 
     public void initWithNode(final String host, final int port) {
-        node = new Node(host, port);
+        if (node == null) {
+            node = new Node(host, port);
+        }
         log.debug("Initwith Node host:" + host + " port:" + port + " node:" + node.getHexId());
     }
 

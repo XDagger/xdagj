@@ -24,10 +24,16 @@
 
 package io.xdag.utils;
 
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.crc32Verify;
+import static io.xdag.utils.BasicUtils.hash2Address;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.math.BigDecimal;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 public class BasicUtilsTest {
@@ -98,5 +104,36 @@ public class BasicUtilsTest {
     public void xdag_log_difficulty2hashrateTest() {
 //        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
         //System.out.println("this is res :" + res);
+    }
+
+    @Test
+    public void testHash2Address() {
+        String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
+        String originhash = "4aa1ab5742feb010a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
+        Bytes32 hash1 = Bytes32.fromHexString(originhash);
+        assertEquals(hash2Address(hash1), news);
+    }
+
+    @Test
+    public void testAddress2Hash() {
+        String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
+        String originhashlow = "0000000000000000a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
+        Bytes32 hashlow = address2Hash(news);
+        assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
+    }
+
+    @Test
+    public void testCrc() {
+        String reque = "8b050002a353147e3853050000000040ffffc63c7b0100000000000000000000"
+                + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"
+                + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"
+                + "a31e6283a9f5da4a4f56c3503f3ab27c776fbb2f89f67e20cd875ac0523fe613"
+                + "08e2eda6e9eb9b754d96128a5676b52e6cc9f2a2e102e9896fea58864c489c6b"
+                + "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000097d1511ec1723d118fe19c06ab4ca825a982282a1733b508b6b56f73cc4adeb";
+
+        byte[] uncryptData = Hex.decode(reque);
+        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
+        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
+        assertTrue(crc32Verify(uncryptData, crc));
     }
 }

@@ -21,16 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.cli;
 
-package io.xdag.wallet;
+public class TelnetServerTest {
 
-import org.hyperledger.besu.crypto.KeyPair;
-
-public class KeyInternalItem {
-
-    public KeyPair ecKey;
-    /**
-     * 0:even 1:odd
-     */
-    public boolean pubKeyParity;
 }
