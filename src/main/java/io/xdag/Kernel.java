@@ -242,7 +242,8 @@ public class Kernel {
             }
             blockchain.tryToConnect(firstBlock);
         } else {
-            poolMiner = new Miner(Bytes32.wrap(xdagStats.getGlobalMiner()));
+            firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
+            poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
         }
         log.info("Blockchain init");
 

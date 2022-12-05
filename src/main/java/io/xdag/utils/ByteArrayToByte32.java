@@ -15,7 +15,7 @@ public class ByteArrayToByte32 {
         return mutableBytes32;
     }
     public static byte[] byte32ToArray(MutableBytes32 value){
-        byte[] bytes = value.mutableCopy().slice(0,20).toArray();
+        byte[] bytes = value.mutableCopy().slice(8,20).toArray();
         return bytes;
     }
 

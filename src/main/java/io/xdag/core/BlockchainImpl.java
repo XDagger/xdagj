@@ -337,6 +337,12 @@ public class BlockchainImpl implements Blockchain {
 //                System.out.println(ref.getAddress().toHexString() + " isaddress ==" + ref.isAddress);
                 if(!ref.isAddress){
                     if (ref != null) {
+                        if(ref.getType() == XDAG_FIELD_OUT && !ref.getAmount().isZero()){
+                            result = ImportResult.INVALID_BLOCK;
+                            result.setHashlow(ref.getAddress());
+                            result.setErrorInfo("Address's amount isn't zero");
+                            return result;
+                        }
                         Block refBlock = getBlockByHash(ref.getAddress(), false);
                         if (refBlock == null) {
 //                        log.debug("No Parent " + Hex.toHexString(ref.getHashLow()));
@@ -959,7 +965,6 @@ public class BlockchainImpl implements Blockchain {
         //TODO:add comments
         Address coinbase = new Address(keyPair2Hash(wallet.getDefKey()),
                 FieldType.XDAG_FIELD_COINBASE,
-                UInt64.valueOf(getReward(getXdagStats().nmain)),
                 true);
         List<Address> refs = Lists.newArrayList();
         if (preTop != null) {
@@ -1290,7 +1295,7 @@ public class BlockchainImpl implements Blockchain {
 //            log.info("new account:{}", Hex.toHexString(block.getHash()));
             if (xdagStats.getOurLastBlockHash() == null) {
 //                log.info("Global miner");
-                xdagStats.setGlobalMiner(block.getHash().toArray());
+//                xdagStats.setGlobalMiner(block.getHash().toArray());
                 blockStore.saveXdagStatus(xdagStats);
             }
             addOurBlock(memOurBlocks.get(block.getHash()), block);

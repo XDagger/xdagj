@@ -145,7 +145,10 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     protected void processTaskShare(TaskShareMessage msg) {
         //share地址不一致，修改对应的miner地址
-        if (compareTo(msg.getEncoded().toArray(), 8, 20, channel.getAccountAddressHash().toArray(),8,20) != 0) {
+        //msg 最后12-32位反转 与 addressHashByte相等
+        if (compareTo(msg.getEncoded().reverse().toArray(), 0, 20, channel.getAccountAddressHashByte(),0,20) != 0) {
+
+            System.out.println(PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()));
             byte[] zero = new byte[8];
             //TODO: 确定矿机协议，不再获取区块，直接获取Base58或者公钥的hash
             Miner oldMiner = channel.getMiner();

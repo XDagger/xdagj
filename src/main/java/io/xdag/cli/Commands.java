@@ -597,6 +597,7 @@ public class Commands {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         kernel.getXdagState().tempSet(XdagState.KEYS);
         kernel.getWallet().addAccountRandom();
+
         kernel.getWallet().flush();
         int size = kernel.getWallet().getAccounts().size();
         kernel.getXdagState().rollback();
@@ -606,7 +607,7 @@ public class Commands {
     public String miners() {
         Miner poolMiner = kernel.getPoolMiner();
         StringBuilder sbd = new StringBuilder();
-        sbd.append("fee:").append(hash2Address(poolMiner.getAddressHash())).append("\n");
+        sbd.append("fee:").append(toBase58(poolMiner.getAddressHashByte())).append("\n");
         if (kernel.getMinerManager().getActivateMiners().size() == 0) {
             sbd.append(" without activate miners");
         } else {

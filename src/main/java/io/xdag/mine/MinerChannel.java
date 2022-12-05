@@ -262,7 +262,7 @@ public class MinerChannel {
     public boolean initMiner(Bytes32 accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
         this.accountAddressHashByte = ByteArrayToByte32.byte32ToArray(accountAddressHash.mutableCopy());
-        String addrHexStr = PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(accountAddressHash.mutableCopy()));
+        String addrHexStr = PubkeyAddressUtils.toBase58(accountAddressHashByte);
         log.debug("Init A Miner:" + addrHexStr);
         // 判断这个矿工是否已经存在了
         if (minerManager !=null && minerManager.getActivateMiners().containsKey(accountAddressHash)) {

@@ -43,11 +43,10 @@ import io.xdag.utils.PubkeyAddressUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
@@ -62,7 +61,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     private final MinerManager minerManager;
     private final AddressStore addressStore;
     private final SyncManager syncManager;
-    public static final int MESSAGE_SIZE = 20;
+    public static final int MESSAGE_SIZE = 24;
 
     public MinerHandShakeHandler(MinerChannel channel, Kernel kernel) {
         this.channel = channel;
@@ -74,8 +73,9 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
+        System.out.println(in.readableBytes());
         if (in.readableBytes() >= MESSAGE_SIZE) {
-            log.debug("Receive a address from ip&port:{}",channel.getInetAddress().toString());
+            log.debug("Receive a address from ip&port:{}",ctx.channel().remoteAddress());
             byte[] message = new byte[MESSAGE_SIZE];
             in.readBytes(message);
 //            long sectorNo = channel.getInBound().get();
@@ -96,7 +96,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
                 // TODO:
                 checkProtocol(ctx,message);
-
+                System.out.println(PubkeyAddressUtils.toBase58(message));
                 if (!initMiner(ByteArrayToByte32.arrayToByte32(message))) {
                     log.debug("too many connect for the miner: {},ip&port:{}",
                             PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
@@ -137,10 +137,10 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             //If it is a new address block
             if (!importResult) {
                 addressStore.addAddress(address);
-                log.info("XDAG:new wallet connect. New address: {} with channel: {} connect.",
+                log.info("XDAG:new miner connect. New address: {} with channel: {} connect.",
                         PubkeyAddressUtils.toBase58(address), channel.getInetAddress().toString());
             } else {
-                log.info("XDAG:old wallet connect. Address: {} with channel {} connect.",
+                log.info("XDAG:old miner connect. Address: {} with channel {} connect.",
                         PubkeyAddressUtils.toBase58(address), channel.getInetAddress().toString());
             }
 //        }
