@@ -36,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -153,6 +154,7 @@ public class Miner {
                     return false;
                 }
             }
+            log.debug("remove Miner: {}", PubkeyAddressUtils.toBase58(addressHashByte));
             return true;
         } else {
             return false;
