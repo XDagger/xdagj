@@ -402,6 +402,7 @@ public class BlockchainImpl implements Blockchain {
                     }
                     id++;
                 } else {
+                    //Record transaction records of public key addresses
                     if (compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
                         if (ref.getType().equals(XDAG_FIELD_INPUT)) {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_OUTPUT, ref.getAmount(),
@@ -901,7 +902,7 @@ public class BlockchainImpl implements Blockchain {
             if (withdrawHeight > 0) {
                 Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
                 // Withdraw the reward
-                cancelReward(withdrawBlock, UInt64.ZERO.subtract(amount));
+                cancelReward(withdrawBlock, UInt64.valueOf(amount));
             }
 
             xdagStats.nmain--;

@@ -179,7 +179,7 @@ public class RandomX {
 
     // 矿池初始化dataset
     public void randomXPoolInitDataset(PointerByReference rxCache, PointerByReference rxDataset) {
-        RandomXJNA.INSTANCE.randomx_init_dataset(rxCache, rxDataset, new NativeLong(0), RandomXJNA.INSTANCE.randomx_dataset_item_count());
+        RandomXJNA.INSTANCE.randomx_init_dataset(rxDataset, rxCache, new NativeLong(0), RandomXJNA.INSTANCE.randomx_dataset_item_count());
     }
 
 
