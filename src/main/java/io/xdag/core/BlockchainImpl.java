@@ -358,7 +358,7 @@ public class BlockchainImpl implements Blockchain {
 
                     }
                 }else {
-                    if(addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
+                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
                     }
@@ -795,12 +795,7 @@ public class BlockchainImpl implements Blockchain {
         }
 
         // 不一定大于0 因为可能部分金额扣除
-        UInt64 remain = sumIn.subtract(sumOut);
         //TODO:need determine what is data;
-        if(!remain.isZero()){
-            addAmount(block.getInfo().getSnapshotInfo().getData(),remain);
-        }
-        block.getInfo().setAmount(UInt64.ZERO);
         updateBlockFlag(block, BI_APPLIED, true);
         return UInt64.ZERO;
     }
@@ -816,7 +811,7 @@ public class BlockchainImpl implements Blockchain {
                     if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                         addAndAccept(ref,link.getAmount());
                         sum = sum.subtract(link.getAmount());
-                    } else {
+                    } else if(link.getType() == XDAG_FIELD_OUT){
                         subtractAndAccept(ref,link.getAmount());
                         sum = sum.add(link.getAmount());
                     }
@@ -831,7 +826,6 @@ public class BlockchainImpl implements Blockchain {
                 }
 
             }
-            subtractAmount(block.getInfo().getSnapshotInfo().getData(), sum);
             updateBlockFlag(block, BI_APPLIED, false);
         }
         updateBlockFlag(block, BI_MAIN_REF, false);

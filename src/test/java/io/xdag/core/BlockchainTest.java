@@ -241,9 +241,9 @@ public class BlockchainTest {
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
-        kernel.getAddressStore().updateBalance(Keys.toBytesAddress(addrKey), UInt64.valueOf(0));
         System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
         MockBlockchain blockchain = new MockBlockchain(kernel);
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(0));
 //        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(1000));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -252,7 +252,7 @@ public class BlockchainTest {
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
         // 2. create 10 mainblocks
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 17; i++) {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
@@ -291,13 +291,13 @@ public class BlockchainTest {
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
         assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
         // there is 12 blocks and 10 mainblocks
-        assertChainStatus(12, 10, 1, 1, blockchain);
+        assertChainStatus(19, 17, 1, 1, blockchain);
 
         pending.clear();
         pending.add(new Address(txBlock.getHashLow(),false));
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
         // 4. confirm transaction block with 3 mainblocks
-        for (int i = 1; i <= 4; i++) {
+        for (int i = 1; i <= 10; i++) {
             generateTime += 64000L;
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
@@ -314,10 +314,10 @@ public class BlockchainTest {
 
         Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getAddress());
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
-        UInt64 poolBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        UInt64 poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
         UInt64 addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals(12288,(long)amount2xdag(kernel.getAddressStore().getAllBalance()));
-        assertEquals(12188,(long)amount2xdag(poolBalance.toLong()));
+        assertEquals(10240,(long)amount2xdag(blockchain.getAddressStore().getAllBalance()));
+        assertEquals(10140,(long)amount2xdag(poolBalance.toLong()));
         assertEquals(100,(long)amount2xdag(addressBalance.toLong()));
         // block reword 1024 + 100 = 1124.0
 //        assertEquals("1124.0", String.valueOf(amount2xdag(toBlock.getInfo().getAmount())));
