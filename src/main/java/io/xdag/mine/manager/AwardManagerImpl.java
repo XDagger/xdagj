@@ -42,6 +42,8 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -168,7 +170,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
                 if(awardBlock != null) {
-                    log.debug("award block:{}", BasicUtils.hash2Address(awardBlock.hash));
+                    log.debug("award block:{}", awardBlock.hash.toHexString());
                     payAndaddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {
@@ -320,11 +322,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {
                 //Filter fake blocks
-                if(blockchain.getBlockByHash(miner.getAddressHash(),false) != null) {
                     miners.add(miner);
                     minerCounts++;
                     log.debug("The number of miners is[{}]", minerCounts);
-                }
             }
         }
 
@@ -550,7 +550,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     }
 
-    public void doPayments(Bytes32 hash, int paymentsPerBlock, PayData payData, int keyPos) {
+    public void doPayments(Bytes32 hashLow, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
 //        HashMap<Address, KeyPair> inputMap = new HashMap<>();
@@ -575,7 +575,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
          */
 
         if (fundRation!=0) {
-            if (blockchain.getBlockByHash(pubAddress2Hash(fundAddress),false)!=null) {
+            if (pubAddress2Hash(fundAddress)!=null) {
                 payAmount = payAmount.add(payData.fundIncome);
                 receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, payData.fundIncome,true));
             }
@@ -585,7 +585,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         //// TODO: 2021/4/19  打印矿工的数据
         for (int i = 0; i < miners.size(); i++) {
             Miner miner = miners.get(i);
-            log.debug("Do payments for every miner,miner address = [{}]", miner.getAddressHash().toHexString());
+            log.debug("Do payments for every miner,miner address = [{}]", PubkeyAddressUtils.toBase58(miner.getAddressHashByte()));
             // 保存的是一个矿工所有的收入
             UInt64 paymentSum = UInt64.ZERO;
             // 根据历史记录分发奖励
@@ -611,14 +611,14 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             receipt.add(new Address(miner.getAddressHash(), XDAG_FIELD_OUTPUT, paymentSum,true));
             if (receipt.size() == paymentsPerBlock) {
 
-                transaction(hash, receipt, payAmount, keyPos);
+                transaction(hashLow, receipt, payAmount, keyPos);
                 payAmount = UInt64.ZERO;
                 receipt.clear();
             }
         }
 
         if (receipt.size() > 0) {
-            transaction(hash, receipt, payAmount, keyPos);
+            transaction(hashLow, receipt, payAmount, keyPos);
             receipt.clear();
         }
     }
@@ -626,12 +626,13 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, UInt64 payAmount, int keypos) {
         log.debug("All Payment: {}", payAmount);
         log.debug("unlock keypos =[{}]", keypos);
+        MutableBytes32 coinBase = blockchain.getBlockByHash(hashLow,true).getCoinBase().getAddress();
         for (Address address : receipt) {
             log.debug("pay data: {}", address.getData().toHexString());
         }
         Map<Address, KeyPair> inputMap = new HashMap<>();
-        Address input = new Address(blockchain.getBlockByHash(hashLow,false).getCoinBase().getAddress(), XDAG_FIELD_INPUT, payAmount,true);
-        KeyPair inputKey = wallet.getAccount(keypos);
+        Address input = new Address(coinBase, XDAG_FIELD_INPUT, payAmount,true);
+        KeyPair inputKey = wallet.getAccount(BasicUtils.Hash2byte(coinBase));
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
         if (inputKey.equals(wallet.getDefKey())) {

@@ -241,6 +241,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
         if (task != null) {
             currentTask = task;
             synchronized (obj1) {
+                log.debug("Now activateMiners size:{}",activateMiners.size());
                 log.debug("the size of active miner channels:{}", activateMinerChannelsSize);
                 activateMinerChannels.values().stream()
                         .filter(MinerChannel::isActive)
