@@ -402,7 +402,7 @@ public class BlockchainImpl implements Blockchain {
                     }
                     id++;
                 } else {
-                    //Record transaction records of public key addresses
+                    //Record transaction history of public key addresses
                     if (compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
                         if (ref.getType().equals(XDAG_FIELD_INPUT)) {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_OUTPUT, ref.getAmount(),
@@ -1605,6 +1605,8 @@ public class BlockchainImpl implements Blockchain {
                 UInt64 allBalance = addressStore.getAllBalance();
                 allBalance = allBalance.addExact(amount);
                 addressStore.updateAllBalance(allBalance);
+                onNewTxHistory(output.getAddress(), rewardBlock.getHashLow(), XDAG_FIELD_COINBASE, amount,
+                        rewardBlock.getTimestamp(), 0, rewardBlock.getInfo().getRemark());
             }
         }
     }

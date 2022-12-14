@@ -24,6 +24,7 @@
 
 package io.xdag.config;
 
+import io.xdag.crypto.randomx.RandomXFlag;
 import io.xdag.crypto.randomx.RandomXJNA;
 import io.xdag.crypto.randomx.RandomXWrapper;
 
@@ -43,7 +44,7 @@ public class RandomXConstants {
 
     //randomx full memory mode. With faster calculation speed, hugepage must be configured
     public static final int RANDOMX_FLAGS = RandomXJNA.INSTANCE.randomx_get_flags() +
-            RandomXWrapper.Flag.LARGE_PAGES.getValue() + RandomXWrapper.Flag.FULL_MEM.getValue();
+            RandomXFlag.LARGE_PAGES.getValue() + RandomXFlag.FULL_MEM.getValue();
 
     //randomx default mode. Calculation speed is slow, no need to configure hugepage
     //public static final int RANDOMX_FLAGS = RandomXJNA.INSTANCE.randomx_get_flags();
