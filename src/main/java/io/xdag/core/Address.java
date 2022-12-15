@@ -24,8 +24,6 @@
 
 package io.xdag.core;
 
-import io.xdag.crypto.Hash;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;

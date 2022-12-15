@@ -42,10 +42,12 @@ import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.jni.Native;
-import io.xdag.db.*;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.DatabaseName;
 import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
@@ -53,6 +55,7 @@ import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.manager.MinerManagerImpl;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
+import io.xdag.mine.randomx.RandomX;
 import io.xdag.net.XdagClient;
 import io.xdag.net.XdagServer;
 import io.xdag.net.libp2p.Libp2pNetwork;
@@ -61,7 +64,6 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
-import io.xdag.mine.randomx.RandomX;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
@@ -90,7 +92,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 @Getter

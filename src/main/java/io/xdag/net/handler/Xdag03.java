@@ -34,9 +34,15 @@ import io.xdag.net.Channel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.*;
-import io.xdag.utils.BasicUtils;
+import io.xdag.net.message.impl.BlockExtRequestMessage;
+import io.xdag.net.message.impl.BlockRequestMessage;
+import io.xdag.net.message.impl.BlocksReplyMessage;
+import io.xdag.net.message.impl.BlocksRequestMessage;
+import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.net.message.impl.SumReplyMessage;
+import io.xdag.net.message.impl.SumRequestMessage;
 import io.xdag.utils.XdagTime;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +51,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-
-import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

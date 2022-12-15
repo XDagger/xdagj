@@ -24,8 +24,16 @@
 
 package io.xdag.consensus;
 
+import static io.xdag.utils.BytesUtils.compareTo;
+import static io.xdag.utils.BytesUtils.equalBytes;
+
 import io.xdag.Kernel;
-import io.xdag.core.*;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.Blockchain;
+import io.xdag.core.XdagBlock;
+import io.xdag.core.XdagField;
+import io.xdag.core.XdagState;
 import io.xdag.crypto.Hash;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
@@ -40,22 +48,23 @@ import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.Message;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static io.xdag.utils.BytesUtils.compareTo;
-import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {

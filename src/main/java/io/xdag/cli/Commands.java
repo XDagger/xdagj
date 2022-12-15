@@ -24,20 +24,71 @@
 
 package io.xdag.cli;
 
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_MAIN;
+import static io.xdag.config.Constants.BI_MAIN_CHAIN;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.BI_REMARK;
+import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
+import static io.xdag.core.BlockState.MAIN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.crypto.Keys.toBytesAddress;
+import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.getHash;
+import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
+import static io.xdag.utils.BasicUtils.xdag2amount;
+import static io.xdag.utils.BasicUtils.xdagHashRate;
+import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
+import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
+import static io.xdag.utils.PubkeyAddressUtils.toBase58;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockInfo;
 import io.xdag.core.BlockState;
-import io.xdag.core.*;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.ImportResult;
+import io.xdag.core.TxHistory;
+import io.xdag.core.XdagState;
+import io.xdag.core.XdagStats;
+import io.xdag.core.XdagTopStatus;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.XdagTime;
-
-import java.util.concurrent.atomic.AtomicInteger;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -48,22 +99,6 @@ import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.KeyPair;
-
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.xdag.core.BlockState.MAIN;
-import static io.xdag.config.Constants.*;
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.crypto.Keys.toBytesAddress;
-import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.PubkeyAddressUtils.*;
 
 @Slf4j
 public class Commands {

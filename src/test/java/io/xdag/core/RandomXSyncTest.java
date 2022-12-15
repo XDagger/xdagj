@@ -24,6 +24,15 @@
 
 package io.xdag.core;
 
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -32,14 +41,18 @@ import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
+import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
@@ -49,16 +62,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
-import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.*;
 
 @Slf4j
 public class RandomXSyncTest {
@@ -104,7 +107,6 @@ public class RandomXSyncTest {
         latch.await();
 
         String kernel2Diff = kernel2.getBlockchain().getBlockByHeight(nmain - 1).getInfo().getDifficulty().toString(16);
-//        System.out.println("第二次同步");
         assertEquals(expected, kernel2Diff);
 
         kernel1.getRandomx().randomXPoolReleaseMem();
@@ -112,7 +114,6 @@ public class RandomXSyncTest {
     }
 
     public void sync(Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
-
         List<Block> blocks = kernel1.getBlockchain().getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
             ImportResult result = kernel2.getBlockchain()
@@ -126,9 +127,7 @@ public class RandomXSyncTest {
 
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-//        ECKeyPair key = ECKeyPair.create(privateKey);
         KeyPair key = KeyPair.create(privateKey, Sign.CURVE, Sign.CURVE_NAME);
-//        System.out.println(key.getPrivateKey().toString(16));
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result;

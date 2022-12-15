@@ -23,9 +23,8 @@
  */
 package io.xdag.core;
 
-import lombok.Data;
-
 import java.util.Arrays;
+import lombok.Data;
 
 @Data
 public class SnapshotInfo {

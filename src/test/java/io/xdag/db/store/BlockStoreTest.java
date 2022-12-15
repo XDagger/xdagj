@@ -31,12 +31,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
+import io.xdag.core.Block;
+import io.xdag.core.XdagBlock;
+import io.xdag.core.XdagStats;
+import io.xdag.crypto.Keys;
+import io.xdag.db.BlockStore;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.KVSource;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.List;
-
-import io.xdag.db.BlockStore;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -44,17 +53,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.core.Block;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagStats;
-import io.xdag.crypto.Keys;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.KVSource;
-import io.xdag.db.rocksdb.RocksdbFactory;
 
 public class BlockStoreTest {
 

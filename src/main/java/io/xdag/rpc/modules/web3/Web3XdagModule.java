@@ -25,7 +25,10 @@
 package io.xdag.rpc.modules.web3;
 
 import io.xdag.rpc.Web3;
-import io.xdag.rpc.dto.*;
+import io.xdag.rpc.dto.AccountResultDTO;
+import io.xdag.rpc.dto.BlockResultDTO;
+import io.xdag.rpc.dto.ConfigDTO;
+import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 
 

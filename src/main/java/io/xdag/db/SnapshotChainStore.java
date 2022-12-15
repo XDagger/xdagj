@@ -26,7 +26,6 @@ package io.xdag.db;
 import io.xdag.core.SnapshotUnit;
 import io.xdag.core.StatsBlock;
 import java.util.List;
-
 import org.hyperledger.besu.crypto.KeyPair;
 
 public interface SnapshotChainStore {

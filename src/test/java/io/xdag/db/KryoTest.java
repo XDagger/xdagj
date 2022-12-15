@@ -32,9 +32,9 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import io.xdag.core.BlockInfo;
+import io.xdag.core.SnapshotBalanceData;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.core.SnapshotBalanceData;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
@@ -52,7 +52,6 @@ public class KryoTest {
     public void init() {
         kryo = new Kryo();
         kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-//        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
@@ -79,12 +78,10 @@ public class KryoTest {
     public void serialize() {
         BlockInfo blockInfo = new BlockInfo();
         blockInfo.setHeight(100);
-//        System.out.println(blockInfo);
         try {
             byte[] data = serialize(blockInfo);
             BlockInfo blockInfo1 = (BlockInfo) deserialize(data, BlockInfo.class);
             assertEquals(blockInfo, blockInfo1);
-//            System.out.println(blockInfo1);
         } catch (SerializationException ignored) {
         } catch (DeserializationException e) {
             e.printStackTrace();
@@ -99,8 +96,6 @@ public class KryoTest {
         } catch (DeserializationException e) {
             e.printStackTrace();
         }
-
-
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {

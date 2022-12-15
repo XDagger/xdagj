@@ -24,6 +24,8 @@
 
 package io.xdag.crypto;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -32,9 +34,6 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
 import org.hyperledger.besu.crypto.SECP256K1;
 import org.hyperledger.besu.crypto.SECPSignature;
-
-import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * Transaction signing logic.

@@ -32,7 +32,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
-import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
@@ -46,7 +45,8 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
-
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.Date;
@@ -54,10 +54,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

@@ -26,7 +26,6 @@ package io.xdag.core;
 import static io.xdag.utils.BasicUtils.hash2Address;
 
 import java.math.BigInteger;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;

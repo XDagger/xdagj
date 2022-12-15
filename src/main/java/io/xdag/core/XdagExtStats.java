@@ -23,13 +23,12 @@
  */
 package io.xdag.core;
 
-import lombok.Getter;
-import lombok.Setter;
+import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-
-import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter

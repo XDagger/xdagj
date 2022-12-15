@@ -24,6 +24,8 @@
 
 package io.xdag.cli;
 
+import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+
 import io.xdag.Kernel;
 import io.xdag.Launcher;
 import io.xdag.config.Config;
@@ -36,15 +38,26 @@ import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.SnapshotJ;
 import io.xdag.db.SnapshotChainStore;
 import io.xdag.db.SnapshotChainStoreImpl;
+import io.xdag.db.SnapshotJ;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+import java.io.Console;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -53,15 +66,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
-
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 public class XdagCli extends Launcher {
 

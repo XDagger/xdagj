@@ -29,7 +29,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.annotation.Nonnull;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

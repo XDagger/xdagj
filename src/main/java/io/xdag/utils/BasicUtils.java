@@ -116,23 +116,6 @@ public class BasicUtils {
         return hashLow;
     }
 
-    // convert xdag to cheato
-//    public static long xdag2amount(double input) {
-//        if (input < 0) {
-//            throw new XdagOverFlowException();
-//        }
-//        double amount = Math.floor(input);
-//        long res = (long) amount << 32;
-//        input -= amount; // 小数部分
-//        input = input * Math.pow(2, 32);
-//        double tmp = Math.ceil(input);
-//        long result =  (long) (res + tmp);
-////        if (result < 0) {
-////            throw new XdagOverFlowException();
-////        }
-//        return result;
-//    }
-
     public static UInt64 xdag2amount(double input) {
         if (input < 0) {
             throw new XdagOverFlowException();

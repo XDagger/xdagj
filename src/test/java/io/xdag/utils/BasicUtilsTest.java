@@ -40,7 +40,6 @@ public class BasicUtilsTest {
 
     @Test
     public void TestXdag2amount() {
-
         BigDecimal a = BigDecimal.valueOf(972.8);
         assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()).toLong());
 
@@ -78,32 +77,6 @@ public class BasicUtilsTest {
 
         // Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
         assertEquals(1024.0, BasicUtils.amount2xdag(4398046511104L), 0.0);
-    }
-
-//    @Test(expected = XdagOverFlowException.class)
-//    public void TestAmount2xdagOverflow() {
-//        long a = -1;
-//        BasicUtils.amount2xdag(a);
-//    }
-
-    @Test
-    public void xdag_diff2logTest() {
-//        double res = BasicUtils.xdag_diff2log(
-//                BasicUtils.getDiffByHash(Bytes32.fromHexString("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
-//        System.out.println(res);
-
-    }
-
-    @Test
-    public void xdag_hashrate() {
-//        BigInteger diff = BasicUtils.getDiffByHash(
-//                Hex.decode("00000021c468294605ebcf8ce9462026caf42941ca82373e6ca5802d1fe339c8"));
-    }
-
-    @Test
-    public void xdag_log_difficulty2hashrateTest() {
-//        double res = BasicUtils.xdag_log_difficulty2hashrate(42.79010346356279);
-        //System.out.println("this is res :" + res);
     }
 
     @Test

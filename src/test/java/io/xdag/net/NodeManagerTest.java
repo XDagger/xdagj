@@ -23,18 +23,17 @@
  */
 package io.xdag.net;
 
+import static org.junit.Assert.assertTrue;
+
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.net.manager.NetDBManager;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
 public class NodeManagerTest {
 

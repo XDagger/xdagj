@@ -47,15 +47,11 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.BytesUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
-import io.xdag.utils.PubkeyAddressUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
@@ -149,7 +145,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         if (compareTo(msg.getEncoded().reverse().toArray(), 0, 20, channel.getAccountAddressHashByte(),0,20) != 0) {
 
             System.out.println(PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()));
-            byte[] zero = new byte[8];
             //TODO: 确定矿机协议，不再获取区块，直接获取Base58或者公钥的hash
             Miner oldMiner = channel.getMiner();
             // Not empty, it means that the corresponding block can be found and the address exists
@@ -172,9 +167,10 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
                     minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
                 }
             } else {
+                String address = PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte());
                 //to do nothing
                 log.debug("Can not receive the share from ip&port:{}, No such Address:{} exists,close channel with Address:{}",
-                        channel.getInetAddress().toString(),PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()));
+                        channel.getInetAddress().toString(), address, address);
                 ctx.close();
                 if(oldMiner != null) {
                     minerManager.getActivateMiners().remove(oldMiner.getAddressHash());

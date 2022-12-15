@@ -38,7 +38,6 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import java.net.InetAddress;
 import java.util.Objects;
 import javax.annotation.Nullable;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

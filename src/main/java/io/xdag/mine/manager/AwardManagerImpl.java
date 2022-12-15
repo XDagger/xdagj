@@ -24,25 +24,26 @@
 
 package io.xdag.mine.manager;
 
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.PoolConfig;
 import io.xdag.consensus.Task;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
-import io.xdag.config.PoolConfig;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
-import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
@@ -57,10 +58,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -553,10 +552,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void doPayments(Bytes32 hashLow, int paymentsPerBlock, PayData payData, int keyPos) {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
-//        HashMap<Address, KeyPair> inputMap = new HashMap<>();
-//        Address input = new Address(hash, XDAG_FIELD_IN);
-//        KeyPair inputKey = wallet.getAccount(keyPos);
-//        inputMap.put(input, inputKey);
         UInt64 payAmount = UInt64.ZERO;
         /**
          * 基金会和转账矿池部分代码 暂时不用 //先支付给基金会 long fundpay =

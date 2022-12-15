@@ -38,15 +38,19 @@ import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.core.*;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.Blockchain;
+import io.xdag.core.BlockchainImpl;
+import io.xdag.core.ImportResult;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.crypto.jni.Native;
+import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.math.BigInteger;
@@ -55,8 +59,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.Before;
 import org.junit.Rule;
@@ -140,8 +144,6 @@ public class SyncTest {
         long fourthTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime + 64000L + 64000L));
 
         Block addressBlock = generateAddressBlock(config, key, generateTime);
-//        Address address = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
-//        System.out.println(address.getAmount());
         pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block secondBlock = generateExtraBlock(config, key, secondTime, pending);
@@ -255,18 +257,15 @@ public class SyncTest {
             result = blockchain.tryToConnect(C);
         }
 
-//        generateTime = fourthTime;
         ref = D.getHashLow();
 
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-//            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
@@ -310,18 +309,15 @@ public class SyncTest {
             result = blockchain.tryToConnect(C2);
         }
 
-//        generateTime = fourthTime;
         ref = D2.getHashLow();
 
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-//            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();

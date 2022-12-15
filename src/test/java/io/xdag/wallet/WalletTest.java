@@ -33,7 +33,6 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
