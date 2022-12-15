@@ -24,6 +24,8 @@
 
 package io.xdag.mine.handler;
 
+import static io.xdag.net.XdagVersion.V03;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,27 +34,19 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
-import io.xdag.core.*;
 import io.xdag.crypto.Base58;
-import io.xdag.crypto.jni.Native;
 import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static io.xdag.config.Constants.BLOCK_HEAD_WORD;
-import static io.xdag.net.XdagVersion.V03;
-import static io.xdag.utils.BasicUtils.crc32Verify;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
@@ -151,23 +145,9 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     }
 
-//    public boolean isDataIllegal(byte[] uncryptData) {
-//        int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-//        int head = BytesUtils.bytesToInt(uncryptData, 0, true);
-//        // clean transport header
-//        System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-//        return (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc));
-//
-//    }
-
     public boolean initMiner(Bytes32 hash) {
         return channel.initMiner(hash);
     }
-
-//    public ImportResult tryToConnect(Block addressBlock) {
-//        return syncManager
-//                .validateAndAddNewBlock(new BlockWrapper(addressBlock, kernel.getConfig().getNodeSpec().getTTL()));
-//    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {

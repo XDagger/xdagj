@@ -26,7 +26,6 @@ package io.xdag.config;
 
 import io.xdag.crypto.randomx.RandomXFlag;
 import io.xdag.crypto.randomx.RandomXJNA;
-import io.xdag.crypto.randomx.RandomXWrapper;
 
 public class RandomXConstants {
 

@@ -140,8 +140,6 @@ public class SyncTest {
         long fourthTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime + 64000L + 64000L));
 
         Block addressBlock = generateAddressBlock(config, key, generateTime);
-//        Address address = new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT);
-//        System.out.println(address.getAmount());
         pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block secondBlock = generateExtraBlock(config, key, secondTime, pending);
@@ -255,18 +253,15 @@ public class SyncTest {
             result = blockchain.tryToConnect(C);
         }
 
-//        generateTime = fourthTime;
         ref = D.getHashLow();
 
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-//            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
@@ -310,18 +305,15 @@ public class SyncTest {
             result = blockchain.tryToConnect(C2);
         }
 
-//        generateTime = fourthTime;
         ref = D2.getHashLow();
 
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-//            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();

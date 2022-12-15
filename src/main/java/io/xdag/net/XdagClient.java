@@ -34,13 +34,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.node.Node;
-import lombok.extern.slf4j.Slf4j;
-
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j

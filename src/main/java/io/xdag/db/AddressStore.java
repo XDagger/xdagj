@@ -4,7 +4,6 @@ import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.checkerframework.checker.units.qual.A;
 
 /**
  * @author Dcj_Cory
@@ -40,16 +39,9 @@ public class AddressStore {
             log.debug("This pubkey don't exist");
             return UInt64.ZERO;
         }else {
-            UInt64 balance = UInt64.fromBytes(Bytes.wrap(data));
-            return balance;
+            return UInt64.fromBytes(Bytes.wrap(data));
         }
     }
-//    public UInt64 getBalanceByAddress(String Address){
-//        byte[] data;
-//        data = AddressSource.get(Hex.decode(Address)) == null ? UInt64.ZERO.toBytes().toArray() : AddressSource.get(Address);
-//        UInt64 balance = UInt64.fromBytes(Bytes.wrap(data));
-//        return balance;
-//    }
 
     public boolean addressIsExist(byte[] Address){
         return AddressSource.get(Address) != null;
@@ -62,8 +54,7 @@ public class AddressStore {
     }
 
     public UInt64 getAllBalance(){
-        UInt64 allBalance = UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{AMOUNT_SUM})));
-        return allBalance;
+        return UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{AMOUNT_SUM})));
     }
 
     public void updateAllBalance(UInt64 value){

@@ -24,6 +24,7 @@
 
 package io.xdag.mine.randomx;
 
+import static io.xdag.config.RandomXConstants.RANDOMX_FLAGS;
 import static io.xdag.config.RandomXConstants.RANDOMX_FORK_HEIGHT;
 import static io.xdag.config.RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT;
 import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_BLOCKS;
@@ -31,8 +32,6 @@ import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_LAG;
 import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS;
 import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG;
 import static io.xdag.config.RandomXConstants.XDAG_RANDOMX;
-import static io.xdag.config.RandomXConstants.RANDOMX_FLAGS;
-
 import static io.xdag.utils.BytesUtils.bytesToPointer;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
@@ -254,7 +253,7 @@ public class RandomX {
             randomXMemory.poolVm = RandomXJNA.INSTANCE.randomx_create_vm(RANDOMX_FLAGS, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.poolVm;
         } else {
-            randomXMemory.blockVm = RandomXJNA.INSTANCE.randomx_create_vm(RANDOMX_FLAGS, randomXMemory.rxCache, randomXMemory.rxDataset);;
+            randomXMemory.blockVm = RandomXJNA.INSTANCE.randomx_create_vm(RANDOMX_FLAGS, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.blockVm;
         }
     }
@@ -359,13 +358,6 @@ public class RandomX {
         // 如果快照在还没切到下一个seed更换周期时就重启，那么还是第一个seed是初始的preseed
         if (blockchain.getXdagStats().nmain < config.getSnapshotSpec().getSnapshotHeight() + (isTestNet
                 ? SEEDHASH_EPOCH_TESTNET_BLOCKS : SEEDHASH_EPOCH_BLOCKS)) {
-//            long firstMemIndex = randomXHashEpochIndex + 1;
-//            RandomXMemory firstMemory = globalMemory[(int) (firstMemIndex) & 1];
-//            firstMemory.seed = preseed;
-//            randomXPoolUpdateSeed(firstMemIndex);
-//            randomXHashEpochIndex = firstMemIndex;
-//            firstMemory.isSwitched = 0;
-//            randomXSetForkTime(blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight()));
             randomXLoadingSnapshot(preseed, forkTime);
         } else {
             this.randomXLoadingSnapshot();

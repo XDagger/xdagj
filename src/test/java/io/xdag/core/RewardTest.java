@@ -170,7 +170,6 @@ public class RewardTest {
 
         // 3. create 20 fork blocks
         for (int i = 0; i < 30; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));

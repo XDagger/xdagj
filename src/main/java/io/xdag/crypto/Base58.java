@@ -1,7 +1,6 @@
 package io.xdag.crypto;
 
 import io.xdag.utils.exception.AddressFormatException;
-
 import java.util.Arrays;
 
 public class Base58 {

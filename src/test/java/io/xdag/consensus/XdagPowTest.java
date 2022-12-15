@@ -44,7 +44,6 @@ public class XdagPowTest {
         MinerChannel channel = mock(MinerChannel.class);
         TaskShareMessage msg  = mock(TaskShareMessage.class);
 
-//        when(channel.getAddressHash())
         xdagPow.receiveNewShare(channel, msg);
 
         verify(xdagPow).receiveNewShare(channel, msg);

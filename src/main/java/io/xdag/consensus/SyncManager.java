@@ -24,34 +24,42 @@
 
 package io.xdag.consensus;
 
+import static io.xdag.core.ImportResult.EXIST;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
-import io.xdag.core.*;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.Blockchain;
+import io.xdag.core.ImportResult;
+import io.xdag.core.XdagBlock;
+import io.xdag.core.XdagState;
 import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes32;
-
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static io.xdag.core.ImportResult.*;
-import static io.xdag.utils.BasicUtils.hash2Address;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 @Getter

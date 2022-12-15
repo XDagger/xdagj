@@ -88,11 +88,6 @@ public class Constants {
         NEW_LINK
     }
 
-    public final static String SNAPTSHOT_KEY_TIME = "g_snapshot_time";
-    public final static String SNAPTSHOT_KEY_STATE = "g_xdag_state";
-    public final static String SNAPTSHOT_KEY_STATS = "g_xdag_stats";
-    public final static String SNAPTSHOT_KEY_EXTSTATS = "g_xdag_extstats";
-
     public final static String SNAPSHOT_KEY_STATS_MAIN = "g_snapshot_main";
     public final static String SNAPSHOT_PRE_SEED = "pre_seed";
 }

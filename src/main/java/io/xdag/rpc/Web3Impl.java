@@ -30,8 +30,6 @@ import io.xdag.rpc.dto.ConfigDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.web3.Web3XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModule;
-import org.checkerframework.checker.units.qual.Acceleration;
-
 import java.util.Map;
 
 public class Web3Impl implements Web3 {

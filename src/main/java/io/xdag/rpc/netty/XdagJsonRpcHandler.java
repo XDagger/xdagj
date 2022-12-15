@@ -35,7 +35,6 @@ import io.xdag.rpc.modules.XdagJsonRpcRequest;
 import io.xdag.rpc.modules.XdagJsonRpcRequestVisitor;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import java.io.IOException;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

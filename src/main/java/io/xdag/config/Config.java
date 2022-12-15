@@ -84,8 +84,6 @@ public interface Config {
     void initKeys() throws Exception;
 
     // rpc
-//    List<ModuleDescription> getRpcModules();
-//    boolean isRPCEnabled();
     RPCSpec getRPCSpec();
 
     // snapshot

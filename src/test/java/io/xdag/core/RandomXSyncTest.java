@@ -104,7 +104,6 @@ public class RandomXSyncTest {
         latch.await();
 
         String kernel2Diff = kernel2.getBlockchain().getBlockByHeight(nmain - 1).getInfo().getDifficulty().toString(16);
-//        System.out.println("第二次同步");
         assertEquals(expected, kernel2Diff);
 
         kernel1.getRandomx().randomXPoolReleaseMem();
@@ -112,7 +111,6 @@ public class RandomXSyncTest {
     }
 
     public void sync(Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
-
         List<Block> blocks = kernel1.getBlockchain().getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
             ImportResult result = kernel2.getBlockchain()
@@ -126,9 +124,7 @@ public class RandomXSyncTest {
 
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-//        ECKeyPair key = ECKeyPair.create(privateKey);
         KeyPair key = KeyPair.create(privateKey, Sign.CURVE, Sign.CURVE_NAME);
-//        System.out.println(key.getPrivateKey().toString(16));
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result;

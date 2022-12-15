@@ -24,6 +24,17 @@
 
 package io.xdag.core;
 
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
+
 import io.xdag.config.Config;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
@@ -47,13 +58,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.checkerframework.checker.units.qual.A;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
-
-import static io.xdag.core.XdagField.FieldType.*;
 
 @Slf4j
 @Getter
@@ -342,9 +350,6 @@ public class Block implements Cloneable {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.writeField(getEncodedHeader());
         List<Address> all = new ArrayList<>();
-//        if(coinBase != null){
-//            all.add(coinBase);
-//        }
         all.addAll(inputs);
         all.addAll(outputs);
         for (Address link : all) {

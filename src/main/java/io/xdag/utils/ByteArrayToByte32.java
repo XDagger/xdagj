@@ -1,7 +1,6 @@
 package io.xdag.utils;
 
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 
 /**
@@ -15,8 +14,7 @@ public class ByteArrayToByte32 {
         return mutableBytes32;
     }
     public static byte[] byte32ToArray(MutableBytes32 value){
-        byte[] bytes = value.mutableCopy().slice(8,20).toArray();
-        return bytes;
+        return value.mutableCopy().slice(8,20).toArray();
     }
 
 }

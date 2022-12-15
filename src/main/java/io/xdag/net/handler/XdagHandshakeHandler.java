@@ -59,7 +59,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         channel.initWithNode(
                 // 连接到对方的channel 并将对方记录为node
                 remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort());
-        log.debug("connect with node:{}",remoteAddress.toString());
+        log.debug("connect with node:{}", remoteAddress);
         // TODO:如果为服务器端 发送pubKey
         if (isServer) {
             channel.sendPubkey(ctx);

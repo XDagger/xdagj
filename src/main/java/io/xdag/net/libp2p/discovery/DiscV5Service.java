@@ -27,7 +27,6 @@ package io.xdag.net.libp2p.discovery;
 import io.xdag.net.libp2p.Libp2pUtils;
 import io.xdag.utils.SafeFuture;
 import io.xdag.utils.Service;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
