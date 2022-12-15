@@ -34,7 +34,6 @@ import io.xdag.config.spec.SnapshotSpec;
 import io.xdag.config.spec.WalletSpec;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
-import io.xdag.crypto.jni.Native;
 import io.xdag.rpc.modules.ModuleDescription;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -178,7 +177,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     public void initKeys() throws Exception {
-        InputStream inputStream = Native.class.getClassLoader().getResourceAsStream("dnet_keys.bin");
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("dnet_keys.bin");
         if (inputStream == null) {
             throw new RuntimeException("can not find dnet_key.bin file.");
         } else {
@@ -189,15 +188,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             System.arraycopy(data, 1024, xKeys.pub, 0, 1024);
             System.arraycopy(data, 2048, xKeys.sect0_encoded, 0, 512);
             System.arraycopy(data, 2048 + 512, xKeys.sect0, 0, 512);
-
-            Native.init(this);
-            if (Native.load_dnet_keys(data, data.length) < 0) {
-                throw new Exception("dnet crypt init failed");
-            }
-
-            if (Native.dnet_crypt_init() < 0) {
-                throw new Exception("dnet crypt init failed");
-            }
         }
     }
 

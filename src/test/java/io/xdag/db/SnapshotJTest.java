@@ -52,7 +52,6 @@ import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.mine.randomx.RandomX;
@@ -125,10 +124,6 @@ public class SnapshotJTest {
         snapshotConfig.getNodeSpec().setStoreDir(root2.newFolder().getAbsolutePath());
         snapshotConfig.getNodeSpec().setStoreBackupDir(root2.newFolder().getAbsolutePath());
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
@@ -160,11 +155,11 @@ public class SnapshotJTest {
         kernel.setOrphanPool(orphanPool);
         kernel.setWallet(wallet);
 
-        RandomX randomX = new RandomX(config);
-        kernel.setRandomx(randomX);
+        RandomX nativeRandomX = new RandomX(config);
+        kernel.setRandomx(nativeRandomX);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setBlockchain(blockchain);
-        randomX.init();
+        nativeRandomX.init();
 
         backup = root2.newFolder();
         createBlockchain();
