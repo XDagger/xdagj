@@ -7,4 +7,3 @@ project ("xdaglib")
 
 # Include sub-projects.
 add_subdirectory ("dfs")
-add_subdirectory ("randomx")

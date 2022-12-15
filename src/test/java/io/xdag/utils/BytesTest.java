@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class BytesTest {
