@@ -110,7 +110,7 @@ public class XdagCliTest {
                     --importmnemonic <mnemonic>       import HDWallet mnemonic
                     --importprivatekey <key>          import hex key
                     --loadsnapshot <filename>         load snapshot
-                    --makesnapshot                    make snapshot
+                    --makesnapshot <covertuint>       make snapshot
                     --password <password>             wallet password
                     --version                         show version
                 """;

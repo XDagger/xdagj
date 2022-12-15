@@ -26,9 +26,10 @@ package io.xdag.rpc.modules.web3;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.BasicUtils.getHash;
+import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
+import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
 
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -57,6 +58,7 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,18 +134,22 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     @Override
     public String xdag_getBalance(String address) {
         Bytes32 hash;
-        if (StringUtils.length(address) == 32) {
-            hash = address2Hash(address);
-        } else {
-            hash = BasicUtils.getHash(address);
-        }
-//        byte[] key = new byte[32];
         MutableBytes32 key = MutableBytes32.create();
-//        System.arraycopy(Objects.requireNonNull(hash), 8, key, 8, 24);
-        key.set(8, hash.slice(8, 24));
-        Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-        String balance = String.format("%.9f", amount2xdag(block.getInfo().getAmount()));
-
+        String balance;
+        if (checkAddress(address)) {
+            hash = pubAddress2Hash(address);
+            key.set(8, Objects.requireNonNull(hash).slice(8, 20));
+            balance = String.format("%.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(fromBase58(address))));
+        } else {
+            if (StringUtils.length(address) == 32) {
+                hash = address2Hash(address);
+            } else {
+                hash = getHash(address);
+            }
+            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
+            Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
+            balance = String.format("%.9f", amount2xdag(block.getInfo().getAmount()));
+        }
 //        double balance = amount2xdag(block.getInfo().getAmount());
         return balance;
     }

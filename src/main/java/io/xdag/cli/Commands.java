@@ -453,25 +453,19 @@ public class Commands {
         if (raw) {
             if (block.getInputs().size() != 0) {
                 inputs = new StringBuilder();
-                for (int i = 0; i < block.getInputs().size(); i++) {
+                for (Address input : block.getInputs()) {
                     inputs.append(String.format("     input: %s           %.9f%n",
-                            block.getInputs().get(i).getIsAddress() ? toBase58(Hash2byte(block.getInputs().get(i).getAddress())) :
-                                    hash2Address(Bytes32.wrap(
-                                    kernel.getBlockchain().getBlockByHash(block.getInputs().get(i).getAddress(), false)
-                                            .getInfo().getHash())),
-                            amount2xdag(block.getInputs().get(i).getAmount())
+                            input.getIsAddress() ? toBase58(Hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
+                            amount2xdag(input.getAmount())
                     ));
                 }
             }
             if (block.getOutputs().size() != 0) {
                 outputs = new StringBuilder();
-                for (int i = 0; i < block.getOutputs().size(); i++) {
+                for (Address output : block.getOutputs()) {
                     outputs.append(String.format("    output: %s           %.9f%n",
-                            block.getOutputs().get(i).getIsAddress() ? toBase58(Hash2byte(block.getOutputs().get(i).getAddress())) :
-                                    hash2Address(Bytes32.wrap(
-                                    kernel.getBlockchain().getBlockByHash(block.getOutputs().get(i).getAddress(), false)
-                                            .getInfo().getHash())),
-                            amount2xdag(block.getOutputs().get(i).getAmount())
+                            output.getIsAddress() ? toBase58(Hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
+                            amount2xdag(output.getAmount())
                     ));
                 }
             }
@@ -678,7 +672,7 @@ public class Commands {
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
-                                               block as address: details
+                                               histories of address: details
                  direction  address                                    amount                 time
                        """;
         StringBuilder tx = new StringBuilder();
@@ -696,6 +690,11 @@ public class Commands {
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
                 tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                        amount2xdag(address.getAmount()),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+            } else if (address.getType().equals(XDAG_FIELD_COINBASE) && (blockInfo.flags&BI_MAIN) != 0) {
+                tx.append(String.format("   coinbase: %s           %.9f   %s%n", hash2Address(address.getAddress()),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));

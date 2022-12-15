@@ -384,9 +384,9 @@ public class RandomX {
             long seedHeight = blockchain.getXdagStats().nmain & ~seedEpoch;
             long preSeedHeight = seedHeight - seedEpoch - 1;
 
-                if (preSeedHeight >= randomXForkSeedHeight) {
-                    randomXHashEpochIndex = 0;
-                    randomXPoolMemIndex = -1;
+            if (preSeedHeight >= randomXForkSeedHeight) {
+                randomXHashEpochIndex = 0;
+                randomXPoolMemIndex = -1;
 
                 block = blockchain.getBlockByHeight(preSeedHeight);
                 long memoryIndex = randomXHashEpochIndex + 1;
