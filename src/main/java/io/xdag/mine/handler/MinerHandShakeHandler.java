@@ -33,6 +33,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
 import io.xdag.consensus.SyncManager;
 import io.xdag.core.*;
+import io.xdag.crypto.Base58;
 import io.xdag.crypto.jni.Native;
 import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
@@ -73,7 +74,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        System.out.println(in.readableBytes());
         if (in.readableBytes() >= MESSAGE_SIZE) {
             log.debug("Receive a address from ip&port:{}",ctx.channel().remoteAddress());
             byte[] message = new byte[MESSAGE_SIZE];
@@ -93,34 +93,38 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 //                byte[] address = ByteArrayToByte32.byte32ToArray(Bytes32.wrap(message).mutableCopy());
 //                System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
 //                Block addressBlock = new Block(new XdagBlock(uncryptData));
-
+            if(!Base58.checkBytes24(message)){
+                ctx.close();
+                log.warn("Address hash is invalid");
+                return;
+            }
                 // TODO:
-                checkProtocol(ctx,message);
-                System.out.println(PubkeyAddressUtils.toBase58(message));
-                if (!initMiner(ByteArrayToByte32.arrayToByte32(message))) {
-                    log.debug("too many connect for the miner: {},ip&port:{}",
-                            PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
-                    ctx.close();
-                    return;
-                }
-                AtomicInteger channelsAccount = kernel.getChannelsAccount();
-                if (channelsAccount.get() >= kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit()) {
-                    ctx.close();
-                    log.warn("Too many channels in this pool");
-                    return;
-                }
+            byte[] addressHash = Arrays.copyOfRange(message,0,20);
+            checkProtocol(ctx,addressHash);
+            if (!initMiner(ByteArrayToByte32.arrayToByte32(addressHash))) {
+                log.debug("too many connect for the miner: {},ip&port:{}",
+                        PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
+                ctx.close();
+                return;
+            }
+            AtomicInteger channelsAccount = kernel.getChannelsAccount();
+            if (channelsAccount.get() >= kernel.getConfig().getPoolSpec().getGlobalMinerChannelLimit()) {
+                ctx.close();
+                log.warn("Too many channels in this pool");
+                return;
+            }
 
-                kernel.getChannelsAccount().getAndIncrement();
-                channel.getInBound().add(1L);
-                minerManager.addActivateChannel(channel);
-                channel.setIsActivate(true);
-                channel.setConnectTime(new Date(System.currentTimeMillis()));
-                channel.setAccountAddressHash(ByteArrayToByte32.arrayToByte32(message));
-                channel.setAccountAddressHashByte(message);
-                channel.activateHandler(ctx, V03);
-                ctx.pipeline().remove(this);
-                // TODO: 2020/5/8 There may be a bug here. If you join infinitely, won't it be created wirelessly?
-                log.debug("add a new miner from ip&port:{},miner's address: [" + PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress().toString());
+            kernel.getChannelsAccount().getAndIncrement();
+            channel.getInBound().add(1L);
+            minerManager.addActivateChannel(channel);
+            channel.setIsActivate(true);
+            channel.setConnectTime(new Date(System.currentTimeMillis()));
+            channel.setAccountAddressHash(ByteArrayToByte32.arrayToByte32(addressHash));
+            channel.setAccountAddressHashByte(addressHash);
+            channel.activateHandler(ctx, V03);
+            ctx.pipeline().remove(this);
+            // TODO: 2020/5/8 There may be a bug here. If you join infinitely, won't it be created wirelessly?
+            log.debug("add a new miner from ip&port:{},miner's address: [" + PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress().toString());
         } else {
             log.debug("length less than " + MESSAGE_SIZE + " bytes");
         }

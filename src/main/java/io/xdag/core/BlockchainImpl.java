@@ -358,9 +358,10 @@ public class BlockchainImpl implements Blockchain {
 
                     }
                 }else {
-                    if(addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
+                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
+                        return result;
                     }
                 }
                 /***
@@ -795,12 +796,7 @@ public class BlockchainImpl implements Blockchain {
         }
 
         // 不一定大于0 因为可能部分金额扣除
-        UInt64 remain = sumIn.subtract(sumOut);
         //TODO:need determine what is data;
-        if(!remain.isZero()){
-            addAmount(block.getInfo().getSnapshotInfo().getData(),remain);
-        }
-        block.getInfo().setAmount(UInt64.ZERO);
         updateBlockFlag(block, BI_APPLIED, true);
         return UInt64.ZERO;
     }
@@ -816,7 +812,7 @@ public class BlockchainImpl implements Blockchain {
                     if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                         addAndAccept(ref,link.getAmount());
                         sum = sum.subtract(link.getAmount());
-                    } else {
+                    } else if(link.getType() == XDAG_FIELD_OUT){
                         subtractAndAccept(ref,link.getAmount());
                         sum = sum.add(link.getAmount());
                     }
@@ -831,7 +827,6 @@ public class BlockchainImpl implements Blockchain {
                 }
 
             }
-            subtractAmount(block.getInfo().getSnapshotInfo().getData(), sum);
             updateBlockFlag(block, BI_APPLIED, false);
         }
         updateBlockFlag(block, BI_MAIN_REF, false);
@@ -968,7 +963,6 @@ public class BlockchainImpl implements Blockchain {
             preTop = new Address(Bytes32.wrap(pretopHash), XdagField.FieldType.XDAG_FIELD_OUT,false);
             res++;
         }
-
         //TODO:add comments
         Address coinbase = new Address(keyPair2Hash(wallet.getDefKey()),
                 FieldType.XDAG_FIELD_COINBASE,
@@ -1598,25 +1592,21 @@ public class BlockchainImpl implements Blockchain {
 
     private void reward(UInt64 amount, long height){
         Block rewardBlock = blockStore.getBlockByHash(getBlockByHeight(height).getHashLow(),true);
-        List<Address> outputs = rewardBlock.getOutputs();
-        for (Address output: outputs) {
-            if(output.type.equals(FieldType.XDAG_FIELD_COINBASE)){
-                addAmount(BasicUtils.Hash2byte(output.getAddress()),amount);
-                UInt64 allBalance = addressStore.getAllBalance();
-                allBalance = allBalance.addExact(amount);
-                addressStore.updateAllBalance(allBalance);
-            }
+        Address coinbase = rewardBlock.getCoinBase();
+        if(coinbase != null){
+            addAmount(BasicUtils.Hash2byte(coinbase.getAddress()),amount);
+            UInt64 allBalance = addressStore.getAllBalance();
+            allBalance = allBalance.addExact(amount);
+            addressStore.updateAllBalance(allBalance);
         }
     }
     private void cancelReward(Block block,UInt64 amount){
-        List<Address> outputs = block.getOutputs();
-        for (Address output: outputs){
-            if(output.type.equals(FieldType.XDAG_FIELD_COINBASE)){
-                subtractAmount(Hash2byte(output.getAddress()),amount);
-                UInt64 allBalance = addressStore.getAllBalance();
-                allBalance = allBalance.subtractExact(amount);
-                addressStore.updateAllBalance(allBalance);
-            }
+        Address coinbase = block.getCoinBase();
+        if(coinbase != null){
+            subtractAmount(BasicUtils.Hash2byte(coinbase.getAddress()),amount);
+            UInt64 allBalance = addressStore.getAllBalance();
+            allBalance = allBalance.subtractExact(amount);
+            addressStore.updateAllBalance(allBalance);
         }
     }
 
