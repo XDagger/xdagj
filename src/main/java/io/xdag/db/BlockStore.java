@@ -30,19 +30,12 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
+import io.xdag.core.*;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.core.SnapshotInfo;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -61,7 +54,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 @Slf4j
 public class BlockStore {
@@ -184,12 +179,17 @@ public class BlockStore {
     }
 
     private void kryoRegister() {
+        kryo.setReferences(false);
+        kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+//        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
         kryo.register(XdagStats.class);
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
+        kryo.register(UInt64.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -607,7 +607,7 @@ public class BlockStore {
     }
 
 
-    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, BigInteger amount,
+    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, UInt64 amount,
             long time, int id, byte[] remark) { // id is used to avoid repeat key
         if (remark == null) {
             remark = new byte[]{};
@@ -619,7 +619,7 @@ public class BlockStore {
         byte[] value;
         value = BytesUtils.merge(type.asByte(),
                 BytesUtils.merge(txHashlow.toArray(),
-                        BytesUtils.merge(BytesUtils.bigIntegerToBytes(amount, 8, true),
+                            BytesUtils.merge(amount.toBytes().reverse().toArray(),
                                 BytesUtils.merge(BytesUtils.longToBytes(time, true),
                                         BytesUtils.merge(BytesUtils.longToBytes(remark.length, true),
                                                 remark))))); // type + tx hash + amount + time + remark_length + remark
@@ -634,9 +634,10 @@ public class BlockStore {
             byte type = BytesUtils.subArray(value, 0, 1)[0];
             XdagField.FieldType fieldType = XdagField.FieldType.fromByte(type);
             Bytes32 hashlow = Bytes32.wrap(BytesUtils.subArray(value, 1, 32));
-            long amount = BytesUtils.bytesToLong(BytesUtils.subArray(value, 33, 8), 0, true);
+            UInt64 amount = UInt64.fromBytes(Bytes.wrap(BytesUtils.subArray(value, 33, 8)).reverse());
+//            long amount = BytesUtils.bytesToLong(, 0, true);
             long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
-            Address address = new Address(hashlow, fieldType, amount);
+            Address address = new Address(hashlow, fieldType, amount,false);
 
             long remarkLength = BytesUtils.bytesToLong(BytesUtils.subArray(value, 49, 8), 0, true);
 

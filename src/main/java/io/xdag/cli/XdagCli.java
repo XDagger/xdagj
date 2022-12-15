@@ -140,6 +140,7 @@ public class XdagCli extends Launcher {
 
         Option makeSnapshotOption = Option.builder()
                 .longOpt(XdagOption.MAKE_SNAPSHOT.toString()).desc("make snapshot")
+                .hasArg(true).optionalArg(true).argName("covertuint").type(String.class)
                 .build();
         addOption(makeSnapshotOption);
     }
@@ -205,7 +206,12 @@ public class XdagCli extends Launcher {
             File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
         } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
-            makeSnapshot();
+            boolean convertUInt = false;
+            String action = cmd.getOptionValue(XdagOption.MAKE_SNAPSHOT.toString());
+            if (action != null && action.trim().equals("convertuint")) {
+                convertUInt = true;
+            }
+            makeSnapshot(convertUInt);
         } else {
             if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
                 String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
@@ -559,8 +565,9 @@ public class XdagCli extends Launcher {
         return new String(console.readPassword(prompt));
     }
 
-    public void makeSnapshot() {
-
+    public void makeSnapshot(boolean b) {
+        System.out.println("make snapshot start");
+        System.out.println("convertuint = " + b);
         long start = System.currentTimeMillis();
         this.getConfig().getSnapshotSpec().setSnapshotJ(true);
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());
@@ -572,7 +579,7 @@ public class XdagCli extends Launcher {
         SnapshotJ index = new SnapshotJ(DatabaseName.INDEX.toString());
         index.setConfig(getConfig());
         index.init();
-        index.makeSnapshot(blockSource, snapshotSource);
+        index.makeSnapshot(blockSource, snapshotSource, b);
 
         long end = System.currentTimeMillis();
         System.out.println("make snapshot done");

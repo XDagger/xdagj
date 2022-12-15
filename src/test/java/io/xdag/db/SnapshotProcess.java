@@ -175,7 +175,7 @@ public class SnapshotProcess {
             log.debug("create No." + i + " extra block");
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
@@ -216,7 +216,7 @@ public class SnapshotProcess {
         int i = 0;
         for (Block block : blocks) {
 
-            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount(), block.getTimestamp(),
+            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount().toLong(), block.getTimestamp(),
                     block.getHash().toArray(), block.getInfo().getFlags());
             if (i < 30) {
                 snapshotChainStore

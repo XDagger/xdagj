@@ -52,7 +52,7 @@ public class MintTest {
      * 根据当前区块数量计算奖励金额 cheato *
      */
     public long getCurrentReward() {
-        return xdag2amount(1024);
+        return xdag2amount(1024).toLong();
     }
 
     public long getReward(long time, long num) {

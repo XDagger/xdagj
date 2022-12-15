@@ -31,17 +31,16 @@ import static io.xdag.core.BlockType.MAIN_BLOCK;
 import static io.xdag.core.BlockType.SNAPSHOT;
 import static io.xdag.core.BlockType.TRANSACTION;
 import static io.xdag.core.BlockType.WALLET;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.PubkeyAddressUtils.toBase58;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
 import io.xdag.Kernel;
 import io.xdag.cli.Commands;
 import io.xdag.core.*;
+import io.xdag.rpc.dto.AccountResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
@@ -73,6 +72,18 @@ public class XdagModuleChainBase implements XdagModuleChain {
     @Override
     public BlockResultDTO getBlockByHash(String hash) {
         return getBlockDTOByHash(hash);
+    }
+
+    @Override
+    public AccountResultDTO getAccountByAddress(String address) {
+        return getAccountDTOByAddress(address);
+    }
+
+    private AccountResultDTO getAccountDTOByAddress(String address) {
+        AccountResultDTO.AccountResultDTOBuilder accountResultDTOBuilder = AccountResultDTO.builder();
+        accountResultDTOBuilder.balance(kernel.getAddressStore().getBalanceByAddress(Hash2byte(pubAddress2Hash(address).mutableCopy())).toString())
+                .transactions(getTxHistory(address));
+        return accountResultDTOBuilder.build();
     }
 
     @Override
@@ -229,18 +240,18 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
         for (Address input : inputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
-            linkBuilder.address(hash2Address(input.getHashLow()))
-                    .hashlow(input.getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(input.getAmount().longValue())))
+            linkBuilder.address(input.getIsAddress() ? toBase58(Hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
+                    .hashlow(input.getAddress().toUnprefixedHexString())
+                    .amount(String.format("%.9f", amount2xdag(input.getAmount())))
                     .direction(0);
             links.add(linkBuilder.build());
         }
 
         for (Address output : outputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
-            linkBuilder.address(hash2Address(output.getHashLow()))
-                    .hashlow(output.getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(output.getAmount().longValue())))
+            linkBuilder.address(output.getIsAddress() ? toBase58(Hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
+                    .hashlow(output.getAddress().toUnprefixedHexString())
+                    .amount(String.format("%.9f", amount2xdag(output.getAmount())))
                     .direction(1);
             links.add(linkBuilder.build());
         }
@@ -268,16 +279,38 @@ public class XdagModuleChainBase implements XdagModuleChain {
         }
         // 2. tx history info
         for (TxHistory txHistory : txHistories) {
-            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getHashLow(), false).getInfo();
+            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false).getInfo();
             if((blockInfo.flags&BI_APPLIED)==0){
                 continue;
             }
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
-            txLinkBuilder.address(hash2Address(txHistory.getAddress().getHashLow()))
-                    .hashlow(txHistory.getAddress().getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount().longValue())))
+            txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
+                    .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
+                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
                             txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)
+                    .time(xdagTimestampToMs(txHistory.getTimeStamp()))
+                    .remark(txHistory.getRemark());
+            txLinks.add(txLinkBuilder.build());
+        }
+        return txLinks;
+    }
+
+    private List<TxLink> getTxHistory(String address) {
+        List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(pubAddress2Hash(address));
+        List<TxLink> txLinks = new ArrayList<>();
+        for (TxHistory txHistory : txHistories) {
+            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false).getInfo();
+            if((blockInfo.flags&BI_APPLIED)==0){
+                continue;
+            }
+            TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
+            txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
+                    .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
+                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
+                    .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
+                            txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 :
+                            txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
                     .time(xdagTimestampToMs(txHistory.getTimeStamp()))
                     .remark(txHistory.getRemark());
             txLinks.add(txLinkBuilder.build());

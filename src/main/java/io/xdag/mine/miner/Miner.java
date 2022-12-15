@@ -34,6 +34,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,10 +50,9 @@ public class Miner {
      * 保存这个矿工的地址
      */
     private final Bytes32 addressHash;
-    /**
-     * 这个保存的是前8位为0 的地址 主要用于查询
-     */
-    private final Bytes32 addressHashLow;
+    @Getter
+    @Setter
+    private final byte[] addressHashByte;
     /**
      * 相同账户地址的channel数量
      */
@@ -111,9 +113,7 @@ public class Miner {
         log.debug("init the new miner:{}", addressHash.toHexString());
         this.addressHash = addressHash;
 //        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
-        addressHash.mutableCopy();
-        this.addressHashLow = addressHash.mutableCopy();
-        ((MutableBytes32) this.addressHashLow).setLong(0, 0);
+        addressHashByte = ByteArrayToByte32.byte32ToArray(addressHash.mutableCopy());
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
         this.meanLogDiff = 0.0;
@@ -154,6 +154,7 @@ public class Miner {
                     return false;
                 }
             }
+            log.debug("remove Miner: {}", PubkeyAddressUtils.toBase58(addressHashByte));
             return true;
         } else {
             return false;
@@ -232,10 +233,6 @@ public class Miner {
 
     public double getPrevDiffSum(long key) {
         return prevDiffSum.get(key);
-    }
-
-    public Bytes32 getAddressHashLow() {
-        return this.addressHashLow;
     }
 
     public Map<InetSocketAddress, MinerChannel> getChannels() {

@@ -29,6 +29,7 @@ import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
+import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,6 +44,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class BasicUtils {
 
@@ -88,6 +91,25 @@ public class BasicUtils {
         return res;
     }
 
+    public static Bytes32 pubAddress2Hash(String address) {
+        Bytes ret = Bytes.wrap(PubkeyAddressUtils.fromBase58(address));
+        MutableBytes32 res = MutableBytes32.create();
+        res.set(8, ret);
+        return res;
+    }
+
+    public static Bytes32 keyPair2Hash(KeyPair keyPair) {
+        Bytes ret = Bytes.wrap(Keys.toBytesAddress(keyPair));
+        MutableBytes32 res = MutableBytes32.create();
+        res.set(8, ret);
+        return res;
+    }
+
+    public static byte[] Hash2byte(MutableBytes32 hash){
+        Bytes bytes = hash.slice(8,20);
+        return bytes.toArray();
+    }
+
     public static byte[] getHashlowByHash(byte[] hash) {
         byte[] hashLow = new byte[32];
         System.arraycopy(hash, 8, hashLow, 8, 24);
@@ -95,19 +117,33 @@ public class BasicUtils {
     }
 
     // convert xdag to cheato
-    public static long xdag2amount(double input) {
+//    public static long xdag2amount(double input) {
+//        if (input < 0) {
+//            throw new XdagOverFlowException();
+//        }
+//        double amount = Math.floor(input);
+//        long res = (long) amount << 32;
+//        input -= amount; // 小数部分
+//        input = input * Math.pow(2, 32);
+//        double tmp = Math.ceil(input);
+//        long result =  (long) (res + tmp);
+////        if (result < 0) {
+////            throw new XdagOverFlowException();
+////        }
+//        return result;
+//    }
+
+    public static UInt64 xdag2amount(double input) {
         if (input < 0) {
             throw new XdagOverFlowException();
         }
-        double amount = Math.floor(input);
-        long res = (long) amount << 32;
+        long amount = (long) Math.floor(input);
+
+        UInt64 res = UInt64.valueOf(amount).shiftLeft(32);
         input -= amount; // 小数部分
         input = input * Math.pow(2, 32);
-        double tmp = Math.ceil(input);
-        long result =  (long) (res + tmp);
-//        if (result < 0) {
-//            throw new XdagOverFlowException();
-//        }
+        long tmp = (long) Math.ceil(input);
+        UInt64 result = res.add(tmp);
         return result;
     }
 
@@ -124,10 +160,21 @@ public class BasicUtils {
      * Xfer:transferred 4398046511104 1024.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 1024
      */
     public static double amount2xdag(long xdag) {
+        if (xdag < 0) {
+            throw new XdagOverFlowException();
+        }
         long first = xdag >>> 32;
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
         BigDecimal bigDecimal = new BigDecimal(first + tem);
+        return bigDecimal.setScale(12, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    public static double amount2xdag(UInt64 xdag) {
+        UInt64 first = xdag.shiftRight(32);
+        UInt64 temp = xdag.subtract(first.shiftLeft(32));
+        double tem = 1.0*temp.toLong()/Math.pow(2, 32);
+        BigDecimal bigDecimal = new BigDecimal(first.toLong() + tem);
         return bigDecimal.setScale(12, RoundingMode.HALF_UP).doubleValue();
     }
 
@@ -193,6 +240,10 @@ public class BasicUtils {
 
     public static int compareAmountTo(long amount1, long amount2) {
         return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
+    }
+
+    public static int compareAmountTo(UInt64 amount1, UInt64 amount2) {
+        return amount1.compareTo(amount2);
     }
 
     public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {

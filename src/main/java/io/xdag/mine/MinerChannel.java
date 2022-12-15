@@ -34,6 +34,7 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
+import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.handler.Miner03;
@@ -55,6 +56,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +65,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
 @Getter
@@ -74,6 +78,7 @@ public class MinerChannel {
     private final Kernel kernel;
     private final Config config;
     private final BlockStore blockStore;
+    private final AddressStore addressStore;
     private final MinerManager minerManager;
     /**
      * 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs
@@ -132,6 +137,9 @@ public class MinerChannel {
     @Getter
     @Setter
     private Bytes32 accountAddressHash;
+    @Getter
+    @Setter
+    private byte[] accountAddressHashByte;
     /**
      * 保存上一轮的share
      */
@@ -198,6 +206,7 @@ public class MinerChannel {
         this.isServer = isServer;
 
         this.blockStore = kernel.getBlockStore();
+        this.addressStore = kernel.getAddressStore();
         this.minerManager = kernel.getMinerManager();
 
         // 容器的初始化
@@ -252,7 +261,8 @@ public class MinerChannel {
 
     public boolean initMiner(Bytes32 accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        String addrHexStr = accountAddressHash.toHexString();
+        this.accountAddressHashByte = ByteArrayToByte32.byte32ToArray(accountAddressHash.mutableCopy());
+        String addrHexStr = PubkeyAddressUtils.toBase58(accountAddressHashByte);
         log.debug("Init A Miner:" + addrHexStr);
         // 判断这个矿工是否已经存在了
         if (minerManager !=null && minerManager.getActivateMiners().containsKey(accountAddressHash)) {
@@ -317,24 +327,17 @@ public class MinerChannel {
      * 矿池发送余额给矿工
      */
     public void sendBalance() {
-//        byte[] hashlow = new byte[32];
-        MutableBytes32 hashlow = MutableBytes32.create();
-//        Bytes32 hashlow = Bytes32.wrap(accountAddressHash.slice(8, 24));
-        hashlow.set(8, accountAddressHash.slice(8, 24));
-//        System.arraycopy(accountAddressHash,8,hashlow,8,24);
-        Block block = blockStore.getBlockByHash(hashlow, false);
-
-        long amount = 0;
-        if (block == null) {
-            log.debug("Can't found block,{}", hashlow.toHexString());
+        UInt64 amount = UInt64.ZERO;
+        if (!addressStore.addressIsExist(accountAddressHashByte)){
+            log.debug("Can't found address,{}", PubkeyAddressUtils.toBase58(accountAddressHashByte));
         } else {
-            amount = block.getInfo().getAmount();
+            amount = addressStore.getBalanceByAddress(accountAddressHashByte);
         }
 //        byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false), BytesUtils.subArray(accountAddressHash.toArray(), 8, 24));
         MutableBytes32 data = MutableBytes32.create();
 //        Bytes data = Bytes.wrap(Bytes.ofUnsignedLong(amount), accountAddressHash.slice(8, 24));
-        data.setLong(0, amount);
-        data.set(8, accountAddressHash.slice(8, 24));
+        data.set(0,amount.toBytes());
+        data.set(8, Bytes.wrap(accountAddressHashByte));
         log.debug("update miner balance {}", data.toHexString());
         miner03.sendMessage(data);
     }
@@ -387,7 +390,7 @@ public class MinerChannel {
         if(this.miner == null){
             return StringUtils.EMPTY;
         }else {
-            return BasicUtils.hash2Address(this.miner.getAddressHash());
+            return PubkeyAddressUtils.toBase58(accountAddressHashByte);
         }
     }
     /**

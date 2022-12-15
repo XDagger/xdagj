@@ -73,6 +73,7 @@ public class XdagField implements Cloneable {
         XDAG_FIELD_HEAD(0x01),
         // 输入
         XDAG_FIELD_IN(0x02),
+
         // 输入
         XDAG_FIELD_OUT(0x03),
         // 输入签名
@@ -84,10 +85,15 @@ public class XdagField implements Cloneable {
         XDAG_FIELD_HEAD_TEST(0x08),
         XDAG_FIELD_REMARK(0x09),
         XDAG_FIELD_SNAPSHOT(0x0A),
-        // 快照
-        XDAG_FIELD_RESERVE2(0x0B),
-        XDAG_FIELD_RESERVE3(0x0C),
-        XDAG_FIELD_RESERVE4(0x0D),
+        /***
+         *sava address mined mainBlock
+         */
+        XDAG_FIELD_COINBASE(0x0B),
+        /***
+         *new tx type
+         */
+        XDAG_FIELD_INPUT(0x0C),
+        XDAG_FIELD_OUTPUT(0x0D),
         XDAG_FIELD_RESERVE5(0x0E),
         XDAG_FIELD_RESERVE6(0x0F);
 
