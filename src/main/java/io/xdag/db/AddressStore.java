@@ -52,7 +52,7 @@ public class AddressStore {
 //    }
 
     public boolean addressIsExist(byte[] Address){
-        return AddressSource.get(Address) == null ? false : true;
+        return AddressSource.get(Address) != null;
     }
 
     public void addAddress(byte[] Address){

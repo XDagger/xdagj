@@ -25,6 +25,7 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.dto.AccountResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.utils.TypeConverter;
 import lombok.extern.slf4j.Slf4j;
@@ -112,5 +113,10 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     @Override
     public String getMaxXferBalance() {
         return xdagModuleChain.getMaxXferBalance();
+    }
+
+    @Override
+    public AccountResultDTO getAccountByAddress(String address) {
+        return xdagModuleChain.getAccountByAddress(address);
     }
 }
