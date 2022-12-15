@@ -99,7 +99,7 @@ public class WalletUtilsTest {
 
         // Verify address according to https://iancoleman.io/bip39/
         Bip32ECKeyPair key = WalletUtils.importMnemonic(wallet, pwd, mnemonic, 0);
-        assertEquals("58d246a56a26c31b75c164e8ab45af13028757fb", BytesUtils.toHexString(Keys.toBytesAddress(key.getKeyPair())));
+        assertEquals("6a52a623fc36974cb3c67c3558694584eb39008a", BytesUtils.toHexString(Keys.toBytesAddress(key.getKeyPair())));
     }
 
     @Test
