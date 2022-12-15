@@ -18,7 +18,7 @@
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
         <netty.version>4.1.85.Final</netty.version>
-        <tuweni.version>2.3.0</tuweni.version>
+        <tuweni.version>2.3.1</tuweni.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -543,18 +543,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jupnp</groupId>
-            <artifactId>org.jupnp.support</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jupnp</groupId>
-            <artifactId>org.jupnp</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
@@ -789,12 +777,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.jnr</groupId>
-            <artifactId>jnr-ffi</artifactId>
-            <version>2.2.13</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.14.0</version>
@@ -924,6 +906,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-ri</artifactId>

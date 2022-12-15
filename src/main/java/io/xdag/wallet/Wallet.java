@@ -278,7 +278,7 @@ public class Wallet {
     public List<KeyPair> getAccounts() {
         requireUnlocked();
         synchronized (accounts) {
-            return new ArrayList<>(accounts.values());
+            return Lists.newArrayList(accounts.values());
         }
     }
 

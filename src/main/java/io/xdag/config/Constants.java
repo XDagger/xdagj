@@ -61,7 +61,7 @@ public class Constants {
     public static final byte BI_REMARK = (byte) 0x80;
     public static final Long SEND_PERIOD = 10L;
     public static final int DNET_PKT_XDAG = 0x8B;
-    public static final int BLOCK_HEAD_WORD = 0x3fca9e2b;
+
     public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
     public static final long REQUEST_WAIT = 64;
     public static final long MAX_ALLOWED_EXTRA = 65536;

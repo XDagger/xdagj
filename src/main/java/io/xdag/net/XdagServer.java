@@ -83,10 +83,6 @@ public class XdagServer {
         } catch (Exception e) {
             log.error("Xdag Node start error:{}.", e.getMessage(), e);
         }
-//        finally {
-//            workerGroup.shutdownGracefully();
-//            bossGroup.shutdownGracefully();
-//        }
     }
 
     public void close() {

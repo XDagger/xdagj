@@ -223,7 +223,7 @@ public class XdagCli extends Launcher {
                     config.getSnapshotSpec().snapshotEnable();
                     System.out.println("enable snapshot:" + config.getSnapshotSpec().isSnapshotEnabled());
                 } catch (NumberFormatException e) {
-                    System.out.println("参数错误");
+                    System.out.println("params error");
                 }
             }
             start();

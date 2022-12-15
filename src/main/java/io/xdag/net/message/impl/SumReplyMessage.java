@@ -43,9 +43,7 @@ public class SumReplyMessage extends AbstractMessage {
     public SumReplyMessage(long endtime, long random, XdagStats xdagStats, MutableBytes sums, NetDB currentDB) {
         super(SUMS_REPLY, 1, endtime, random, xdagStats, currentDB);
         this.sums = sums;
-//        System.arraycopy(BytesUtils.longToBytes(random, true), 0, encoded, 32, 8);
         encoded.set(32, Bytes.wrap(BytesUtils.longToBytes(random, true)));
-//        System.arraycopy(sums, 0, encoded, 256, 256);
         encoded.set(256, Bytes.wrap(sums));
         updateCrc();
     }
@@ -108,14 +106,10 @@ public class SumReplyMessage extends AbstractMessage {
         // test netdb
         int length = 6;
         // 80 是sizeof(xdag_stats)
-//        byte[] netdb = new byte[length * 32 - 80];
         MutableBytes netdb = MutableBytes.create(length * 32 - 80);
         netdb.set(0, encoded.slice(144, length * 32 - 80));
         netDB = new NetDB(netdb.toArray());
-
-//        sums = new byte[256];
         sums = MutableBytes.create(256);
-//        System.arraycopy(encoded.toArray(), 256, sums, 0, 256);
         sums.set(0, encoded.slice(256, 256));
         parsed = true;
     }

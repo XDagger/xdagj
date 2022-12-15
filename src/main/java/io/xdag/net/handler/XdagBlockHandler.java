@@ -57,7 +57,6 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
     public static byte getMsgCode(XdagBlock xdagblock, int n) {
         Bytes data = xdagblock.getData();
-//        long type = BytesUtils.bytesToLong(data, 8, true);
         long type = data.getLong(8, ByteOrder.LITTLE_ENDIAN);
         return (byte) (type >> (n << 2) & 0xf);
     }

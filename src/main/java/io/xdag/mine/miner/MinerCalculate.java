@@ -158,7 +158,6 @@ public class MinerCalculate {
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
             int i = (int) (((currentTaskTime >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
-            // int i = (int) (((currentTaskTime>> 16) +1 ) & 7);
             diff = BytesUtils.hexBytesToDouble(hash.toArray(), 8, false);
             diff *= Math.pow(2, -64);
             diff += BytesUtils.hexBytesToDouble(hash.toArray(), 0, false);

@@ -288,7 +288,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
                 num = NumberUtils.toInt(argv.get(0));
             }
-            println(commands.minedblocks(num));
+            println(commands.minedBlocks(num));
         } catch (Exception e) {
             saveException(e);
         }

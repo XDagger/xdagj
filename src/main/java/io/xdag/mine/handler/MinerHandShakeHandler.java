@@ -72,27 +72,12 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             log.debug("Receive a address from ip&port:{}",ctx.channel().remoteAddress());
             byte[] message = new byte[MESSAGE_SIZE];
             in.readBytes(message);
-//            long sectorNo = channel.getInBound().get();
-
-            /* decrypt data */
-//            byte[] uncryptData = Native.dfslib_uncrypt_array(message, 1, sectorNo);
-//            int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
-//            int head = BytesUtils.bytesToInt(uncryptData, 0, true);
-//
-//            // 清除transportheader
-//            System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
-//            System.out.println(Hex.toHexString(uncryptData));
-//            if (head != BLOCK_HEAD_WORD || !crc32Verify(uncryptData, crc)) {
-//                System.out.println(head != BLOCK_HEAD_WORD);
-//                byte[] address = ByteArrayToByte32.byte32ToArray(Bytes32.wrap(message).mutableCopy());
-//                System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
-//                Block addressBlock = new Block(new XdagBlock(uncryptData));
             if(!Base58.checkBytes24(message)){
-                ctx.close();
                 log.warn("Address hash is invalid");
+                ctx.close();
                 return;
             }
-                // TODO:
+
             byte[] addressHash = Arrays.copyOfRange(message,0,20);
             checkProtocol(ctx,addressHash);
             if (!initMiner(ByteArrayToByte32.arrayToByte32(addressHash))) {
@@ -118,31 +103,23 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             channel.activateHandler(ctx, V03);
             ctx.pipeline().remove(this);
             // TODO: 2020/5/8 There may be a bug here. If you join infinitely, won't it be created wirelessly?
-            log.debug("add a new miner from ip&port:{},miner's address: [" + PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress().toString());
+            log.debug("add a new miner from ip&port:{},miner's address: [" + PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress());
         } else {
             log.debug("length less than " + MESSAGE_SIZE + " bytes");
         }
     }
 
     public void checkProtocol(ChannelHandlerContext ctx, byte[] address) {
-//        if (addressBlock.getXdagBlock().getField(addressBlock.getOutsigIndex()).getData().isZero()) {
-//            // pseudo block
-//            log.debug("Pseudo block, addressBlockHashLow: {},ip&port:{}",addressBlock.getHashLow(),channel.getInetAddress().toString());
-//
-//        } else {
-            boolean importResult = addressStore.addressIsExist(address);
+        boolean importResult = addressStore.addressIsExist(address);
 
-            //If it is a new address block
-            if (!importResult) {
-                addressStore.addAddress(address);
-                log.info("XDAG:new miner connect. New address: {} with channel: {} connect.",
-                        PubkeyAddressUtils.toBase58(address), channel.getInetAddress().toString());
-            } else {
-                log.info("XDAG:old miner connect. Address: {} with channel {} connect.",
-                        PubkeyAddressUtils.toBase58(address), channel.getInetAddress().toString());
-            }
-//        }
-
+        if (!importResult) {
+            addressStore.addAddress(address);
+            log.info("XDAG:new miner connect. New address: {} with channel: {} connect.",
+                    PubkeyAddressUtils.toBase58(address), channel.getInetAddress());
+        } else {
+            log.info("XDAG:old miner connect. Address: {} with channel {} connect.",
+                    PubkeyAddressUtils.toBase58(address), channel.getInetAddress());
+        }
     }
 
     public boolean initMiner(Bytes32 hash) {

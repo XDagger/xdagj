@@ -88,7 +88,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         Message msg = null;
-        long sectorNo = channel.getInBound().get();
         int len = in.readableBytes();
         // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {
@@ -97,7 +96,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                     channel.getInetAddress().toString());
             byte[] data = new byte[DATA_SIZE];
             in.readBytes(data);
-//            byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 1, sectorNo);
             BytesUtils.arrayReverse(data);
             //The message received is the worker_name
             if(BytesUtils.compareTo(data,28,4, BigInteger.valueOf(WORKERNAME_HEADER_WORD).toByteArray(),0,4)==0){
@@ -117,7 +115,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
                     PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
             byte[] data = new byte[512];
             in.readBytes(data);
-//            byte[] unCryptData = Native.dfslib_uncrypt_array(encryptData, 16, sectorNo);
             long transportHeader = BytesUtils.bytesToLong(data, 0, true);
             int ttl = (int) ((transportHeader >> 8) & 0xff);
             int crc = BytesUtils.bytesToInt(data, 4, true);

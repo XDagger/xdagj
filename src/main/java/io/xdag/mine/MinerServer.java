@@ -81,10 +81,6 @@ public class MinerServer {
         } catch (Exception e) {
             log.error("Xdag Pool start error:{}.", e.getMessage(), e);
         }
-//        finally {
-//            workerGroup.shutdownGracefully();
-//            bossGroup.shutdownGracefully();
-//        }
     }
 
     public void close() {

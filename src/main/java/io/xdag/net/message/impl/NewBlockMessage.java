@@ -83,7 +83,6 @@ public class NewBlockMessage extends Message {
     private void encode() {
         this.encoded = this.block.getXdagBlock().getData().mutableCopy();
         long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16);
-//        System.arraycopy(BytesUtils.longToBytes(transportheader, true), 0, this.encoded, 0, 8);
         this.encoded.set(0, Bytes.wrap(BytesUtils.longToBytes(transportheader, true)));
         updateCrc();
     }
@@ -91,7 +90,6 @@ public class NewBlockMessage extends Message {
     public void updateCrc() {
         CRC32 crc32 = new CRC32();
         crc32.update(encoded.toArray(), 0, 512);
-//        System.arraycopy(BytesUtils.intToBytes((int) crc32.getValue(), true), 0, encoded, 4, 4);
         this.encoded.set(4, Bytes.wrap(BytesUtils.intToBytes((int) crc32.getValue(), true)));
     }
 

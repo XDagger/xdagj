@@ -53,8 +53,36 @@ import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
 import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
 import static io.xdag.utils.PubkeyAddressUtils.toBase58;
 
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
 import io.xdag.Kernel;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -72,33 +100,8 @@ import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.XdagTime;
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
-import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
 public class Commands {
@@ -209,12 +212,12 @@ public class Commands {
      */
     public String balance(String address) {
         if (StringUtils.isEmpty(address)) {
-            UInt64 ourbalance = UInt64.ZERO;
+            UInt64 ourBalance = UInt64.ZERO;
             List<KeyPair> list = kernel.getWallet().getAccounts();
             for (KeyPair k : list) {
-                ourbalance = ourbalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
+                ourBalance = ourBalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
             }
-            return "Balance: " + String.format("%.9f", amount2xdag(ourbalance))
+            return "Balance: " + String.format("%.9f", amount2xdag(ourBalance))
                     + " XDAG";
         } else {
             Bytes32 hash;
@@ -247,7 +250,6 @@ public class Commands {
      * @return Transaction hash
      */
     public String xfer(double sendAmount, Bytes32 address, String remark) {
-
         StringBuilder str = new StringBuilder();
         str.append("Transaction :{ ").append("\n");
 
@@ -258,11 +260,8 @@ public class Commands {
         // 待转账余额
         AtomicReference<UInt64> remain = new AtomicReference<>(amount);
 
-
-//        AtomicLong remain = new AtomicLong(amount);
         // 转账输入
         Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
-
         List<KeyPair> accounts = kernel.getWallet().getAccounts();
         for (KeyPair account : accounts) {
             byte[] addr = toBytesAddress(account);
@@ -278,7 +277,6 @@ public class Commands {
                     ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get().subtract(addrBalance), true), account);
                 }
             }
-
         }
 
         // 余额不足
@@ -305,16 +303,17 @@ public class Commands {
         // 判断是否有remark
         int hasRemark = remark == null ? 0 : 1;
 
-        List<BlockWrapper> res = new ArrayList<>();
+        List<BlockWrapper> res = Lists.newArrayList();
 
         // 遍历ourKeys 计算每个区块最多能放多少个
         // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
-        LinkedList<Map.Entry<Address, KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
+
+        LinkedList<Map.Entry<Address, KeyPair>> stack = Lists.newLinkedList(ourKeys.entrySet());
 
         // 每次创建区块用到的keys
-        Map<Address, KeyPair> keys = new HashMap<>();
+        Map<Address, KeyPair> keys = Maps.newHashMap();
         // 保证key的唯一性
-        Set<KeyPair> keysPerBlock = new HashSet<>();
+        Set<KeyPair> keysPerBlock = Sets.newHashSet();
         // 放入defkey
         keysPerBlock.add(kernel.getWallet().getDefKey());
 
@@ -355,9 +354,7 @@ public class Commands {
     }
 
     private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
-
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
-
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark);
 
         if (block == null) {
@@ -366,18 +363,17 @@ public class Commands {
 
         KeyPair defaultKey = kernel.getWallet().getDefKey();
 
-        boolean isdefaultKey = false;
+        boolean isDefaultKey = false;
         // signature
         for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
-                isdefaultKey = true;
-//                block.signOut(ecKey);
+                isDefaultKey = true;
             } else {
                 block.signIn(ecKey);
             }
         }
         // signOut. If the default key is changed, the output signature needs to be re-signed.
-        if (isdefaultKey) {
+        if (isDefaultKey) {
             block.signOut(defaultKey);
         } else {
             block.signOut(kernel.getWallet().getDefKey());
@@ -587,7 +583,7 @@ public class Commands {
      * @param n Number of prints
      * @return minedblock info
      */
-    public String minedblocks(int n) {
+    public String minedBlocks(int n) {
         List<Block> blocks = kernel.getBlockchain().listMinedBlocks(n);
         if (CollectionUtils.isEmpty(blocks)) {
             return "empty";
@@ -659,7 +655,7 @@ public class Commands {
 
     public String disConnectMinerChannel(String command) {
         // TODO: 2020/6/13 判断输入的ip地址是否是合法的 端口 然后找到特定的channel 断开连接
-        if ("all".equals(command)) {
+        if (StringUtils.equals("all", command)) {
             Map<InetSocketAddress, MinerChannel> channels = kernel.getMinerManager().getActivateMinerChannels();
             for (MinerChannel channel : channels.values()) {
                 channel.dropConnection();
@@ -695,7 +691,6 @@ public class Commands {
                 return false;
             }
             if (compareAmountTo(block.getInfo().getAmount(),UInt64.ZERO) > 0) {
-//            if(long2UnsignedLong(block.getInfo().getAmount()).compareTo(UnsignedLong.ZERO)>0){
                 balance[0] = balance[0].add(block.getInfo().getAmount());
             }
             return false;

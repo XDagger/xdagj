@@ -110,7 +110,6 @@ public class Miner {
     public Miner(Bytes32 addressHash) {
         log.debug("init the new miner:{}", addressHash.toHexString());
         this.addressHash = addressHash;
-//        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
         addressHashByte = ByteArrayToByte32.byte32ToArray(addressHash.mutableCopy());
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
@@ -201,36 +200,6 @@ public class Miner {
 
     public Date getRegTime() {
         return registeredTime;
-    }
-
-    public void setRegisteredTime(Time registeredTime) {
-        this.registeredTime = registeredTime;
-    }
-
-    public void setDiffSum(long key, double value) {
-        double temp = 0.0;
-        if (diffSum.get(key) != null && (temp = diffSum.get(key)) == 0.0) {
-            diffSum.put(key, value);
-        }
-        temp += value;
-        diffSum.put(key, temp);
-    }
-
-    public void setPrevDiffSum(long key, double value) {
-        double temp = 0.0;
-        if (prevDiffSum.get(key) != null && (temp = prevDiffSum.get(key)) == 0.0) {
-            prevDiffSum.put(key, value);
-        }
-        temp += value;
-        prevDiffSum.put(key, temp);
-    }
-
-    public double getDiffSum(long key) {
-        return diffSum.get(key);
-    }
-
-    public double getPrevDiffSum(long key) {
-        return prevDiffSum.get(key);
     }
 
     public Map<InetSocketAddress, MinerChannel> getChannels() {

@@ -103,7 +103,7 @@ public class MinerChannel {
     @Getter
     @Setter
     private long taskIndex;
-    private long taskTime = 0;
+    private long taskTime;
     /**
      * 每一轮任务分享share的次数 接收一次加1
      */
@@ -314,8 +314,6 @@ public class MinerChannel {
      * 矿池发送给矿工的任务
      */
     public void sendTaskToMiner(XdagField[] fields) {
-//        byte[] bytes = BytesUtils.merge(fields[0].getData(), fields[1].getData());
-//        Bytes.wrap(fields[0].getData(), fields[1].getData())
         miner03.sendMessage(Bytes.wrap(fields[0].getData(), fields[1].getData()));
     }
 
@@ -329,9 +327,7 @@ public class MinerChannel {
         } else {
             amount = addressStore.getBalanceByAddress(accountAddressHashByte);
         }
-//        byte[] data = BytesUtils.merge(BytesUtils.longToBytes(amount, false), BytesUtils.subArray(accountAddressHash.toArray(), 8, 24));
         MutableBytes32 data = MutableBytes32.create();
-//        Bytes data = Bytes.wrap(Bytes.ofUnsignedLong(amount), accountAddressHash.slice(8, 24));
         data.set(0,amount.toBytes());
         data.set(8, Bytes.wrap(accountAddressHashByte));
         log.debug("update miner balance {}", data.toHexString());
@@ -382,6 +378,7 @@ public class MinerChannel {
         miner.setMinerStates(MinerStates.MINER_ACTIVE);
         isMill = true;
     }
+
     public String getAddressHash(){
         if(this.miner == null){
             return StringUtils.EMPTY;
@@ -389,6 +386,7 @@ public class MinerChannel {
             return PubkeyAddressUtils.toBase58(accountAddressHashByte);
         }
     }
+
     /**
      * 内部类 用于计算这个channel 的入栈和出战信息
      */

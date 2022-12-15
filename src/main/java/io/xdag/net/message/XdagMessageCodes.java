@@ -27,8 +27,9 @@ package io.xdag.net.message;
 import static io.xdag.net.XdagVersion.V03;
 
 import io.xdag.net.XdagVersion;
-import java.util.HashMap;
 import java.util.Map;
+
+import com.google.common.collect.Maps;
 
 /**
  * xdag block.h
@@ -62,8 +63,8 @@ public enum XdagMessageCodes {
     NEW_BLOCK(0x0B),
     WORKER_NAME(0x0C);
 
-    private static final Map<XdagVersion, Map<Integer, XdagMessageCodes>> intToTypeMap = new HashMap<>();
-    private static final Map<XdagVersion, XdagMessageCodes[]> versionToValuesMap = new HashMap<>();
+    private static final Map<XdagVersion, Map<Integer, XdagMessageCodes>> intToTypeMap = Maps.newHashMap();
+    private static final Map<XdagVersion, XdagMessageCodes[]> versionToValuesMap = Maps.newHashMap();
 
     static {
         versionToValuesMap.put(
@@ -85,7 +86,7 @@ public enum XdagMessageCodes {
                 });
 
         for (XdagVersion v : XdagVersion.values()) {
-            Map<Integer, XdagMessageCodes> map = new HashMap<>();
+            Map<Integer, XdagMessageCodes> map = Maps.newHashMap();
             intToTypeMap.put(v, map);
             for (XdagMessageCodes code : values(v)) {
                 map.put(code.cmd, code);

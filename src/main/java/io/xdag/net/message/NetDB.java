@@ -36,6 +36,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -44,7 +48,7 @@ public class NetDB {
     /**
      * remote
      */
-    List<IP> ipList = new ArrayList<>();
+    List<IP> ipList = Lists.newArrayList();
 
     public NetDB() {
     }
@@ -109,7 +113,7 @@ public class NetDB {
      * 获取remote接收到的新IP
      */
     public Set<Node> getIPList() {
-        Set<Node> res = new HashSet<>();
+        Set<Node> res = Sets.newHashSet();
         if (ipList.size() != 0) {
             for (IP ip : ipList) {
                 res.add(new Node(ip.getIp(), ip.getPort()));
