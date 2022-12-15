@@ -35,7 +35,6 @@ import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.SnapshotChainStore;
@@ -44,12 +43,10 @@ import io.xdag.db.SnapshotJ;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.Console;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -203,9 +200,6 @@ public class XdagCli extends Launcher {
             importPrivateKey(cmd.getOptionValue(XdagOption.IMPORT_PRIVATE_KEY.toString()).trim());
         } else if (cmd.hasOption(XdagOption.IMPORT_MNEMONIC.toString())) {
             importMnemonic(cmd.getOptionValue(XdagOption.IMPORT_MNEMONIC.toString()).trim());
-        } else if (cmd.hasOption(XdagOption.CONVERT_OLD_WALLET.toString())) {
-            File file = new File(cmd.getOptionValue(XdagOption.CONVERT_OLD_WALLET.toString()).trim());
-            convertOldWallet(file);
         } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
             File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
             loadSnapshot(file);
@@ -409,24 +403,6 @@ public class XdagCli extends Launcher {
         return true;
     }
 
-    protected boolean convertOldWallet(File file) {
-        if (!file.exists()) {
-            System.out.println("File:" + file.getName() + " not exists.");
-            return false;
-        }
-        String password = readPassword("Old wallet password:");
-        String random = readPassword("Old wallet random:");
-        List<KeyPair> keyList = readOldWallet(password, random, file);
-        for (KeyPair key : keyList) {
-            System.out.println("PrivateKey:" + BytesUtils.toHexString(key.getPrivateKey().getEncoded()));
-            System.out.println(" PublicKey:" + BytesUtils.toHexString(key.getPublicKey().getEncoded()));
-            System.out.println("   Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            importPrivateKey(key.getPrivateKey().getEncodedBytes().toHexString());
-        }
-        System.out.println("Old Wallet Converted Successfully!");
-        return true;
-    }
-
     // snapshot load
     protected void loadSnapshot(File file) {
         Config config = getConfig();
@@ -440,25 +416,6 @@ public class XdagCli extends Launcher {
         long end = System.currentTimeMillis();
         System.out.println("load res: " + res);
         System.out.println("time: " + (end - start) / 1000 + "s");
-    }
-
-    public List<KeyPair> readOldWallet(String password, String random, File walletDatFile) {
-        byte[] priv32Encrypted = new byte[32];
-        int keysNum = 0;
-        List<KeyPair> keyList = new ArrayList<>();
-        Native.general_dnet_key(password, random);
-        try (FileInputStream fileInputStream = new FileInputStream(walletDatFile)) {
-            while (fileInputStream.read(priv32Encrypted) != -1) {
-                byte[] priv32 = Native.uncrypt_wallet_key(priv32Encrypted, keysNum++);
-                // TODO: paulochen java跟c 两边的钱包字节序不一样 一个需要reverse一个不需要
-//                BytesUtils.arrayReverse(priv32);
-                KeyPair ecKey = KeyPair.create(SECPPrivateKey.create(Numeric.toBigInt(priv32), Sign.CURVE_NAME), Sign.CURVE, Sign.CURVE_NAME);
-                keyList.add(ecKey);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return keyList;
     }
 
     public Wallet loadWallet() {

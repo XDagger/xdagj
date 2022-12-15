@@ -47,7 +47,6 @@ import io.xdag.core.StatsBlock;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
@@ -96,10 +95,6 @@ public class SnapshotProcess {
             config.getSnapshotSpec().setSnapshotHeight(100);
         }
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);

@@ -54,7 +54,6 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
@@ -114,10 +113,6 @@ public class BlockchainTest {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
