@@ -29,6 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -39,11 +40,13 @@ import java.util.List;
 import io.xdag.db.*;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.checkerframework.checker.units.qual.A;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -84,16 +87,18 @@ public class MinerConnectTest {
     AddressStore addressStore;
     MinerChannel channel;
     BlockchainImpl blockchain;
-
+    BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
+    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
     @Before
     public void setUp() throws Exception {
+        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
+//        Native.init(config);
+//        if (Native.dnet_crypt_init() < 0) {
+//            throw new Exception("dnet crypt init failed");
+//        }
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
@@ -138,58 +143,7 @@ public class MinerConnectTest {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 //        Native.crypt_start();
         KeyPair key = Keys.createEcKeyPair();
-        Block address = generateAddressBlock(config, key, new Date().getTime());
-        MutableBytes encoded = address.getXdagBlock().getData();
-        byte[] data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
-
-        ByteBuf buf = Unpooled.buffer();
-        buf.writeBytes(data);
-        ByteBuf buf1 = buf.duplicate();
-        //2、创建EmbeddedChannel，并添加一个MinerHandshakeHandler
-        EmbeddedChannel embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
-
-        //3、将数据写入 EmbeddedChannel
-        boolean writeInbound = embeddedChannel.writeInbound(buf1.retain());
-        assertTrue(writeInbound);
-        //4、标记 Channel 为已完成状态
-        boolean finish = embeddedChannel.finish();
-        assertTrue(finish);
-
-        //5、读取数据
-        ByteBuf readInbound = embeddedChannel.readInbound();
-        assertEquals(1, readInbound.readInt());
-
-        String fake = "0000000000000000510500000000000011100b07790100000000000000000000913c141ee4175a018a3412ba52f827d2fd67da7c0c581641e9f48a81e9dbd8f2486fac9f54560465e53a20f21940a335414f3949fc807f187fb57f51a48611220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        address = new Block(new XdagBlock(Hex.decode(fake)));
-        encoded = address.getXdagBlock().getData();
-        data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
-
-        buf.clear();
-        buf.writeBytes(data);
-        buf1 = buf.duplicate();
-        embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
-        //3、将数据写入 EmbeddedChannel
-        writeInbound = embeddedChannel.writeInbound(buf1.retain());
-        assertTrue(writeInbound);
-        //4、标记 Channel 为已完成状态
-        finish = embeddedChannel.finish();
-        assertTrue(finish);
-
-        //5、读取数据
-        readInbound = embeddedChannel.readInbound();
-        assertEquals(0, readInbound.readInt());
-
-        //释放资源
-        buf.release();
-    }
-    @Test
-    public void testNewMinerConnect()
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-//        Native.crypt_start();
-        KeyPair key = Keys.createEcKeyPair();
         byte[] address = Keys.toBytesAddress(key);
-
-//        byte[] data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
 
         ByteBuf buf = Unpooled.buffer();
         buf.writeBytes(address);
@@ -207,6 +161,55 @@ public class MinerConnectTest {
         //5、读取数据
         ByteBuf readInbound = embeddedChannel.readInbound();
         assertEquals(1, readInbound.readInt());
+
+//        String fake = "0000000000000000510500000000000011100b07790100000000000000000000913c141ee4175a018a3412ba52f827d2fd67da7c0c581641e9f48a81e9dbd8f2486fac9f54560465e53a20f21940a335414f3949fc807f187fb57f51a48611220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+//        address = new Block(new XdagBlock(Hex.decode(fake)));
+//        encoded = address.getXdagBlock().getData();
+//        data = encoded.toArray();
+//
+//        buf.clear();
+//        buf.writeBytes(data);
+//        buf1 = buf.duplicate();
+//        embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
+//        //3、将数据写入 EmbeddedChannel
+//        writeInbound = embeddedChannel.writeInbound(buf1.retain());
+//        assertTrue(writeInbound);
+//        //4、标记 Channel 为已完成状态
+//        finish = embeddedChannel.finish();
+//        assertTrue(finish);
+//
+//        //5、读取数据
+//        readInbound = embeddedChannel.readInbound();
+//        assertEquals(0, readInbound.readInt());
+//
+//        //释放资源
+//        buf.release();
+//    }
+//    @Test
+//    public void testNewMinerConnect()
+//            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+////        Native.crypt_start();
+//        KeyPair key = Keys.createEcKeyPair();
+//        byte[] address = Keys.toBytesAddress(key);
+//
+////        byte[] data = Native.dfslib_encrypt_array(encoded.toArray(), 16, 0);
+//
+//        ByteBuf buf = Unpooled.buffer();
+//        buf.writeBytes(address);
+//        ByteBuf buf1 = buf.duplicate();
+//        //2、创建EmbeddedChannel，并添加一个MinerHandshakeHandler
+//        EmbeddedChannel embeddedChannel = new EmbeddedChannel(new MockMinerHandshakeHandler(channel, kernel));
+//
+//        //3、将数据写入 EmbeddedChannel
+//        boolean writeInbound = embeddedChannel.writeInbound(buf1.retain());
+//        assertTrue(writeInbound);
+//        //4、标记 Channel 为已完成状态
+//        boolean finish = embeddedChannel.finish();
+//        assertTrue(finish);
+//
+//        //5、读取数据
+//        ByteBuf readInbound = embeddedChannel.readInbound();
+//        assertEquals(1, readInbound.readInt());
 
 //        String fake = "0000000000000000510500000000000011100b07790100000000000000000000913c141ee4175a018a3412ba52f827d2fd67da7c0c581641e9f48a81e9dbd8f2486fac9f54560465e53a20f21940a335414f3949fc807f187fb57f51a48611220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 //        address = new Block(new XdagBlock(Hex.decode(fake)));
