@@ -1,7 +1,5 @@
 package io.xdag.utils;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.junit.Test;
 

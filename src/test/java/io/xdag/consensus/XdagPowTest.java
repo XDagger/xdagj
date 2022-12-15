@@ -23,14 +23,15 @@
  */
 package io.xdag.consensus;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.message.TaskShareMessage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class XdagPowTest {

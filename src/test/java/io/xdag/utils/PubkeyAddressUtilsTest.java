@@ -1,16 +1,15 @@
 package io.xdag.utils;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.AddressFormatException;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.junit.Test;
-
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.junit.Test;
 
 public class PubkeyAddressUtilsTest {
     @Test

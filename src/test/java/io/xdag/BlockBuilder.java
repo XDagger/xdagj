@@ -24,22 +24,23 @@
 
 package io.xdag;
 
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.crypto.Hash;
+import io.xdag.utils.BasicUtils;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.xdag.utils.BasicUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.encoders.Hex;
-
-import static io.xdag.core.XdagField.FieldType.*;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class BlockBuilder {
 

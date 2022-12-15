@@ -24,34 +24,8 @@
 
 package io.xdag.mine.miner;
 
-import static io.xdag.BlockBuilder.generateAddressBlock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import io.xdag.db.*;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.bouncycastle.util.encoders.Hex;
-import org.checkerframework.checker.units.qual.A;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -60,19 +34,36 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.core.Block;
 import io.xdag.core.BlockchainImpl;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagBlock;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
+import io.xdag.db.AddressStore;
+import io.xdag.db.BlockStore;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.DatabaseName;
+import io.xdag.db.OrphanPool;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.handler.MinerHandShakeHandler;
+import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.BytesUtils;
 import io.xdag.wallet.Wallet;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.Collections;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class MinerConnectTest {
 

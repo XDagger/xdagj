@@ -29,11 +29,10 @@ import static org.junit.Assert.assertEquals;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Hash;
+import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.KVSource;
-import io.xdag.db.BlockStore;
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;

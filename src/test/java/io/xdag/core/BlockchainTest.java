@@ -63,7 +63,6 @@ import io.xdag.db.OrphanPool;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;

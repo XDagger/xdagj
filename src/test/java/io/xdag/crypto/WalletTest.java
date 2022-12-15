@@ -23,9 +23,6 @@
  */
 package io.xdag.crypto;
 
-import io.xdag.crypto.jni.Native;
-import org.bouncycastle.util.encoders.Hex;
-
 public class WalletTest {
 //    public static void main(String[] args) throws Exception {
 //        Native.init();

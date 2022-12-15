@@ -23,14 +23,21 @@
  */
 package io.xdag.crypto;
 
+import static io.xdag.crypto.jni.RandomX.allocCache;
+import static io.xdag.crypto.jni.RandomX.allocDataSet;
+import static io.xdag.crypto.jni.RandomX.calculateHash;
+import static io.xdag.crypto.jni.RandomX.createVm;
+import static io.xdag.crypto.jni.RandomX.destroyVm;
+import static io.xdag.crypto.jni.RandomX.initCache;
+import static io.xdag.crypto.jni.RandomX.initDataSet;
+import static io.xdag.crypto.jni.RandomX.releaseCache;
+import static io.xdag.crypto.jni.RandomX.releaseDataSet;
+
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.jni.Native;
-import io.xdag.utils.BytesUtils;
 import org.junit.Before;
 import org.junit.Test;
-
-import static io.xdag.crypto.jni.RandomX.*;
 
 
 public class RandomXTest {

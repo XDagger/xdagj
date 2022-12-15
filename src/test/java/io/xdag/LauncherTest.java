@@ -24,6 +24,7 @@
 package io.xdag;
 
 import static org.junit.Assert.assertTrue;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.junit.Test;
