@@ -31,6 +31,7 @@ import lombok.Data;
 @Data
 @Builder
 public class AccountResultDTO {
+    private String address;
     private String balance;
     private List<BlockResultDTO.TxLink> transactions; // means transaction a wallet have
 

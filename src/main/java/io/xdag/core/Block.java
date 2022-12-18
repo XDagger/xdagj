@@ -262,11 +262,11 @@ public class Block implements Cloneable {
             case XDAG_FIELD_OUT -> outputs.add(new Address(field,false));
             case XDAG_FIELD_OUTPUT -> outputs.add(new Address(field,true));
             case XDAG_FIELD_REMARK -> this.info.setRemark(field.getData().toArray());
-                case XDAG_FIELD_COINBASE -> {
+            case XDAG_FIELD_COINBASE -> {
                     this.coinBase = new Address(field,true);
                     outputs.add(new Address(field,true));
-                }
-                case XDAG_FIELD_SIGN_IN, XDAG_FIELD_SIGN_OUT -> {
+            }
+            case XDAG_FIELD_SIGN_IN, XDAG_FIELD_SIGN_OUT -> {
                 BigInteger r;
                 BigInteger s;
                 int j, signo_s = -1;
