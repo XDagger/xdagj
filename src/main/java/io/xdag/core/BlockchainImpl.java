@@ -40,11 +40,7 @@ import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.Hash2byte;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
@@ -155,6 +151,7 @@ public class BlockchainImpl implements Blockchain {
         this.addressStore = kernel.getAddressStore();
         this.blockStore = kernel.getBlockStore();
         this.orphanPool = kernel.getOrphanPool();
+        snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
 
         // 2. if enable snapshot, init snapshot from rocksdb
         if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()
@@ -163,7 +160,6 @@ public class BlockchainImpl implements Blockchain {
                 && !blockStore.isSnapshotBoot()) {
             this.xdagStats = new XdagStats();
             this.xdagTopStatus = new XdagTopStatus();
-            snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
 
             if (kernel.getConfig().getSnapshotSpec().isSnapshotJ()) {
                 this.snapshotJ = new SnapshotJ("SNAPSHOTJ");
@@ -822,9 +818,9 @@ public class BlockchainImpl implements Blockchain {
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
             }else {
                 if(link.getType() == XDAG_FIELD_INPUT){
-                    subtractAmount(BasicUtils.Hash2byte(link.addressHash),link.getAmount());
+                    subtractAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
                 }else {
-                    addAmount(BasicUtils.Hash2byte(link.addressHash),link.getAmount());
+                    addAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
                 }
             }
         }
@@ -852,10 +848,10 @@ public class BlockchainImpl implements Blockchain {
                     }
                 }else {
                     if (link.getType() == XDAG_FIELD_INPUT){
-                        addAmount(BasicUtils.Hash2byte(link.getAddress()),link.getAmount());
+                        addAmount(BasicUtils.Hash2byte(link.getAddress()), link.getAmount(), block);
                         sum = sum.subtract(link.getAmount());
                     }else {
-                        subtractAmount(BasicUtils.Hash2byte(link.getAddress()),link.getAmount());
+                        subtractAmount(BasicUtils.Hash2byte(link.getAddress()), link.getAmount(), block);
                         sum = sum.add(link.getAmount());
                     }
                 }
@@ -892,7 +888,7 @@ public class BlockchainImpl implements Blockchain {
             updateBlockFlag(block, BI_MAIN, true);
 
             long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long rewardHeight = mainNumber > awardEpoch ? mainNumber - awardEpoch : -1;
+            long rewardHeight = mainNumber > awardEpoch + snapshotHeight ? mainNumber - snapshotHeight - awardEpoch : -1;
             log.debug("rewardHeight: {}", rewardHeight);
             long reward = getReward(rewardHeight);
             // 接收奖励
@@ -926,7 +922,7 @@ public class BlockchainImpl implements Blockchain {
 
             updateBlockFlag(block, BI_MAIN, false);
             long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long withdrawHeight = xdagStats.nmain > awardEpoch ? xdagStats.nmain - awardEpoch : -1;
+            long withdrawHeight = xdagStats.nmain > awardEpoch + snapshotHeight ? xdagStats.nmain - snapshotHeight - awardEpoch : -1;
             long amount = getReward(withdrawHeight);
             if (withdrawHeight > 0) {
                 Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
@@ -1596,7 +1592,6 @@ public class BlockchainImpl implements Blockchain {
         }
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.add(xdagStats.getBalance()));
-//            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
         }
     }
 
@@ -1606,36 +1601,43 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
         }
         if ((block.getInfo().flags & BI_OURS) != 0) {
-            xdagStats.setBalance(amount.add(xdagStats.getBalance()));
-//            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
+            xdagStats.setBalance(xdagStats.getBalance().subtract(amount));
         }
     }
 
-    private void subtractAmount(byte[] addressHash,UInt64 amount){
+    private void subtractAmount(byte[] addressHash, UInt64 amount, Block block){
         UInt64 balance = addressStore.getBalanceByAddress(addressHash);
         balance = balance.subtractExact(amount);
         addressStore.updateBalance(addressHash,balance);
+        if ((block.getInfo().flags & BI_OURS) != 0) {
+            xdagStats.setBalance(xdagStats.getBalance().subtract(amount));
+        }
     }
-    private void addAmount(byte[] addressHash,UInt64 amount){
+    private void addAmount(byte[] addressHash, UInt64 amount, Block block){
         UInt64 balance = addressStore.getBalanceByAddress(addressHash);
         balance = balance.addExact(amount);
         addressStore.updateBalance(addressHash,balance);
+        if ((block.getInfo().flags & BI_OURS) != 0) {
+            xdagStats.setBalance(amount.add(xdagStats.getBalance()));
+        }
     }
 
     private void reward(UInt64 amount, long height){
         Block rewardBlock = blockStore.getBlockByHash(getBlockByHeight(height).getHashLow(),true);
         Address coinbase = rewardBlock.getCoinBase();
         if(coinbase != null){
-            addAmount(BasicUtils.Hash2byte(coinbase.getAddress()),amount);
+            addAmount(BasicUtils.Hash2byte(coinbase.getAddress()), amount, rewardBlock);
             UInt64 allBalance = addressStore.getAllBalance();
             allBalance = allBalance.addExact(amount);
             addressStore.updateAllBalance(allBalance);
+            onNewTxHistory(coinbase.getAddress(), rewardBlock.getHashLow(), XDAG_FIELD_COINBASE, amount,
+                    rewardBlock.getTimestamp(), 0, rewardBlock.getInfo().getRemark());
         }
     }
     private void cancelReward(Block block,UInt64 amount){
         Address coinbase = block.getCoinBase();
         if(coinbase != null){
-            subtractAmount(BasicUtils.Hash2byte(coinbase.getAddress()),amount);
+            subtractAmount(BasicUtils.Hash2byte(coinbase.getAddress()),amount, block);
             UInt64 allBalance = addressStore.getAllBalance();
             allBalance = allBalance.subtractExact(amount);
             addressStore.updateAllBalance(allBalance);

@@ -26,15 +26,11 @@ package io.xdag.rpc.modules.web3;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.getHash;
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
-import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
+import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.PubkeyAddressUtils.*;
 
 import io.xdag.Kernel;
+import io.xdag.cli.Commands;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
@@ -128,7 +124,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_coinbase() {
-        return hash2Address(kernel.getPoolMiner().getAddressHash());
+        return toBase58(Hash2byte(kernel.getPoolMiner().getAddressHash().mutableCopy()));
     }
 
     @Override

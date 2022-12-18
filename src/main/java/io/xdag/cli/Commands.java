@@ -494,6 +494,7 @@ public class Commands {
             if (block.getOutputs().size() != 0) {
                 outputs = new StringBuilder();
                 for (Address output : block.getOutputs()) {
+                    if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %.9f%n",
                             output.getIsAddress() ? toBase58(Hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
                             amount2xdag(output.getAmount())
@@ -509,7 +510,7 @@ public class Commands {
                        """;
         StringBuilder tx = new StringBuilder();
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
-            tx.append(String.format("    earn: %s           %.9f   %s%n", hash2Address(block.getHashLow()),
+            tx.append(String.format("    earn: %s           %.9f   %s%n", toBase58(Hash2byte(block.getCoinBase().getAddress())),
                     amount2xdag(kernel.getBlockchain().getReward(block.getInfo().getHeight())),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
@@ -699,6 +700,10 @@ public class Commands {
     }
 
     public String address(Bytes32 wrap) {
+        StringBuilder ov = new StringBuilder();
+        ov.append(" OverView" + "\n")
+                .append(String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n")
+                .append(String.format(" balance: %.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())))) + "\n");
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
@@ -724,7 +729,7 @@ public class Commands {
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else if (address.getType().equals(XDAG_FIELD_COINBASE) && (blockInfo.flags&BI_MAIN) != 0) {
-                tx.append(String.format("   coinbase: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                tx.append(String.format(" coinbase: %s           %.9f   %s%n", hash2Address(address.getAddress()),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
@@ -735,6 +740,6 @@ public class Commands {
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             }
         }
-        return txHisFormat + "\n" + tx;
+        return ov + "\n" + txHisFormat + "\n" + tx;
     }
 }

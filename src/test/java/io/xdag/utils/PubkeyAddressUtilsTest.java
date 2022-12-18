@@ -23,9 +23,6 @@
  */
 package io.xdag.utils;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.AddressFormatException;
 import java.security.InvalidAlgorithmParameterException;
@@ -35,6 +32,8 @@ import org.apache.tuweni.bytes.MutableBytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class PubkeyAddressUtilsTest {
 
@@ -56,8 +55,8 @@ public class PubkeyAddressUtilsTest {
 
     @Test
     public void testCheckAddress() {
-        assertEquals(true, PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"));
-        assertEquals(false, PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a"));
+        assertTrue(PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"));
+        assertFalse(PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a"));
     }
 
     @Test
