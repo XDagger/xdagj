@@ -888,11 +888,11 @@ public class BlockchainImpl implements Blockchain {
             updateBlockFlag(block, BI_MAIN, true);
 
             long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long rewardHeight = mainNumber > awardEpoch + snapshotHeight ? mainNumber - snapshotHeight - awardEpoch : -1;
+            long rewardHeight = mainNumber > awardEpoch + snapshotHeight ? mainNumber - awardEpoch : -1;
             log.debug("rewardHeight: {}", rewardHeight);
             long reward = getReward(rewardHeight);
             // 接收奖励
-            if (rewardHeight > 0) {
+            if (rewardHeight > snapshotHeight) {
                 reward(UInt64.valueOf(reward), rewardHeight);
             }
             xdagStats.nmain++;
@@ -922,9 +922,9 @@ public class BlockchainImpl implements Blockchain {
 
             updateBlockFlag(block, BI_MAIN, false);
             long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long withdrawHeight = xdagStats.nmain > awardEpoch + snapshotHeight ? xdagStats.nmain - snapshotHeight - awardEpoch : -1;
+            long withdrawHeight = xdagStats.nmain > awardEpoch + snapshotHeight ? xdagStats.nmain - awardEpoch : -1;
             long amount = getReward(withdrawHeight);
-            if (withdrawHeight > 0) {
+            if (withdrawHeight > snapshotHeight) {
                 Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
                 // Withdraw the reward
                 cancelReward(withdrawBlock, UInt64.valueOf(amount));

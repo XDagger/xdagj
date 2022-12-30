@@ -24,7 +24,6 @@
 
 package io.xdag.mine.randomx;
 
-import static io.xdag.config.RandomXConstants.RANDOMX_FLAGS;
 import static io.xdag.config.RandomXConstants.RANDOMX_FORK_HEIGHT;
 import static io.xdag.config.RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT;
 import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_BLOCKS;
@@ -44,6 +43,7 @@ import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.crypto.randomx.NativeSize;
+import io.xdag.crypto.randomx.RandomXFlag;
 import io.xdag.crypto.randomx.RandomXJNA;
 import io.xdag.crypto.randomx.RandomXUtils;
 import io.xdag.utils.XdagTime;
@@ -66,6 +66,7 @@ public class RandomX {
     protected final Config config;
     protected boolean isTestNet = true;
     protected int mineType;
+    protected int flags;
     protected long randomXForkSeedHeight;
     protected long randomXForkLag;
 
@@ -87,6 +88,12 @@ public class RandomX {
             isTestNet = false;
         }
         this.mineType = XDAG_RANDOMX;
+        // get randomx flags
+        if (config.getRandomxSpec().getRandomxFlag()) {
+            flags = RandomXJNA.INSTANCE.randomx_get_flags() + RandomXFlag.LARGE_PAGES.getValue() + RandomXFlag.FULL_MEM.getValue();
+        } else {
+            flags = RandomXJNA.INSTANCE.randomx_get_flags();
+        }
     }
 
     public void setBlockchain(Blockchain blockchain) {
@@ -250,10 +257,10 @@ public class RandomX {
 
     public PointerByReference randomXUpdateVm(RandomXMemory randomXMemory, boolean isPoolVm) {
         if (isPoolVm) {
-            randomXMemory.poolVm = RandomXJNA.INSTANCE.randomx_create_vm(RANDOMX_FLAGS, randomXMemory.rxCache, randomXMemory.rxDataset);
+            randomXMemory.poolVm = RandomXJNA.INSTANCE.randomx_create_vm(flags, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.poolVm;
         } else {
-            randomXMemory.blockVm = RandomXJNA.INSTANCE.randomx_create_vm(RANDOMX_FLAGS, randomXMemory.rxCache, randomXMemory.rxDataset);
+            randomXMemory.blockVm = RandomXJNA.INSTANCE.randomx_create_vm(flags, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.blockVm;
         }
     }
@@ -265,7 +272,7 @@ public class RandomX {
         try {
             RandomXMemory rx_memory = globalMemory[(int) (memIndex) & 1];
             if (rx_memory.rxCache == null) {
-                rx_memory.rxCache = RandomXJNA.INSTANCE.randomx_alloc_cache(RANDOMX_FLAGS);
+                rx_memory.rxCache = RandomXJNA.INSTANCE.randomx_alloc_cache(flags);
                 if (rx_memory.rxCache == null) {
                     // fail alloc
                     log.debug("Failed alloc cache");
@@ -277,7 +284,7 @@ public class RandomX {
 
             if (rx_memory.rxDataset == null) {
                 // 分配dataset
-                rx_memory.rxDataset = RandomXJNA.INSTANCE.randomx_alloc_dataset(RANDOMX_FLAGS);
+                rx_memory.rxDataset = RandomXJNA.INSTANCE.randomx_alloc_dataset(flags);
                 if (rx_memory.rxDataset == null) {
                     //分配失败
                     log.debug("Failed alloc dataset");

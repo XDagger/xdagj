@@ -26,12 +26,7 @@ package io.xdag.config;
 
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.RPCSpec;
-import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.config.spec.*;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.rpc.modules.ModuleDescription;
@@ -55,7 +50,7 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec {
+public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec {
 
     protected String configName;
 
@@ -161,6 +156,10 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected long snapshotTime; // TODO：用于sync时的起始时间
     protected boolean isSnapshotJ;
 
+    // =========================
+    // Randomx Config
+    // =========================
+    protected boolean flag;
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
         this.configName = configName;
@@ -198,6 +197,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     @Override
     public SnapshotSpec getSnapshotSpec() {
+        return this;
+    }
+
+    @Override
+    public RandomxSpec getRandomxSpec() {
         return this;
     }
 
@@ -282,6 +286,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                 rpcPortHttp = config.getInt("rpc.http.port", 10001);
                 rpcPortWs = config.getInt("rpc.ws.port", 10002);
             }
+            flag = config.getBoolean("randomx.flags.fullmem");
             // access configuration properties
         } catch (ConfigurationException cex) {
             log.error(cex.getMessage(), cex);
@@ -461,6 +466,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     @Override
     public long getSnapshotHeight() {
         return snapshotHeight;
+    }
+
+    @Override
+    public boolean getRandomxFlag() {
+        return flag;
     }
 
     @Override
