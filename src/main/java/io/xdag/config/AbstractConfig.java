@@ -286,7 +286,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                 rpcPortHttp = config.getInt("rpc.http.port", 10001);
                 rpcPortWs = config.getInt("rpc.ws.port", 10002);
             }
-            flag = config.getBoolean("randomx.flags.fullmem");
+            flag = config.getBoolean("randomx.flags.fullmem", false);
             // access configuration properties
         } catch (ConfigurationException cex) {
             log.error(cex.getMessage(), cex);
