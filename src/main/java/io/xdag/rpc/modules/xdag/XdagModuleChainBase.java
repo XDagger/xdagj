@@ -59,6 +59,7 @@ import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 public class XdagModuleChainBase implements XdagModuleChain {
 
@@ -86,9 +87,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
     }
 
     private AccountResultDTO getAccountDTOByAddress(String address) {
+        UInt64 balance = kernel.getAddressStore().getBalanceByAddress(Hash2byte(pubAddress2Hash(address).mutableCopy()));
         AccountResultDTO.AccountResultDTOBuilder accountResultDTOBuilder = AccountResultDTO.builder();
         accountResultDTOBuilder.address(address)
-                .balance(kernel.getAddressStore().getBalanceByAddress(Hash2byte(pubAddress2Hash(address).mutableCopy())).toString())
+                .balance(String.format("%.9f", amount2xdag(balance)))
                 .transactions(getTxHistory(address));
         return accountResultDTOBuilder.build();
     }
