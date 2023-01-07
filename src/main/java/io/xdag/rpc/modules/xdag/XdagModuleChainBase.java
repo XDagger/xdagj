@@ -38,6 +38,7 @@ import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
+import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
 import static io.xdag.utils.PubkeyAddressUtils.toBase58;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
@@ -153,17 +154,21 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
     public BlockResultDTO getBlockDTOByHash(String hash) {
         Bytes32 blockHash;
-        if (StringUtils.length(hash) == 32) {
-            blockHash = address2Hash(hash);
+        if (checkAddress(hash)) {
+            return transferAccountToBlockResultDTO(hash);
         } else {
-            blockHash = BasicUtils.getHash(hash);
+            if (StringUtils.length(hash) == 32) {
+                blockHash = address2Hash(hash);
+            } else {
+                blockHash = BasicUtils.getHash(hash);
+            }
+            Block block = blockchain.getBlockByHash(blockHash, true);
+            if (block == null) {
+                block = blockchain.getBlockByHash(blockHash, false);
+                return transferBlockInfoToBlockResultDTO(block);
+            }
+            return transferBlockToBlockResultDTO(block);
         }
-        Block block = blockchain.getBlockByHash(blockHash, true);
-        if (block == null) {
-            block = blockchain.getBlockByHash(blockHash, false);
-            return transferBlockInfoToBlockResultDTO(block);
-        }
-        return transferBlockToBlockResultDTO(block);
     }
 
     private BlockResultDTO transferBlockToBriefBlockResultDTO(Block block) {
@@ -206,6 +211,28 @@ public class XdagModuleChainBase implements XdagModuleChain {
 //                .refs(getLinks(block))
 //                .height(block.getInfo().getHeight())
                 .transactions(getTxLinks(block));
+        return BlockResultDTOBuilder.build();
+    }
+
+    private BlockResultDTO transferAccountToBlockResultDTO(String address) {
+        UInt64 balance = kernel.getAddressStore().getBalanceByAddress(Hash2byte(pubAddress2Hash(address).mutableCopy()));
+
+        BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
+        BlockResultDTOBuilder.address(address)
+                .hash(null)
+                .balance(String.format("%.9f", amount2xdag(balance)))
+                .type("wallet")
+//                .blockTime()
+//                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
+//                .flags(Integer.toHexString(block.getInfo().getFlags()))
+//                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
+//                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
+//                        StandardCharsets.UTF_8).trim())
+                .state("Accepted")
+//                .type(getType(block))
+//                .refs(getLinks(block))
+//                .height(block.getInfo().getHeight())
+                .transactions(getTxHistory(address));
         return BlockResultDTOBuilder.build();
     }
 
