@@ -222,8 +222,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .hash(null)
                 .balance(String.format("%.9f", amount2xdag(balance)))
                 .type("wallet")
-//                .blockTime()
-//                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
+                .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
+                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
 //                .flags(Integer.toHexString(block.getInfo().getFlags()))
 //                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
 //                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
