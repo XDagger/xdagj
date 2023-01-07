@@ -221,7 +221,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         BlockResultDTOBuilder.address(address)
                 .hash(null)
                 .balance(String.format("%.9f", amount2xdag(balance)))
-                .type("wallet")
+                .type("Wallet")
                 .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
                 .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
 //                .flags(Integer.toHexString(block.getInfo().getFlags()))
