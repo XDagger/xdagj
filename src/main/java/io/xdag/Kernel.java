@@ -227,7 +227,6 @@ public class Kernel {
         // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
-            addressStore.addAddress(firstAccount);
             poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
             firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
             firstBlock.signOut(wallet.getDefKey());
