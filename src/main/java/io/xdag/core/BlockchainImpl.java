@@ -41,11 +41,7 @@ import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.Hash2byte;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
-import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
@@ -203,7 +199,7 @@ public class BlockchainImpl implements Blockchain {
         System.out.println("init snapshot...");
         snapshotJ.setConfig(kernel.getConfig());
         snapshotJ.init();
-        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime(),kernel.getAddressStore());
+        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
 
         xdagStats.balance = UInt64.valueOf(snapshotJ.getOurBalance());
