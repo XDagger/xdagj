@@ -77,6 +77,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("state", new CommandMethods(this::processState, this::defaultCompleter));
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
+        commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
         commandExecute.put("miners", new CommandMethods(this::processMiners, this::defaultCompleter));
 //        commandExecute.put("run", new CommandMethods(this::processRun, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
@@ -85,8 +86,26 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
         commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
-//        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
+        commandExecute.put("oldbalance", new CommandMethods(this::processOldBalance, this::defaultCompleter));
         registerCommands(commandExecute);
+    }
+
+    private void processXferToNew(CommandInput input) {
+        final String[] usage = {
+                "xfertonew -  transfer the old balance to new address \n",
+                "Usage: balance xfertonew",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+            println(commands.xferToNew());
+
+        } catch (Exception e) {
+            saveException(e);
+        }
     }
 
     private void processAddress(CommandInput input) {
@@ -125,10 +144,10 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private void processBalanceMaxXfer(CommandInput input) {
+    private void processOldBalance(CommandInput input) {
         final String[] usage = {
-                "balancemaxxfer -  print max balance we can transfer \n",
-                "Usage: balance balancemaxxfer",
+                "oldbalance -  print max balance we can transfer \n",
+                "Usage: balance oldbalance",
                 "  -? --help                    Show help",
         };
         try {

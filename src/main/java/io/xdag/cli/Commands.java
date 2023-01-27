@@ -67,12 +67,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import io.xdag.crypto.Keys;
+import io.xdag.utils.BasicUtils;
+import io.xdag.wallet.Wallet;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -741,5 +746,46 @@ public class Commands {
             }
         }
         return ov + "\n" + txHisFormat + "\n" + tx;
+    }
+
+    public String xferToNew() {
+        StringBuilder str = new StringBuilder();
+        str.append("Transaction :{ ").append("\n");
+
+        MutableBytes32 to = MutableBytes32.create();
+        Bytes32 accountHash = keyPair2Hash(kernel.getWallet().getDefKey());
+        to.set(8, accountHash.slice(8, 20));
+
+        String remark = "old balance to new address";
+
+        // 转账输入
+        Map<Address, KeyPair> ourBlocks = Maps.newHashMap();
+
+        // our block select
+        kernel.getBlockStore().fetchOurBlocks(pair -> {
+            int index = pair.getKey();
+            Block block = pair.getValue();
+
+            if (compareAmountTo(UInt64.ZERO, block.getInfo().getAmount()) < 0) {
+//            if (remain.get() <= block.getInfo().getAmount()) {
+                ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(), false),
+                        kernel.getWallet().getAccounts().get(index));
+                return false;
+            }
+            return false;
+        });
+
+        // 生成多个交易块
+        List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark);
+        for (BlockWrapper blockWrapper : txs) {
+
+            ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
+            if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
+                kernel.getChannelMgr().sendNewBlock(blockWrapper);
+                str.append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow())).append("\n");
+            }
+        }
+
+        return str.append("}, it will take several minutes to complete the transaction.").toString();
     }
 }
