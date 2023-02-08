@@ -24,6 +24,7 @@
 
 package io.xdag.mine.randomx;
 
+import com.sun.jna.ptr.PointerByReference;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -36,10 +37,10 @@ public class RandomXMemory {
     protected long seedTime;
     protected long switchTime;
     protected int isSwitched;
-    protected long rxCache;
-    protected long rxDataset;
-    protected long poolVm;
-    protected long blockVm;
+    protected PointerByReference rxCache;
+    protected PointerByReference rxDataset;
+    protected PointerByReference poolVm;
+    protected PointerByReference blockVm;
 
     public RandomXMemory() {
         this.switchTime = -1;

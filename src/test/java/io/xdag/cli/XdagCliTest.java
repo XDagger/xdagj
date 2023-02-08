@@ -54,9 +54,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.assertj.core.util.Lists;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.Before;
 import org.junit.Rule;
@@ -110,7 +110,7 @@ public class XdagCliTest {
                     --importmnemonic <mnemonic>       import HDWallet mnemonic
                     --importprivatekey <key>          import hex key
                     --loadsnapshot <filename>         load snapshot
-                    --makesnapshot                    make snapshot
+                    --makesnapshot <covertuint>       make snapshot
                     --password <password>             wallet password
                     --version                         show version
                 """;
@@ -536,37 +536,6 @@ public class XdagCliTest {
         // execution
         assertFalse(xdagCLI.importMnemonic(errorMnemonic));
         assertTrue(xdagCLI.importMnemonic(rightMnemonic));
-    }
-
-    @Test
-    public void testConvertOldWallet() {
-        XdagCli xdagCLI = spy(new XdagCli());
-        File walletFile = spy(new File(""));
-        xdagCLI.setConfig(config);
-        String hexPrivKey = "8f30bc86f42f55d8d64dd26a5428fc1e65f0616823153c084b43aad76cd97e04";
-        byte[] keyBytes = BytesUtils.hexStringToBytes(hexPrivKey);
-        SECPPrivateKey secretKey = SECPPrivateKey.create(Bytes32.wrap(keyBytes), Sign.CURVE_NAME);
-        KeyPair account = KeyPair.create(secretKey, Sign.CURVE, Sign.CURVE_NAME);
-        List<KeyPair> keyList = Lists.newArrayList(account);
-
-        // mock wallet
-        Wallet wallet = mock(Wallet.class);
-        when(wallet.unlock("oldpassword")).thenReturn(true);
-        when(xdagCLI.loadWallet()).thenReturn(wallet);
-        when(wallet.exists()).thenReturn(true);
-        doReturn("oldpassword").when(xdagCLI).readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
-        // mock passwords
-        doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
-
-        // mock wallet
-        doReturn(keyList).when(xdagCLI).readOldWallet("111111", "111111", walletFile);
-        doReturn(true).when(walletFile).exists();
-
-        // mock passwords
-        doReturn("111111").when(xdagCLI).readPassword("Old wallet password:");
-        doReturn("111111").when(xdagCLI).readPassword("Old wallet random:");
-
-        assertTrue(xdagCLI.convertOldWallet(walletFile));
     }
 
 }

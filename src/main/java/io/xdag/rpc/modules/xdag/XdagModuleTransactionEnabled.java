@@ -24,34 +24,39 @@
 
 package io.xdag.rpc.modules.xdag;
 
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.crypto.Keys.toBytesAddress;
+import static io.xdag.rpc.ErrorCode.ERR_BALANCE_NOT_ENOUGH;
+import static io.xdag.rpc.ErrorCode.ERR_PARAM_INVALID;
+import static io.xdag.rpc.ErrorCode.ERR_TO_ADDRESS_INVALID;
+import static io.xdag.rpc.ErrorCode.ERR_VALUE_INVALID;
+import static io.xdag.rpc.ErrorCode.ERR_WALLET_UNLOCK;
+import static io.xdag.rpc.ErrorCode.SUCCESS;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
+import static io.xdag.utils.BasicUtils.xdag2amount;
+
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.core.Address;
-import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.XdagTime;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.exception.XdagOverFlowException;
 import io.xdag.wallet.Wallet;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static io.xdag.config.Constants.CONFIRMATIONS_COUNT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.rpc.ErrorCode.*;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.xdag2amount;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
@@ -110,9 +115,9 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         }
     }
 
-
+    //TODO:need change
     public void doXfer(double sendValue,Bytes32 fromAddress, Bytes32 toAddress,String remark, ProcessResult processResult) {
-        long amount;
+        UInt64 amount = UInt64.ZERO;
         try {
             amount = xdag2amount(sendValue);
         } catch (XdagOverFlowException e){
@@ -122,63 +127,55 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         }
         MutableBytes32 to = MutableBytes32.create();
 //        System.arraycopy(address, 8, to, 8, 24);
-        to.set(8, toAddress.slice(8, 24));
+        to.set(8, toAddress.slice(8, 20));
 
         // 待转账余额
-        AtomicLong remain = new AtomicLong(amount);
+        AtomicReference<UInt64> remain = new AtomicReference<>(amount);
         // 转账输入
-        Map<Address, KeyPair> ourBlocks = Maps.newHashMap();
+        Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
 
         // 如果没有from则从节点账户里搜索
         if (fromAddress == null) {
             logger.debug("fromAddress is null, search all our blocks");
             // our block select
-            kernel.getBlockStore().fetchOurBlocks(pair -> {
-                int index = pair.getKey();
-                Block block = pair.getValue();
-                if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
-                    return false;
-                }
-                if (compareAmountTo(remain.get(),block.getInfo().getAmount()) <= 0) {
-//                if (remain.get() <= block.getInfo().getAmount()) {
-                    ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, remain.get()),
-                            kernel.getWallet().getAccounts().get(index));
-                    remain.set(0);
-                    return true;
+
+            List<KeyPair> accounts = kernel.getWallet().getAccounts();
+            for (KeyPair account : accounts) {
+                byte[] addr = toBytesAddress(account);
+                UInt64 addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
+                if (compareAmountTo(remain.get(), addrBalance) <= 0) {
+                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(),true), account);
+                    remain.set(UInt64.ZERO);
+                    break;
                 } else {
-                    if (compareAmountTo(block.getInfo().getAmount(),0) > 0) {
-//                    if (block.getInfo().getAmount() > 0) {
-                        remain.set(remain.get() - block.getInfo().getAmount());
-                        ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount()),
-                                kernel.getWallet().getAccounts().get(index));
-                        return false;
+                    if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
+                        remain.set(remain.get().subtract(addrBalance));
+                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get().subtract(addrBalance), true), account);
                     }
-                    return false;
                 }
-            });
+            }
         } else {
             MutableBytes32 from = MutableBytes32.create();
-            from.set(8, fromAddress.slice(8, 24));
-            Block fromBlock = kernel.getBlockStore().getBlockInfoByHash(from);
+            from.set(8, fromAddress.slice(8, 20));
+            byte[] addr = from.slice(8, 20).toArray();
             // 如果余额足够
-            if (compareAmountTo(fromBlock.getInfo().getAmount(),remain.get()) >= 0) {
+            if (compareAmountTo(kernel.getAddressStore().getBalanceByAddress(addr), remain.get()) >= 0) {
                 // if (fromBlock.getInfo().getAmount() >= remain.get()) {
-                int keyIndex = kernel.getBlockStore().getKeyIndexByHash(from);
-                ourBlocks.put(new Address(from, XDAG_FIELD_IN, remain.get()),
-                        kernel.getWallet().getAccounts().get(keyIndex));
-                remain.set(0);
+                ourAccounts.put(new Address(from, XDAG_FIELD_INPUT, remain.get(), true),
+                        kernel.getWallet().getAccount(addr));
+                remain.set(UInt64.ZERO);
             }
         }
 
         // 余额不足
-        if (compareAmountTo(remain.get(),0) > 0) {
+        if (compareAmountTo(remain.get(),UInt64.ZERO) > 0) {
             processResult.setCode(ERR_BALANCE_NOT_ENOUGH.code());
             processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;
         }
         List<String> resInfo = new ArrayList<>();
         // create transaction
-        List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourBlocks, to, remark);
+        List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -214,20 +211,21 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         Bytes32 hash = null;
 
         // check whether to is exist in blockchain
-        if (address.length() == 32) {
-            hash = Bytes32.wrap(address2Hash(address));
+        if (PubkeyAddressUtils.checkAddress(address)) {
+            hash = pubAddress2Hash(address);
         } else {
-            hash = Bytes32.wrap(BasicUtils.getHash(address));
-        }
-        if (hash == null) {
             processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
             processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
-        } else {
-            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
-                processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-                processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
-            }
         }
+//        if (hash == null) {
+//            processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+//            processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
+//        } else {
+//            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
+//                processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
+//                processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
+//            }
+//        }
 
         return hash;
     }

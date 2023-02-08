@@ -34,8 +34,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.math.ec.ECPoint;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 

@@ -24,8 +24,8 @@
 
 package io.xdag.mine.manager;
 
-import io.xdag.consensus.Task;
 import io.xdag.config.PoolConfig;
+import io.xdag.consensus.Task;
 import org.apache.tuweni.bytes.Bytes32;
 
 public interface AwardManager {

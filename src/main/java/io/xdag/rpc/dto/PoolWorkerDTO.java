@@ -23,11 +23,10 @@
  */
 package io.xdag.rpc.dto;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.net.InetSocketAddress;
 import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder

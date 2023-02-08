@@ -45,12 +45,11 @@ import io.xdag.core.BlockchainImpl;
 import io.xdag.core.ImportResult;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
+import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.math.BigInteger;
@@ -59,8 +58,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.Before;
 import org.junit.Rule;
@@ -144,15 +143,15 @@ public class SyncTest {
         long fourthTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime + 64000L + 64000L));
 
         Block addressBlock = generateAddressBlock(config, key, generateTime);
-        pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(addressBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block secondBlock = generateExtraBlock(config, key, secondTime, pending);
         pending.clear();
-        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block thirdBlock = generateExtraBlock(config, key, thirdTime, pending);
         pending.clear();
-        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(secondBlock.getHashLow(), XDAG_FIELD_OUT,false));
 
         Block fourthBlock = generateExtraBlock(config, key, fourthTime, pending);
 
@@ -176,7 +175,7 @@ public class SyncTest {
 //            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
@@ -208,7 +207,7 @@ public class SyncTest {
         for (int i = 1; i <= 10; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
@@ -223,22 +222,22 @@ public class SyncTest {
         long tempTime = XdagTime.msToXdagtimestamp(generateTime);
         long firstTime = XdagTime.getEndOfEpoch(tempTime);
         pending.clear();
-        pending.add(new Address(ref, XDAG_FIELD_OUT));
+        pending.add(new Address(ref, XDAG_FIELD_OUT,false));
         Block A = generateExtraBlock(config, key, firstTime, pending);
         pending.clear();
-        pending.add(new Address(A.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(A.getHashLow(), XDAG_FIELD_OUT,false));
 
         long secondTime = XdagTime.getEndOfEpoch(tempTime) + 1;
         Block B = generateExtraBlock(config, key, secondTime, pending);
         pending.clear();
-        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
         long thirdTime = XdagTime.getEndOfEpoch(tempTime);
         Block C = generateExtraBlock(config, key, thirdTime, pending);
         pending.clear();
-        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
@@ -257,18 +256,15 @@ public class SyncTest {
             result = blockchain.tryToConnect(C);
         }
 
-//        generateTime = fourthTime;
         ref = D.getHashLow();
 
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-//            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
@@ -278,22 +274,22 @@ public class SyncTest {
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
         firstTime = XdagTime.getEndOfEpoch(tempTime);
         pending.clear();
-        pending.add(new Address(ref, XDAG_FIELD_OUT));
+        pending.add(new Address(ref, XDAG_FIELD_OUT,false));
         Block A2 = generateExtraBlock(config, key, firstTime, pending);
         pending.clear();
-        pending.add(new Address(A2.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(A2.getHashLow(), XDAG_FIELD_OUT,false));
 
         secondTime = XdagTime.getEndOfEpoch(tempTime) + 1;
         Block B2 = generateExtraBlock(config, key, secondTime, pending);
         pending.clear();
-        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
         thirdTime = XdagTime.getEndOfEpoch(tempTime);
         Block C2 = generateExtraBlockGivenRandom(config, key, thirdTime, pending, "1235");
         pending.clear();
-        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT));
+        pending.add(new Address(B2.getHashLow(), XDAG_FIELD_OUT,false));
 
         generateTime += 64000L;
         tempTime = XdagTime.msToXdagtimestamp(generateTime);
@@ -312,18 +308,15 @@ public class SyncTest {
             result = blockchain.tryToConnect(C2);
         }
 
-//        generateTime = fourthTime;
         ref = D2.getHashLow();
 
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-//            long xdagTime = XdagTime.getEndOfEpoch(generateTime);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             blockchain.tryToConnect(extraBlock);
             ref = extraBlock.getHashLow();
@@ -338,10 +331,7 @@ public class SyncTest {
         Config config = new DevnetConfig();
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
+
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);

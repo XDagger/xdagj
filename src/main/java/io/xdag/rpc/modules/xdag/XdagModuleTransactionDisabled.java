@@ -24,12 +24,12 @@
 
 package io.xdag.rpc.modules.xdag;
 
+import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
+
 import io.xdag.Kernel;
 import io.xdag.rpc.Web3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
 
 public class XdagModuleTransactionDisabled extends XdagModuleTransactionBase {
 

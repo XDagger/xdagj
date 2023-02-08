@@ -24,9 +24,8 @@
 
 package io.xdag.utils;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.math.BigInteger;
+import org.apache.commons.lang3.StringUtils;
 
 public class Numeric {
 

@@ -41,12 +41,11 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
+import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
 import java.io.IOException;
@@ -85,10 +84,6 @@ public class ExtraBlockTest {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
@@ -134,7 +129,7 @@ public class ExtraBlockTest {
         for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -148,7 +143,7 @@ public class ExtraBlockTest {
         // 3. create 30 extra block
         for (int i = 10; i <= 40; i++) {
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "01" + i);
@@ -183,7 +178,7 @@ public class ExtraBlockTest {
         for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -198,7 +193,7 @@ public class ExtraBlockTest {
         // 3. create 30 extra block
         for (int i = 10; i <= 40; i++) {
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "01" + i);
             blockchain.tryToConnect(extraBlock);

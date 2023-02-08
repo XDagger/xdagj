@@ -30,16 +30,19 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import io.xdag.core.BlockInfo;
+import io.xdag.core.SnapshotBalanceData;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.core.SnapshotBalanceData;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 public class KryoTest {
 
@@ -48,12 +51,14 @@ public class KryoTest {
     @Before
     public void init() {
         kryo = new Kryo();
+        kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
         kryo.register(long.class);
         kryo.register(int.class);
         kryo.register(SnapshotBalanceData.class);
+        kryo.register(UInt64.class);
     }
 
     @Test
@@ -73,12 +78,10 @@ public class KryoTest {
     public void serialize() {
         BlockInfo blockInfo = new BlockInfo();
         blockInfo.setHeight(100);
-//        System.out.println(blockInfo);
         try {
             byte[] data = serialize(blockInfo);
             BlockInfo blockInfo1 = (BlockInfo) deserialize(data, BlockInfo.class);
             assertEquals(blockInfo, blockInfo1);
-//            System.out.println(blockInfo1);
         } catch (SerializationException ignored) {
         } catch (DeserializationException e) {
             e.printStackTrace();
@@ -93,8 +96,6 @@ public class KryoTest {
         } catch (DeserializationException e) {
             e.printStackTrace();
         }
-
-
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {

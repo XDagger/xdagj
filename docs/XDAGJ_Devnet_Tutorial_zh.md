@@ -71,7 +71,7 @@
 
   ```shell
   cd pool
-  nohup java -jar xdagj-0.5.1-shaded.jar > xdagj.log 2>&1 &
+  nohup java -jar xdagj-0.5.4-shaded.jar > xdagj.log 2>&1 &
   #等待系统启动完毕，采用telnet接入
   telnet 127.0.0.1:6001
   ```

@@ -31,21 +31,21 @@ import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_LAG;
 import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS;
 import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG;
 import static io.xdag.config.RandomXConstants.XDAG_RANDOMX;
-import static io.xdag.crypto.jni.RandomX.allocCache;
-import static io.xdag.crypto.jni.RandomX.allocDataSet;
-import static io.xdag.crypto.jni.RandomX.calculateHash;
-import static io.xdag.crypto.jni.RandomX.createVm;
-import static io.xdag.crypto.jni.RandomX.destroyVm;
-import static io.xdag.crypto.jni.RandomX.initCache;
-import static io.xdag.crypto.jni.RandomX.initDataSet;
-import static io.xdag.crypto.jni.RandomX.releaseCache;
-import static io.xdag.crypto.jni.RandomX.releaseDataSet;
+import static io.xdag.utils.BytesUtils.bytesToPointer;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
+import com.sun.jna.Memory;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
+import io.xdag.crypto.randomx.NativeSize;
+import io.xdag.crypto.randomx.RandomXFlag;
+import io.xdag.crypto.randomx.RandomXJNA;
+import io.xdag.crypto.randomx.RandomXUtils;
 import io.xdag.utils.XdagTime;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -66,6 +66,7 @@ public class RandomX {
     protected final Config config;
     protected boolean isTestNet = true;
     protected int mineType;
+    protected int flags;
     protected long randomXForkSeedHeight;
     protected long randomXForkLag;
 
@@ -80,12 +81,19 @@ public class RandomX {
     protected boolean is_full_mem;
     protected boolean is_Large_pages;
 
+
     public RandomX(Config config) {
         this.config = config;
         if (config instanceof MainnetConfig) {
             isTestNet = false;
         }
         this.mineType = XDAG_RANDOMX;
+        // get randomx flags
+        if (config.getRandomxSpec().getRandomxFlag()) {
+            flags = RandomXJNA.INSTANCE.randomx_get_flags() + RandomXFlag.LARGE_PAGES.getValue() + RandomXFlag.FULL_MEM.getValue();
+        } else {
+            flags = RandomXJNA.INSTANCE.randomx_get_flags();
+        }
     }
 
     public void setBlockchain(Blockchain blockchain) {
@@ -176,8 +184,8 @@ public class RandomX {
 
 
     // 矿池初始化dataset
-    public void randomXPoolInitDataset(long rxCache, long rxDataset, int threadsNum) {
-        initDataSet(rxCache, rxDataset, threadsNum);
+    public void randomXPoolInitDataset(PointerByReference rxCache, PointerByReference rxDataset) {
+        RandomXJNA.INSTANCE.randomx_init_dataset(rxDataset, rxCache, new NativeLong(0), RandomXJNA.INSTANCE.randomx_dataset_item_count());
     }
 
 
@@ -195,7 +203,9 @@ public class RandomX {
 
         readWriteLock.writeLock().lock();
         try {
-            hash = Bytes32.wrap(calculateHash(memory.poolVm, data.toArray(), dataSize));
+            Pointer hashPointer = new Memory(RandomXUtils.HASH_SIZE);
+            RandomXJNA.INSTANCE.randomx_calculate_hash(memory.poolVm, bytesToPointer(data.toArray()), new NativeSize(dataSize), hashPointer);
+            hash = Bytes32.wrap(hashPointer.getByteArray(0, RandomXUtils.HASH_SIZE));
         } finally {
             readWriteLock.writeLock().unlock();
         }
@@ -234,7 +244,9 @@ public class RandomX {
         readWriteLock.writeLock().lock();
         try {
             log.debug("Use seed {}", Hex.toHexString(Arrays.reverse(memory.seed)));
-            hash = calculateHash(memory.blockVm, data, dataSize);
+            Pointer hashPointer = new Memory(RandomXUtils.HASH_SIZE);
+            RandomXJNA.INSTANCE.randomx_calculate_hash(memory.blockVm, bytesToPointer(data), new NativeSize(dataSize), hashPointer);
+            hash = hashPointer.getByteArray(0, RandomXUtils.HASH_SIZE);
         } finally {
             readWriteLock.writeLock().unlock();
         }
@@ -243,12 +255,12 @@ public class RandomX {
     }
 
 
-    public long randomXUpdateVm(RandomXMemory randomXMemory, boolean isPoolVm) {
+    public PointerByReference randomXUpdateVm(RandomXMemory randomXMemory, boolean isPoolVm) {
         if (isPoolVm) {
-            randomXMemory.poolVm = createVm(randomXMemory.rxCache, randomXMemory.rxDataset, 4);
+            randomXMemory.poolVm = RandomXJNA.INSTANCE.randomx_create_vm(flags, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.poolVm;
         } else {
-            randomXMemory.blockVm = createVm(randomXMemory.rxCache, randomXMemory.rxDataset, 4);
+            randomXMemory.blockVm = RandomXJNA.INSTANCE.randomx_create_vm(flags, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.blockVm;
         }
     }
@@ -259,37 +271,37 @@ public class RandomX {
         readWriteLock.writeLock().lock();
         try {
             RandomXMemory rx_memory = globalMemory[(int) (memIndex) & 1];
-            if (rx_memory.rxCache == 0) {
-                rx_memory.rxCache = allocCache();
-                if (rx_memory.rxCache == 0) {
+            if (rx_memory.rxCache == null) {
+                rx_memory.rxCache = RandomXJNA.INSTANCE.randomx_alloc_cache(flags);
+                if (rx_memory.rxCache == null) {
                     // fail alloc
                     log.debug("Failed alloc cache");
                     return;
                 }
             }
             // 分配成功
-            initCache(rx_memory.rxCache, rx_memory.seed, rx_memory.seed.length);
+            RandomXJNA.INSTANCE.randomx_init_cache(rx_memory.rxCache, bytesToPointer(rx_memory.seed), new NativeSize(rx_memory.seed.length));
 
-            if (rx_memory.rxDataset == 0) {
+            if (rx_memory.rxDataset == null) {
                 // 分配dataset
-                rx_memory.rxDataset = allocDataSet();
-                if (rx_memory.rxDataset == 0) {
+                rx_memory.rxDataset = RandomXJNA.INSTANCE.randomx_alloc_dataset(flags);
+                if (rx_memory.rxDataset == null) {
                     //分配失败
                     log.debug("Failed alloc dataset");
                     return;
                 }
             }
 
-            randomXPoolInitDataset(rx_memory.rxCache, rx_memory.rxDataset, 4);
+            randomXPoolInitDataset(rx_memory.rxCache, rx_memory.rxDataset);
 
-            if (randomXUpdateVm(rx_memory, true) <= 0) {
+            if (randomXUpdateVm(rx_memory, true) == null) {
                 // update failed
                 log.debug("Update pool vm failed");
                 return;
             }
 
             // update finished
-            if (randomXUpdateVm(rx_memory, false) <= 0) {
+            if (randomXUpdateVm(rx_memory, false) == null) {
                 // update failed
                 log.debug("Update block vm failed");
             }
@@ -307,17 +319,17 @@ public class RandomX {
             globalMemoryLock[i].writeLock().lock();
             try {
                 RandomXMemory rx_memory = globalMemory[i];
-                if (rx_memory.poolVm != 0) {
-                    destroyVm(rx_memory.poolVm);
+                if (rx_memory.poolVm != null) {
+                    RandomXJNA.INSTANCE.randomx_destroy_vm(rx_memory.poolVm);
                 }
-                if (rx_memory.blockVm != 0) {
-                    destroyVm(rx_memory.blockVm);
+                if (rx_memory.blockVm != null) {
+                    RandomXJNA.INSTANCE.randomx_destroy_vm(rx_memory.blockVm);
                 }
-                if (rx_memory.rxCache != 0) {
-                    releaseCache(rx_memory.rxCache);
+                if (rx_memory.rxCache != null) {
+                    RandomXJNA.INSTANCE.randomx_release_cache(rx_memory.rxCache);
                 }
-                if (rx_memory.rxDataset != 0) {
-                    releaseDataSet(rx_memory.rxDataset);
+                if (rx_memory.rxDataset != null) {
+                    RandomXJNA.INSTANCE.randomx_release_dataset(rx_memory.rxDataset);
                 }
             } finally {
                 globalMemoryLock[i].writeLock().unlock();
@@ -353,13 +365,6 @@ public class RandomX {
         // 如果快照在还没切到下一个seed更换周期时就重启，那么还是第一个seed是初始的preseed
         if (blockchain.getXdagStats().nmain < config.getSnapshotSpec().getSnapshotHeight() + (isTestNet
                 ? SEEDHASH_EPOCH_TESTNET_BLOCKS : SEEDHASH_EPOCH_BLOCKS)) {
-//            long firstMemIndex = randomXHashEpochIndex + 1;
-//            RandomXMemory firstMemory = globalMemory[(int) (firstMemIndex) & 1];
-//            firstMemory.seed = preseed;
-//            randomXPoolUpdateSeed(firstMemIndex);
-//            randomXHashEpochIndex = firstMemIndex;
-//            firstMemory.isSwitched = 0;
-//            randomXSetForkTime(blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight()));
             randomXLoadingSnapshot(preseed, forkTime);
         } else {
             this.randomXLoadingSnapshot();
@@ -378,9 +383,9 @@ public class RandomX {
             long seedHeight = blockchain.getXdagStats().nmain & ~seedEpoch;
             long preSeedHeight = seedHeight - seedEpoch - 1;
 
-                if (preSeedHeight >= randomXForkSeedHeight) {
-                    randomXHashEpochIndex = 0;
-                    randomXPoolMemIndex = -1;
+            if (preSeedHeight >= randomXForkSeedHeight) {
+                randomXHashEpochIndex = 0;
+                randomXPoolMemIndex = -1;
 
                 block = blockchain.getBlockByHeight(preSeedHeight);
                 long memoryIndex = randomXHashEpochIndex + 1;

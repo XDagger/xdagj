@@ -25,9 +25,9 @@
 package io.xdag.rpc.modules.web3;
 
 import io.xdag.rpc.Web3;
+import io.xdag.rpc.dto.AccountResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.ConfigDTO;
-import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 
@@ -109,4 +109,8 @@ public interface Web3XdagModule {
     Object xdag_getPoolWorkers() throws Exception;
 
     String xdag_getMaxXferBalance() throws Exception;
+
+    default AccountResultDTO xdag_getAccountByAddress(String address) {
+        return getXdagModule().getAccountByAddress(address);
+    }
 }

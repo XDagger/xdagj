@@ -26,11 +26,13 @@ package io.xdag.utils;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
-import org.apache.commons.lang3.ArrayUtils;
-
+import com.sun.jna.Memory;
+import com.sun.jna.Pointer;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.tuweni.units.bigints.UInt64;
 
 public class BytesUtils {
 
@@ -100,6 +102,12 @@ public class BytesUtils {
         return buffer.getShort();
     }
 
+    public static Pointer bytesToPointer(byte[] bytes) {
+        Pointer pointer = new Memory(bytes.length);
+        pointer.write(0, bytes, 0, bytes.length);
+        return pointer;
+    }
+
     public static String toHexString(byte[] data) {
         return data == null ? "" : BaseEncoding.base16().lowerCase().encode(data);
     }
@@ -110,6 +118,18 @@ public class BytesUtils {
         }
         byte[] bytes = new byte[numBytes];
         byte[] biBytes = b.toByteArray();
+        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
+        int length = Math.min(biBytes.length, numBytes);
+        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
+        return bytes;
+    }
+
+    public static byte[] bigIntegerToBytes(UInt64 b, int numBytes) {
+        if (b == null) {
+            return null;
+        }
+        byte[] bytes = new byte[numBytes];
+        byte[] biBytes = b.toBytes().toArray();
         int start = (biBytes.length == numBytes + 1) ? 1 : 0;
         int length = Math.min(biBytes.length, numBytes);
         System.arraycopy(biBytes, start, bytes, numBytes - length, length);

@@ -61,7 +61,7 @@ public class Constants {
     public static final byte BI_REMARK = (byte) 0x80;
     public static final Long SEND_PERIOD = 10L;
     public static final int DNET_PKT_XDAG = 0x8B;
-    public static final int BLOCK_HEAD_WORD = 0x3fca9e2b;
+
     public static final long REQUEST_BLOCKS_MAX_TIME = UnsignedLong.fromLongBits(1L << 20).longValue();
     public static final long REQUEST_WAIT = 64;
     public static final long MAX_ALLOWED_EXTRA = 65536;
@@ -73,7 +73,7 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
-    public static final String CLIENT_VERSION = "0.5.3";
+    public static final String CLIENT_VERSION = "0.5.4";
 
     /**
      * 同步问题 分叉高度
@@ -87,11 +87,6 @@ public class Constants {
         PRE_TOP,
         NEW_LINK
     }
-
-    public final static String SNAPTSHOT_KEY_TIME = "g_snapshot_time";
-    public final static String SNAPTSHOT_KEY_STATE = "g_xdag_state";
-    public final static String SNAPTSHOT_KEY_STATS = "g_xdag_stats";
-    public final static String SNAPTSHOT_KEY_EXTSTATS = "g_xdag_extstats";
 
     public final static String SNAPSHOT_KEY_STATS_MAIN = "g_snapshot_main";
     public final static String SNAPSHOT_PRE_SEED = "pre_seed";

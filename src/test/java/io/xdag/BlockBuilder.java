@@ -25,25 +25,29 @@
 package io.xdag;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.crypto.Hash;
+import io.xdag.utils.BasicUtils;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
 
 public class BlockBuilder {
 
     public static Block generateAddressBlock(Config config, KeyPair key, long xdagTime) {
         Block b = new Block(config, xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
+        b.getInfo().setAmount(BasicUtils.xdag2amount(1000));
         return b;
     }
 
@@ -66,16 +70,28 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-            long amount) {
+    public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+                                                 UInt64 amount) {
         List<Address> refs = Lists.newArrayList();
-        refs.add(new Address(from.getHashLow(), XDAG_FIELD_IN, amount)); // key1
-        refs.add(new Address(to.getHashLow(), XDAG_FIELD_OUT, amount));
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
         b.signOut(key);
         return b;
     }
+    public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+                                                    UInt64 amount) {
+        List<Address> refs = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
+        List<KeyPair> keys = new ArrayList<>();
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
+        b.signOut(key);
+        return b;
+    }
+
 
 }

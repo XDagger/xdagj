@@ -120,24 +120,17 @@ public class BlockRequestMessage extends AbstractMessage {
         first.set(16, Bytes.wrap(BytesUtils.longToBytes(starttime, true)));
         first.set(24, Bytes.wrap(BytesUtils.longToBytes(endtime, true)));
 
-//        System.arraycopy(first, 0, encoded, 0, 32);
         encoded.set(0, first);
         encoded.set(32, hash.reverse());
 
         // field2 diff and maxdiff
-//        System.arraycopy(BytesUtils.bigIntegerToBytes(diff, 16, true), 0, encoded, 64, 16);
         encoded.set(64, Bytes.wrap(BytesUtils.bigIntegerToBytes(diff, 16, true)));
-//        System.arraycopy(BytesUtils.bigIntegerToBytes(maxDiff, 16, true), 0, encoded, 80, 16);
         encoded.set(80, Bytes.wrap(BytesUtils.bigIntegerToBytes(maxDiff, 16, true)));
 
         // field3 nblock totalblock main totalmain
-//        System.arraycopy(BytesUtils.longToBytes(nblocks, true), 0, encoded, 96, 8);
         encoded.set(96, Bytes.wrap(BytesUtils.longToBytes(nblocks, true)));
-//        System.arraycopy(BytesUtils.longToBytes(totalBlockNumber, true), 0, encoded, 104, 8);
         encoded.set(104, Bytes.wrap(BytesUtils.longToBytes(totalBlockNumber, true)));
-//        System.arraycopy(BytesUtils.longToBytes(nmain, true), 0, encoded, 112, 8);
         encoded.set(112, Bytes.wrap(BytesUtils.longToBytes(nmain, true)));
-//        System.arraycopy(BytesUtils.longToBytes(totalMainNumber, true), 0, encoded, 120, 8);
         encoded.set(120, Bytes.wrap(BytesUtils.longToBytes(totalMainNumber, true)));
         encoded.set(128, Bytes.wrap(mutableBytes));
         updateCrc();
@@ -148,19 +141,13 @@ public class BlockRequestMessage extends AbstractMessage {
         if (parsed) {
             return;
         }
-//        starttime = BytesUtils.bytesToLong(encoded, 16, true);
+
         this.starttime = encoded.getLong(16, ByteOrder.LITTLE_ENDIAN);
-//        endtime = BytesUtils.bytesToLong(encoded, 24, true);
         this.endtime = encoded.getLong(24, ByteOrder.LITTLE_ENDIAN);
-//        BigInteger maxdifficulty = BytesUtils.bytesToBigInteger(encoded, 80, true);
         BigInteger maxdifficulty = encoded.slice(80, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
-//        long totalnblocks = BytesUtils.bytesToLong(encoded, 104, true);
         long totalnblocks = encoded.getLong(104, ByteOrder.LITTLE_ENDIAN);
-//        long totalnmains = BytesUtils.bytesToLong(encoded, 120, true);
         long totalnmains = encoded.getLong(120, ByteOrder.LITTLE_ENDIAN);
-//        int totalnhosts = BytesUtils.bytesToInt(encoded, 132, true);
         int totalnhosts = encoded.getInt(132, ByteOrder.LITTLE_ENDIAN);
-//        long maintime = BytesUtils.bytesToLong(encoded, 136, true);
         long maintime = encoded.getLong(136, ByteOrder.LITTLE_ENDIAN);
         xdagStats = new XdagStats(maxdifficulty, totalnblocks, totalnmains, totalnhosts, maintime);
         MutableBytes32 hash = MutableBytes32.create();

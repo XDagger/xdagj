@@ -23,30 +23,38 @@
  */
 package io.xdag.db;
 
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
-import io.xdag.core.*;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
-import io.xdag.db.OrphanPool;
-import io.xdag.mine.randomx.RandomX;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockchainImpl;
+import io.xdag.core.ImportResult;
 import io.xdag.core.SnapshotBalanceData;
 import io.xdag.core.SnapshotUnit;
 import io.xdag.core.StatsBlock;
-import io.xdag.db.SnapshotChainStore;
-import io.xdag.db.SnapshotChainStoreImpl;
+import io.xdag.core.XdagTopStatus;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -55,20 +63,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static io.xdag.BlockBuilder.generateExtraBlock;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.*;
-
 @Slf4j
 public class SnapshotProcess {
 
-    public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();
     @Rule
@@ -98,10 +95,6 @@ public class SnapshotProcess {
             config.getSnapshotSpec().setSnapshotHeight(100);
         }
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
@@ -175,7 +168,7 @@ public class SnapshotProcess {
             log.debug("create No." + i + " extra block");
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
@@ -216,7 +209,7 @@ public class SnapshotProcess {
         int i = 0;
         for (Block block : blocks) {
 
-            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount(), block.getTimestamp(),
+            SnapshotBalanceData balanceData = new SnapshotBalanceData(block.getInfo().getAmount().toLong(), block.getTimestamp(),
                     block.getHash().toArray(), block.getInfo().getFlags());
             if (i < 30) {
                 snapshotChainStore

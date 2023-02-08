@@ -38,18 +38,14 @@ public class NewTaskMessage extends Message {
 
     public NewTaskMessage(MutableBytes bytes) {
         super(bytes);
-//        xdagFields[0] = new XdagField(BytesUtils.subArray(bytes, 0, 32));
         xdagFields[0] = new XdagField(bytes.mutableSlice(0, 32));
-//        xdagFields[1] = new XdagField(BytesUtils.subArray(bytes, 32, 32));
         xdagFields[1] = new XdagField(bytes.mutableSlice(32, 32));
     }
 
     @Override
     public Bytes getEncoded() {
         MutableBytes data = MutableBytes.create(64);
-//        xdagFields[0].getData().copyTo(data,0);
         data.set(0, xdagFields[0].getData());
-//        xdagFields[1].getData().copyTo(data,32);
         data.set(32, xdagFields[1].getData());
         return data;
     }

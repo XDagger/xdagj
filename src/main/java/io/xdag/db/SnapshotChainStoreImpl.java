@@ -23,7 +23,12 @@
  */
 package io.xdag.db;
 
-import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.SNAPSHOT_KEY_STATS_MAIN;
+import static io.xdag.config.Constants.SNAPSHOT_PRE_SEED;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getHashlowByHash;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -38,18 +43,17 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.xdag.core.Block;
+import io.xdag.core.SnapshotBalanceData;
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
 import io.xdag.core.XdagBlock;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.core.SnapshotBalanceData;
-import io.xdag.core.SnapshotUnit;
-import io.xdag.core.StatsBlock;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FileUtils;
 import io.xdag.utils.Numeric;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -62,14 +66,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.CursorIterable.KeyVal;

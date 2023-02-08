@@ -25,15 +25,15 @@
 package io.xdag.cli;
 
 import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
 import io.xdag.Kernel;
-import io.xdag.crypto.jni.Native;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Setter;
@@ -41,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
 import org.jline.builtins.telnet.Telnet;
@@ -78,6 +77,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("state", new CommandMethods(this::processState, this::defaultCompleter));
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
+        commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
         commandExecute.put("miners", new CommandMethods(this::processMiners, this::defaultCompleter));
 //        commandExecute.put("run", new CommandMethods(this::processRun, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
@@ -85,14 +85,69 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
-        commandExecute.put("balancemaxxfer", new CommandMethods(this::processBalanceMaxXfer, this::defaultCompleter));
+        commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
+        commandExecute.put("oldbalance", new CommandMethods(this::processOldBalance, this::defaultCompleter));
         registerCommands(commandExecute);
     }
 
-    private void processBalanceMaxXfer(CommandInput input) {
+    private void processXferToNew(CommandInput input) {
         final String[] usage = {
-                "balancemaxxfer -  print max balance we can transfer \n",
-                "Usage: balance balancemaxxfer",
+                "xfertonew -  transfer the old balance to new address \n",
+                "Usage: balance xfertonew",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+            println(commands.xferToNew());
+
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processAddress(CommandInput input) {
+        final String[] usage = {
+                "address-  print extended info for the account corresponding to the address",
+                "Usage: address [PUBLIC ADDRESS]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+
+            if (argv.size() == 0) {
+                println("Need hash or address");
+                return;
+            }
+
+            String address = argv.get(0);
+            try {
+                Bytes32 hash;
+                if (PubkeyAddressUtils.checkAddress(address)) {
+                    hash = pubAddress2Hash(address);
+                } else {
+                    println("Incorrect address");
+                    return;
+                }
+                println(commands.address(hash));
+            } catch (Exception e) {
+                println("Argument is incorrect.");
+            }
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processOldBalance(CommandInput input) {
+        final String[] usage = {
+                "oldbalance -  print max balance we can transfer \n",
+                "Usage: balance oldbalance",
                 "  -? --help                    Show help",
         };
         try {
@@ -155,6 +210,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             saveException(e);
         }
     }
+
 
     private void processBlock(CommandInput input) {
         final String[] usage = {
@@ -251,7 +307,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
                 num = NumberUtils.toInt(argv.get(0));
             }
-            println(commands.minedblocks(num));
+            println(commands.minedBlocks(num));
         } catch (Exception e) {
             saveException(e);
         }
@@ -320,20 +376,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            if (argv.get(1).length() == 32) {
-                hash = Bytes32.wrap(address2Hash(argv.get(1)));
+            if (PubkeyAddressUtils.checkAddress(argv.get(1))) {
+                hash = pubAddress2Hash(argv.get(1));
             } else {
-                hash = Bytes32.wrap(BasicUtils.getHash(argv.get(1)));
-            }
-            if (hash == null) {
-                println("No Address");
-                return;
-            }
-
-            MutableBytes32 key = MutableBytes32.create();
-            key.set(8, Objects.requireNonNull(hash).slice(8, 24));
-            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(key), false) == null) {
-//            if (kernel.getAccountStore().getAccountBlockByHash(hash, false) == null) {
                 println("Incorrect address");
                 return;
             }
@@ -501,13 +546,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
         if (isTelnet) {
             return line.equals(kernel.getConfig().getAdminSpec().getTelnetPassword());
-        } else {
-            int err = Native.verify_dnet_key(line, kernel.getConfig().getNodeSpec().getDnetKeyBytes());
-            if (err < 0) {
-                println("The password is incorrect");
-                return false;
-            }
         }
+
         return true;
     }
 

@@ -32,7 +32,6 @@ import io.xdag.Kernel;
 import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.manager.XdagChannelManager;
-
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +42,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

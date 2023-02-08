@@ -23,13 +23,13 @@
  */
 package io.xdag.consensus;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import io.xdag.core.XdagField;
 import io.xdag.utils.XdagSha256Digest;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class TaskTest {
 

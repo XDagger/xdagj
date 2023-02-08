@@ -28,7 +28,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.xdag.Kernel;
-import io.xdag.crypto.jni.Native;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
 import java.net.InetSocketAddress;
@@ -59,7 +58,7 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
         channel.initWithNode(
                 // 连接到对方的channel 并将对方记录为node
                 remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort());
-        log.debug("connect with node:{}",remoteAddress.toString());
+        log.debug("connect with node:{}", remoteAddress);
         // TODO:如果为服务器端 发送pubKey
         if (isServer) {
             channel.sendPubkey(ctx);
@@ -123,17 +122,9 @@ public class XdagHandshakeHandler extends ByteToMessageDecoder {
             }
 
         } else {
-            byte[] read = new byte[512];
-            in.readBytes(read);
-            log.debug("接受区块：" + Hex.encodeHexString(read));
-            // 接受区块
-            byte[] uncryptData = Native.dfslib_uncrypt_byte_sector(
-                    read, read.length, channel.getNode().getStat().Inbound.get() - 3 + 1);
-            log.debug(
-                    "in="
-                            + channel.getNode().getStat().Inbound.get()
-                            + ", after  dfslib_uncrypt_sector : "
-                            + Hex.encodeHexString(uncryptData));
+            byte[] uncryptData = new byte[512];
+            in.readBytes(uncryptData);
+            log.debug("in=" + channel.getNode().getStat().Inbound.get() + ", receive block：" + Hex.encodeHexString(uncryptData));
             channel.getNode().getStat().Inbound.add();
         }
     }

@@ -6,19 +6,19 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.5.3</version>
+    <version>0.5.4</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <kotlin.version>1.7.0</kotlin.version>
+        <kotlin.version>1.7.22</kotlin.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
         <!-- netty -->
-        <netty.version>4.1.84.Final</netty.version>
-        <tuweni.version>2.3.0</tuweni.version>
+        <netty.version>4.1.85.Final</netty.version>
+        <tuweni.version>2.3.1</tuweni.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -89,37 +89,6 @@
                     <skip>false</skip>
                 </configuration>
             </plugin>
-
-            <!-- cmake on maven compile -->
-            <plugin>
-                <groupId>com.googlecode.cmake-maven-project</groupId>
-                <artifactId>cmake-maven-plugin</artifactId>
-                <version>3.22.1-b1</version>
-                <executions>
-                    <execution>
-                        <id>cmake-generate</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <sourcePath>${project.basedir}/src/c</sourcePath>
-                            <targetPath>${project.basedir}/src/c/build</targetPath>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>cmake-compile</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <projectDirectory>${project.basedir}/src/c/build</projectDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
 
             <!-- testing -->
             <plugin>
@@ -348,6 +317,14 @@
     </build>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.xdag/xdagj-native-randomx -->
+        <dependency>
+            <groupId>io.xdag</groupId>
+            <artifactId>xdagj-native-randomx</artifactId>
+            <version>0.1.4</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
@@ -550,7 +527,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.1.1</version>
+            <version>3.1.2</version>
             <exclusions>
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
@@ -563,18 +540,6 @@
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
             <version>3.21.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jupnp</groupId>
-            <artifactId>org.jupnp.support</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jupnp</groupId>
-            <artifactId>org.jupnp</artifactId>
-            <version>2.6.1</version>
         </dependency>
 
         <dependency>
@@ -746,7 +711,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>4.3.4</version>
+            <version>4.3.5</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -812,27 +777,21 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.jnr</groupId>
-            <artifactId>jnr-ffi</artifactId>
-            <version>2.2.12</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.13.4.2</version>
+            <version>2.14.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.13.4</version>
+            <version>2.14.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.13.4</version>
+            <version>2.14.0</version>
         </dependency>
 
         <dependency>
@@ -947,10 +906,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-ri</artifactId>
-            <version>2.3.3</version>
+            <version>4.0.0</version>
             <type>pom</type>
             <exclusions>
                 <exclusion>

@@ -24,13 +24,13 @@
 package io.xdag.mine.message;
 
 
+import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
+
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
-
-import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 
 public class WorkerNameMessage extends Message {
 

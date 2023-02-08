@@ -24,18 +24,16 @@
 
 package io.xdag.crypto;
 
+import static org.junit.Assert.assertEquals;
+
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.jni.Native;
-import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Objects;
-
-import static org.junit.Assert.assertEquals;
+import org.apache.commons.io.IOUtils;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DnetKeysTest {
 
@@ -48,7 +46,7 @@ public class DnetKeysTest {
     public void setUp() throws Exception {
         config = new DevnetConfig();
         config.initKeys();
-        String absolutePath = Objects.requireNonNull(Native.class.getClassLoader().getResource("dnet_keys.bin")).getPath();
+        String absolutePath = Objects.requireNonNull(DnetKeysTest.class.getClassLoader().getResource("dnet_keys.bin")).getPath();
         File keyFile = new File(absolutePath);
 
         dnetKeys = new byte[3072];

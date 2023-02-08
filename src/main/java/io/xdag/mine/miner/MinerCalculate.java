@@ -34,6 +34,7 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -86,13 +87,13 @@ public class MinerCalculate {
             }
         }
         log.debug("print unpaid for miner: {} , sum= [{}] , count = [{}]",
-                BasicUtils.hash2Address(channel.getMiner().getAddressHash()),sum, count);
+                PubkeyAddressUtils.toBase58(channel.getMiner().getAddressHashByte()),sum, count);
         return diffToPay(sum, count);
     }
 
     public static String minerStats(Miner miner) {
         StringBuilder res = new StringBuilder();
-        String address = BasicUtils.hash2Address(miner.getAddressHash());
+        String address = PubkeyAddressUtils.toBase58(miner.getAddressHashByte());
         double unpaid = calculateUnpaidShares(miner);
         String minerRegTime = XdagTime.format(miner.getRegTime());
         res.append("miner: ")
@@ -115,7 +116,7 @@ public class MinerCalculate {
 
             double mean = channel.getMeanLogDiff();
             log.debug("print unpaid = [{}],  meanlog = [{}] for miner: {} ",
-                    unpaidChannel, mean ,BasicUtils.hash2Address(channel.getMiner().getAddressHash()));
+                    unpaidChannel, mean ,channel.getAddressHash());
             double rate = BasicUtils.xdag_log_difficulty2hashrate(mean);
 
             channelStr
@@ -157,7 +158,6 @@ public class MinerCalculate {
         if (channelTaskTime <= currentTaskTime) {
             // 获取到位置 myron
             int i = (int) (((currentTaskTime >> 16) + 1) & config.getPoolSpec().getAwardEpoch());
-            // int i = (int) (((currentTaskTime>> 16) +1 ) & 7);
             diff = BytesUtils.hexBytesToDouble(hash.toArray(), 8, false);
             diff *= Math.pow(2, -64);
             diff += BytesUtils.hexBytesToDouble(hash.toArray(), 0, false);
@@ -172,7 +172,7 @@ public class MinerCalculate {
                 channel.setTaskTime(currentTaskTime);
                 double maxDiff = channel.getMaxDiffs(i);
                 log.debug("CalculateNoPaidShares for miner: {},channel get maxDiff at first is [{}] = [{}]",
-                        channel.getAccountAddressHash().toHexString(), i, maxDiff);
+                        channel.getAddressHash(), i, maxDiff);
                 if (maxDiff > 0) {
 
                     channel.addPrevDiff(maxDiff);

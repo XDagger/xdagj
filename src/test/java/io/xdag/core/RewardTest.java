@@ -24,6 +24,14 @@
 
 package io.xdag.core;
 
+import static io.xdag.BlockBuilder.generateAddressBlock;
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -31,15 +39,18 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.crypto.jni.Native;
+import io.xdag.db.BlockStore;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
 import io.xdag.wallet.Wallet;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -48,17 +59,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-
-import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 
 public class RewardTest {
 
@@ -80,10 +80,6 @@ public class RewardTest {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());
         config.getNodeSpec().setStoreBackupDir(root.newFolder().getAbsolutePath());
 
-        Native.init(config);
-        if (Native.dnet_crypt_init() < 0) {
-            throw new Exception("dnet crypt init failed");
-        }
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
@@ -147,7 +143,7 @@ public class RewardTest {
         for (int i = 1; i <= 20; i++) {
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
@@ -170,10 +166,9 @@ public class RewardTest {
 
         // 3. create 20 fork blocks
         for (int i = 0; i < 30; i++) {
-//            date = DateUtils.addSeconds(date, 64);
             generateTime += 64000L;
             pending.clear();
-            pending.add(new Address(ref, XDAG_FIELD_OUT));
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
             Block extraBlock = generateExtraBlockGivenRandom(config, poolKey, xdagTime, pending, "3456");
@@ -181,7 +176,7 @@ public class RewardTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount());
+        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount().toLong());
     }
 
     static class MockBlockchain extends BlockchainImpl {

@@ -83,10 +83,6 @@ public class XdagServer {
         } catch (Exception e) {
             log.error("Xdag Node start error:{}.", e.getMessage(), e);
         }
-//        finally {
-//            workerGroup.shutdownGracefully();
-//            bossGroup.shutdownGracefully();
-//        }
     }
 
     public void close() {
@@ -95,8 +91,6 @@ public class XdagServer {
                 channelFuture.channel().close().sync();
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
-//                workerGroup.terminationFuture().sync();
-//                bossGroup.terminationFuture().sync();
                 log.debug("Xdag Node closed.");
             } catch (Exception e) {
                 log.error("Xdag Node close error:{}", e.getMessage(), e);

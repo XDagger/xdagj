@@ -28,14 +28,13 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.utils.BytesUtils;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
 @Slf4j
 public class OrphanPool {
@@ -85,7 +84,7 @@ public class OrphanPool {
                 long time =  BytesUtils.bytesToLong(an.getValue(), 0, true);
                 if (time <= sendtime[0]) {
                     addNum--;
-                    res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT));
+                    res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT,false));
                     sendtime[1] = Math.max(sendtime[1],time);
                 }
             }

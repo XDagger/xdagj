@@ -40,9 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes32;
-
-import static io.xdag.utils.BasicUtils.hash2Address;
 
 @Slf4j
 public class XdagChannelManager {

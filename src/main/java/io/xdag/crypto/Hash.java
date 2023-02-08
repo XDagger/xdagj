@@ -24,6 +24,8 @@
 
 package io.xdag.crypto;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;
@@ -47,8 +49,23 @@ public class Hash {
         return result.toHexString();
     }
 
+
+    public static MessageDigest newDigest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);  // Can't happen.
+        }
+    }
+
     public static Bytes32 hashTwice(Bytes input) {
         return sha256(sha256(input));
+    }
+
+    public static byte[] hashTwice(byte[] input) {
+        MessageDigest digest = newDigest();
+        digest.update(input);
+        return digest.digest(digest.digest());
     }
 
     public static Bytes32 sha256(Bytes input) {

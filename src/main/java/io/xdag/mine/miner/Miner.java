@@ -25,6 +25,8 @@
 package io.xdag.mine.miner;
 
 import io.xdag.mine.MinerChannel;
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import java.net.InetSocketAddress;
 import java.sql.Time;
 import java.util.Calendar;
@@ -38,7 +40,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
 
 @Slf4j
 public class Miner {
@@ -47,10 +48,9 @@ public class Miner {
      * 保存这个矿工的地址
      */
     private final Bytes32 addressHash;
-    /**
-     * 这个保存的是前8位为0 的地址 主要用于查询
-     */
-    private final Bytes32 addressHashLow;
+    @Getter
+    @Setter
+    private final byte[] addressHashByte;
     /**
      * 相同账户地址的channel数量
      */
@@ -110,10 +110,7 @@ public class Miner {
     public Miner(Bytes32 addressHash) {
         log.debug("init the new miner:{}", addressHash.toHexString());
         this.addressHash = addressHash;
-//        this.addressHashLow = BytesUtils.fixBytes(addressHash, 8, 24);
-        addressHash.mutableCopy();
-        this.addressHashLow = addressHash.mutableCopy();
-        ((MutableBytes32) this.addressHashLow).setLong(0, 0);
+        addressHashByte = ByteArrayToByte32.byte32ToArray(addressHash.mutableCopy());
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
         this.meanLogDiff = 0.0;
@@ -154,6 +151,7 @@ public class Miner {
                     return false;
                 }
             }
+            log.debug("remove Miner: {}", PubkeyAddressUtils.toBase58(addressHashByte));
             return true;
         } else {
             return false;
@@ -202,40 +200,6 @@ public class Miner {
 
     public Date getRegTime() {
         return registeredTime;
-    }
-
-    public void setRegisteredTime(Time registeredTime) {
-        this.registeredTime = registeredTime;
-    }
-
-    public void setDiffSum(long key, double value) {
-        double temp = 0.0;
-        if (diffSum.get(key) != null && (temp = diffSum.get(key)) == 0.0) {
-            diffSum.put(key, value);
-        }
-        temp += value;
-        diffSum.put(key, temp);
-    }
-
-    public void setPrevDiffSum(long key, double value) {
-        double temp = 0.0;
-        if (prevDiffSum.get(key) != null && (temp = prevDiffSum.get(key)) == 0.0) {
-            prevDiffSum.put(key, value);
-        }
-        temp += value;
-        prevDiffSum.put(key, temp);
-    }
-
-    public double getDiffSum(long key) {
-        return diffSum.get(key);
-    }
-
-    public double getPrevDiffSum(long key) {
-        return prevDiffSum.get(key);
-    }
-
-    public Bytes32 getAddressHashLow() {
-        return this.addressHashLow;
     }
 
     public Map<InetSocketAddress, MinerChannel> getChannels() {

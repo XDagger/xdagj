@@ -24,15 +24,26 @@
 
 package io.xdag.wallet;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
 import com.google.common.collect.Lists;
+import io.xdag.config.Config;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
+import io.xdag.core.SimpleEncoder;
+import io.xdag.crypto.Aes;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.Numeric;
+import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SystemUtil;
 import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;
@@ -53,30 +64,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
-
-import io.xdag.config.Config;
-import io.xdag.core.SimpleEncoder;
-import io.xdag.crypto.Aes;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.Numeric;
-import io.xdag.utils.SimpleDecoder;
-import io.xdag.utils.SystemUtil;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter
@@ -279,7 +278,7 @@ public class Wallet {
     public List<KeyPair> getAccounts() {
         requireUnlocked();
         synchronized (accounts) {
-            return new ArrayList<>(accounts.values());
+            return Lists.newArrayList(accounts.values());
         }
     }
 
@@ -503,7 +502,7 @@ public class Wallet {
 
         // base count a block <header + send address + defKey signature>
         int base = 1 + 1 + 2 + hasRemark;
-        long amount = 0;
+        UInt64 amount = UInt64.ZERO;
 
         while (stack.size() > 0) {
             Map.Entry<Address, KeyPair> key = stack.peek();
@@ -517,7 +516,7 @@ public class Wallet {
             }
             // 可以将该输入 放进一个区块
             if (base < 16) {
-                amount += key.getKey().getAmount().longValue();
+                amount = amount.add(key.getKey().getAmount());
                 keys.put(key.getKey(), key.getValue());
                 stack.poll();
             } else {
@@ -527,7 +526,7 @@ public class Wallet {
                 keysPerBlock = new HashSet<>();
                 keysPerBlock.add(getDefKey());
                 base = 1 + 1 + 2 + hasRemark;
-                amount = 0;
+                amount = UInt64.ZERO;
             }
         }
         if (keys.size() != 0) {
@@ -537,9 +536,9 @@ public class Wallet {
         return res;
     }
 
-    private BlockWrapper createTransaction(Bytes32 to, long amount, Map<Address, KeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
 
-        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUT, amount));
+        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 
         Block block = createNewBlock(new HashMap<>(keys), tos, remark);
 

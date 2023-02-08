@@ -24,6 +24,8 @@
 
 package io.xdag.net;
 
+import static org.junit.Assert.assertEquals;
+
 import io.xdag.net.message.NetDB;
 import io.xdag.net.message.impl.SumRequestMessage;
 import io.xdag.utils.BytesUtils;
@@ -31,8 +33,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class NetTest {
 

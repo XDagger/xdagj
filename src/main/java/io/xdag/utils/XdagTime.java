@@ -25,7 +25,6 @@
 package io.xdag.utils;
 
 import java.util.Date;
-
 import org.apache.commons.lang3.time.FastDateFormat;
 
 public class XdagTime {

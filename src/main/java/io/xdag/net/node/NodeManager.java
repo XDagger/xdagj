@@ -24,6 +24,8 @@
 
 package io.xdag.net.node;
 
+import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.xdag.Kernel;
@@ -36,14 +38,22 @@ import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.NetDB;
-import lombok.extern.slf4j.Slf4j;
-
 import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
-
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
