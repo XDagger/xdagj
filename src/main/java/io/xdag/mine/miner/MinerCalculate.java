@@ -135,7 +135,7 @@ public class MinerCalculate {
                     .append("HashRate:  ")
                     .append(String.format("%.6f", rate))
                     .append("   ")
-                    .append(channel.isMill() ? "RandomXMiner" : "xdagClient")
+                    .append("RandomXMiner")
                     .append("\n");
             res.append(channelStr);
         }

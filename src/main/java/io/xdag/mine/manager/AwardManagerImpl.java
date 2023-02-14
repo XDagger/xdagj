@@ -367,11 +367,16 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             return -3;
         }
 
-        payData.balance = UInt64.valueOf(kernel.getBlockchain().getReward(block.getInfo().getHeight()));
+        if(!block.isOurs()){
+            log.debug("Isn't mine");
+            return -4;
+        }
+
+        payData.balance = block.getCoinBase().getAmount();
 
         if (compareAmountTo(payData.balance,UInt64.ZERO) <= 0) {
             log.debug("no main block,can't pay");
-            return -4;
+            return -5;
         }
 
         // 计算矿池部分的收益
@@ -381,12 +386,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 进行各部分奖励的计算
         if (compareAmountTo(payData.unusedBalance,UInt64.ZERO) <= 0) {
             log.debug("Balance no enough");
-            return -5;
+            return -6;
         }
 
         if (keyPos < 0) {
             log.debug("can't find the key");
-            return -6;
+            return -7;
         }
 
         // 决定一个区块是否需要再有一个签名字段
@@ -416,7 +421,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("after cal prevdiffSum为[{}]", prevDiffSum);
         if (prevDiffSum <= DBL) {
             log.debug("diff is too low");
-            return -7;
+            return -8;
         }
 
         // 通过precalculatePay后计算出的数据 进行计算
