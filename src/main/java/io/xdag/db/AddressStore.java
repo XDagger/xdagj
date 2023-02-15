@@ -50,18 +50,14 @@ public class AddressStore {
             AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
         }
         if(AddressSource.get(new byte[]{AMOUNT_SUM}) == null){
-            AddressSource.put(new byte[AMOUNT_SUM],BytesUtils.longToBytes(0,false));
+            AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
         }
     }
 
     public void reset() {
         this.AddressSource.reset();
-        if(AddressSource.get(new byte[]{ADDRESS_SIZE}) == null){
-            AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
-        }
-        if(AddressSource.get(new byte[]{AMOUNT_SUM}) == null){
-            AddressSource.put(new byte[AMOUNT_SUM],BytesUtils.longToBytes(0,false));
-        }
+        AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
+        AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
     }
 
     public UInt64 getBalanceByAddress(byte[] Address){
