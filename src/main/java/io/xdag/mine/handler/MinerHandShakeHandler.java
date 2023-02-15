@@ -55,7 +55,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     private final Kernel kernel;
     private final MinerManager minerManager;
     private final AddressStore addressStore;
-    private final SyncManager syncManager;
     public static final int MESSAGE_SIZE = 24;
 
     public MinerHandShakeHandler(MinerChannel channel, Kernel kernel) {
@@ -63,7 +62,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         this.kernel = kernel;
         minerManager = kernel.getMinerManager();
         addressStore = kernel.getAddressStore();
-        syncManager = kernel.getSyncMgr();
     }
 
     @Override
@@ -111,7 +109,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     public void checkProtocol(ChannelHandlerContext ctx, byte[] address) {
         boolean importResult = addressStore.addressIsExist(address);
-
         if (!importResult) {
             addressStore.addAddress(address);
             log.info("XDAG:new miner connect. New address: {} with channel: {} connect.",

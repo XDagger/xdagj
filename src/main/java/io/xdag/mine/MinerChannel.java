@@ -181,8 +181,7 @@ public class MinerChannel {
     private MinerMessageHandler minerMessageHandler;
     private Miner03 miner03;
 
-    @Getter
-    private boolean isMill = false;
+
 
     /**
      * 矿工名
@@ -376,7 +375,6 @@ public class MinerChannel {
         this.accountAddressHash = miner.getAddressHash();
         miner.putChannel(this.getInetAddress(), this);
         miner.setMinerStates(MinerStates.MINER_ACTIVE);
-        isMill = true;
     }
 
     public String getAddressHash(){
