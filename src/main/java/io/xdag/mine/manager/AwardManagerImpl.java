@@ -39,11 +39,14 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
+import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
@@ -66,6 +69,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
+
 
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
@@ -347,7 +351,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         MutableBytes32 hashlow = MutableBytes32.create();
 //        Bytes32.wrap(BytesUtils.fixBytes(hash, 8, 24));
         hashlow.set(8, Bytes.wrap(hash).slice(8, 24));
-        Block block = blockchain.getBlockByHash(hashlow, false);
+        Block block = blockchain.getBlockByHash(hashlow, true);
         //TODO
         log.debug("Hash low [{}]",hashlow.toHexString());
         if (keyPos < 0) {
@@ -367,12 +371,13 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             return -3;
         }
 
-        if(!block.isOurs()){
+        if(!checkMine(block)){
             log.debug("Isn't mine");
             return -4;
         }
 
-        payData.balance = block.getCoinBase().getAmount();
+        payData.balance = UInt64.valueOf(blockchain.getReward(block.getInfo().getHeight()));
+
 
         if (compareAmountTo(payData.balance,UInt64.ZERO) <= 0) {
             log.debug("no main block,can't pay");
@@ -645,6 +650,22 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
+    }
+
+    public boolean checkMine(Block block){
+        List<KeyPair> ourkeys = wallet.getAccounts();
+        // 遍历所有key
+        for (int i = 0; i < ourkeys.size(); i++) {
+            KeyPair ecKey = ourkeys.get(i);
+            byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
+            byte[] publicKeyHash = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
+            Address coinBase = block.getCoinBase();
+            byte[] coinBaseKey = ByteArrayToByte32.byte32ToArray(coinBase.getAddress());
+            if(compareTo(publicKeyHash,0,20,coinBaseKey,0,20) == 0){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
