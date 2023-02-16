@@ -46,8 +46,12 @@ public class AddressStore {
 
     public void init() {
         this.AddressSource.init();
-        AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
-        AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
+        if(AddressSource.get(new byte[]{ADDRESS_SIZE}) == null){
+            AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
+        }
+        if(AddressSource.get(new byte[]{AMOUNT_SUM}) == null){
+            AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
+        }
     }
 
     public void reset() {

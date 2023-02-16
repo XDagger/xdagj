@@ -768,6 +768,9 @@ public class BlockchainImpl implements Blockchain {
                                 link.getAmount());
                         return UInt64.ZERO;
                     }
+                }else {
+                    log.debug("Type error");
+                    return UInt64.ZERO;
                 }
 
                 //Verify in advance that Address amount is not negative
@@ -812,6 +815,9 @@ public class BlockchainImpl implements Blockchain {
                 Block ref = getBlockByHash(link.getAddress(), false);
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                     subtractAndAccept(ref,link.getAmount());
+                    UInt64 allBalance = addressStore.getAllBalance();
+                    allBalance = allBalance.addExact(link.getAmount());
+                    addressStore.updateAllBalance(allBalance);
                 } else {
                     addAndAccept(ref,link.getAmount());
                 }
@@ -842,6 +848,9 @@ public class BlockchainImpl implements Blockchain {
                     if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                         addAndAccept(ref,link.getAmount());
                         sum = sum.subtract(link.getAmount());
+                        UInt64 allBalance = addressStore.getAllBalance();
+                        allBalance = allBalance.subtractExact(link.getAmount());
+                        addressStore.updateAllBalance(allBalance);
                     } else if(link.getType() == XDAG_FIELD_OUT){
                         subtractAndAccept(ref,link.getAmount());
                         sum = sum.add(link.getAmount());
@@ -1630,6 +1639,7 @@ public class BlockchainImpl implements Blockchain {
             UInt64 allBalance = addressStore.getAllBalance();
             allBalance = allBalance.addExact(amount);
             addressStore.updateAllBalance(allBalance);
+            System.out.println(allBalance.toLong());
             onNewTxHistory(coinbase.getAddress(), rewardBlock.getHashLow(), XDAG_FIELD_COINBASE, amount,
                     rewardBlock.getTimestamp(), 0, rewardBlock.getInfo().getRemark());
         }
