@@ -26,8 +26,7 @@ package io.xdag.mine.manager;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
@@ -377,6 +376,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         }
 
         payData.balance = UInt64.valueOf(blockchain.getReward(block.getInfo().getHeight()));
+        if(amount2xdag(payData.balance) == 1024){
+            log.debug("error reward block height:{} && hash:{}",block.getInfo().getHeight(),block.getHash());
+        }
 
 
         if (compareAmountTo(payData.balance,UInt64.ZERO) <= 0) {
