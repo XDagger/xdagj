@@ -110,30 +110,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             }
             channel.getInBound().add();
             // When a message of 512 bytes is received, it means that a transaction is sent from a miner after receiving a block.
-        } else if (len == 16 * DATA_SIZE) {
-            log.debug("Received a message from the miner:{} ip&port:{},msg len == 512",
-                    PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
-            byte[] data = new byte[512];
-            in.readBytes(data);
-            long transportHeader = BytesUtils.bytesToLong(data, 0, true);
-            int ttl = (int) ((transportHeader >> 8) & 0xff);
-            int crc = BytesUtils.bytesToInt(data, 4, true);
-            System.arraycopy(BytesUtils.longToBytes(0, true), 0, data, 4, 4);
-            // Verify length and crc checksum
-            if (!crc32Verify(data, crc)) {
-                log.debug("receive not a block from miner:{} ip&port:{}",
-                        PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),
-                        channel.getInetAddress().toString());
-            } else {
-                System.arraycopy(BytesUtils.longToBytes(0, true), 0, data, 0, 8);
-                XdagBlock xdagBlock = new XdagBlock(data);
-                byte first_field_type = getMsgCode(xdagBlock, 0);
-                XdagField.FieldType netType = channel.getKernel().getConfig().getXdagFieldHeader();
-                if (netType.asByte() == first_field_type) {
-                    msg = new NewBlockMessage(xdagBlock, ttl);
-                }
-                channel.getInBound().add(16);
-            }
         } else {
             log.error("There is no type information from the message with length:{} from Address:{} ip&port:{}",
                     len,channel.getAddressHash(),channel.getInetAddress().toString());
