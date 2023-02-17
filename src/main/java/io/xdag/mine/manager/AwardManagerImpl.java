@@ -24,6 +24,7 @@
 
 package io.xdag.mine.manager;
 
+import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static io.xdag.utils.BasicUtils.*;
@@ -351,6 +352,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 //        Bytes32.wrap(BytesUtils.fixBytes(hash, 8, 24));
         hashlow.set(8, Bytes.wrap(hash).slice(8, 24));
         Block block = blockchain.getBlockByHash(hashlow, true);
+        int flag = block.getInfo().flags & ~(BI_OURS | BI_REMARK);
+        // 1F
+        if (flag != (BI_REF | BI_MAIN_REF | BI_APPLIED | BI_MAIN | BI_MAIN_CHAIN)) {
+            log.debug("Block:{} not become a mainBlock,didn't reward",block.getHash().toHexString());
+            return -1;
+        }
         //TODO
         log.debug("Hash low [{}]",hashlow.toHexString());
         if (keyPos < 0) {
