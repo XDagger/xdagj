@@ -408,8 +408,10 @@ public class Commands {
                             orphan blocks: %d
                          wait sync blocks: %d
                          chain difficulty: %s of %s
-                              XDAG supply: %.9f of %.9f
-                        4 hr hashrate KHs: %.9f of %.9f""",
+                              XDAG supply: %.9f of %.9f 
+                          XDAG in address: %.9f
+                        4 hr hashrate KHs: %.9f of %.9f
+                        Number of Address: %d""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
@@ -422,8 +424,10 @@ public class Commands {
                 maxDiff.toString(16),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
                 amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain))),
+                amount2xdag(kernel.getAddressStore().getAllBalance()),
                 xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateOurs()),
-                xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal())
+                xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal()),
+                kernel.getAddressStore().getAddressSize().toLong()
         );
     }
 
