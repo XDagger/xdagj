@@ -1635,7 +1635,6 @@ public class BlockchainImpl implements Blockchain {
             UInt64 allBalance = addressStore.getAllBalance();
             allBalance = allBalance.addExact(amount);
             addressStore.updateAllBalance(allBalance);
-            System.out.println(allBalance.toLong());
             onNewTxHistory(coinbase.getAddress(), rewardBlock.getHashLow(), XDAG_FIELD_COINBASE, amount,
                     rewardBlock.getTimestamp(), 0, rewardBlock.getInfo().getRemark());
         }
