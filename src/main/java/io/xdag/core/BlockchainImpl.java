@@ -41,11 +41,7 @@ import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.Hash2byte;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
-import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
@@ -1386,9 +1382,9 @@ public class BlockchainImpl implements Blockchain {
     private boolean verifyBlockSignature(Address in, List<SECPPublicKey> keys) {
         Bytes pubHash = in.getAddress().mutableCopy().slice(8,20);
         for (SECPPublicKey key : keys) {
-            if(!Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return false;
+            if(Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return true;
         }
-        return true;
+        return false;
     }
 
     private boolean verifySignature(Address in, List<SECPPublicKey> publicKeys) {
