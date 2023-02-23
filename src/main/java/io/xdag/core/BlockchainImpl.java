@@ -395,6 +395,7 @@ public class BlockchainImpl implements Blockchain {
                  */
                 // TODO: 如果是交易块 不设置extra
                 if (ref != null && compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
+                    log.debug("Try to connect a tx Block:{}",block.getHash().toHexString());
 //                if (ref != null && !ref.getAmount().equals(BigInteger.ZERO)) {
                     updateBlockFlag(block, BI_EXTRA, false);
                 }
@@ -764,7 +765,8 @@ public class BlockchainImpl implements Blockchain {
                                 link.getAmount());
                         return UInt64.ZERO;
                     }
-                }else {
+                  }
+                else {
                     log.debug("Type error");
                     return UInt64.ZERO;
                 }
