@@ -530,6 +530,7 @@ public class XdagCliTest {
         when(wallet.flush()).thenReturn(true);
 
         // mock passwords
+        doReturn("oldpassword").when(xdagCLI).readNewPassword("EnterNewPassword:", "ReEnterNewPassword:");
         doReturn("oldpassword").when(xdagCLI).readPassword(WALLET_PASSWORD_PROMPT);
         doReturn(null).when(xdagCLI).startKernel(any(), any());
 

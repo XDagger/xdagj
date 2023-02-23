@@ -378,7 +378,7 @@ public class XdagCli extends Launcher {
     }
 
     protected boolean importMnemonic(String mnemonic) {
-        Wallet wallet = loadAndUnlockWallet();
+        Wallet wallet = loadWallet().exists() ? loadAndUnlockWallet() : createNewWallet();
 
         if (wallet.isHdWalletInitialized()) {
             System.out.println("HDWallet Mnemonic Already In Wallet");
