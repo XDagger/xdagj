@@ -73,7 +73,7 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
-    public static final String CLIENT_VERSION = "0.5.4";
+    public static final String CLIENT_VERSION = "0.5.5";
 
     /**
      * 同步问题 分叉高度
