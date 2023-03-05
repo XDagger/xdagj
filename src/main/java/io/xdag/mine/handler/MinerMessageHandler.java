@@ -24,36 +24,33 @@
 
 package io.xdag.mine.handler;
 
-import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
-import static io.xdag.utils.BasicUtils.crc32Verify;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.List;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.tuweni.bytes.MutableBytes;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
 import io.xdag.mine.MinerChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
-import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.tuweni.bytes.MutableBytes;
 
 @Slf4j
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     private final MinerChannel channel;
     private final int DATA_SIZE = 32;// length of each field
-    private static final long WORKERNAME_HEADER_WORD = 0xf46b9853;
+    private static final long WORKERNAME_HEADER_WORD = 0xf46b9853L;
     private MessageFactory messageFactory;
 
     public MinerMessageHandler(MinerChannel channel) {
@@ -87,7 +84,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        Message msg = null;
+        Message msg;
         int len = in.readableBytes();
         // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {

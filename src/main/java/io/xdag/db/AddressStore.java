@@ -86,7 +86,7 @@ public class AddressStore {
 
     public UInt64 getAddressSize(){
         return UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{ADDRESS_SIZE})));
-    };
+    }
 
     public void updateAllBalance(UInt64 value){
         AddressSource.put(new byte[]{AMOUNT_SUM},value.toBytes().toArray());

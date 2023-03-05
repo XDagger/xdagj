@@ -270,28 +270,25 @@ public class SyncManager {
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
                 switch (importResult) {
-                    case EXIST:
-                    case IN_MEM:
-                    case IMPORTED_BEST:
-                    case IMPORTED_NOT_BEST:
-                        // TODO import成功后都需要移除
-                        syncPopBlock(bw);
-                        queue.remove(bw);
-                        break;
-                    case NO_PARENT:
-                        if (syncPushBlock(bw, importResult.getHashlow())) {
-                            log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow(),
-                                    importResult.getHashlow().toHexString());
-                            List<Channel> channels = channelMgr.getActiveChannels();
-                            for (Channel channel : channels) {
-                                if (channel.getNode().equals(bw.getRemoteNode())) {
-                                    channel.getXdag().sendGetBlock(importResult.getHashlow());
-                                }
+                case EXIST, IN_MEM, IMPORTED_BEST, IMPORTED_NOT_BEST -> {
+                    // TODO import成功后都需要移除
+                    syncPopBlock(bw);
+                    queue.remove(bw);
+                }
+                case NO_PARENT -> {
+                    if (syncPushBlock(bw, importResult.getHashlow())) {
+                        log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow(),
+                                importResult.getHashlow().toHexString());
+                        List<Channel> channels = channelMgr.getActiveChannels();
+                        for (Channel channel : channels) {
+                            if (channel.getNode().equals(bw.getRemoteNode())) {
+                                channel.getXdag().sendGetBlock(importResult.getHashlow());
                             }
                         }
-                        break;
-                    default:
-                        break;
+                    }
+                }
+                default -> {
+                }
                 }
             });
         }

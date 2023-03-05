@@ -67,17 +67,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import io.xdag.crypto.Keys;
-import io.xdag.utils.BasicUtils;
-import io.xdag.wallet.Wallet;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -104,6 +99,7 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -709,10 +705,10 @@ public class Commands {
     }
 
     public String address(Bytes32 wrap) {
-        StringBuilder ov = new StringBuilder();
-        ov.append(" OverView" + "\n")
-                .append(String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n")
-                .append(String.format(" balance: %.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())))) + "\n");
+        String ov = " OverView" + "\n"
+                + String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n"
+                + String.format(" balance: %.9f",
+                amount2xdag(kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())))) + "\n";
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------

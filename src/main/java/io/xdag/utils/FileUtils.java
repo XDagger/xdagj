@@ -63,7 +63,7 @@ public class FileUtils {
         }
         List<File> list = new ArrayList<>();
         File[] files = dir.listFiles();
-        if (files != null && files.length != 0) {
+        if (files != null) {
             for (File file : files) {
                 if (file.getName().toUpperCase().endsWith(suffix.toUpperCase())) {
                     list.add(file);

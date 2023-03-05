@@ -296,17 +296,17 @@ public class BytesUtils {
 
         final int firstNonZero = firstNonZeroByte(data);
         switch (firstNonZero) {
-            case -1:
-                return valueForZero;
-
-            case 0:
-                return data;
-
-            default:
-                byte[] result = new byte[data.length - firstNonZero];
-                System.arraycopy(data, firstNonZero, result, 0, data.length - firstNonZero);
-
-                return result;
+        case -1 -> {
+            return valueForZero;
+        }
+        case 0 -> {
+            return data;
+        }
+        default -> {
+            byte[] result = new byte[data.length - firstNonZero];
+            System.arraycopy(data, firstNonZero, result, 0, data.length - firstNonZero);
+            return result;
+        }
         }
     }
 

@@ -26,6 +26,14 @@ package io.xdag.mine.handler;
 
 import static io.xdag.net.XdagVersion.V03;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.tuweni.bytes.Bytes32;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,20 +41,13 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
-import io.xdag.consensus.SyncManager;
 import io.xdag.crypto.Base58;
 import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {

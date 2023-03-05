@@ -664,13 +664,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public boolean checkMine(Block block){
         List<KeyPair> ourkeys = wallet.getAccounts();
         // 遍历所有key
-        for (int i = 0; i < ourkeys.size(); i++) {
-            KeyPair ecKey = ourkeys.get(i);
+        for (KeyPair ecKey : ourkeys) {
             byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
             byte[] publicKeyHash = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
             Address coinBase = block.getCoinBase();
             byte[] coinBaseKey = ByteArrayToByte32.byte32ToArray(coinBase.getAddress());
-            if(compareTo(publicKeyHash,0,20,coinBaseKey,0,20) == 0){
+            if (compareTo(publicKeyHash, 0, 20, coinBaseKey, 0, 20) == 0) {
                 return true;
             }
         }

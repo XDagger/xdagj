@@ -116,7 +116,6 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
         // clean transport header
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
         return (dataLength != 512 || !crc32Verify(uncryptData, crc));
-
     }
 
 }
