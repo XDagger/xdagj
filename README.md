@@ -73,13 +73,17 @@ Four stages：
 
 #### Expansion phase: XDAGJ & EVM 
 
-- [ ] Improve the address block structure and increase the handling fee
+- [x] Improve the address block structure 
+
+- [ ] Increase the handling fee
 
 - [x] Optimize and improve mobile wallets to improve user experience
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
-- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete decentralization
+- [x] Decrease the threshold of mining pool users 
+
+- [ ] Open the whitelist to achieve complete decentralization
 
 #### Prosperity phase: XDAGJ & DeFi
 
