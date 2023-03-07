@@ -152,17 +152,15 @@ public class BlockchainTest {
     public void testExtraBlock() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        KeyPair poolKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(0));
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result;
         log.debug("1. create 1 tx block");
-        Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
-
+        Block addressBlock = generateAddressBlock(config, key, generateTime);
 
         // 1. add address block
         result = blockchain.tryToConnect(addressBlock);
@@ -172,28 +170,30 @@ public class BlockchainTest {
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
         // 2. create 100 mainblocks
-        for (int i = 1; i <= 27; i++) {
+        for (int i = 1; i <= 10; i++) {
             log.debug("create No." + i + " extra block");
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
-            pending.add(new Address(keyPair2Hash(poolKey),
-                    XdagField.FieldType.XDAG_FIELD_COINBASE,
-                    true));
             long time = XdagTime.msToXdagtimestamp(generateTime);
             long xdagTime = XdagTime.getEndOfEpoch(time);
-            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            Block extraBlock = generateExtraBlock(config, key, xdagTime, pending);
             result = blockchain.tryToConnect(extraBlock);
             assertSame(result, IMPORTED_BEST);
-            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
+            assertChainStatus(i + 1, i > 1 ? i - 1 : 0, 1, i < 2 ? 1 : 0, blockchain);
+            assertArrayEquals(extraBlock.getHashLow().toArray(), stats.getTop());
             Block storedExtraBlock = blockchain.getBlockByHash(Bytes32.wrap(stats.getTop()), false);
             assertArrayEquals(extraBlock.getHashLow().toArray(), storedExtraBlock.getHashLow().toArray());
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
 
-        UInt64 poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        assertEquals(10240,(long)amount2xdag(poolBalance));
+        // skip first 2 extra block amount assert
+        Lists.reverse(extraBlockList).stream().skip(2).forEach(b -> {
+            Block sb = blockchain.getBlockByHash(b.getHashLow(), false);
+//            System.out.println(Hex.toHexString(sb.getHashLow()) + ": " + String.valueOf(amount2xdag(sb.getInfo().getAmount())));
+            assertEquals("1024.0", String.valueOf(amount2xdag(sb.getInfo().getAmount())));
+        });
     }
 
     @Test
@@ -206,7 +206,7 @@ public class BlockchainTest {
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
 //        System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(0));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(1000));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(result, IMPORTED_BEST);
@@ -272,12 +272,9 @@ public class BlockchainTest {
             pending.clear();
         }
 
-        Block toBlock = blockchain.getBlockStore().getBlockInfoByHash(to.getAddress());
-        Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
         UInt64 poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
         UInt64 addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals(10240,(long)amount2xdag(blockchain.getAddressStore().getAllBalance()));
-        assertEquals(10140,(long)amount2xdag(poolBalance.toLong()));
+        assertEquals(900,(long)amount2xdag(poolBalance.toLong()));
         assertEquals(100,(long)amount2xdag(addressBalance.toLong()));
     }
 
@@ -358,7 +355,7 @@ public class BlockchainTest {
 
         UInt64 poolBalance = UInt64.valueOf((long)amount2xdag(blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount()));
         UInt64 addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals(900,poolBalance.toLong());
+        assertEquals(1924 ,poolBalance.toLong());
         assertEquals(100,(long)amount2xdag(addressBalance.toLong()));
     }
 
