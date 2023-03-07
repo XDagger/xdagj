@@ -800,7 +800,6 @@ public class BlockchainImpl implements Blockchain {
                 sumOut = sumOut.add(link.getAmount());
             }
         }
-
         if (compareAmountTo(block.getInfo().getAmount().add(sumIn),sumOut) < 0 ||
                 compareAmountTo(block.getInfo().getAmount().add(sumIn),sumIn) < 0
         ) {
@@ -823,7 +822,7 @@ public class BlockchainImpl implements Blockchain {
             }else {
                 if(link.getType() == XDAG_FIELD_INPUT){
                     subtractAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
-                }else {
+                }else if(link.getType() == XDAG_FIELD_OUTPUT){
                     addAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
                 }
             }
@@ -891,21 +890,16 @@ public class BlockchainImpl implements Blockchain {
             // 设置奖励
             long mainNumber = xdagStats.nmain + 1;
             log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
+            long reward = getReward(mainNumber);
             block.getInfo().setHeight(mainNumber);
             updateBlockFlag(block, BI_MAIN, true);
 
-            long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long rewardHeight = mainNumber > awardEpoch + snapshotHeight ? mainNumber - awardEpoch : -1;
-            log.debug("rewardHeight: {}", rewardHeight);
-            long reward = getReward(rewardHeight);
             // 接收奖励
-            if (rewardHeight > snapshotHeight) {
-                reward(UInt64.valueOf(reward), rewardHeight);
-            }
+            acceptAmount(block, UInt64.valueOf(reward));
             xdagStats.nmain++;
 
             // 递归执行主块引用的区块 并获取手续费
-            addAndAccept(block, applyBlock(block));
+            acceptAmount(block, applyBlock(block));
             // 主块REF指向自身
             // TODO:补充手续费
             updateBlockRef(block, new Address(block));
@@ -927,19 +921,14 @@ public class BlockchainImpl implements Blockchain {
 
             log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
+            long amount = getReward(xdagStats.nmain);
             updateBlockFlag(block, BI_MAIN, false);
-            long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long withdrawHeight = xdagStats.nmain > awardEpoch + snapshotHeight ? xdagStats.nmain - awardEpoch : -1;
-            long amount = getReward(withdrawHeight);
-            if (withdrawHeight > snapshotHeight) {
-                Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
-                // Withdraw the reward
-                cancelReward(withdrawBlock, UInt64.valueOf(amount));
-            }
 
             xdagStats.nmain--;
 
-            addAndAccept(block, unApplyBlock(block));
+            // 去掉奖励和引用块的手续费
+            acceptAmount(block, UInt64.ZERO.subtract(amount));
+            acceptAmount(block, unApplyBlock(block));
 
             if (randomXUtils != null) {
                 randomXUtils.randomXUnsetForkTime(block);
@@ -1626,6 +1615,18 @@ public class BlockchainImpl implements Blockchain {
         addressStore.updateBalance(addressHash,balance);
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.add(xdagStats.getBalance()));
+        }
+    }
+
+    // TODO : accept amount to block which in snapshot
+    private void acceptAmount(Block block, UInt64 amount) {
+        block.getInfo().setAmount(block.getInfo().getAmount().add(amount));
+        if (block.isSaved) {
+            blockStore.saveBlockInfo(block.getInfo());
+        }
+        if ((block.getInfo().flags & BI_OURS) != 0) {
+            xdagStats.setBalance(amount.add(xdagStats.getBalance()));
+//            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
         }
     }
 
