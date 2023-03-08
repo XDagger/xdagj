@@ -171,14 +171,15 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveXdagStatus(xdagStats);
         } else {
             XdagStats storedStats = blockStore.getXdagStatus();
+            XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
             if (storedStats != null) {
                 storedStats.setNwaitsync(0);
                 this.xdagStats = storedStats;
                 this.xdagStats.nextra = 0;
+                storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
             } else {
                 this.xdagStats = new XdagStats();
             }
-            XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
             this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
             preSeed = blockStore.getPreSeed();
         }
@@ -484,6 +485,7 @@ public class BlockchainImpl implements Blockchain {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
+                log.debug("update top: {}", block.getHashLow());
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
