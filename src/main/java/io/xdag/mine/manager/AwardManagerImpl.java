@@ -25,8 +25,7 @@
 package io.xdag.mine.manager;
 
 import static io.xdag.config.Constants.*;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
@@ -68,6 +67,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
+import org.checkerframework.checker.units.qual.A;
 import org.hyperledger.besu.crypto.KeyPair;
 
 
@@ -352,12 +352,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 //        Bytes32.wrap(BytesUtils.fixBytes(hash, 8, 24));
         hashlow.set(8, Bytes.wrap(hash).slice(8, 24));
         Block block = blockchain.getBlockByHash(hashlow, true);
-        int flag = block.getInfo().flags & ~(BI_OURS | BI_REMARK);
-        // 1F
-        if (flag != (BI_REF | BI_MAIN_REF | BI_APPLIED | BI_MAIN | BI_MAIN_CHAIN)) {
-            log.debug("Block:{} not become a mainBlock,didn't reward",block.getHash().toHexString());
-            return -1;
-        }
         //TODO
         log.debug("Hash low [{}]",hashlow.toHexString());
         if (keyPos < 0) {
@@ -377,15 +371,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             return -3;
         }
 
-        if(!checkMine(block)){
-            log.debug("Isn't mine");
-            return -4;
-        }
 
-        payData.balance = UInt64.valueOf(blockchain.getReward(block.getInfo().getHeight()));
-        if(amount2xdag(payData.balance) == 1024){
-            log.debug("error reward block height:{} && hash:{}",block.getInfo().getHeight(),block.getHash());
-        }
+        payData.balance = block.getInfo().getAmount();
 
 
         if (compareAmountTo(payData.balance,UInt64.ZERO) <= 0) {
@@ -588,6 +575,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
          * += payData.poolFee;
          */
 
+        receipt.add(new Address(blockchain.getBlockByHash(hashLow,true).getCoinBase().getAddress(),XDAG_FIELD_OUTPUT,payData.poolFee,true));
+        payAmount = payAmount.add(payData.poolFee);
+
         if (fundRation!=0) {
             if (pubAddress2Hash(fundAddress)!=null) {
                 payAmount = payAmount.add(payData.fundIncome);
@@ -640,13 +630,12 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, UInt64 payAmount, int keypos) {
         log.debug("All Payment: {}", payAmount);
         log.debug("unlock keypos =[{}]", keypos);
-        MutableBytes32 coinBase = blockchain.getBlockByHash(hashLow,true).getCoinBase().getAddress();
         for (Address address : receipt) {
             log.debug("pay data: {}", address.getData().toHexString());
         }
         Map<Address, KeyPair> inputMap = new HashMap<>();
-        Address input = new Address(coinBase, XDAG_FIELD_INPUT, payAmount,true);
-        KeyPair inputKey = wallet.getAccount(BasicUtils.Hash2byte(coinBase));
+        Address input = new Address(hashLow, XDAG_FIELD_IN, payAmount,false);
+        KeyPair inputKey = wallet.getAccount(keypos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, null);
         if (inputKey.equals(wallet.getDefKey())) {
