@@ -1,6 +1,6 @@
 @echo off
 
-set XDAG_VERSION="0.5.5"
+set XDAG_VERSION="0.6.0"
 set XDAG_JARNAME="xdagj-%XDAG_VERSION%-shaded.jar"
 set XDAG_OPTS="-t"
 
