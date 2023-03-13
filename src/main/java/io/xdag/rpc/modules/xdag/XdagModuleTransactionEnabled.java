@@ -150,7 +150,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                 } else {
                     if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
                         remain.set(remain.get().subtract(addrBalance));
-                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get().subtract(addrBalance), true), account);
+                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance, true), account);
                     }
                 }
             }

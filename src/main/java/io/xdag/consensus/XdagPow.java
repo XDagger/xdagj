@@ -413,19 +413,21 @@ public class XdagPow implements PoW, Listener, Runnable {
                     continue;
                 }
                 switch (ev.getType()) {
-                    case TIMEOUT:
-                        // TODO : 判断当前是否可以进行产块
-                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
-                            onTimeout();
-                        }
-                        break;
-                    case NEW_PRETOP:
-                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST || kernel.getXdagState() == XdagState.SYNC) {
-                            onNewPreTop();
-                        }
-                        break;
-                    default:
-                        break;
+                case TIMEOUT -> {
+                    // TODO : 判断当前是否可以进行产块
+                    if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
+                            || kernel.getXdagState() == XdagState.SYNC) {
+                        onTimeout();
+                    }
+                }
+                case NEW_PRETOP -> {
+                    if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
+                            || kernel.getXdagState() == XdagState.SYNC) {
+                        onNewPreTop();
+                    }
+                }
+                default -> {
+                }
                 }
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);

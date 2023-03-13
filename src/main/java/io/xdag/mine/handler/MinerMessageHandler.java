@@ -24,36 +24,33 @@
 
 package io.xdag.mine.handler;
 
-import static io.xdag.net.handler.XdagBlockHandler.getMsgCode;
 import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
-import static io.xdag.utils.BasicUtils.crc32Verify;
+
+import java.io.IOException;
+import java.util.List;
+
+import jakarta.xml.bind.DatatypeConverter;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.tuweni.bytes.MutableBytes;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
 import io.xdag.mine.MinerChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
-import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.tuweni.bytes.MutableBytes;
 
 @Slf4j
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     private final MinerChannel channel;
     private final int DATA_SIZE = 32;// length of each field
-    private static final long WORKERNAME_HEADER_WORD = 0xf46b9853;
+    private static final String WORKERNAME_HEADER_WORD = "f46b9853";
     private MessageFactory messageFactory;
 
     public MinerMessageHandler(MinerChannel channel) {
@@ -87,7 +84,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        Message msg = null;
+        Message msg;
         int len = in.readableBytes();
         // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {
@@ -98,7 +95,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             in.readBytes(data);
             BytesUtils.arrayReverse(data);
             //The message received is the worker_name
-            if(BytesUtils.compareTo(data,28,4, BigInteger.valueOf(WORKERNAME_HEADER_WORD).toByteArray(),0,4)==0){
+            if(BytesUtils.compareTo(data,28,4, DatatypeConverter.parseHexBinary(WORKERNAME_HEADER_WORD),0,4)==0){
                 msg = messageFactory.create(WORKER_NAME.asByte(),MutableBytes.wrap(data));
             }else {
                 if (channel.isServer()) {
@@ -110,30 +107,6 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             }
             channel.getInBound().add();
             // When a message of 512 bytes is received, it means that a transaction is sent from a miner after receiving a block.
-        } else if (len == 16 * DATA_SIZE) {
-            log.debug("Received a message from the miner:{} ip&port:{},msg len == 512",
-                    PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
-            byte[] data = new byte[512];
-            in.readBytes(data);
-            long transportHeader = BytesUtils.bytesToLong(data, 0, true);
-            int ttl = (int) ((transportHeader >> 8) & 0xff);
-            int crc = BytesUtils.bytesToInt(data, 4, true);
-            System.arraycopy(BytesUtils.longToBytes(0, true), 0, data, 4, 4);
-            // Verify length and crc checksum
-            if (!crc32Verify(data, crc)) {
-                log.debug("receive not a block from miner:{} ip&port:{}",
-                        PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),
-                        channel.getInetAddress().toString());
-            } else {
-                System.arraycopy(BytesUtils.longToBytes(0, true), 0, data, 0, 8);
-                XdagBlock xdagBlock = new XdagBlock(data);
-                byte first_field_type = getMsgCode(xdagBlock, 0);
-                XdagField.FieldType netType = channel.getKernel().getConfig().getXdagFieldHeader();
-                if (netType.asByte() == first_field_type) {
-                    msg = new NewBlockMessage(xdagBlock, ttl);
-                }
-                channel.getInBound().add(16);
-            }
         } else {
             log.error("There is no type information from the message with length:{} from Address:{} ip&port:{}",
                     len,channel.getAddressHash(),channel.getInetAddress().toString());

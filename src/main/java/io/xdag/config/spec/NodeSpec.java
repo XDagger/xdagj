@@ -44,10 +44,6 @@ public interface NodeSpec {
 
     int getConnectionReadTimeout();
 
-    byte[] getDnetKeyBytes();
-
-    void setDnetKeyBytes(byte[] dnetKeyBytes);
-
     DnetKeys getXKeys();
 
     int getTTL();

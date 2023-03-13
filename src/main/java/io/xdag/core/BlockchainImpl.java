@@ -41,11 +41,7 @@ import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.Hash2byte;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.getDiffByHash;
-import static io.xdag.utils.BasicUtils.getHashlowByHash;
-import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
@@ -175,14 +171,15 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveXdagStatus(xdagStats);
         } else {
             XdagStats storedStats = blockStore.getXdagStatus();
+            XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
             if (storedStats != null) {
                 storedStats.setNwaitsync(0);
                 this.xdagStats = storedStats;
                 this.xdagStats.nextra = 0;
+                storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
             } else {
                 this.xdagStats = new XdagStats();
             }
-            XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
             this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
             preSeed = blockStore.getPreSeed();
         }
@@ -399,6 +396,7 @@ public class BlockchainImpl implements Blockchain {
                  */
                 // TODO: 如果是交易块 不设置extra
                 if (ref != null && compareAmountTo(ref.getAmount(),UInt64.ZERO) != 0) {
+                    log.debug("Try to connect a tx Block:{}",block.getHash().toHexString());
 //                if (ref != null && !ref.getAmount().equals(BigInteger.ZERO)) {
                     updateBlockFlag(block, BI_EXTRA, false);
                 }
@@ -487,6 +485,7 @@ public class BlockchainImpl implements Blockchain {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
+                log.debug("update top: {}", block.getHashLow());
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 result = ImportResult.IMPORTED_BEST;
@@ -768,6 +767,10 @@ public class BlockchainImpl implements Blockchain {
                                 link.getAmount());
                         return UInt64.ZERO;
                     }
+                  }
+                else {
+                    log.debug("Type error");
+                    return UInt64.ZERO;
                 }
 
                 //Verify in advance that Address amount is not negative
@@ -799,7 +802,6 @@ public class BlockchainImpl implements Blockchain {
                 sumOut = sumOut.add(link.getAmount());
             }
         }
-
         if (compareAmountTo(block.getInfo().getAmount().add(sumIn),sumOut) < 0 ||
                 compareAmountTo(block.getInfo().getAmount().add(sumIn),sumIn) < 0
         ) {
@@ -812,6 +814,9 @@ public class BlockchainImpl implements Blockchain {
                 Block ref = getBlockByHash(link.getAddress(), false);
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                     subtractAndAccept(ref,link.getAmount());
+                    UInt64 allBalance = addressStore.getAllBalance();
+                    allBalance = allBalance.addExact(link.getAmount());
+                    addressStore.updateAllBalance(allBalance);
                 } else {
                     addAndAccept(ref,link.getAmount());
                 }
@@ -819,7 +824,7 @@ public class BlockchainImpl implements Blockchain {
             }else {
                 if(link.getType() == XDAG_FIELD_INPUT){
                     subtractAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
-                }else {
+                }else if(link.getType() == XDAG_FIELD_OUTPUT){
                     addAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
                 }
             }
@@ -842,6 +847,9 @@ public class BlockchainImpl implements Blockchain {
                     if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                         addAndAccept(ref,link.getAmount());
                         sum = sum.subtract(link.getAmount());
+                        UInt64 allBalance = addressStore.getAllBalance();
+                        allBalance = allBalance.subtractExact(link.getAmount());
+                        addressStore.updateAllBalance(allBalance);
                     } else if(link.getType() == XDAG_FIELD_OUT){
                         subtractAndAccept(ref,link.getAmount());
                         sum = sum.add(link.getAmount());
@@ -884,21 +892,16 @@ public class BlockchainImpl implements Blockchain {
             // 设置奖励
             long mainNumber = xdagStats.nmain + 1;
             log.debug("mainNumber = {},hash = {}", mainNumber, Hex.toHexString(block.getInfo().getHash()));
+            long reward = getReward(mainNumber);
             block.getInfo().setHeight(mainNumber);
             updateBlockFlag(block, BI_MAIN, true);
 
-            long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long rewardHeight = mainNumber > awardEpoch + snapshotHeight ? mainNumber - awardEpoch : -1;
-            log.debug("rewardHeight: {}", rewardHeight);
-            long reward = getReward(rewardHeight);
             // 接收奖励
-            if (rewardHeight > snapshotHeight) {
-                reward(UInt64.valueOf(reward), rewardHeight);
-            }
+            acceptAmount(block, UInt64.valueOf(reward));
             xdagStats.nmain++;
 
             // 递归执行主块引用的区块 并获取手续费
-            addAndAccept(block, applyBlock(block));
+            acceptAmount(block, applyBlock(block));
             // 主块REF指向自身
             // TODO:补充手续费
             updateBlockRef(block, new Address(block));
@@ -920,19 +923,14 @@ public class BlockchainImpl implements Blockchain {
 
             log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
+            long amount = getReward(xdagStats.nmain);
             updateBlockFlag(block, BI_MAIN, false);
-            long awardEpoch = kernel.getConfig().getPoolSpec().getAwardEpoch();
-            long withdrawHeight = xdagStats.nmain > awardEpoch + snapshotHeight ? xdagStats.nmain - awardEpoch : -1;
-            long amount = getReward(withdrawHeight);
-            if (withdrawHeight > snapshotHeight) {
-                Block withdrawBlock = blockStore.getBlockByHash(getBlockByHeight(withdrawHeight).getHashLow(), true);
-                // Withdraw the reward
-                cancelReward(withdrawBlock, UInt64.valueOf(amount));
-            }
 
             xdagStats.nmain--;
 
-            addAndAccept(block, unApplyBlock(block));
+            // 去掉奖励和引用块的手续费
+            acceptAmount(block, UInt64.ZERO.subtract(amount));
+            acceptAmount(block, unApplyBlock(block));
 
             if (randomXUtils != null) {
                 randomXUtils.randomXUnsetForkTime(block);
@@ -1375,9 +1373,9 @@ public class BlockchainImpl implements Blockchain {
     private boolean verifyBlockSignature(Address in, List<SECPPublicKey> keys) {
         Bytes pubHash = in.getAddress().mutableCopy().slice(8,20);
         for (SECPPublicKey key : keys) {
-            if(!Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return false;
+            if(Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return true;
         }
-        return true;
+        return false;
     }
 
     private boolean verifySignature(Address in, List<SECPPublicKey> publicKeys) {
@@ -1619,6 +1617,18 @@ public class BlockchainImpl implements Blockchain {
         addressStore.updateBalance(addressHash,balance);
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.add(xdagStats.getBalance()));
+        }
+    }
+
+    // TODO : accept amount to block which in snapshot
+    private void acceptAmount(Block block, UInt64 amount) {
+        block.getInfo().setAmount(block.getInfo().getAmount().add(amount));
+        if (block.isSaved) {
+            blockStore.saveBlockInfo(block.getInfo());
+        }
+        if ((block.getInfo().flags & BI_OURS) != 0) {
+            xdagStats.setBalance(amount.add(xdagStats.getBalance()));
+//            xdagStats.setBalance(amount.plus(long2UnsignedLong(xdagStats.getBalance())).longValue());
         }
     }
 

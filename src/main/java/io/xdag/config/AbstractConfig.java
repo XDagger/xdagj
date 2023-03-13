@@ -374,11 +374,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     @Override
-    public void setDnetKeyBytes(byte[] dnetKeyBytes) {
-        this.dnetKeyBytes = dnetKeyBytes;
-    }
-
-    @Override
     public boolean enableRefresh() {
         return this.enableRefresh;
     }
@@ -419,16 +414,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         }
 
         this.moduleDescriptions = modules;
-
-        // TODO: get modules from config
-//        String name = "xdag";
-//        String version = "1.0";
-//        boolean enabled = true;
-//        List<String> enabledMethods = null;
-//        List<String> disabledMethods = null;
-//
-//        modules.add(new ModuleDescription(name, version, enabled, enabledMethods, disabledMethods));
-//        this.moduleDescriptions = modules;
 
         return modules;
     }

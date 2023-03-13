@@ -67,17 +67,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import io.xdag.crypto.Keys;
-import io.xdag.utils.BasicUtils;
-import io.xdag.wallet.Wallet;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -104,6 +99,7 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -279,7 +275,7 @@ public class Commands {
             } else {
                 if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
                     remain.set(remain.get().subtract(addrBalance));
-                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get().subtract(addrBalance), true), account);
+                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance, true), account);
                 }
             }
         }
@@ -408,8 +404,10 @@ public class Commands {
                             orphan blocks: %d
                          wait sync blocks: %d
                          chain difficulty: %s of %s
-                              XDAG supply: %.9f of %.9f
-                        4 hr hashrate KHs: %.9f of %.9f""",
+                              XDAG supply: %.9f of %.9f 
+                          XDAG in address: %.9f
+                        4 hr hashrate KHs: %.9f of %.9f
+                        Number of Address: %d""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
@@ -422,8 +420,10 @@ public class Commands {
                 maxDiff.toString(16),
                 amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
                 amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain))),
+                amount2xdag(kernel.getAddressStore().getAllBalance()),
                 xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateOurs()),
-                xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal())
+                xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal()),
+                kernel.getAddressStore().getAddressSize().toLong()
         );
     }
 
@@ -705,10 +705,10 @@ public class Commands {
     }
 
     public String address(Bytes32 wrap) {
-        StringBuilder ov = new StringBuilder();
-        ov.append(" OverView" + "\n")
-                .append(String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n")
-                .append(String.format(" balance: %.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())))) + "\n");
+        String ov = " OverView" + "\n"
+                + String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n"
+                + String.format(" balance: %.9f",
+                amount2xdag(kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())))) + "\n";
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
@@ -765,7 +765,9 @@ public class Commands {
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             int index = pair.getKey();
             Block block = pair.getValue();
-
+            if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
+                return false;
+            }
             if (compareAmountTo(UInt64.ZERO, block.getInfo().getAmount()) < 0) {
 //            if (remain.get() <= block.getInfo().getAmount()) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(), false),

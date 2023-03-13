@@ -26,6 +26,14 @@ package io.xdag.mine.handler;
 
 import static io.xdag.net.XdagVersion.V03;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.tuweni.bytes.Bytes32;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,20 +41,13 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
-import io.xdag.consensus.SyncManager;
 import io.xdag.crypto.Base58;
 import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 public class MinerHandShakeHandler extends ByteToMessageDecoder {
@@ -55,7 +56,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     private final Kernel kernel;
     private final MinerManager minerManager;
     private final AddressStore addressStore;
-    private final SyncManager syncManager;
     public static final int MESSAGE_SIZE = 24;
 
     public MinerHandShakeHandler(MinerChannel channel, Kernel kernel) {
@@ -63,7 +63,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         this.kernel = kernel;
         minerManager = kernel.getMinerManager();
         addressStore = kernel.getAddressStore();
-        syncManager = kernel.getSyncMgr();
     }
 
     @Override
@@ -111,7 +110,6 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
     public void checkProtocol(ChannelHandlerContext ctx, byte[] address) {
         boolean importResult = addressStore.addressIsExist(address);
-
         if (!importResult) {
             addressStore.addAddress(address);
             log.info("XDAG:new miner connect. New address: {} with channel: {} connect.",

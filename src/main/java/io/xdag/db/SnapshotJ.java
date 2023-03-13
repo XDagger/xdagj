@@ -149,7 +149,6 @@ public class SnapshotJ extends RocksdbKVSource {
                             //public key exists
                             if (snapshotInfo.getType()) {
                                 byte[] ecKeyPair = snapshotInfo.getData();
-                                byte[] pubKey = Hash.sha256hash160(Bytes.wrap(ecKeyPair));
                                 for (int i = 0; i < keys.size(); i++) {
                                     KeyPair key = keys.get(i);
                                     if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {

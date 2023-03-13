@@ -140,42 +140,24 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
-        //share地址不一致，修改对应的miner地址
+        //share地址不一致，修改对应的miner地址 否则向下进行处理
         //msg 最后12-32位反转 与 addressHashByte相等
+        //实际是当初有伪块时区别矿机和钱包用的
         if (compareTo(msg.getEncoded().reverse().toArray(), 0, 20, channel.getAccountAddressHashByte(),0,20) != 0) {
-
-            System.out.println(PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()));
             //TODO: 确定矿机协议，不再获取区块，直接获取Base58或者公钥的hash
-            Miner oldMiner = channel.getMiner();
-            // Not empty, it means that the corresponding block can be found and the address exists
-            if (addressStore.addressIsExist(channel.getAccountAddressHashByte())) {
-                Miner miner = kernel.getMinerManager().getActivateMiners()
-                        .get(channel.getAccountAddressHash());
-                if (miner == null) {
-                    miner = new Miner(channel.getAccountAddressHash());
-                    log.debug("Create new miner channel:{}, address:{}, workerName:{}.",
-                            channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
-                    minerManager.addActiveMiner(miner);
-                }
-                // Change the address corresponding to the channel and replace the new miner connection
-                channel.updateMiner(miner);
-                log.debug("RandomX miner channel:{}, address:{}, workerName:{}",
-                        channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
 
-                if(oldMiner != null) {
-                    oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
-                    minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
-                }
-            } else {
-                String address = PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte());
-                //to do nothing
-                log.debug("Can not receive the share from ip&port:{}, No such Address:{} exists,close channel with Address:{}",
-                        channel.getInetAddress().toString(), address, address);
-                ctx.close();
-                if(oldMiner != null) {
-                    minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
-                }
+            Miner miner = kernel.getMinerManager().getActivateMiners()
+                    .get(channel.getAccountAddressHash());
+            if (miner == null) {
+                miner = new Miner(channel.getAccountAddressHash());
+                log.debug("Create new miner channel:{}, address:{}, workerName:{}.",
+                        channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
+                minerManager.addActiveMiner(miner);
             }
+            // Change the address corresponding to the channel and replace the new miner connection
+            channel.updateMiner(miner);
+            log.debug("RandomX miner channel:{}, address:{}, workerName:{}",
+                    channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
         }
 
         if (channel.getSharesCounts() <= kernel.getConfig().getPoolSpec().getMaxShareCountPerChannel()) {

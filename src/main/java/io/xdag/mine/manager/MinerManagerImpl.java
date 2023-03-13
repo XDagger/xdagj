@@ -83,7 +83,6 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     private volatile Task currentTask;
     @Setter
     private PoW poW;
-    private ScheduledFuture<?> updateFuture;
     private ScheduledFuture<?> cleanChannelFuture;
     private ScheduledFuture<?> cleanMinerFuture;
 
@@ -120,21 +119,8 @@ public class MinerManagerImpl implements MinerManager, Runnable {
      * 启动 函数 开启遍历和server
      */
     public void init() {
-        updateFuture = scheduledExecutor.scheduleAtFixedRate(this::updateBalance, 64, 64, TimeUnit.SECONDS);
         cleanChannelFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateChannel, 64, 32, TimeUnit.SECONDS);
         cleanMinerFuture = scheduledExecutor.scheduleAtFixedRate(this::cleanUnactivateMiner, 64, 32, TimeUnit.SECONDS);
-    }
-
-    private void updateBalance() {
-        synchronized (obj1) {
-            try {
-                activateMinerChannels.values().stream()
-                        .filter(MinerChannel::isActive)
-                        .forEach(mc -> workerExecutor.submit(mc::sendBalance));
-            } catch (Exception e) {
-                log.error("An exception occurred in updateBalance: Exception->{}", e.getMessage(), e);
-            }
-        }
     }
 
     @Override
@@ -147,9 +133,7 @@ public class MinerManagerImpl implements MinerManager, Runnable {
     }
 
     public void close() {
-        if (updateFuture != null) {
-            updateFuture.cancel(true);
-        }
+        
         if (cleanChannelFuture != null) {
             cleanChannelFuture.cancel(true);
         }
