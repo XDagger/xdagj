@@ -29,9 +29,9 @@ import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
 
+import jakarta.xml.bind.DatatypeConverter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.MutableBytes;
 
@@ -50,7 +50,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
 
     private final MinerChannel channel;
     private final int DATA_SIZE = 32;// length of each field
-    private static final long WORKERNAME_HEADER_WORD = 0xf46b9853L;
+    private static final String WORKERNAME_HEADER_WORD = "f46b9853";
     private MessageFactory messageFactory;
 
     public MinerMessageHandler(MinerChannel channel) {
@@ -95,7 +95,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
             in.readBytes(data);
             BytesUtils.arrayReverse(data);
             //The message received is the worker_name
-            if(BytesUtils.compareTo(data,28,4, BigInteger.valueOf(WORKERNAME_HEADER_WORD).toByteArray(),0,4)==0){
+            if(BytesUtils.compareTo(data,28,4, DatatypeConverter.parseHexBinary(WORKERNAME_HEADER_WORD),0,4)==0){
                 msg = messageFactory.create(WORKER_NAME.asByte(),MutableBytes.wrap(data));
             }else {
                 if (channel.isServer()) {

@@ -145,7 +145,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
         //实际是当初有伪块时区别矿机和钱包用的
         if (compareTo(msg.getEncoded().reverse().toArray(), 0, 20, channel.getAccountAddressHashByte(),0,20) != 0) {
             //TODO: 确定矿机协议，不再获取区块，直接获取Base58或者公钥的hash
-            Miner oldMiner = channel.getMiner();
 
             Miner miner = kernel.getMinerManager().getActivateMiners()
                     .get(channel.getAccountAddressHash());
@@ -159,11 +158,6 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             channel.updateMiner(miner);
             log.debug("RandomX miner channel:{}, address:{}, workerName:{}",
                     channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
-
-            if (oldMiner != null) {
-                oldMiner.setMinerStates(MinerStates.MINER_ARCHIVE);
-                minerManager.getActivateMiners().remove(oldMiner.getAddressHash());
-            }
         }
 
         if (channel.getSharesCounts() <= kernel.getConfig().getPoolSpec().getMaxShareCountPerChannel()) {
