@@ -125,10 +125,9 @@ Four stages：
 ## FAQ
 
 - Time Synchronization Method with NTP
+  [XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)
 
-  [XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)]
 - XDAGJ RPC Document
-
   [XDAGJ_RPC](./docs/XDAGJ_RPC.md)
 
 ## Contribution
