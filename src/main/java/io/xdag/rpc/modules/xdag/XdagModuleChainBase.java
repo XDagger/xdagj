@@ -306,8 +306,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
             if (block.getInfo().getRemark() != null && block.getInfo().getRemark().length != 0) {
                 remark = new String(block.getInfo().getRemark(), StandardCharsets.UTF_8).trim();
             }
-            txLinkBuilder.address(toBase58(Hash2byte(block.getCoinBase().getAddress())))
-                    .hashlow(block.getCoinBase().getAddress().toUnprefixedHexString())
+            txLinkBuilder.address(hash2Address(block.getHashLow()))
+                    .hashlow(block.getHashLow().toUnprefixedHexString())
                     .amount(String.format("%.9f", amount2xdag(blockchain.getReward(block.getInfo().getHeight()))))
                     .direction(2)
                     .time(xdagTimestampToMs(block.getTimestamp()))
