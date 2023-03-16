@@ -66,6 +66,22 @@ public class BigDecimalUtils {
         return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
     }
 
+
+    /**
+     * @param v1 被除数
+     * @param v2 除数
+     * @param scale 精确到小数点后几位
+     * @return 截断后的结果
+     */
+    public static double divAndDown(double v1, double v2, int scale) {
+        if (scale < 0) {
+            throw new IllegalArgumentException("The scale must be a positive integer or zero");
+        }
+        BigDecimal b1 = BigDecimal.valueOf(v1);
+        BigDecimal b2 = BigDecimal.valueOf(v2);
+        return b1.divide(b2, scale, RoundingMode.DOWN).doubleValue();
+    }
+
     /**
      * 对一个double 提供精确到某位小数点的精确结果
      *

@@ -515,7 +515,7 @@ public class Commands {
                        """;
         StringBuilder tx = new StringBuilder();
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
-            tx.append(String.format("    earn: %s           %.9f   %s%n", toBase58(Hash2byte(block.getCoinBase().getAddress())),
+            tx.append(String.format("    earn: %s           %.9f   %s%n", hash2Address(block.getHashLow()),
                     amount2xdag(kernel.getBlockchain().getReward(block.getInfo().getHeight())),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));

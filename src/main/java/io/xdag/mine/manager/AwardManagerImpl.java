@@ -24,7 +24,6 @@
 
 package io.xdag.mine.manager;
 
-import static io.xdag.config.Constants.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
@@ -43,7 +42,6 @@ import io.xdag.crypto.Sign;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
@@ -67,7 +65,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.checkerframework.checker.units.qual.A;
 import org.hyperledger.besu.crypto.KeyPair;
 
 
@@ -382,7 +379,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         // 计算矿池部分的收益
         payData.poolFee = BigDecimalUtils.mul(payData.balance, poolRation);
-        payData.unusedBalance = payData.balance.subtract(payData.poolFee);
+        payData.unusedBalance = payData.balance.subtractExact(payData.poolFee);
 
         // 进行各部分奖励的计算
         if (compareAmountTo(payData.unusedBalance,UInt64.ZERO) <= 0) {
@@ -451,7 +448,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 说明需要支付给基金会
         if (fundRation != 0) {
             payData.fundIncome = BigDecimalUtils.mul(payData.balance ,fundRation);
-            payData.unusedBalance = payData.unusedBalance.subtract(payData.fundIncome);
+            payData.unusedBalance = payData.unusedBalance.subtractExact(payData.fundIncome);
         }
 
 
@@ -473,7 +470,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
                 payData.rewardMiner = miner.getAddressHash().toArray();
                 // 有可以出块的矿工 分配矿工的奖励
                 payData.minerReward = BigDecimalUtils.mul(payData.balance, minerRewardRation);
-                payData.unusedBalance = payData.unusedBalance.subtract(payData.minerReward);
+                payData.unusedBalance = payData.unusedBalance.subtractExact(payData.minerReward);
             }
         }
 
@@ -489,7 +486,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         // 要进行参与奖励的支付
         if (payData.diffSums > 0) {
             payData.directIncome = BigDecimalUtils.mul(payData.balance, directRation);
-            payData.unusedBalance = payData.unusedBalance.subtract(payData.directIncome);
+            payData.unusedBalance = payData.unusedBalance.subtractExact(payData.directIncome);
         }
         return payData.prevDiffSums;
     }
@@ -559,6 +556,9 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         log.debug("Do payment");
         ArrayList<Address> receipt = new ArrayList<>(paymentsPerBlock - 1);
         UInt64 payAmount = UInt64.ZERO;
+        //计算发给所有矿工的总额，用来计算矿池自身最终所得
+        UInt64 paySum = UInt64.ZERO;
+
         /**
          * 基金会和转账矿池部分代码 暂时不用 //先支付给基金会 long fundpay =
          * BasicUtils.xdag2amount(payData.fundIncome); byte[] fund =
@@ -575,12 +575,10 @@ public class AwardManagerImpl implements AwardManager, Runnable {
          * += payData.poolFee;
          */
 
-        receipt.add(new Address(blockchain.getBlockByHash(hashLow,true).getCoinBase().getAddress(),XDAG_FIELD_OUTPUT,payData.poolFee,true));
-        payAmount = payAmount.add(payData.poolFee);
 
         if (fundRation!=0) {
-            if (pubAddress2Hash(fundAddress)!=null) {
-                payAmount = payAmount.add(payData.fundIncome);
+            if (PubkeyAddressUtils.checkAddress(fundAddress)) {
+                payAmount = payAmount.addExact(payData.fundIncome);
                 receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, payData.fundIncome,true));
             }
         }
@@ -594,25 +592,27 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             UInt64 paymentSum = UInt64.ZERO;
             // 根据历史记录分发奖励
             if (payData.prevDiffSums > 0) {
-                double per = BigDecimalUtils.div(prev_diff.get(i), payData.prevDiffSums);
+                double per = BigDecimalUtils.divAndDown(prev_diff.get(i), payData.prevDiffSums, 8);
                 // paymentSum += (long)payData.unusedBalance * per;
-                paymentSum = paymentSum.add(BigDecimalUtils.mul(payData.unusedBalance, per));
+                paymentSum = paymentSum.addExact(BigDecimalUtils.mul(payData.unusedBalance, per));
             }
             // 计算当前这一轮
             if (payData.diffSums > 0) {
-                double per = BigDecimalUtils.div(diff.get(i), payData.diffSums);
+                double per = BigDecimalUtils.divAndDown(diff.get(i), payData.diffSums, 8);
                 // paymentSum += (long)payData.directIncome * per;
-                paymentSum = paymentSum.add(BigDecimalUtils.mul(payData.directIncome, per));
+                paymentSum = paymentSum.addExact(BigDecimalUtils.mul(payData.directIncome, per));
             }
             if (payData.rewardMiner != null
                     && compareTo(payData.rewardMiner, 8, 24, miner.getAddressHash().toArray(), 8, 24) == 0) {
-                paymentSum = paymentSum.add(payData.minerReward);
+                paymentSum = paymentSum.addExact(payData.minerReward);
             }
             if (compareAmountTo(paymentSum,UInt64.valueOf(42590)) < 0) {
                 continue;
             }
-            payAmount = payAmount.add(paymentSum);
+            payAmount = payAmount.addExact(paymentSum);
             receipt.add(new Address(miner.getAddressHash(), XDAG_FIELD_OUTPUT, paymentSum,true));
+
+            paySum = paySum.addExact(paymentSum);
             if (receipt.size() == paymentsPerBlock) {
 
                 transaction(hashLow, receipt, payAmount, keyPos);
@@ -621,10 +621,15 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             }
         }
 
-        if (receipt.size() > 0) {
-            transaction(hashLow, receipt, payAmount, keyPos);
-            receipt.clear();
+        //给矿池主奖励
+        UInt64 poolAmount = payData.balance.subtractExact(payData.fundIncome).subtractExact(paySum);
+        if (poolAmount.compareTo(UInt64.ZERO) > 0) {
+            receipt.add(new Address(blockchain.getBlockByHash(hashLow,true).getCoinBase().getAddress(),XDAG_FIELD_OUTPUT,poolAmount,true));
+            payAmount = payAmount.addExact(poolAmount);
         }
+
+        transaction(hashLow, receipt, payAmount, keyPos);
+        receipt.clear();
     }
 
     public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, UInt64 payAmount, int keypos) {
