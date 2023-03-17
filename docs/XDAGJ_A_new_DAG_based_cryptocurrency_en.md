@@ -1,118 +1,121 @@
 ![](img/xdag/XDAG_first.png)
 
-# XDAG: A New DAG-Based Cryptocurrency
+XDAG: A Novel DAG-Based Cryptocurrency
 
 ## Introduction
 
-XDAG is a new generation public chain based on the directed acyclic graph (DAG) infrastructure. It is the first mineable, pure community-driven DAG+POW project, with the main network launched in January 2018. The maximum supply of XDAG is approximately 1.446294144 billion. XDAG has no project sponsor, no ICO, no private placement, and no pre-mining. It is developed and maintained by blockchain enthusiasts from all over the world, making it truly decentralized, efficient, secure, and fair. Although XDAG is a DAG project, its transaction model is similar to Bitcoin's UTXO, and the development of the project shares some similarities with Bitcoin.
+XDAG is an avant-garde distributed ledger technology (DLT) based on the directed acyclic graph (DAG) infrastructure. It is the premier community-driven DAG+POW project that can be mined, with the major network launched in January 2018. XDAG has an approximate maximum supply of 1.446294144 billion without any private placement, initial coin offering (ICO), or project sponsor. Thus, it embodies a genuinely decentralized, efficient, secure, and equitable sentiment, being developed and maintained by blockchain aficionados from across the globe. Even though XDAG is a DAG protocol, its transaction design has similarities to Bitcoin's UTXO, with its development sharing some parallels with Bitcoin as well.
 
-## The Legend of XDAG
+## The Saga of XDAG
 
-XDAG was started in September 2017 by a math professor at a Russian university using the name Cheatoshi. Because he was dissatisfied with the cryptocurrency projects of that time, he decided to create his cryptocurrency project using DAG and PoW. Cheatoshi spent three months completing the project but failed to launch it in December 2017. After debugging for a few days, the XDAG network successfully launched in January 2018.
+XDAG was initiated in September 2017 by a professor of mathematics at a Russian university named Cheatoshi, who was disheartened by the cryptocurrency projects during that time. Therefore, he decided to create a cryptocurrency project that integrated DAG and PoW. Although the development of the project took three months, Cheatoshi failed to launch it in December 2017. However, after several days of debugging, the XDAG network was finally launched in January 2018.
 
-On January 5, 2018, Cheatoshi posted the founding post of XDAG in the Bitcointalk forum, declaring that he intended to create a fair cryptocurrency system based on DAG technology. At that time, everyone was communicating on Bitcointalk. In February 2018, Cheatoshi open-sourced the project, allowing the community to participate and contribute. Afterward, the community migrated the project to Github. Cheatoshi then disappeared, leaving the project completely transferred to the community to manage. This experience is very similar to that of Satoshi Nakamoto.
+On January 5, 2018, Cheatoshi released the founding post of XDAG in the Bitcointalk forum, declaring his intention to construct an equitable cryptocurrency system based on DAG technology. In those times, Bitcointalk was the most preferred means of communication. In February 2018, Cheatoshi open-sourced the project, allowing the community to contribute and participate. Subsequently, the community transferred the project to Github. However, Cheatoshi vanished, completely transferring management of the project to the community. This experience mimics that of Satoshi Nakamoto.
 
-Salute to Cheatoshi.
+Our heartfelt gratitude to Cheatoshi.
 
-XDAG is the first DAG to support mining (IOTA doesn't really use mining), while having no pre-mining and no ICO, and being completely community-driven with no sponsors or investors. XDAG is currently being continuously developed and maintained by a group of blockchain developers who persist in the ideal of decentralization.
+XDAG is the first DAG that supports mining (IOTA does not employ mining) without pre-mining, ICO or any sponsor or investor. It is continuously developed and maintained by a group of blockchain developers who remain firm in their belief that decentralization remains the paramount ideal.
+## Contemporary Hurdles with Decentralized Technology
 
-## Current Issues with Decentralized Technology
+Despite the advancements in the industry, blockchain technology confronts a plethora of issues that assume critical importance as its implementation scales up. At present, two fundamental difficulties arise:
 
-Despite the industry's advancements, blockchain technology itself has various issues that are becoming increasingly critical as implementation scales up. Two primary problems are currently being encountered:
-
-1. The TPS bottleneck of the blockchain limits the performance of blockchain technology by allowing only a limited number of transactions to be processed simultaneously.
-2. The long confirmation time of the blockchain hampers the scalability of blockchain technology as users face slow transactions and high fees.
+1. The TPS bottleneck of the blockchain impairs its performance by allowing only a limited number of transactions to be processed simultaneously.
+2. The prolonged confirmation time of the blockchain impedes its scalability as users experience tardy transactions coupled with high fees.<br />
 ![State-of-The-art](img/xdag/XDAG_second.png)
 
-The current approaches tried include:
+Contemporary Approaches and Potential Mitigation Strategies for Enhancing Decentralized Technology
+
+Currently, approaches to tackling the limitations of blockchain technology include:
 
 1. Layer 1 (Sharding)
 
-   PoS/DPoS and consensus/Sharding (sharding calculation)
+   - PoS/DPoS and consensus/Sharding (sharding calculation)
 
 2. Layer 2 (Side Chain)
 
-   Side Chain/ State Channels/ Multi Chains
+   - Side Chain/ State Channels/ Multi Chains
 
-Despite the defects of blockchain, whether it is the centralized solution of EOS or the current hot sharding technology, there are still unsolvable problems in side chain technology, which indirectly shows that it will face great difficulties and challenges to expand based on blockchain itself. The technology of DAG appeared as a third option of resolution.
+Despite the efforts to implement solutions for the defects of blockchain, such as EOS's centralized approach or the current sharding technology in vogue, there are still unresolved issues in side chain technology. This indirectly demonstrates that blockchain-based expansion will face significant difficulties and challenges. DAG technology has emerged as a viable third option for resolution.
 
-DAG is relatively special, the data structure is different from the blockchain, and it is born with high scalability. The most well-known project using DAG technology is IOTA, but IOTA still has the problem of centralization; XDAG has made changes with PoW being adopted, which has been proven to be the optimal consensus scheme, and leaving the work of verifying transactions to miners exclusively, and retaining the original advantages of DAG.
+DAG is unique in that its data structure differs from that of blockchain and has intrinsic high scalability. IOTA is the most popular DAG-based project, but it still grapples with the problem of centralization. XDAG has introduced PoW, which has been proven to be the optimal consensus system, and exclusively delegates the responsibility of verifying transactions to miners, while retaining the original advantages of DAG.
 
-These problems pose significant challenges to the future adoption and utilization of blockchain technology. Some possible mitigation strategies that can effectively address these issues include adopting alternative consensus algorithms like DAG (Directed Acyclic Graph). DAG is a revolutionary technology that uses a non-linear structure to ensure maximum transaction processing speed, high scalability, and improved security measures.
+These challenges pose a significant hurdle to the widespread adoption and utilization of blockchain technology. One feasible mitigation strategy is to adopt alternative consensus algorithms like DAG. DAG is a revolutionary technology that deploys a non-linear structure to ensure the maximum speed of transaction processing, improved security measures, and high scalability.
 
-One such technology that is built on DAG is XDAG. XDAG is an innovative technology that aims to address several issues that have hindered the widespread adoption of blockchain technology. This technology is designed to deliver high-speed, secure, and scalable solutions, making it an ideal choice for various applications that require high throughput and transaction speeds.
+XDAG, built on a DAG structure, is an innovative technology that intends to address several issues that have impeded the universal acceptance of blockchain technology. This technology is engineered to provide high-speed, secure, and scalable solutions, thereby making it an ideal choice for many applications requiring high throughput and transaction speeds.
 
-XDAG provides numerous advantages over the traditional blockchain system. The DAG structure enables XDAG to process many transactions simultaneously, significantly increasing the TPS rate. XDAG eliminates the need for miners, making it more energy-efficient and faster than other blockchain consensus algorithms. XDAG's confirmation times are much faster, allowing for real-time, high-throughput transactions.
+XDAG outperforms the traditional blockchain system in many ways. The DAG structure enables XDAG to process numerous transactions simultaneously, significantly increasing the TPS rate. By eliminating the need for miners, XDAG becomes more energy-efficient and faster than other blockchain consensus algorithms. XDAG's confirmation times are much faster, allowing for real-time, high-throughput transactions.
 
-In conclusion, blockchain technology poses several challenges to scalability and efficiency that need attention to enhance its adoption and utilization. Adopting new technologies such as XDAG or integrating the existing ones, in addition to applying other mitigation strategies, can revolutionize blockchain technology, offering the potential to become more efficient, secure, and scalable for various applications.
+In conclusion, the scalability and efficiency limitations of blockchain technology require attention to enhance its adoption and utilization. Integrating existing or adopting new technologies like XDAG, in addition to applying other mitigation strategies, can revolutionize blockchain technology, offering the potential to become more efficient, secure, and scalable for various applications. Therefore, you can utilize XDAG, built on a DAG structure, to address scalability and efficiency issues in blockchain technology. Adopting alternative consensus algorithms such as XDAG, can revolutionize and enhance the adoption and utilization of blockchain technology.
+XDAG Technology: An Overview of DAG Structures
 
-You can use XDAG, which is built on a DAG structure, to address scalability and efficiency problems in blockchain technology. This technology provides numerous advantages over the traditional blockchain system, including high scalability, faster confirmation times, and a higher TPS rate. Adopting new technologies like XDAG can revolutionize and enhance blockchain technology's adoption and utilization.
-## XDAG Technology
+DAG (Directed Acyclic Graph) has been in existence since it was first introduced as a mathematical concept in graph theory and has emerged as a crucial tool in numerous technological domains, with computer technology being no exception. DAG structures, while theoretically more complex than single-chain structures, offer better scalability.
 
-DAG (Directed Acyclic Graph) has been around since it was first introduced as a mathematical concept in graph theory, and a branch of mathematics back in 1736. This digital storage structure has been in use in computer technology since the early days of the field. While DAG structures are theoretically more complex than single-chain structures, they offer better scalability.
-
-Several public chains in the industry currently use DAG structures, but each implementation has its own unique approach and application scenarios, with different understandings of DAG technology playing a major factor.
+Presently, several public chains in the industry utilize DAG structures, but each implementation has its unique approach and application scenarios, with different understandings of DAG technology playing a significant role.
 
 The various DAG implementations include:
 
-1. NANO, where each account has its chain, and transaction records link different accounts together to form a DAG structure.
+1. NANO, where each account has its chain, and transaction records link different accounts to form a DAG structure.
 
    ![NANO DAG](img/xdag/XDAG_third.png)
 
-2. IOTA's DAG, where the user determines the validity of a transaction based on its height and weight.
+2. IOTA's DAG, where the user evaluates the legitimacy of a transaction based on its height and weight.
 
    ![IOTA DAG](img/xdag/XDAG_fourth.png)
 
-3. Hashgraph's DAG, which uses a modified gossip algorithm between nodes for transaction propagation, forming a sequence in time, and creating a DAG structure.
+3. Hashgraph's DAG, which employs a modified gossip algorithm between nodes for transaction propagation, forming a sequence in time, and creating a DAG structure.
 
    ![Hashgraph DAG](img/xdag/XDAG_fifth.png)
 
-4. Byteball's DAG, which uses witness nodes to increase the branch's weight and determine the current master chain in the DAG.
+4. Byteball's DAG, which utilizes witness nodes to amplify the branch's weight and determine the current master chain in the DAG.
 
    ![Byteball DAG](img/xdag/XDAG_sixth.png)
 
-Despite the different approaches, these DAG implementations do not address the "impossible triangle" problem, which is characterized by issues related to decentralization, high TPS, and low confirmation time. The XDAG technology, built on an advanced DAG structural model, is designed to solve the "impossible triangle" problem.
+DAG Implementations and XDAG Technology: Addressing the "Impossible Triangle" Problem
 
-XDAG was built from the ground up to address problems related to scalability, high TPS, and low confirmation time, and does so by using the DAG-based algorithm with many unique features. These include an exclusive consensus model, transaction filtering methods at both receiving and sending ends, dynamic memory pool allocation, and much more.
+Despite the diverse approaches, DAG implementations presently available do not provide a solution to the "impossible triangle" problem, which is characterized by issues related to decentralization, high TPS, and low confirmation time. In contrast, the XDAG technology, built on an advanced DAG structural model, is engineered to solve the "impossible triangle" problem.
 
-As such, XDAG technology offers the potential for blockchain technology to become more efficient, secure, and scalable for various applications.
+XDAG was purpose-built to alleviate issues associated with scalability, high TPS, and low confirmation time by employing the DAG-based algorithm that incorporates numerous unique features. These include an exclusive consensus model, transaction filtering methods at both ends of reception and transmission, dynamic memory pool allocation, and much more.
 
+XDAG technology offers the potential for blockchain technology to become more efficient, secure, and scalable for various applications.
 
-XDAG aims to redesign the underlying data structure of blockchain technology and adopt a DAG composition. This innovative approach combines PoW consensus algorithm and DAG technology to provide concurrent processing of transactions between different nodes, improving transactions per second (TPS) and reducing confirmation time. The network is also designed to ensure security and fairness.
-
+XDAG aims to revamp the underlying data structure of blockchain technology and adopt a DAG composition. This innovative approach blends PoW consensus algorithm and DAG technology to provide concurrent processing of transactions between different nodes, remarkably enhancing transactions per second (TPS) and reducing confirmation time. The network is also designed to ensure security and fairness.
 ![XDAG_seventh.png](img/xdag/XDAG_seventh.png)
 
-In the figure above, A represents wallet address block, Tx represents transaction block, M represents the main block generated by PoW, and W represents the witness block.
+In the above illustration, A portrays the wallet address block, Tx denotes the transaction block, M embodies the primary block engendered through Proof of Work, and W denotes the witness block.
 
-The unique feature of XDAG is that blocks, transactions, and addresses are equivalent.
+XDAG's distinct characteristic is that blocks, transactions, and addresses are identical.
 
 ![XDAG_eighth.png](img/xdag/XDAG_eighth.png)
 
-The block data structure in XDAG is shown above. This data structure is used for persistent storage of data. The block structure is composed of 16 structures named xdag_field. Each xdag_field consists of a structure and a union.
+The data structure of a block in XDAG is illustrated in the above diagram. This structure is utilized to achieve consistent storage of data. The block structure comprises of 16 structures, each having a name of xdag_field. Each xdag_field comprises of a structure and a union.
 
-The transport_header is used to represent the sequence number during transmission and to hold the address of the next block during post-reception processing.
+The transport_header is employed to designate the sequence number during transmission and to store the address of the succeeding block during post-reception processing.
 
-Type is a 64-bit field that indicates the type of 16 fields in a block. It is divided into 16 parts, each four bits, indicating half a byte. Thus, four bits can indicate 16 types. The field type indicates the corresponding type for each four bits.
+The 64-bit Type field conveys the type of 16 fields in a block, and is split into 16 sections, each consisting of four bits, thus signifying half a byte. Consequently, four bits are capable of indicating 16 types, with the type field indicating the corresponding type for each four bits.
 
-Time is used to indicate the time of block generation. The format used is 1/1024 seconds, with one second expressed as 2^10. Time is also used as the starting time point of the request time range when data is exchanged between nodes.
+Time is utilized to indicate the time of block generation, with the format being expressed in 1/1024 seconds, with one second expressed as 2^10. Time is also invoked as the starting time point of the request time range during data exchange between nodes.
 
-Hash is a 24-byte truncated hash, usually the truncated hash of another block.
+Hash represents a 24-byte truncated hash, typically the truncated hash of another block.
 
-Amount is a quantity value in Cheato, used to record the number of XDAGs. Cheato is the basic unit of XDAG, and 1 XDAG contains 2^32 Cheato.
+Amount serves as a quantitative value in Cheato, intended for recording the number of XDAGs. Cheato is the basic unit of XDAG, with 1 XDAG containing 2^32 Cheato.
 
-End_time is used to indicate the end time point of data exchange between nodes as the request time range. Data is a 32-byte hash.
+End_time represents the concluding time point of data exchange between nodes for the request time range. Data is a 32-byte hash.
 
-The blocks in XDAG are generated independently by each node and wallet, without interference from others. This ensures the independence of block processing in the basic design, laying the foundation for the high TPS mentioned subsequently.
-Technology Advantages of XDAG
+Blocks in XDAG are autonomously generated by each node and wallet, without interference from other sources. This basic design configuration ensures the independence of block processing, laying the groundwork for the high transactions per second (TPS) discussed in subsequent sections.
 
-1. XDAG is the first public chain based on DAG to realize PoW. By combining the high concurrency of DAG with the security and decentralization of PoW, it solves the "impossible triangle" problem in blockchain technology.
-2. Block, transaction, and address are equivalent in XDAG. This unique design ensures that the transfer process will not lose coins due to typing in the wrong address.
+Technological benefits of XDAG are outlined below:
+
+1. XDAG represents the first public chain founded on DAG technology to achieve PoW. This amalgamation of the high concurrency of DAG with the security and decentralization of PoW has resolved the "impossible triangle" problem in blockchain technology.
+
+2. In XDAG, the block, transaction, and address are interchangeable. This unique design has negated the possibility of lost coins owing to incorrect addresses during the transfer process.
+
 3. XDAG has low transaction fees and high TPS.
-4. XDAG uses unique technology to solve many problems that may exist in the blockchain system, such as double-spending, uncontrollable transaction time, centralization, 34% attacks, and 51% attacks.
-5. Some of the experiments currently being done in Bitcoin and Ether can also be done on XDAG since the founders have designed their own operating systems with this in mind.
 
-The concepts mentioned in the figures below explain the above points:
+4. Through unique technical approaches, XDAG has resolved several challenges that could arise in the blockchain system, such as double-spending, uncontrollable transaction time, centralization, 34% attacks, and 51% attacks.
 
+5. The founders of XDAG have planned and designed their own operating systems such that some of the ongoing experiments in Bitcoin and Ethereum can also be carried out using XDAG.
+
+The concepts illustrated in the figures below underpin the aforementioned points.
 ![XDAG_ninth.png](img/xdag/XDAG_ninth.png)
 
 In the concept of the main chain in DAG, transactions need sorting; otherwise, the problem of double-spending cannot be solved. Inside the main chain of XDAG, there are slices according to time, and each slice will be packaged for transactions. Green is the main block on the main chain, yellow is the witness block, blue is the transfer transaction, and black is the address block.
@@ -159,12 +162,11 @@ But this time, the situation has changed. The person maliciously used technical 
 At this point, PoW consensus comes into play, and a master block is generated every 64 seconds in XDAG. By comparing the difficulty of the master blocks, M1' and M1'', it is determined that M1'' is more challenging. Therefore, M1'' referenced block Tx2 in sorting priority over M1' referenced Tx1, so that Tx1 is detected as a double spend. As a result, the transaction block pointed to by the hash is marked as rejected in the internal block, while the transaction block Tx1 is recorded in the DAG forever and will not be deleted.
 
 If there is a user who wants to cheat and sends these two transactions to different
-5. XDAG supports high TPS.
+XDAG boasts of high transactions per second (TPS).
 
-Why can high TPS be achieved by XDAG? It is because the DAG is split into multiple localized blocks, which enables a high TPS similar to the effect of sharding computation.
+The reason behind XDAG's remarkable TPS is due to the fact that the DAG is divided into numerous localized blocks. This approach allows for a high TPS, akin to the effects observed in sharding computation.
 
-The diagram (see figure below) displays a more comprehensive DAG structure of XDAG, where the wallet address blocks from previous diagrams are omitted for simplicity.
-
+The diagram provided in the figure below depicts a more detailed DAG structure of XDAG, with the omission of wallet address blocks, for the sake of simplicity.
 ![XDAG_seventeenth.png](img/xdag/XDAG_seventeenth.png)
 
 In the diagram, nodes denote different nodes, M denotes the main block mined by PoW, W denotes an additional block, which I named a witness block, and Tx is the transaction block.
@@ -174,31 +176,30 @@ Different nodes receive their transaction blocks separately, and the act of stit
 At the same time, a master block is generated every 64 seconds through PoW, which greatly reduces the transaction confirmation time of decentralized public chains, and can be confirmed in 1 to 2 minutes on average.
 ## Advantages of XDAG
 
-1. XDAG adopts the DAG + PoW method to break through and solve the limitations of traditional blockchain technology, which can greatly improve the scalability of the blockchain system. XDAG has the advantages of decentralization and high TPS while supporting PoW mining. XDAG network can still have high TPS under the most decentralized condition, such as PoW consensus, and the transaction volume can reach several thousand TPS.
+1. XDAG employs the DAG + PoW approach as a means of surmounting and resolving the constraints of conventional blockchain technology, thereby significantly amplifying the scalability of the blockchain system. XDAG embodies attributes of decentralization and high TPS while maintaining support for PoW mining. The XDAG network is capable of achieving high TPS even under highly decentralized conditions such as with PoW consensus, with transaction volume reaching several thousand TPS.
 
-Theoretically, the DAG approach allows for unlimited trading blocks between Main Blocks, but the actual situation still depends on network transmission speed and equipment performance on the network. The peak transaction volume has reached several thousand TPS, but due to network and hardware conditions, the transaction limit has not been measured.
+In theory, the DAG methodology enables vast trading blocks between Main Blocks, but the actual situation is still contingent on network transmission swiftness and network equipment performance. Peak transaction volume has reached several thousand TPS, while the transaction limit has not been gauged due to network and hardware conditions.
 
-2. Friendly to blockchain technology. A block in XDAG is also a transaction, and the address generated by the wallet will also generate a transaction in the network: Block = Transaction = Address. Some of the experiments currently done on Bitcoin and ETH can be done on XDAG because the founders have considered these in the design of the operating system.
+2. Modernization of blockchain technology is evident in XDAG. A block in XDAG is also a transaction, and the address generated by the wallet creates a transaction in the network: Block = Transaction = Address. With the founders' thoughtful consideration in designing the operating system, some of the ongoing experiments in Bitcoin and ETH can be realized in XDAG.
 
-3. Fast block generation, fast transfer, and no commission. Thanks to the characteristics of the infrastructure DAG technology, XDAG is currently set to generate a block every 64 seconds, the transfer can take about 3 minutes to the account, and the fee is zero. This is in the case of PoW decentralization, to achieve high TPS and fast transfer.
+3. Rapid block generation, swift transfer, and no commission. The infrastructure of DAG technology affords XDAG a block generation rate of every 64 seconds, with transfer usually completed within approximately 3 minutes and commission fees at zero. This is achievable in the state of PoW decentralization to achieve high TPS and prompt transfer.
 
-4. XDAG can achieve financial security, with no black hole address. All wallet addresses and transaction records in XDAG are blocks, so as long as there is a wallet, the wallet address must exist in the main network. If you try to transfer money to a non-existent address, it will fail, so there is no problem of transferring to a black hole address.
+4. XDAG can achieve financial security, absent of black hole addresses. As every wallet address and transaction record in XDAG are blocks, every wallet must exist in the main network, ensuring that in the situation where an attempt is made to transfer funds to a non-existent address, such endeavours will fail, assuring no issue of transfer to a black hole address.
 
-5. Originality of XDAG. The implementation of DAG+PoW in XDAG is groundbreaking and the earliest (Note: check the time through BitcoinTalk's Genesis post), and the code is original. XDAG provides C language and Java.
+5. Originality is intrinsic to XDAG. The implementation of DAG + PoW in XDAG is revolutionary and pioneering, being the earliest (Note: validate time through BitcoinTalk's Genesis post), with original code. XDAG provides C language and Java.
 
-6. Truly community-driven. No project sponsor, no pre-mining, no ICO. Every XDAG is mined and mined out by miners fairly. The community team is made up of enthusiasts from different countries, together driving the evolution of XDAG.
+6. Authentically community-driven. No project sponsor, no pre-mining, no ICO. Every XDAG is mined and extracted by miners in a fair distribution. The volunteer-based community team is composed of enthusiasts from around the world, propelling the evolution of XDAG.
 
-7. ASIC resistance and CPU mining. XDAG adopts the RandomX mining algorithm to attract more CPU users to join mining, which provides more fairness.
+7. XDAG affirms ASIC resistance and CPU mining. By adopting the RandomX mining algorithm, greater numbers of CPU users are incentivized to engage in mining, henceforth promoting fairness.
 
-With these advantages, XDAG can support many decentralized scenario applications, allowing more applications to be ported to XDAG, free from the pain of congestion and high fees of other public chains.
-## XDAG Community
+XDAG exemplifies support for numerous decentralized scenario applications, allowing for seamless porting of more applications to the XDAG network, bearing freedom from congestion and prohibitive fees associated with other public chains.
+## The XDAG Community
 
-XDAG enthusiasts have set up a community autonomy team, which has gone from geek free development to orderly advancement. XDAG is making rapid progress, one step at a time, and the community is getting stronger and stronger.
+XDAG enthusiasts have established an autonomous community team that has progressed from freeform development to methodical advancement. In a step-by-step process, XDAG achieves rapid advancement, all the while with the community growing ever stronger.
 
-Currently, the XDAG community autonomy team comprises more than 20 members from around the world, including those working on XDAG JAVA/C, PC wallet, Android wallet, IOS wallet, mining algorithm, mining software, network protocols, community website, testnet, community operations, and other different tasks.
+Presently, the XDAG community autonomy team comprises over 20 members spanning the globe, with each member working on diverse aspects, such as XDAG JAVA/C, PC wallet, Android wallet, IOS wallet, mining algorithm, mining software, network protocols, community website, testnet, community operations, and other sundry tasks.
 
-The workload is still relatively large for an autonomous community, and more XDAG enthusiasts are needed to join the team. The community has established a community proposal mechanism (https://trello.com/b/nlSBXa2d/xps) and a developer incentive mechanism. You can check the community website at https://xdag.io/ where there is a "Reward Task" to attract more developers to the community. Anyone can suggest improvements on XPS and sponsor the development costs.
-
+Despite the prodigious workload, an autonomous community demands more XDAG enthusiasts to partake in the team. The community has formulated a proposal mechanism (https://trello.com/b/nlSBXa2d/xps), as well as an incentivization mechanism, enticing more developers to join the community by utilizing the "Reward Task" featured on the community website at https://xdag.io/. Anyone may propose improvements on XPS and sponsor development costs.
 Here's an example:
 
 ![](img/xdag/XDAG_eighteenth.png)
