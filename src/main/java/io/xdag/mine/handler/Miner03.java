@@ -41,7 +41,7 @@ import io.xdag.consensus.SyncManager;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
-import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.mine.message.NewBalanceMessage;
@@ -60,7 +60,7 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
 
     private final Kernel kernel;
     private final MinerChannel channel;
-    private final AddressStoreImpl addressStore;
+    private final AddressStore addressStore;
     private final MinerManager minerManager;
     private final SyncManager syncManager;
     private ChannelHandlerContext ctx;

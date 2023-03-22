@@ -47,8 +47,8 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.XdagField;
-import io.xdag.db.rocksdb.AddressStoreImpl;
-import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.AddressStore;
+import io.xdag.db.BlockStore;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.handler.Miner03;
 import io.xdag.mine.handler.MinerHandShakeHandler;
@@ -75,8 +75,8 @@ public class MinerChannel {
     private final boolean isServer;
     private final Kernel kernel;
     private final Config config;
-    private final BlockStoreImpl blockStore;
-    private final AddressStoreImpl addressStore;
+    private final BlockStore blockStore;
+    private final AddressStore addressStore;
     private final MinerManager minerManager;
     /**
      * 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs

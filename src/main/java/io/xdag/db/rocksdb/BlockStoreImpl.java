@@ -53,7 +53,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.UnsignedLong;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -67,7 +66,9 @@ import io.xdag.core.XdagTopStatus;
 import io.xdag.db.BlockStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -113,59 +114,6 @@ public class BlockStoreImpl implements BlockStore {
         this.kryo = new Kryo();
         this.txHistorySource = txHistory;
         kryoRegister();
-    }
-
-    public static List<String> getFileName(long time) {
-        List<String> files = Lists.newArrayList(SUM_FILE_NAME);
-        StringBuilder stringBuffer = new StringBuilder(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
-        stringBuffer.append("/");
-        files.add(stringBuffer + SUM_FILE_NAME);
-        stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
-        stringBuffer.append("/");
-        files.add(stringBuffer + SUM_FILE_NAME);
-        stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
-        stringBuffer.append("/");
-        files.add(stringBuffer + SUM_FILE_NAME);
-        return files;
-    }
-
-    public static byte[] getTimeKey(long timestamp, Bytes32 hashlow) {
-        long t = UnsignedLong.fromLongBits(timestamp >> 16).longValue();
-        byte[] key = BytesUtils.merge(TIME_HASH_INFO, BytesUtils.longToBytes(t, false));
-        if (hashlow == null) {
-            return key;
-        }
-        return BytesUtils.merge(key, hashlow.toArray());
-    }
-
-    public static byte[] getOurKey(int index, byte[] hashlow) {
-        byte[] key = BytesUtils.merge(OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
-        key = BytesUtils.merge(key, hashlow);
-        return key;
-    }
-
-    // ADD: 高度键
-    public static byte[] getHeight(long height) {
-        return BytesUtils.merge(BLOCK_HEIGHT, BytesUtils.longToBytes(height, false));
-    }
-
-    private static int getOurIndex(byte[] key) {
-        try {
-            byte[] index = BytesUtils.subArray(key, 1, 4);
-            return BytesUtils.bytesToInt(index, 0, false);
-        } catch (Exception e) {
-            return 0;
-        }
-//        return BytesUtils.bytesToInt(key, 1, false);
-    }
-
-    private static byte[] getOurHash(byte[] key) {
-        try {
-            return BytesUtils.subArray(key, 5, 32);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private void kryoRegister() {
@@ -278,14 +226,14 @@ public class BlockStoreImpl implements BlockStore {
     public void saveBlock(Block block) {
         long time = block.getTimestamp();
         // Fix: time中只拿key的后缀（hashlow）就够了，值可以不存
-        timeSource.put(getTimeKey(time, block.getHashLow()), new byte[]{0});
+        timeSource.put(BlockUtils.getTimeKey(time, block.getHashLow()), new byte[]{0});
         blockSource.put(block.getHashLow().toArray(), block.getXdagBlock().getData().toArray());
         saveBlockSums(block);
         saveBlockInfo(block.getInfo());
     }
 
     public void saveOurBlock(int index, byte[] hashlow) {
-        indexSource.put(getOurKey(index, hashlow), new byte[]{0});
+        indexSource.put(BlockUtils.getOurKey(index, hashlow), new byte[]{0});
     }
 
     public Bytes getOurBlock(int index) {
@@ -324,7 +272,7 @@ public class BlockStoreImpl implements BlockStore {
             Block block = pair.getValue();
             if (equalBytes(hashlow, block.getHashLow().toArray())) {
                 int index = pair.getKey();
-                indexSource.delete(getOurKey(index, hashlow));
+                indexSource.delete(BlockUtils.getOurKey(index, hashlow));
                 return Boolean.TRUE;
             }
             return Boolean.FALSE;
@@ -333,10 +281,10 @@ public class BlockStoreImpl implements BlockStore {
 
     public void fetchOurBlocks(Function<Pair<Integer, Block>, Boolean> function) {
         indexSource.fetchPrefix(new byte[]{OURS_BLOCK_INFO}, pair -> {
-            int index = getOurIndex(pair.getKey());
+            int index = BlockUtils.getOurIndex(pair.getKey());
 //            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
-            assert getOurHash(pair.getKey()) != null;
-            Block block = getBlockInfoByHash(Bytes32.wrap(Objects.requireNonNull(getOurHash(pair.getKey()))));
+            assert BlockUtils.getOurHash(pair.getKey()) != null;
+            Block block = getBlockInfoByHash(Bytes32.wrap(Objects.requireNonNull(BlockUtils.getOurHash(pair.getKey()))));
             if (function.apply(Pair.of(index, block))) {
                 return Boolean.TRUE;
             }
@@ -348,7 +296,7 @@ public class BlockStoreImpl implements BlockStore {
         long size = 512;
         long sum = block.getXdagBlock().getSum();
         long time = block.getTimestamp();
-        List<String> filename = getFileName(time);
+        List<String> filename = FileUtils.getFileName(time);
         for (int i = 0; i < filename.size(); i++) {
             updateSum(filename.get(i), sum, size, (time >> (40 - 8 * i)) & 0xff);
         }
@@ -420,7 +368,7 @@ public class BlockStoreImpl implements BlockStore {
         for (level = -6; endtime != 0; level++, endtime >>= 4) {
         }
 
-        List<String> files = getFileName((starttime) & 0xffffff000000L);
+        List<String> files = FileUtils.getFileName((starttime) & 0xffffff000000L);
 
         if (level < 2) {
             key = files.get(3);
@@ -478,7 +426,7 @@ public class BlockStoreImpl implements BlockStore {
         // 如果区块是主块的话顺便保存对应的高度信息
         // TODO: paulochen 如果回滚了，对应高度的键值对该怎么更新(直接让其height=0的区块覆盖)
 //        if (blockInfo.getHeight() > 0) {
-        indexSource.put(getHeight(blockInfo.getHeight()), blockInfo.getHashlow());
+        indexSource.put(BlockUtils.getHeight(blockInfo.getHeight()), blockInfo.getHashlow());
 //        } else {
 //            indexSource.get()
 //        }
@@ -508,7 +456,7 @@ public class BlockStoreImpl implements BlockStore {
 
     public List<Block> getBlocksByTime(long startTime) {
         List<Block> blocks = Lists.newArrayList();
-        byte[] keyPrefix = getTimeKey(startTime, null);
+        byte[] keyPrefix = BlockUtils.getTimeKey(startTime, null);
         List<byte[]> keys = timeSource.prefixKeyLookup(keyPrefix);
         for (byte[] bytes : keys) {
             // 1 + 8 : prefix + time
@@ -523,7 +471,7 @@ public class BlockStoreImpl implements BlockStore {
 
     //ADD: 通过高度获取区块
     public Block getBlockByHeight(long height) {
-        byte[] hashlow = indexSource.get(getHeight(height));
+        byte[] hashlow = indexSource.get(BlockUtils.getHeight(height));
         if (hashlow == null) {
             return null;
         }

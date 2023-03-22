@@ -46,7 +46,7 @@ import org.apache.tuweni.bytes.MutableBytes;
 import com.google.common.util.concurrent.SettableFuture;
 
 import io.xdag.Kernel;
-import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.manager.XdagChannelManager;
 import lombok.Getter;
@@ -62,7 +62,7 @@ public class XdagSync {
             .build();
 
     private final XdagChannelManager channelMgr;
-    private final BlockStoreImpl blockStore;
+    private final BlockStore blockStore;
     private final ScheduledExecutorService sendTask;
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> sumsRequestMap;

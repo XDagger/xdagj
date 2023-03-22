@@ -37,6 +37,7 @@ import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagStats;
 import io.xdag.crypto.Keys;
+import io.xdag.db.BlockStore;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
 import io.xdag.db.rocksdb.DatabaseName;
@@ -79,25 +80,25 @@ public class BlockStoreImplTest {
 
     @Test
     public void testNewBlockStore() {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         assertNotNull(bs);
     }
 
     @Test
     public void testInit() {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
     }
 
     @Test
     public void testReset() {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.reset();
     }
 
     @Test
     public void testSaveXdagStatus() {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         XdagStats stats = new XdagStats();
         stats.setNmain(1);
@@ -109,7 +110,7 @@ public class BlockStoreImplTest {
     @Test
     public void testSaveBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource,txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         KeyPair key = Keys.createEcKeyPair();
@@ -123,7 +124,7 @@ public class BlockStoreImplTest {
     @Test
     public void testSaveOurBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         KeyPair key = Keys.createEcKeyPair();
@@ -136,7 +137,7 @@ public class BlockStoreImplTest {
     @Test
     public void testRemoveOurBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         KeyPair key = Keys.createEcKeyPair();
@@ -151,7 +152,7 @@ public class BlockStoreImplTest {
     @Test
     public void testSaveBlockSums()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStoreImpl bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = 1602951025307L;
         KeyPair key = Keys.createEcKeyPair();
@@ -164,7 +165,7 @@ public class BlockStoreImplTest {
 
     @Test
     public void getBlockByTimeTest() {
-        BlockStoreImpl blockStore = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
+        BlockStore blockStore = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         blockStore.init();
 
         // 创建区块

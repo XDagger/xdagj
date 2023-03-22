@@ -60,7 +60,6 @@ import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -132,7 +131,7 @@ public class SnapshotJ extends RocksdbKVSource {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStoreImpl blockStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {

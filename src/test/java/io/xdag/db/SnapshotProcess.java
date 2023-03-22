@@ -109,14 +109,14 @@ public class SnapshotProcess {
         Kernel kernel = new Kernel(config);
         DatabaseFactory dbFactory = new RocksdbFactory(config);
 
-        BlockStoreImpl blockStore = new BlockStoreImpl(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);

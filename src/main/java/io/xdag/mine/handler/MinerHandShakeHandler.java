@@ -42,7 +42,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.xdag.Kernel;
 import io.xdag.crypto.Base58;
-import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
 import io.xdag.utils.ByteArrayToByte32;
@@ -55,7 +55,7 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
     private final MinerChannel channel;
     private final Kernel kernel;
     private final MinerManager minerManager;
-    private final AddressStoreImpl addressStore;
+    private final AddressStore addressStore;
     public static final int MESSAGE_SIZE = 24;
 
     public MinerHandShakeHandler(MinerChannel channel, Kernel kernel) {

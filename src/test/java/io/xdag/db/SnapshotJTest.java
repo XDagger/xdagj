@@ -138,17 +138,17 @@ public class SnapshotJTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStoreImpl blockStore = new BlockStoreImpl(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
-        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
         snapshotSource = new SnapshotJ("SNAPSHOTJ");
@@ -201,13 +201,13 @@ public class SnapshotJTest {
     public void testSaveSnapshotToIndex() throws Exception {
         makeSnapshot();
         RocksdbFactory dbFactory = new RocksdbFactory(snapshotConfig);
-        BlockStoreImpl blockStore = new BlockStoreImpl(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
         blockStore.reset();
-        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
         List<KeyPair> keys = new ArrayList<>();

@@ -53,6 +53,10 @@ public interface BlockStore {
     byte TX_HISTORY = (byte) 0xa0;
     String SUM_FILE_NAME = "sums.dat";
 
+    void init();
+
+    void reset();
+
     XdagStats getXdagStatus();
 
     void saveXdagTopStatus(XdagTopStatus status);
@@ -117,5 +121,7 @@ public interface BlockStore {
     void updateSum(String key, long sum, long size, long index);
 
     int loadSum(long starttime, long endtime, MutableBytes sums);
+
+    void saveXdagStatus(XdagStats status);
 
 }

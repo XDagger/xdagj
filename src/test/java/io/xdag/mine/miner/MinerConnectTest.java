@@ -38,6 +38,9 @@ import io.xdag.core.BlockchainImpl;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.AddressStore;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.AddressStoreImpl;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
@@ -75,7 +78,7 @@ public class MinerConnectTest {
     String pwd;
     Kernel kernel;
     DatabaseFactory dbFactory;
-    AddressStoreImpl addressStore;
+    AddressStore addressStore;
     MinerChannel channel;
     BlockchainImpl blockchain;
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
@@ -100,7 +103,7 @@ public class MinerConnectTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStoreImpl blockStore = new BlockStoreImpl(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
@@ -108,11 +111,11 @@ public class MinerConnectTest {
 
         blockStore.reset();
 
-        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
 
         addressStore.reset();
 
-        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);

@@ -29,6 +29,7 @@ import static org.junit.Assert.assertEquals;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Hash;
+import io.xdag.utils.BlockUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -89,14 +90,14 @@ public class RocksdbKVSourceTest {
         byte[] value1 = Hex.decode("1234");
         byte[] value2 = Hex.decode("2345");
 
-        byte[] key1 = BlockStoreImpl.getTimeKey(time1, hashlow1);
-        byte[] key2 = BlockStoreImpl.getTimeKey(time1, hashlow2);
+        byte[] key1 = BlockUtils.getTimeKey(time1, hashlow1);
+        byte[] key2 = BlockUtils.getTimeKey(time1, hashlow2);
 
         indexSource.put(key1, value1);
         indexSource.put(key2, value2);
 
         long searchTime = 1602226304712L;
-        byte[] key = BlockStoreImpl.getTimeKey(searchTime, null);
+        byte[] key = BlockUtils.getTimeKey(searchTime, null);
         List<byte[]> keys = indexSource.prefixKeyLookup(key);
         assertEquals(2, keys.size());
         List<byte[]> values = indexSource.prefixValueLookup(key);

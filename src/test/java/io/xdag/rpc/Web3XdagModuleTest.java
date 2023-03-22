@@ -29,6 +29,8 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
 import io.xdag.db.rocksdb.DatabaseName;
@@ -77,14 +79,14 @@ public class Web3XdagModuleTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStoreImpl blockStore = new BlockStoreImpl(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);

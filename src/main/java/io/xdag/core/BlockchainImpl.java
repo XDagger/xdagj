@@ -93,12 +93,12 @@ import io.xdag.core.XdagField.FieldType;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.AddressStore;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.SnapshotChainStore;
 import io.xdag.db.SnapshotJ;
-import io.xdag.db.rocksdb.AddressStoreImpl;
-import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.SnapshotChainStoreImpl;
 import io.xdag.listener.BlockMessage;
@@ -124,12 +124,12 @@ public class BlockchainImpl implements Blockchain {
 
     private final Wallet wallet;
 
-    private final AddressStoreImpl addressStore;
-    private final BlockStoreImpl blockStore;
+    private final AddressStore addressStore;
+    private final BlockStore blockStore;
     /**
      * 非Extra orphan存放
      */
-    private final OrphanBlockStoreImpl orphanBlockStore;
+    private final OrphanBlockStore orphanBlockStore;
 
     private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
     private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
@@ -285,7 +285,7 @@ public class BlockchainImpl implements Blockchain {
         snapshotChainStore.reset();
     }
 
-    protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStoreImpl blockStore) {
+    protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStore blockStore) {
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         for (SnapshotUnit snapshotUnit : snapshotUnits) {
             BlockInfo blockInfo = SnapshotUnit.trasferToBlockInfo(snapshotUnit);

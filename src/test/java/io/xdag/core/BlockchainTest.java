@@ -54,6 +54,9 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.AddressStore;
+import io.xdag.db.BlockStore;
+import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.AddressStoreImpl;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
@@ -123,17 +126,17 @@ public class BlockchainTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStoreImpl blockStore = new BlockStoreImpl(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
-        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
         kernel.setBlockStore(blockStore);
