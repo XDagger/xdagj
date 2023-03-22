@@ -38,17 +38,17 @@ import io.xdag.core.BlockchainImpl;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.db.AddressStore;
-import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.BytesUtils;
-import io.xdag.wallet.Wallet;
+import io.xdag.Wallet;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -75,7 +75,7 @@ public class MinerConnectTest {
     String pwd;
     Kernel kernel;
     DatabaseFactory dbFactory;
-    AddressStore addressStore;
+    AddressStoreImpl addressStore;
     MinerChannel channel;
     BlockchainImpl blockchain;
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
@@ -100,7 +100,7 @@ public class MinerConnectTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStore blockStore = new BlockStore(
+        BlockStoreImpl blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
@@ -108,15 +108,15 @@ public class MinerConnectTest {
 
         blockStore.reset();
 
-        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
 
         addressStore.reset();
 
-        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
+        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setOrphanPool(orphanPool);
+        kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setWallet(wallet);
 
         blockchain = new BlockchainImpl(kernel);

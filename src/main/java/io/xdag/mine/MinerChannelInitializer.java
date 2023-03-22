@@ -24,13 +24,14 @@
 
 package io.xdag.mine;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.xdag.Kernel;
-import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

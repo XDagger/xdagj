@@ -24,17 +24,19 @@
 
 package io.xdag.net.handler;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.codec.binary.Hex;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.XdagVersion;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Hex;
 
 @Slf4j
 public class XdagHandshakeHandler extends ByteToMessageDecoder {

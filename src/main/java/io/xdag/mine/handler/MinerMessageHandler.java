@@ -31,7 +31,6 @@ import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 import java.io.IOException;
 import java.util.List;
 
-import jakarta.xml.bind.DatatypeConverter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.MutableBytes;
 
@@ -43,6 +42,7 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
+import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

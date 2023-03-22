@@ -24,12 +24,14 @@
 
 package io.xdag.net.node;
 
-import io.xdag.utils.BytesUtils;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import lombok.Getter;
+
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomUtils;
+
+import io.xdag.utils.BytesUtils;
+import lombok.Getter;
 
 public class Node {
 

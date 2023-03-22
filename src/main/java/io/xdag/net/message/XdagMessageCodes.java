@@ -26,10 +26,11 @@ package io.xdag.net.message;
 
 import static io.xdag.net.XdagVersion.V03;
 
-import io.xdag.net.XdagVersion;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
+
+import io.xdag.net.XdagVersion;
 
 /**
  * xdag block.h

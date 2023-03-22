@@ -24,6 +24,10 @@
 
 package io.xdag.net.libp2p;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.jetbrains.annotations.NotNull;
+
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
 import io.libp2p.core.multistream.ProtocolBinding;
@@ -38,11 +42,9 @@ import io.xdag.net.handler.XdagBlockHandler;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
-import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 @Getter

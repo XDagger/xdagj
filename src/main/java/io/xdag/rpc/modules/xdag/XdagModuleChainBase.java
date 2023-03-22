@@ -31,7 +31,11 @@ import static io.xdag.core.BlockType.MAIN_BLOCK;
 import static io.xdag.core.BlockType.SNAPSHOT;
 import static io.xdag.core.BlockType.TRANSACTION;
 import static io.xdag.core.BlockType.WALLET;
-import static io.xdag.core.XdagField.FieldType.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.Hash2byte;
 import static io.xdag.utils.BasicUtils.address2Hash;
@@ -41,6 +45,15 @@ import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
 import static io.xdag.utils.PubkeyAddressUtils.toBase58;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 import io.xdag.Kernel;
 import io.xdag.cli.Commands;
@@ -54,13 +67,6 @@ import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
 import io.xdag.utils.BasicUtils;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 
 public class XdagModuleChainBase implements XdagModuleChain {
 

@@ -26,15 +26,17 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 
+import java.math.BigInteger;
+import java.nio.ByteOrder;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
+
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
 
 public class SumReplyMessage extends AbstractMessage {
 

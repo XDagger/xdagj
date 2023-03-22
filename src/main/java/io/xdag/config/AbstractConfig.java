@@ -24,20 +24,12 @@
 
 package io.xdag.config;
 
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigObject;
-import io.xdag.config.spec.*;
-import io.xdag.core.XdagField;
-import io.xdag.crypto.DnetKeys;
-import io.xdag.rpc.modules.ModuleDescription;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
@@ -46,6 +38,23 @@ import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigObject;
+
+import io.xdag.config.spec.AdminSpec;
+import io.xdag.config.spec.NodeSpec;
+import io.xdag.config.spec.PoolSpec;
+import io.xdag.config.spec.RPCSpec;
+import io.xdag.config.spec.RandomxSpec;
+import io.xdag.config.spec.SnapshotSpec;
+import io.xdag.config.spec.WalletSpec;
+import io.xdag.core.XdagField;
+import io.xdag.crypto.DnetKeys;
+import io.xdag.rpc.modules.ModuleDescription;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter

@@ -24,7 +24,16 @@
 
 package io.xdag.net.handler;
 
+import java.util.List;
+
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
+
 import com.google.common.util.concurrent.SettableFuture;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
@@ -42,15 +51,9 @@ import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.net.message.impl.SumReplyMessage;
 import io.xdag.net.message.impl.SumRequestMessage;
 import io.xdag.utils.XdagTime;
-import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.bytes.MutableBytes32;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

@@ -25,6 +25,7 @@
 package io.xdag.utils;
 
 import java.io.IOException;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.io.DigestOutputStream;

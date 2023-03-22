@@ -27,10 +27,9 @@ import static io.xdag.BlockBuilder.generateAddressBlock;
 import static io.xdag.BlockBuilder.generateExtraBlock;
 import static io.xdag.BlockBuilder.generateNewTransactionBlock;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
+import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.assertArrayEquals;
@@ -52,13 +51,18 @@ import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
+import io.xdag.Wallet;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -66,7 +70,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
+
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -134,25 +138,25 @@ public class SnapshotJTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStore blockStore = new BlockStore(
+        BlockStoreImpl blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
-        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
+        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore.reset();
 
         snapshotSource = new SnapshotJ("SNAPSHOTJ");
         snapshotSource.setConfig(snapshotConfig);
         snapshotSource.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setOrphanPool(orphanPool);
+        kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setWallet(wallet);
 
         RandomX nativeRandomX = new RandomX(config);
@@ -197,13 +201,13 @@ public class SnapshotJTest {
     public void testSaveSnapshotToIndex() throws Exception {
         makeSnapshot();
         RocksdbFactory dbFactory = new RocksdbFactory(snapshotConfig);
-        BlockStore blockStore = new BlockStore(
+        BlockStoreImpl blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
         blockStore.reset();
-        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStoreImpl addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
         List<KeyPair> keys = new ArrayList<>();

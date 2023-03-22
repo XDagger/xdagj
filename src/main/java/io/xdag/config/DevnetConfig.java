@@ -26,8 +26,9 @@ package io.xdag.config;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
-import com.google.common.primitives.UnsignedLong;
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.primitives.UnsignedLong;
 
 public class DevnetConfig extends AbstractConfig {
 

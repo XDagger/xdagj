@@ -40,36 +40,20 @@ import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.BasicUtils.getHashlowByHash;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
-import com.google.common.collect.Lists;
-import com.google.common.primitives.UnsignedLong;
-import io.xdag.Kernel;
-import io.xdag.config.MainnetConfig;
-import io.xdag.core.XdagField.FieldType;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
-import io.xdag.db.AddressStore;
-import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.OrphanPool;
-import io.xdag.db.SnapshotChainStore;
-import io.xdag.db.SnapshotChainStoreImpl;
-import io.xdag.db.SnapshotJ;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.listener.BlockMessage;
-import io.xdag.listener.Listener;
-import io.xdag.listener.PretopMessage;
-import io.xdag.mine.randomx.RandomX;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -83,9 +67,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -101,6 +83,36 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 
+import com.google.common.collect.Lists;
+import com.google.common.primitives.UnsignedLong;
+
+import io.xdag.Kernel;
+import io.xdag.Wallet;
+import io.xdag.config.MainnetConfig;
+import io.xdag.core.XdagField.FieldType;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.SnapshotJ;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.SnapshotChainStoreImpl;
+import io.xdag.listener.BlockMessage;
+import io.xdag.listener.Listener;
+import io.xdag.listener.PretopMessage;
+import io.xdag.mine.randomx.RandomX;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.XdagTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Getter
 public class BlockchainImpl implements Blockchain {
@@ -112,12 +124,12 @@ public class BlockchainImpl implements Blockchain {
 
     private final Wallet wallet;
 
-    private final AddressStore addressStore;
-    private final BlockStore blockStore;
+    private final AddressStoreImpl addressStore;
+    private final BlockStoreImpl blockStore;
     /**
      * 非Extra orphan存放
      */
-    private final OrphanPool orphanPool;
+    private final OrphanBlockStoreImpl orphanBlockStore;
 
     private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
     private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
@@ -146,7 +158,7 @@ public class BlockchainImpl implements Blockchain {
         // 1. init chain state from rocksdb
         this.addressStore = kernel.getAddressStore();
         this.blockStore = kernel.getBlockStore();
-        this.orphanPool = kernel.getOrphanPool();
+        this.orphanBlockStore = kernel.getOrphanBlockStore();
         snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
 
         // 2. if enable snapshot, init snapshot from rocksdb
@@ -273,7 +285,7 @@ public class BlockchainImpl implements Blockchain {
         snapshotChainStore.reset();
     }
 
-    protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStore blockStore) {
+    protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStoreImpl blockStore) {
         List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
         for (SnapshotUnit snapshotUnit : snapshotUnits) {
             BlockInfo blockInfo = SnapshotUnit.trasferToBlockInfo(snapshotUnit);
@@ -511,7 +523,7 @@ public class BlockchainImpl implements Blockchain {
             } else {
 //                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
-                orphanPool.addOrphan(block);
+                orphanBlockStore.addOrphan(block);
                 xdagStats.nnoref++;
             }
             blockStore.saveXdagStatus(xdagStats);
@@ -1036,7 +1048,7 @@ public class BlockchainImpl implements Blockchain {
      * @Param [num]
      **/
     public List<Address> getBlockFromOrphanPool(int num, long[] sendtime) {
-        return orphanPool.getOrphan(num, sendtime);
+        return orphanBlockStore.getOrphan(num, sendtime);
     }
 
     public Bytes32 getPreTopMainBlockForLink(long sendTime) {
@@ -1281,7 +1293,7 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(removeBlockRaw, BI_EXTRA, false);
                 xdagStats.nextra--;
             } else {
-                orphanPool.deleteByHash(b.getHashLow().toArray());
+                orphanBlockStore.deleteByHash(b.getHashLow().toArray());
                 xdagStats.nnoref--;
             }
             // 更新这个块的flag

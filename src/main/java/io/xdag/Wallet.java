@@ -22,29 +22,13 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.wallet;
+package io.xdag;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
-import com.google.common.collect.Lists;
-import io.xdag.config.Config;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.SimpleEncoder;
-import io.xdag.crypto.Aes;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.Numeric;
-import io.xdag.utils.SimpleDecoder;
-import io.xdag.utils.SystemUtil;
-import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,9 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -76,6 +58,28 @@ import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import com.google.common.collect.Lists;
+
+import io.xdag.config.Config;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.SimpleEncoder;
+import io.xdag.crypto.Aes;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.Numeric;
+import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SystemUtil;
+import io.xdag.utils.WalletUtils;
+import io.xdag.utils.XdagTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter

@@ -26,18 +26,6 @@ package io.xdag.net.node;
 
 import static io.xdag.net.libp2p.Libp2pUtils.discoveryPeerToDailId;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.net.Channel;
-import io.xdag.net.XdagClient;
-import io.xdag.net.handler.XdagChannelInitializer;
-import io.xdag.net.libp2p.Libp2pNetwork;
-import io.xdag.net.libp2p.discovery.DiscoveryPeer;
-import io.xdag.net.manager.NetDBManager;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.NetDB;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Deque;
@@ -53,8 +41,23 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.net.Channel;
+import io.xdag.net.XdagClient;
+import io.xdag.net.handler.XdagChannelInitializer;
+import io.xdag.net.libp2p.Libp2pNetwork;
+import io.xdag.net.libp2p.discovery.DiscoveryPeer;
+import io.xdag.net.manager.NetDBManager;
+import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.message.NetDB;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NodeManager {

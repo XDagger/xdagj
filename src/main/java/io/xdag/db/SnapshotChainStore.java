@@ -23,12 +23,24 @@
  */
 package io.xdag.db;
 
-import io.xdag.core.SnapshotUnit;
-import io.xdag.core.StatsBlock;
 import java.util.List;
+
 import org.hyperledger.besu.crypto.KeyPair;
 
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
+
 public interface SnapshotChainStore {
+
+    byte SNAPSHOT_UNIT = 0x10;
+    byte SNAPSHOT_STATS = 0x20;
+    byte SNAPSHOT_GLOBAL_BALANCE = 0x30;
+    byte PRE_SEED = 0x40;
+    String BALACNE_KEY = "balance";
+    String STATS_KEY = "stats";
+    String PUB_KEY = "pubkey";
+    String SIG_KEY = "signature";
+    String BLOCK_KEY = "block";
 
     void init();
 

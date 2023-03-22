@@ -27,17 +27,12 @@ package io.xdag.cli;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
-import io.xdag.Kernel;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.PubkeyAddressUtils;
-import io.xdag.wallet.Wallet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.tuweni.bytes.Bytes32;
@@ -54,6 +49,14 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
+
+import io.xdag.Kernel;
+import io.xdag.Wallet;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.WalletUtils;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Shell extends JlineCommandRegistry implements CommandRegistry, Telnet.ShellProvider {
@@ -555,7 +558,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         Character mask = '*';
         String line;
         do {
-            line = reader.readLine(io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT, mask);
+            line = reader.readLine(WalletUtils.WALLET_PASSWORD_PROMPT, mask);
         } while (StringUtils.isEmpty(line));
         return line;
     }

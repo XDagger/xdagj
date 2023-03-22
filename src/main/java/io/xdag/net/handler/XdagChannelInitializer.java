@@ -24,6 +24,8 @@
 
 package io.xdag.net.handler;
 
+import java.net.InetSocketAddress;
+
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -32,7 +34,6 @@ import io.xdag.Kernel;
 import io.xdag.net.XdagChannel;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.net.node.Node;
-import java.net.InetSocketAddress;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

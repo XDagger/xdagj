@@ -24,9 +24,10 @@
 
 package io.xdag.net.libp2p;
 
+import org.apache.tuweni.bytes.Bytes;
+
 import io.libp2p.core.PeerId;
 import io.xdag.net.libp2p.peer.NodeId;
-import org.apache.tuweni.bytes.Bytes;
 
 public class LibP2PNodeId extends NodeId {
 

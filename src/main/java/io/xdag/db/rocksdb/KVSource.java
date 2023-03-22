@@ -21,28 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-//package io.xdag.rpc.modules.eth.subscribe;
-//
-//import com.fasterxml.jackson.annotation.JsonCreator;
-//import com.fasterxml.jackson.annotation.JsonFormat;
-//import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-//
-//import java.util.Objects;
-//
-//@JsonFormat(shape=JsonFormat.Shape.ARRAY)
-//@JsonPropertyOrder({"subscriptionId"})
-//public class EthUnsubscribeParams {
-//
-//    private final SubscriptionId subscriptionId;
-//
-//    @JsonCreator
-//    public EthUnsubscribeParams(
-//            @JsonProperty("subscriptionId") SubscriptionId subscriptionId) {
-//        this.subscriptionId = Objects.requireNonNull(subscriptionId);
-//    }
-//
-//    public SubscriptionId getSubscriptionId() {
-//        return subscriptionId;
-//    }
-//}
+
+package io.xdag.db.rocksdb;
+
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+
+import org.apache.commons.lang3.tuple.Pair;
+
+public interface KVSource<K, V> {
+
+    String getName();
+
+    void setName(String name);
+
+    boolean isAlive();
+
+    void init();
+
+    void close();
+
+    void reset();
+
+    void put(K key, V val);
+
+    V get(K key);
+
+    void delete(K key);
+
+    Set<byte[]> keys() throws RuntimeException;
+
+    List<K> prefixKeyLookup(byte[] key);
+
+    void fetchPrefix(byte[] key, Function<Pair<K, V>, Boolean> func);
+
+    List<V> prefixValueLookup(byte[] key);
+
+    List<Pair<byte[], byte[]>> prefixKeyAndValueLookup(byte[] key);
+
+}

@@ -24,31 +24,10 @@
 
 package io.xdag.rpc.dto;
 
-
 import java.util.List;
+
 import lombok.Builder;
 import lombok.Data;
-
-//@Data
-////TODO: Return xdagblock info
-//public class BlockResultDTO {
-//
-//    // blockInfo
-//    // rawData
-//    String height;
-//    String data;
-//
-//    public BlockResultDTO(long height) {
-//        this.height = Long.toHexString(height);
-//        this.data = "0x";
-//    }
-//
-//
-//    public static BlockResultDTO fromBlock(Block b, boolean raw) {
-//
-//        return null;
-//    }
-//}
 
 @Data
 @Builder

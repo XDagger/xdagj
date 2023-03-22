@@ -26,10 +26,11 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.XdagVersion.V03;
 
+import org.apache.tuweni.bytes.MutableBytes;
+
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
-import org.apache.tuweni.bytes.MutableBytes;
 
 public class Xdag03MessageFactory implements MessageFactory {
 

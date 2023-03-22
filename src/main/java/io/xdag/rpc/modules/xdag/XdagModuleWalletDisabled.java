@@ -27,23 +27,22 @@ package io.xdag.rpc.modules.xdag;
 import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
 
 import java.util.Arrays;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class XdagModuleWalletDisabled implements XdagModuleWallet {
-
-    private static final Logger logger = LoggerFactory.getLogger(XdagModuleWalletDisabled.class);
 
     @Override
     public String[] accounts() {
         String[] accounts = {};
-        logger.debug("xdag_accounts(): {}", Arrays.toString(accounts));
+        log.debug("xdag_accounts(): {}", Arrays.toString(accounts));
         return accounts;
     }
 
     @Override
     public String sign(String addr, String data) {
-        logger.debug("eth_sign({}, {}): {}", addr, data, null);
+        log.debug("eth_sign({}, {}): {}", addr, data, null);
         throw invalidParamError("Local wallet is disabled in this node");
     }
 }

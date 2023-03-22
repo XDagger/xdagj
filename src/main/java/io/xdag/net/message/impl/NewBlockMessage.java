@@ -26,14 +26,16 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.config.Constants.DNET_PKT_XDAG;
 
+import java.util.zip.CRC32;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
+
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import java.util.zip.CRC32;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
 
 public class NewBlockMessage extends Message {
 

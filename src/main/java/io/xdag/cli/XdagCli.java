@@ -24,27 +24,8 @@
 
 package io.xdag.cli;
 
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
-import io.xdag.Kernel;
-import io.xdag.Launcher;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.SnapshotChainStore;
-import io.xdag.db.SnapshotChainStoreImpl;
-import io.xdag.db.SnapshotJ;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
 import java.io.Console;
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -63,6 +45,26 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import io.xdag.Kernel;
+import io.xdag.Launcher;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.MainnetConfig;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.crypto.Sign;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.SnapshotJ;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.db.rocksdb.SnapshotChainStoreImpl;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagTime;
 
 public class XdagCli extends Launcher {
 

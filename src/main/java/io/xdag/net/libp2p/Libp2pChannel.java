@@ -24,6 +24,10 @@
 
 package io.xdag.net.libp2p;
 
+import java.net.InetSocketAddress;
+
+import org.apache.commons.lang3.math.NumberUtils;
+
 import io.libp2p.core.Connection;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.core.multiformats.Protocol;
@@ -33,10 +37,8 @@ import io.xdag.net.Channel;
 import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
-import java.net.InetSocketAddress;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.math.NumberUtils;
 
 /**
  * @author wawa

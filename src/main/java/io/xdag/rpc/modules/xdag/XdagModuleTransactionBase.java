@@ -24,6 +24,10 @@
 
 package io.xdag.rpc.modules.xdag;
 
+import org.bouncycastle.util.encoders.Hex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
@@ -31,9 +35,6 @@ import io.xdag.core.XdagBlock;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.utils.BasicUtils;
-import org.bouncycastle.util.encoders.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class XdagModuleTransactionBase implements XdagModuleTransaction {
 

@@ -24,14 +24,15 @@
 
 package io.xdag.core;
 
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.PubkeyAddressUtils;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
+
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.PubkeyAddressUtils;
+import lombok.Getter;
+import lombok.Setter;
 
 public class Address {
 

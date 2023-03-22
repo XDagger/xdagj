@@ -24,10 +24,11 @@
 
 package io.xdag.net.message.impl;
 
-import io.xdag.net.message.Message;
-import io.xdag.net.message.XdagMessageCodes;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
+
+import io.xdag.net.message.Message;
+import io.xdag.net.message.XdagMessageCodes;
 
 public class BlockExtRequestMessage extends Message {
 

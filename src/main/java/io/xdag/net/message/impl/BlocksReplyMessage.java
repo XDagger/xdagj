@@ -26,13 +26,14 @@ package io.xdag.net.message.impl;
 
 import static io.xdag.net.message.XdagMessageCodes.BLOCKS_REPLY;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
+
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.EqualsAndHashCode;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
 
 @EqualsAndHashCode(callSuper = false)
 public class BlocksReplyMessage extends AbstractMessage {

@@ -24,14 +24,16 @@
 
 package io.xdag.mine.manager;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+
+import org.apache.tuweni.bytes.Bytes;
+
 import io.xdag.consensus.PoW;
 import io.xdag.consensus.Task;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.net.message.Message;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import org.apache.tuweni.bytes.Bytes;
 
 public interface MinerManager {
 

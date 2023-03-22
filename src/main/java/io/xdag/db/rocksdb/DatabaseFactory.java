@@ -22,9 +22,14 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.rpc.dto;
+package io.xdag.db.rocksdb;
 
-// TODO: return transaction receipt
-public class TransactionReceiptDTO {
+public interface DatabaseFactory {
 
+    KVSource<byte[], byte[]> getDB(DatabaseName name);
+
+    /**
+     * Close all opened resources.
+     */
+    void close();
 }

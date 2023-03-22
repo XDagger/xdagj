@@ -26,6 +26,20 @@ package io.xdag.mine;
 
 import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
+import java.net.InetSocketAddress;
+import java.nio.ByteOrder;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -33,8 +47,8 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.core.XdagField;
-import io.xdag.db.AddressStore;
-import io.xdag.db.BlockStore;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.mine.handler.ConnectionLimitHandler;
 import io.xdag.mine.handler.Miner03;
 import io.xdag.mine.handler.MinerHandShakeHandler;
@@ -47,21 +61,9 @@ import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
-import java.net.InetSocketAddress;
-import java.nio.ByteOrder;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
 @Getter
@@ -73,8 +75,8 @@ public class MinerChannel {
     private final boolean isServer;
     private final Kernel kernel;
     private final Config config;
-    private final BlockStore blockStore;
-    private final AddressStore addressStore;
+    private final BlockStoreImpl blockStore;
+    private final AddressStoreImpl addressStore;
     private final MinerManager minerManager;
     /**
      * 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs

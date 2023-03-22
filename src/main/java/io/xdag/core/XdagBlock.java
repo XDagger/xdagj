@@ -27,6 +27,7 @@ package io.xdag.core;
 import static io.xdag.core.XdagField.FieldType.fromByte;
 
 import java.nio.ByteOrder;
+
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 

@@ -26,11 +26,31 @@ package io.xdag.rpc.modules.web3;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.PubkeyAddressUtils.*;
+import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.amount2xdag;
+import static io.xdag.utils.BasicUtils.getHash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
+import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
+import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
+import static io.xdag.utils.PubkeyAddressUtils.toBase58;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.xdag.Kernel;
-import io.xdag.cli.Commands;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
@@ -51,19 +71,6 @@ import io.xdag.rpc.dto.PoolWorkerDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.BasicUtils;
-import io.xdag.wallet.Wallet;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Web3XdagModuleImpl implements Web3XdagModule {
 

@@ -47,10 +47,15 @@ import io.xdag.core.StatsBlock;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.SnapshotChainStoreImpl;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
+import io.xdag.Wallet;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -104,18 +109,18 @@ public class SnapshotProcess {
         Kernel kernel = new Kernel(config);
         DatabaseFactory dbFactory = new RocksdbFactory(config);
 
-        BlockStore blockStore = new BlockStore(
+        BlockStoreImpl blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
+        OrphanBlockStoreImpl orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setOrphanPool(orphanPool);
+        kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setWallet(wallet);
 
         RandomX randomX = new RandomX(config);

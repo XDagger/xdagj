@@ -24,11 +24,12 @@
 
 package io.xdag.cli;
 
-import io.xdag.Kernel;
-import lombok.extern.slf4j.Slf4j;
 import org.jline.builtins.telnet.Telnet;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+
+import io.xdag.Kernel;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TelnetServer {

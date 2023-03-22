@@ -24,6 +24,14 @@
 
 package io.xdag;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.tuweni.bytes.Bytes;
+
 import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
@@ -41,11 +49,11 @@ import io.xdag.core.BlockchainImpl;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.crypto.Keys;
-import io.xdag.db.AddressStore;
-import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.OrphanPool;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
@@ -81,16 +89,9 @@ import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes;
 
 @Slf4j
 @Getter
@@ -101,9 +102,9 @@ public class Kernel {
     private Config config;
     private Wallet wallet;
     private DatabaseFactory dbFactory;
-    private AddressStore addressStore;
-    private BlockStore blockStore;
-    private OrphanPool orphanPool;
+    private AddressStoreImpl addressStore;
+    private BlockStoreImpl blockStore;
+    private OrphanBlockStoreImpl orphanBlockStore;
     private Blockchain blockchain;
     private NetDB netDB;
     private XdagClient client;
@@ -189,7 +190,7 @@ public class Kernel {
         log.info("Wallet init.");
 
         dbFactory = new RocksdbFactory(this.config);
-        blockStore = new BlockStore(
+        blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME),
@@ -197,13 +198,13 @@ public class Kernel {
         log.info("Block Store init.");
         blockStore.init();
 
-        addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.init();
         log.info("Address Store init");
 
-        orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");
-        orphanPool.init();
+        orphanBlockStore.init();
 
         // ====================================
         // netstatus netdb init

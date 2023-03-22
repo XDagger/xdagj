@@ -24,12 +24,14 @@
 
 package io.xdag.rpc.filter;
 
+import java.io.IOException;
+import java.util.List;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.googlecode.jsonrpc4j.JsonRpcBasicServer;
 import com.googlecode.jsonrpc4j.RequestInterceptor;
+
 import io.xdag.rpc.modules.ModuleDescription;
-import java.io.IOException;
-import java.util.List;
 
 public class JsonRpcMethodFilter implements RequestInterceptor {
 

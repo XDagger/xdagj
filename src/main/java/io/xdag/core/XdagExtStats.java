@@ -27,6 +27,7 @@ import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+
 import lombok.Getter;
 import lombok.Setter;
 

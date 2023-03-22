@@ -24,12 +24,11 @@
 
 package io.xdag.db.rocksdb;
 
-import io.xdag.config.Config;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.KVSource;
 import java.util.EnumMap;
+
 import org.apache.commons.lang3.StringUtils;
+
+import io.xdag.config.Config;
 
 public class RocksdbFactory implements DatabaseFactory {
 

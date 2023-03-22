@@ -26,12 +26,13 @@ package io.xdag.rpc.modules;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.rpc.jsonrpc.JsonRpcRequest;
 import io.xdag.rpc.jsonrpc.JsonRpcResultOrError;
 import io.xdag.rpc.jsonrpc.JsonRpcVersion;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "method", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "method", visible = true)
 @JsonSubTypes({
 })
 public abstract class XdagJsonRpcRequest extends JsonRpcRequest<XdagJsonRpcMethod> {

@@ -24,6 +24,8 @@
 
 package io.xdag.net;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -38,7 +40,6 @@ import io.xdag.Kernel;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.utils.NettyUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class XdagServer {

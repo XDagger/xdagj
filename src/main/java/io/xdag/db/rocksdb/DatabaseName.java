@@ -22,32 +22,33 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.rpc.modules.xdag;
+package io.xdag.db.rocksdb;
 
-import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
+public enum DatabaseName {
 
-import io.xdag.Kernel;
-import io.xdag.rpc.Web3;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+    /**
+     * Block index.
+     */
+    INDEX,
 
-public class XdagModuleTransactionDisabled extends XdagModuleTransactionBase {
+    /**
+     * Block raw data.
+     */
+    BLOCK,
 
-    private static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionDisabled.class);
+    /**
+     * Time related block.
+     */
+    TIME,
 
-    public XdagModuleTransactionDisabled(Kernel kernel) {
-        super(kernel);
-    }
+    TXHISTORY,
 
-    @Override
-    public String sendTransaction(Web3.CallArguments args) {
-        logger.debug("xdag_sendTransaction({}): {}", args, null);
-        throw invalidParamError("Local wallet is disabled in this node");
-    }
+    /**
+     * Orphan block index
+     */
+    ORPHANIND,
 
-    @Override
-    public String sendRawTransaction(String rawData) {
-        logger.debug("xdag_sendRawTransaction({}): {}", rawData, null);
-        throw invalidParamError("Local wallet is disabled in this node");
-    }
+    SNAPSHOT,
+
+    ADDRESS
 }

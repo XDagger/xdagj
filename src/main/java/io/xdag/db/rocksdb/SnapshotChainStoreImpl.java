@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.db;
+package io.xdag.db.rocksdb;
 
 import static io.xdag.config.Constants.BI_APPLIED;
 import static io.xdag.config.Constants.BI_MAIN_REF;
@@ -38,22 +38,6 @@ import static org.lmdbjava.Env.create;
 import static org.lmdbjava.EnvFlags.MDB_FIXEDMAP;
 import static org.lmdbjava.EnvFlags.MDB_NOSYNC;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import io.xdag.core.Block;
-import io.xdag.core.SnapshotBalanceData;
-import io.xdag.core.SnapshotUnit;
-import io.xdag.core.StatsBlock;
-import io.xdag.core.XdagBlock;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
-import io.xdag.db.execption.DeserializationException;
-import io.xdag.db.execption.SerializationException;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.FileUtils;
-import io.xdag.utils.Numeric;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -66,7 +50,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -82,18 +66,28 @@ import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 import org.xerial.snappy.Snappy;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
+import io.xdag.core.Block;
+import io.xdag.core.SnapshotBalanceData;
+import io.xdag.core.SnapshotUnit;
+import io.xdag.core.StatsBlock;
+import io.xdag.core.XdagBlock;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
+import io.xdag.db.SnapshotChainStore;
+import io.xdag.db.execption.DeserializationException;
+import io.xdag.db.execption.SerializationException;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.FileUtils;
+import io.xdag.utils.Numeric;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 public class SnapshotChainStoreImpl implements SnapshotChainStore {
-
-    public static final byte SNAPSHOT_UNIT = 0x10;
-    public static final byte SNAPSHOT_STATS = 0x20;
-    public static final byte SNAPSHOT_GLOBAL_BALANCE = 0x30;
-    public static final byte PRE_SEED = 0x40;
-    public static final String BALACNE_KEY = "balance";
-    public static final String STATS_KEY = "stats";
-    public static final String PUB_KEY = "pubkey";
-    public static final String SIG_KEY = "signature";
-    public static final String BLOCK_KEY = "block";
 
     private final Kryo kryo;
 
