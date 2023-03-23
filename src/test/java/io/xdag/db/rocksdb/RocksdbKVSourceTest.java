@@ -57,24 +57,24 @@ public class RocksdbKVSourceTest {
     @Test
     public void testRocksdbFactory() {
         DatabaseFactory factory = new RocksdbFactory(config);
-        KVSource<byte[], byte[]> blocksource = factory.getDB(DatabaseName.BLOCK); // <block-hash,block-info>
-        KVSource<byte[], byte[]> indexsource = factory.getDB(DatabaseName.INDEX); // <hash,info>
-        KVSource<byte[], byte[]> orphansource = factory.getDB(DatabaseName.ORPHANIND); // <hash,info>
+        KVSource<byte[], byte[]> blockSource = factory.getDB(DatabaseName.BLOCK); // <block-hash,block-info>
+        KVSource<byte[], byte[]> indexSource = factory.getDB(DatabaseName.INDEX); // <hash,info>
+        KVSource<byte[], byte[]> orphanSource = factory.getDB(DatabaseName.ORPHANIND); // <hash,info>
 
-        blocksource.reset();
-        indexsource.reset();
-        orphansource.reset();
+        blockSource.reset();
+        indexSource.reset();
+        orphanSource.reset();
 
         byte[] key = Hex.decode("FFFF");
         byte[] value = Hex.decode("1234");
 
-        blocksource.put(key, value);
-        indexsource.put(key, value);
-        orphansource.put(key, value);
+        blockSource.put(key, value);
+        indexSource.put(key, value);
+        orphanSource.put(key, value);
 
-        assertEquals("1234", Hex.toHexString(blocksource.get(key)));
-        assertEquals("1234", Hex.toHexString(indexsource.get(key)));
-        assertEquals("1234", Hex.toHexString(orphansource.get(key)));
+        assertEquals("1234", Hex.toHexString(blockSource.get(key)));
+        assertEquals("1234", Hex.toHexString(indexSource.get(key)));
+        assertEquals("1234", Hex.toHexString(orphanSource.get(key)));
     }
 
     @Test

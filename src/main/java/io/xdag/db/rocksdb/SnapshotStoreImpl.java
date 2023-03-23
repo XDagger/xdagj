@@ -25,6 +25,7 @@ package io.xdag.db.rocksdb;
 
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
+import static io.xdag.db.BlockStore.SUMS_BLOCK_INFO;
 import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 
@@ -108,7 +109,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
 
     public void makeSnapshot(RocksdbKVSource blockSource, boolean b) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
-            for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.isValid() && iter.key()[0] < 0x40; iter.next()) {
+            for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.isValid() && iter.key()[0] < SUMS_BLOCK_INFO; iter.next()) {
                 PreBlockInfo preBlockInfo;
                 BlockInfo blockInfo = new BlockInfo();
                 if (iter.value() != null) {
@@ -160,7 +161,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
     public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
-                if (iter.key()[0] == 0x30) {
+                if (iter.key()[0] == HASH_BLOCK_INFO) {
                     BlockInfo blockInfo = new BlockInfo();
                     if (iter.value() != null) {
                         try {
@@ -215,7 +216,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                 blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
                     }
-                } else if (iter.key()[0] == (byte) 0x90) {
+                } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
                 }
             }
