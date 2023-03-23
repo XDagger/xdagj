@@ -24,6 +24,12 @@
 
 package io.xdag.net.manager;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.xdag.Kernel;
+import io.xdag.core.BlockWrapper;
+import io.xdag.net.Channel;
+import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,14 +38,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
-import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
-import io.xdag.net.Channel;
-import io.xdag.net.node.Node;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

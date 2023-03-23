@@ -26,7 +26,6 @@ package io.xdag.utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
 import org.apache.tuweni.units.bigints.UInt64;
 
 public class BigDecimalUtils {

@@ -27,12 +27,10 @@ import static io.xdag.utils.BasicUtils.hash2Address;
 
 import java.math.BigInteger;
 import java.nio.ByteOrder;
-
+import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.Arrays;
-
-import lombok.Data;
 
 @Data
 public class StatsBlock {

@@ -26,7 +26,6 @@ package io.xdag.crypto;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;

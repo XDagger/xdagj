@@ -28,7 +28,6 @@ import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 
 import java.util.Collections;
 import java.util.List;
-
 import lombok.Data;
 
 @Data

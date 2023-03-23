@@ -24,10 +24,6 @@
 
 package io.xdag.net.libp2p;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.jetbrains.annotations.NotNull;
-
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PChannel;
 import io.libp2p.core.Stream;
@@ -39,8 +35,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import io.xdag.net.libp2p.peer.NodeId;
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 
 @Getter
 @Setter

@@ -25,7 +25,6 @@
 package io.xdag.core;
 
 import java.math.BigInteger;
-
 import lombok.Getter;
 import lombok.Setter;
 

@@ -26,20 +26,6 @@ package io.xdag.mine;
 
 import static io.xdag.mine.miner.MinerStates.MINER_ACTIVE;
 
-import java.net.InetSocketAddress;
-import java.nio.ByteOrder;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -61,9 +47,21 @@ import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
+import java.net.InetSocketAddress;
+import java.nio.ByteOrder;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
 @Getter

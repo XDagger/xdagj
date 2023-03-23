@@ -26,12 +26,11 @@ package io.xdag.mine.message;
 
 import static io.xdag.net.message.XdagMessageCodes.NEW_TASK;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
-
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 
 public class NewTaskMessage extends Message {
 

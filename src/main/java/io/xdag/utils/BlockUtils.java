@@ -23,11 +23,9 @@
  */
 package io.xdag.utils;
 
-import org.apache.tuweni.bytes.Bytes32;
-
 import com.google.common.primitives.UnsignedLong;
-
 import io.xdag.db.BlockStore;
+import org.apache.tuweni.bytes.Bytes32;
 
 public final class BlockUtils {
 

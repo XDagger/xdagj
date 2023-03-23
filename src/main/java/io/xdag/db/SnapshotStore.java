@@ -23,49 +23,31 @@
  */
 package io.xdag.db;
 
+import io.xdag.core.BlockInfo;
+import io.xdag.core.PreBlockInfo;
+import io.xdag.db.rocksdb.RocksdbKVSource;
 import java.util.List;
-
 import org.hyperledger.besu.crypto.KeyPair;
+import org.rocksdb.RocksIterator;
 
-import io.xdag.core.SnapshotUnit;
-import io.xdag.core.StatsBlock;
-
-public interface SnapshotChainStore {
-
-    byte SNAPSHOT_UNIT = 0x10;
-    byte SNAPSHOT_STATS = 0x20;
-    byte SNAPSHOT_GLOBAL_BALANCE = 0x30;
-    byte PRE_SEED = 0x40;
-    String BALACNE_KEY = "balance";
-    String STATS_KEY = "stats";
-    String PUB_KEY = "pubkey";
-    String SIG_KEY = "signature";
-    String BLOCK_KEY = "block";
+public interface SnapshotStore {
 
     void init();
 
     void reset();
 
-    void saveSnapshotUnit(byte[] key, SnapshotUnit snapshotUnit);
+    void makeSnapshot(RocksdbKVSource blockSource, boolean b);
 
-    SnapshotUnit getSnapshotUnit(byte[] key);
+    void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime);
 
-    List<SnapshotUnit> getAllSnapshotUnit();
+    void save(RocksIterator iter, BlockInfo blockInfo);
 
-    List<StatsBlock> getSnapshotStatsBlock();
+    void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo);
 
-    StatsBlock getLatestStatsBlock();
+    long getOurBalance();
 
-    byte[] getSnapshotPreSeed();
+    long getNextTime();
 
-    void saveSnaptshotStatsBlock(int i, StatsBlock statsBlock);
-
-    void saveGlobalBalance(long balance);
-
-    long getGlobalBalance();
-
-    StatsBlock getStatsBlockByIndex(int i);
-
-    boolean loadFromSnapshotData(String filepath, boolean mainLag, List<KeyPair> publicKeys);
+    long getHeight();
 
 }

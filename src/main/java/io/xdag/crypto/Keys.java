@@ -33,7 +33,6 @@ import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;

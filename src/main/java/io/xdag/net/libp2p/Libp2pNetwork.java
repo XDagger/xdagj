@@ -24,14 +24,6 @@
 
 package io.xdag.net.libp2p;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.PrivKey;
@@ -47,8 +39,14 @@ import io.xdag.Kernel;
 import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.SafeFuture;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
 @Getter

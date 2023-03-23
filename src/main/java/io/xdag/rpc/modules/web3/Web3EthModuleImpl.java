@@ -26,12 +26,11 @@ package io.xdag.rpc.modules.web3;
 
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.xdag.rpc.dto.ETHBlockResultDTO;
 import io.xdag.rpc.dto.ETHTransactionReceiptDTO;
 import io.xdag.rpc.modules.eth.EthModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Web3EthModuleImpl implements Web3EthModule {
 

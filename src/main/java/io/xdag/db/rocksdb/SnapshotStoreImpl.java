@@ -21,33 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.db;
+package io.xdag.db.rocksdb;
 
 import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
-import static io.xdag.db.rocksdb.BlockStoreImpl.SNAPSHOT_PRESEED;
+import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
+import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.util.List;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt64;
-import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.objenesis.strategy.StdInstantiatorStrategy;
-import org.rocksdb.RocksIterator;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.PreBlockInfo;
@@ -58,32 +43,72 @@ import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
+import io.xdag.db.BlockStore;
+import io.xdag.db.SnapshotStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.utils.BytesUtils;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPSignature;
+import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.rocksdb.RocksIterator;
 
 @Slf4j
-public class SnapshotJ extends RocksdbKVSource {
+public class SnapshotStoreImpl implements SnapshotStore {
 
-    public static final Kryo kryo = new Kryo();
-    private long ourBalance = 0L;
-    private long nextTime = 0;
-    private long height = 0;
+    private final RocksdbKVSource snapshotSource;
 
-    static {
+    private final Kryo kryo;
+    private long ourBalance;
+    private long nextTime;
+    private long height;
+
+
+    public SnapshotStoreImpl(RocksdbKVSource snapshotSource) {
+        this.snapshotSource = snapshotSource;
+        this.kryo = new Kryo();
         kryoRegister();
     }
 
-    public SnapshotJ(String name) {
-        super(name);
+    @Override
+    public void init() {
+        snapshotSource.init();
     }
 
-    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource snapshotSource, boolean b) {
+    @Override
+    public void reset() {
+        snapshotSource.reset();
+    }
 
-        try (RocksIterator iter = getDb().newIterator()) {
-            for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.key()[0] < 0x40; iter.next()) {
+    public void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo) {
+        blockInfo.setSnapshot(preBlockInfo.isSnapshot());
+        blockInfo.setSnapshotInfo(preBlockInfo.getSnapshotInfo());
+        blockInfo.setFee(preBlockInfo.getFee());
+        blockInfo.setHash(preBlockInfo.getHash());
+        blockInfo.setDifficulty(preBlockInfo.getDifficulty());
+        blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
+        blockInfo.setHashlow(preBlockInfo.getHashlow());
+        blockInfo.setFlags(preBlockInfo.getFlags());
+        blockInfo.setHeight(preBlockInfo.getHeight());
+        blockInfo.setMaxDiffLink(preBlockInfo.getMaxDiffLink());
+        blockInfo.setRef(preBlockInfo.getRef());
+        blockInfo.setRemark(preBlockInfo.getRemark());
+        blockInfo.setTimestamp(preBlockInfo.getTimestamp());
+        blockInfo.setType(preBlockInfo.getType());
+    }
+
+    public void makeSnapshot(RocksdbKVSource blockSource, boolean b) {
+        try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
+            for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.isValid() && iter.key()[0] < 0x40; iter.next()) {
                 PreBlockInfo preBlockInfo;
                 BlockInfo blockInfo = new BlockInfo();
                 if (iter.value() != null) {
@@ -105,16 +130,17 @@ public class SnapshotJ extends RocksdbKVSource {
                         flag &= ~BI_OURS;
                         blockInfo.setFlags(flag);
                         blockInfo.setSnapshot(true);
-                        save(iter, blockInfo, snapshotSource);
+                        save(iter, blockInfo);
                     } else { //Storage block data without public key and balance
                         if (blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0) {
 //                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
-                            blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(BytesUtils.subArray(iter.key(), 1, 32))));
+                            blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(
+                                    BytesUtils.subArray(iter.key(), 1, 32))));
                             int flag = blockInfo.getFlags();
                             flag &= ~BI_OURS;
                             blockInfo.setFlags(flag);
-                            save(iter, blockInfo, snapshotSource);
+                            save(iter, blockInfo);
                         }
                     }
                 }
@@ -127,12 +153,12 @@ public class SnapshotJ extends RocksdbKVSource {
             log.error(e.getMessage(), e);
         }
 
-        byte[] preSeed = this.get(new byte[]{SNAPSHOT_PRESEED});
+        byte[] preSeed = snapshotSource.get(new byte[]{SNAPSHOT_PRESEED});
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
     public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
-        try (RocksIterator iter = getDb().newIterator()) {
+        try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == 0x30) {
                     BlockInfo blockInfo = new BlockInfo();
@@ -198,7 +224,7 @@ public class SnapshotJ extends RocksdbKVSource {
         }
     }
 
-    private void save(RocksIterator iter, BlockInfo blockInfo, RocksdbKVSource snapshotSource) {
+    public void save(RocksIterator iter, BlockInfo blockInfo) {
         byte[] value = null;
         try {
             value = serialize(blockInfo);
@@ -220,7 +246,7 @@ public class SnapshotJ extends RocksdbKVSource {
         return height;
     }
 
-    public static Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
+    public Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         synchronized (kryo) {
             try {
                 final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
@@ -233,7 +259,7 @@ public class SnapshotJ extends RocksdbKVSource {
         }
     }
 
-    public static byte[] serialize(final Object obj) throws SerializationException {
+    public byte[] serialize(final Object obj) throws SerializationException {
         synchronized (kryo) {
             try {
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -248,26 +274,8 @@ public class SnapshotJ extends RocksdbKVSource {
         }
     }
 
-    public void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo) {
-        blockInfo.setSnapshot(preBlockInfo.isSnapshot());
-        blockInfo.setSnapshotInfo(preBlockInfo.getSnapshotInfo());
-        blockInfo.setFee(preBlockInfo.getFee());
-        blockInfo.setHash(preBlockInfo.getHash());
-        blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
-        blockInfo.setHashlow(preBlockInfo.getHashlow());
-        blockInfo.setFlags(preBlockInfo.getFlags());
-        blockInfo.setHeight(preBlockInfo.getHeight());
-        blockInfo.setMaxDiffLink(preBlockInfo.getMaxDiffLink());
-        blockInfo.setRef(preBlockInfo.getRef());
-        blockInfo.setRemark(preBlockInfo.getRemark());
-        blockInfo.setTimestamp(preBlockInfo.getTimestamp());
-        blockInfo.setType(preBlockInfo.getType());
-    }
-
-    public static void kryoRegister() {
+    private void kryoRegister() {
         kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-//        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
@@ -277,4 +285,5 @@ public class SnapshotJ extends RocksdbKVSource {
         kryo.register(UInt64.class);
         kryo.register(PreBlockInfo.class);
     }
+
 }

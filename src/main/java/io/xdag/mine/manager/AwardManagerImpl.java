@@ -31,26 +31,6 @@ import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
@@ -68,8 +48,26 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.hyperledger.besu.crypto.KeyPair;
 
 
 @Slf4j

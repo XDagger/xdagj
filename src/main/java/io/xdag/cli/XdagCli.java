@@ -26,8 +26,22 @@ package io.xdag.cli;
 
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
+import io.xdag.Kernel;
+import io.xdag.Launcher;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.MnemonicUtils;
+import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.crypto.Sign;
+import io.xdag.db.SnapshotStore;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.db.rocksdb.SnapshotStoreImpl;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagTime;
 import java.io.Console;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -36,7 +50,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -45,26 +58,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
-
-import io.xdag.Kernel;
-import io.xdag.Launcher;
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.MainnetConfig;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.db.SnapshotChainStore;
-import io.xdag.db.SnapshotJ;
-import io.xdag.db.rocksdb.DatabaseFactory;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.rocksdb.SnapshotChainStoreImpl;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
 
 public class XdagCli extends Launcher {
 
@@ -124,12 +117,6 @@ public class XdagCli extends Launcher {
                 .hasArg(true).optionalArg(false).argName("filename").type(String.class)
                 .build();
         addOption(convertOldWalletOption);
-
-        Option loadSnapshotOption = Option.builder()
-                .longOpt(XdagOption.LOAD_SNAPSHOT.toString()).desc("load snapshot")
-                .hasArg(true).optionalArg(false).argName("filename").type(String.class)
-                .build();
-        addOption(loadSnapshotOption);
 
         Option bootSnapshotOption = Option.builder()
                 .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
@@ -202,9 +189,6 @@ public class XdagCli extends Launcher {
             importPrivateKey(cmd.getOptionValue(XdagOption.IMPORT_PRIVATE_KEY.toString()).trim());
         } else if (cmd.hasOption(XdagOption.IMPORT_MNEMONIC.toString())) {
             importMnemonic(cmd.getOptionValue(XdagOption.IMPORT_MNEMONIC.toString()).trim());
-        } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
-            File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
-            loadSnapshot(file);
         } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
             boolean convertUInt = false;
             String action = cmd.getOptionValue(XdagOption.MAKE_SNAPSHOT.toString());
@@ -405,21 +389,6 @@ public class XdagCli extends Launcher {
         return true;
     }
 
-    // snapshot load
-    protected void loadSnapshot(File file) {
-        Config config = getConfig();
-        DatabaseFactory dbFactory = new RocksdbFactory(config);
-        SnapshotChainStore snapshotChainStore = new SnapshotChainStoreImpl(dbFactory.getDB(DatabaseName.SNAPSHOT));
-        snapshotChainStore.reset();
-        boolean mainLag = config instanceof MainnetConfig;
-        Wallet wallet = loadAndUnlockWallet();
-        long start = System.currentTimeMillis();
-        boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag, wallet.getAccounts());
-        long end = System.currentTimeMillis();
-        System.out.println("load res: " + res);
-        System.out.println("time: " + (end - start) / 1000 + "s");
-    }
-
     public Wallet loadWallet() {
         return new Wallet(getConfig());
     }
@@ -536,18 +505,17 @@ public class XdagCli extends Launcher {
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());
         blockSource.setConfig(getConfig());
         blockSource.init();
-        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOTJ");
+        RocksdbKVSource snapshotSource = new RocksdbKVSource(DatabaseName.SNAPSHOT.toString());
         snapshotSource.setConfig(getConfig());
         snapshotSource.init();
-        SnapshotJ index = new SnapshotJ(DatabaseName.INDEX.toString());
-        index.setConfig(getConfig());
-        index.init();
-        index.makeSnapshot(blockSource, snapshotSource, b);
+        SnapshotStore snapshotStore = new SnapshotStoreImpl(snapshotSource);
+
+        snapshotStore.makeSnapshot(blockSource, b);
 
         long end = System.currentTimeMillis();
         System.out.println("make snapshot done");
         System.out.println("time：" + (end - start) + "ms");
-        System.out.println("snapshot height: " + index.getHeight());
-        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(index.getNextTime()) + 1));
+        System.out.println("snapshot height: " + snapshotStore.getHeight());
+        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(snapshotStore.getNextTime()) + 1));
     }
 }

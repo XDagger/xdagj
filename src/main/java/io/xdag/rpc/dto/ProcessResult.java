@@ -24,7 +24,6 @@
 package io.xdag.rpc.dto;
 
 import java.util.List;
-
 import lombok.Builder;
 import lombok.Data;
 

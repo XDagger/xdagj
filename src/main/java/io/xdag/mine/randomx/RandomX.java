@@ -34,19 +34,10 @@ import static io.xdag.config.RandomXConstants.XDAG_RANDOMX;
 import static io.xdag.utils.BytesUtils.bytesToPointer;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
 import com.sun.jna.Memory;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
-
 import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
@@ -56,8 +47,14 @@ import io.xdag.crypto.randomx.RandomXFlag;
 import io.xdag.crypto.randomx.RandomXJNA;
 import io.xdag.crypto.randomx.RandomXUtils;
 import io.xdag.utils.XdagTime;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 
 @Slf4j

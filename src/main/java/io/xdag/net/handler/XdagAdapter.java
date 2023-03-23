@@ -24,11 +24,10 @@
 
 package io.xdag.net.handler;
 
-import org.apache.tuweni.bytes.MutableBytes32;
-
 import io.xdag.core.Block;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 public class XdagAdapter implements Xdag {
 

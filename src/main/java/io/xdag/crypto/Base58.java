@@ -23,9 +23,8 @@
  */
 package io.xdag.crypto;
 
-import java.util.Arrays;
-
 import io.xdag.utils.exception.AddressFormatException;
+import java.util.Arrays;
 
 public class Base58 {
     public static final char[] ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray();

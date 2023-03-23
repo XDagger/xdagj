@@ -27,6 +27,11 @@ package io.xdag.consensus;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.config.Constants.REQUEST_WAIT;
 
+import com.google.common.util.concurrent.SettableFuture;
+import io.xdag.Kernel;
+import io.xdag.db.BlockStore;
+import io.xdag.net.Channel;
+import io.xdag.net.manager.XdagChannelManager;
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,21 +42,13 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
-
-import com.google.common.util.concurrent.SettableFuture;
-
-import io.xdag.Kernel;
-import io.xdag.db.BlockStore;
-import io.xdag.net.Channel;
-import io.xdag.net.manager.XdagChannelManager;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagSync {

@@ -24,9 +24,8 @@
 
 package io.xdag.config.spec;
 
-import java.util.List;
-
 import io.xdag.rpc.modules.ModuleDescription;
+import java.util.List;
 
 public interface RPCSpec {
 

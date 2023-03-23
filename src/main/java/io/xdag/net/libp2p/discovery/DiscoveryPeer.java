@@ -24,14 +24,11 @@
 
 package io.xdag.net.libp2p.discovery;
 
+import com.google.common.base.MoreObjects;
 import java.net.InetSocketAddress;
 import java.util.Objects;
-
-import org.apache.tuweni.bytes.Bytes;
-
-import com.google.common.base.MoreObjects;
-
 import lombok.Getter;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * @author wawa

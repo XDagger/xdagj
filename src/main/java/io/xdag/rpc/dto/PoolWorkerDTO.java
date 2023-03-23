@@ -25,7 +25,6 @@ package io.xdag.rpc.dto;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-
 import lombok.Builder;
 import lombok.Data;
 

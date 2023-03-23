@@ -25,7 +25,6 @@
 package io.xdag.mine.randomx;
 
 import com.sun.jna.ptr.PointerByReference;
-
 import lombok.Getter;
 import lombok.Setter;
 

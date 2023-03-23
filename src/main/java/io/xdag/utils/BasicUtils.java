@@ -28,6 +28,9 @@ import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
+import com.google.common.primitives.UnsignedLong;
+import io.xdag.crypto.Keys;
+import io.xdag.utils.exception.XdagOverFlowException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,18 +40,12 @@ import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
-
-import com.google.common.primitives.UnsignedLong;
-
-import io.xdag.crypto.Keys;
-import io.xdag.utils.exception.XdagOverFlowException;
 
 public class BasicUtils {
 

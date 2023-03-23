@@ -27,7 +27,6 @@ package io.xdag.rpc.modules.xdag;
 import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
 
 import java.util.Arrays;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

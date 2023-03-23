@@ -23,13 +23,12 @@
  */
 package io.xdag.utils;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.apache.commons.lang3.SystemUtils;
 
 public final class NettyUtils {
 

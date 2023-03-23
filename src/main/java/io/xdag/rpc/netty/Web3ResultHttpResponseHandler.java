@@ -28,7 +28,6 @@ import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_JSON;
 
 import com.googlecode.jsonrpc4j.DefaultHttpStatusCodeProvider;
-
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

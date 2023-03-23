@@ -26,20 +26,18 @@ package io.xdag.net.libp2p;
 
 import static io.libp2p.crypto.keys.Secp256k1Kt.unmarshalSecp256k1PublicKey;
 
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Optional;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.ethereum.beacon.discovery.schema.EnrField;
-import org.ethereum.beacon.discovery.schema.NodeRecord;
-
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.PubKey;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.libp2p.peer.NodeId;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.ethereum.beacon.discovery.schema.EnrField;
+import org.ethereum.beacon.discovery.schema.NodeRecord;
 
 /**
  * @author wawa

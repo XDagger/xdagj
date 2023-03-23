@@ -24,14 +24,13 @@
 
 package io.xdag.net;
 
-import java.net.InetSocketAddress;
-
 import io.netty.channel.socket.SocketChannel;
 import io.xdag.Kernel;
 import io.xdag.core.BlockWrapper;
 import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.Getter;
 import lombok.Setter;
 

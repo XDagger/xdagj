@@ -46,15 +46,6 @@ import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
 import static io.xdag.utils.PubkeyAddressUtils.toBase58;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt64;
-
 import io.xdag.Kernel;
 import io.xdag.cli.Commands;
 import io.xdag.core.Address;
@@ -67,6 +58,13 @@ import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
 import io.xdag.utils.BasicUtils;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 
 public class XdagModuleChainBase implements XdagModuleChain {
 

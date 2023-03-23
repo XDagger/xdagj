@@ -24,8 +24,6 @@
 
 package io.xdag.net.handler;
 
-import java.math.BigInteger;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
@@ -38,6 +36,7 @@ import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.XdagMessageCodes;
+import java.math.BigInteger;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;

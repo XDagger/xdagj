@@ -27,11 +27,6 @@ package io.xdag.mine.miner;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-
-import org.apache.tuweni.bytes.Bytes32;
-
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.consensus.Task;
@@ -41,7 +36,10 @@ import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
+import java.net.InetSocketAddress;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 public class MinerCalculate {

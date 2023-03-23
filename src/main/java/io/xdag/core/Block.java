@@ -35,6 +35,10 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
 
+import io.xdag.config.Config;
+import io.xdag.crypto.Hash;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +49,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,14 +62,6 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
-
-import io.xdag.config.Config;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.BytesUtils;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter

@@ -26,18 +26,16 @@ package io.xdag.core;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 
+import io.xdag.utils.XdagTime;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Objects;
-
+import lombok.Data;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.Arrays;
 import org.xerial.snappy.Snappy;
-
-import io.xdag.utils.XdagTime;
-import lombok.Data;
 
 @Data
 public class SnapshotBalanceData {

@@ -47,9 +47,6 @@ public enum XdagOption {
     // Snapshot enable
     ENABLE_SNAPSHOT("enablesnapshot"),
 
-    // Snapshot load
-    LOAD_SNAPSHOT("loadsnapshot"),
-
     MAKE_SNAPSHOT("makesnapshot");
 
     private final String name;

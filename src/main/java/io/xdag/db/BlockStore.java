@@ -23,21 +23,19 @@
  */
 package io.xdag.db;
 
-import java.util.List;
-import java.util.function.Function;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.units.bigints.UInt64;
-
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.TxHistory;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
+import java.util.List;
+import java.util.function.Function;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.units.bigints.UInt64;
 
 public interface BlockStore {
 

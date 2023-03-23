@@ -26,15 +26,12 @@ package io.xdag.utils;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import com.google.common.collect.Lists;
+import io.xdag.db.BlockStore;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bouncycastle.util.encoders.Hex;
-
-import com.google.common.collect.Lists;
-
-import io.xdag.db.BlockStore;
 
 public class FileUtils {
 

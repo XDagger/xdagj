@@ -27,19 +27,17 @@ package io.xdag.crypto;
 import static io.xdag.crypto.Hash.hmacSha512;
 import static io.xdag.crypto.Hash.sha256hash160;
 
+import io.xdag.utils.Numeric;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
+import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
-
-import io.xdag.utils.Numeric;
-import lombok.Getter;
 
 /**
  * BIP-32 key pair.

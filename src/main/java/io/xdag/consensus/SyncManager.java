@@ -28,23 +28,7 @@ import static io.xdag.core.ImportResult.EXIST;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 
-import java.math.BigInteger;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes32;
-
 import com.google.common.collect.Queues;
-
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -60,9 +44,22 @@ import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.XdagTime;
+import java.math.BigInteger;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
 
 @Slf4j
 @Getter

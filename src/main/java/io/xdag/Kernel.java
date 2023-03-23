@@ -24,14 +24,6 @@
 
 package io.xdag;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.tuweni.bytes.Bytes;
-
 import io.libp2p.core.crypto.KEY_TYPE;
 import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
@@ -52,6 +44,7 @@ import io.xdag.crypto.Keys;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
+import io.xdag.db.SnapshotStore;
 import io.xdag.db.rocksdb.AddressStoreImpl;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
@@ -92,9 +85,15 @@ import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.XdagTime;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 
 @Slf4j
 @Getter
@@ -108,6 +107,8 @@ public class Kernel {
     private AddressStore addressStore;
     private BlockStore blockStore;
     private OrphanBlockStore orphanBlockStore;
+
+    private SnapshotStore SnapshotStore;
     private Blockchain blockchain;
     private NetDB netDB;
     private XdagClient client;

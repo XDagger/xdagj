@@ -24,7 +24,6 @@
 package io.xdag.core;
 
 import java.util.Arrays;
-
 import lombok.Data;
 
 @Data

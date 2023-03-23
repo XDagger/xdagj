@@ -26,7 +26,6 @@ package io.xdag.crypto;
 
 import java.math.BigInteger;
 import java.util.Arrays;
-
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;

@@ -26,7 +26,6 @@ package io.xdag.rpc.utils;
 
 import java.math.BigInteger;
 import java.util.regex.Pattern;
-
 import org.bouncycastle.util.encoders.Hex;
 
 public class TypeConverter {

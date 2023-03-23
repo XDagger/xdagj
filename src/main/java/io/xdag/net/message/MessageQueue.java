@@ -26,19 +26,17 @@ package io.xdag.net.message;
 
 import static io.xdag.config.Constants.SEND_PERIOD;
 
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.xdag.net.Channel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.xdag.net.Channel;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class MessageQueue {

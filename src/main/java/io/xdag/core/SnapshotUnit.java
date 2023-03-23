@@ -26,13 +26,11 @@ package io.xdag.core;
 import static io.xdag.utils.BasicUtils.hash2Address;
 
 import java.math.BigInteger;
-
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 @Data
 @Slf4j

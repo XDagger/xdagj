@@ -26,11 +26,6 @@ package io.xdag.net.handler;
 
 import static io.xdag.utils.BasicUtils.crc32Verify;
 
-import java.nio.ByteOrder;
-import java.util.List;
-
-import org.apache.tuweni.bytes.Bytes;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -41,9 +36,12 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BytesUtils;
+import java.nio.ByteOrder;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 
 @EqualsAndHashCode(callSuper = false)
 @Slf4j

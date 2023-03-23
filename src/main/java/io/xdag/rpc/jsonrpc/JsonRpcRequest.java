@@ -24,9 +24,8 @@
 
 package io.xdag.rpc.jsonrpc;
 
-import java.util.Objects;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Objects;
 
 public abstract class JsonRpcRequest<T extends Enum<T>> extends JsonRpcIdentifiableMessage {
 

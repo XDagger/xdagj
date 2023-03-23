@@ -24,13 +24,6 @@
 
 package io.xdag.net;
 
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ThreadFactory;
-
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -41,7 +34,12 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
 import io.xdag.net.handler.XdagChannelInitializer;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ThreadFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class XdagClient {

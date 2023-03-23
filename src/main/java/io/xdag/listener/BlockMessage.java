@@ -23,9 +23,8 @@
  */
 package io.xdag.listener;
 
-import org.apache.tuweni.bytes.Bytes;
-
 import io.xdag.config.Constants.MessageType;
+import org.apache.tuweni.bytes.Bytes;
 
 
 public class BlockMessage implements Message {

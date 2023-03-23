@@ -24,11 +24,6 @@
 
 package io.xdag.rpc.netty;
 
-import java.net.InetAddress;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -48,6 +43,9 @@ import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.xdag.rpc.cors.CorsConfiguration;
+import java.net.InetAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Web3HttpServer {
 

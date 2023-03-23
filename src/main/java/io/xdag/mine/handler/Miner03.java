@@ -26,12 +26,6 @@ package io.xdag.mine.handler;
 
 import static io.xdag.utils.BytesUtils.compareTo;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt64;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -53,7 +47,11 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.PubkeyAddressUtils;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Slf4j
 public class Miner03 extends SimpleChannelInboundHandler<Message> {

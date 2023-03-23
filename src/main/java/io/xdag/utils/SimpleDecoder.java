@@ -24,9 +24,8 @@
 
 package io.xdag.utils;
 
-import java.io.UnsupportedEncodingException;
-
 import io.xdag.utils.exception.SimpleCodecException;
+import java.io.UnsupportedEncodingException;
 
 public class SimpleDecoder {
 

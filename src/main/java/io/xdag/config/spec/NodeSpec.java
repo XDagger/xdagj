@@ -24,10 +24,9 @@
 
 package io.xdag.config.spec;
 
+import io.xdag.crypto.DnetKeys;
 import java.net.InetSocketAddress;
 import java.util.List;
-
-import io.xdag.crypto.DnetKeys;
 
 /**
  * The Node Specifications

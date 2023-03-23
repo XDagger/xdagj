@@ -24,13 +24,12 @@
 
 package io.xdag.mine.message;
 
-import org.apache.tuweni.bytes.MutableBytes;
-
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.XdagMessageCodes;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.MutableBytes;
 
 @Slf4j
 public class MinerMessageFactory implements MessageFactory {

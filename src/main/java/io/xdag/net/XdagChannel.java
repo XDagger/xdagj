@@ -24,8 +24,6 @@
 
 package io.xdag.net;
 
-import java.net.InetSocketAddress;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -44,6 +42,7 @@ import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.impl.Xdag03MessageFactory;
 import io.xdag.net.node.Node;
+import java.net.InetSocketAddress;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;

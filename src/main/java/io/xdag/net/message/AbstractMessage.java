@@ -29,20 +29,18 @@ import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 import static io.xdag.net.message.XdagMessageCodes.SUMS_REPLY;
 
+import io.xdag.core.XdagStats;
+import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.zip.CRC32;
-
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-
-import io.xdag.core.XdagStats;
-import io.xdag.utils.BytesUtils;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractMessage extends Message {

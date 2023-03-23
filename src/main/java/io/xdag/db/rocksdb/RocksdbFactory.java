@@ -24,11 +24,9 @@
 
 package io.xdag.db.rocksdb;
 
-import java.util.EnumMap;
-
-import org.apache.commons.lang3.StringUtils;
-
 import io.xdag.config.Config;
+import java.util.EnumMap;
+import org.apache.commons.lang3.StringUtils;
 
 public class RocksdbFactory implements DatabaseFactory {
 
