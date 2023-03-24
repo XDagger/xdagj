@@ -24,12 +24,15 @@
 
 package io.xdag.mine.manager;
 
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static java.lang.Math.E;
 
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.PoolConfig;
 import io.xdag.consensus.Task;
@@ -45,7 +48,6 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
-import io.xdag.wallet.Wallet;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;

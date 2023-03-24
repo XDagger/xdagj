@@ -24,7 +24,7 @@
 
 package io.xdag.cli;
 
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -45,19 +45,16 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
-import io.xdag.wallet.Wallet;
-import java.io.File;
+import io.xdag.Wallet;
+
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.tuweni.bytes.Bytes32;
-import org.assertj.core.util.Lists;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,7 +106,6 @@ public class XdagCliTest {
                     --help                            print help
                     --importmnemonic <mnemonic>       import HDWallet mnemonic
                     --importprivatekey <key>          import hex key
-                    --loadsnapshot <filename>         load snapshot
                     --makesnapshot <covertuint>       make snapshot
                     --password <password>             wallet password
                     --version                         show version

@@ -28,9 +28,10 @@ import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.PubkeyAddressUtils;
-import io.xdag.wallet.Wallet;
+import io.xdag.utils.WalletUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -555,7 +556,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         Character mask = '*';
         String line;
         do {
-            line = reader.readLine(io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT, mask);
+            line = reader.readLine(WalletUtils.WALLET_PASSWORD_PROMPT, mask);
         } while (StringUtils.isEmpty(line));
         return line;
     }

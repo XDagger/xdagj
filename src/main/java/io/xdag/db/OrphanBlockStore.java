@@ -21,15 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-//package io.xdag.rpc.modules.eth.subscribe;
-//
-//import com.fasterxml.jackson.annotation.JsonTypeInfo;
-//import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-//import io.netty.channel.Channel;
-//
-//@JsonDeserialize(using = EthSubscribeParamsDeserializer.class)
-//@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-//public interface EthSubscribeParams {
-//    SubscriptionId accept(EthSubscribeParamsVisitor visitor, Channel channel);
-//}
-//
+package io.xdag.db;
+
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import java.util.List;
+import org.bouncycastle.util.encoders.Hex;
+
+public interface OrphanBlockStore {
+
+    byte ORPHAN_PREFEX = 0x00;
+    /**
+     * size key
+     */
+    byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+
+    void init();
+
+    void reset();
+
+    List<Address> getOrphan(long num, long[] sendTime);
+
+    void deleteByHash(byte[] hashlow);
+
+    void addOrphan(Block block);
+
+    long getOrphanSize();
+
+}

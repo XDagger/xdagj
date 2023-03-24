@@ -39,6 +39,7 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.core.Address;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
@@ -47,7 +48,6 @@ import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.exception.XdagOverFlowException;
-import io.xdag.wallet.Wallet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

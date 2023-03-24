@@ -22,11 +22,12 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.db;
+package io.xdag.db.rocksdb;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
+import io.xdag.db.OrphanBlockStore;
 import io.xdag.utils.BytesUtils;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,17 +38,13 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
-public class OrphanPool {
+public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
-    public static final byte ORPHAN_PREFEX = 0x00;
-    /**
-     * size key
-     */
-    private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+
     // <hash,nexthash>
     private final KVSource<byte[], byte[]> orphanSource;
 
-    public OrphanPool(KVSource<byte[], byte[]> orphan) {
+    public OrphanBlockStoreImpl(KVSource<byte[], byte[]> orphan) {
         this.orphanSource = orphan;
     }
 

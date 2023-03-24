@@ -23,7 +23,6 @@
  */
 package io.xdag.mine.message;
 
-
 import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 
 import io.xdag.core.XdagField;

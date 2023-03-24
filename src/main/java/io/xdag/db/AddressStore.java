@@ -23,84 +23,26 @@
  */
 package io.xdag.db;
 
-import io.xdag.utils.BytesUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
 
-/**
- * @author Dcj_Cory
- * @date 2022/10/31 1:43 PM
- */
-@Slf4j
-public class AddressStore {
-    private static final int AddressSize = 20;
-    private final KVSource<byte[], byte[]> AddressSource;
-    public static final byte ADDRESS_SIZE = 0x10;
-    public static final byte AMOUNT_SUM = 0x20;
+public interface AddressStore {
 
-    //<addressHash,balance>
-    public AddressStore(KVSource<byte[], byte[]> addressSource) {
-        AddressSource = addressSource;
-    }
+    void init();
 
-    public void init() {
-        this.AddressSource.init();
-        if(AddressSource.get(new byte[]{ADDRESS_SIZE}) == null){
-            AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
-        }
-        if(AddressSource.get(new byte[]{AMOUNT_SUM}) == null){
-            AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
-        }
-    }
+    void reset();
 
-    public void reset() {
-        this.AddressSource.reset();
-        AddressSource.put(new byte[]{ADDRESS_SIZE}, BytesUtils.longToBytes(0,false));
-        AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
-    }
+    UInt64 getBalanceByAddress(byte[] Address);
 
-    public UInt64 getBalanceByAddress(byte[] Address){
-        byte[] data = AddressSource.get(Address);
-        if(data == null){
-            log.debug("This pubkey don't exist");
-            return UInt64.ZERO;
-        }else {
-            return UInt64.fromBytes(Bytes.wrap(data));
-        }
-    }
+    boolean addressIsExist(byte[] Address);
 
-    public boolean addressIsExist(byte[] Address){
-        return AddressSource.get(Address) != null;
-    }
+    void addAddress(byte[] Address);
 
-    public void addAddress(byte[] Address){
-        AddressSource.put(Address,UInt64.ZERO.toBytes().toArray());
-        long currentSize = BytesUtils.bytesToLong(AddressSource.get(new byte[]{ADDRESS_SIZE}),0,false);
-        AddressSource.put(new byte[] {ADDRESS_SIZE},BytesUtils.longToBytes(currentSize + 1,false));
-    }
+    UInt64 getAllBalance();
 
-    public UInt64 getAllBalance(){
-        return UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{AMOUNT_SUM})));
-    }
+    void updateAllBalance(UInt64 value);
 
-    public UInt64 getAddressSize(){
-        return UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{ADDRESS_SIZE})));
-    }
+    UInt64 getAddressSize();
 
-    public void updateAllBalance(UInt64 value){
-        AddressSource.put(new byte[]{AMOUNT_SUM},value.toBytes().toArray());
-    }
-    //TODO：计算上移到应用层
-    public void updateBalance(byte[] address,UInt64 value){
-        if(address.length != AddressSize){
-            log.debug("The Address type is wrong");
-            return;
-        }
-        if(AddressSource.get(address) == null){
-            log.debug("This address don't exist");
-            addAddress(address);
-        }
-        AddressSource.put(address,value.toBytes().toArray());
-    }
+    void updateBalance(byte[] address, UInt64 value);
+
 }

@@ -82,28 +82,6 @@ public class BigDecimalUtils {
         return b1.divide(b2, scale, RoundingMode.DOWN).doubleValue();
     }
 
-    /**
-     * 对一个double 提供精确到某位小数点的精确结果
-     *
-     * @param value 数字
-     * @param scale 要保留的小数点的后几位
-     * @return 四舍五入后的结果
-     */
-    public static double round(double value, int scale) {
-        if (scale < 0) {
-            throw new IllegalArgumentException("The scale must be a positive integer or zero");
-        }
-        BigDecimal b = BigDecimal.valueOf(value);
-        BigDecimal one = BigDecimal.ONE;
-        return b.divide(one, scale, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    public static long mul(long v1, double v2) {
-        BigDecimal b1 = BigDecimal.valueOf(v1);
-        BigDecimal b2 = BigDecimal.valueOf(v2);
-        return b1.multiply(b2).longValue();
-    }
-
     public static UInt64 mul(UInt64 v1, double v2) {
         BigDecimal b1 = BigDecimal.valueOf(v1.toLong());
         BigDecimal b2 = BigDecimal.valueOf(v2);
