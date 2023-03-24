@@ -285,40 +285,6 @@ public class BytesUtils {
         return Numeric.toBigInt(data).doubleValue();
     }
 
-    public static byte[] stripLeadingZeroes(byte[] data) {
-        return stripLeadingZeroes(data, ZERO_BYTE_ARRAY);
-    }
-
-    public static byte[] stripLeadingZeroes(byte[] data, byte[] valueForZero) {
-        if (data == null) {
-            return null;
-        }
-
-        final int firstNonZero = firstNonZeroByte(data);
-        switch (firstNonZero) {
-        case -1 -> {
-            return valueForZero;
-        }
-        case 0 -> {
-            return data;
-        }
-        default -> {
-            byte[] result = new byte[data.length - firstNonZero];
-            System.arraycopy(data, firstNonZero, result, 0, data.length - firstNonZero);
-            return result;
-        }
-        }
-    }
-
-    public static int firstNonZeroByte(byte[] data) {
-        for (int i = 0; i < data.length; ++i) {
-            if (data[i] != 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     public static boolean equalBytes(byte[] b1, byte[] b2) {
         return b1.length == b2.length && compareTo(b1, 0, b1.length, b2, 0, b2.length) == 0;
     }

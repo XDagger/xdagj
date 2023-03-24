@@ -53,36 +53,9 @@ import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
 import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
 import static io.xdag.utils.PubkeyAddressUtils.toBase58;
 
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
-import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import io.xdag.Kernel;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
@@ -101,8 +74,32 @@ import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
 public class Commands {
@@ -171,17 +168,12 @@ public class Commands {
     public String account(int num) {
         // account in memory, do not store in rocksdb, do not show in terminal
         StringBuilder str = new StringBuilder();
-
         List<KeyPair> list = kernel.getWallet().getAccounts();
-
-//        List<Map.Entry<Block, Integer>> list = new ArrayList<>(ours.entrySet());
 
         // 按balance降序排序，按key index降序排序
         list.sort((o1, o2) -> {
             int compareResult = compareAmountTo(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o2)),
                     kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o1)));
-//            int compareResult = long2UnsignedLong(o2.getKey().getInfo().getAmount()).compareTo(long2UnsignedLong(o1.getKey().getInfo().getAmount()));
-            // TODO
             if (compareResult >= 0) {
                 return 1;
             } else {
@@ -218,8 +210,7 @@ public class Commands {
             for (KeyPair k : list) {
                 ourBalance = ourBalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
             }
-            return "Balance: " + String.format("%.9f", amount2xdag(ourBalance))
-                    + " XDAG";
+            return String.format("Balance: %.9f XDAG", amount2xdag(ourBalance));
         } else {
             Bytes32 hash;
             MutableBytes32 key = MutableBytes32.create();
@@ -227,7 +218,7 @@ public class Commands {
                 hash = pubAddress2Hash(address);
                 key.set(8, Objects.requireNonNull(hash).slice(8, 20));
                 UInt64 balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address));
-                return "Account balance: " + String.format("%.9f", amount2xdag(balance)) + " XDAG";
+                return String.format("Account balance: %.9f XDAG", amount2xdag(balance));
             } else {
                 if (StringUtils.length(address) == 32) {
                     hash = address2Hash(address);
@@ -236,7 +227,7 @@ public class Commands {
                 }
                 key.set(8, Objects.requireNonNull(hash).slice(8, 24));
                 Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-                return "Block balance: " + String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
+                return String.format("Block balance: %.9f XDAG", amount2xdag(block.getInfo().getAmount()));
             }
 
         }
@@ -769,7 +760,6 @@ public class Commands {
                 return false;
             }
             if (compareAmountTo(UInt64.ZERO, block.getInfo().getAmount()) < 0) {
-//            if (remain.get() <= block.getInfo().getAmount()) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(), false),
                         kernel.getWallet().getAccounts().get(index));
                 return false;
@@ -780,14 +770,12 @@ public class Commands {
         // 生成多个交易块
         List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark);
         for (BlockWrapper blockWrapper : txs) {
-
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
                 str.append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow())).append("\n");
             }
         }
-
         return str.append("}, it will take several minutes to complete the transaction.").toString();
     }
 }

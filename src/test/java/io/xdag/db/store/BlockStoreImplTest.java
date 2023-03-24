@@ -38,9 +38,10 @@ import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagStats;
 import io.xdag.crypto.Keys;
 import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.KVSource;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.KVSource;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -54,7 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class BlockStoreTest {
+public class BlockStoreImplTest {
 
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
@@ -79,25 +80,25 @@ public class BlockStoreTest {
 
     @Test
     public void testNewBlockStore() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         assertNotNull(bs);
     }
 
     @Test
     public void testInit() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
     }
 
     @Test
     public void testReset() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.reset();
     }
 
     @Test
     public void testSaveXdagStatus() {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         XdagStats stats = new XdagStats();
         stats.setNmain(1);
@@ -109,7 +110,7 @@ public class BlockStoreTest {
     @Test
     public void testSaveBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource,txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         KeyPair key = Keys.createEcKeyPair();
@@ -123,7 +124,7 @@ public class BlockStoreTest {
     @Test
     public void testSaveOurBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         KeyPair key = Keys.createEcKeyPair();
@@ -136,7 +137,7 @@ public class BlockStoreTest {
     @Test
     public void testRemoveOurBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = System.currentTimeMillis();
         KeyPair key = Keys.createEcKeyPair();
@@ -151,7 +152,7 @@ public class BlockStoreTest {
     @Test
     public void testSaveBlockSums()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        BlockStore bs = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         bs.init();
         long time = 1602951025307L;
         KeyPair key = Keys.createEcKeyPair();
@@ -164,7 +165,7 @@ public class BlockStoreTest {
 
     @Test
     public void getBlockByTimeTest() {
-        BlockStore blockStore = new BlockStore(indexSource, timeSource, blockSource, txHistory);
+        BlockStore blockStore = new BlockStoreImpl(indexSource, timeSource, blockSource, txHistory);
         blockStore.init();
 
         // 创建区块

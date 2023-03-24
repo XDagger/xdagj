@@ -22,9 +22,33 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.rpc.dto;
+package io.xdag.db.rocksdb;
 
-// TODO: return transaction receipt
-public class TransactionReceiptDTO {
+public enum DatabaseName {
 
+    /**
+     * Block index.
+     */
+    INDEX,
+
+    /**
+     * Block raw data.
+     */
+    BLOCK,
+
+    /**
+     * Time related block.
+     */
+    TIME,
+
+    TXHISTORY,
+
+    /**
+     * Orphan block index
+     */
+    ORPHANIND,
+
+    SNAPSHOT,
+
+    ADDRESS
 }

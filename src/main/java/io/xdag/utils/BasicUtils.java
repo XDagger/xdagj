@@ -31,14 +31,10 @@ import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -110,12 +106,6 @@ public class BasicUtils {
         return bytes.toArray();
     }
 
-    public static byte[] getHashlowByHash(byte[] hash) {
-        byte[] hashLow = new byte[32];
-        System.arraycopy(hash, 8, hashLow, 8, 24);
-        return hashLow;
-    }
-
     public static UInt64 xdag2amount(double input) {
         if (input < 0) {
             throw new XdagOverFlowException();
@@ -180,38 +170,6 @@ public class BasicUtils {
         return Math.exp(logDiff) * Math.pow(2, -58) * (0.65);
     }
 
-    /**
-     * @param number should be in form '0x34fabd34....'
-     * @return String
-     */
-    public static BigInteger unifiedNumericToBigInteger(String number) {
-
-        boolean match = Pattern.matches("0[xX][0-9a-fA-F]+", number);
-        if (!match) {
-            return (new BigInteger(number));
-        } else {
-            number = number.substring(2);
-            number = number.length() % 2 != 0 ? "0".concat(number) : number;
-            byte[] numberBytes = Bytes.fromHexString(number).toArray();
-            return (new BigInteger(1, numberBytes));
-        }
-    }
-
-    public static byte[] readDnetDat(File file) throws IOException {
-        FileInputStream inputStream = new FileInputStream(file);
-        byte[] buffer = new byte[2048];
-        try {
-            while (true) {
-                int len = inputStream.read(buffer);
-                if (len == -1) {
-                    break;
-                }
-            }
-        } finally {
-            inputStream.close();
-        }
-        return buffer;
-    }
     public static double xdagHashRate(BigInteger[] diffs){
         double sum = 0;
         for (int i = 0; i < HASH_RATE_LAST_MAX_TIME; i++) {

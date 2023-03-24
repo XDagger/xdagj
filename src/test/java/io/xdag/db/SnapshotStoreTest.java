@@ -27,16 +27,14 @@ import static io.xdag.BlockBuilder.generateAddressBlock;
 import static io.xdag.BlockBuilder.generateExtraBlock;
 import static io.xdag.BlockBuilder.generateNewTransactionBlock;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
+import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
@@ -52,13 +50,19 @@ import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
+import io.xdag.Wallet;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -66,7 +70,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
+
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -79,7 +83,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 @Slf4j
-public class SnapshotJTest {
+public class SnapshotStoreTest {
 
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();
@@ -106,7 +110,10 @@ public class SnapshotJTest {
     MutableBytes32 address3;
     MutableBytes32 address4;
     List<Block> extraBlockList = Lists.newLinkedList();
-    SnapshotJ snapshotSource;
+    SnapshotStoreImpl snapshotStore;
+
+    RocksdbKVSource snapshotSource;
+
     File backup;
 
     XdagTopStatus topStatus;
@@ -134,25 +141,26 @@ public class SnapshotJTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStore blockStore = new BlockStore(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
-
         blockStore.reset();
-        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+
+        AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
-        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore.reset();
 
-        snapshotSource = new SnapshotJ("SNAPSHOTJ");
-        snapshotSource.setConfig(snapshotConfig);
-        snapshotSource.reset();
+        snapshotSource =  (RocksdbKVSource)dbFactory.getDB(DatabaseName.SNAPSHOT);
+        snapshotStore = new SnapshotStoreImpl(snapshotSource);
+        snapshotStore.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setOrphanPool(orphanPool);
+        kernel.setOrphanBlockStore(orphanBlockStore);
+        kernel.setAddressStore(addressStore);
         kernel.setWallet(wallet);
 
         RandomX nativeRandomX = new RandomX(config);
@@ -169,14 +177,14 @@ public class SnapshotJTest {
     @Test
     public void testMakeSnapshot() throws Exception {
         makeSnapshot();
-        BlockInfo blockInfo1 = (BlockInfo) SnapshotJ.deserialize(
+        BlockInfo blockInfo1 = (BlockInfo) snapshotStore.deserialize(
                 snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address1.toArray())), BlockInfo.class);
-        BlockInfo blockInfo2 = (BlockInfo) SnapshotJ.deserialize(
+        BlockInfo blockInfo2 = (BlockInfo) snapshotStore.deserialize(
                 snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address2.toArray())), BlockInfo.class);
 
-        BlockInfo blockInfo3 = (BlockInfo) SnapshotJ.deserialize(
+        BlockInfo blockInfo3 = (BlockInfo) snapshotStore.deserialize(
                 snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address3.toArray())), BlockInfo.class);
-        BlockInfo blockInfo4 = (BlockInfo) SnapshotJ.deserialize(
+        BlockInfo blockInfo4 = (BlockInfo) snapshotStore.deserialize(
                 snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address4.toArray())), BlockInfo.class);
 
         //Compare balances
@@ -197,27 +205,27 @@ public class SnapshotJTest {
     public void testSaveSnapshotToIndex() throws Exception {
         makeSnapshot();
         RocksdbFactory dbFactory = new RocksdbFactory(snapshotConfig);
-        BlockStore blockStore = new BlockStore(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
         blockStore.reset();
-        AddressStore addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
         List<KeyPair> keys = new ArrayList<>();
         keys.add(poolKey);
 
-        snapshotSource.saveSnapshotToIndex(blockStore, keys,0);
+        snapshotStore.saveSnapshotToIndex(blockStore, keys,0);
 
         //Verify the total balance of the current account
-        assertEquals("254976.0", String.valueOf(BasicUtils.amount2xdag(snapshotSource.getOurBalance())));
+        assertEquals("254976.0", String.valueOf(BasicUtils.amount2xdag(snapshotStore.getOurBalance())));
         //Verify height
         assertEquals(249,height);
 
         XdagStats xdagStats = new XdagStats();
-        xdagStats.balance = UInt64.valueOf(snapshotSource.getOurBalance());
+        xdagStats.balance = UInt64.valueOf(snapshotStore.getOurBalance());
         xdagStats.setTotalnmain(height);
         xdagStats.setNmain(height);
 
@@ -227,24 +235,21 @@ public class SnapshotJTest {
     }
 
     public void makeSnapshot() throws IOException {
-
         dataConfig.getNodeSpec().setStoreDir(backup.getAbsolutePath());
         dataConfig.getNodeSpec().setStoreBackupDir(root2.newFolder().getAbsolutePath());
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.BLOCK.toString());
         blockSource.setConfig(dataConfig);
         blockSource.init();
 
-        SnapshotJ index = new SnapshotJ(DatabaseName.INDEX.toString());
-        index.setConfig(dataConfig);
-        index.init();
-
-        snapshotSource = new SnapshotJ("SNAPSHOTJ");
+        RocksdbKVSource snapshotSource = new RocksdbKVSource(DatabaseName.SNAPSHOT.toString());
         snapshotSource.setConfig(dataConfig);
         snapshotSource.init();
-        boolean b = false;
-        index.makeSnapshot(blockSource, snapshotSource, b);
 
-        height = index.getHeight();
+        SnapshotStore snapshotStore = new SnapshotStoreImpl(snapshotSource);
+        snapshotStore.init();
+
+        snapshotStore.makeSnapshot(blockSource, false);
+        height = snapshotStore.getHeight();
     }
 
     public void createBlockchain() {
@@ -256,8 +261,6 @@ public class SnapshotJTest {
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
 
         MockBlockchain blockchain = (MockBlockchain) kernel.getBlockchain();
-
-
 
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -387,11 +390,6 @@ public class SnapshotJTest {
 
         public MockBlockchain(Kernel kernel) {
             super(kernel);
-        }
-
-        @Override
-        public void initSnapshot() {
-
         }
 
         @Override

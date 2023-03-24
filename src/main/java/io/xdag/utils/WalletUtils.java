@@ -22,10 +22,11 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.wallet;
+package io.xdag.utils;
 
 import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
 
+import io.xdag.Wallet;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.MnemonicUtils;
 import lombok.extern.slf4j.Slf4j;

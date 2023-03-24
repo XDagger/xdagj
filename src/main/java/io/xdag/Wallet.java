@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.wallet;
+package io.xdag;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -44,6 +44,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SystemUtil;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;

@@ -21,28 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-//package io.xdag.rpc.modules.eth.subscribe;
-//
-//import com.fasterxml.jackson.annotation.JsonCreator;
-//import com.fasterxml.jackson.annotation.JsonFormat;
-//import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-//
-//import java.util.Objects;
-//
-//@JsonFormat(shape=JsonFormat.Shape.ARRAY)
-//@JsonPropertyOrder({"subscriptionId"})
-//public class EthUnsubscribeParams {
-//
-//    private final SubscriptionId subscriptionId;
-//
-//    @JsonCreator
-//    public EthUnsubscribeParams(
-//            @JsonProperty("subscriptionId") SubscriptionId subscriptionId) {
-//        this.subscriptionId = Objects.requireNonNull(subscriptionId);
-//    }
-//
-//    public SubscriptionId getSubscriptionId() {
-//        return subscriptionId;
-//    }
-//}
+package io.xdag.db;
+
+import io.xdag.core.BlockInfo;
+import io.xdag.core.PreBlockInfo;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import java.util.List;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.rocksdb.RocksIterator;
+
+public interface SnapshotStore {
+
+    void init();
+
+    void reset();
+
+    void makeSnapshot(RocksdbKVSource blockSource, boolean b);
+
+    void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime);
+
+    void save(RocksIterator iter, BlockInfo blockInfo);
+
+    void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo);
+
+    long getOurBalance();
+
+    long getNextTime();
+
+    long getHeight();
+
+}

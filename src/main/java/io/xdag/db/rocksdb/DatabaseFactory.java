@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.db;
+package io.xdag.db.rocksdb;
 
 public interface DatabaseFactory {
 

@@ -43,7 +43,6 @@ import io.xdag.mine.message.NewTaskMessage;
 import io.xdag.mine.message.TaskShareMessage;
 import io.xdag.mine.message.WorkerNameMessage;
 import io.xdag.mine.miner.Miner;
-import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BasicUtils;

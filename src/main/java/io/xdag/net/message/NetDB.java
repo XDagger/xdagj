@@ -26,18 +26,16 @@ package io.xdag.net.message;
 
 import static io.xdag.utils.BytesUtils.isFullZero;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import io.xdag.net.node.Node;
+import io.xdag.utils.BytesUtils;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
-import io.xdag.net.node.Node;
-import io.xdag.utils.BytesUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

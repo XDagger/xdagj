@@ -43,9 +43,13 @@ import io.xdag.core.XdagStats;
 import io.xdag.crypto.Keys;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.OrphanPool;
+import io.xdag.db.OrphanBlockStore;
+import io.xdag.db.SnapshotStore;
+import io.xdag.db.rocksdb.AddressStoreImpl;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
@@ -81,7 +85,6 @@ import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
@@ -103,7 +106,9 @@ public class Kernel {
     private DatabaseFactory dbFactory;
     private AddressStore addressStore;
     private BlockStore blockStore;
-    private OrphanPool orphanPool;
+    private OrphanBlockStore orphanBlockStore;
+
+    private SnapshotStore SnapshotStore;
     private Blockchain blockchain;
     private NetDB netDB;
     private XdagClient client;
@@ -189,7 +194,7 @@ public class Kernel {
         log.info("Wallet init.");
 
         dbFactory = new RocksdbFactory(this.config);
-        blockStore = new BlockStore(
+        blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TIME),
@@ -197,13 +202,13 @@ public class Kernel {
         log.info("Block Store init.");
         blockStore.init();
 
-        addressStore = new AddressStore(dbFactory.getDB(DatabaseName.ADDRESS));
+        addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.init();
         log.info("Address Store init");
 
-        orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");
-        orphanPool.init();
+        orphanBlockStore.init();
 
         // ====================================
         // netstatus netdb init
@@ -226,7 +231,7 @@ public class Kernel {
         XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
-            firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
+            firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
             poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
             firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
             firstBlock.signOut(wallet.getDefKey());
@@ -236,7 +241,7 @@ public class Kernel {
             }
             blockchain.tryToConnect(firstBlock);
         } else {
-            firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
+            firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
             poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
         }
         log.info("Blockchain init");

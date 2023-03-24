@@ -40,13 +40,15 @@ import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.OrphanPool;
+import io.xdag.db.OrphanBlockStore;
+import io.xdag.db.rocksdb.BlockStoreImpl;
+import io.xdag.db.rocksdb.DatabaseFactory;
+import io.xdag.db.rocksdb.DatabaseName;
+import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
+import io.xdag.Wallet;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;
@@ -90,18 +92,18 @@ public class RewardTest {
         kernel = new Kernel(config);
         dbFactory = new RocksdbFactory(config);
 
-        BlockStore blockStore = new BlockStore(
+        BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
                 dbFactory.getDB(DatabaseName.BLOCK),
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanPool orphanPool = new OrphanPool(dbFactory.getDB(DatabaseName.ORPHANIND));
-        orphanPool.reset();
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);
-        kernel.setOrphanPool(orphanPool);
+        kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setWallet(wallet);
     }
 
