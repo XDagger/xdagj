@@ -168,17 +168,12 @@ public class Commands {
     public String account(int num) {
         // account in memory, do not store in rocksdb, do not show in terminal
         StringBuilder str = new StringBuilder();
-
         List<KeyPair> list = kernel.getWallet().getAccounts();
-
-//        List<Map.Entry<Block, Integer>> list = new ArrayList<>(ours.entrySet());
 
         // 按balance降序排序，按key index降序排序
         list.sort((o1, o2) -> {
             int compareResult = compareAmountTo(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o2)),
                     kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o1)));
-//            int compareResult = long2UnsignedLong(o2.getKey().getInfo().getAmount()).compareTo(long2UnsignedLong(o1.getKey().getInfo().getAmount()));
-            // TODO
             if (compareResult >= 0) {
                 return 1;
             } else {
@@ -215,8 +210,7 @@ public class Commands {
             for (KeyPair k : list) {
                 ourBalance = ourBalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
             }
-            return "Balance: " + String.format("%.9f", amount2xdag(ourBalance))
-                    + " XDAG";
+            return String.format("Balance: %.9f XDAG", amount2xdag(ourBalance));
         } else {
             Bytes32 hash;
             MutableBytes32 key = MutableBytes32.create();
@@ -224,7 +218,7 @@ public class Commands {
                 hash = pubAddress2Hash(address);
                 key.set(8, Objects.requireNonNull(hash).slice(8, 20));
                 UInt64 balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address));
-                return "Account balance: " + String.format("%.9f", amount2xdag(balance)) + " XDAG";
+                return String.format("Account balance: %.9f XDAG", amount2xdag(balance));
             } else {
                 if (StringUtils.length(address) == 32) {
                     hash = address2Hash(address);
@@ -233,7 +227,7 @@ public class Commands {
                 }
                 key.set(8, Objects.requireNonNull(hash).slice(8, 24));
                 Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-                return "Block balance: " + String.format("%.9f", amount2xdag(block.getInfo().getAmount())) + " XDAG";
+                return String.format("Block balance: %.9f XDAG", amount2xdag(block.getInfo().getAmount()));
             }
 
         }
@@ -766,7 +760,6 @@ public class Commands {
                 return false;
             }
             if (compareAmountTo(UInt64.ZERO, block.getInfo().getAmount()) < 0) {
-//            if (remain.get() <= block.getInfo().getAmount()) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(), false),
                         kernel.getWallet().getAccounts().get(index));
                 return false;
@@ -777,14 +770,12 @@ public class Commands {
         // 生成多个交易块
         List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark);
         for (BlockWrapper blockWrapper : txs) {
-
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
                 kernel.getChannelMgr().sendNewBlock(blockWrapper);
                 str.append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow())).append("\n");
             }
         }
-
         return str.append("}, it will take several minutes to complete the transaction.").toString();
     }
 }

@@ -39,13 +39,13 @@ import org.apache.tuweni.units.bigints.UInt64;
 
 public interface BlockStore {
 
-    byte SETTING_STATS = 0x10;
-    byte TIME_HASH_INFO = 0x20;
-    byte HASH_BLOCK_INFO = 0x30;
-    byte SUMS_BLOCK_INFO = 0x40;
-    byte OURS_BLOCK_INFO = 0x50;
-    byte SETTING_TOP_STATUS = 0x60;
-    byte SNAPSHOT_BOOT = 0x70;
+    byte SETTING_STATS = (byte) 0x10;
+    byte TIME_HASH_INFO = (byte) 0x20;
+    byte HASH_BLOCK_INFO = (byte) 0x30;
+    byte SUMS_BLOCK_INFO = (byte) 0x40;
+    byte OURS_BLOCK_INFO = (byte) 0x50;
+    byte SETTING_TOP_STATUS = (byte) 0x60;
+    byte SNAPSHOT_BOOT = (byte) 0x70;
     byte BLOCK_HEIGHT = (byte) 0x80;
     byte SNAPSHOT_PRESEED = (byte) 0x90;
     byte TX_HISTORY = (byte) 0xa0;

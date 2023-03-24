@@ -231,7 +231,7 @@ public class Kernel {
         XdagStats xdagStats = blockchain.getXdagStats();
         // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
-            firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
+            firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
             poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
             firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
             firstBlock.signOut(wallet.getDefKey());
@@ -241,7 +241,7 @@ public class Kernel {
             }
             blockchain.tryToConnect(firstBlock);
         } else {
-            firstAccount = Keys.Pub2Byte(wallet.getDefKey().getPublicKey());
+            firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
             poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
         }
         log.info("Blockchain init");

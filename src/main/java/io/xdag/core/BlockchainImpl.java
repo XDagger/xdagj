@@ -1308,7 +1308,7 @@ public class BlockchainImpl implements Blockchain {
     private boolean verifyBlockSignature(Address in, List<SECPPublicKey> keys) {
         Bytes pubHash = in.getAddress().mutableCopy().slice(8,20);
         for (SECPPublicKey key : keys) {
-            if(Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return true;
+            if(Arrays.areEqual(pubHash.toArray(),Keys.toBytesAddress(key))) return true;
         }
         return false;
     }

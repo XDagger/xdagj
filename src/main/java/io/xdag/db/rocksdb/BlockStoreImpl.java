@@ -91,32 +91,20 @@ public class BlockStoreImpl implements BlockStore {
     public BlockStoreImpl(
             KVSource<byte[], byte[]> index,
             KVSource<byte[], byte[]> time,
-            KVSource<byte[], byte[]> block) {
-        this.indexSource = index;
-        this.timeSource = time;
-        this.blockSource = block;
-        this.txHistorySource = null;
-        this.kryo = new Kryo();
-        kryoRegister();
-    }
-
-    public BlockStoreImpl(
-            KVSource<byte[], byte[]> index,
-            KVSource<byte[], byte[]> time,
             KVSource<byte[], byte[]> block,
             KVSource<byte[], byte[]> txHistory) {
         this.indexSource = index;
         this.timeSource = time;
         this.blockSource = block;
-        this.kryo = new Kryo();
         this.txHistorySource = txHistory;
+
+        this.kryo = new Kryo();
         kryoRegister();
     }
 
     private void kryoRegister() {
         kryo.setReferences(false);
         kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-//        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
 
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
