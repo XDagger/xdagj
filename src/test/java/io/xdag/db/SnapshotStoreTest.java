@@ -245,10 +245,14 @@ public class SnapshotStoreTest {
         snapshotSource.setConfig(dataConfig);
         snapshotSource.init();
 
+        RocksdbKVSource indexSource = new RocksdbKVSource(DatabaseName.INDEX.toString());
+        indexSource.setConfig(dataConfig);
+        indexSource.init();
+
         SnapshotStore snapshotStore = new SnapshotStoreImpl(snapshotSource);
         snapshotStore.init();
 
-        snapshotStore.makeSnapshot(blockSource, false);
+        snapshotStore.makeSnapshot(blockSource, indexSource,false);
         height = snapshotStore.getHeight();
     }
 
