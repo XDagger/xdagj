@@ -27,6 +27,9 @@ import org.apache.tuweni.units.bigints.UInt64;
 
 public interface AddressStore {
 
+    byte ADDRESS_SIZE = (byte) 0x10;
+    byte AMOUNT_SUM = (byte) 0x20;
+
     void init();
 
     void reset();
@@ -39,10 +42,16 @@ public interface AddressStore {
 
     UInt64 getAllBalance();
 
+    void saveAddressSize(byte[] addressSize);
+
+    void savaAmountSum(byte[] amountSum);
+
     void updateAllBalance(UInt64 value);
 
     UInt64 getAddressSize();
 
     void updateBalance(byte[] address, UInt64 value);
+
+    void saveAddress(byte[] address,byte[] balance);
 
 }
