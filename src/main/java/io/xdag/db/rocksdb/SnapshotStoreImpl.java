@@ -30,8 +30,8 @@ import static io.xdag.db.BlockStore.SUMS_BLOCK_INFO;
 import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
 import static io.xdag.db.AddressStore.ADDRESS_SIZE;
 import static io.xdag.db.AddressStore.AMOUNT_SUM;
-import static io.xdag.utils.BasicUtils.Hash2byte;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.ByteArrayToByte32.arrayToByte32;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -53,14 +53,12 @@ import io.xdag.db.BlockStore;
 import io.xdag.db.SnapshotStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.List;
 
-import io.xdag.utils.PubkeyAddressUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -253,7 +251,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         }
                     }
                     addressStore.saveAddress(address,balance);
-                    blockStore.saveTxHistory(ByteArrayToByte32.arrayToByte32(address),ByteArrayToByte32.arrayToByte32(address),
+                    blockStore.saveTxHistory(arrayToByte32(address), arrayToByte32(address),
                             XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
                             snapshotTime,0,"snapshot".getBytes());
                 }
