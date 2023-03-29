@@ -113,7 +113,7 @@ public class AddressStoreImpl implements AddressStore {
             log.debug("This address don't exist");
             addAddress(address);
         }
-        AddressSource.put(address,value.toBytes().toArray());
+        AddressSource.put((BytesUtils.merge(ADDRESS,address)),value.toBytes().toArray());
     }
 
     @Override
