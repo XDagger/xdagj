@@ -76,6 +76,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
 
     private final Kryo kryo;
     private long ourBalance;
+    private long allBalance;
     private long nextTime;
     private long height;
 
@@ -139,7 +140,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         blockInfo.setSnapshot(true);
                         save(iter, blockInfo);
                     } else { //Storage block data without public key and balance
-                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0) || (blockInfo.getFlags() & BI_MAIN) != 0) {
+                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0)) {
 //                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
                             blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(
@@ -216,6 +217,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         if ((flag & BI_OURS) != 0 && keyIndex > -1) {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
+                        allBalance += blockInfo.getAmount().toLong();
                         blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
                                 XdagField.FieldType.XDAG_FIELD_SNAPSHOT,blockInfo.getAmount(),
                                 snapshotTime,0,
@@ -235,11 +237,14 @@ public class SnapshotStoreImpl implements SnapshotStore {
     public void saveAddress(BlockStore blockStore,AddressStore addressStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
-                if(iter.key()[0] == ADDRESS_SIZE){
-                    addressStore.saveAddressSize(iter.value());
-                }else if(iter.key()[0] == AMOUNT_SUM){
-                    addressStore.savaAmountSum(iter.value());
-                }else {
+                if(iter.key().length < 20){
+                    if(iter.key()[0] == ADDRESS_SIZE){
+                        addressStore.saveAddressSize(iter.value());
+                    }else if(iter.key()[0] == AMOUNT_SUM){
+                        addressStore.savaAmountSum(iter.value());
+                        allBalance = addressStore.getAllBalance().toLong();
+                    }
+                } else {
                     byte[] address = iter.key();
                     byte[] balance = iter.value();
                     for (int i = 0; i < keys.size(); i++) {
@@ -273,6 +278,10 @@ public class SnapshotStoreImpl implements SnapshotStore {
         return this.ourBalance;
     }
 
+    public long getAllBalance(){
+        return this.allBalance;
+    }
+
     public long getNextTime() {
         return nextTime;
     }
@@ -280,6 +289,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
     public long getHeight() {
         return height;
     }
+
 
     public Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         synchronized (kryo) {

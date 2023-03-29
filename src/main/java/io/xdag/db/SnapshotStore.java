@@ -52,4 +52,6 @@ public interface SnapshotStore {
 
     long getHeight();
 
+    long getAllBalance();
+
 }
