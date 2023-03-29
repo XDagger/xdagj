@@ -73,6 +73,8 @@ import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -710,32 +712,41 @@ public class Commands {
 
         for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(wrap)) {
             Address address = txHistory.getAddress();
-            BlockInfo blockInfo = kernel.getBlockchain().getBlockByHash(address.getAddress(), false).getInfo();
-            if((blockInfo.flags&BI_APPLIED)==0){
-                continue;
-            }
-            if (address.getType().equals(XDAG_FIELD_INPUT)) {
-                tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                        amount2xdag(address.getAmount()),
-                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
-            } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
-                tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                        amount2xdag(address.getAmount()),
-                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
-            } else if (address.getType().equals(XDAG_FIELD_COINBASE) && (blockInfo.flags&BI_MAIN) != 0) {
-                tx.append(String.format(" coinbase: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                        amount2xdag(address.getAmount()),
-                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
-            } else {
-                tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+            Block block = kernel.getBlockchain().getBlockByHash(address.getAddress(), false);
+            if(block != null){
+                BlockInfo blockInfo = block.getInfo();
+                if((blockInfo.flags&BI_APPLIED)==0){
+                    continue;
+                }
+                if (address.getType().equals(XDAG_FIELD_INPUT)) {
+                    tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                            amount2xdag(address.getAmount()),
+                            FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+                } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
+                    tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                            amount2xdag(address.getAmount()),
+                            FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+                } else if (address.getType().equals(XDAG_FIELD_COINBASE) && (blockInfo.flags&BI_MAIN) != 0) {
+                    tx.append(String.format(" coinbase: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                            amount2xdag(address.getAmount()),
+                            FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+                } else {
+                    tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getAddress()),
+                            amount2xdag(address.getAmount()),
+                            FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
+                }
+            }else {
+                tx.append(String.format(" snapshot: %s           %.9f   %s%n", (PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(address.getAddress()))),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             }
         }
+
         return ov + "\n" + txHisFormat + "\n" + tx;
     }
 

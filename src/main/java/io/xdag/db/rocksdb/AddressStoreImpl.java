@@ -85,6 +85,16 @@ public class AddressStoreImpl implements AddressStore {
         return UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{AMOUNT_SUM})));
     }
 
+    @Override
+    public void saveAddressSize(byte[] addressSize) {
+        AddressSource.put(new byte[]{ADDRESS_SIZE},addressSize);
+    }
+
+    @Override
+    public void savaAmountSum(byte[] amountSum) {
+        AddressSource.put(new byte[]{AMOUNT_SUM},amountSum);
+    }
+
     public UInt64 getAddressSize(){
         return UInt64.fromBytes(Bytes.wrap(AddressSource.get(new byte[]{ADDRESS_SIZE})));
     }
@@ -92,6 +102,8 @@ public class AddressStoreImpl implements AddressStore {
     public void updateAllBalance(UInt64 value){
         AddressSource.put(new byte[]{AMOUNT_SUM},value.toBytes().toArray());
     }
+
+
     //TODO：计算上移到应用层
     public void updateBalance(byte[] address,UInt64 value){
         if(address.length != AddressSize){
@@ -104,4 +116,10 @@ public class AddressStoreImpl implements AddressStore {
         }
         AddressSource.put(address,value.toBytes().toArray());
     }
+
+    @Override
+    public void saveAddress(byte[] address, byte[] balance) {
+        AddressSource.put(address,balance);
+    }
+
 }

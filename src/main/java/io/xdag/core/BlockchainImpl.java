@@ -139,6 +139,7 @@ public class BlockchainImpl implements Blockchain {
     private ScheduledFuture<?> checkLoopFuture;
     private long snapshotHeight;
     private SnapshotStore snapshotStore;
+    private SnapshotStore snapshotAddressStore;
     private final XdagExtStats xdagExtStats;
     @Getter
     private byte[] preSeed;
@@ -178,7 +179,9 @@ public class BlockchainImpl implements Blockchain {
                 storedStats.setNwaitsync(0);
                 this.xdagStats = storedStats;
                 this.xdagStats.nextra = 0;
-                storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
+                if (getBlockByHeight(xdagStats.nmain) != null) {
+                    storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
+                }
             } else {
                 this.xdagStats = new XdagStats();
             }
@@ -201,8 +204,17 @@ public class BlockchainImpl implements Blockchain {
         long start = System.currentTimeMillis();
         System.out.println("init snapshot...");
 
-        RocksdbKVSource snapshotSource = (RocksdbKVSource)this.kernel.getDbFactory().getDB(DatabaseName.SNAPSHOT);
+        RocksdbKVSource snapshotAddressSource = new RocksdbKVSource("SNAPSHOT/ADDRESS");
+        snapshotAddressStore = new SnapshotStoreImpl(snapshotAddressSource);
+        snapshotAddressSource.setConfig(kernel.getConfig());
+        System.out.println("snapshot init");
+        snapshotAddressSource.init();
+        snapshotAddressStore.saveAddress(this.blockStore,this.addressStore,kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
+
+        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOT/BLOCKS");
         snapshotStore = new SnapshotStoreImpl(snapshotSource);
+        snapshotSource.setConfig(kernel.getConfig());
+        System.out.println("address init");
         snapshotStore.init();
         snapshotStore.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
