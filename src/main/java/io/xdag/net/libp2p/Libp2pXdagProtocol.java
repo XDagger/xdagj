@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 @Getter
@@ -60,15 +59,15 @@ public class Libp2pXdagProtocol implements ProtocolBinding<Libp2pXdagProtocol.Li
         this.channelManager = kernel.getChannelMgr();
     }
 
-    @NotNull
+
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
         return new ProtocolDescriptor("xdagj-libp2p-protocol");
     }
 
-    @NotNull
+
     @Override
-    public CompletableFuture<Libp2pXdagController> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
+    public CompletableFuture<Libp2pXdagController> initChannel(P2PChannel p2PChannel, String s) {
         final Connection connection = ((io.libp2p.core.Stream) p2PChannel).getConnection();
         libp2pChannel = new Libp2pChannel(connection, this, kernel);
         channelManager.add(libp2pChannel);
