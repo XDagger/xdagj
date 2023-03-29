@@ -37,8 +37,7 @@ import org.apache.tuweni.units.bigints.UInt64;
 public class AddressStoreImpl implements AddressStore {
     private static final int AddressSize = 20;
     private final KVSource<byte[], byte[]> AddressSource;
-    public static final byte ADDRESS_SIZE = 0x10;
-    public static final byte AMOUNT_SUM = 0x20;
+
 
     //<addressHash,balance>
     public AddressStoreImpl(KVSource<byte[], byte[]> addressSource) {
@@ -61,8 +60,8 @@ public class AddressStoreImpl implements AddressStore {
         AddressSource.put(new byte[]{AMOUNT_SUM},BytesUtils.longToBytes(0,false));
     }
 
-    public UInt64 getBalanceByAddress(byte[] Address){
-        byte[] data = AddressSource.get(Address);
+    public UInt64 getBalanceByAddress(byte[] address){
+        byte[] data = AddressSource.get(BytesUtils.merge(ADDRESS,address));
         if(data == null){
             log.debug("This pubkey don't exist");
             return UInt64.ZERO;
@@ -71,12 +70,12 @@ public class AddressStoreImpl implements AddressStore {
         }
     }
 
-    public boolean addressIsExist(byte[] Address){
-        return AddressSource.get(Address) != null;
+    public boolean addressIsExist(byte[] address){
+        return AddressSource.get(BytesUtils.merge(ADDRESS,address)) != null;
     }
 
-    public void addAddress(byte[] Address){
-        AddressSource.put(Address,UInt64.ZERO.toBytes().toArray());
+    public void addAddress(byte[] address){
+        AddressSource.put(BytesUtils.merge(ADDRESS,address),UInt64.ZERO.toBytes().toArray());
         long currentSize = BytesUtils.bytesToLong(AddressSource.get(new byte[]{ADDRESS_SIZE}),0,false);
         AddressSource.put(new byte[] {ADDRESS_SIZE},BytesUtils.longToBytes(currentSize + 1,false));
     }
@@ -110,16 +109,16 @@ public class AddressStoreImpl implements AddressStore {
             log.debug("The Address type is wrong");
             return;
         }
-        if(AddressSource.get(address) == null){
+        if(AddressSource.get(BytesUtils.merge(ADDRESS,address)) == null){
             log.debug("This address don't exist");
             addAddress(address);
         }
-        AddressSource.put(address,value.toBytes().toArray());
+        AddressSource.put((BytesUtils.merge(ADDRESS,address)),value.toBytes().toArray());
     }
 
     @Override
     public void saveAddress(byte[] address, byte[] balance) {
-        AddressSource.put(address,balance);
+        AddressSource.put(BytesUtils.merge(ADDRESS,address),balance);
     }
 
 }

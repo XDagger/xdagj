@@ -207,14 +207,12 @@ public class BlockchainImpl implements Blockchain {
         RocksdbKVSource snapshotAddressSource = new RocksdbKVSource("SNAPSHOT/ADDRESS");
         snapshotAddressStore = new SnapshotStoreImpl(snapshotAddressSource);
         snapshotAddressSource.setConfig(kernel.getConfig());
-        System.out.println("snapshot init");
         snapshotAddressSource.init();
         snapshotAddressStore.saveAddress(this.blockStore,this.addressStore,kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
 
         RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOT/BLOCKS");
         snapshotStore = new SnapshotStoreImpl(snapshotSource);
         snapshotSource.setConfig(kernel.getConfig());
-        System.out.println("address init");
         snapshotStore.init();
         snapshotStore.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
@@ -235,10 +233,13 @@ public class BlockchainImpl implements Blockchain {
         xdagTopStatus.setTopDiff(lastBlock.getInfo().getDifficulty());
         xdagTopStatus.setPreTopDiff(lastBlock.getInfo().getDifficulty());
 
+        long allBalance = snapshotStore.getAllBalance() + snapshotAddressStore.getAllBalance();
+
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
         System.out.println("time：" + (end - start) + "ms");
         System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotStore.getOurBalance()));
+        System.out.println(String.format("All amount: %.9f", BasicUtils.amount2xdag(allBalance)));
     }
 
 
