@@ -58,8 +58,6 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.Buffer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,13 +123,13 @@ public class Web3WebSocketServerTest {
             }
 
             @Override
-            public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @Nullable Response response) {
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 failureReference.set(t);
             }
 
             @SneakyThrows
             @Override
-            public void onMessage(@NotNull WebSocket webSocket, @NotNull String bytes) {
+            public void onMessage(WebSocket webSocket, String bytes) {
                 JsonNode jsonRpcResponse = OBJECT_MAPPER.readTree(bytes);
                 assertEquals(jsonRpcResponse.at("/result").asText(), mockResult);
                 wsAsyncResultLatch.countDown();
@@ -143,7 +141,7 @@ public class Web3WebSocketServerTest {
 //            }
 
             @Override
-            public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
+            public void onClosing(WebSocket webSocket, int code, String reason) {
                 wsAsyncCloseLatch.countDown();
             }
         });
