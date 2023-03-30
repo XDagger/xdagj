@@ -61,6 +61,8 @@ import io.xdag.utils.BasicUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.xdag.utils.ByteArrayToByte32;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
@@ -341,19 +343,30 @@ public class XdagModuleChainBase implements XdagModuleChain {
         List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(pubAddress2Hash(address));
         List<TxLink> txLinks = new ArrayList<>();
         for (TxHistory txHistory : txHistories) {
-            BlockInfo blockInfo = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false).getInfo();
-            if((blockInfo.flags&BI_APPLIED)==0){
-                continue;
-            }
+            Block b = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false);
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
-            txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
-                    .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
-                    .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
-                    .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT) ? 0 :
-                            txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT) ? 1 :
-                            txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
-                    .time(xdagTimestampToMs(txHistory.getTimeStamp()))
-                    .remark(txHistory.getRemark());
+            if (b != null) {
+                BlockInfo blockInfo = b.getInfo();
+                if ((blockInfo.flags & BI_APPLIED) == 0) {
+                    continue;
+                }
+                txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
+                        .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
+                        .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
+                        .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT) ? 0 :
+                                txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT) ? 1 :
+                                        txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
+                        .time(xdagTimestampToMs(txHistory.getTimeStamp()))
+                        .remark(txHistory.getRemark());
+            } else {
+                txLinkBuilder.address(toBase58(ByteArrayToByte32.byte32ToArray(txHistory.getAddress().getAddress())))
+                        .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
+                        .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
+                        .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
+                                txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)
+                        .time(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
+                        .remark(txHistory.getRemark());
+            }
             txLinks.add(txLinkBuilder.build());
         }
         return txLinks;
