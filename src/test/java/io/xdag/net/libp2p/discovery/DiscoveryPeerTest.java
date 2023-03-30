@@ -30,12 +30,13 @@ import io.libp2p.core.crypto.PrivKey;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 public class DiscoveryPeerTest {
 
@@ -56,7 +57,7 @@ public class DiscoveryPeerTest {
                 Bytes.wrap(privKey.publicKey().raw()),
                 new InetSocketAddress(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}), 10001));
 //        System.out.println(discoveryPeer.getNodeAddress().toString());
-        List<String> boot = new ArrayList<>();
+        List<String> boot = Lists.newArrayList();
         Bytes bytes = Bytes.wrap(privKey.raw());
         discV5Service1 = DiscV5Service.create((bytes),
                 "127.0.0.1",

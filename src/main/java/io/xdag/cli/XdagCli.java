@@ -29,7 +29,6 @@ import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 import io.xdag.Kernel;
 import io.xdag.Launcher;
 import io.xdag.Wallet;
-import io.xdag.config.AbstractConfig;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.crypto.Keys;
@@ -45,11 +44,8 @@ import io.xdag.utils.XdagTime;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -57,11 +53,12 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.file.CopyDirectoryVisitor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import com.google.common.collect.Lists;
 
 public class XdagCli extends Launcher {
 
@@ -155,7 +152,7 @@ public class XdagCli extends Launcher {
         Config config = buildConfig(args);
         setConfig(config);
         // move old args
-        List<String> argsList = new ArrayList<>();
+        List<String> argsList = Lists.newArrayList();
         for (String arg : args) {
             if (StringUtils.equalsAny(arg, "-d", "-t")) {
                 // only devnet or testnet

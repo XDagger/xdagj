@@ -66,7 +66,6 @@ import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.SnapshotStore;
-import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.listener.BlockMessage;
@@ -135,7 +134,7 @@ public class BlockchainImpl implements Blockchain {
 
     private final ScheduledExecutorService checkLoop;
     private final RandomX randomXUtils;
-    private final List<Listener> listeners = new ArrayList<>();
+    private final List<Listener> listeners = Lists.newArrayList();
     private ScheduledFuture<?> checkLoopFuture;
     private long snapshotHeight;
     private SnapshotStore snapshotStore;
@@ -1652,7 +1651,7 @@ public class BlockchainImpl implements Blockchain {
         if (temp == null) {
             temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
         }
-        List<Block> res = new ArrayList<>();
+        List<Block> res = Lists.newArrayList();
         while (count > 0) {
             if (temp == null) {
                 break;

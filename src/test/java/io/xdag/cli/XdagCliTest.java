@@ -63,6 +63,8 @@ import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.mockito.Mockito;
 
+import com.google.common.collect.Lists;
+
 public class XdagCliTest {
 
     static { Security.addProvider(new BouncyCastleProvider());  }
@@ -128,7 +130,7 @@ public class XdagCliTest {
         xdagCLI.setConfig(new MainnetConfig());
 
         // mock accounts
-        List<KeyPair> accounts = new ArrayList<>();
+        List<KeyPair> accounts = Lists.newArrayList();
         KeyPair account = Keys.createEcKeyPair();
         accounts.add(account);
 
@@ -153,7 +155,7 @@ public class XdagCliTest {
         xdagCLI.setConfig(new TestnetConfig());
 
         // mock accounts
-        List<KeyPair> accounts = new ArrayList<>();
+        List<KeyPair> accounts = Lists.newArrayList();
         KeyPair account = Keys.createEcKeyPair();
         accounts.add(account);
 
@@ -178,7 +180,7 @@ public class XdagCliTest {
         xdagCLI.setConfig(new DevnetConfig());
 
         // mock accounts
-        List<KeyPair> accounts = new ArrayList<>();
+        List<KeyPair> accounts = Lists.newArrayList();
         KeyPair account = Keys.createEcKeyPair();
         accounts.add(account);
 
@@ -339,7 +341,7 @@ public class XdagCliTest {
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         // mock accounts
-        List<KeyPair> accounts = new ArrayList<>();
+        List<KeyPair> accounts = Lists.newArrayList();
         KeyPair account = Keys.createEcKeyPair();
         accounts.add(account);
 

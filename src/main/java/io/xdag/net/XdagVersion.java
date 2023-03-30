@@ -24,8 +24,9 @@
 
 package io.xdag.net;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.collect.Lists;
 
 public enum XdagVersion {
     V03((byte) 3);
@@ -54,7 +55,7 @@ public enum XdagVersion {
     }
 
     public static List<XdagVersion> supported() {
-        List<XdagVersion> supported = new ArrayList<>();
+        List<XdagVersion> supported = Lists.newArrayList();
         for (XdagVersion v : values()) {
             if (isSupported(v.code)) {
                 supported.add(v);

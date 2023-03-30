@@ -69,6 +69,7 @@ import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 
+import com.google.common.collect.Lists;
 
 @Slf4j
 public class AwardManagerImpl implements AwardManager, Runnable {
@@ -111,8 +112,8 @@ public class AwardManagerImpl implements AwardManager, Runnable {
     private List<Miner> miners;
     @Setter
     private MinerManager minerManager;
-    private ArrayList<Double> diff = new ArrayList<>();
-    private ArrayList<Double> prev_diff = new ArrayList<>();
+    private ArrayList<Double> diff = Lists.newArrayList();
+    private ArrayList<Double> prev_diff = Lists.newArrayList();
     private final String fundAddress;
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("AwardManager-work-thread")
@@ -319,7 +320,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         // 每一个区块最多可以放多少交易 这个要由密钥的位置来决定
         int payminersPerBlock;
-        miners = new ArrayList<>();
+        miners = Lists.newArrayList();
         // 统计矿工的数量
         if (minerManager != null) {
             for (Miner miner : minerManager.getActivateMiners().values()) {

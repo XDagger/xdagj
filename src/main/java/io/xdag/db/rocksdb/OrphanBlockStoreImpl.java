@@ -29,13 +29,14 @@ import io.xdag.core.Block;
 import io.xdag.core.XdagField;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.utils.BytesUtils;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
+
+import com.google.common.collect.Lists;
 
 @Slf4j
 public class OrphanBlockStoreImpl implements OrphanBlockStore {
@@ -61,7 +62,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
     }
 
     public List<Address> getOrphan(long num, long[] sendtime) {
-        List<Address> res = new ArrayList<>();
+        List<Address> res = Lists.newArrayList();
         if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
             return null;
         } else {
