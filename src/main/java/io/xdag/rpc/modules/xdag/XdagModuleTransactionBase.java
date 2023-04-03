@@ -68,7 +68,7 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
         ImportResult result = kernel.getSyncMgr().importBlock(
                 new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
         return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
-                BasicUtils.hash2Address(block.getHash()) : result.getErrorInfo();
+                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.toString();
     }
 
     @Override
