@@ -264,12 +264,14 @@ public class BlockchainImpl implements Blockchain {
                 if (type != XDAG_FIELD_HEAD.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a mainnet block");
+                    log.debug("Block type error, is not a mainnet block");
                     return result;
                 }
             } else {
                 if (type != XDAG_FIELD_HEAD_TEST.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a testnet block");
+                    log.debug("Block type error, is not a testnet block");
                     return result;
                 }
             }
@@ -280,6 +282,7 @@ public class BlockchainImpl implements Blockchain {
             ) {
                 result = ImportResult.INVALID_BLOCK;
                 result.setErrorInfo("Block's time is illegal");
+                log.debug("Block's time is illegal");
                 return result;
             }
 
@@ -310,6 +313,7 @@ public class BlockchainImpl implements Blockchain {
                             result = ImportResult.INVALID_BLOCK;
                             result.setHashlow(ref.getAddress());
                             result.setErrorInfo("Address's amount isn't zero");
+                            log.debug("Address's amount isn't zero");
                             return result;
                         }
                         Block refBlock = getBlockByHash(ref.getAddress(), false);
@@ -318,6 +322,7 @@ public class BlockchainImpl implements Blockchain {
                             result = ImportResult.NO_PARENT;
                             result.setHashlow(ref.getAddress());
                             result.setErrorInfo("Block have no parent for " + result.getHashlow().toHexString());
+                            log.debug("Block have no parent for " + result.getHashlow().toHexString());
                             return result;
                         } else {
                             // 链接块的时间需要小于该块时间，否则为不合法区块
@@ -325,6 +330,7 @@ public class BlockchainImpl implements Blockchain {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(refBlock.getHashLow());
                                 result.setErrorInfo("Ref block's time >= block's time");
+                                log.debug("Ref block's time >= block's time");
                                 return result;
                             }
 
@@ -335,6 +341,7 @@ public class BlockchainImpl implements Blockchain {
                     if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
+                        log.debug("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                 }
@@ -353,6 +360,7 @@ public class BlockchainImpl implements Blockchain {
                 result = ImportResult.INVALID_BLOCK;
                 result.setHashlow(block.getHashLow());
                 result.setErrorInfo("Block's input can't be used");
+                log.debug("Block's input can't be used");
                 return ImportResult.INVALID_BLOCK;
             }
 

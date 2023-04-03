@@ -27,6 +27,7 @@ package io.xdag.rpc.modules.xdag;
 import io.xdag.Kernel;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
+import io.xdag.core.ImportResult;
 import io.xdag.core.XdagBlock;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
@@ -64,9 +65,10 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
         // 2. try to add blockchain
 
         Block block = new Block(new XdagBlock(Hex.decode(rawData)));
-        kernel.getSyncMgr().importBlock(
+        ImportResult result = kernel.getSyncMgr().importBlock(
                 new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
-        return BasicUtils.hash2Address(block.getHash());
+        return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
+                BasicUtils.hash2Address(block.getHash()) : result.getErrorInfo();
     }
 
     @Override

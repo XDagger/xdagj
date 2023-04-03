@@ -24,7 +24,6 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import io.xdag.rpc.dto.AccountResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO;
 
 public interface XdagModuleChain {
@@ -32,8 +31,6 @@ public interface XdagModuleChain {
     String getCoinBase();
 
     BlockResultDTO getBlockByHash(String hash);
-
-    AccountResultDTO getAccountByAddress(String address);
 
     BlockResultDTO getBlockByNumber(String bnOrId);
 
