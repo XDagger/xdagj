@@ -52,7 +52,6 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -551,7 +550,7 @@ public class BlockStoreImpl implements BlockStore {
 
     public List<TxHistory> getTxHistoryByAddress(Bytes32 addressHashlow) {
         List<byte[]> values = txHistorySource.prefixValueLookup(BytesUtils.merge(TX_HISTORY, addressHashlow.toArray()));
-        List<TxHistory> res = new ArrayList<>();
+        List<TxHistory> res = Lists.newArrayList();
 
         for (byte[] value : values) {
             byte type = BytesUtils.subArray(value, 0, 1)[0];

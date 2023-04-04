@@ -58,7 +58,6 @@ import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
 import io.xdag.utils.BasicUtils;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 import io.xdag.utils.ByteArrayToByte32;
@@ -66,6 +65,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
+
+import com.google.common.collect.Lists;
 
 public class XdagModuleChainBase implements XdagModuleChain {
 
@@ -125,7 +126,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         try {
             int number = numberReq == null ? 20 : Integer.parseInt(numberReq);// default 20
             List<Block> blocks = blockchain.listMainBlocks(number);
-            List<BlockResultDTO> resultDTOS = new ArrayList<>();
+            List<BlockResultDTO> resultDTOS = Lists.newArrayList();
             for (Block block : blocks) {
                 BlockResultDTO dto = transferBlockToBriefBlockResultDTO(blockchain.getBlockByHash(block.getHash(), false));
                 if (dto != null) {
@@ -245,7 +246,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
     private List<Link> getLinks(Block block) {
         List<Address> inputs = block.getInputs();
         List<Address> outputs = block.getOutputs();
-        List<Link> links = new ArrayList<>();
+        List<Link> links = Lists.newArrayList();
 
         // fee update
         Link.LinkBuilder fee = Link.builder();
@@ -282,7 +283,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
     private List<TxLink> getTxLinks(Block block) {
         List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(block.getHashLow());
-        List<TxLink> txLinks = new ArrayList<>();
+        List<TxLink> txLinks = Lists.newArrayList();
         // 1. earning info
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
@@ -319,7 +320,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
     private List<TxLink> getTxHistory(String address) {
         List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(pubAddress2Hash(address));
-        List<TxLink> txLinks = new ArrayList<>();
+        List<TxLink> txLinks = Lists.newArrayList();
         for (TxHistory txHistory : txHistories) {
             Block b = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false);
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();

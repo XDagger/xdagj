@@ -31,10 +31,11 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 public class WhliteListTest {
 
@@ -45,7 +46,7 @@ public class WhliteListTest {
     public void setup() {
         // 初始化白名单
         String[] list = new String[]{"124.34.34.1:1001", "127.0.0.1:1002"};
-        List<InetSocketAddress> addressList = new ArrayList<>();
+        List<InetSocketAddress> addressList = Lists.newArrayList();
         for (String address : list) {
             addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
         }

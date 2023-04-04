@@ -43,6 +43,8 @@ import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
 
+import com.google.common.collect.Lists;
+
 /**
  * Provides utility methods to generate random mnemonics and also generate seeds from mnemonics.
  *
@@ -283,7 +285,7 @@ public class MnemonicUtils {
 
     private static List<String> readAllLines(InputStream inputStream) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-        List<String> data = new ArrayList<>();
+        List<String> data = Lists.newArrayList();
         for (String line; (line = br.readLine()) != null; ) {
             data.add(line);
         }

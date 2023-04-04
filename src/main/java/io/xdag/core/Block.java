@@ -42,7 +42,6 @@ import io.xdag.utils.BytesUtils;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,6 +61,8 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
+
+import com.google.common.collect.Lists;
 
 @Slf4j
 @Getter
@@ -349,7 +350,7 @@ public class Block implements Cloneable {
     private byte[] getEncodedBody() {
         SimpleEncoder encoder = new SimpleEncoder();
         encoder.writeField(getEncodedHeader());
-        List<Address> all = new ArrayList<>();
+        List<Address> all = Lists.newArrayList();
         all.addAll(inputs);
         all.addAll(outputs);
         for (Address link : all) {
@@ -412,7 +413,7 @@ public class Block implements Cloneable {
      */
     public List<SECPPublicKey> verifiedKeys() {
         List<SECPPublicKey> keys = getPubKeys();
-        List<SECPPublicKey> res = new ArrayList<>();
+        List<SECPPublicKey> res = Lists.newArrayList();
         Bytes digest;
         Bytes32 hash;
         for (SECPSignature sig : this.getInsigs().keySet()) {
@@ -551,7 +552,7 @@ public class Block implements Cloneable {
     }
 
     public List<Address> getLinks() {
-        List<Address> links = new ArrayList<>();
+        List<Address> links = Lists.newArrayList();
         links.addAll(getInputs());
         links.addAll(getOutputs());
         return links;

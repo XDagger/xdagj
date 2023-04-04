@@ -37,6 +37,7 @@ import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
@@ -173,7 +174,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;
         }
-        List<String> resInfo = new ArrayList<>();
+        List<String> resInfo = Lists.newArrayList();
         // create transaction
         List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark);
         for (BlockWrapper blockWrapper : txs) {

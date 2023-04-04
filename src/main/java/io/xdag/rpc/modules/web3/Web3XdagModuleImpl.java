@@ -58,7 +58,6 @@ import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.BasicUtils;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -69,6 +68,8 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 public class Web3XdagModuleImpl implements Web3XdagModule {
 
@@ -220,7 +221,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public Object xdag_netConnectionList() throws Exception {
-        List<NetConnDTO> netConnDTOList = new ArrayList<>();
+        List<NetConnDTO> netConnDTOList = Lists.newArrayList();
         NetConnDTO.NetConnDTOBuilder netConnDTOBuilder = NetConnDTO.builder();
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
         for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
@@ -265,8 +266,8 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     }
 
     @Override
-    public Object xdag_getPoolWorkers() throws Exception {
-        List<PoolWorkerDTO> poolWorkerDTOList = new ArrayList<>();
+    public Object xdag_getPoolWorkers() {
+        List<PoolWorkerDTO> poolWorkerDTOList = Lists.newArrayList();
         PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder = PoolWorkerDTO.builder();
         Collection<Miner> miners = kernel.getMinerManager().getActivateMiners().values();
         PoolWorkerDTO poolWorker = getPoolWorkerDTO(poolWorkerDTOBuilder, kernel.getPoolMiner());
@@ -292,7 +293,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         return poolWorkerDTOBuilder.build();
     }
     private List<PoolWorkerDTO.Worker> getWorkers(Miner miner) {
-        List<PoolWorkerDTO.Worker> workersList = new ArrayList<>();
+        List<PoolWorkerDTO.Worker> workersList = Lists.newArrayList();
         PoolWorkerDTO.Worker.WorkerBuilder workerBuilder = PoolWorkerDTO.Worker.builder();
         Map<InetSocketAddress, MinerChannel> channels = miner.getChannels();
         for (Map.Entry<InetSocketAddress, MinerChannel> channel : channels.entrySet()) {

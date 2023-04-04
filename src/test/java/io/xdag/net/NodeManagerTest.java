@@ -30,10 +30,11 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.net.manager.NetDBManager;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 public class NodeManagerTest {
 
@@ -43,7 +44,7 @@ public class NodeManagerTest {
     @Before
     public void setUp() throws Exception {
         String[] list = new String[]{"127.0.0.1:1001", "127.0.0.1:1002"};
-        List<InetSocketAddress> addressList = new ArrayList<>();
+        List<InetSocketAddress> addressList = Lists.newArrayList();
         for (String address : list) {
             InetSocketAddress inetSocketAddress = new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1]));
             addressList.add(inetSocketAddress);
