@@ -53,7 +53,6 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.Blockchain;
 import io.xdag.core.TxHistory;
-import io.xdag.rpc.dto.AccountResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
@@ -87,20 +86,6 @@ public class XdagModuleChainBase implements XdagModuleChain {
     @Override
     public BlockResultDTO getBlockByHash(String hash) {
         return getBlockDTOByHash(hash);
-    }
-
-    @Override
-    public AccountResultDTO getAccountByAddress(String address) {
-        return getAccountDTOByAddress(address);
-    }
-
-    private AccountResultDTO getAccountDTOByAddress(String address) {
-        UInt64 balance = kernel.getAddressStore().getBalanceByAddress(Hash2byte(pubAddress2Hash(address).mutableCopy()));
-        AccountResultDTO.AccountResultDTOBuilder accountResultDTOBuilder = AccountResultDTO.builder();
-        accountResultDTOBuilder.address(address)
-                .balance(String.format("%.9f", amount2xdag(balance)))
-                .transactions(getTxHistory(address));
-        return accountResultDTOBuilder.build();
     }
 
     @Override
@@ -231,14 +216,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .type("Wallet")
                 .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
                 .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
-//                .flags(Integer.toHexString(block.getInfo().getFlags()))
-//                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
-//                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
-//                        StandardCharsets.UTF_8).trim())
                 .state("Accepted")
-//                .type(getType(block))
-//                .refs(getLinks(block))
-//                .height(block.getInfo().getHeight())
                 .transactions(getTxHistory(address));
         return BlockResultDTOBuilder.build();
     }
