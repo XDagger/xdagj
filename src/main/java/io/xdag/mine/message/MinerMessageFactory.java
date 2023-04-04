@@ -24,7 +24,6 @@
 
 package io.xdag.mine.message;
 
-
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;

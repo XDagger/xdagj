@@ -29,10 +29,8 @@ import static org.junit.Assert.assertEquals;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Hash;
-import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.KVSource;
+import io.xdag.utils.BlockUtils;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -59,24 +57,24 @@ public class RocksdbKVSourceTest {
     @Test
     public void testRocksdbFactory() {
         DatabaseFactory factory = new RocksdbFactory(config);
-        KVSource<byte[], byte[]> blocksource = factory.getDB(DatabaseName.BLOCK); // <block-hash,block-info>
-        KVSource<byte[], byte[]> indexsource = factory.getDB(DatabaseName.INDEX); // <hash,info>
-        KVSource<byte[], byte[]> orphansource = factory.getDB(DatabaseName.ORPHANIND); // <hash,info>
+        KVSource<byte[], byte[]> blockSource = factory.getDB(DatabaseName.BLOCK); // <block-hash,block-info>
+        KVSource<byte[], byte[]> indexSource = factory.getDB(DatabaseName.INDEX); // <hash,info>
+        KVSource<byte[], byte[]> orphanSource = factory.getDB(DatabaseName.ORPHANIND); // <hash,info>
 
-        blocksource.reset();
-        indexsource.reset();
-        orphansource.reset();
+        blockSource.reset();
+        indexSource.reset();
+        orphanSource.reset();
 
         byte[] key = Hex.decode("FFFF");
         byte[] value = Hex.decode("1234");
 
-        blocksource.put(key, value);
-        indexsource.put(key, value);
-        orphansource.put(key, value);
+        blockSource.put(key, value);
+        indexSource.put(key, value);
+        orphanSource.put(key, value);
 
-        assertEquals("1234", Hex.toHexString(blocksource.get(key)));
-        assertEquals("1234", Hex.toHexString(indexsource.get(key)));
-        assertEquals("1234", Hex.toHexString(orphansource.get(key)));
+        assertEquals("1234", Hex.toHexString(blockSource.get(key)));
+        assertEquals("1234", Hex.toHexString(indexSource.get(key)));
+        assertEquals("1234", Hex.toHexString(orphanSource.get(key)));
     }
 
     @Test
@@ -92,14 +90,14 @@ public class RocksdbKVSourceTest {
         byte[] value1 = Hex.decode("1234");
         byte[] value2 = Hex.decode("2345");
 
-        byte[] key1 = BlockStore.getTimeKey(time1, hashlow1);
-        byte[] key2 = BlockStore.getTimeKey(time1, hashlow2);
+        byte[] key1 = BlockUtils.getTimeKey(time1, hashlow1);
+        byte[] key2 = BlockUtils.getTimeKey(time1, hashlow2);
 
         indexSource.put(key1, value1);
         indexSource.put(key2, value2);
 
         long searchTime = 1602226304712L;
-        byte[] key = BlockStore.getTimeKey(searchTime, null);
+        byte[] key = BlockUtils.getTimeKey(searchTime, null);
         List<byte[]> keys = indexSource.prefixKeyLookup(key);
         assertEquals(2, keys.size());
         List<byte[]> values = indexSource.prefixValueLookup(key);

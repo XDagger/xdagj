@@ -99,7 +99,7 @@ public class Keys {
         return Hash.sha256hash160(Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)));
     }
 
-    public static byte[] Pub2Byte(SECPPublicKey publicKey){
+    public static byte[] toBytesAddress(SECPPublicKey publicKey){
         return Hash.sha256hash160(Bytes.wrap(publicKey.asEcPoint(Sign.CURVE).getEncoded(true)));
     }
 

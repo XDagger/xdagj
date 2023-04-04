@@ -21,12 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.db;
+package io.xdag.db.rocksdb;
 
+import static io.xdag.config.Constants.BI_MAIN;
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
+import static io.xdag.db.BlockStore.SUMS_BLOCK_INFO;
 import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
+import static io.xdag.db.AddressStore.ADDRESS_SIZE;
+import static io.xdag.db.AddressStore.AMOUNT_SUM;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.ByteArrayToByte32.arrayToByte32;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -43,14 +48,17 @@ import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
+import io.xdag.db.AddressStore;
+import io.xdag.db.BlockStore;
+import io.xdag.db.SnapshotStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
-import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -62,25 +70,53 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.rocksdb.RocksIterator;
 
 @Slf4j
-public class SnapshotJ extends RocksdbKVSource {
+public class SnapshotStoreImpl implements SnapshotStore {
 
-    public static final Kryo kryo = new Kryo();
-    private long ourBalance = 0L;
-    private long nextTime = 0;
-    private long height = 0;
+    private final RocksdbKVSource snapshotSource;
 
-    static {
+    private final Kryo kryo;
+    private long ourBalance;
+    private long allBalance;
+    private long nextTime;
+    private long height;
+
+
+    public SnapshotStoreImpl(RocksdbKVSource snapshotSource) {
+        this.snapshotSource = snapshotSource;
+        this.kryo = new Kryo();
         kryoRegister();
     }
 
-    public SnapshotJ(String name) {
-        super(name);
+    @Override
+    public void init() {
+        snapshotSource.init();
     }
 
-    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource snapshotSource, boolean b) {
+    @Override
+    public void reset() {
+        snapshotSource.reset();
+    }
 
-        try (RocksIterator iter = getDb().newIterator()) {
-            for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.key()[0] < 0x40; iter.next()) {
+    public void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo) {
+        blockInfo.setSnapshot(preBlockInfo.isSnapshot());
+        blockInfo.setSnapshotInfo(preBlockInfo.getSnapshotInfo());
+        blockInfo.setFee(preBlockInfo.getFee());
+        blockInfo.setHash(preBlockInfo.getHash());
+        blockInfo.setDifficulty(preBlockInfo.getDifficulty());
+        blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
+        blockInfo.setHashlow(preBlockInfo.getHashlow());
+        blockInfo.setFlags(preBlockInfo.getFlags());
+        blockInfo.setHeight(preBlockInfo.getHeight());
+        blockInfo.setMaxDiffLink(preBlockInfo.getMaxDiffLink());
+        blockInfo.setRef(preBlockInfo.getRef());
+        blockInfo.setRemark(preBlockInfo.getRemark());
+        blockInfo.setTimestamp(preBlockInfo.getTimestamp());
+        blockInfo.setType(preBlockInfo.getType());
+    }
+
+    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource indexSource,boolean b) {
+        try (RocksIterator iter = indexSource.getDb().newIterator()) {
+            for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.isValid() && iter.key()[0] < SUMS_BLOCK_INFO; iter.next()) {
                 PreBlockInfo preBlockInfo;
                 BlockInfo blockInfo = new BlockInfo();
                 if (iter.value() != null) {
@@ -102,16 +138,17 @@ public class SnapshotJ extends RocksdbKVSource {
                         flag &= ~BI_OURS;
                         blockInfo.setFlags(flag);
                         blockInfo.setSnapshot(true);
-                        save(iter, blockInfo, snapshotSource);
+                        save(iter, blockInfo);
                     } else { //Storage block data without public key and balance
-                        if (blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0) {
+                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0)) {
 //                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
-                            blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(BytesUtils.subArray(iter.key(), 1, 32))));
+                            blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(
+                                    BytesUtils.subArray(iter.key(), 1, 32))));
                             int flag = blockInfo.getFlags();
                             flag &= ~BI_OURS;
                             blockInfo.setFlags(flag);
-                            save(iter, blockInfo, snapshotSource);
+                            save(iter, blockInfo);
                         }
                     }
                 }
@@ -124,14 +161,14 @@ public class SnapshotJ extends RocksdbKVSource {
             log.error(e.getMessage(), e);
         }
 
-        byte[] preSeed = this.get(new byte[]{SNAPSHOT_PRESEED});
+        byte[] preSeed = snapshotSource.get(new byte[]{SNAPSHOT_PRESEED});
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
     public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
-        try (RocksIterator iter = getDb().newIterator()) {
+        try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
-                if (iter.key()[0] == 0x30) {
+                if (iter.key()[0] == HASH_BLOCK_INFO) {
                     BlockInfo blockInfo = new BlockInfo();
                     if (iter.value() != null) {
                         try {
@@ -180,13 +217,14 @@ public class SnapshotJ extends RocksdbKVSource {
                         if ((flag & BI_OURS) != 0 && keyIndex > -1) {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
+                        allBalance += blockInfo.getAmount().toLong();
                         blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
                                 XdagField.FieldType.XDAG_FIELD_SNAPSHOT,blockInfo.getAmount(),
                                 snapshotTime,0,
                                 blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
                     }
-                } else if (iter.key()[0] == (byte) 0x90) {
+                } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
                 }
             }
@@ -195,7 +233,38 @@ public class SnapshotJ extends RocksdbKVSource {
         }
     }
 
-    private void save(RocksIterator iter, BlockInfo blockInfo, RocksdbKVSource snapshotSource) {
+    @Override
+    public void saveAddress(BlockStore blockStore,AddressStore addressStore, List<KeyPair> keys,long snapshotTime) {
+        try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
+            for (iter.seekToFirst(); iter.isValid(); iter.next()) {
+                if(iter.key().length < 20){
+                    if(iter.key()[0] == ADDRESS_SIZE){
+                        addressStore.saveAddressSize(iter.value());
+                    }else if(iter.key()[0] == AMOUNT_SUM){
+                        addressStore.savaAmountSum(iter.value());
+                        allBalance = addressStore.getAllBalance().toLong();
+                    }
+                } else {
+                    byte[] address = iter.key();
+                    byte[] balance = iter.value();
+                    for (int i = 0; i < keys.size(); i++) {
+                        KeyPair keyPair = keys.get(i);
+                        byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
+                        byte[] myAddress = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
+                        if (BytesUtils.compareTo(address,0,20,myAddress,0,20) == 0) {
+                            ourBalance += UInt64.fromBytes(Bytes.wrap(balance)).toLong();
+                        }
+                    }
+                    addressStore.saveAddress(address,balance);
+                    blockStore.saveTxHistory(arrayToByte32(address), arrayToByte32(address),
+                            XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
+                            snapshotTime,0,"snapshot".getBytes());
+                }
+            }
+        }
+    }
+
+    public void save(RocksIterator iter, BlockInfo blockInfo) {
         byte[] value = null;
         try {
             value = serialize(blockInfo);
@@ -209,6 +278,10 @@ public class SnapshotJ extends RocksdbKVSource {
         return this.ourBalance;
     }
 
+    public long getAllBalance(){
+        return this.allBalance;
+    }
+
     public long getNextTime() {
         return nextTime;
     }
@@ -217,7 +290,8 @@ public class SnapshotJ extends RocksdbKVSource {
         return height;
     }
 
-    public static Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
+
+    public Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         synchronized (kryo) {
             try {
                 final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
@@ -230,7 +304,7 @@ public class SnapshotJ extends RocksdbKVSource {
         }
     }
 
-    public static byte[] serialize(final Object obj) throws SerializationException {
+    public byte[] serialize(final Object obj) throws SerializationException {
         synchronized (kryo) {
             try {
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -245,26 +319,8 @@ public class SnapshotJ extends RocksdbKVSource {
         }
     }
 
-    public void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo) {
-        blockInfo.setSnapshot(preBlockInfo.isSnapshot());
-        blockInfo.setSnapshotInfo(preBlockInfo.getSnapshotInfo());
-        blockInfo.setFee(preBlockInfo.getFee());
-        blockInfo.setHash(preBlockInfo.getHash());
-        blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
-        blockInfo.setHashlow(preBlockInfo.getHashlow());
-        blockInfo.setFlags(preBlockInfo.getFlags());
-        blockInfo.setHeight(preBlockInfo.getHeight());
-        blockInfo.setMaxDiffLink(preBlockInfo.getMaxDiffLink());
-        blockInfo.setRef(preBlockInfo.getRef());
-        blockInfo.setRemark(preBlockInfo.getRemark());
-        blockInfo.setTimestamp(preBlockInfo.getTimestamp());
-        blockInfo.setType(preBlockInfo.getType());
-    }
-
-    public static void kryoRegister() {
+    private void kryoRegister() {
         kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-//        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
@@ -274,4 +330,5 @@ public class SnapshotJ extends RocksdbKVSource {
         kryo.register(UInt64.class);
         kryo.register(PreBlockInfo.class);
     }
+
 }

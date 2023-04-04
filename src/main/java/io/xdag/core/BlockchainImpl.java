@@ -40,14 +40,23 @@ import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.config.Constants.SYNC_FIX_HEIGHT;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.getDiffByHash;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
 import io.xdag.crypto.Hash;
@@ -55,12 +64,10 @@ import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.OrphanPool;
-import io.xdag.db.SnapshotChainStore;
-import io.xdag.db.SnapshotChainStoreImpl;
-import io.xdag.db.SnapshotJ;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.OrphanBlockStore;
+import io.xdag.db.SnapshotStore;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
@@ -69,7 +76,6 @@ import io.xdag.utils.BasicUtils;
 import io.xdag.utils.ByteArrayToByte32;
 import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -84,7 +90,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -117,7 +122,7 @@ public class BlockchainImpl implements Blockchain {
     /**
      * 非Extra orphan存放
      */
-    private final OrphanPool orphanPool;
+    private final OrphanBlockStore orphanBlockStore;
 
     private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
     private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
@@ -129,12 +134,11 @@ public class BlockchainImpl implements Blockchain {
 
     private final ScheduledExecutorService checkLoop;
     private final RandomX randomXUtils;
-    private final List<Listener> listeners = new ArrayList<>();
+    private final List<Listener> listeners = Lists.newArrayList();
     private ScheduledFuture<?> checkLoopFuture;
-    @Setter
-    private SnapshotChainStore snapshotChainStore;
     private long snapshotHeight;
-    private SnapshotJ snapshotJ;
+    private SnapshotStore snapshotStore;
+    private SnapshotStore snapshotAddressStore;
     private final XdagExtStats xdagExtStats;
     @Getter
     private byte[] preSeed;
@@ -146,7 +150,7 @@ public class BlockchainImpl implements Blockchain {
         // 1. init chain state from rocksdb
         this.addressStore = kernel.getAddressStore();
         this.blockStore = kernel.getBlockStore();
-        this.orphanPool = kernel.getOrphanPool();
+        this.orphanBlockStore = kernel.getOrphanBlockStore();
         snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
 
         // 2. if enable snapshot, init snapshot from rocksdb
@@ -158,12 +162,10 @@ public class BlockchainImpl implements Blockchain {
             this.xdagTopStatus = new XdagTopStatus();
 
             if (kernel.getConfig().getSnapshotSpec().isSnapshotJ()) {
-                this.snapshotJ = new SnapshotJ("SNAPSHOTJ");
+
+
+
                 initSnapshotJ();
-            } else {
-                this.snapshotChainStore = new SnapshotChainStoreImpl(
-                        new RocksdbFactory(kernel.getConfig()).getDB(DatabaseName.SNAPSHOT));
-                initSnapshot();
             }
 
             // 保存最新快照的状态
@@ -176,7 +178,9 @@ public class BlockchainImpl implements Blockchain {
                 storedStats.setNwaitsync(0);
                 this.xdagStats = storedStats;
                 this.xdagStats.nextra = 0;
-                storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
+                if (getBlockByHeight(xdagStats.nmain) != null) {
+                    storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
+                }
             } else {
                 this.xdagStats = new XdagStats();
             }
@@ -198,12 +202,21 @@ public class BlockchainImpl implements Blockchain {
     public void initSnapshotJ() {
         long start = System.currentTimeMillis();
         System.out.println("init snapshot...");
-        snapshotJ.setConfig(kernel.getConfig());
-        snapshotJ.init();
-        snapshotJ.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
+
+        RocksdbKVSource snapshotAddressSource = new RocksdbKVSource("SNAPSHOT/ADDRESS");
+        snapshotAddressStore = new SnapshotStoreImpl(snapshotAddressSource);
+        snapshotAddressSource.setConfig(kernel.getConfig());
+        snapshotAddressSource.init();
+        snapshotAddressStore.saveAddress(this.blockStore,this.addressStore,kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
+
+        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOT/BLOCKS");
+        snapshotStore = new SnapshotStoreImpl(snapshotSource);
+        snapshotSource.setConfig(kernel.getConfig());
+        snapshotStore.init();
+        snapshotStore.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
 
-        xdagStats.balance = UInt64.valueOf(snapshotJ.getOurBalance());
+        xdagStats.balance = UInt64.valueOf(snapshotStore.getOurBalance());
         xdagStats.setNwaitsync(0);
         xdagStats.setNnoref(0);
         xdagStats.setNextra(0);
@@ -219,86 +232,19 @@ public class BlockchainImpl implements Blockchain {
         xdagTopStatus.setTopDiff(lastBlock.getInfo().getDifficulty());
         xdagTopStatus.setPreTopDiff(lastBlock.getInfo().getDifficulty());
 
+        long allBalance = snapshotStore.getAllBalance() + snapshotAddressStore.getAllBalance();
+
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
         System.out.println("time：" + (end - start) + "ms");
-        System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotJ.getOurBalance()));
-    }
-
-    public void initSnapshot() {
-        long start = System.currentTimeMillis();
-        initSnapshotChain();
-        initStats();
-        // TODO 清理snapshot的数据
-        cleanSnapshotChain();
-        long end = System.currentTimeMillis();
-        System.out.println("init snapshot done");
-        System.out.println("time：" + (end - start) + "ms");
+        System.out.println("Our balance: " + BasicUtils.amount2xdag(snapshotStore.getOurBalance()));
+        System.out.println(String.format("All amount: %.9f", BasicUtils.amount2xdag(allBalance)));
     }
 
 
     @Override
     public void registerListener(Listener listener) {
         this.listeners.add(listener);
-    }
-
-    public void initStats() {
-        this.xdagStats.setTotalnmain(snapshotHeight);
-        this.xdagStats.setNmain(snapshotHeight);
-        this.xdagStats.setMaxdifficulty(snapshotChainStore.getLatestStatsBlock().getDifficulty());
-        this.xdagStats.setDifficulty(snapshotChainStore.getLatestStatsBlock().getDifficulty());
-        this.xdagStats.setNwaitsync(0);
-        this.xdagStats.setNnoref(0);
-        this.xdagStats.setNextra(0);
-
-        this.xdagStats.setBalance(UInt64.valueOf(snapshotChainStore.getGlobalBalance()));
-//        this.xdagStats.setGlobalMiner();
-        this.xdagStats.setTotalnblocks(0);
-        this.xdagStats.setNblocks(0);
-
-        this.xdagTopStatus.setPreTop(getHashlowByHash(snapshotChainStore.getLatestStatsBlock().getHash()));
-        this.xdagTopStatus.setTop(getHashlowByHash(snapshotChainStore.getLatestStatsBlock().getHash()));
-
-        this.xdagTopStatus.setPreTopDiff(snapshotChainStore.getLatestStatsBlock().getDifficulty());
-        this.xdagTopStatus.setTopDiff(snapshotChainStore.getLatestStatsBlock().getDifficulty());
-    }
-
-    public void initSnapshotChain() {
-        log.info("Snapshot Store init.");
-        snapshotChainStore.init();
-        getBlockFromSnapshot(snapshotChainStore, blockStore);
-    }
-
-    public void cleanSnapshotChain() {
-        snapshotChainStore.reset();
-    }
-
-    protected void getBlockFromSnapshot(SnapshotChainStore snapshotChainStore, BlockStore blockStore) {
-        List<SnapshotUnit> snapshotUnits = snapshotChainStore.getAllSnapshotUnit();
-        for (SnapshotUnit snapshotUnit : snapshotUnits) {
-            BlockInfo blockInfo = SnapshotUnit.trasferToBlockInfo(snapshotUnit);
-            onNewTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
-                    FieldType.XDAG_FIELD_SNAPSHOT,blockInfo.getAmount(),
-                    kernel.getConfig().getSnapshotSpec().getSnapshotTime(),0,
-                    blockInfo.getRemark());
-            blockStore.saveBlockInfo(blockInfo);
-            if (snapshotUnit.getKeyIndex() > -1) {
-                blockStore.saveOurBlock(snapshotUnit.getKeyIndex(), blockInfo.getHashlow());
-            }
-        }
-
-        List<StatsBlock> statsBlocks = snapshotChainStore.getSnapshotStatsBlock();
-        for (StatsBlock statsBlock : statsBlocks) {
-            if (blockStore.hasBlockInfo(Bytes32.wrap(getHashlowByHash(statsBlock.getHash())))) {
-                BlockInfo blockInfo = blockStore
-                        .getBlockInfoByHash(Bytes32.wrap(getHashlowByHash(statsBlock.getHash()))).getInfo();
-                blockInfo.setDifficulty(statsBlock.getDifficulty());
-                blockInfo.setHeight(kernel.getConfig().getSnapshotSpec().getSnapshotHeight()-statsBlock.getHeight());
-                blockStore.saveBlockInfo(blockInfo);
-            }
-        }
-        preSeed = snapshotChainStore.getSnapshotPreSeed();
-        blockStore.savePreSeed(preSeed);
     }
 
     /**
@@ -317,12 +263,14 @@ public class BlockchainImpl implements Blockchain {
                 if (type != XDAG_FIELD_HEAD.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a mainnet block");
+                    log.debug("Block type error, is not a mainnet block");
                     return result;
                 }
             } else {
                 if (type != XDAG_FIELD_HEAD_TEST.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a testnet block");
+                    log.debug("Block type error, is not a testnet block");
                     return result;
                 }
             }
@@ -333,6 +281,7 @@ public class BlockchainImpl implements Blockchain {
             ) {
                 result = ImportResult.INVALID_BLOCK;
                 result.setErrorInfo("Block's time is illegal");
+                log.debug("Block's time is illegal");
                 return result;
             }
 
@@ -363,6 +312,7 @@ public class BlockchainImpl implements Blockchain {
                             result = ImportResult.INVALID_BLOCK;
                             result.setHashlow(ref.getAddress());
                             result.setErrorInfo("Address's amount isn't zero");
+                            log.debug("Address's amount isn't zero");
                             return result;
                         }
                         Block refBlock = getBlockByHash(ref.getAddress(), false);
@@ -371,6 +321,7 @@ public class BlockchainImpl implements Blockchain {
                             result = ImportResult.NO_PARENT;
                             result.setHashlow(ref.getAddress());
                             result.setErrorInfo("Block have no parent for " + result.getHashlow().toHexString());
+                            log.debug("Block have no parent for " + result.getHashlow().toHexString());
                             return result;
                         } else {
                             // 链接块的时间需要小于该块时间，否则为不合法区块
@@ -378,6 +329,7 @@ public class BlockchainImpl implements Blockchain {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(refBlock.getHashLow());
                                 result.setErrorInfo("Ref block's time >= block's time");
+                                log.debug("Ref block's time >= block's time");
                                 return result;
                             }
 
@@ -388,6 +340,7 @@ public class BlockchainImpl implements Blockchain {
                     if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
+                        log.debug("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                 }
@@ -406,6 +359,7 @@ public class BlockchainImpl implements Blockchain {
                 result = ImportResult.INVALID_BLOCK;
                 result.setHashlow(block.getHashLow());
                 result.setErrorInfo("Block's input can't be used");
+                log.debug("Block's input can't be used");
                 return ImportResult.INVALID_BLOCK;
             }
 
@@ -511,7 +465,7 @@ public class BlockchainImpl implements Blockchain {
             } else {
 //                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
-                orphanPool.addOrphan(block);
+                orphanBlockStore.addOrphan(block);
                 xdagStats.nnoref++;
             }
             blockStore.saveXdagStatus(xdagStats);
@@ -686,6 +640,7 @@ public class BlockchainImpl implements Blockchain {
         log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
 //        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
         if (xdagTopStatus.getTop() != null) {
+            log.debug("now top : {}", Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
                     && !blockEqual(block, tmp); tmp = getMaxDiffLink(tmp, true)) {
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
@@ -1035,7 +990,7 @@ public class BlockchainImpl implements Blockchain {
      * @Param [num]
      **/
     public List<Address> getBlockFromOrphanPool(int num, long[] sendtime) {
-        return orphanPool.getOrphan(num, sendtime);
+        return orphanBlockStore.getOrphan(num, sendtime);
     }
 
     public Bytes32 getPreTopMainBlockForLink(long sendTime) {
@@ -1280,7 +1235,7 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(removeBlockRaw, BI_EXTRA, false);
                 xdagStats.nextra--;
             } else {
-                orphanPool.deleteByHash(b.getHashLow().toArray());
+                orphanBlockStore.deleteByHash(b.getHashLow().toArray());
                 xdagStats.nnoref--;
             }
             // 更新这个块的flag
@@ -1373,7 +1328,7 @@ public class BlockchainImpl implements Blockchain {
     private boolean verifyBlockSignature(Address in, List<SECPPublicKey> keys) {
         Bytes pubHash = in.getAddress().mutableCopy().slice(8,20);
         for (SECPPublicKey key : keys) {
-            if(Arrays.areEqual(pubHash.toArray(),Keys.Pub2Byte(key))) return true;
+            if(Arrays.areEqual(pubHash.toArray(),Keys.toBytesAddress(key))) return true;
         }
         return false;
     }
@@ -1704,7 +1659,7 @@ public class BlockchainImpl implements Blockchain {
         if (temp == null) {
             temp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getPreTop()), false);
         }
-        List<Block> res = new ArrayList<>();
+        List<Block> res = Lists.newArrayList();
         while (count > 0) {
             if (temp == null) {
                 break;

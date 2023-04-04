@@ -22,13 +22,13 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.db;
+package io.xdag.db.rocksdb;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XdagField;
+import io.xdag.db.OrphanBlockStore;
 import io.xdag.utils.BytesUtils;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -36,18 +36,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 
-@Slf4j
-public class OrphanPool {
+import com.google.common.collect.Lists;
 
-    public static final byte ORPHAN_PREFEX = 0x00;
-    /**
-     * size key
-     */
-    private static final byte[] ORPHAN_SIZE = Hex.decode("FFFFFFFFFFFFFFFF");
+@Slf4j
+public class OrphanBlockStoreImpl implements OrphanBlockStore {
+
+
     // <hash,nexthash>
     private final KVSource<byte[], byte[]> orphanSource;
 
-    public OrphanPool(KVSource<byte[], byte[]> orphan) {
+    public OrphanBlockStoreImpl(KVSource<byte[], byte[]> orphan) {
         this.orphanSource = orphan;
     }
 
@@ -64,7 +62,7 @@ public class OrphanPool {
     }
 
     public List<Address> getOrphan(long num, long[] sendtime) {
-        List<Address> res = new ArrayList<>();
+        List<Address> res = Lists.newArrayList();
         if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
             return null;
         } else {

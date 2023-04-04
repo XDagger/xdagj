@@ -22,32 +22,41 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.rpc.modules.xdag;
+package io.xdag.db.rocksdb;
 
-import static io.xdag.rpc.exception.XdagJsonRpcRequestException.invalidParamError;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import org.apache.commons.lang3.tuple.Pair;
 
-import io.xdag.Kernel;
-import io.xdag.rpc.Web3;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public interface KVSource<K, V> {
 
-public class XdagModuleTransactionDisabled extends XdagModuleTransactionBase {
+    String getName();
 
-    private static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionDisabled.class);
+    void setName(String name);
 
-    public XdagModuleTransactionDisabled(Kernel kernel) {
-        super(kernel);
-    }
+    boolean isAlive();
 
-    @Override
-    public String sendTransaction(Web3.CallArguments args) {
-        logger.debug("xdag_sendTransaction({}): {}", args, null);
-        throw invalidParamError("Local wallet is disabled in this node");
-    }
+    void init();
 
-    @Override
-    public String sendRawTransaction(String rawData) {
-        logger.debug("xdag_sendRawTransaction({}): {}", rawData, null);
-        throw invalidParamError("Local wallet is disabled in this node");
-    }
+    void close();
+
+    void reset();
+
+    void put(K key, V val);
+
+    V get(K key);
+
+    void delete(K key);
+
+    Set<byte[]> keys() throws RuntimeException;
+
+    List<K> prefixKeyLookup(byte[] key);
+
+    void fetchPrefix(byte[] key, Function<Pair<K, V>, Boolean> func);
+
+    List<V> prefixValueLookup(byte[] key);
+
+    List<Pair<byte[], byte[]>> prefixKeyAndValueLookup(byte[] key);
+
 }

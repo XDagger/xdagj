@@ -28,13 +28,6 @@ import static io.xdag.net.message.XdagMessageCodes.NEW_BALANCE;
 import static io.xdag.net.message.XdagMessageCodes.TASK_SHARE;
 import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 
-import java.io.IOException;
-import java.util.List;
-
-import jakarta.xml.bind.DatatypeConverter;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.tuweni.bytes.MutableBytes;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -43,7 +36,12 @@ import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.PubkeyAddressUtils;
+import jakarta.xml.bind.DatatypeConverter;
+import java.io.IOException;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.tuweni.bytes.MutableBytes;
 
 @Slf4j
 public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {

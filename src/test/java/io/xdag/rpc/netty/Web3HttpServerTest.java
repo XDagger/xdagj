@@ -26,34 +26,38 @@ package io.xdag.rpc.netty;
 
 import static org.junit.Assert.assertEquals;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.xdag.rpc.Web3;
-import io.xdag.rpc.cors.CorsConfiguration;
-import io.xdag.rpc.modules.ModuleDescription;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.google.common.collect.Lists;
+
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.xdag.rpc.Web3;
+import io.xdag.rpc.cors.CorsConfiguration;
+import io.xdag.rpc.modules.ModuleDescription;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.junit.Test;
-import org.mockito.Mockito;
 
 public class Web3HttpServerTest {
 
@@ -125,7 +129,7 @@ public class Web3HttpServerTest {
     @Test
     public void smokeTestUsingValidHostAndHostName() throws Exception {
         String domain = "www.google.com";
-        List<String> rpcHost = new ArrayList<>();
+        List<String> rpcHost = Lists.newArrayList();
         rpcHost.add(domain);
         smokeTest(APPLICATION_JSON, domain, InetAddress.getByName(domain), rpcHost);
     }
@@ -133,11 +137,11 @@ public class Web3HttpServerTest {
     @Test
     public void smokeTestUsingInvalidHostAndHostName() throws Exception {
         InetAddress google = InetAddress.getByName("www.google.com");
-        smokeTest(APPLICATION_JSON, google.getHostAddress(), google, new ArrayList<>());
+        smokeTest(APPLICATION_JSON, google.getHostAddress(), google, Lists.newArrayList());
     }
 
     private void smokeTest(String contentType, String host) throws Exception {
-        smokeTest(contentType, host, InetAddress.getLoopbackAddress(), new ArrayList<>());
+        smokeTest(contentType, host, InetAddress.getLoopbackAddress(), Lists.newArrayList());
     }
 
     private void smokeTest(String contentType, String host, InetAddress rpcAddress, List<String> rpcHost)

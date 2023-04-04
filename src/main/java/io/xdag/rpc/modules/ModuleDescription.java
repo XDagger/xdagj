@@ -24,8 +24,9 @@
 
 package io.xdag.rpc.modules;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.collect.Lists;
 
 public class ModuleDescription {
 
@@ -41,8 +42,8 @@ public class ModuleDescription {
         this.name = name;
         this.version = version;
         this.enabled = enabled;
-        this.enabledMethods = enabledMethods == null ? new ArrayList<>() : enabledMethods;
-        this.disabledMethods = disabledMethods == null ? new ArrayList<>() : disabledMethods;
+        this.enabledMethods = enabledMethods == null ? Lists.newArrayList() : enabledMethods;
+        this.disabledMethods = disabledMethods == null ? Lists.newArrayList() : disabledMethods;
     }
 
     public String getName() {

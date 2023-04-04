@@ -26,7 +26,6 @@ package io.xdag.db.rocksdb;
 
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
-import io.xdag.db.KVSource;
 import io.xdag.utils.BytesUtils;
 import java.io.File;
 import java.io.IOException;
@@ -235,7 +234,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                                 + (val == null ? "null" : val.length));
             }
         } catch (RocksDBException e) {
-//            System.out.println("Failed to put into db");
             log.error("Failed to put into db '{}'", name, e);
             hintOnTooManyOpenFiles(e);
             throw new RuntimeException(e);
@@ -244,7 +242,6 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         }
     }
 
-    //get 不到
     @Override
     public byte[] get(byte[] key) {
         resetDbLock.readLock().lock();

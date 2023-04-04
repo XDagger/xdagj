@@ -37,8 +37,10 @@ import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.core.Address;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
@@ -47,7 +49,6 @@ import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.exception.XdagOverFlowException;
-import io.xdag.wallet.Wallet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +174,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;
         }
-        List<String> resInfo = new ArrayList<>();
+        List<String> resInfo = Lists.newArrayList();
         // create transaction
         List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark);
         for (BlockWrapper blockWrapper : txs) {

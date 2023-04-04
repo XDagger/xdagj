@@ -24,34 +24,28 @@
 
 package io.xdag.cli;
 
-import static io.xdag.wallet.WalletUtils.WALLET_PASSWORD_PROMPT;
+import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 import io.xdag.Kernel;
 import io.xdag.Launcher;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
-import io.xdag.config.MainnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.Sign;
-import io.xdag.db.DatabaseFactory;
-import io.xdag.db.DatabaseName;
-import io.xdag.db.SnapshotChainStore;
-import io.xdag.db.SnapshotChainStoreImpl;
-import io.xdag.db.SnapshotJ;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.SnapshotStore;
+import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbKVSource;
+import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.wallet.Wallet;
-import java.io.Console;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -63,6 +57,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import com.google.common.collect.Lists;
 
 public class XdagCli extends Launcher {
 
@@ -123,12 +119,6 @@ public class XdagCli extends Launcher {
                 .build();
         addOption(convertOldWalletOption);
 
-        Option loadSnapshotOption = Option.builder()
-                .longOpt(XdagOption.LOAD_SNAPSHOT.toString()).desc("load snapshot")
-                .hasArg(true).optionalArg(false).argName("filename").type(String.class)
-                .build();
-        addOption(loadSnapshotOption);
-
         Option bootSnapshotOption = Option.builder()
                 .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
                 .hasArg(true).numberOfArgs(3).optionalArg(false)
@@ -162,7 +152,7 @@ public class XdagCli extends Launcher {
         Config config = buildConfig(args);
         setConfig(config);
         // move old args
-        List<String> argsList = new ArrayList<>();
+        List<String> argsList = Lists.newArrayList();
         for (String arg : args) {
             if (StringUtils.equalsAny(arg, "-d", "-t")) {
                 // only devnet or testnet
@@ -200,9 +190,6 @@ public class XdagCli extends Launcher {
             importPrivateKey(cmd.getOptionValue(XdagOption.IMPORT_PRIVATE_KEY.toString()).trim());
         } else if (cmd.hasOption(XdagOption.IMPORT_MNEMONIC.toString())) {
             importMnemonic(cmd.getOptionValue(XdagOption.IMPORT_MNEMONIC.toString()).trim());
-        } else if (cmd.hasOption(XdagOption.LOAD_SNAPSHOT.toString())) {
-            File file = new File(cmd.getOptionValue(XdagOption.LOAD_SNAPSHOT.toString()).trim());
-            loadSnapshot(file);
         } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
             boolean convertUInt = false;
             String action = cmd.getOptionValue(XdagOption.MAKE_SNAPSHOT.toString());
@@ -403,21 +390,6 @@ public class XdagCli extends Launcher {
         return true;
     }
 
-    // snapshot load
-    protected void loadSnapshot(File file) {
-        Config config = getConfig();
-        DatabaseFactory dbFactory = new RocksdbFactory(config);
-        SnapshotChainStore snapshotChainStore = new SnapshotChainStoreImpl(dbFactory.getDB(DatabaseName.SNAPSHOT));
-        snapshotChainStore.reset();
-        boolean mainLag = config instanceof MainnetConfig;
-        Wallet wallet = loadAndUnlockWallet();
-        long start = System.currentTimeMillis();
-        boolean res = snapshotChainStore.loadFromSnapshotData(file.getAbsolutePath(), mainLag, wallet.getAccounts());
-        long end = System.currentTimeMillis();
-        System.out.println("load res: " + res);
-        System.out.println("time: " + (end - start) / 1000 + "s");
-    }
-
     public Wallet loadWallet() {
         return new Wallet(getConfig());
     }
@@ -534,18 +506,58 @@ public class XdagCli extends Launcher {
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());
         blockSource.setConfig(getConfig());
         blockSource.init();
-        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOTJ");
+        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOT/BLOCKS");
         snapshotSource.setConfig(getConfig());
         snapshotSource.init();
-        SnapshotJ index = new SnapshotJ(DatabaseName.INDEX.toString());
-        index.setConfig(getConfig());
-        index.init();
-        index.makeSnapshot(blockSource, snapshotSource, b);
+        RocksdbKVSource indexSource = new RocksdbKVSource(DatabaseName.INDEX.toString());
+        indexSource.setConfig(getConfig());
+        indexSource.init();
+        SnapshotStore snapshotStore = new SnapshotStoreImpl(snapshotSource);
 
+        snapshotStore.makeSnapshot(blockSource,indexSource,b);
+
+        Path source = Paths.get(getConfig().getRootDir() + "/rocksdb/xdagdb/ADDRESS");
+        Path target = Paths.get(getConfig().getRootDir() + "/rocksdb/xdagdb/SNAPSHOT/ADDRESS");
+        copyDir(source.toString(),target.toString());
         long end = System.currentTimeMillis();
         System.out.println("make snapshot done");
         System.out.println("time：" + (end - start) + "ms");
-        System.out.println("snapshot height: " + index.getHeight());
-        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(index.getNextTime()) + 1));
+        System.out.println("snapshot height: " + snapshotStore.getHeight());
+        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(snapshotStore.getNextTime()) + 1));
+    }
+    public static void copyDir(String sourcePath, String newPath) {
+        File start = new File(sourcePath);
+        File end = new File(newPath);
+        String[] filePath = start.list();		//获取该文件夹下的所有文件以及目录的名字
+        if(!end.exists()) {
+            end.mkdir();
+        }
+        for(String temp:filePath) {
+            //查看其数组中每一个是文件还是文件夹
+            if(new File(sourcePath+File.separator+temp).isDirectory()) {
+                //为文件夹，进行递归
+                copyDir(sourcePath+File.separator+temp, newPath+File.separator+temp);
+            }else {
+                //为文件则进行拷贝
+                copyFile(sourcePath+File.separator+temp, newPath+File.separator+temp);
+            }
+        }
+    }
+    public static void copyFile(String sourcePath, String newPath) {
+        File start = new File(sourcePath);
+        File end = new File(newPath);
+        try(BufferedInputStream bis=new BufferedInputStream(new FileInputStream(start));
+            BufferedOutputStream bos=new BufferedOutputStream(new FileOutputStream(end))) {
+            int len = 0;
+            byte[] flush = new byte[1024];
+            while((len=bis.read(flush)) != -1) {
+                bos.write(flush, 0, len);
+            }
+            bos.flush();
+        }catch(FileNotFoundException e) {
+            e.printStackTrace();
+        }catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -6,7 +6,8 @@
 
 
 ## Directory
-  - [System environment](#system-environment)
+
+- [System environment](#system-environment)
   - [Installation and usage](#installation-and-usage)
   - [Develop](#develop)
     - [XDAG Mars Project](#XDAG-Mars-Project)
@@ -17,14 +18,15 @@
   - [License](#license)
 
 ## System environment
-```yaml
-JDK   : v17
-Maven : v3.8.3
+
 ```
+JDK: v17
+Maven: v3.8.3
+```
+
 ## Installation and usage
 
-XDAGJ Testnet Tutorial can help you quickly access XDAGJ testnet by using wallets and mining functions.
-The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
+The XDAGJ Testnet Tutorial can help you quickly access XDAGJ testnet by using wallets and mining functions. The Private Chain Building Tutorial helps you to build a private-chain for testing XDAGJ and finding bugs.
 
 [XDAGJ_TestNet_Tutorial](./docs/XDAGJ_TestNet_Tutorial_en.md)
 
@@ -34,11 +36,11 @@ The Private Chain Building Tutorial helps you to build a private-chain for testi
 
 ## Develop
 
-XDAGJ has the basic functions as a pool. Follow-up works will improve the stability of the system and add new functions. The aim is to prepar for XDAG to enter the metaverse. It is important to adopt excellent blockchain technology.
+XDAGJ has basic pool functions. Follow-up work will improve system stability and add new functions. The goal is to prepare XDAG for entry into the metaverse. It is important to adopt excellent blockchain technology.
 
 ### XDAG Mars Project
 
-Four stages：
+Four stages:
 
 #### Exploration phase: XDAGJ testnet is online (online, in beta)
 
@@ -57,33 +59,35 @@ Four stages：
 
 - [x] Add test cases: write test cases for existing functions
 
-- [x] Add log functions: provide a relatively complete log service to facilitate trouble shooting
+- [x] Add log functions: provide a relatively complete log service to facilitate troubleshooting
 
 - [x] Optimize synchronization protocol: ameliorate the existing synchronization protocol and improve synchronization efficiency
 
-- [x] Implement the snapshot function: reduce the cost of runing a mining pool and boost the loading process
+- [x] Implement the snapshot function: reduce the cost of running a mining pool and boost the loading process
 
-- [x] Implement the RPC function: access to Web3j, realize the standardization of the interface
+- [x] Implement the RPC function: access Web3j, realize the standardization of the interface
 
 - [x] Introduce the Stratum protocol for miners
 
-- [ ] Lightweight wallet application: connect to MateMask, join the browser wallet
+- [ ] Lightweight wallet application: connect to MetaMask, join the browser wallet
 
 - [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
-#### Expansion phase: XDAGJ & EVM 
+
+#### Expansion phase: XDAGJ & EVM
 
 - [x] Improve the address block structure 
 
 - [ ] Increase the handling fee
 
-- [x] Optimize and improve mobile wallets to improve user experience
+- [x] Optimize and improve mobile wallets to improve the user experience
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
 - [x] Decrease the threshold of mining pool users 
 
 - [ ] Open the whitelist to achieve complete decentralization
+
 
 #### Prosperity phase: XDAGJ & DeFi
 
@@ -108,11 +112,11 @@ Four stages：
 
 - Commit Message
 
-  The submission message must begin with a short subject line, followed by an optional, more detailed explanatory text, which is separated from the abstract by a blank line.
+  The submission message must begin with a short subject line, followed by an optional, more detailed explanatory text, which should be separated from the abstract by a blank line.
 
 - Pull Request
 
-  The pull request must be as clear and detailed as possible, including all related issues. If the pull request is to close an issue, please use the Github keyword convention [close, fix, or resolve](https://help.github.com/articles/closing-issues-via-commit-messages/). If the pull request only completes part of the problem, use the `connected` keyword. This helps our tool to correctly link the issue to the pull request.
+  The pull request must be as clear and detailed as possible, including all related issues. If the pull request is to close an issue, please use the Github keyword convention [`close`, `fix`, or `resolve`](https://help.github.com/articles/closing-issues-via-commit-messages/). If the pull request only completes part of the problem, use the `connected` keyword. This helps our tool to correctly link the issue to the pull request.
 
 - Code Style
 
@@ -120,7 +124,7 @@ Four stages：
 
 - Code Review
 
-  We value the quality and accuracy of the code. Therefore, we will review all the code that needs to be changed.
+  We value the quality and accuracy of the code. Therefore, we will review all of the code that needs to be changed.
 
 ## FAQ
 
@@ -134,35 +138,32 @@ Four stages：
 
 - Security Question
 
-  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, we hope you can give it back as soon as possible.
+  XDAGJ is still in the process of large-scale development, which means that there may be problems with existing codes or protocols, or errors that may exist in practice. If you find a security problem, we hope you can report it back as soon as possible.<br /><br />
 
   If you find a problem that may affect the security of the deployed system, we hope that you can send the problem privately to xdagj@xdag.io. Please do not discuss it publicly!
 
   If the problem is a weakness of the agreement or does not affect the online system, it can be discussed publicly and posted to [issues](https://github.com/XDagger/xdagj.git).
 
-- features
+- Features
 
-  We are very happy to add more useful and interesting new features to XDAGJ. You can talk about any interesting new features.
+  We are very happy to add more useful and interesting new features to XDAGJ. You can suggest any interesting new features that you think would be beneficial.
 
-If you are interested in the development of XDAGJ, we also welcome you to join the developer team and contribute your strength to XDAGJ. You can get in touch with us at xdagj@xdag.io .
+  If you are interested in the development of XDAGJ, we also welcome you to join the developer team and contribute your strength to XDAGJ. You can get in touch with us at xdagj@xdag.io.
 
 ## Sponsorship
 
-Since the Apollo Project was launched, XDAGJ has achieved a 0 to 1 breakthrough. The development of XDAGJ has been on the right track. Your support can drive a successful technology implementation of XDAGJ.
-
+Since the launch of the Apollo Project, XDAGJ has made a significant breakthrough from 0 to 1. The development of XDAGJ has been on the right track. Your support can drive the successful implementation of XDAGJ technology.
 XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
 
 ## Other
 
 [XDAGJ Libp2p Introduction](./docs/XDAGJ_Networking_Specification.md)
 
-[XDAG WIKI](https://github.com/XDagger/xdag/wiki)
+[XDAG Wiki](https://github.com/XDagger/xdag/wiki)
 
 [XDAG Whitepaper](https://github.com/XDagger/xdag/blob/master/WhitePaper.md)
 
 [XDAG Protocol](https://github.com/XDagger/xdag/blob/master/Protocol.md)
-
-
 
 ## License
 

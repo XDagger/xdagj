@@ -40,13 +40,14 @@ import io.xdag.net.libp2p.discovery.DiscV5Service;
 import io.xdag.net.libp2p.peer.NodeId;
 import io.xdag.utils.SafeFuture;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.KeyPair;
+
+import com.google.common.collect.Lists;
 
 @Slf4j
 @Getter
@@ -66,7 +67,7 @@ public class Libp2pNetwork {
         this.protocol = new NonProtocol();
         this.privKey = privKey;
         this.advertisedAddr = listenAddr;
-        this.bootnodes = new ArrayList<>();
+        this.bootnodes = Lists.newArrayList();
     }
 
     public Libp2pNetwork(Kernel kernel) {

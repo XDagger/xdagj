@@ -38,7 +38,6 @@ import io.xdag.net.libp2p.peer.NodeId;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
 
 @Getter
 @Setter
@@ -49,15 +48,14 @@ public class NonProtocol implements ProtocolBinding<NonProtocol.Controller> {
     public NonProtocol() {
     }
 
-    @NotNull
     @Override
     public ProtocolDescriptor getProtocolDescriptor() {
         return new ProtocolDescriptor("xdagj-non-protocol");
     }
 
-    @NotNull
+
     @Override
-    public CompletableFuture<Controller> initChannel(@NotNull P2PChannel p2PChannel, @NotNull String s) {
+    public CompletableFuture<Controller> initChannel(P2PChannel p2PChannel, String s) {
         this.connection = ((Stream) p2PChannel).getConnection();
         final NodeId nodeId = new LibP2PNodeId(connection.secureSession().getRemoteId());
         Controller controller = new Controller(nodeId, p2PChannel);

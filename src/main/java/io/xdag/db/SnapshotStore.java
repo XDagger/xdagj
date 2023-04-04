@@ -21,15 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-//package io.xdag.rpc.modules.eth.subscribe;
-//
-//import com.fasterxml.jackson.annotation.JsonTypeInfo;
-//import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-//import io.netty.channel.Channel;
-//
-//@JsonDeserialize(using = EthSubscribeParamsDeserializer.class)
-//@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-//public interface EthSubscribeParams {
-//    SubscriptionId accept(EthSubscribeParamsVisitor visitor, Channel channel);
-//}
-//
+package io.xdag.db;
+
+import io.xdag.core.BlockInfo;
+import io.xdag.core.PreBlockInfo;
+import io.xdag.db.rocksdb.RocksdbKVSource;
+import java.util.List;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.rocksdb.RocksIterator;
+
+public interface SnapshotStore {
+
+    void init();
+
+    void reset();
+
+    void makeSnapshot(RocksdbKVSource blockSource,RocksdbKVSource indexSource,boolean b);
+
+    void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime);
+
+    void saveAddress(BlockStore blockStore,AddressStore addressStore,List<KeyPair> keys,long snapshotTime);
+
+    void save(RocksIterator iter, BlockInfo blockInfo);
+
+    void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo);
+
+    long getOurBalance();
+
+    long getNextTime();
+
+    long getHeight();
+
+    long getAllBalance();
+
+}

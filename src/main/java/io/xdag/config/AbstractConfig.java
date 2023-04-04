@@ -24,15 +24,21 @@
 
 package io.xdag.config;
 
+import com.google.common.collect.Lists;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
-import io.xdag.config.spec.*;
+import io.xdag.config.spec.AdminSpec;
+import io.xdag.config.spec.NodeSpec;
+import io.xdag.config.spec.PoolSpec;
+import io.xdag.config.spec.RPCSpec;
+import io.xdag.config.spec.RandomxSpec;
+import io.xdag.config.spec.SnapshotSpec;
+import io.xdag.config.spec.WalletSpec;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.rpc.modules.ModuleDescription;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
@@ -111,8 +117,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int TTL = 5;
     protected byte[] dnetKeyBytes = new byte[2048];
     protected DnetKeys xKeys;
-    protected List<InetSocketAddress> whiteIPList = new ArrayList<>() {
-    };
+    protected List<InetSocketAddress> whiteIPList = Lists.newArrayList();
 
 
     // =========================
@@ -121,7 +126,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int libp2pPort;
     protected boolean isBootnode;
     protected String libp2pPrivkey;
-    protected List<String> bootnodes = new ArrayList<>();
+    protected List<String> bootnodes = Lists.newArrayList();
 
     // =========================
     // Wallet spec
@@ -389,7 +394,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             return this.moduleDescriptions;
         }
 
-        List<ModuleDescription> modules = new ArrayList<>();
+        List<ModuleDescription> modules = Lists.newArrayList();
 
         com.typesafe.config.Config configFromFiles = ConfigFactory.load("rpc_modules");
         List<? extends ConfigObject> list = configFromFiles.getObjectList("rpc.modules");

@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
@@ -38,7 +39,6 @@ import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +47,8 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 public class WalletTest {
 
@@ -178,7 +180,7 @@ public class WalletTest {
     public void testHDKeyRecover() {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<KeyPair> keyPairList1 = new ArrayList<>();
+        List<KeyPair> keyPairList1 = Lists.newArrayList();
         int hdkeyCount = 5;
         for (int i = 0; i < hdkeyCount; i++) {
             KeyPair key = wallet.addAccountWithNextHdKey();
@@ -190,7 +192,7 @@ public class WalletTest {
         // use different password and same mnemonic
         wallet2.unlock(pwd + pwd);
         wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<KeyPair> keyPairList2 = new ArrayList<>();
+        List<KeyPair> keyPairList2 = Lists.newArrayList();
         for (int i = 0; i < hdkeyCount; i++) {
             KeyPair key = wallet2.addAccountWithNextHdKey();
             keyPairList2.add(key);
