@@ -80,7 +80,7 @@ Four stages:
 
 - [ ] Increase the handling fee
 
-- [x] Optimize and improve mobile wallets to improve the user experience
+- [x] Optimize wallets to improve the user experience
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
