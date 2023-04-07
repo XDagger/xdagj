@@ -15,7 +15,7 @@
 
   ```yaml
   JDK   : v17
-  Maven : v3.8.4
+  Maven : v3.9.1
   ```
 
   Please make sure that the above environment is already available in your operating system, and the JDK version must be 17

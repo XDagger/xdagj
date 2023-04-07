@@ -21,8 +21,15 @@
 
 ```
 JDK: v17
-Maven: v3.8.3
+Maven: v3.9.1
 ```
+
+### JDK 17 Download
+Eclipse Temurin™ 17 Latest Releases(https://adoptium.net/temurin/releases/)
+
+### Maven 3.9.1 Download
+Apache Maven 3.9.x Latest Releases(https://maven.apache.org/download.cgi)
+
 
 ## Installation and usage
 
