@@ -20,8 +20,15 @@
 
 ```yaml
 JDK   : v17
-Maven : v3.8.3
+Maven : v3.9.1
 ```
+
+### JDK 17 下载
+Eclipse Temurin™ 17 Latest Releases(https://adoptium.net/temurin/releases/)
+
+### Maven 3.9.x 下载
+Apache Maven 3.9.x Latest Releases(https://maven.apache.org/download.cgi)
+
 
 ## 安装与用法
 
