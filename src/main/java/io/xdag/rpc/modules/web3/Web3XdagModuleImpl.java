@@ -63,6 +63,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import io.xdag.utils.PubkeyAddressUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -285,7 +287,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     }
 
     private PoolWorkerDTO getPoolWorkerDTO(PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder,Miner miner){
-        poolWorkerDTOBuilder.address(BasicUtils.hash2Address(miner.getAddressHash()))
+        poolWorkerDTOBuilder.address(PubkeyAddressUtils.toBase58(miner.getAddressHashByte()))
                 .status(miner.getMinerStates().toString())
                 .unpaidShares(MinerCalculate.calculateUnpaidShares(miner))
                 .hashrate(BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff()))
