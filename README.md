@@ -21,8 +21,15 @@
 
 ```
 JDK: v17
-Maven: v3.8.3
+Maven: v3.9.1
 ```
+
+### JDK 17 Download
+Eclipse Temurin™ 17 Latest Releases(https://adoptium.net/temurin/releases/)
+
+### Maven 3.9.1 Download
+Apache Maven 3.9.x Latest Releases(https://maven.apache.org/download.cgi)
+
 
 ## Installation and usage
 
@@ -76,13 +83,17 @@ Four stages:
 
 #### Expansion phase: XDAGJ & EVM
 
-- [ ] Improve the address block structure and increase the handling fee
+- [x] Improve the address block structure 
 
-- [x] Optimize and improve mobile wallets to improve the user experience
+- [ ] Increase the handling fee
+
+- [x] Optimize wallets to improve the user experience
 
 - [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
 
-- [ ] Lower the threshold of mining pool users and gradually open the whitelist to achieve complete decentralization
+- [x] Decrease the threshold of mining pool users 
+
+- [ ] Open the whitelist to achieve complete decentralization
 
 
 #### Prosperity phase: XDAGJ & DeFi
@@ -125,10 +136,9 @@ Four stages:
 ## FAQ
 
 - Time Synchronization Method with NTP
+  [XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)
 
-  [XDAGJ_Time_Synchronization](./docs/XDAGJ_Time_Synchronization_en.md)]
 - XDAGJ RPC Document
-
   [XDAGJ_RPC](./docs/XDAGJ_RPC.md)
 
 ## Contribution
