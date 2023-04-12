@@ -160,7 +160,7 @@ Four stages:
 ## Sponsorship
 
 Since the launch of the Apollo Project, XDAGJ has made a significant breakthrough from 0 to 1. The development of XDAGJ has been on the right track. Your support can drive the successful implementation of XDAGJ technology.
-XDAG：+89Zijf2XsXqbdVK7rdfR4F8+RkHkAPh
+XDAG：BkcVG4i1BfxUJLdNPdctaCReBoyn4j32d
 
 ## Other
 
