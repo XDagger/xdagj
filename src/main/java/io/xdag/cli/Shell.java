@@ -30,7 +30,6 @@ import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.PubkeyAddressUtils;
 import io.xdag.utils.WalletUtils;
 import java.util.HashMap;
 import java.util.List;
@@ -130,7 +129,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             String address = argv.get(0);
             try {
                 Bytes32 hash;
-                if (PubkeyAddressUtils.checkAddress(address)) {
+                if (WalletUtils.checkAddress(address)) {
                     hash = pubAddress2Hash(address);
                 } else {
                     println("Incorrect address");
@@ -377,7 +376,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            if (PubkeyAddressUtils.checkAddress(argv.get(1))) {
+            if (WalletUtils.checkAddress(argv.get(1))) {
                 hash = pubAddress2Hash(argv.get(1));
             } else {
                 println("Incorrect address");

@@ -29,10 +29,9 @@ import lombok.Data;
 
 @Data
 @Builder
-//TODO: return xdag status
 public class StatusDTO {
 
-    // status 状态信息
+    // status info
     private final String nblock;
     private final String totalNblocks;
     private final String nmain;
