@@ -410,15 +410,8 @@ public class BlockchainImpl implements Blockchain {
 
             // 更新区块难度和maxDiffLink
             BigInteger cuDiff = calculateCurrentBlockDiff(block);
-            BigInteger diff = calculateBlockDiff(block,cuDiff);
-
-            // 更新preTop
-            setPreTop(block, diff);
-            setPreTop(getBlockByHash(xdagTopStatus.getTop() == null ? null : Bytes32.wrap(xdagTopStatus.getTop()),
-                    false), xdagTopStatus.getTopDiff());
-
-            // 通知XdagPoW 新pretop产生
-            onNewPretop();
+            // 计算区块难度
+            calculateBlockDiff(block,cuDiff);
 
             // TODO:extra 处理
             processExtraBlock();
@@ -439,9 +432,20 @@ public class BlockchainImpl implements Blockchain {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
+                // 保存当前的Top
+                Block currentTop = getBlockByHash(xdagTopStatus.getTop() == null ? null :
+                        Bytes32.wrap(xdagTopStatus.getTop()), false);
+                BigInteger currentTopDiff = getXdagTopStatus().getTopDiff();
                 log.debug("update top: {}", block.getHashLow());
+                // 更新Top
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
+                // 更新 preTop
+                setPreTop(currentTop,currentTopDiff);
+                // 如果该区块周期比当前任务周期大，不触发重新生成区块
+                if (XdagTime.getEpoch(block.getTimestamp()) < XdagTime.getCurrentEpoch()) {
+                    onNewPretop();
+                }
                 result = ImportResult.IMPORTED_BEST;
                 xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
                 xdagStats.updateDiff(xdagTopStatus.getTopDiff());
@@ -594,7 +598,7 @@ public class BlockchainImpl implements Blockchain {
 
     protected void onNewPretop() {
         for (Listener listener : listeners) {
-            listener.onMessage(new PretopMessage(Bytes.wrap(xdagTopStatus.getPreTop()), PRE_TOP));
+            listener.onMessage(new PretopMessage(Bytes.wrap(xdagTopStatus.getTop()), PRE_TOP));
         }
     }
 
@@ -612,8 +616,8 @@ public class BlockchainImpl implements Blockchain {
         Block p = null;
         int i = 0;
         // TODO: 如果是快照点主块会直接返回，因为快照点前的数据都已经确定好
-        if (xdagTopStatus.getTop() != null) {
-            for (Block block = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false); block != null
+        if (getXdagTopStatus().getTop() != null) {
+            for (Block block = getBlockByHash(Bytes32.wrap(getXdagTopStatus().getTop()), false); block != null
                     && ((block.getInfo().flags & BI_MAIN) == 0);
                     block = getMaxDiffLink(getBlockByHash(block.getHashLow(), true), true)) {
 
@@ -638,10 +642,11 @@ public class BlockchainImpl implements Blockchain {
      */
     public void unWindMain(Block block) {
         log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
-//        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
-        if (xdagTopStatus.getTop() != null) {
-            log.debug("now top : {}", Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
-            for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
+//        log.debug("getXdagTopStatus().getTop(),{}",getXdagTopStatus().getTop()==null?"null":Hex.toHexString(getXdagTopStatus().getTop()));
+        if (getXdagTopStatus().getTop() != null) {
+            // preTop 有可能为空，所以注释掉下面的日志打印
+            log.debug("now pretop : {}",getXdagTopStatus().getPreTop() == null?"null": Bytes32.wrap(getXdagTopStatus().getPreTop()).toHexString());
+            for (Block tmp = getBlockByHash(Bytes32.wrap(getXdagTopStatus().getTop()), true); tmp != null
                     && !blockEqual(block, tmp); tmp = getMaxDiffLink(tmp, true)) {
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
                 // 更新对应的flag信息
@@ -654,6 +659,9 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    public XdagTopStatus getXdagTopStatus() {
+        return xdagTopStatus;
+    }
 
     private boolean blockEqual(Block block1, Block block2) {
         if (block1 == null) {
@@ -1020,8 +1028,12 @@ public class BlockchainImpl implements Blockchain {
         if (block == null) {
             return;
         }
-        if (XdagTime.getEpoch(block.getTimestamp()) > XdagTime.getCurrentEpoch()) {
-            return;
+        Block currentTop = getBlockByHash(xdagTopStatus.getTop() == null ? null :
+                Bytes32.wrap(xdagTopStatus.getTop()), false);
+        if (currentTop != null) {
+            if (XdagTime.getEpoch(block.getTimestamp()) >= XdagTime.getEpoch(currentTop.getTimestamp())) {
+                return;
+            }
         }
         if (xdagTopStatus.getPreTop() == null) {
             xdagTopStatus.setPreTop(block.getHashLow().toArray());

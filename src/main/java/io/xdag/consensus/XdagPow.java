@@ -83,6 +83,8 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected AtomicReference<Task> currentTask = new AtomicReference<>();
     protected AtomicLong taskIndex = new AtomicLong(0L);
 
+    private boolean isWorking = false; // 用于判断是否该触发onNewPretop 重新生成区块
+
 
     private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("XdagPow-timer-thread")
@@ -267,11 +269,13 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     public void receiveNewPretop(Bytes pretop) {
-        if (!this.isRunning) {
+        if (!this.isRunning || !isWorking) {
             return;
         }
-        if (!equalBytes(pretop.toArray(), globalPretop.toArray())) {
-            globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
+
+        // 防重
+        if (globalPretop == null || !equalBytes(pretop.toArray(), globalPretop.toArray())) {
+            globalPretop = Bytes32.wrap(pretop);
             events.add(new Event(Event.Type.NEW_PRETOP, pretop));
         }
     }
@@ -327,6 +331,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void onTimeout() {
         Block b  = generateBlock.get();
+        isWorking = false;
         if (b != null) {
             Block newBlock = new Block(new XdagBlock(b.toBytes()));
             log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
@@ -338,6 +343,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
             broadcaster.broadcast(bw);
         }
+        isWorking = true;
         newBlock();
     }
 
@@ -405,7 +411,7 @@ public class XdagPow implements PoW, Listener, Runnable {
  //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
-        globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
+        globalPretop = null;
         while (this.isRunning) {
             try {
                 Event ev = events.poll(10, TimeUnit.MILLISECONDS);
