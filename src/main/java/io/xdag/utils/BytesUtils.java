@@ -32,12 +32,11 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 
 public class BytesUtils {
-
-    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-    private static final byte[] ZERO_BYTE_ARRAY = new byte[]{0};
 
     public static byte[] intToBytes(int value, boolean littleEndian) {
         ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -364,7 +363,14 @@ public class BytesUtils {
         }
     }
 
-
+    public static MutableBytes32 arrayToByte32(byte[] value){
+        MutableBytes32 mutableBytes32 = MutableBytes32.wrap(new byte[32]);
+        mutableBytes32.set(8, Bytes.wrap(value));
+        return mutableBytes32;
+    }
+    public static byte[] byte32ToArray(MutableBytes32 value){
+        return value.mutableCopy().slice(8,20).toArray();
+    }
 
     public static UnsignedLong long2UnsignedLong(long number) {
         return UnsignedLong.valueOf(toHexString((ByteBuffer.allocate(8).putLong(number).array())),16);

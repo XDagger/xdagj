@@ -62,7 +62,6 @@ public class BlockResultDTO {
     @Data
     @Builder
     public static class Link {
-
         private int direction; // 0 input 1 output 2 fee
         private String address;
         private String hashlow;

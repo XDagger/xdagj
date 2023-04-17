@@ -73,8 +73,8 @@ import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -337,10 +337,10 @@ public class BlockchainImpl implements Blockchain {
 
                     }
                 }else {
-                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
+                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
-                        result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
-                        log.debug("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
+                        result.setErrorInfo("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                        log.debug("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                 }

@@ -45,16 +45,16 @@ import io.xdag.rpc.Web3;
 import io.xdag.rpc.exception.XdagErrorResolver;
 import io.xdag.rpc.filter.JsonRpcMethodFilter;
 import io.xdag.rpc.modules.ModuleDescription;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 @ChannelHandler.Sharable
 public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBufHolder> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("jsonrpc");
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonNodeFactory jsonNodeFactory = JsonNodeFactory.instance;
     private final JsonRpcBasicServer jsonRpcServer;
@@ -77,7 +77,7 @@ public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBu
             responseCode = jsonRpcServer.handleRequest(is, os);
         } catch (Exception e) {
             String unexpectedErrorMsg = "Unexpected error";
-            LOGGER.error(unexpectedErrorMsg, e);
+            log.error(unexpectedErrorMsg, e);
             int errorCode = ErrorResolver.JsonError.CUSTOM_SERVER_ERROR_LOWER;
             responseContent = buildErrorContent(errorCode, unexpectedErrorMsg);
             responseCode = errorCode;
@@ -91,7 +91,7 @@ public class JsonRpcWeb3ServerHandler extends SimpleChannelInboundHandler<ByteBu
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        LOGGER.error("Unexpected exception", cause);
+        log.error("Unexpected exception", cause);
         ctx.close();
     }
 

@@ -42,29 +42,29 @@ public class PubkeyAddressUtilsTest {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         KeyPair key = Keys.createEcKeyPair();
         byte[] hash160 = Keys.toBytesAddress(key);
-        String base58 = PubkeyAddressUtils.toBase58(hash160);
-        assertArrayEquals(PubkeyAddressUtils.fromBase58(base58), hash160);
+        String base58 = WalletUtils.toBase58(hash160);
+        assertArrayEquals(WalletUtils.fromBase58(base58), hash160);
     }
 
     @Test(expected = AddressFormatException.class)
     public void testAddressFormatException() {
         //the correct base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"
         String base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a";
-        PubkeyAddressUtils.fromBase58(base58);
+        WalletUtils.fromBase58(base58);
     }
 
     @Test
     public void testCheckAddress() {
-        assertTrue(PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"));
-        assertFalse(PubkeyAddressUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a"));
+        assertTrue(WalletUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"));
+        assertFalse(WalletUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a"));
     }
 
     @Test
     public void testToByte32(){
         String addressStr = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C";
-        byte[] addressbyte = PubkeyAddressUtils.fromBase58(addressStr);
-        MutableBytes32 address= ByteArrayToByte32.arrayToByte32(addressbyte);
-        String res = PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(address));
+        byte[] addressbyte = WalletUtils.fromBase58(addressStr);
+        MutableBytes32 address= BytesUtils.arrayToByte32(addressbyte);
+        String res = WalletUtils.toBase58(BytesUtils.byte32ToArray(address));
         Assert.assertEquals(addressStr, res);
     }
 }

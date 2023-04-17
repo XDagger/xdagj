@@ -37,13 +37,15 @@ import io.xdag.crypto.Base58;
 import io.xdag.db.AddressStore;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.manager.MinerManager;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.xdag.utils.WalletUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -77,9 +79,9 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
 
             byte[] addressHash = Arrays.copyOfRange(message,0,20);
             checkProtocol(ctx,addressHash);
-            if (!initMiner(ByteArrayToByte32.arrayToByte32(addressHash))) {
+            if (!initMiner(BytesUtils.arrayToByte32(addressHash))) {
                 log.debug("too many connect for the miner: {},ip&port:{}",
-                        PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
+                        WalletUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString());
                 ctx.close();
                 return;
             }
@@ -95,12 +97,12 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
             minerManager.addActivateChannel(channel);
             channel.setIsActivate(true);
             channel.setConnectTime(new Date(System.currentTimeMillis()));
-            channel.setAccountAddressHash(ByteArrayToByte32.arrayToByte32(addressHash));
+            channel.setAccountAddressHash(BytesUtils.arrayToByte32(addressHash));
             channel.setAccountAddressHashByte(addressHash);
             channel.activateHandler(ctx, V03);
             ctx.pipeline().remove(this);
             // TODO: 2020/5/8 There may be a bug here. If you join infinitely, won't it be created wirelessly?
-            log.debug("add a new miner from ip&port:{},miner's address: [" + PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress());
+            log.debug("add a new miner from ip&port:{},miner's address: [" + WalletUtils.toBase58(channel.getAccountAddressHashByte()) + "]",channel.getInetAddress());
         } else {
             log.debug("length less than " + MESSAGE_SIZE + " bytes");
         }
@@ -111,10 +113,10 @@ public class MinerHandShakeHandler extends ByteToMessageDecoder {
         if (!importResult) {
             addressStore.addAddress(address);
             log.info("XDAG:new miner connect. New address: {} with channel: {} connect.",
-                    PubkeyAddressUtils.toBase58(address), channel.getInetAddress());
+                    WalletUtils.toBase58(address), channel.getInetAddress());
         } else {
             log.info("XDAG:old miner connect. Address: {} with channel {} connect.",
-                    PubkeyAddressUtils.toBase58(address), channel.getInetAddress());
+                    WalletUtils.toBase58(address), channel.getInetAddress());
         }
     }
 

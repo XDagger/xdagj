@@ -45,8 +45,8 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.MessageFactory;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.Date;
@@ -54,6 +54,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -256,8 +258,8 @@ public class MinerChannel {
 
     public boolean initMiner(Bytes32 accountAddressHash) {
         this.accountAddressHash = accountAddressHash;
-        this.accountAddressHashByte = ByteArrayToByte32.byte32ToArray(accountAddressHash.mutableCopy());
-        String addrHexStr = PubkeyAddressUtils.toBase58(accountAddressHashByte);
+        this.accountAddressHashByte = BytesUtils.byte32ToArray(accountAddressHash.mutableCopy());
+        String addrHexStr = WalletUtils.toBase58(accountAddressHashByte);
         log.debug("Init A Miner:" + addrHexStr);
         // 判断这个矿工是否已经存在了
         if (minerManager !=null && minerManager.getActivateMiners().containsKey(accountAddressHash)) {
@@ -322,7 +324,7 @@ public class MinerChannel {
     public void sendBalance() {
         UInt64 amount = UInt64.ZERO;
         if (!addressStore.addressIsExist(accountAddressHashByte)){
-            log.debug("Can't found address,{}", PubkeyAddressUtils.toBase58(accountAddressHashByte));
+            log.debug("Can't found address,{}", WalletUtils.toBase58(accountAddressHashByte));
         } else {
             amount = addressStore.getBalanceByAddress(accountAddressHashByte);
         }
@@ -381,7 +383,7 @@ public class MinerChannel {
         if(this.miner == null){
             return StringUtils.EMPTY;
         }else {
-            return PubkeyAddressUtils.toBase58(accountAddressHashByte);
+            return WalletUtils.toBase58(accountAddressHashByte);
         }
     }
 

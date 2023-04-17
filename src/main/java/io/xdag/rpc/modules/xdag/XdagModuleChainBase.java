@@ -42,8 +42,8 @@ import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
-import static io.xdag.utils.PubkeyAddressUtils.toBase58;
+import static io.xdag.utils.WalletUtils.checkAddress;
+import static io.xdag.utils.WalletUtils.toBase58;
 import static io.xdag.utils.XdagTime.xdagTimestampToMs;
 
 import io.xdag.Kernel;
@@ -57,10 +57,11 @@ import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.BlockResultDTO.Link;
 import io.xdag.rpc.dto.BlockResultDTO.TxLink;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.BytesUtils;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import io.xdag.utils.ByteArrayToByte32;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
@@ -338,7 +339,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         .time(xdagTimestampToMs(txHistory.getTimeStamp()))
                         .remark(txHistory.getRemark());
             } else {
-                txLinkBuilder.address(toBase58(ByteArrayToByte32.byte32ToArray(txHistory.getAddress().getAddress())))
+                txLinkBuilder.address(toBase58(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
                         .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
                         .amount(String.format("%.9f", amount2xdag(txHistory.getAddress().getAmount())))
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
