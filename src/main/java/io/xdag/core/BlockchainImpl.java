@@ -324,7 +324,7 @@ public class BlockchainImpl implements Blockchain {
                             log.debug("Block have no parent for " + result.getHashlow().toHexString());
                             return result;
                         } else {
-                            // 链接块的时间需要小于该块时间，否则为不合法区块
+                            // ensure ref block's time is earlier than block's time
                             if (refBlock.getTimestamp() >= block.getTimestamp()) {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(refBlock.getHashLow());
@@ -435,14 +435,16 @@ public class BlockchainImpl implements Blockchain {
                 // 保存当前的Top
                 Block currentTop = getBlockByHash(xdagTopStatus.getTop() == null ? null :
                         Bytes32.wrap(xdagTopStatus.getTop()), false);
-                BigInteger currentTopDiff = getXdagTopStatus().getTopDiff();
+                BigInteger currentTopDiff = xdagTopStatus.getTopDiff();
                 log.debug("update top: {}", block.getHashLow());
-                // 更新Top
+                // update Top
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
-                // 更新 preTop
+                // update preTop
                 setPreTop(currentTop,currentTopDiff);
                 // 如果该区块周期比当前任务周期大，不触发重新生成区块
+
+                // if block's epoch is earlier than current epoch, then notify the PoW thread to regenerate the main block
                 if (XdagTime.getEpoch(block.getTimestamp()) < XdagTime.getCurrentEpoch()) {
                     onNewPretop();
                 }
@@ -616,8 +618,8 @@ public class BlockchainImpl implements Blockchain {
         Block p = null;
         int i = 0;
         // TODO: 如果是快照点主块会直接返回，因为快照点前的数据都已经确定好
-        if (getXdagTopStatus().getTop() != null) {
-            for (Block block = getBlockByHash(Bytes32.wrap(getXdagTopStatus().getTop()), false); block != null
+        if (xdagTopStatus.getTop() != null) {
+            for (Block block = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false); block != null
                     && ((block.getInfo().flags & BI_MAIN) == 0);
                     block = getMaxDiffLink(getBlockByHash(block.getHashLow(), true), true)) {
 
@@ -643,10 +645,9 @@ public class BlockchainImpl implements Blockchain {
     public void unWindMain(Block block) {
         log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
 //        log.debug("getXdagTopStatus().getTop(),{}",getXdagTopStatus().getTop()==null?"null":Hex.toHexString(getXdagTopStatus().getTop()));
-        if (getXdagTopStatus().getTop() != null) {
-            // preTop 有可能为空，所以注释掉下面的日志打印
-            log.debug("now pretop : {}",getXdagTopStatus().getPreTop() == null?"null": Bytes32.wrap(getXdagTopStatus().getPreTop()).toHexString());
-            for (Block tmp = getBlockByHash(Bytes32.wrap(getXdagTopStatus().getTop()), true); tmp != null
+        if (xdagTopStatus.getTop() != null) {
+            log.debug("now pretop : {}",xdagTopStatus.getPreTop() == null?"null": Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
+            for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
                     && !blockEqual(block, tmp); tmp = getMaxDiffLink(tmp, true)) {
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
                 // 更新对应的flag信息
@@ -659,9 +660,6 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    public XdagTopStatus getXdagTopStatus() {
-        return xdagTopStatus;
-    }
 
     private boolean blockEqual(Block block1, Block block2) {
         if (block1 == null) {
@@ -1021,33 +1019,38 @@ public class BlockchainImpl implements Blockchain {
 
     /**
      * update pretop
-     * @param block block
-     * @param diff difficulty of block
+     * @param target target
+     * @param targetDiff difficulty of block
      */
-    public void setPreTop(Block block, BigInteger diff) {
-        if (block == null) {
-            return;
-        }
-        Block currentTop = getBlockByHash(xdagTopStatus.getTop() == null ? null :
-                Bytes32.wrap(xdagTopStatus.getTop()), false);
-        if (currentTop != null) {
-            if (XdagTime.getEpoch(block.getTimestamp()) >= XdagTime.getEpoch(currentTop.getTimestamp())) {
-                return;
-            }
-        }
-        if (xdagTopStatus.getPreTop() == null) {
-            xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(diff);
-            block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(diff);
+    public void setPreTop(Block target, BigInteger targetDiff) {
+        if (target == null) {
             return;
         }
 
-        if (diff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
-            xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(diff);
-            block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(diff);
+        // make sure the target's epoch is earlier than current top's epoch
+        Block block = getBlockByHash(xdagTopStatus.getTop() == null ? null :
+                Bytes32.wrap(xdagTopStatus.getTop()), false);
+        if (block != null) {
+            if (XdagTime.getEpoch(target.getTimestamp()) >= XdagTime.getEpoch(block.getTimestamp())) {
+                return;
+            }
+        }
+
+        // if pretop is null, then update pretop to target
+        if (xdagTopStatus.getPreTop() == null) {
+            xdagTopStatus.setPreTop(target.getHashLow().toArray());
+            xdagTopStatus.setPreTopDiff(targetDiff);
+            target.setPretopCandidate(true);
+            target.setPretopCandidateDiff(targetDiff);
+            return;
+        }
+
+        // if targetDiff greater than pretop diff, then update pretop to target
+        if (targetDiff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
+            xdagTopStatus.setPreTop(target.getHashLow().toArray());
+            xdagTopStatus.setPreTopDiff(targetDiff);
+            target.setPretopCandidate(true);
+            target.setPretopCandidateDiff(targetDiff);
         }
     }
     /**
