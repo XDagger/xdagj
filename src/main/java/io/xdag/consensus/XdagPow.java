@@ -83,7 +83,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected AtomicReference<Task> currentTask = new AtomicReference<>();
     protected AtomicLong taskIndex = new AtomicLong(0L);
 
-    private boolean isWorking = false; // 用于判断是否该触发onNewPretop 重新生成区块
+    private boolean isWorking = false;
 
 
     private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()

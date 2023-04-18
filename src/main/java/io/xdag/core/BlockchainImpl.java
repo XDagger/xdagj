@@ -408,9 +408,9 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(block, BI_OURS, true);
             }
 
-            // 更新区块难度和maxDiffLink
+            // calculate block's self difficulty
             BigInteger cuDiff = calculateCurrentBlockDiff(block);
-            // 计算区块难度
+            // calculate block's chain difficulty
             calculateBlockDiff(block,cuDiff);
 
             // TODO:extra 处理
@@ -432,7 +432,7 @@ public class BlockchainImpl implements Blockchain {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
-                // 保存当前的Top
+
                 Block currentTop = getBlockByHash(xdagTopStatus.getTop() == null ? null :
                         Bytes32.wrap(xdagTopStatus.getTop()), false);
                 BigInteger currentTopDiff = xdagTopStatus.getTopDiff();
@@ -442,8 +442,6 @@ public class BlockchainImpl implements Blockchain {
                 xdagTopStatus.setTop(block.getHashLow().toArray());
                 // update preTop
                 setPreTop(currentTop,currentTopDiff);
-                // 如果该区块周期比当前任务周期大，不触发重新生成区块
-
                 // if block's epoch is earlier than current epoch, then notify the PoW thread to regenerate the main block
                 if (XdagTime.getEpoch(block.getTimestamp()) < XdagTime.getCurrentEpoch()) {
                     onNewPretop();
@@ -644,7 +642,7 @@ public class BlockchainImpl implements Blockchain {
      */
     public void unWindMain(Block block) {
         log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
-//        log.debug("getXdagTopStatus().getTop(),{}",getXdagTopStatus().getTop()==null?"null":Hex.toHexString(getXdagTopStatus().getTop()));
+//        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
         if (xdagTopStatus.getTop() != null) {
             log.debug("now pretop : {}",xdagTopStatus.getPreTop() == null?"null": Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
