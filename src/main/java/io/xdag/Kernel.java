@@ -70,8 +70,8 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
-import io.xdag.rpc.modules.web3.Web3XdagModule;
-import io.xdag.rpc.modules.web3.Web3XdagModuleImpl;
+import io.xdag.rpc.modules.xdag.Web3XdagModule;
+import io.xdag.rpc.modules.xdag.Web3XdagModuleImpl;
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModuleChainBase;
 import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
@@ -83,7 +83,7 @@ import io.xdag.rpc.netty.Web3WebSocketServer;
 import io.xdag.rpc.netty.XdagJsonRpcHandler;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
-import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -232,7 +232,7 @@ public class Kernel {
         // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
-            poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
+            poolMiner = new Miner(BytesUtils.arrayToByte32(firstAccount));
             firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
             firstBlock.signOut(wallet.getDefKey());
             xdagStats.setOurLastBlockHash(firstBlock.getHashLow().toArray());
@@ -242,7 +242,7 @@ public class Kernel {
             blockchain.tryToConnect(firstBlock);
         } else {
             firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
-            poolMiner = new Miner(ByteArrayToByte32.arrayToByte32(firstAccount));
+            poolMiner = new Miner(BytesUtils.arrayToByte32(firstAccount));
         }
         log.info("Blockchain init");
 

@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.rpc.modules.web3;
+package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
@@ -31,9 +31,9 @@ import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.getHash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
-import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
-import static io.xdag.utils.PubkeyAddressUtils.toBase58;
+import static io.xdag.utils.WalletUtils.checkAddress;
+import static io.xdag.utils.WalletUtils.fromBase58;
+import static io.xdag.utils.WalletUtils.toBase58;
 
 import io.xdag.Kernel;
 import io.xdag.Wallet;
@@ -55,7 +55,6 @@ import io.xdag.rpc.dto.ConfigDTO;
 import io.xdag.rpc.dto.NetConnDTO;
 import io.xdag.rpc.dto.PoolWorkerDTO;
 import io.xdag.rpc.dto.StatusDTO;
-import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.utils.BasicUtils;
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -64,18 +63,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import io.xdag.utils.PubkeyAddressUtils;
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
+@Slf4j
 public class Web3XdagModuleImpl implements Web3XdagModule {
 
-    private static final Logger logger = LoggerFactory.getLogger(Web3XdagModuleImpl.class);
     private final Blockchain blockchain;
     private final XdagModule xdagModule;
     private final Kernel kernel;
@@ -125,7 +123,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
             return s;
         } finally {
-            logger.debug("xdag_syncing():current {}, highest {}, isSyncDone {}", s.currentBlock, s.highestBlock,
+            log.debug("xdag_syncing():current {}, highest {}, isSyncDone {}", s.currentBlock, s.highestBlock,
                     s.isSyncDone);
         }
     }
@@ -138,7 +136,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     @Override
     public String xdag_blockNumber() {
         long b = blockchain.getXdagStats().nmain;
-        logger.debug("xdag_blockNumber(): {}", b);
+        log.debug("xdag_blockNumber(): {}", b);
         return Long.toString(b);
     }
 
@@ -196,12 +194,12 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     }
 
     @Override
-    public Object xdag_netType() throws Exception {
+    public Object xdag_netType() {
         return kernel.getConfig().getRootDir();
     }
 
     @Override
-    public Object xdag_poolConfig() throws Exception {
+    public Object xdag_poolConfig() {
         PoolSpec poolSpec = kernel.getConfig().getPoolSpec();
         NodeSpec nodeSpec = kernel.getConfig().getNodeSpec();
         ConfigDTO.ConfigDTOBuilder configDTOBuilder = ConfigDTO.builder();
@@ -222,7 +220,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     }
 
     @Override
-    public Object xdag_netConnectionList() throws Exception {
+    public Object xdag_netConnectionList() {
         List<NetConnDTO> netConnDTOList = Lists.newArrayList();
         NetConnDTO.NetConnDTOBuilder netConnDTOBuilder = NetConnDTO.builder();
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
@@ -247,7 +245,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     }
 
     @Override
-    public Object xdag_updatePoolConfig(ConfigDTO configDTO, String passphrase) throws Exception {
+    public Object xdag_updatePoolConfig(ConfigDTO configDTO, String passphrase) {
         try {
             //unlock
             if (checkPassword(passphrase)) {
@@ -282,12 +280,12 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     }
 
     @Override
-    public String xdag_getMaxXferBalance() throws Exception {
+    public String xdag_getMaxXferBalance() {
         return xdagModule.getMaxXferBalance();
     }
 
     private PoolWorkerDTO getPoolWorkerDTO(PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder,Miner miner){
-        poolWorkerDTOBuilder.address(PubkeyAddressUtils.toBase58(miner.getAddressHashByte()))
+        poolWorkerDTOBuilder.address(toBase58(miner.getAddressHashByte()))
                 .status(miner.getMinerStates().toString())
                 .unpaidShares(MinerCalculate.calculateUnpaidShares(miner))
                 .hashrate(BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff()))

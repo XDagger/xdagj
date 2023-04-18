@@ -25,7 +25,7 @@
 package io.xdag.core;
 
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
@@ -167,7 +167,7 @@ public class Address {
     @Override
     public String toString() {
         if(isAddress){
-            return "Address [" + PubkeyAddressUtils.toBase58(addressHash.slice(8,20).toArray()) + "]";
+            return "Address [" + WalletUtils.toBase58(addressHash.slice(8,20).toArray()) + "]";
         }else {
             return "Block Hash[" + addressHash.toHexString() + "]";
         }

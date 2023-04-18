@@ -34,7 +34,7 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BigDecimalUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -87,13 +87,13 @@ public class MinerCalculate {
             }
         }
         log.debug("print unpaid for miner: {} , sum= [{}] , count = [{}]",
-                PubkeyAddressUtils.toBase58(channel.getMiner().getAddressHashByte()),sum, count);
+                WalletUtils.toBase58(channel.getMiner().getAddressHashByte()),sum, count);
         return diffToPay(sum, count);
     }
 
     public static String minerStats(Miner miner) {
         StringBuilder res = new StringBuilder();
-        String address = PubkeyAddressUtils.toBase58(miner.getAddressHashByte());
+        String address = WalletUtils.toBase58(miner.getAddressHashByte());
         double unpaid = calculateUnpaidShares(miner);
         String minerRegTime = XdagTime.format(miner.getRegTime());
         res.append("miner: ")

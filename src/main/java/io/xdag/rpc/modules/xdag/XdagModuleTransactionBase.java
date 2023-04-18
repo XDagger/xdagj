@@ -32,13 +32,12 @@ import io.xdag.core.XdagBlock;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.utils.BasicUtils;
+import lombok.extern.slf4j.Slf4j;
+
 import org.bouncycastle.util.encoders.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class XdagModuleTransactionBase implements XdagModuleTransaction {
-
-    protected static final Logger logger = LoggerFactory.getLogger(XdagModuleTransactionBase.class);
 
     private final Kernel kernel;
 

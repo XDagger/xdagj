@@ -29,12 +29,11 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.googlecode.jsonrpc4j.ErrorResolver;
 import java.lang.reflect.Method;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class XdagErrorResolver implements ErrorResolver {
-
-    private static final Logger logger = LoggerFactory.getLogger("web3");
 
     @Override
     public ErrorResolver.JsonError resolveError(Throwable t, Method method, List<JsonNode> arguments) {
@@ -45,7 +44,7 @@ public class XdagErrorResolver implements ErrorResolver {
             error = new ErrorResolver.JsonError(-32603, "Internal server error, probably due to invalid parameter type",
                     null);
         } else {
-            logger.error("JsonRPC error when for method {} with arguments {}", method, arguments, t);
+            log.error("JsonRPC error when for method {} with arguments {}", method, arguments, t);
             error = new ErrorResolver.JsonError(-32603, "Internal server error", null);
         }
         return error;

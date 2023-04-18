@@ -25,8 +25,8 @@
 package io.xdag.mine.miner;
 
 import io.xdag.mine.MinerChannel;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
+
 import java.net.InetSocketAddress;
 import java.util.Calendar;
 import java.util.Date;
@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +49,8 @@ public class Miner {
      * 保存这个矿工的地址
      */
     private final Bytes32 addressHash;
+
     @Getter
-    @Setter
     private final byte[] addressHashByte;
     /**
      * 相同账户地址的channel数量
@@ -58,17 +60,12 @@ public class Miner {
      * 存放的是连续16个任务本地计算的最大难度 每一轮放的都是最小hash 计算出来的diffs
      */
     private final List<Double> maxDiffs = new CopyOnWriteArrayList<>();
-    /* 保存的时该矿工每一次进行任务计算的nonce + 低192bites的hash */
-    // private XdagField id = new XdagField();
+
     /**
      * 保存的是这个矿工对应的channel
      */
     private final Map<InetSocketAddress, MinerChannel> channels = new ConcurrentHashMap<>();
-    /**
-     * 分别存放的是本轮中 的难度 以及前面所有计算的难度
-     */
-    private final Map<Long, Double> diffSum = new ConcurrentHashMap<>();
-    private final Map<Long, Double> prevDiffSum = new ConcurrentHashMap<>();
+
     protected int boundedTaskCounter;
     /**
      * 记录收到任务的时间
@@ -109,7 +106,7 @@ public class Miner {
     public Miner(Bytes32 addressHash) {
         log.debug("init the new miner:{}", addressHash.toHexString());
         this.addressHash = addressHash;
-        addressHashByte = ByteArrayToByte32.byte32ToArray(addressHash.mutableCopy());
+        addressHashByte = BytesUtils.byte32ToArray(addressHash.mutableCopy());
         this.minerStates = MinerStates.MINER_UNKNOWN;
         this.taskTime = 0;
         this.meanLogDiff = 0.0;
@@ -150,7 +147,7 @@ public class Miner {
                     return false;
                 }
             }
-            log.debug("remove Miner: {}", PubkeyAddressUtils.toBase58(addressHashByte));
+            log.debug("remove Miner: {}", WalletUtils.toBase58(addressHashByte));
             return true;
         } else {
             return false;

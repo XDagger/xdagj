@@ -49,9 +49,9 @@ import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 import static io.xdag.utils.BasicUtils.xdag2amount;
 import static io.xdag.utils.BasicUtils.xdagHashRate;
-import static io.xdag.utils.PubkeyAddressUtils.checkAddress;
-import static io.xdag.utils.PubkeyAddressUtils.fromBase58;
-import static io.xdag.utils.PubkeyAddressUtils.toBase58;
+import static io.xdag.utils.WalletUtils.checkAddress;
+import static io.xdag.utils.WalletUtils.fromBase58;
+import static io.xdag.utils.WalletUtils.toBase58;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -73,8 +73,7 @@ import io.xdag.mine.miner.MinerCalculate;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.net.node.Node;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -740,7 +739,7 @@ public class Commands {
                                     .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
                 }
             }else {
-                tx.append(String.format(" snapshot: %s           %.9f   %s%n", (PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(address.getAddress()))),
+                tx.append(String.format(" snapshot: %s           %.9f   %s%n", (toBase58(BytesUtils.byte32ToArray(address.getAddress()))),
                         amount2xdag(address.getAmount()),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));

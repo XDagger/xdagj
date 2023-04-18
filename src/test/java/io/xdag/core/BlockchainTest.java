@@ -64,7 +64,7 @@ import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.Wallet;
 import java.io.IOException;
@@ -235,10 +235,8 @@ public class BlockchainTest {
         }
         //TODO 两种不同的交易模式的测试
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        Address from = new Address(ByteArrayToByte32.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
-//        System.out.println(PubkeyAddressUtils.toBase58(from.getAddress().slice(8,20).toArray()));
-        Address to = new Address(ByteArrayToByte32.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
-//        System.out.println(PubkeyAddressUtils.toBase58(to.getAddress().slice(8,20).toArray()));
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 
@@ -317,9 +315,7 @@ public class BlockchainTest {
         //TODO 两种不同的交易模式的测试
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
         Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN,false);
-//        System.out.println(PubkeyAddressUtils.toBase58(from.getAddress().slice(8,20).toArray()));
-        Address to = new Address(ByteArrayToByte32.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
-//        System.out.println(PubkeyAddressUtils.toBase58(to.getAddress().slice(8,20).toArray()));
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
 

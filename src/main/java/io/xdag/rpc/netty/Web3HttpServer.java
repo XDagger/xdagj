@@ -43,13 +43,15 @@ import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.xdag.rpc.cors.CorsConfiguration;
+import lombok.extern.slf4j.Slf4j;
+
 import java.net.InetAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class Web3HttpServer {
 
-    private static final Logger logger = LoggerFactory.getLogger(Web3HttpServer.class);
     private final InetAddress bindAddress;
     private final int port;
     private final EventLoopGroup bossGroup;
@@ -79,7 +81,7 @@ public class Web3HttpServer {
     }
 
     public void start() {
-        logger.info("RPC HTTP enabled");
+        log.info("RPC HTTP enabled");
 
         ServerBootstrap b = new ServerBootstrap();
         b.option(ChannelOption.SO_REUSEADDR, reuseAddress);
@@ -111,7 +113,7 @@ public class Web3HttpServer {
         try {
             b.bind(bindAddress, port).sync();
         } catch (InterruptedException e) {
-            logger.error("The RPC HTTP server couldn't be started", e);
+            log.error("The RPC HTTP server couldn't be started", e);
             Thread.currentThread().interrupt();
         }
     }

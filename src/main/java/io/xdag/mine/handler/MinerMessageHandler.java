@@ -35,7 +35,7 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.WalletUtils;
 import jakarta.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.util.List;
@@ -65,7 +65,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         long sectorNo = channel.getOutBound().get();
         if (len == DATA_SIZE) {
             log.debug("Send a message for miner: {} ip&port:{} with sectorNo={},length={}",
-                    PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString(),sectorNo, len);
+                    WalletUtils.toBase58(channel.getAccountAddressHashByte()),channel.getInetAddress().toString(),sectorNo, len);
             BytesUtils.arrayReverse(bytes);
             out.writeBytes(bytes);
             channel.getOutBound().add();
@@ -87,7 +87,7 @@ public class MinerMessageHandler extends ByteToMessageCodec<byte[]> {
         // The length of the received message is 32 bytes
         if (len == DATA_SIZE) {
             log.debug("Received a message from the miner:{} ip&port:{},msg len == 32",
-                    PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),
+                    WalletUtils.toBase58(channel.getAccountAddressHashByte()),
                     channel.getInetAddress().toString());
             byte[] data = new byte[DATA_SIZE];
             in.readBytes(data);

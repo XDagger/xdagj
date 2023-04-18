@@ -24,19 +24,18 @@
 
 package io.xdag.rpc.cors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CorsConfiguration {
 
-    private static final Logger logger = LoggerFactory.getLogger("cors");
     private final String header;
 
     public CorsConfiguration(String header) {
         this.header = header;
 
         if ("*".equals(header)) {
-            logger.warn("CORS header set to '*'");
+            log.warn("CORS header set to '*'");
         }
 
         if (header != null && (header.contains("\n") || header.contains("\r"))) {

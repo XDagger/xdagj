@@ -46,9 +46,11 @@ import io.xdag.mine.miner.Miner;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.impl.NewBlockMessage;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.PubkeyAddressUtils;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
+import io.xdag.utils.WalletUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -129,13 +131,13 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
     protected void processNewBalance(NewBalanceMessage msg) {
         // TODO: 2020/5/9 Process the balance information received by the miner Miner function
         log.debug("ip&port:{},Address:{} receive new balance: [{}]",
-                channel.getInetAddress().toString(),PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),BasicUtils.amount2xdag(UInt64.fromBytes(msg.getEncoded().slice(0,8))));
+                channel.getInetAddress().toString(), WalletUtils.toBase58(channel.getAccountAddressHashByte()),BasicUtils.amount2xdag(UInt64.fromBytes(msg.getEncoded().slice(0,8))));
     }
 
     protected void processNewTask(NewTaskMessage msg) {
         // TODO: 2020/5/9 Handle new tasks received by miners Miner functions
         log.debug("Address:{} receive new task: [{}]",
-                PubkeyAddressUtils.toBase58(channel.getAccountAddressHashByte()),BasicUtils.amount2xdag(UInt64.fromBytes(msg.getEncoded().slice(0,8))));
+                WalletUtils.toBase58(channel.getAccountAddressHashByte()),BasicUtils.amount2xdag(UInt64.fromBytes(msg.getEncoded().slice(0,8))));
     }
 
     protected void processTaskShare(TaskShareMessage msg) {
@@ -150,13 +152,13 @@ public class Miner03 extends SimpleChannelInboundHandler<Message> {
             if (miner == null) {
                 miner = new Miner(channel.getAccountAddressHash());
                 log.debug("Create new miner channel:{}, address:{}, workerName:{}.",
-                        channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
+                        channel.getInetAddress().toString(), WalletUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
                 minerManager.addActiveMiner(miner);
             }
             // Change the address corresponding to the channel and replace the new miner connection
             channel.updateMiner(miner);
             log.debug("RandomX miner channel:{}, address:{}, workerName:{}",
-                    channel.getInetAddress().toString(), PubkeyAddressUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
+                    channel.getInetAddress().toString(), WalletUtils.toBase58(miner.getAddressHashByte()), channel.getWorkerName());
         }
 
         if (channel.getSharesCounts() <= kernel.getConfig().getPoolSpec().getMaxShareCountPerChannel()) {

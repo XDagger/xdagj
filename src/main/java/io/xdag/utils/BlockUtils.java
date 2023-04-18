@@ -44,7 +44,6 @@ public final class BlockUtils {
         return key;
     }
 
-    // ADD: 高度键
     public static byte[] getHeight(long height) {
         return BytesUtils.merge(BlockStore.BLOCK_HEIGHT, BytesUtils.longToBytes(height, false));
     }

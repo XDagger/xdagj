@@ -61,7 +61,6 @@ public class BasicUtils {
     public static Bytes32 getHash(String address) {
         Bytes32 hash = null;
         if (address != null) {
-//            hash = Hex.decode(address);
             hash = Bytes32.fromHexString(address);
         }
         return hash;
@@ -78,17 +77,14 @@ public class BasicUtils {
     }
 
     public static Bytes32 address2Hash(String address) {
-//        byte[] ret = Base64.decode(address);
         Bytes ret = Bytes.fromBase64String(address);
-//        byte[] res = new byte[32];
         MutableBytes32 res = MutableBytes32.create();
-//        System.arraycopy(Arrays.reverse(ret),0,res,8,24);
         res.set(8, ret.reverse().slice(0, 24));
         return res;
     }
 
     public static Bytes32 pubAddress2Hash(String address) {
-        Bytes ret = Bytes.wrap(PubkeyAddressUtils.fromBase58(address));
+        Bytes ret = Bytes.wrap(WalletUtils.fromBase58(address));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
         return res;
