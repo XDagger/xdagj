@@ -454,20 +454,13 @@ public class BlockchainImpl implements Blockchain {
             // 新增区块
             xdagStats.nblocks++;
             xdagStats.totalnblocks = Math.max(xdagStats.nblocks, xdagStats.totalnblocks);
-//            if (xdagStats.getTotalnblocks() < xdagStats.getNblocks()) {
-//                xdagStats.setTotalnblocks(xdagStats.getNblocks());
-//            }
 
-            //orphan (hash , block)
-//            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
-//                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 memOrphanPool.put(block.getHashLow(), block);
                 xdagStats.nextra++;
 //                 TODO：设置为返回 IMPORTED_EXTRA
 //                result = ImportResult.IMPORTED_EXTRA;
             } else {
-//                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
                 orphanBlockStore.addOrphan(block);
                 xdagStats.nnoref++;
@@ -642,7 +635,6 @@ public class BlockchainImpl implements Blockchain {
      */
     public void unWindMain(Block block) {
         log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
-//        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
         if (xdagTopStatus.getTop() != null) {
             log.debug("now pretop : {}",xdagTopStatus.getPreTop() == null?"null": Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
@@ -1009,8 +1001,10 @@ public class BlockchainImpl implements Blockchain {
             return null;
         }
         if (XdagTime.getEpoch(topInfo.getTimestamp()) == mainTime) {
+            log.debug("use pretop:{}", Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             return Bytes32.wrap(xdagTopStatus.getPreTop());
         } else {
+            log.debug("use top:{}", Bytes32.wrap(xdagTopStatus.getTop()).toHexString());
             return Bytes32.wrap(xdagTopStatus.getTop());
         }
     }
@@ -1045,6 +1039,7 @@ public class BlockchainImpl implements Blockchain {
 
         // if targetDiff greater than pretop diff, then update pretop to target
         if (targetDiff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
+            log.debug("update pretop:{}", Bytes32.wrap(target.getHashLow()).toHexString());
             xdagTopStatus.setPreTop(target.getHashLow().toArray());
             xdagTopStatus.setPreTopDiff(targetDiff);
             target.setPretopCandidate(true);

@@ -276,6 +276,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         // prevent duplicate event
         if (globalPretop == null || !equalBytes(pretop.toArray(), globalPretop.toArray())) {
+            log.debug("update global pretop:{}", Bytes32.wrap(pretop).toHexString());
             globalPretop = Bytes32.wrap(pretop);
             events.add(new Event(Event.Type.NEW_PRETOP, pretop));
         }
