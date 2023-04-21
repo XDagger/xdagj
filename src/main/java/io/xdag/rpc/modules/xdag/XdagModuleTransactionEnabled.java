@@ -47,9 +47,10 @@ import io.xdag.core.ImportResult;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.exception.XdagOverFlowException;
-import java.util.ArrayList;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,6 +60,7 @@ import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 
+@Slf4j
 public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
     private final Kernel kernel;
@@ -76,7 +78,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
     @Override
     public Object personalSendTransaction(CallArguments args, String passphrase) {
 
-        logger.debug("personalSendTransaction args:{}",args);
+        log.debug("personalSendTransaction args:{}",args);
 
         String from = args.from;
         String to = args.to;
@@ -137,7 +139,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         // 如果没有from则从节点账户里搜索
         if (fromAddress == null) {
-            logger.debug("fromAddress is null, search all our blocks");
+            log.debug("fromAddress is null, search all our blocks");
             // our block select
 
             List<KeyPair> accounts = kernel.getWallet().getAccounts();
@@ -212,21 +214,12 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         Bytes32 hash = null;
 
         // check whether to is exist in blockchain
-        if (PubkeyAddressUtils.checkAddress(address)) {
+        if (WalletUtils.checkAddress(address)) {
             hash = pubAddress2Hash(address);
         } else {
             processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
             processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
         }
-//        if (hash == null) {
-//            processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-//            processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
-//        } else {
-//            if (kernel.getBlockchain().getBlockByHash(Bytes32.wrap(hash), false) == null) {
-//                processResult.setCode(ERR_TO_ADDRESS_INVALID.code());
-//                processResult.setErrMsg(ERR_TO_ADDRESS_INVALID.msg());
-//            }
-//        }
 
         return hash;
     }

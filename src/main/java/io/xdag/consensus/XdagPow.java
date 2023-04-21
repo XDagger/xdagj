@@ -83,6 +83,8 @@ public class XdagPow implements PoW, Listener, Runnable {
     protected AtomicReference<Task> currentTask = new AtomicReference<>();
     protected AtomicLong taskIndex = new AtomicLong(0L);
 
+    private boolean isWorking = false;
+
 
     private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("XdagPow-timer-thread")
@@ -267,11 +269,15 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     public void receiveNewPretop(Bytes pretop) {
-        if (!this.isRunning) {
+        // make sure the PoW is running and the main block is generating
+        if (!this.isRunning || !isWorking) {
             return;
         }
-        if (!equalBytes(pretop.toArray(), globalPretop.toArray())) {
-            globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
+
+        // prevent duplicate event
+        if (globalPretop == null || !equalBytes(pretop.toArray(), globalPretop.toArray())) {
+            log.debug("update global pretop:{}", Bytes32.wrap(pretop).toHexString());
+            globalPretop = Bytes32.wrap(pretop);
             events.add(new Event(Event.Type.NEW_PRETOP, pretop));
         }
     }
@@ -327,17 +333,20 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     protected void onTimeout() {
         Block b  = generateBlock.get();
+        // stop generate main block
+        isWorking = false;
         if (b != null) {
             Block newBlock = new Block(new XdagBlock(b.toBytes()));
             log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
                     newBlock.getHash().toHexString());
-            // 发送区块 如果有的话 然后开始生成新区块
+            // add new block, reward miner, and broadcast the new block
             kernel.getBlockchain().tryToConnect(newBlock);
             awardManager.addAwardBlock(minShare.get(), newBlock.getHash(), newBlock.getTimestamp());
             BlockWrapper bw = new BlockWrapper(newBlock, kernel.getConfig().getNodeSpec().getTTL());
-
             broadcaster.broadcast(bw);
         }
+        // start generate main block
+        isWorking = true;
         newBlock();
     }
 
@@ -405,7 +414,7 @@ public class XdagPow implements PoW, Listener, Runnable {
  //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
-        globalPretop = Bytes32.wrap(blockchain.getXdagTopStatus().getPreTop());
+        globalPretop = null;
         while (this.isRunning) {
             try {
                 Event ev = events.poll(10, TimeUnit.MILLISECONDS);

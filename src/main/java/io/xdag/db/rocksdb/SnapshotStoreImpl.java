@@ -23,7 +23,6 @@
  */
 package io.xdag.db.rocksdb;
 
-import static io.xdag.config.Constants.BI_MAIN;
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
 import static io.xdag.db.BlockStore.SUMS_BLOCK_INFO;
@@ -31,7 +30,6 @@ import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
 import static io.xdag.db.AddressStore.ADDRESS_SIZE;
 import static io.xdag.db.AddressStore.AMOUNT_SUM;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.ByteArrayToByte32.arrayToByte32;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -256,7 +254,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         }
                     }
                     addressStore.saveAddress(address,balance);
-                    blockStore.saveTxHistory(arrayToByte32(address), arrayToByte32(address),
+                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(address), BytesUtils.arrayToByte32(address),
                             XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
                             snapshotTime,0,"snapshot".getBytes());
                 }

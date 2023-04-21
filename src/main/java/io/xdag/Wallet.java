@@ -43,11 +43,11 @@ import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
-import io.xdag.utils.SystemUtil;
 import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.InvalidAlgorithmParameterException;
@@ -339,7 +339,7 @@ public class Wallet {
             }
 
             // set posix permissions
-            if (SystemUtil.isPosix() && !file.exists()) {
+            if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix") && !file.exists()) {
                 Files.createFile(file.toPath());
                 Files.setPosixFilePermissions(file.toPath(), POSIX_SECURED_PERMISSIONS);
             }

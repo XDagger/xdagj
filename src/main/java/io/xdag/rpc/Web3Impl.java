@@ -27,9 +27,8 @@ package io.xdag.rpc;
 import io.xdag.rpc.dto.BlockResultDTO;
 import io.xdag.rpc.dto.ConfigDTO;
 import io.xdag.rpc.dto.StatusDTO;
-import io.xdag.rpc.modules.web3.Web3XdagModule;
+import io.xdag.rpc.modules.xdag.Web3XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModule;
-import java.util.Map;
 
 public class Web3Impl implements Web3 {
 
@@ -40,94 +39,10 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public String web3_clientVersion() {
-        return null;
-    }
-
-    @Override
     public String web3_sha3(String data) {
         return null;
     }
 
-    @Override
-    public String net_version() {
-        return null;
-    }
-
-    @Override
-    public String net_peerCount() {
-        return null;
-    }
-
-    @Override
-    public boolean net_listening() {
-        return false;
-    }
-
-    @Override
-    public String[] net_peerList() {
-        return new String[0];
-    }
-
-    @Override
-    public Map<String, String> rpc_modules() {
-        return null;
-    }
-
-    @Override
-    public void db_putString() {
-
-    }
-
-    @Override
-    public void db_getString() {
-
-    }
-
-    @Override
-    public void db_putHex() {
-
-    }
-
-    @Override
-    public void db_getHex() {
-
-    }
-
-    @Override
-    public String personal_newAccount(String passphrase) {
-        return null;
-    }
-
-    @Override
-    public String[] personal_listAccounts() {
-        return new String[0];
-    }
-
-    @Override
-    public String personal_importRawKey(String key, String passphrase) {
-        return null;
-    }
-
-    @Override
-    public Object personal_sendTransaction(CallArguments transactionArgs, String passphrase) {
-        return web3XdagModule.xdag_personal_sendTransaction(transactionArgs, passphrase);
-    }
-
-    @Override
-    public boolean personal_unlockAccount(String key, String passphrase, String duration) {
-        return false;
-    }
-
-    @Override
-    public boolean personal_lockAccount(String key) {
-        return false;
-    }
-
-    @Override
-    public String personal_dumpRawKey(String address) {
-        return null;
-    }
 
     @Override
     public XdagModule getXdagModule() {

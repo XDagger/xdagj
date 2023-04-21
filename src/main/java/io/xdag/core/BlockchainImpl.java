@@ -73,8 +73,8 @@ import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -324,7 +324,7 @@ public class BlockchainImpl implements Blockchain {
                             log.debug("Block have no parent for " + result.getHashlow().toHexString());
                             return result;
                         } else {
-                            // 链接块的时间需要小于该块时间，否则为不合法区块
+                            // ensure ref block's time is earlier than block's time
                             if (refBlock.getTimestamp() >= block.getTimestamp()) {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(refBlock.getHashLow());
@@ -337,10 +337,10 @@ public class BlockchainImpl implements Blockchain {
 
                     }
                 }else {
-                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(ByteArrayToByte32.byte32ToArray(ref.getAddress()))){
+                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
-                        result.setErrorInfo("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
-                        log.debug("Address isn't exist " + PubkeyAddressUtils.toBase58(ByteArrayToByte32.byte32ToArray(ref.getAddress())));
+                        result.setErrorInfo("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                        log.debug("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                 }
@@ -408,17 +408,10 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(block, BI_OURS, true);
             }
 
-            // 更新区块难度和maxDiffLink
+            // calculate block's self difficulty
             BigInteger cuDiff = calculateCurrentBlockDiff(block);
-            BigInteger diff = calculateBlockDiff(block,cuDiff);
-
-            // 更新preTop
-            setPreTop(block, diff);
-            setPreTop(getBlockByHash(xdagTopStatus.getTop() == null ? null : Bytes32.wrap(xdagTopStatus.getTop()),
-                    false), xdagTopStatus.getTopDiff());
-
-            // 通知XdagPoW 新pretop产生
-            onNewPretop();
+            // calculate block's chain difficulty
+            calculateBlockDiff(block,cuDiff);
 
             // TODO:extra 处理
             processExtraBlock();
@@ -439,9 +432,20 @@ public class BlockchainImpl implements Blockchain {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
                             currentHeight, xdagStats.nmain, currentHeight - xdagStats.nmain);
                 }
+
+                Block currentTop = getBlockByHash(xdagTopStatus.getTop() == null ? null :
+                        Bytes32.wrap(xdagTopStatus.getTop()), false);
+                BigInteger currentTopDiff = xdagTopStatus.getTopDiff();
                 log.debug("update top: {}", block.getHashLow());
+                // update Top
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
+                // update preTop
+                setPreTop(currentTop,currentTopDiff);
+                // if block's epoch is earlier than current epoch, then notify the PoW thread to regenerate the main block
+                if (XdagTime.getEpoch(block.getTimestamp()) < XdagTime.getCurrentEpoch()) {
+                    onNewPretop();
+                }
                 result = ImportResult.IMPORTED_BEST;
                 xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
                 xdagStats.updateDiff(xdagTopStatus.getTopDiff());
@@ -450,20 +454,13 @@ public class BlockchainImpl implements Blockchain {
             // 新增区块
             xdagStats.nblocks++;
             xdagStats.totalnblocks = Math.max(xdagStats.nblocks, xdagStats.totalnblocks);
-//            if (xdagStats.getTotalnblocks() < xdagStats.getNblocks()) {
-//                xdagStats.setTotalnblocks(xdagStats.getNblocks());
-//            }
 
-            //orphan (hash , block)
-//            log.debug("======New block waiting to link======,{}",Hex.toHexString(block.getHashLow()));
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
-//                log.debug("block:{} is extra, put it into memOrphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 memOrphanPool.put(block.getHashLow(), block);
                 xdagStats.nextra++;
 //                 TODO：设置为返回 IMPORTED_EXTRA
 //                result = ImportResult.IMPORTED_EXTRA;
             } else {
-//                log.debug("block:{} is extra, put it into orphanPool waiting to link.", Hex.toHexString(block.getHashLow()));
                 saveBlock(block);
                 orphanBlockStore.addOrphan(block);
                 xdagStats.nnoref++;
@@ -594,7 +591,7 @@ public class BlockchainImpl implements Blockchain {
 
     protected void onNewPretop() {
         for (Listener listener : listeners) {
-            listener.onMessage(new PretopMessage(Bytes.wrap(xdagTopStatus.getPreTop()), PRE_TOP));
+            listener.onMessage(new PretopMessage(Bytes.wrap(xdagTopStatus.getTop()), PRE_TOP));
         }
     }
 
@@ -638,9 +635,8 @@ public class BlockchainImpl implements Blockchain {
      */
     public void unWindMain(Block block) {
         log.debug("Unwind main to block,{}", block == null ? "null" : block.getHashLow().toHexString());
-//        log.debug("xdagTopStatus.getTop(),{}",xdagTopStatus.getTop()==null?"null":Hex.toHexString(xdagTopStatus.getTop()));
         if (xdagTopStatus.getTop() != null) {
-            log.debug("now top : {}", Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
+            log.debug("now pretop : {}",xdagTopStatus.getPreTop() == null?"null": Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
                     && !blockEqual(block, tmp); tmp = getMaxDiffLink(tmp, true)) {
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
@@ -1005,37 +1001,49 @@ public class BlockchainImpl implements Blockchain {
             return null;
         }
         if (XdagTime.getEpoch(topInfo.getTimestamp()) == mainTime) {
+            log.debug("use pretop:{}", Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             return Bytes32.wrap(xdagTopStatus.getPreTop());
         } else {
+            log.debug("use top:{}", Bytes32.wrap(xdagTopStatus.getTop()).toHexString());
             return Bytes32.wrap(xdagTopStatus.getTop());
         }
     }
 
     /**
      * update pretop
-     * @param block block
-     * @param diff difficulty of block
+     * @param target target
+     * @param targetDiff difficulty of block
      */
-    public void setPreTop(Block block, BigInteger diff) {
-        if (block == null) {
-            return;
-        }
-        if (XdagTime.getEpoch(block.getTimestamp()) > XdagTime.getCurrentEpoch()) {
-            return;
-        }
-        if (xdagTopStatus.getPreTop() == null) {
-            xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(diff);
-            block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(diff);
+    public void setPreTop(Block target, BigInteger targetDiff) {
+        if (target == null) {
             return;
         }
 
-        if (diff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
-            xdagTopStatus.setPreTop(block.getHashLow().toArray());
-            xdagTopStatus.setPreTopDiff(diff);
-            block.setPretopCandidate(true);
-            block.setPretopCandidateDiff(diff);
+        // make sure the target's epoch is earlier than current top's epoch
+        Block block = getBlockByHash(xdagTopStatus.getTop() == null ? null :
+                Bytes32.wrap(xdagTopStatus.getTop()), false);
+        if (block != null) {
+            if (XdagTime.getEpoch(target.getTimestamp()) >= XdagTime.getEpoch(block.getTimestamp())) {
+                return;
+            }
+        }
+
+        // if pretop is null, then update pretop to target
+        if (xdagTopStatus.getPreTop() == null) {
+            xdagTopStatus.setPreTop(target.getHashLow().toArray());
+            xdagTopStatus.setPreTopDiff(targetDiff);
+            target.setPretopCandidate(true);
+            target.setPretopCandidateDiff(targetDiff);
+            return;
+        }
+
+        // if targetDiff greater than pretop diff, then update pretop to target
+        if (targetDiff.compareTo(xdagTopStatus.getPreTopDiff()) > 0) {
+            log.debug("update pretop:{}", Bytes32.wrap(target.getHashLow()).toHexString());
+            xdagTopStatus.setPreTop(target.getHashLow().toArray());
+            xdagTopStatus.setPreTopDiff(targetDiff);
+            target.setPretopCandidate(true);
+            target.setPretopCandidateDiff(targetDiff);
         }
     }
     /**

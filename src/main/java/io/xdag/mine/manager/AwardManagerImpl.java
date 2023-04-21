@@ -46,8 +46,8 @@ import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
-import io.xdag.utils.ByteArrayToByte32;
-import io.xdag.utils.PubkeyAddressUtils;
+import io.xdag.utils.BytesUtils;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +60,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import io.xdag.utils.WalletUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -580,7 +582,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
 
         if (fundRation!=0) {
-            if (PubkeyAddressUtils.checkAddress(fundAddress)) {
+            if (WalletUtils.checkAddress(fundAddress)) {
                 payAmount = payAmount.addExact(payData.fundIncome);
                 receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, payData.fundIncome,true));
             }
@@ -590,7 +592,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         //// TODO: 2021/4/19  打印矿工的数据
         for (int i = 0; i < miners.size(); i++) {
             Miner miner = miners.get(i);
-            log.debug("Do payments for every miner,miner address = [{}]", PubkeyAddressUtils.toBase58(miner.getAddressHashByte()));
+            log.debug("Do payments for every miner,miner address = [{}]", WalletUtils.toBase58(miner.getAddressHashByte()));
             // 保存的是一个矿工所有的收入
             UInt64 paymentSum = UInt64.ZERO;
             // 根据历史记录分发奖励
@@ -665,7 +667,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
             byte[] publicKeyHash = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
             Address coinBase = block.getCoinBase();
-            byte[] coinBaseKey = ByteArrayToByte32.byte32ToArray(coinBase.getAddress());
+            byte[] coinBaseKey = BytesUtils.byte32ToArray(coinBase.getAddress());
             if (compareTo(publicKeyHash, 0, 20, coinBaseKey, 0, 20) == 0) {
                 return true;
             }
