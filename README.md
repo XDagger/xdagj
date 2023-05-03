@@ -164,6 +164,8 @@ XDAG：BkcVG4i1BfxUJLdNPdctaCReBoyn4j32d
 
 ## Other
 
+[XDAGJ New Address Structure](./docs/New_Address_Structure.md)
+
 [XDAGJ Libp2p Introduction](./docs/XDAGJ_Networking_Specification.md)
 
 [XDAG Wiki](https://github.com/XDagger/xdag/wiki)
