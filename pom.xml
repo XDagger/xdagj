@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="http://maven.apache.org/POM/4.0.0"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.xdag</groupId>
@@ -257,55 +257,55 @@
                             <target>
                                 <!-- windows build -->
                                 <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                        tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar"/>
+                                      tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar"/>
                                 <copy file="src/main/resources/log4j2.xml"
-                                        tofile="${dist.base}/windows/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.config"
-                                        tofile="${dist.base}/windows/xdag-mainnet.config"/>
-                                <copy file="src/main/resources/xdag-testnet.config"
-                                        tofile="${dist.base}/windows/xdag-testnet.config"/>
-                                <copy file="src/main/resources/xdag-devnet.config"
-                                        tofile="${dist.base}/windows/xdag-devnet.config"/>
+                                      tofile="${dist.base}/windows/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.conf"
+                                      tofile="${dist.base}/windows/xdag-mainnet.conf"/>
+                                <copy file="src/main/resources/xdag-testnet.conf"
+                                      tofile="${dist.base}/windows/xdag-testnet.conf"/>
+                                <copy file="src/main/resources/xdag-devnet.conf"
+                                      tofile="${dist.base}/windows/xdag-devnet.conf"/>
                                 <copy file="${project.basedir}/script/xdag.bat"
-                                        tofile="${dist.base}/windows/xdag.bat"/>
+                                      tofile="${dist.base}/windows/xdag.bat"/>
                                 <zip basedir="${dist.base}/windows/"
-                                        destfile="${dist.base}/xdagj-windows.zip"/>
+                                     destfile="${dist.base}/xdagj-windows.zip"/>
                                 <delete dir="${dist.base}/windows/" includeemptydirs="true"/>
 
                                 <!-- linux build (executable jar) -->
                                 <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                        tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar"/>
+                                      tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar"/>
                                 <copy file="src/main/resources/log4j2.xml"
-                                        tofile="${dist.base}/linux/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.config"
-                                        tofile="${dist.base}/linux/xdag-mainnet.config"/>
-                                <copy file="src/main/resources/xdag-testnet.config"
-                                        tofile="${dist.base}/linux/xdag-testnet.config"/>
-                                <copy file="src/main/resources/xdag-devnet.config"
-                                        tofile="${dist.base}/linux/xdag-devnet.config"/>
+                                      tofile="${dist.base}/linux/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.conf"
+                                      tofile="${dist.base}/linux/xdag-mainnet.conf"/>
+                                <copy file="src/main/resources/xdag-testnet.conf"
+                                      tofile="${dist.base}/linux/xdag-testnet.conf"/>
+                                <copy file="src/main/resources/xdag-devnet.conf"
+                                      tofile="${dist.base}/linux/xdag-devnet.conf"/>
                                 <copy file="${project.basedir}/script/xdag.sh"
-                                        tofile="${dist.base}/linux/xdag.sh"/>
+                                      tofile="${dist.base}/linux/xdag.sh"/>
                                 <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
                                 <zip basedir="${dist.base}/linux/"
-                                        destfile="${dist.base}/xdagj-linux.zip"/>
+                                     destfile="${dist.base}/xdagj-linux.zip"/>
                                 <delete dir="${dist.base}/linux/" includeemptydirs="true"/>
 
                                 <!-- macos build -->
                                 <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                        tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar"/>
+                                      tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar"/>
                                 <copy file="src/main/resources/log4j2.xml"
-                                        tofile="${dist.base}/macos/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.config"
-                                        tofile="${dist.base}/macos/xdag-mainnet.config"/>
-                                <copy file="src/main/resources/xdag-testnet.config"
-                                        tofile="${dist.base}/macos/xdag-testnet.config"/>
-                                <copy file="src/main/resources/xdag-devnet.config"
-                                        tofile="${dist.base}/macos/xdag-devnet.config"/>
+                                      tofile="${dist.base}/macos/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.conf"
+                                      tofile="${dist.base}/macos/xdag-mainnet.conf"/>
+                                <copy file="src/main/resources/xdag-testnet.conf"
+                                      tofile="${dist.base}/macos/xdag-testnet.conf"/>
+                                <copy file="src/main/resources/xdag-devnet.conf"
+                                      tofile="${dist.base}/macos/xdag-devnet.conf"/>
                                 <copy file="${project.basedir}/script/xdag.sh"
-                                        tofile="${dist.base}/macos/xdag.sh"/>
+                                      tofile="${dist.base}/macos/xdag.sh"/>
                                 <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
                                 <zip basedir="${dist.base}/macos/"
-                                        destfile="${dist.base}/xdagj-macos.zip"/>
+                                     destfile="${dist.base}/xdagj-macos.zip"/>
                                 <delete dir="${dist.base}/macos/" includeemptydirs="true"/>
                             </target>
                         </configuration>
@@ -391,21 +391,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
-            <version>2.8.0</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-lang3</artifactId>
-                    <groupId>org.apache.commons</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.9.4</version>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.4.2</version>
         </dependency>
 
         <dependency>

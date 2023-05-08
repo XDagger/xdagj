@@ -45,7 +45,7 @@ public class TestnetConfigTest {
     @Test
     public void testParams() {
         assertEquals("testnet", config.getRootDir());
-        assertEquals("xdag-testnet.config", config.getConfigName());
+        assertEquals("xdag-testnet", config.getConfigName());
         assertEquals(whitelistUrl, config.getNodeSpec().getWhitelistUrl());
         assertEquals(0x16900000000L, config.getXdagEra());
         assertEquals(XDAG_FIELD_HEAD_TEST, config.getXdagFieldHeader());

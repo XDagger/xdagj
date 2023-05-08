@@ -86,9 +86,9 @@ TODO
 
 ## 修改矿池参数
 
-配置文件位于`src/main/resources/xdag-xxx.config`，打包后位于程序的根目录下（./pool）具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
+配置文件位于`src/main/resources/xdag-xxx.conf`，打包后位于程序的根目录下（./pool）具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
 
-- xdag-devnet.config 为例
+- xdag-devnet.conf 为例
 
 ```yaml
 # 管理员控制

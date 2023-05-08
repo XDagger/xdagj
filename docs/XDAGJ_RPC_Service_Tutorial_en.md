@@ -20,7 +20,7 @@ This section describes XDAGJ RPC service.
 
 If you want to open the rpc service，you need to set "isRPCEnabled = true" in your configuration file.
 
-The configuration file is located in `src/main/resources/xdag-XXX.config`, if you do not modify it, the default configuration is disabled. 
+The configuration file is located in `src/main/resources/xdag-XXX.conf`, if you do not modify it, the default configuration is disabled. 
 
 - Show XDAG synchronization status
     

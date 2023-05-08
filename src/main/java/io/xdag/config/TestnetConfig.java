@@ -31,7 +31,7 @@ import com.google.common.primitives.UnsignedLong;
 public class TestnetConfig extends AbstractConfig {
 
     public TestnetConfig() {
-        super("testnet", "xdag-testnet.config");
+        super("testnet", "xdag-testnet");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
 
         // testnet wait 1 epoch

@@ -31,7 +31,7 @@ import com.google.common.primitives.UnsignedLong;
 public class MainnetConfig extends AbstractConfig {
 
     public MainnetConfig() {
-        super("mainnet", "xdag-mainnet.config");
+        super("mainnet", "xdag-mainnet");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
         this.xdagEra = 0x16940000000L;

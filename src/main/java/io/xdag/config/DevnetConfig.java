@@ -32,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 public class DevnetConfig extends AbstractConfig {
 
     public DevnetConfig() {
-        super("devnet", "xdag-devnet.config");
+        super("devnet", "xdag-devnet");
         this.whitelistUrl = StringUtils.EMPTY;
 
         this.waitEpoch = 1;
