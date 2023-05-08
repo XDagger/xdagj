@@ -29,12 +29,12 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.assertEquals;
 
 import io.xdag.config.Config;
-import io.xdag.config.MainnetConfig;
+import io.xdag.config.DevnetConfig;
 import org.junit.Test;
 
 public class MintTest {
 
-    Config config = new MainnetConfig();
+    Config config = new DevnetConfig();
 
     @Test
     public void testMint() {

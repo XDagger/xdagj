@@ -45,7 +45,7 @@ public class MainnetConfigTest {
     @Test
     public void testParams() {
         assertEquals("mainnet", config.getRootDir());
-        assertEquals("xdag-mainnet.config", config.getConfigName());
+        assertEquals("xdag-mainnet", config.getConfigName());
         assertEquals(whitelistUrl, config.getNodeSpec().getWhitelistUrl());
         assertEquals(0x16940000000L, config.getXdagEra());
         assertEquals(XDAG_FIELD_HEAD, config.getXdagFieldHeader());

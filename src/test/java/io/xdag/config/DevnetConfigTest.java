@@ -44,7 +44,7 @@ public class DevnetConfigTest {
     @Test
     public void testParams() {
         assertEquals("devnet", config.getRootDir());
-        assertEquals("xdag-devnet.config", config.getConfigName());
+        assertEquals("xdag-devnet", config.getConfigName());
         assertEquals(StringUtils.EMPTY, config.getNodeSpec().getWhitelistUrl());
         assertEquals(0x16900000000L, config.getXdagEra());
         assertEquals(XDAG_FIELD_HEAD_TEST, config.getXdagFieldHeader());
