@@ -47,7 +47,7 @@ public class BlockInfo {
     private byte[] remark;
     private byte[] hash;
     private byte[] hashlow;
-    private UInt64 amount = UInt64.ZERO;
+    private XAmount amount = XAmount.ZERO;
     private long timestamp;
 
     // snapshot
@@ -60,7 +60,7 @@ public class BlockInfo {
                 "height=" + height +
                 ", hash=" + Arrays.toString(hash) +
                 ", hashlow=" + Arrays.toString(hashlow) +
-                ", amount=" + amount2xdag(amount) +
+                ", amount=" + amount.toString() +
                 ", type=" + type +
                 ", difficulty=" + difficulty +
                 ", ref=" + Arrays.toString(ref) +

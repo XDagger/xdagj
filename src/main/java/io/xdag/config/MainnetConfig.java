@@ -26,7 +26,8 @@ package io.xdag.config;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 
-import com.google.common.primitives.UnsignedLong;
+import org.apache.tuweni.units.bigints.UInt64;
+import io.xdag.core.XAmount;
 
 public class MainnetConfig extends AbstractConfig {
 
@@ -35,10 +36,10 @@ public class MainnetConfig extends AbstractConfig {
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
 
         this.xdagEra = 0x16940000000L;
-        this.mainStartAmount = UnsignedLong.fromLongBits(1L << 42).longValue();
+        this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
 
         this.apolloForkHeight = 1017323;
-        this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
+        this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
         this.xdagFieldHeader = XDAG_FIELD_HEAD;
 
         this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";

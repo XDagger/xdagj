@@ -32,6 +32,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
@@ -322,14 +323,14 @@ public class MinerChannel {
      * 矿池发送余额给矿工
      */
     public void sendBalance() {
-        UInt64 amount = UInt64.ZERO;
+        XAmount amount = XAmount.ZERO;
         if (!addressStore.addressIsExist(accountAddressHashByte)){
             log.debug("Can't found address,{}", WalletUtils.toBase58(accountAddressHashByte));
         } else {
             amount = addressStore.getBalanceByAddress(accountAddressHashByte);
         }
         MutableBytes32 data = MutableBytes32.create();
-        data.set(0,amount.toBytes());
+        data.set(0, amount.toXAmount().toBytes());
         data.set(8, Bytes.wrap(accountAddressHashByte));
         log.debug("update miner balance {}", data.toHexString());
         miner03.sendMessage(data);

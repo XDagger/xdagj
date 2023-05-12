@@ -34,6 +34,7 @@ import io.xdag.config.spec.RPCSpec;
 import io.xdag.config.spec.RandomxSpec;
 import io.xdag.config.spec.SnapshotSpec;
 import io.xdag.config.spec.WalletSpec;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.DnetKeys;
 import io.xdag.rpc.modules.ModuleDescription;
@@ -131,9 +132,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected long xdagEra;
     protected XdagField.FieldType xdagFieldHeader;
-    protected long mainStartAmount;
+    protected XAmount mainStartAmount;
     protected long apolloForkHeight;
-    protected long apolloForkAmount;
+    protected XAmount apolloForkAmount;
 
 
     // =========================

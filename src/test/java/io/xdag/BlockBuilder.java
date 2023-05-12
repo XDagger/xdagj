@@ -33,13 +33,13 @@ import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
+import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
 import io.xdag.crypto.Hash;
-import io.xdag.utils.BasicUtils;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.KeyPair;
 
@@ -48,7 +48,7 @@ public class BlockBuilder {
     public static Block generateAddressBlock(Config config, KeyPair key, long xdagTime) {
         Block b = new Block(config, xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
-        b.getInfo().setAmount(BasicUtils.xdag2amount(1000));
+        b.getInfo().setAmount(XAmount.of(1000, XUnit.XDAG));
         return b;
     }
 
@@ -72,7 +72,7 @@ public class BlockBuilder {
     }
 
     public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-                                                 UInt64 amount) {
+                                                 XAmount amount) {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
@@ -83,7 +83,7 @@ public class BlockBuilder {
         return b;
     }
     public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-                                                    UInt64 amount) {
+                                                    XAmount amount) {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
@@ -95,7 +95,7 @@ public class BlockBuilder {
     }
 
     public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-                                                    UInt64 amount) {
+            XAmount amount) {
         List<Address> refs = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, amount,false));

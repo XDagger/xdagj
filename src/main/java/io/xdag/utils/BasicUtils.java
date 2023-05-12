@@ -29,6 +29,8 @@ import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
+
+import io.xdag.core.XAmount;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.math.BigDecimal;
@@ -179,11 +181,23 @@ public class BasicUtils {
         return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
     }
 
+    public static int compareAmountTo(XAmount amount1, XAmount amount2) {
+        return amount1.compareTo(amount2);
+    }
+
     public static int compareAmountTo(UInt64 amount1, UInt64 amount2) {
         return amount1.compareTo(amount2);
     }
 
     public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {
         return amount1.compareTo(amount2);
+    }
+
+    public static BigDecimal amount2xdagNew(long xdag) {
+        if(xdag < 0) throw new XdagOverFlowException();
+        long first = xdag >> 32;
+        long temp = xdag - (first << 32);
+        double tem = temp / Math.pow(2, 32);
+        return new BigDecimal(first + tem);
     }
 }
