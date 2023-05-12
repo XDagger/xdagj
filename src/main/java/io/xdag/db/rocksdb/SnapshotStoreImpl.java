@@ -40,6 +40,7 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.PreBlockInfo;
 import io.xdag.core.SnapshotInfo;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
@@ -73,8 +74,8 @@ public class SnapshotStoreImpl implements SnapshotStore {
     private final RocksdbKVSource snapshotSource;
 
     private final Kryo kryo;
-    private long ourBalance;
-    private long allBalance;
+    private XAmount ourBalance = XAmount.ZERO;
+    private XAmount allBalance = XAmount.ZERO;
     private long nextTime;
     private long height;
 
@@ -101,7 +102,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         blockInfo.setFee(preBlockInfo.getFee());
         blockInfo.setHash(preBlockInfo.getHash());
         blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
+        blockInfo.setAmount(preBlockInfo.getAmount());
         blockInfo.setHashlow(preBlockInfo.getHashlow());
         blockInfo.setFlags(preBlockInfo.getFlags());
         blockInfo.setHeight(preBlockInfo.getHeight());
@@ -138,7 +139,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         blockInfo.setSnapshot(true);
                         save(iter, blockInfo);
                     } else { //Storage block data without public key and balance
-                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0)) {
+                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), XAmount.ZERO) != 0)) {
 //                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
                             blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(
@@ -189,7 +190,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                     if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
-                                        ourBalance += blockInfo.getAmount().toLong();
+                                        ourBalance = ourBalance.add(blockInfo.getAmount());
                                         break;
                                     }
                                 }
@@ -205,7 +206,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                     if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
-                                        ourBalance += blockInfo.getAmount().toLong();
+                                        ourBalance = ourBalance.add(blockInfo.getAmount());
                                         break;
                                     }
                                 }
@@ -215,9 +216,9 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         if ((flag & BI_OURS) != 0 && keyIndex > -1) {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
-                        allBalance += blockInfo.getAmount().toLong();
+                        allBalance = allBalance.add(blockInfo.getAmount());
                         blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
-                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT,blockInfo.getAmount(),
+                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT, blockInfo.getAmount(),
                                 snapshotTime,0,
                                 blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
@@ -239,23 +240,24 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     if(iter.key()[0] == ADDRESS_SIZE){
                         addressStore.saveAddressSize(iter.value());
                     }else if(iter.key()[0] == AMOUNT_SUM){
-                        addressStore.savaAmountSum(iter.value());
-                        allBalance = addressStore.getAllBalance().toLong();
+                        UInt64 u64v = UInt64.fromBytes(Bytes.wrap(iter.value()));
+                        addressStore.savaAmountSum(XAmount.ofXAmount(u64v.toLong()));
+                        allBalance = addressStore.getAllBalance();
                     }
                 } else {
                     byte[] address = iter.key();
-                    byte[] balance = iter.value();
+                    XAmount balance = XAmount.ofXAmount(UInt64.fromBytes(Bytes.wrap(iter.value())).toLong());
                     for (int i = 0; i < keys.size(); i++) {
                         KeyPair keyPair = keys.get(i);
                         byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                         byte[] myAddress = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
                         if (BytesUtils.compareTo(address,0,20,myAddress,0,20) == 0) {
-                            ourBalance += UInt64.fromBytes(Bytes.wrap(balance)).toLong();
+                            ourBalance = ourBalance.add(balance);
                         }
                     }
-                    addressStore.saveAddress(address,balance);
+                    addressStore.saveAddress(address, balance);
                     blockStore.saveTxHistory(BytesUtils.arrayToByte32(address), BytesUtils.arrayToByte32(address),
-                            XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
+                            XdagField.FieldType.XDAG_FIELD_SNAPSHOT, balance,
                             snapshotTime,0,"snapshot".getBytes());
                 }
             }
@@ -272,11 +274,11 @@ public class SnapshotStoreImpl implements SnapshotStore {
         snapshotSource.put(iter.key(), value);
     }
 
-    public long getOurBalance() {
+    public XAmount getOurBalance() {
         return this.ourBalance;
     }
 
-    public long getAllBalance(){
+    public XAmount getAllBalance(){
         return this.allBalance;
     }
 
@@ -326,6 +328,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
         kryo.register(UInt64.class);
+        kryo.register(XAmount.class);
         kryo.register(PreBlockInfo.class);
     }
 

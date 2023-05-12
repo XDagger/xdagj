@@ -25,6 +25,7 @@ package io.xdag.db;
 
 import io.xdag.core.BlockInfo;
 import io.xdag.core.PreBlockInfo;
+import io.xdag.core.XAmount;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import java.util.List;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -46,12 +47,12 @@ public interface SnapshotStore {
 
     void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo);
 
-    long getOurBalance();
+    XAmount getOurBalance();
 
     long getNextTime();
 
     long getHeight();
 
-    long getAllBalance();
+    XAmount getAllBalance();
 
 }

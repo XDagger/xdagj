@@ -25,6 +25,8 @@ package io.xdag.db;
 
 import org.apache.tuweni.units.bigints.UInt64;
 
+import io.xdag.core.XAmount;
+
 public interface AddressStore {
 
     byte ADDRESS_SIZE = (byte) 0x10;
@@ -35,24 +37,24 @@ public interface AddressStore {
 
     void reset();
 
-    UInt64 getBalanceByAddress(byte[] Address);
+    XAmount getBalanceByAddress(byte[] Address);
 
     boolean addressIsExist(byte[] Address);
 
     void addAddress(byte[] Address);
 
-    UInt64 getAllBalance();
+    XAmount getAllBalance();
 
     void saveAddressSize(byte[] addressSize);
 
-    void savaAmountSum(byte[] amountSum);
+    void savaAmountSum(XAmount balanceSum);
 
-    void updateAllBalance(UInt64 value);
+    void updateAllBalance(XAmount balance);
 
     UInt64 getAddressSize();
 
-    void updateBalance(byte[] address, UInt64 value);
+    void updateBalance(byte[] address, XAmount balance);
 
-    void saveAddress(byte[] address,byte[] balance);
+    void saveAddress(byte[] address, XAmount balance);
 
 }

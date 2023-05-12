@@ -37,6 +37,7 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.SnapshotInfo;
 import io.xdag.core.TxHistory;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
@@ -112,6 +113,7 @@ public class BlockStoreImpl implements BlockStore {
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
         kryo.register(UInt64.class);
+        kryo.register(XAmount.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -529,7 +531,7 @@ public class BlockStoreImpl implements BlockStore {
     }
 
 
-    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, UInt64 amount,
+    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, XAmount amount,
             long time, int id, byte[] remark) { // id is used to avoid repeat key
         if (remark == null) {
             remark = new byte[]{};
@@ -541,7 +543,7 @@ public class BlockStoreImpl implements BlockStore {
         byte[] value;
         value = BytesUtils.merge(type.asByte(),
                 BytesUtils.merge(txHashlow.toArray(),
-                            BytesUtils.merge(amount.toBytes().reverse().toArray(),
+                            BytesUtils.merge(amount.toXAmount().toBytes().reverse().toArray(),
                                 BytesUtils.merge(BytesUtils.longToBytes(time, true),
                                         BytesUtils.merge(BytesUtils.longToBytes(remark.length, true),
                                                 remark))))); // type + tx hash + amount + time + remark_length + remark
@@ -556,7 +558,8 @@ public class BlockStoreImpl implements BlockStore {
             byte type = BytesUtils.subArray(value, 0, 1)[0];
             XdagField.FieldType fieldType = XdagField.FieldType.fromByte(type);
             Bytes32 hashlow = Bytes32.wrap(BytesUtils.subArray(value, 1, 32));
-            UInt64 amount = UInt64.fromBytes(Bytes.wrap(BytesUtils.subArray(value, 33, 8)).reverse());
+            UInt64 u64v = UInt64.fromBytes(Bytes.wrap(BytesUtils.subArray(value, 33, 8)).reverse());
+            XAmount amount = XAmount.ofXAmount(u64v.toLong());
 //            long amount = BytesUtils.bytesToLong(, 0, true);
             long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
             Address address = new Address(hashlow, fieldType, amount,false);

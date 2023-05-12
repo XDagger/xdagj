@@ -56,9 +56,9 @@ public interface Blockchain {
 
     XdagTopStatus getXdagTopStatus();
 
-    long getReward(long nmain);
+    XAmount getReward(long nmain);
 
-    long getSupply(long nmain);
+    XAmount getSupply(long nmain);
 
     List<Block> getBlocksByTime(long starttime, long endtime);
 

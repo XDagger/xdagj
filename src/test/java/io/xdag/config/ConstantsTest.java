@@ -26,8 +26,9 @@ package io.xdag.config;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.primitives.UnsignedLong;
-import io.xdag.utils.BasicUtils;
+import io.xdag.core.XUnit;
+
+import org.apache.tuweni.units.bigints.UInt64;
 import org.junit.Test;
 
 public class ConstantsTest {
@@ -35,13 +36,12 @@ public class ConstantsTest {
     @Test
     public void testMainStartAmount() {
         Config config = new MainnetConfig();
-        UnsignedLong startAmount = UnsignedLong.fromLongBits(1L << 42);
-        UnsignedLong apolloStartAmount = UnsignedLong.fromLongBits(1L << 39);
-        assertEquals(config.getMainStartAmount(), startAmount.longValue());
-        assertEquals(config.getApolloForkAmount(), apolloStartAmount.longValue());
-        assertEquals(config.getMainStartAmount(), startAmount.longValue());
-        assertEquals(String.valueOf(BasicUtils.amount2xdag(config.getMainStartAmount())), "1024.0");
-        assertEquals(String.valueOf(BasicUtils.amount2xdag(config.getApolloForkAmount())), "128.0");
+        UInt64 startAmount = UInt64.valueOf(1L << 42);
+        UInt64 apolloStartAmount = UInt64.valueOf(1L << 39);
+        assertEquals(config.getMainStartAmount().toXAmount().toLong(), startAmount.toLong());
+        assertEquals(config.getApolloForkAmount().toXAmount().toLong(), apolloStartAmount.toLong());
+        assertEquals("1024.0", config.getMainStartAmount().toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("128.0", config.getApolloForkAmount().toDecimal(1, XUnit.XDAG).toString());
     }
 
 }

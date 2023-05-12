@@ -35,7 +35,6 @@ import static io.xdag.rpc.ErrorCode.SUCCESS;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -44,6 +43,8 @@ import io.xdag.Wallet;
 import io.xdag.core.Address;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ImportResult;
+import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.rpc.dto.ProcessResult;
 import io.xdag.utils.BasicUtils;
@@ -51,13 +52,13 @@ import io.xdag.utils.WalletUtils;
 import io.xdag.utils.exception.XdagOverFlowException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
@@ -120,9 +121,9 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
     //TODO:need change
     public void doXfer(double sendValue,Bytes32 fromAddress, Bytes32 toAddress,String remark, ProcessResult processResult) {
-        UInt64 amount = UInt64.ZERO;
+        XAmount amount = XAmount.ZERO;
         try {
-            amount = xdag2amount(sendValue);
+            amount = XAmount.of(BigDecimal.valueOf(sendValue), XUnit.XDAG);
         } catch (XdagOverFlowException e){
             processResult.setCode(ERR_PARAM_INVALID.code());
             processResult.setErrMsg(ERR_PARAM_INVALID.msg());
@@ -133,7 +134,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
         to.set(8, toAddress.slice(8, 20));
 
         // 待转账余额
-        AtomicReference<UInt64> remain = new AtomicReference<>(amount);
+        AtomicReference<XAmount> remain = new AtomicReference<>(amount);
         // 转账输入
         Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
 
@@ -145,13 +146,13 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
             List<KeyPair> accounts = kernel.getWallet().getAccounts();
             for (KeyPair account : accounts) {
                 byte[] addr = toBytesAddress(account);
-                UInt64 addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
+                XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
                 if (compareAmountTo(remain.get(), addrBalance) <= 0) {
                     ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(),true), account);
-                    remain.set(UInt64.ZERO);
+                    remain.set(XAmount.ZERO);
                     break;
                 } else {
-                    if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
+                    if (compareAmountTo(addrBalance, XAmount.ZERO) > 0) {
                         remain.set(remain.get().subtract(addrBalance));
                         ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance, true), account);
                     }
@@ -166,12 +167,12 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
                 // if (fromBlock.getInfo().getAmount() >= remain.get()) {
                 ourAccounts.put(new Address(from, XDAG_FIELD_INPUT, remain.get(), true),
                         kernel.getWallet().getAccount(addr));
-                remain.set(UInt64.ZERO);
+                remain.set(XAmount.ZERO);
             }
         }
 
         // 余额不足
-        if (compareAmountTo(remain.get(),UInt64.ZERO) > 0) {
+        if (compareAmountTo(remain.get(), XAmount.ZERO) > 0) {
             processResult.setCode(ERR_BALANCE_NOT_ENOUGH.code());
             processResult.setErrMsg(ERR_BALANCE_NOT_ENOUGH.msg());
             return;

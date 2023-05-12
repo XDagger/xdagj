@@ -21,31 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.core;
 
-package io.xdag.config;
+import static java.util.Arrays.stream;
+import java.math.BigInteger;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
+/**
+ *  XUnit
+ * NANO_XDAG	   1 NANO_XDAG	1	          10^-9 XDAG
+ * MICRO_XDAG	10^3 NANO_XDAG	1,000	      10^-6 XDAG
+ * MILLI_XDAG	10^6 NANO_XDAG	1,000,000	  10^-3 XDAG
+ * XDAG	        10^9 NANO_XDAG	1,000,000,000	  1 XDAG
+ */
+public enum XUnit {
 
-import org.apache.tuweni.units.bigints.UInt64;
-import io.xdag.core.XAmount;
+    NANO_XDAG(0, "nXDAG"),
 
-public class MainnetConfig extends AbstractConfig {
+    MICRO_XDAG(3, "μXDAG"),
 
-    public MainnetConfig() {
-        super("mainnet", "xdag-mainnet");
-        this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
+    MILLI_XDAG(6, "mXDAG"),
 
-        this.xdagEra = 0x16940000000L;
-        this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
+    XDAG(9, "XDAG");
 
-        this.apolloForkHeight = 1017323;
-        this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
-        this.xdagFieldHeader = XDAG_FIELD_HEAD;
+    public final int exp;
+    public final long factor;
+    public final String symbol;
 
-        this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";
-        this.walletKeyFile = this.rootDir + "/wallet.dat";
+    XUnit(int exp, String symbol) {
+        this.exp = exp;
+        this.factor = BigInteger.TEN.pow(exp).longValueExact();
+        this.symbol = symbol;
+    }
 
-        this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
+    /**
+     * Decode the unit from symbol.
+     *
+     * @param symbol
+     *            the symbol text
+     * @return a Unit object if valid; otherwise false
+     */
+    public static XUnit of(String symbol) {
+        return stream(values()).filter(v -> v.symbol.equals(symbol)).findAny().orElse(null);
     }
 
 }

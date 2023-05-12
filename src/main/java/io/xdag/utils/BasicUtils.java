@@ -29,12 +29,13 @@ import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
+
+import io.xdag.core.XAmount;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -116,13 +117,6 @@ public class BasicUtils {
         return result;
     }
 
-    public static String formatDouble(double d) {
-        NumberFormat nf = NumberFormat.getInstance();
-        nf.setMaximumFractionDigits(9);
-        nf.setGroupingUsed(false);
-        return nf.format(d);
-    }
-
     /**
      * Xfer:transferred   44796588980   10.430000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10.43
      * Xfer:transferred   42949672960   10.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10
@@ -179,11 +173,23 @@ public class BasicUtils {
         return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
     }
 
+    public static int compareAmountTo(XAmount amount1, XAmount amount2) {
+        return amount1.compareTo(amount2);
+    }
+
     public static int compareAmountTo(UInt64 amount1, UInt64 amount2) {
         return amount1.compareTo(amount2);
     }
 
     public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {
         return amount1.compareTo(amount2);
+    }
+
+    public static BigDecimal amount2xdagNew(long xdag) {
+        if(xdag < 0) throw new XdagOverFlowException();
+        long first = xdag >> 32;
+        long temp = xdag - (first << 32);
+        double tem = temp / Math.pow(2, 32);
+        return new BigDecimal(first + tem);
     }
 }

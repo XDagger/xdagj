@@ -41,40 +41,17 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static io.xdag.crypto.Keys.toBytesAddress;
 import static io.xdag.utils.BasicUtils.Hash2byte;
 import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.getHash;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.BasicUtils.xdag2amount;
 import static io.xdag.utils.BasicUtils.xdagHashRate;
 import static io.xdag.utils.WalletUtils.checkAddress;
 import static io.xdag.utils.WalletUtils.fromBase58;
 import static io.xdag.utils.WalletUtils.toBase58;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import io.xdag.Kernel;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.BlockState;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.ImportResult;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XdagState;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
-import io.xdag.mine.MinerChannel;
-import io.xdag.mine.miner.Miner;
-import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.mine.miner.MinerStates;
-import io.xdag.net.node.Node;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -91,16 +68,42 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.KeyPair;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
+import io.xdag.Kernel;
+import io.xdag.core.Address;
+import io.xdag.core.Block;
+import io.xdag.core.BlockInfo;
+import io.xdag.core.BlockState;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.ImportResult;
+import io.xdag.core.TxHistory;
+import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
+import io.xdag.core.XdagState;
+import io.xdag.core.XdagStats;
+import io.xdag.core.XdagTopStatus;
+import io.xdag.mine.MinerChannel;
+import io.xdag.mine.miner.Miner;
+import io.xdag.mine.miner.MinerCalculate;
+import io.xdag.mine.miner.MinerStates;
+import io.xdag.net.node.Node;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagTime;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Commands {
@@ -189,7 +192,7 @@ public class Commands {
             }
             str.append(toBase58(toBytesAddress(keyPair)))
                     .append(" ")
-                    .append(String.format("%.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(keyPair)))))
+                    .append(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(keyPair)).toDecimal(9, XUnit.XDAG).toPlainString())
                     .append(" XDAG")
                     .append("\n");
             num--;
@@ -206,20 +209,20 @@ public class Commands {
      */
     public String balance(String address) {
         if (StringUtils.isEmpty(address)) {
-            UInt64 ourBalance = UInt64.ZERO;
+            XAmount ourBalance = XAmount.ZERO;
             List<KeyPair> list = kernel.getWallet().getAccounts();
             for (KeyPair k : list) {
                 ourBalance = ourBalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
             }
-            return String.format("Balance: %.9f XDAG", amount2xdag(ourBalance));
+            return String.format("Balance: %s XDAG", ourBalance.toDecimal(9, XUnit.XDAG).toPlainString());
         } else {
             Bytes32 hash;
             MutableBytes32 key = MutableBytes32.create();
             if (checkAddress(address)) {
                 hash = pubAddress2Hash(address);
                 key.set(8, Objects.requireNonNull(hash).slice(8, 20));
-                UInt64 balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address));
-                return String.format("Account balance: %.9f XDAG", amount2xdag(balance));
+                XAmount balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address));
+                return String.format("Account balance: %s XDAG", balance.toDecimal(9, XUnit.XDAG).toPlainString());
             } else {
                 if (StringUtils.length(address) == 32) {
                     hash = address2Hash(address);
@@ -228,7 +231,7 @@ public class Commands {
                 }
                 key.set(8, Objects.requireNonNull(hash).slice(8, 24));
                 Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-                return String.format("Block balance: %.9f XDAG", amount2xdag(block.getInfo().getAmount()));
+                return String.format("Block balance: %s XDAG", block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString());
             }
 
         }
@@ -246,26 +249,26 @@ public class Commands {
         StringBuilder str = new StringBuilder();
         str.append("Transaction :{ ").append("\n");
 
-        UInt64 amount = xdag2amount(sendAmount);
+        XAmount amount = XAmount.of(BigDecimal.valueOf(sendAmount), XUnit.XDAG);
         MutableBytes32 to = MutableBytes32.create();
         to.set(8, address.slice(8, 20));
 
         // 待转账余额
-        AtomicReference<UInt64> remain = new AtomicReference<>(amount);
+        AtomicReference<XAmount> remain = new AtomicReference<>(amount);
 
         // 转账输入
         Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
         List<KeyPair> accounts = kernel.getWallet().getAccounts();
         for (KeyPair account : accounts) {
             byte[] addr = toBytesAddress(account);
-            UInt64 addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
+            XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
 
             if (compareAmountTo(remain.get(), addrBalance) <= 0) {
                 ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(),true), account);
-                remain.set(UInt64.ZERO);
+                remain.set(XAmount.ZERO);
                 break;
             } else {
-                if (compareAmountTo(addrBalance, UInt64.ZERO) > 0) {
+                if (compareAmountTo(addrBalance, XAmount.ZERO) > 0) {
                     remain.set(remain.get().subtract(addrBalance));
                     ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance, true), account);
                 }
@@ -273,7 +276,7 @@ public class Commands {
         }
 
         // 余额不足
-        if (compareAmountTo(remain.get(),UInt64.ZERO) > 0) {
+        if (compareAmountTo(remain.get(),XAmount.ZERO) > 0) {
             return "Balance not enough.";
         }
 
@@ -312,7 +315,7 @@ public class Commands {
 
         // base count a block <header + send address + defKey signature>
         int base = 1 + 1 + 2 + hasRemark;
-        UInt64 amount = UInt64.ZERO;
+        XAmount amount = XAmount.ZERO;
 
         while (stack.size() > 0) {
             Map.Entry<Address, KeyPair> key = stack.peek();
@@ -336,7 +339,7 @@ public class Commands {
                 keysPerBlock = new HashSet<>();
                 keysPerBlock.add(kernel.getWallet().getDefKey());
                 base = 1 + 1 + 2 + hasRemark;
-                amount = UInt64.ZERO;
+                amount = XAmount.ZERO;
             }
         }
         if (keys.size() != 0) {
@@ -346,7 +349,7 @@ public class Commands {
         return res;
     }
 
-    private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark) {
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark);
 
@@ -396,8 +399,8 @@ public class Commands {
                             orphan blocks: %d
                          wait sync blocks: %d
                          chain difficulty: %s of %s
-                              XDAG supply: %.9f of %.9f 
-                          XDAG in address: %.9f
+                              XDAG supply: %s of %s
+                          XDAG in address: %s
                         4 hr hashrate KHs: %.9f of %.9f
                         Number of Address: %d""",
                 kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
@@ -410,9 +413,9 @@ public class Commands {
 //                xdagStats.getMaxdifficulty()!=null?xdagStats.getMaxdifficulty().toString(16):"",
                 currentDiff.toString(16),
                 maxDiff.toString(16),
-                amount2xdag(kernel.getBlockchain().getSupply(xdagStats.nmain)),
-                amount2xdag(kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain))),
-                amount2xdag(kernel.getAddressStore().getAllBalance()),
+                kernel.getBlockchain().getSupply(xdagStats.nmain).toDecimal(9, XUnit.XDAG).toPlainString(),
+                kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)).toDecimal(9, XUnit.XDAG).toPlainString(),
+                kernel.getAddressStore().getAllBalance().toDecimal(9, XUnit.XDAG).toPlainString(),
                 xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateOurs()),
                 xdagHashRate(kernel.getBlockchain().getXdagExtStats().getHashRateTotal()),
                 kernel.getAddressStore().getAddressSize().toLong()
@@ -471,20 +474,20 @@ public class Commands {
                       hash: %s
                     remark: %s
                 difficulty: %s
-                   balance: %s  %.9f
+                   balance: %s  %s
                 -----------------------------------------------------------------------------------------------------------------------------
                                                block as transaction: details
                  direction  address                                    amount
-                       fee: %s           %.9f""";
+                       fee: %s           %s""";
         StringBuilder inputs = null;
         StringBuilder outputs = null;
         if (raw) {
             if (block.getInputs().size() != 0) {
                 inputs = new StringBuilder();
                 for (Address input : block.getInputs()) {
-                    inputs.append(String.format("     input: %s           %.9f%n",
+                    inputs.append(String.format("     input: %s           %s%n",
                             input.getIsAddress() ? toBase58(Hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
-                            amount2xdag(input.getAmount())
+                            input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
             }
@@ -492,9 +495,9 @@ public class Commands {
                 outputs = new StringBuilder();
                 for (Address output : block.getOutputs()) {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
-                    outputs.append(String.format("    output: %s           %.9f%n",
+                    outputs.append(String.format("    output: %s           %s%n",
                             output.getIsAddress() ? toBase58(Hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
-                            amount2xdag(output.getAmount())
+                            output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
             }
@@ -507,8 +510,8 @@ public class Commands {
                        """;
         StringBuilder tx = new StringBuilder();
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
-            tx.append(String.format("    earn: %s           %.9f   %s%n", hash2Address(block.getHashLow()),
-                    amount2xdag(kernel.getBlockchain().getReward(block.getInfo().getHeight())),
+            tx.append(String.format("    earn: %s           %s   %s%n", hash2Address(block.getHashLow()),
+                    kernel.getBlockchain().getReward(block.getInfo().getHeight()).toDecimal(9, XUnit.XDAG).toPlainString(),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
         }
@@ -519,18 +522,19 @@ public class Commands {
                 continue;
             }
             if (address.getType().equals(XDAG_FIELD_IN)) {
-                tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                        amount2xdag(address.getAmount()),
+                tx.append(String.format("    input: %s           %s  %s%n", hash2Address(address.getAddress()),
+                        address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else if (address.getType().equals(XDAG_FIELD_OUT)) {
-                tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                        amount2xdag(address.getAmount()),
+                tx.append(String.format("   output: %s           %s   %s%n", hash2Address(address.getAddress()),
+                        address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             } else {
-                tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                        amount2xdag(address.getAmount()),
+                tx.append(String.format(" snapshot: %s           %s   %s%n",
+                        hash2Address(address.getAddress()),
+                        address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             }
@@ -543,12 +547,12 @@ public class Commands {
                 Integer.toHexString(block.getInfo().getFlags()),
                 getStateByFlags(block.getInfo().getFlags()),
                 Hex.toHexString(block.getInfo().getHash()),
-                block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
+                block.getInfo().getRemark() == null ? StringUtils.EMPTY : new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
                 block.getInfo().getDifficulty().toString(16),
-                hash2Address(block.getHash()), amount2xdag(block.getInfo().getAmount()),
+                hash2Address(block.getHash()), block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                 //fee目前为0
-                block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-                        : hash2Address(Bytes32.wrap(block.getInfo().getRef())), 0.0
+                block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
+                XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString()
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
@@ -681,26 +685,25 @@ public class Commands {
     }
 
     public static String getBalanceMaxXfer(Kernel kernel){
-        final UInt64[] balance = {UInt64.ZERO};
+        final XAmount[] balance = {XAmount.ZERO};
 
         kernel.getBlockStore().fetchOurBlocks(pair -> {
             Block block = pair.getValue();
             if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                 return false;
             }
-            if (compareAmountTo(block.getInfo().getAmount(),UInt64.ZERO) > 0) {
+            if (compareAmountTo(block.getInfo().getAmount(),XAmount.ZERO) > 0) {
                 balance[0] = balance[0].add(block.getInfo().getAmount());
             }
             return false;
         });
-        return String.format("%.9f", amount2xdag(balance[0]));
+        return String.format("%s", balance[0].toDecimal(9, XUnit.XDAG).toPlainString());
     }
 
     public String address(Bytes32 wrap) {
         String ov = " OverView" + "\n"
                 + String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n"
-                + String.format(" balance: %.9f",
-                amount2xdag(kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())))) + "\n";
+                + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
@@ -718,29 +721,29 @@ public class Commands {
                     continue;
                 }
                 if (address.getType().equals(XDAG_FIELD_INPUT)) {
-                    tx.append(String.format("    input: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                            amount2xdag(address.getAmount()),
+                    tx.append(String.format("    input: %s           %s   %s%n", hash2Address(address.getAddress()),
+                            address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                     .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
                 } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
-                    tx.append(String.format("   output: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                            amount2xdag(address.getAmount()),
+                    tx.append(String.format("   output: %s           %s   %s%n", hash2Address(address.getAddress()),
+                            address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                     .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
                 } else if (address.getType().equals(XDAG_FIELD_COINBASE) && (blockInfo.flags&BI_MAIN) != 0) {
-                    tx.append(String.format(" coinbase: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                            amount2xdag(address.getAmount()),
+                    tx.append(String.format(" coinbase: %s           %s   %s%n", hash2Address(address.getAddress()),
+                            address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                     .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
                 } else {
-                    tx.append(String.format(" snapshot: %s           %.9f   %s%n", hash2Address(address.getAddress()),
-                            amount2xdag(address.getAmount()),
+                    tx.append(String.format(" snapshot: %s           %s  %s%n", hash2Address(address.getAddress()),
+                            address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                     .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
                 }
             }else {
-                tx.append(String.format(" snapshot: %s           %.9f   %s%n", (toBase58(BytesUtils.byte32ToArray(address.getAddress()))),
-                        amount2xdag(address.getAmount()),
+                tx.append(String.format(" snapshot: %s           %s   %s%n", (toBase58(BytesUtils.byte32ToArray(address.getAddress()))),
+                        address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(XdagTime.xdagTimestampToMs(txHistory.getTimeStamp()))));
             }
@@ -769,7 +772,7 @@ public class Commands {
             if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                 return false;
             }
-            if (compareAmountTo(UInt64.ZERO, block.getInfo().getAmount()) < 0) {
+            if (compareAmountTo(XAmount.ZERO, block.getInfo().getAmount()) < 0) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(), false),
                         kernel.getWallet().getAccounts().get(index));
                 return false;

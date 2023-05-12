@@ -28,8 +28,6 @@ import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
-import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.*;
 
 import com.google.common.collect.Lists;
@@ -64,7 +62,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.After;
@@ -177,9 +174,9 @@ public class SnapshotStoreTest {
                 snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address3.toArray())), BlockInfo.class);
 
         //Compare balances
-        assertEquals("924.0", String.valueOf(amount2xdag(blockInfo1.getAmount())));
-        assertEquals("1024.0", String.valueOf(amount2xdag(blockInfo2.getAmount())));
-        assertEquals("1024.0", String.valueOf(amount2xdag(blockInfo3.getAmount())));
+        assertEquals("924.0", String.valueOf(blockInfo1.getAmount().toDecimal(1, XUnit.XDAG)));
+        assertEquals("1024.0", String.valueOf(blockInfo2.getAmount().toDecimal(1, XUnit.XDAG)));
+        assertEquals("1024.0", String.valueOf(blockInfo3.getAmount().toDecimal(1, XUnit.XDAG)));
 
         //Compare public key
 //        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
@@ -210,12 +207,12 @@ public class SnapshotStoreTest {
 //        snapshotStore.saveAddress(blockStore, addressStore, keys,0);
 
         //Verify the total balance of the current account
-        assertEquals("45980.0", String.valueOf(BasicUtils.amount2xdag(snapshotStore.getAllBalance())));
+        assertEquals("45980.0", String.valueOf(snapshotStore.getAllBalance().toDecimal(1, XUnit.XDAG)));
         //Verify height
         assertEquals(45, height);
 
         XdagStats xdagStats = new XdagStats();
-        xdagStats.balance = UInt64.valueOf(snapshotStore.getOurBalance());
+        xdagStats.balance = snapshotStore.getOurBalance();
         xdagStats.setTotalnmain(height);
         xdagStats.setNmain(height);
 
@@ -274,7 +271,7 @@ public class SnapshotStoreTest {
         Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
         Address to = new Address(BasicUtils.keyPair2Hash(addrKey), XDAG_FIELD_OUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100));
+        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
 
         // 3. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -306,12 +303,12 @@ public class SnapshotStoreTest {
             pending.clear();
         }
 
-        UInt64 toBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount toBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
 
-        assertEquals("100.0", String.valueOf(amount2xdag(toBalance)));
+        assertEquals("100.0", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));
         // block reword 1024 - 100 = 924.0
-        assertEquals("924.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount())));
+        assertEquals("924.0", String.valueOf(fromBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG)));
 
 
         address1 = from.getAddress();

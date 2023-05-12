@@ -26,7 +26,8 @@ package io.xdag.config;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
-import com.google.common.primitives.UnsignedLong;
+import org.apache.tuweni.units.bigints.UInt64;
+import io.xdag.core.XAmount;
 
 public class TestnetConfig extends AbstractConfig {
 
@@ -38,10 +39,10 @@ public class TestnetConfig extends AbstractConfig {
         this.waitEpoch = 1;
 
         this.xdagEra = 0x16900000000L;
-        this.mainStartAmount = UnsignedLong.fromLongBits(1L << 42).longValue();
+        this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
 
         this.apolloForkHeight = 196250;
-        this.apolloForkAmount = UnsignedLong.fromLongBits(1L << 39).longValue();
+        this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
 
         this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";

@@ -26,6 +26,7 @@ package io.xdag.db;
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.TxHistory;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
@@ -35,7 +36,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.units.bigints.UInt64;
 
 public interface BlockStore {
 
@@ -102,7 +102,7 @@ public interface BlockStore {
     byte[] getPreSeed();
 
     // tx history
-    void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, UInt64 amount,
+    void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, XAmount amount,
             long time, int id, byte[] remark);
 
     List<TxHistory> getTxHistoryByAddress(Bytes32 addressHashlow);

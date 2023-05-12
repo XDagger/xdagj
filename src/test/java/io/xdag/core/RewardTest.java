@@ -178,7 +178,7 @@ public class RewardTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount().toLong());
+        assertEquals("0", blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount().toString());
     }
 
     static class MockBlockchain extends BlockchainImpl {
@@ -188,9 +188,10 @@ public class RewardTest {
         }
 
         @Override
-        public long getReward(long nmain) {
-            long start = getStartAmount(nmain);
-            return start >> (nmain >> 4);
+        public XAmount getReward(long nmain) {
+            XAmount start = getStartAmount(nmain);
+            long nanoStart = start.toXAmount().toLong();
+            return XAmount.ofXAmount(nanoStart >> (nmain >> 4));
         }
     }
 

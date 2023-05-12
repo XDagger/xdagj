@@ -63,7 +63,6 @@ import io.xdag.db.rocksdb.DatabaseFactory;
 import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
 import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import io.xdag.Wallet;
@@ -74,7 +73,6 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -172,7 +170,7 @@ public class BlockchainTest {
         assertArrayEquals(addressBlock.getHashLow().toArray(), stats.getTop());
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
-        // 2. create 100 mainblocks
+        // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
             log.debug("create No." + i + " extra block");
             generateTime += 64000L;
@@ -194,8 +192,7 @@ public class BlockchainTest {
         // skip first 2 extra block amount assert
         Lists.reverse(extraBlockList).stream().skip(2).forEach(b -> {
             Block sb = blockchain.getBlockByHash(b.getHashLow(), false);
-//            System.out.println(Hex.toHexString(sb.getHashLow()) + ": " + String.valueOf(amount2xdag(sb.getInfo().getAmount())));
-            assertEquals("1024.0", String.valueOf(amount2xdag(sb.getInfo().getAmount())));
+            assertEquals("1024.0", sb.getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
         });
     }
 
@@ -207,9 +204,8 @@ public class BlockchainTest {
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
-//        System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), xdag2amount(1000));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(result, IMPORTED_BEST);
@@ -217,7 +213,7 @@ public class BlockchainTest {
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
         // 2. create 10 mainblocks
-        for (int i = 1; i <= 17; i++) {
+        for (int i = 1; i <= 10; i++) {
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
@@ -238,7 +234,7 @@ public class BlockchainTest {
         Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
         Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
+        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
 
         // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -252,13 +248,13 @@ public class BlockchainTest {
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
         assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
         // there is 12 blocks and 10 mainblocks
-        assertChainStatus(19, 17, 1, 1, blockchain);
+        assertChainStatus(12, 10, 1, 1, blockchain);
 
         pending.clear();
         pending.add(new Address(txBlock.getHashLow(),false));
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
-        // 4. confirm transaction block with 3 mainblocks
-        for (int i = 1; i <= 10; i++) {
+        // 4. confirm transaction block with 16 mainblocks
+        for (int i = 1; i <= 16; i++) {
             generateTime += 64000L;
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
             pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
@@ -273,10 +269,10 @@ public class BlockchainTest {
             pending.clear();
         }
 
-        UInt64 poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        UInt64 addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals(900,(long)amount2xdag(poolBalance.toLong()));
-        assertEquals(100,(long)amount2xdag(addressBalance.toLong()));
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("100.00", addressBalance.toDecimal(2, XUnit.XDAG).toString());
     }
 
     @Test
@@ -317,7 +313,7 @@ public class BlockchainTest {
         Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN,false);
         Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100.00));
+        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
 
         // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -352,10 +348,10 @@ public class BlockchainTest {
             pending.clear();
         }
 
-        UInt64 poolBalance = UInt64.valueOf((long)amount2xdag(blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount()));
-        UInt64 addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals(1924 ,poolBalance.toLong());
-        assertEquals(100,(long)amount2xdag(addressBalance.toLong()));
+        XAmount poolBalance = blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount();
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        assertEquals("1924.0" , poolBalance.toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("100.0", addressBalance.toDecimal(1, XUnit.XDAG).toString());
     }
 
     @Test
@@ -373,7 +369,7 @@ public class BlockchainTest {
         BlockchainImpl blockchain = spy(new BlockchainImpl(kernel));
 
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateOldTransactionBlock(config, fromKey, xdagTime - 1, from, to, xdag2amount(100.00));
+        Block txBlock = generateOldTransactionBlock(config, fromKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
 
         when(blockchain.getBlockByHash(from.getAddress(), false)).thenReturn(fromAddrBlock);
         when(blockchain.getBlockByHash(from.getAddress(), true)).thenReturn(fromAddrBlock);
@@ -399,19 +395,19 @@ public class BlockchainTest {
     @Test
     public void testGetStartAmount() {
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
-        assertEquals(String.valueOf(amount2xdag(blockchain.getStartAmount(1L))), "1024.0");
-        assertEquals(String.valueOf(amount2xdag(blockchain.getStartAmount(config.getApolloForkHeight()))), "128.0");
+        assertEquals("1024.0", blockchain.getStartAmount(1L).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("128.0", blockchain.getStartAmount(config.getApolloForkHeight()).toDecimal(1, XUnit.XDAG).toString());
     }
 
     @Test
     public void testGetSupply() {
         BlockchainImpl blockchain = new BlockchainImpl(kernel);
-        assertEquals("1024.0", String.valueOf(amount2xdag(blockchain.getSupply(1))));
-        assertEquals("2048.0", String.valueOf(amount2xdag(blockchain.getSupply(2))));
-        assertEquals("3072.0", String.valueOf(amount2xdag(blockchain.getSupply(3))));
-        long apolloSypply = blockchain.getSupply(config.getApolloForkHeight());
+        assertEquals("1024.0", blockchain.getSupply(1).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("2048.0", blockchain.getSupply(2).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("3072.0", blockchain.getSupply(3).toDecimal(1, XUnit.XDAG).toString());
+        XAmount apolloSypply = blockchain.getSupply(config.getApolloForkHeight());
         assertEquals(String.valueOf(config.getApolloForkHeight() * 1024 - (1024 - 128)),
-                BasicUtils.formatDouble(amount2xdag(apolloSypply)));
+                apolloSypply.toDecimal(0, XUnit.XDAG).toString());
     }
 
     @Test

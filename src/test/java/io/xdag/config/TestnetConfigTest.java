@@ -25,11 +25,12 @@
 package io.xdag.config;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.amount2xdag;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import io.xdag.core.XUnit;
 
 public class TestnetConfigTest {
 
@@ -50,8 +51,8 @@ public class TestnetConfigTest {
         assertEquals(0x16900000000L, config.getXdagEra());
         assertEquals(XDAG_FIELD_HEAD_TEST, config.getXdagFieldHeader());
         assertEquals(196250, config.getApolloForkHeight());
-        assertEquals("1024.0", String.valueOf(amount2xdag(config.getMainStartAmount())));
-        assertEquals("128.0", String.valueOf(amount2xdag(config.getApolloForkAmount())));
+        assertEquals("1024.0", String.valueOf(config.getMainStartAmount().toDecimal(1, XUnit.XDAG)));
+        assertEquals("128.0", String.valueOf(config.getApolloForkAmount().toDecimal(1, XUnit.XDAG)));
     }
 
 }
