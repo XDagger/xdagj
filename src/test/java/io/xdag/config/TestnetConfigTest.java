@@ -25,7 +25,6 @@
 package io.xdag.config;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-import static io.xdag.utils.BasicUtils.amount2xdag;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;

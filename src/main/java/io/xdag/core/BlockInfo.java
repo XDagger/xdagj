@@ -24,14 +24,12 @@
 
 package io.xdag.core;
 
-import static io.xdag.utils.BasicUtils.amount2xdag;
 
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.tuweni.units.bigints.UInt64;
 
 @Getter
 @Setter

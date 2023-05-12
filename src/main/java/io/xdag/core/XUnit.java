@@ -28,7 +28,6 @@ import java.math.BigInteger;
 
 /**
  *  XUnit
- *
  * NANO_XDAG	   1 NANO_XDAG	1	          10^-9 XDAG
  * MICRO_XDAG	10^3 NANO_XDAG	1,000	      10^-6 XDAG
  * MILLI_XDAG	10^6 NANO_XDAG	1,000,000	  10^-3 XDAG

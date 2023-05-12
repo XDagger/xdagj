@@ -43,8 +43,9 @@ public class XAmountTest {
 
     @Test
     public void testUnits() {
-        assertEquals(ZERO, ZERO);
-        assertEquals(XAmount.of(1), XAmount.of(1));
+        assertEquals(ZERO, XAmount.of(0));
+        assertEquals(XAmount.ONE, XAmount.of(1));
+        assertEquals(XAmount.TEN, XAmount.of(10));
         assertEquals(XAmount.of(1000), XAmount.of(1, MICRO_XDAG));
         assertEquals(XAmount.of(1000, MICRO_XDAG), XAmount.of(1, MILLI_XDAG));
         assertEquals(XAmount.of(1000, MILLI_XDAG), XAmount.of(1, XDAG));
@@ -81,10 +82,10 @@ public class XAmountTest {
 
     @Test
     public void testCompareTo() {
-        assertEquals(ZERO.compareTo(ZERO), 0);
+        assertEquals(ZERO.compareTo(XAmount.of(0)), 0);
         assertEquals(XAmount.of(1000).compareTo(XAmount.of(1, MICRO_XDAG)), 0);
 
-        assertEquals(XAmount.of(10).compareTo(XAmount.of(10)), 0);
+        assertEquals(XAmount.TEN.compareTo(XAmount.of(10)), 0);
         assertEquals(XAmount.of(5).compareTo(XAmount.of(10)), -1);
         assertEquals(XAmount.of(10).compareTo(XAmount.of(5)), 1);
     }

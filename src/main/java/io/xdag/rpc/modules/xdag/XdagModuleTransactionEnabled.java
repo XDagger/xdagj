@@ -35,7 +35,6 @@ import static io.xdag.rpc.ErrorCode.SUCCESS;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.BasicUtils.xdag2amount;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

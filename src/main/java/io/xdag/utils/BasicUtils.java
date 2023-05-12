@@ -118,13 +118,6 @@ public class BasicUtils {
         return result;
     }
 
-    public static String formatDouble(double d) {
-        NumberFormat nf = NumberFormat.getInstance();
-        nf.setMaximumFractionDigits(9);
-        nf.setGroupingUsed(false);
-        return nf.format(d);
-    }
-
     /**
      * Xfer:transferred   44796588980   10.430000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10.43
      * Xfer:transferred   42949672960   10.000000000 XDAG to the address 0000002f28322e9d817fd94a1357e51a. 10
