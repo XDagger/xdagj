@@ -31,22 +31,18 @@ import static org.junit.Assert.assertNotNull;
 
 import io.xdag.utils.Numeric;
 import java.nio.ByteBuffer;
-import java.security.Security;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
 /**
  * BIP-32 implementation test.
  *
  * <p>Test vectors taken from BIP-32 definition
- * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+ * <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">bip32</a>
  */
 public class Bip32Test {
-
-    static { Security.addProvider(new BouncyCastleProvider());  }
 
     public static Bytes addChecksum(byte[] input) {
         int inputLength = input.length;

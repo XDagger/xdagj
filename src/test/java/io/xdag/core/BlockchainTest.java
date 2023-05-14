@@ -68,12 +68,10 @@ import io.xdag.utils.XdagTime;
 import io.xdag.Wallet;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.Security;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.After;
@@ -84,8 +82,6 @@ import org.junit.rules.TemporaryFolder;
 
 @Slf4j
 public class BlockchainTest {
-
-    static { Security.addProvider(new BouncyCastleProvider());  }
 
     @Rule
     public TemporaryFolder root = new TemporaryFolder();

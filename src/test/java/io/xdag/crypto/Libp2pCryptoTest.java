@@ -30,15 +30,11 @@ import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.crypto.PubKey;
 import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.xdag.utils.Numeric;
-import java.security.Security;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
 import org.junit.Test;
 
 public class Libp2pCryptoTest {
-
-    static { Security.addProvider(new BouncyCastleProvider());  }
 
     private PrivKey libp2pPrivKey;
     private PubKey libp2pPubKey;
