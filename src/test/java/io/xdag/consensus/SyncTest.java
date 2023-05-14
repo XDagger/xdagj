@@ -55,12 +55,10 @@ import io.xdag.db.rocksdb.RocksdbFactory;
 import io.xdag.utils.XdagTime;
 import io.xdag.Wallet;
 import java.math.BigInteger;
-import java.security.Security;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.Before;
@@ -69,8 +67,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class SyncTest {
-
-    static { Security.addProvider(new BouncyCastleProvider());  }
 
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();

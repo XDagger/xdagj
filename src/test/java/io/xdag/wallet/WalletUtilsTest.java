@@ -41,10 +41,8 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
 
 import java.io.IOException;
-import java.security.Security;
 import java.util.Collections;
 import org.apache.tuweni.io.Base58;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
 import org.junit.Before;
@@ -53,8 +51,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class WalletUtilsTest {
-
-    static { Security.addProvider(new BouncyCastleProvider());  }
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
