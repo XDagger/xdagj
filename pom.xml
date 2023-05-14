@@ -27,7 +27,7 @@
         <jline.version>3.23.0</jline.version>
         <junit.version>4.13.2</junit.version>
         <mockito.version>5.2.0</mockito.version>
-        <system-rules.version>1.19.0</system-rules.version>
+        <system-lambda.version>1.2.1</system-lambda.version>
         <log4j.version>2.20.0</log4j.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
@@ -579,8 +579,8 @@
 
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-rules</artifactId>
-            <version>${system-rules.version}</version>
+            <artifactId>system-lambda</artifactId>
+            <version>${system-lambda.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
