@@ -141,23 +141,24 @@ public class NetDBManager {
     public void refresh() {
         try {
             File file = new File(databaseWhite);
-            BufferedReader reader;
             // 白名单的地址 并且读取
             URL url;
             url = new URL(whiteUrl);
 
             FileUtils.copyURLToFile(url, file);
             if (file.exists() && file.isFile()) {
-                reader = new BufferedReader(
-                        new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
-                String temp;
-                String ip;
-                int port;
-                while ((temp = reader.readLine()) != null) {
-                    ip = temp.split(":")[0];
-                    port = Integer.parseInt(temp.split(":")[1]);
-                    whiteDB = new NetDB();
-                    whiteDB.addNewIP(ip, port);
+                try(BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+                    String temp;
+                    String ip;
+                    int port;
+                    while ((temp = reader.readLine()) != null) {
+                        ip = temp.split(":")[0];
+                        port = Integer.parseInt(temp.split(":")[1]);
+                        whiteDB = new NetDB();
+                        whiteDB.addNewIP(ip, port);
+                    }
+                } catch (IOException e) {
+                    log.error(e.getMessage(), e);
                 }
             }
         } catch (IOException e) {
