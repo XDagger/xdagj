@@ -28,6 +28,9 @@ import static io.xdag.net.message.XdagMessageCodes.WORKER_NAME;
 import io.xdag.core.XdagField;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
@@ -57,6 +60,6 @@ public class WorkerNameMessage extends Message {
 
     @Override
     public String toString() {
-        return null;
+        return new ToStringBuilder(this, ToStringStyle.JSON_STYLE).toString();
     }
 }
