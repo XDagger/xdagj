@@ -45,7 +45,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
-import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.getDiffByHash;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
@@ -308,8 +308,7 @@ public class BlockchainImpl implements Blockchain {
                  * mainBlocks and linkBlocks are same as original
                  */
 //                System.out.println(ref.getAddress().toHexString() + " isaddress ==" + ref.isAddress);
-                if(!ref.isAddress){
-                    if (ref != null) {
+                if(ref!= null && !ref.isAddress){
                         if(ref.getType() == XDAG_FIELD_OUT && !ref.getAmount().isZero()){
                             result = ImportResult.INVALID_BLOCK;
                             result.setHashlow(ref.getAddress());
@@ -336,10 +335,8 @@ public class BlockchainImpl implements Blockchain {
                             }
 
                         }
-
-                    }
-                }else {
-                    if(ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()))){
+                } else {
+                    if(ref!= null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()))){
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
                         log.debug("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
@@ -733,10 +730,10 @@ public class BlockchainImpl implements Blockchain {
                 }
                 sumIn = sumIn.add(link.getAmount());
             } else if(link.getType() == XDAG_FIELD_INPUT){
-                XAmount balance = addressStore.getBalanceByAddress(Hash2byte(link.getAddress()));
+                XAmount balance = addressStore.getBalanceByAddress(hash2byte(link.getAddress()));
                 if(compareAmountTo(balance,link.amount) < 0){
                     log.debug("This input ref doesn't have enough amount,hash:{},amount:{},need:{}",
-                            Hex.toHexString(Hash2byte(link.getAddress())), balance,
+                            Hex.toHexString(hash2byte(link.getAddress())), balance,
                             link.getAmount());
                     return XAmount.ZERO;
                 }
@@ -776,9 +773,9 @@ public class BlockchainImpl implements Blockchain {
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
             }else {
                 if(link.getType() == XDAG_FIELD_INPUT){
-                    subtractAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
+                    subtractAmount(BasicUtils.hash2byte(link.addressHash), link.getAmount(), block);
                 }else if(link.getType() == XDAG_FIELD_OUTPUT){
-                    addAmount(BasicUtils.Hash2byte(link.addressHash), link.getAmount(), block);
+                    addAmount(BasicUtils.hash2byte(link.addressHash), link.getAmount(), block);
                 }
             }
         }
@@ -809,10 +806,10 @@ public class BlockchainImpl implements Blockchain {
                     }
                 }else {
                     if (link.getType() == XDAG_FIELD_INPUT){
-                        addAmount(BasicUtils.Hash2byte(link.getAddress()), link.getAmount(), block);
+                        addAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount(), block);
                         sum = sum.subtract(link.getAmount());
                     }else {
-                        subtractAmount(BasicUtils.Hash2byte(link.getAddress()), link.getAmount(), block);
+                        subtractAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount(), block);
                         sum = sum.add(link.getAmount());
                     }
                 }

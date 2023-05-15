@@ -26,7 +26,7 @@ package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.getHash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
@@ -36,7 +36,6 @@ import static io.xdag.utils.WalletUtils.toBase58;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -130,7 +129,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_coinbase() {
-        return toBase58(Hash2byte(kernel.getPoolMiner().getAddressHash().mutableCopy()));
+        return toBase58(hash2byte(kernel.getPoolMiner().getAddressHash().mutableCopy()));
     }
 
     @Override
@@ -222,8 +221,8 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         List<NetConnDTO> netConnDTOList = Lists.newArrayList();
         NetConnDTO.NetConnDTOBuilder netConnDTOBuilder = NetConnDTO.builder();
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
-        for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
-            Node node = it.next();
+        for (Map.Entry<Node, Long> entry : map.entrySet()) {
+            Node node = entry.getKey();
             netConnDTOBuilder.connectTime(map.get(node) == null ? 0 : map.get(node)) // use default "0"
                     .inBound(node.getStat().Inbound.get())
                     .outBound(node.getStat().Outbound.get())
