@@ -37,7 +37,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.amount2xdag;
 import static io.xdag.utils.BasicUtils.hash2Address;
@@ -209,7 +209,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
     }
 
     private BlockResultDTO transferAccountToBlockResultDTO(String address) {
-        XAmount balance = kernel.getAddressStore().getBalanceByAddress(Hash2byte(pubAddress2Hash(address).mutableCopy()));
+        XAmount balance = kernel.getAddressStore().getBalanceByAddress(hash2byte(pubAddress2Hash(address).mutableCopy()));
 
         BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
         BlockResultDTOBuilder.address(address)
@@ -263,7 +263,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
 
         for (Address input : inputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
-            linkBuilder.address(input.getIsAddress() ? toBase58(Hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
+            linkBuilder.address(input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
                     .hashlow(input.getAddress().toUnprefixedHexString())
                     .amount(String.format("%s", input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(0);
@@ -273,7 +273,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         for (Address output : outputs) {
             Link.LinkBuilder linkBuilder = Link.builder();
             if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
-            linkBuilder.address(output.getIsAddress() ? toBase58(Hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
+            linkBuilder.address(output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
                     .hashlow(output.getAddress().toUnprefixedHexString())
                     .amount(String.format("%s", output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(1);

@@ -39,7 +39,7 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static io.xdag.crypto.Keys.toBytesAddress;
-import static io.xdag.utils.BasicUtils.Hash2byte;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BasicUtils.getHash;
@@ -486,7 +486,7 @@ public class Commands {
                 inputs = new StringBuilder();
                 for (Address input : block.getInputs()) {
                     inputs.append(String.format("     input: %s           %s%n",
-                            input.getIsAddress() ? toBase58(Hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
+                            input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
                             input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
@@ -496,7 +496,7 @@ public class Commands {
                 for (Address output : block.getOutputs()) {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %s%n",
-                            output.getIsAddress() ? toBase58(Hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
+                            output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
                             output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
@@ -609,7 +609,8 @@ public class Commands {
     public String listConnect() {
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
         StringBuilder stringBuilder = new StringBuilder();
-        for (Node node : map.keySet()) {
+        for (Map.Entry<Node, Long> entry : map.entrySet()) {
+            Node node = entry.getKey();
             stringBuilder
                     .append(node.getAddress())
                     .append(" ")
@@ -702,8 +703,8 @@ public class Commands {
 
     public String address(Bytes32 wrap) {
         String ov = " OverView" + "\n"
-                + String.format(" address: %s", toBase58(Hash2byte(wrap.mutableCopy()))) + "\n"
-                + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(Hash2byte(wrap.mutableCopy())).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
+                + String.format(" address: %s", toBase58(hash2byte(wrap.mutableCopy()))) + "\n"
+                + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(hash2byte(wrap.mutableCopy())).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
