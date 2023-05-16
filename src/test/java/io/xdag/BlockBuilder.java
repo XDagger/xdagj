@@ -25,7 +25,6 @@
 package io.xdag;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 
@@ -36,7 +35,6 @@ import io.xdag.core.Block;
 import io.xdag.core.XAmount;
 import io.xdag.core.XUnit;
 import io.xdag.crypto.Hash;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -46,27 +44,27 @@ import org.hyperledger.besu.crypto.KeyPair;
 public class BlockBuilder {
 
     public static Block generateAddressBlock(Config config, KeyPair key, long xdagTime) {
+        return generateAddressBlockWithAmount(config, key, xdagTime, XAmount.of(1000, XUnit.XDAG) );
+    }
+
+    public static Block generateAddressBlockWithAmount(Config config, KeyPair key, long xdagTime, XAmount balance) {
         Block b = new Block(config, xdagTime, null, null, false, null, null, -1);
         b.signOut(key);
-        b.getInfo().setAmount(XAmount.of(1000, XUnit.XDAG));
+        b.getInfo().setAmount(balance);
         return b;
     }
 
     // TODO:set nonce means this block is a mining block, the mining param need to set true
     public static Block generateExtraBlock(Config config, KeyPair key, long xdagTime, List<Address> pendings) {
-        Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
-        b.signOut(key);
-        Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode("1234")));
-        b.setNonce(random);
-        return b;
+        return generateExtraBlockGivenRandom(config, key, xdagTime, pendings, "1234");
     }
 
     // TODO:set nonce means this block is a mining block, the mining param need to set true
     public static Block generateExtraBlockGivenRandom(Config config, KeyPair key, long xdagTime,
             List<Address> pendings, String randomS) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1);
-        b.signOut(key);
         Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode(randomS)));
+        b.signOut(key);
         b.setNonce(random);
         return b;
     }
@@ -74,9 +72,9 @@ public class BlockBuilder {
     public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
                                                  XAmount amount) {
         List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
-        List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
         b.signOut(key);
@@ -85,26 +83,13 @@ public class BlockBuilder {
     public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount) {
         List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
-        List<KeyPair> keys = new ArrayList<>();
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
         b.signOut(key);
         return b;
     }
-
-    public static Block generateTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
-            XAmount amount) {
-        List<Address> refs = Lists.newArrayList();
-        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
-        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUT, amount,false));
-        List<KeyPair> keys = new ArrayList<>();
-        keys.add(key);
-        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0); // orphan
-        b.signOut(key);
-        return b;
-    }
-
 
 }
