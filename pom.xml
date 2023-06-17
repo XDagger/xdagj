@@ -34,7 +34,7 @@
         <commons-codec.version>1.15</commons-codec.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-cli.version>1.5.0</commons-cli.version>
-        <guava.version>31.1-jre</guava.version>
+        <guava.version>32.0.0-jre</guava.version>
         <rocksdbjni.version>8.0.0</rocksdbjni.version>
         <okhttp.version>4.10.0</okhttp.version>
         <assertj-core.version>3.24.2</assertj-core.version>
@@ -47,7 +47,7 @@
         <jaxws-ri.version>4.0.1</jaxws-ri.version>
         <config.version>1.4.2</config.version>
         <agrona.version>1.17.1</agrona.version>
-        <snappy-java.version>1.1.9.1</snappy-java.version>
+        <snappy-java.version>1.1.10.1</snappy-java.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
