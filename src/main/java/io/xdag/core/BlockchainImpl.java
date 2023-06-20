@@ -1553,9 +1553,9 @@ public class BlockchainImpl implements Blockchain {
         UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHash()).getInfo().getAmount();
         log.debug("block:{} [old:{} add:{} fin:{}]",
                 block.getHashLow().toHexString(),
-                BasicUtils.xdag2amount(oldAmount.toLong()),
-                BasicUtils.xdag2amount(amount.toLong()),
-                BasicUtils.xdag2amount(finalAmount.toLong()));
+                BasicUtils.amount2xdag(oldAmount.toLong()),
+                BasicUtils.amount2xdag(amount.toLong()),
+                BasicUtils.amount2xdag(finalAmount.toLong()));
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
@@ -1570,9 +1570,9 @@ public class BlockchainImpl implements Blockchain {
         UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHash()).getInfo().getAmount();
         log.debug("block:{} [old:{} sub:{} fin:{}]",
                 block.getHashLow().toHexString(),
-                BasicUtils.xdag2amount(oldAmount.toLong()),
-                BasicUtils.xdag2amount(amount.toLong()),
-                BasicUtils.xdag2amount(finalAmount.toLong()));
+                BasicUtils.amount2xdag(oldAmount.toLong()),
+                BasicUtils.amount2xdag(amount.toLong()),
+                BasicUtils.amount2xdag(finalAmount.toLong()));
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
@@ -1587,9 +1587,9 @@ public class BlockchainImpl implements Blockchain {
         UInt64 finalAmount = addressStore.getBalanceByAddress(addressHash);
         log.debug("Address:{} [old:{} sub:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
-                BasicUtils.xdag2amount(balance.toLong()),
-                BasicUtils.xdag2amount(amount.toLong()),
-                BasicUtils.xdag2amount(finalAmount.toLong()));
+                BasicUtils.amount2xdag(balance.toLong()),
+                BasicUtils.amount2xdag(amount.toLong()),
+                BasicUtils.amount2xdag(finalAmount.toLong()));
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(xdagStats.getBalance().subtract(amount));
         }
