@@ -89,7 +89,7 @@ public class SyncManager {
     /***
      * Queue for poll oldest block
      */
-    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
+//    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
@@ -214,13 +214,13 @@ public class SyncManager {
      * @param hashLow 缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
-        if(syncMap.size() >= MAX_SIZE){
-            for (int i = 0; i < 200; i++) {
-                Bytes32 last = syncQueue.poll();
-                assert last != null;
-                if(syncMap.remove(last) != null) blockchain.getXdagStats().nwaitsync--;
-            }
-        }
+//        if(syncMap.size() >= MAX_SIZE){
+//            for (int i = 0; i < 200; i++) {
+//                Bytes32 last = syncQueue.poll();
+//                assert last != null;
+//                if(syncMap.remove(last) != null) blockchain.getXdagStats().nwaitsync--;
+//            }
+//        }
         AtomicBoolean r = new AtomicBoolean(true);
         long now = System.currentTimeMillis();
 //        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
@@ -228,9 +228,9 @@ public class SyncManager {
         blockWrapper.setTime(now);
         newQueue.add(blockWrapper);
         blockchain.getXdagStats().nwaitsync++;
-        if(!syncMap.containsKey(hashLow)){
-            syncQueue.offer(hashLow);
-        }
+//        if(!syncMap.containsKey(hashLow)){
+//            syncQueue.offer(hashLow);
+//        }
         syncMap.merge(hashLow, newQueue,
                 (oldQ, newQ) -> {
                     blockchain.getXdagStats().nwaitsync--;
@@ -265,7 +265,7 @@ public class SyncManager {
         Queue<BlockWrapper> queue = syncMap.getOrDefault(block.getHashLow(), null);
         if (queue != null) {
             syncMap.remove(block.getHashLow());
-            syncQueue.remove(block.getHashLow());
+//            syncQueue.remove(block.getHashLow());
             blockchain.getXdagStats().nwaitsync--;
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
