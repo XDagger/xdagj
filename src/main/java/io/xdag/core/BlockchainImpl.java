@@ -1600,9 +1600,9 @@ public class BlockchainImpl implements Blockchain {
         UInt64 finalAmount = addressStore.getBalanceByAddress(addressHash);
         log.debug("Address:{} [old:{} add:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
-                BasicUtils.xdag2amount(balance.toLong()),
-                BasicUtils.xdag2amount(amount.toLong()),
-                BasicUtils.xdag2amount(finalAmount.toLong()));
+                BasicUtils.amount2xdag(balance.toLong()),
+                BasicUtils.amount2xdag(amount.toLong()),
+                BasicUtils.amount2xdag(finalAmount.toLong()));
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.add(xdagStats.getBalance()));
         }
