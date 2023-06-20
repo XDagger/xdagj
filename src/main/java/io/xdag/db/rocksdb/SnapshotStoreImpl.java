@@ -249,11 +249,11 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         KeyPair keyPair = keys.get(i);
                         byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                         byte[] myAddress = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
-                        if (BytesUtils.compareTo(address,0,20,myAddress,0,20) == 0) {
+                        if (BytesUtils.compareTo(address,1,20,myAddress,0,20) == 0) {
                             ourBalance += UInt64.fromBytes(Bytes.wrap(balance)).toLong();
                         }
                     }
-                    addressStore.saveAddress(address,balance);
+                    addressStore.snapshotAddress(address,balance);
                     blockStore.saveTxHistory(BytesUtils.arrayToByte32(address), BytesUtils.arrayToByte32(address),
                             XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
                             snapshotTime,0,"snapshot".getBytes());

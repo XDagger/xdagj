@@ -53,6 +53,6 @@ public interface AddressStore {
 
     void updateBalance(byte[] address, UInt64 value);
 
-    void saveAddress(byte[] address,byte[] balance);
+    void snapshotAddress(byte[] address,byte[] balance);
 
 }
