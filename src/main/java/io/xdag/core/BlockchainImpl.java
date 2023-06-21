@@ -1550,7 +1550,7 @@ public class BlockchainImpl implements Blockchain {
     private void addAndAccept(Block block, UInt64 amount) {
         UInt64 oldAmount = block.getInfo().getAmount();
         block.getInfo().setAmount(block.getInfo().getAmount().addExact(amount));
-        UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHash()).getInfo().getAmount();
+        UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
         log.debug("Balance checker —— block:{} [old:{} add:{} fin:{}]",
                 block.getHashLow().toHexString(),
                 BasicUtils.amount2xdag(oldAmount),
@@ -1567,7 +1567,7 @@ public class BlockchainImpl implements Blockchain {
     private void subtractAndAccept(Block block,UInt64 amount){
         UInt64 oldAmount = block.getInfo().getAmount();
         block.getInfo().setAmount(block.getInfo().getAmount().subtractExact(amount));
-        UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHash()).getInfo().getAmount();
+        UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
         log.debug("Balance checker —— block:{} [old:{} sub:{} fin:{}]",
                 block.getHashLow().toHexString(),
                 BasicUtils.amount2xdag(oldAmount),
@@ -1616,7 +1616,7 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
         }
         UInt64 finalAmount = blockStore.getBlockByHash(block.getHashLow(),false).getInfo().getAmount();
-        log.debug("Balance checker —— Block:{} [old:{} add:{} fin:{}]",
+        log.debug("Balance checker —— Block:{} [old:{} acc:{} fin:{}]",
                 block.getHashLow().toHexString(),
                 BasicUtils.amount2xdag(oldAmount),
                 BasicUtils.amount2xdag(amount),
