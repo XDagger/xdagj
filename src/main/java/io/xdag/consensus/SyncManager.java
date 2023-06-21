@@ -45,11 +45,7 @@ import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -65,7 +61,10 @@ import org.apache.tuweni.bytes.Bytes32;
 @Getter
 @Setter
 public class SyncManager {
-    public static final int MAX_SIZE = 100000;
+    //sycMap's MAX_SIZE
+    public static final int MAX_SIZE = 500000;
+    //If syncMap.size() > MAX_SIZE remove number of keys;
+    public static final int DELETE_NUM = 5000;
     private Kernel kernel;
     private Blockchain blockchain;
     private long importStart;
@@ -214,13 +213,15 @@ public class SyncManager {
      * @param hashLow 缺失的parent哈希
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
-//        if(syncMap.size() >= MAX_SIZE){
-//            for (int i = 0; i < 200; i++) {
-//                Bytes32 last = syncQueue.poll();
-//                assert last != null;
-//                if(syncMap.remove(last) != null) blockchain.getXdagStats().nwaitsync--;
-//            }
-//        }
+        if(syncMap.size() >= MAX_SIZE){
+            for (int j = 0; j < DELETE_NUM; j++) {
+                List<Bytes32> keyList = new ArrayList<>(syncMap.keySet());
+                Random rand = new Random();
+                Bytes32 key = keyList.get(rand.nextInt(keyList.size()));
+                assert key != null;
+                if(syncMap.remove(key) != null) blockchain.getXdagStats().nwaitsync--;
+            }
+        }
         AtomicBoolean r = new AtomicBoolean(true);
         long now = System.currentTimeMillis();
 //        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);

@@ -1616,7 +1616,7 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
         }
         UInt64 finalAmount = blockStore.getBlockByHash(block.getHashLow(),false).getInfo().getAmount();
-        log.debug("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
+        log.debug("Balance checker —— Block:{} [old:{} add:{} fin:{}]",
                 block.getHashLow().toHexString(),
                 BasicUtils.amount2xdag(oldAmount),
                 BasicUtils.amount2xdag(amount),
