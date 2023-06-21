@@ -45,11 +45,7 @@ import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -65,7 +61,10 @@ import org.apache.tuweni.bytes.Bytes32;
 @Getter
 @Setter
 public class SyncManager {
-    public static final int MAX_SIZE = 100000;
+    //sycMap's MAX_SIZE
+    public static final int MAX_SIZE = 500000;
+    //If syncMap.size() > MAX_SIZE remove number of keys;
+    public static final int DELETE_NUM = 5000;
     private Kernel kernel;
     private Blockchain blockchain;
     private long importStart;
@@ -89,7 +88,7 @@ public class SyncManager {
     /***
      * Queue for poll oldest block
      */
-    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
+//    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
@@ -215,10 +214,12 @@ public class SyncManager {
      */
     public boolean syncPushBlock(BlockWrapper blockWrapper, Bytes32 hashLow) {
         if(syncMap.size() >= MAX_SIZE){
-            for (int i = 0; i < 200; i++) {
-                Bytes32 last = syncQueue.poll();
-                assert last != null;
-                if(syncMap.remove(last) != null) blockchain.getXdagStats().nwaitsync--;
+            for (int j = 0; j < DELETE_NUM; j++) {
+                List<Bytes32> keyList = new ArrayList<>(syncMap.keySet());
+                Random rand = new Random();
+                Bytes32 key = keyList.get(rand.nextInt(keyList.size()));
+                assert key != null;
+                if(syncMap.remove(key) != null) blockchain.getXdagStats().nwaitsync--;
             }
         }
         AtomicBoolean r = new AtomicBoolean(true);
@@ -228,9 +229,9 @@ public class SyncManager {
         blockWrapper.setTime(now);
         newQueue.add(blockWrapper);
         blockchain.getXdagStats().nwaitsync++;
-        if(!syncMap.containsKey(hashLow)){
-            syncQueue.offer(hashLow);
-        }
+//        if(!syncMap.containsKey(hashLow)){
+//            syncQueue.offer(hashLow);
+//        }
         syncMap.merge(hashLow, newQueue,
                 (oldQ, newQ) -> {
                     blockchain.getXdagStats().nwaitsync--;
@@ -265,7 +266,7 @@ public class SyncManager {
         Queue<BlockWrapper> queue = syncMap.getOrDefault(block.getHashLow(), null);
         if (queue != null) {
             syncMap.remove(block.getHashLow());
-            syncQueue.remove(block.getHashLow());
+//            syncQueue.remove(block.getHashLow());
             blockchain.getXdagStats().nwaitsync--;
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);
