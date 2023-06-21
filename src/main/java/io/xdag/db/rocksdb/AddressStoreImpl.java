@@ -117,8 +117,8 @@ public class AddressStoreImpl implements AddressStore {
     }
 
     @Override
-    public void saveAddress(byte[] address, byte[] balance) {
-        AddressSource.put(BytesUtils.merge(ADDRESS,address),balance);
+    public void snapshotAddress(byte[] address, byte[] balance) {
+        AddressSource.put(address,balance);
     }
 
 }
