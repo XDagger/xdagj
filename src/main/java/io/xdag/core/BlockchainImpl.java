@@ -1558,12 +1558,7 @@ public class BlockchainImpl implements Blockchain {
     // TODO : accept amount to block which in snapshot
     private void addAndAccept(Block block, UInt64 amount) {
         UInt64 oldAmount = block.getInfo().getAmount();
-        try {
-            block.getInfo().setAmount(block.getInfo().getAmount().addExact(amount));
-        } catch (Exception e) {
-//            log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  block {}", oldAmount, amount, block.getHashLow().toHexString());
-        }
+        block.getInfo().setAmount(block.getInfo().getAmount().addExact(amount));
         UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
         log.debug("Balance checker —— block:{} [old:{} add:{} fin:{}]",
                 block.getHashLow().toHexString(),
@@ -1580,12 +1575,7 @@ public class BlockchainImpl implements Blockchain {
 
     private void subtractAndAccept(Block block,UInt64 amount){
         UInt64 oldAmount = block.getInfo().getAmount();
-        try {
-            block.getInfo().setAmount(block.getInfo().getAmount().subtractExact(amount));
-        } catch (Exception e) {
-//            log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  block {}", oldAmount, amount, block.getHashLow().toHexString());
-        }
+        block.getInfo().setAmount(block.getInfo().getAmount().subtractExact(amount));
         UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
         log.debug("Balance checker —— block:{} [old:{} sub:{} fin:{}]",
                 block.getHashLow().toHexString(),
@@ -1602,12 +1592,7 @@ public class BlockchainImpl implements Blockchain {
 
     private void subtractAmount(byte[] addressHash, UInt64 amount, Block block){
         UInt64 balance = addressStore.getBalanceByAddress(addressHash);
-        try {
-            addressStore.updateBalance(addressHash,balance.subtractExact(amount));
-        } catch (Exception e) {
-//            log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
-        }
+        addressStore.updateBalance(addressHash,balance.subtractExact(amount));
         UInt64 finalAmount = addressStore.getBalanceByAddress(addressHash);
         log.debug("Balance checker —— Address:{} [old:{} sub:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
@@ -1620,12 +1605,7 @@ public class BlockchainImpl implements Blockchain {
     }
     private void addAmount(byte[] addressHash, UInt64 amount, Block block){
         UInt64 balance = addressStore.getBalanceByAddress(addressHash);
-        try {
-            addressStore.updateBalance(addressHash,balance.addExact(amount));
-        } catch (Exception e) {
-//            log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
-        }
+        addressStore.updateBalance(addressHash,balance.addExact(amount));
         UInt64 finalAmount = addressStore.getBalanceByAddress(addressHash);
         log.debug("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
