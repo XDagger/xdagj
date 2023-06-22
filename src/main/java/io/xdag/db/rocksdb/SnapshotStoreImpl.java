@@ -55,6 +55,7 @@ import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -254,7 +255,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         }
                     }
                     addressStore.snapshotAddress(address,balance);
-                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(address), BytesUtils.arrayToByte32(address),
+                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), BytesUtils.arrayToByte32(address),
                             XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
                             snapshotTime,0,"snapshot".getBytes());
                 }
