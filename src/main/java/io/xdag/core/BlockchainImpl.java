@@ -75,12 +75,7 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -768,11 +763,7 @@ public class BlockchainImpl implements Blockchain {
                 if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
                     subtractAndAccept(ref,link.getAmount());
                     UInt64 allBalance = addressStore.getAllBalance();
-                    try {
-                        allBalance = allBalance.addExact(link.getAmount());
-                    }catch (Exception e){
-                        log.debug("apply allBalance error");
-                    }
+                    allBalance = allBalance.add(link.getAmount());
                     addressStore.updateAllBalance(allBalance);
                 } else {
                     addAndAccept(ref,link.getAmount());
@@ -796,6 +787,7 @@ public class BlockchainImpl implements Blockchain {
     // TODO: unapply block which in snapshot
     public UInt64 unApplyBlock(Block block) {
         List<Address> links = block.getLinks();
+        Collections.reverse(links);
         if ((block.getInfo().flags & BI_APPLIED) != 0) {
             UInt64 sum = UInt64.ZERO;
             for (Address link : links) {
@@ -1495,7 +1487,9 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public void checkState() {
-        checkOrphan();
+        if (kernel.getXdagState() == XdagState.SDST || XdagState.STST == kernel.getXdagState() || XdagState.SYNC == kernel.getXdagState()) {
+            checkOrphan();
+        }
         checkMain();
     }
 
@@ -1561,7 +1555,7 @@ public class BlockchainImpl implements Blockchain {
         try {
             block.getInfo().setAmount(block.getInfo().getAmount().addExact(amount));
         } catch (Exception e) {
-//            log.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             log.debug("balance {}  amount {}  block {}", oldAmount, amount, block.getHashLow().toHexString());
         }
         UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
@@ -1583,7 +1577,7 @@ public class BlockchainImpl implements Blockchain {
         try {
             block.getInfo().setAmount(block.getInfo().getAmount().subtractExact(amount));
         } catch (Exception e) {
-//            log.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             log.debug("balance {}  amount {}  block {}", oldAmount, amount, block.getHashLow().toHexString());
         }
         UInt64 finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
@@ -1605,7 +1599,7 @@ public class BlockchainImpl implements Blockchain {
         try {
             addressStore.updateBalance(addressHash,balance.subtractExact(amount));
         } catch (Exception e) {
-//            log.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
         }
         UInt64 finalAmount = addressStore.getBalanceByAddress(addressHash);
@@ -1623,11 +1617,11 @@ public class BlockchainImpl implements Blockchain {
         try {
             addressStore.updateBalance(addressHash,balance.addExact(amount));
         } catch (Exception e) {
-//            log.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
         }
         UInt64 finalAmount = addressStore.getBalanceByAddress(addressHash);
-        log.debug("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
+        log.warn("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
                 BasicUtils.amount2xdag(balance),
                 BasicUtils.amount2xdag(amount),
@@ -1645,7 +1639,7 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
         }
         UInt64 finalAmount = blockStore.getBlockByHash(block.getHashLow(),false).getInfo().getAmount();
-        log.debug("Balance checker —— Block:{} [old:{} acc:{} fin:{}]",
+        log.warn("Balance checker —— Block:{} [old:{} acc:{} fin:{}]",
                 block.getHashLow().toHexString(),
                 BasicUtils.amount2xdag(oldAmount),
                 BasicUtils.amount2xdag(amount),
