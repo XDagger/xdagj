@@ -2,7 +2,7 @@
 
 ulimit -n unlimited
 
-XDAG_VERSION="0.6.3"
+XDAG_VERSION="0.6.4"
 XDAG_JARNAME="xdagj-${XDAG_VERSION}-shaded.jar"
 XDAG_OPTS="-t"
 
