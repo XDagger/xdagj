@@ -55,6 +55,6 @@ public interface AddressStore {
 
     void updateBalance(byte[] address, XAmount balance);
 
-    void saveAddress(byte[] address, XAmount balance);
+    void snapshotAddress(byte[] address, XAmount balance);
 
 }
