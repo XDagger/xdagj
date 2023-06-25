@@ -41,13 +41,10 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
 import io.xdag.core.XAmount;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerStates;
 import io.xdag.utils.BigDecimalUtils;
-import io.xdag.utils.BytesUtils;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -405,16 +402,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
             payminersPerBlock = 9;
         }
 
-//        poolMiner.setDiffSum(time, 0.0);
-//        poolMiner.setPrevDiffSum(time, minerCounts);
-
-        // 真正处理的数据是在这一块
-        // 这个函数会把每一个矿工的计算出来的diff 和prevdiff 都存在上面的列表
-        // prevDiffSum 是每一个矿工的本轮计算的难度 加上以前所有难度之和
-        // diffs 是本轮进行的计算
-
-        //同样开辟两个数组
-
         diff = new ArrayList<>(minerCounts);
         prev_diff = new ArrayList<>(minerCounts);
         Collections.fill(diff, 0.0);
@@ -435,20 +422,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
     private double precalculatePayments(Bytes32 nonce, int index, PayData payData) {
         log.debug("precalculatePayments........");
-
-//        if(g_pool_fund) {
-//            if(g_fund_miner.state == MINER_UNKNOWN) {
-//                xtime_t t;
-//                if(!xdag_address2hash(FUND_ADDRESS, g_fund_miner.id.hash) && xdag_get_block_pos(g_fund_miner.id.hash, &t, 0) >= 0) {
-//                    g_fund_miner.state = MINER_SERVICE;
-//                }
-//            }
-//
-//            if(g_fund_miner.state != MINER_UNKNOWN) {
-//                data->fund = data->balance * g_pool_fund;
-//                data->pay -= data->fund;
-//            }
-//        }
 
         // 说明需要支付给基金会
         if (fundRation != 0) {
@@ -564,7 +537,7 @@ public class AwardManagerImpl implements AwardManager, Runnable {
         //计算发给所有矿工的总额，用来计算矿池自身最终所得
         XAmount paySum = XAmount.ZERO;
 
-        /**
+        /*
          * 基金会和转账矿池部分代码 暂时不用 //先支付给基金会 long fundpay =
          * BasicUtils.xdag2amount(payData.fundIncome); byte[] fund =
          * BytesUtils.fixBytes(BasicUtils.address2Hash(Constants.FUND_ADDRESS),8,24);
@@ -579,8 +552,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
          * Address(poolMiner.getAddressLow(),XDAG_FIELD_OUT,payData.poolFee)); payAmount
          * += payData.poolFee;
          */
-
-
         if (fundRation!=0) {
             if (WalletUtils.checkAddress(fundAddress)) {
                 payAmount = payAmount.add(payData.fundIncome);
@@ -659,21 +630,6 @@ public class AwardManagerImpl implements AwardManager, Runnable {
 
         // todo 需要验证还是直接connect
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
-    }
-
-    public boolean checkMine(Block block){
-        List<KeyPair> ourkeys = wallet.getAccounts();
-        // 遍历所有key
-        for (KeyPair ecKey : ourkeys) {
-            byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
-            byte[] publicKeyHash = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
-            Address coinBase = block.getCoinBase();
-            byte[] coinBaseKey = BytesUtils.byte32ToArray(coinBase.getAddress());
-            if (compareTo(publicKeyHash, 0, 20, coinBaseKey, 0, 20) == 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

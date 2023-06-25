@@ -47,13 +47,10 @@ import org.hyperledger.besu.crypto.KeyPair;
 public class BasicUtils {
 
     public static BigInteger getDiffByHash(Bytes32 hash) {
-//        byte[] data = new byte[16];
         MutableBytes data = MutableBytes.create(16);
         // 实现了右移32位 4个字节
-//        System.arraycopy(hash, 0, data, 4, 12);
         data.set(4, hash.slice(0, 12));
         BigInteger res = new BigInteger(data.toUnprefixedHexString(), 16);
-//        BigInteger res = data.toUnsignedBigInteger();
         // max是2的128次方减1 这样效率高吗
         BigInteger max = new BigInteger("ffffffffffffffffffffffffffffffff", 16);
         return max.divide(res);

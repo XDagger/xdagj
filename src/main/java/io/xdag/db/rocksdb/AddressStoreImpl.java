@@ -30,10 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
 
-/**
- * @author Dcj_Cory
- * @date 2022/10/31 1:43 PM
- */
+
 @Slf4j
 public class AddressStoreImpl implements AddressStore {
     private static final int AddressSize = 20;

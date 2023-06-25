@@ -88,6 +88,4 @@ public class Constants {
         NEW_LINK
     }
 
-    public final static String SNAPSHOT_KEY_STATS_MAIN = "g_snapshot_main";
-    public final static String SNAPSHOT_PRE_SEED = "pre_seed";
 }

@@ -26,7 +26,6 @@ package io.xdag.utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import org.apache.tuweni.units.bigints.UInt64;
 
 public class BigDecimalUtils {
 
@@ -82,9 +81,4 @@ public class BigDecimalUtils {
         return b1.divide(b2, scale, RoundingMode.DOWN).doubleValue();
     }
 
-    public static UInt64 mul(UInt64 v1, double v2) {
-        BigDecimal b1 = BigDecimal.valueOf(v1.toLong());
-        BigDecimal b2 = BigDecimal.valueOf(v2);
-        return UInt64.valueOf(b1.multiply(b2).longValue());
-    }
 }

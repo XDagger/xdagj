@@ -80,8 +80,4 @@ public class XdagSha256Digest {
         return state;
     }
 
-    public byte[] getDigest() {
-        return outputStream.getDigest();
-    }
-
 }

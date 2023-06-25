@@ -121,7 +121,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
     //TODO:need change
     public void doXfer(double sendValue,Bytes32 fromAddress, Bytes32 toAddress,String remark, ProcessResult processResult) {
-        XAmount amount = XAmount.ZERO;
+        XAmount amount;
         try {
             amount = XAmount.of(BigDecimal.valueOf(sendValue), XUnit.XDAG);
         } catch (XdagOverFlowException e){
@@ -214,7 +214,7 @@ public class XdagModuleTransactionEnabled extends XdagModuleTransactionBase {
 
         Bytes32 hash = null;
 
-        // check whether to is exist in blockchain
+        // check whether existed in blockchain
         if (WalletUtils.checkAddress(address)) {
             hash = pubAddress2Hash(address);
         } else {

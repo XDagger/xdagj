@@ -224,14 +224,12 @@ public class SyncManager {
         }
         AtomicBoolean r = new AtomicBoolean(true);
         long now = System.currentTimeMillis();
-//        ByteArrayWrapper refKey = new ByteArrayWrapper(hashLow);
+
         Queue<BlockWrapper> newQueue = Queues.newConcurrentLinkedQueue();
         blockWrapper.setTime(now);
         newQueue.add(blockWrapper);
         blockchain.getXdagStats().nwaitsync++;
-//        if(!syncMap.containsKey(hashLow)){
-//            syncQueue.offer(hashLow);
-//        }
+
         syncMap.merge(hashLow, newQueue,
                 (oldQ, newQ) -> {
                     blockchain.getXdagStats().nwaitsync--;
@@ -262,11 +260,10 @@ public class SyncManager {
      */
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
-//        ByteArrayWrapper key = new ByteArrayWrapper(block.getHashLow().toArray());
+
         Queue<BlockWrapper> queue = syncMap.getOrDefault(block.getHashLow(), null);
         if (queue != null) {
             syncMap.remove(block.getHashLow());
-//            syncQueue.remove(block.getHashLow());
             blockchain.getXdagStats().nwaitsync--;
             queue.forEach(bw -> {
                 ImportResult importResult = importBlock(bw);

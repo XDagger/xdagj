@@ -54,7 +54,7 @@ public class TypeConverter {
     }
 
     public static String toQuantityJsonHex(double n) {
-        return "" + n;
+        return String.valueOf(n);
     }
 
     /**

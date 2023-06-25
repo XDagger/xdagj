@@ -46,8 +46,6 @@ import io.xdag.rpc.cors.CorsConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slf4j
 public class Web3HttpServer {

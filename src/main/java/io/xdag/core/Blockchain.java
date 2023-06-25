@@ -33,7 +33,7 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 public interface Blockchain {
 
-    // for snapshot pre seed
+    // for snapshot pre-seed
     byte[] getPreSeed();
 
     ImportResult tryToConnect(Block block);
