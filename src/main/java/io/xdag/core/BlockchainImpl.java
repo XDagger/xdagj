@@ -1567,9 +1567,9 @@ public class BlockchainImpl implements Blockchain {
         XAmount finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
         log.debug("Balance checker —— block:{} [old:{} add:{} fin:{}]",
                 block.getHashLow().toHexString(),
-                oldAmount.toDecimal(9, XUnit.XDAG),
-                amount.toDecimal(9, XUnit.XDAG),
-                finalAmount.toDecimal(9, XUnit.XDAG));
+                oldAmount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                amount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
@@ -1589,9 +1589,9 @@ public class BlockchainImpl implements Blockchain {
         XAmount finalAmount = blockStore.getBlockInfoByHash(block.getHashLow()).getInfo().getAmount();
         log.debug("Balance checker —— block:{} [old:{} sub:{} fin:{}]",
                 block.getHashLow().toHexString(),
-                oldAmount.toDecimal(9, XUnit.XDAG),
-                amount.toDecimal(9, XUnit.XDAG),
-                finalAmount.toDecimal(9, XUnit.XDAG));
+                oldAmount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                amount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         if (block.isSaved) {
             blockStore.saveBlockInfo(block.getInfo());
         }
@@ -1611,9 +1611,9 @@ public class BlockchainImpl implements Blockchain {
         XAmount finalAmount = addressStore.getBalanceByAddress(addressHash);
         log.debug("Balance checker —— Address:{} [old:{} sub:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
-                balance.toDecimal(9, XUnit.XDAG),
-                amount.toDecimal(9, XUnit.XDAG),
-                finalAmount.toDecimal(9, XUnit.XDAG));
+                balance.toDecimal(9, XUnit.XDAG).toPlainString(),
+                amount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(xdagStats.getBalance().subtract(amount));
         }
@@ -1630,9 +1630,9 @@ public class BlockchainImpl implements Blockchain {
         XAmount finalAmount = addressStore.getBalanceByAddress(addressHash);
         log.warn("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
                 WalletUtils.toBase58(addressHash),
-                balance.toDecimal(9, XUnit.XDAG),
-                amount.toDecimal(9, XUnit.XDAG),
-                finalAmount.toDecimal(9, XUnit.XDAG));
+                balance.toDecimal(9, XUnit.XDAG).toPlainString(),
+                amount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.add(xdagStats.getBalance()));
         }
@@ -1648,9 +1648,9 @@ public class BlockchainImpl implements Blockchain {
         XAmount finalAmount = blockStore.getBlockByHash(block.getHashLow(),false).getInfo().getAmount();
         log.warn("Balance checker —— Block:{} [old:{} acc:{} fin:{}]",
                 block.getHashLow().toHexString(),
-                oldAmount.toDecimal(9, XUnit.XDAG),
-                amount.toDecimal(9, XUnit.XDAG),
-                finalAmount.toDecimal(9, XUnit.XDAG));
+                oldAmount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                amount.toDecimal(9, XUnit.XDAG).toPlainString(),
+                finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         if ((block.getInfo().flags & BI_OURS) != 0) {
             xdagStats.setBalance(amount.add(xdagStats.getBalance()));
         }
