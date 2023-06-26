@@ -181,13 +181,14 @@ public class BlockchainImpl implements Blockchain {
                 storedStats.setNwaitsync(0);
                 this.xdagStats = storedStats;
                 this.xdagStats.nextra = 0;
-                if (getBlockByHeight(xdagStats.nmain) != null) {
-                    storedTopStatus.setTop(getBlockByHeight(xdagStats.nmain).getHashLow().toArray());
-                }
             } else {
                 this.xdagStats = new XdagStats();
             }
             this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
+            Block lastBlock = getBlockByHeight(xdagStats.nmain);
+            if (lastBlock != null) {
+                this.xdagTopStatus.setTop(lastBlock.getHashLow().toArray());
+            }
             preSeed = blockStore.getPreSeed();
         }
 
