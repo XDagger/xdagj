@@ -2,7 +2,7 @@
 
 ulimit -n unlimited
 
-XDAG_VERSION="0.6.4"
+XDAG_VERSION="${project.version}"
 XDAG_JARNAME="xdagj-${XDAG_VERSION}-shaded.jar"
 XDAG_OPTS="-t"
 
@@ -19,9 +19,11 @@ JAVA_HEAPDUMP="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./logs/xdag-heap
 
 JAVA_GC_LOG="-Xlog:gc*,gc+heap=trace,gc+age=trace,safepoint:file=./logs/xdag-gc-%t.log:time,level,tid,tags:filecount=8,filesize=10m"
 
+XDAGJ_VERSION="-Dxdagj.version=${XDAG_VERSION}"
+
 if [ ! -d "logs" ];then
   mkdir "logs"
 fi
 
 # start kernel
-java ${JAVA_OPTS} ${JAVA_HEAPDUMP} ${JAVA_GC_LOG} -cp .:${XDAG_JARNAME} io.xdag.Bootstrap "$@"
+java ${JAVA_OPTS} ${JAVA_HEAPDUMP} ${JAVA_GC_LOG} ${XDAGJ_VERSION} -cp .:${XDAG_JARNAME} io.xdag.Bootstrap "$@"
