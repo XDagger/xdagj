@@ -30,10 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
 
-/**
- * @author Dcj_Cory
- * @date 2022/10/31 1:43 PM
- */
+
 @Slf4j
 public class AddressStoreImpl implements AddressStore {
     private static final int AddressSize = 20;
@@ -122,7 +119,7 @@ public class AddressStoreImpl implements AddressStore {
     }
 
     @Override
-    public void saveAddress(byte[] address, XAmount balance) {
+    public void snapshotAddress(byte[] address, XAmount balance) {
         UInt64 u64V = balance.toXAmount();
         AddressSource.put(BytesUtils.merge(ADDRESS,address), u64V.toBytes().toArray());
     }

@@ -40,7 +40,7 @@ public class Web3HttpMethodFilterHandler extends SimpleChannelInboundHandler<Ful
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         HttpMethod httpMethod = request.method();
         if (HttpMethod.POST.equals(httpMethod)) {
-            // retain the request so it isn't released automatically by SimpleChannelInboundHandler
+            // retain the request, so it isn't released automatically by SimpleChannelInboundHandler
             ctx.fireChannelRead(request.retain());
         } else {
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_IMPLEMENTED);

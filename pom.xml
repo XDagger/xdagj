@@ -6,7 +6,7 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.6.3</version>
+    <version>0.6.4</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -256,6 +256,35 @@
                 </executions>
             </plugin>
 
+            <!-- version  -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>replace-version</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/dist</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/script</directory>
+                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>xdag.sh</include>
+                                        <include>xdag.bat</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- prepare distribution -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -285,7 +314,7 @@
                                       tofile="${dist.base}/windows/xdag-testnet.conf"/>
                                 <copy file="src/main/resources/xdag-devnet.conf"
                                       tofile="${dist.base}/windows/xdag-devnet.conf"/>
-                                <copy file="${project.basedir}/script/xdag.bat"
+                                <copy file="${dist.base}/xdag.bat"
                                       tofile="${dist.base}/windows/xdag.bat"/>
                                 <zip basedir="${dist.base}/windows/"
                                      destfile="${dist.base}/xdagj-windows.zip"/>
@@ -302,7 +331,7 @@
                                       tofile="${dist.base}/linux/xdag-testnet.conf"/>
                                 <copy file="src/main/resources/xdag-devnet.conf"
                                       tofile="${dist.base}/linux/xdag-devnet.conf"/>
-                                <copy file="${project.basedir}/script/xdag.sh"
+                                <copy file="${dist.base}/xdag.sh"
                                       tofile="${dist.base}/linux/xdag.sh"/>
                                 <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
                                 <zip basedir="${dist.base}/linux/"
@@ -320,7 +349,7 @@
                                       tofile="${dist.base}/macos/xdag-testnet.conf"/>
                                 <copy file="src/main/resources/xdag-devnet.conf"
                                       tofile="${dist.base}/macos/xdag-devnet.conf"/>
-                                <copy file="${project.basedir}/script/xdag.sh"
+                                <copy file="${dist.base}/xdag.sh"
                                       tofile="${dist.base}/macos/xdag.sh"/>
                                 <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
                                 <zip basedir="${dist.base}/macos/"

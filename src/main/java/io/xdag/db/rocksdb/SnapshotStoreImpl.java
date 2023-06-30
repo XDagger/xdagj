@@ -57,6 +57,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -248,16 +249,15 @@ public class SnapshotStoreImpl implements SnapshotStore {
                 } else {
                     byte[] address = iter.key();
                     XAmount balance = XAmount.ofXAmount(UInt64.fromBytes(Bytes.wrap(iter.value())).toLong());
-                    for (int i = 0; i < keys.size(); i++) {
-                        KeyPair keyPair = keys.get(i);
+                    for (KeyPair keyPair : keys) {
                         byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                         byte[] myAddress = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
-                        if (BytesUtils.compareTo(address,0,20,myAddress,0,20) == 0) {
+                        if (BytesUtils.compareTo(address, 1, 20, myAddress, 0, 20) == 0) {
                             ourBalance = ourBalance.add(balance);
                         }
                     }
-                    addressStore.saveAddress(address, balance);
-                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(address), BytesUtils.arrayToByte32(address),
+                    addressStore.snapshotAddress(address, balance);
+                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)),
                             XdagField.FieldType.XDAG_FIELD_SNAPSHOT, balance,
                             snapshotTime,0,"snapshot".getBytes(StandardCharsets.UTF_8));
                 }

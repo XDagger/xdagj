@@ -268,7 +268,6 @@ public class BlockStoreImpl implements BlockStore {
     public void fetchOurBlocks(Function<Pair<Integer, Block>, Boolean> function) {
         indexSource.fetchPrefix(new byte[]{OURS_BLOCK_INFO}, pair -> {
             int index = BlockUtils.getOurIndex(pair.getKey());
-//            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
             assert BlockUtils.getOurHash(pair.getKey()) != null;
             Block block = getBlockInfoByHash(Bytes32.wrap(Objects.requireNonNull(BlockUtils.getOurHash(pair.getKey()))));
             if (function.apply(Pair.of(index, block))) {

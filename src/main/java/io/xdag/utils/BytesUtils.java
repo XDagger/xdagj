@@ -237,7 +237,7 @@ public class BytesUtils {
     }
 
     /**
-     * Convert a byte into an byte array.
+     * Convert a byte into a byte array.
      */
     public static byte[] of(byte b) {
         return new byte[]{b};

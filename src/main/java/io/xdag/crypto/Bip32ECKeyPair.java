@@ -43,7 +43,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
  * BIP-32 key pair.
  *
  * <p>Adapted from:
- * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/DeterministicKey.java
+ * <a href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/DeterministicKey.java">DeterministicKey</a>
  */
 @Getter
 public class Bip32ECKeyPair {
