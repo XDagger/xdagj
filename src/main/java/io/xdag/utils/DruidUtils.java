@@ -20,7 +20,6 @@ public final class DruidUtils {
 
     static {
         try {
-
             Properties p = new Properties();
             InputStream inputStream = DruidUtils.class.getClassLoader().getResourceAsStream("druid.properties");
             p.load(inputStream);

@@ -69,6 +69,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 @Slf4j
 public class SnapshotStoreTest {
@@ -142,6 +143,8 @@ public class SnapshotStoreTest {
         OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
+        TransactionHistoryStore txHistoryStore = Mockito.mock(TransactionHistoryStore.class);
+
         snapshotSource =  (RocksdbKVSource)dbFactory.getDB(DatabaseName.SNAPSHOT);
         snapshotStore = new SnapshotStoreImpl(snapshotSource);
         snapshotStore.reset();
@@ -149,6 +152,7 @@ public class SnapshotStoreTest {
         kernel.setBlockStore(blockStore);
         kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setAddressStore(addressStore);
+        kernel.setTxHistoryStore(txHistoryStore);
         kernel.setWallet(wallet);
 
         RandomX nativeRandomX = new RandomX(config);
@@ -203,8 +207,7 @@ public class SnapshotStoreTest {
         List<KeyPair> keys = Lists.newArrayList();
         keys.add(poolKey);
 
-        snapshotStore.saveSnapshotToIndex(blockStore, keys,0);
-//        snapshotStore.saveAddress(blockStore, addressStore, keys,0);
+        snapshotStore.saveSnapshotToIndex(blockStore, kernel.getTxHistoryStore(), keys,0);
 
         //Verify the total balance of the current account
         assertEquals("45980.0", String.valueOf(snapshotStore.getAllBalance().toDecimal(1, XUnit.XDAG)));
@@ -217,7 +220,6 @@ public class SnapshotStoreTest {
         xdagStats.setNmain(height);
 
         //Verify Stats
-//        assertEquals(xdagStats.balance, stats.balance);
         assertEquals(xdagStats.nmain, stats.nmain);
     }
 

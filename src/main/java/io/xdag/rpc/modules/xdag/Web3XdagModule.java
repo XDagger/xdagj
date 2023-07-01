@@ -58,12 +58,12 @@ public interface Web3XdagModule {
 
     String xdag_getTotalBalance() throws Exception;
 
-    default BlockResultDTO xdag_getTransactionByHash(String hash) throws Exception {
-        return xdag_getBlockByHash(hash);
+    default BlockResultDTO xdag_getTransactionByHash(String hash, int page) throws Exception {
+        return xdag_getBlockByHash(hash, page);
     }
 
-    default BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
-        return getXdagModule().getBlockByNumber(bnOrId);
+    default BlockResultDTO xdag_getBlockByNumber(String bnOrId, int page) {
+        return getXdagModule().getBlockByNumber(bnOrId, page);
     }
 
     default String xdag_getRewardByNumber(String bnOrId) {
@@ -90,8 +90,8 @@ public interface Web3XdagModule {
         return getXdagModule().personalSendTransaction(args, passphrase);
     }
 
-    default BlockResultDTO xdag_getBlockByHash(String blockHash) {
-        return getXdagModule().getBlockByHash(blockHash);
+    default BlockResultDTO xdag_getBlockByHash(String blockHash, int page) {
+        return getXdagModule().getBlockByHash(blockHash, page);
     }
 
     StatusDTO xdag_getStatus() throws Exception;
