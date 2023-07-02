@@ -83,13 +83,16 @@ public class TransactionHistoryStoreImplTest {
     }
 
     @Test
-    public void testTxTxHistorySaveAndListAndCount() {
+    public void testTxHistorySaveAndListAndCount() {
+        long timestamp = System.currentTimeMillis();
+        String remark = "xdagj_test";
+        String hash = BasicUtils.hash2Address(Bytes32.ZERO);
         TxHistory txHistory = new TxHistory();
         Address input = new Address(secretkey_1.getEncodedBytes(), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
         txHistory.setAddress(input);
-        txHistory.setHash(BasicUtils.hash2Address(Bytes32.ZERO));
-        txHistory.setRemark("xdagj_test");
-        txHistory.setTimestamp(System.currentTimeMillis());
+        txHistory.setHash(hash);
+        txHistory.setRemark(remark);
+        txHistory.setTimestamp(timestamp);
         txHistoryStore.saveTxHistory(txHistory);
 
         String addr = input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress());
@@ -97,10 +100,12 @@ public class TransactionHistoryStoreImplTest {
         assertNotNull(txHistoryList);
         assertEquals(1, txHistoryList.size());
 
+        TxHistory resTxHistory = txHistoryList.get(0);
         int count = txHistoryStore.getTxHistoryCount(addr);
         assertEquals(1, count);
-        assertEquals("xdagj_test", txHistoryList.get(0).getRemark());
-        assertEquals(BasicUtils.hash2Address(Bytes32.ZERO), txHistoryList.get(0).getHash());
+        assertEquals(remark, resTxHistory.getRemark());
+        assertEquals(hash, resTxHistory.getHash());
+        assertEquals(timestamp, resTxHistory.getTimestamp());
     }
 
 }
