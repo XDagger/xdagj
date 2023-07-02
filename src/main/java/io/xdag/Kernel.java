@@ -200,8 +200,7 @@ public class Kernel {
         blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.TXHISTORY));
+                dbFactory.getDB(DatabaseName.TIME));
         log.info("Block Store init.");
         blockStore.init();
 

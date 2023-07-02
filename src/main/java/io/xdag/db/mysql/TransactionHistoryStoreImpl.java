@@ -32,8 +32,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
 
-import org.apache.tuweni.bytes.Bytes32;
-
 import com.google.common.collect.Lists;
 
 import io.xdag.core.Address;
@@ -49,9 +47,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
-    private static final String SQL_INSERT = "insert into t_transaction_history(faddress,famount,ftype,fremark,ftime) values(?,?,?,?,?)";
+    private static final String SQL_INSERT = "insert into t_transaction_history(faddress,fhash,famount,ftype,fremark,ftime) values(?,?,?,?,?,?)";
 
-    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS = "select faddress,famount,ftype,fremark,ftime from t_transaction_history order by fid desc limit ?,?";
+    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS = "select faddress,fhash,famount,ftype,fremark,ftime from t_transaction_history where faddress= ? order by fid desc limit ?,?";
 
     private static final String SQL_QUERY_TXHISTORY_COUNT = "select count(*) from t_transaction_history where faddress=?";
 
@@ -70,10 +68,11 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 Address address = txHistory.getAddress();
                 String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
                 pstmt.setString(1, addr);
-                pstmt.setBigDecimal(2, txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG));
-                pstmt.setInt(3, txHistory.getAddress().getType().asByte());
-                pstmt.setString(4, txHistory.getRemark());
-                pstmt.setTimestamp(5, new java.sql.Timestamp(txHistory.getTimeStamp()));
+                pstmt.setString(2, txHistory.getHash());
+                pstmt.setBigDecimal(3, txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG));
+                pstmt.setInt(4, txHistory.getAddress().getType().asByte());
+                pstmt.setString(5, txHistory.getRemark());
+                pstmt.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
                 pstmt.execute();
             }
         } catch (Exception e) {
@@ -92,18 +91,21 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             conn = DruidUtils.getConnection();
             if (conn != null) {
                 pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS);
-                pstmt.setInt(1, (page - 1) * PAGE_SIZE);
-                pstmt.setInt(2, PAGE_SIZE);
+                pstmt.setString(1, address);
+                pstmt.setInt(2, (page - 1) * PAGE_SIZE);
+                pstmt.setInt(3, PAGE_SIZE);
                 rs = pstmt.executeQuery();
                 while (rs.next()) {
                     TxHistory txHistory = new TxHistory();
-                    Bytes32 addr = BasicUtils.pubAddress2Hash(rs.getString(1));
-                    XAmount amount = XAmount.of(rs.getBigDecimal(2), XUnit.XDAG);
-                    int fType = rs.getInt(3);
-                    Address addrObj = new Address(addr, XdagField.FieldType.fromByte((byte)fType), amount, true);
+                    //Bytes32 addr = BasicUtils.address2Hash(rs.getString(1));
+                    String hashlow = rs.getString(2);
+                    txHistory.setHash(hashlow);
+                    XAmount amount = XAmount.of(rs.getBigDecimal(3), XUnit.XDAG);
+                    int fType = rs.getInt(4);
+                    Address addrObj = new Address(BasicUtils.address2Hash(hashlow), XdagField.FieldType.fromByte((byte)fType), amount, false);
                     txHistory.setAddress(addrObj);
-                    txHistory.setRemark(rs.getString(4));
-                    txHistory.setTimeStamp(rs.getTimestamp(5).getTime());
+                    txHistory.setRemark(rs.getString(5));
+                    txHistory.setTimestamp(rs.getTimestamp(6).getTime());
                     txHistoryList.add(txHistory);
                 }
             }

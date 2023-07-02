@@ -233,7 +233,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         if(blockInfo.getRemark() != null) {
                             txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
                         }
-                        txHistory.setTimeStamp(snapshotTime);
+                        txHistory.setTimestamp(snapshotTime);
 
                         txHistoryStore.saveTxHistory(txHistory);
                     }
@@ -276,7 +276,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     TxHistory txHistory = new TxHistory();
                     txHistory.setAddress(addr);
                     txHistory.setRemark("snapshot");
-                    txHistory.setTimeStamp(snapshotTime);
+                    txHistory.setTimestamp(snapshotTime);
 
                     txHistoryStore.saveTxHistory(txHistory);
                 }

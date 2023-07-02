@@ -133,8 +133,7 @@ public class SnapshotStoreTest {
         BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TXHISTORY));
+                dbFactory.getDB(DatabaseName.BLOCK));
         blockStore.reset();
 
         AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
@@ -198,8 +197,7 @@ public class SnapshotStoreTest {
         BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TXHISTORY));
+                dbFactory.getDB(DatabaseName.BLOCK));
         blockStore.reset();
         AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();

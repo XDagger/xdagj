@@ -34,6 +34,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
 
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,6 +45,7 @@ import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.Sign;
 import io.xdag.db.TransactionHistoryStore;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.DruidUtils;
 
 public class TransactionHistoryStoreImplTest {
@@ -53,6 +55,7 @@ public class TransactionHistoryStoreImplTest {
                CREATE TABLE `t_transaction_history` (
                 `fid` int NOT NULL AUTO_INCREMENT,
                 `faddress` varchar(64) NOT NULL,
+                `fhash` varchar(64) NOT NULL,
                 `famount` decimal(10,9) NOT NULL,
                 `ftype` tinyint NOT NULL,
                 `fremark` varchar(64) DEFAULT NULL,
@@ -63,7 +66,7 @@ public class TransactionHistoryStoreImplTest {
                 )
             """;
 
-    private TransactionHistoryStore txHistoryStore = new TransactionHistoryStoreImpl();
+    private final TransactionHistoryStore txHistoryStore = new TransactionHistoryStoreImpl();
 
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
 
@@ -71,9 +74,12 @@ public class TransactionHistoryStoreImplTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
+        Statement stmt;
         Connection conn = DruidUtils.getConnection();
-        Statement stmt = conn.createStatement();
-        stmt.execute(SQL_CTEATE_TABLE);
+        if (conn != null) {
+            stmt = conn.createStatement();
+            stmt.execute(SQL_CTEATE_TABLE);
+        }
     }
 
     @Test
@@ -81,8 +87,9 @@ public class TransactionHistoryStoreImplTest {
         TxHistory txHistory = new TxHistory();
         Address input = new Address(secretkey_1.getEncodedBytes(), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
         txHistory.setAddress(input);
+        txHistory.setHash(BasicUtils.hash2Address(Bytes32.ZERO));
         txHistory.setRemark("xdagj_test");
-        txHistory.setTimeStamp(System.currentTimeMillis());
+        txHistory.setTimestamp(System.currentTimeMillis());
         txHistoryStore.saveTxHistory(txHistory);
 
         String addr = input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress());
@@ -92,6 +99,8 @@ public class TransactionHistoryStoreImplTest {
 
         int count = txHistoryStore.getTxHistoryCount(addr);
         assertEquals(1, count);
+        assertEquals("xdagj_test", txHistoryList.get(0).getRemark());
+        assertEquals(BasicUtils.hash2Address(Bytes32.ZERO), txHistoryList.get(0).getHash());
     }
 
 }

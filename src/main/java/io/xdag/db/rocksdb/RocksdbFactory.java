@@ -46,8 +46,6 @@ public class RocksdbFactory implements DatabaseFactory {
                     // time data source must set fixed prefix length
                     if (StringUtils.equals(DatabaseName.TIME.toString(), name.toString())) {
                         dataSource = new RocksdbKVSource(name.toString(), 9);
-                    } else if (StringUtils.equals(DatabaseName.TXHISTORY.toString(), name.toString())) {
-                        dataSource = new RocksdbKVSource(name.toString(), 33);
                     } else {
                         dataSource = new RocksdbKVSource(name.toString());
                     }

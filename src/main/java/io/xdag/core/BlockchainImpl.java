@@ -367,7 +367,6 @@ public class BlockchainImpl implements Blockchain {
                 return ImportResult.INVALID_BLOCK;
             }
 
-            int id = 0;
             // remove links
             for (Address ref : all) {
                 if(!ref.isAddress){
@@ -381,10 +380,10 @@ public class BlockchainImpl implements Blockchain {
                     if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
                         if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
-                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                                    block.getTimestamp(), block.getInfo().getRemark());
                         } else {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
-                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                                    block.getTimestamp(), block.getInfo().getRemark());
                         }
                     }
                 } else {
@@ -392,14 +391,13 @@ public class BlockchainImpl implements Blockchain {
                     if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
                         if (ref.getType().equals(XDAG_FIELD_INPUT)) {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_OUTPUT, ref.getAmount(),
-                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                                    block.getTimestamp(), block.getInfo().getRemark());
                         } else {
                             onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_INPUT, ref.getAmount(),
-                                    block.getTimestamp(), id, block.getInfo().getRemark());
+                                    block.getTimestamp(), block.getInfo().getRemark());
                         }
                     }
                 }
-                id++;
             }
 
             // 检查当前主链
@@ -504,14 +502,15 @@ public class BlockchainImpl implements Blockchain {
 
 
     public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
-            XAmount amount, long time, int id, byte[] remark) {
+            XAmount amount, long time, byte[] remark) {
         Address address = new Address(addressHashlow, type, amount,false);
         TxHistory txHistory = new TxHistory();
         txHistory.setAddress(address);
+        txHistory.setHash(BasicUtils.hash2Address(txHashlow));
         if(remark != null) {
             txHistory.setRemark(new String(remark, StandardCharsets.UTF_8));
         }
-        txHistory.setTimeStamp(time);
+        txHistory.setTimestamp(time);
         txHistoryStore.saveTxHistory(txHistory);
     }
 

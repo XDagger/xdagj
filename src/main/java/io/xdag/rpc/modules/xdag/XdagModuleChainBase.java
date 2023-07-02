@@ -313,7 +313,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                     .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
                             txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)
-                    .time(xdagTimestampToMs(txHistory.getTimeStamp()))
+                    .time(xdagTimestampToMs(txHistory.getTimestamp()))
                     .remark(txHistory.getRemark());
             txLinks.add(txLinkBuilder.build());
         }
@@ -337,7 +337,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT) ? 0 :
                                 txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT) ? 1 :
                                         txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
-                        .time(xdagTimestampToMs(txHistory.getTimeStamp()))
+                        .time(xdagTimestampToMs(txHistory.getTimestamp()))
                         .remark(txHistory.getRemark());
             } else {
                 txLinkBuilder.address(toBase58(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
