@@ -32,14 +32,11 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.google.common.collect.Lists;
-import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.SnapshotInfo;
-import io.xdag.core.TxHistory;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.db.BlockStore;
@@ -86,17 +83,13 @@ public class BlockStoreImpl implements BlockStore {
      */
     private final KVSource<byte[], byte[]> blockSource;
 
-    private final KVSource<byte[], byte[]> txHistorySource;
-
     public BlockStoreImpl(
             KVSource<byte[], byte[]> index,
             KVSource<byte[], byte[]> time,
-            KVSource<byte[], byte[]> block,
-            KVSource<byte[], byte[]> txHistory) {
+            KVSource<byte[], byte[]> block) {
         this.indexSource = index;
         this.timeSource = time;
         this.blockSource = block;
-        this.txHistorySource = txHistory;
 
         this.kryo = new Kryo();
         kryoRegister();
@@ -148,14 +141,12 @@ public class BlockStoreImpl implements BlockStore {
         indexSource.init();
         timeSource.init();
         blockSource.init();
-        txHistorySource.init();
     }
 
     public void reset() {
         indexSource.reset();
         timeSource.reset();
         blockSource.reset();
-        txHistorySource.reset();
     }
 
     public void saveXdagStatus(XdagStats status) {

@@ -31,14 +31,16 @@ import lombok.Setter;
 public class TxHistory {
 
     Address address;
-    long timeStamp;
+    String hash;
+    long timestamp;
     String remark;
 
     public TxHistory(){}
 
-    public TxHistory(Address address, long timeStamp, String remark) {
+    public TxHistory(Address address, String hash, long timestamp, String remark) {
         this.address = address;
-        this.timeStamp = timeStamp;
+        this.hash = hash;
+        this.timestamp = timestamp;
         this.remark = remark;
     }
 }

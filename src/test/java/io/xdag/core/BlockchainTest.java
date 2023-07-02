@@ -125,8 +125,7 @@ public class BlockchainTest {
         BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK),
-                dbFactory.getDB(DatabaseName.TXHISTORY));
+                dbFactory.getDB(DatabaseName.BLOCK));
 
         blockStore.reset();
         OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
