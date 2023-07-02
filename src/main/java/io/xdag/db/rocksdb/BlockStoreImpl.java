@@ -529,50 +529,5 @@ public class BlockStoreImpl implements BlockStore {
         return indexSource.get(new byte[]{SNAPSHOT_PRESEED});
     }
 
-
-    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, XAmount amount,
-            long time, int id, byte[] remark) { // id is used to avoid repeat key
-        if (remark == null) {
-            remark = new byte[]{};
-        }
-        byte[] key = BytesUtils.merge(TX_HISTORY,
-                BytesUtils.merge(addressHashlow.toArray(), BytesUtils.merge(txHashlow.toArray(),
-                        BytesUtils.intToBytes(id, true)))); // key 0xa0 + address hash + tx hash + id
-
-        byte[] value;
-        value = BytesUtils.merge(type.asByte(),
-                BytesUtils.merge(txHashlow.toArray(),
-                            BytesUtils.merge(amount.toXAmount().toBytes().reverse().toArray(),
-                                BytesUtils.merge(BytesUtils.longToBytes(time, true),
-                                        BytesUtils.merge(BytesUtils.longToBytes(remark.length, true),
-                                                remark))))); // type + tx hash + amount + time + remark_length + remark
-        txHistorySource.put(key, value);
-    }
-
-    public List<TxHistory> getTxHistoryByAddress(Bytes32 addressHashlow) {
-        List<byte[]> values = txHistorySource.prefixValueLookup(BytesUtils.merge(TX_HISTORY, addressHashlow.toArray()));
-        List<TxHistory> res = Lists.newArrayList();
-
-        for (byte[] value : values) {
-            byte type = BytesUtils.subArray(value, 0, 1)[0];
-            XdagField.FieldType fieldType = XdagField.FieldType.fromByte(type);
-            Bytes32 hashlow = Bytes32.wrap(BytesUtils.subArray(value, 1, 32));
-            UInt64 u64v = UInt64.fromBytes(Bytes.wrap(BytesUtils.subArray(value, 33, 8)).reverse());
-            XAmount amount = XAmount.ofXAmount(u64v.toLong());
-//            long amount = BytesUtils.bytesToLong(, 0, true);
-            long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
-            Address address = new Address(hashlow, fieldType, amount,false);
-
-            long remarkLength = BytesUtils.bytesToLong(BytesUtils.subArray(value, 49, 8), 0, true);
-
-            String remark = "";
-            if (remarkLength != 0) {
-                remark = new String(BytesUtils.subArray(value, 57, (int) remarkLength), StandardCharsets.UTF_8).trim();
-            }
-            res.add(new TxHistory(address, timestamp, remark));
-        }
-        return res;
-
-    }
 }
 

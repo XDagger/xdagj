@@ -54,6 +54,7 @@ import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 import static io.xdag.utils.WalletUtils.toBase58;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -96,6 +97,7 @@ import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.SnapshotStore;
+import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.listener.BlockMessage;
@@ -122,6 +124,7 @@ public class BlockchainImpl implements Blockchain {
 
     private final AddressStore addressStore;
     private final BlockStore blockStore;
+    private final TransactionHistoryStore txHistoryStore;
     /**
      * 非Extra orphan存放
      */
@@ -154,6 +157,7 @@ public class BlockchainImpl implements Blockchain {
         this.addressStore = kernel.getAddressStore();
         this.blockStore = kernel.getBlockStore();
         this.orphanBlockStore = kernel.getOrphanBlockStore();
+        this.txHistoryStore = kernel.getTxHistoryStore();
         snapshotHeight = kernel.getConfig().getSnapshotSpec().getSnapshotHeight();
 
         // 2. if enable snapshot, init snapshot from rocksdb
@@ -211,13 +215,13 @@ public class BlockchainImpl implements Blockchain {
         snapshotAddressStore = new SnapshotStoreImpl(snapshotAddressSource);
         snapshotAddressSource.setConfig(kernel.getConfig());
         snapshotAddressSource.init();
-        snapshotAddressStore.saveAddress(this.blockStore,this.addressStore,kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
+        snapshotAddressStore.saveAddress(this.blockStore,this.addressStore,this.txHistoryStore,kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
 
         RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOT/BLOCKS");
         snapshotStore = new SnapshotStoreImpl(snapshotSource);
         snapshotSource.setConfig(kernel.getConfig());
         snapshotStore.init();
-        snapshotStore.saveSnapshotToIndex(this.blockStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
+        snapshotStore.saveSnapshotToIndex(this.blockStore, this.txHistoryStore, kernel.getWallet().getAccounts(),kernel.getConfig().getSnapshotSpec().getSnapshotTime());
         Block lastBlock = blockStore.getBlockByHeight(snapshotHeight);
 
         xdagStats.balance = snapshotStore.getOurBalance();
@@ -501,12 +505,18 @@ public class BlockchainImpl implements Blockchain {
 
     public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
             XAmount amount, long time, int id, byte[] remark) {
-        blockStore.saveTxHistory(addressHashlow, txHashlow, type, amount, time, id, remark);
+        Address address = new Address(addressHashlow, type, amount,false);
+        TxHistory txHistory = new TxHistory();
+        txHistory.setAddress(address);
+        if(remark != null) {
+            txHistory.setRemark(new String(remark, StandardCharsets.UTF_8));
+        }
+        txHistory.setTimeStamp(time);
+        txHistoryStore.saveTxHistory(txHistory);
     }
 
-
-    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow) {
-        return blockStore.getTxHistoryByAddress(addressHashlow);
+    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page) {
+        return txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page);
     }
 
     /**

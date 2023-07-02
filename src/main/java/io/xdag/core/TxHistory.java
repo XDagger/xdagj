@@ -23,14 +23,18 @@
  */
 package io.xdag.core;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class TxHistory {
 
     Address address;
     long timeStamp;
     String remark;
+
+    public TxHistory(){}
 
     public TxHistory(Address address, long timeStamp, String remark) {
         this.address = address;

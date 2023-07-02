@@ -36,10 +36,13 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+
+import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.PreBlockInfo;
 import io.xdag.core.SnapshotInfo;
+import io.xdag.core.TxHistory;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagField;
@@ -50,6 +53,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.SnapshotStore;
+import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BytesUtils;
@@ -166,7 +170,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == HASH_BLOCK_INFO) {
@@ -219,11 +223,19 @@ public class SnapshotStoreImpl implements SnapshotStore {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
                         allBalance = allBalance.add(blockInfo.getAmount());
-                        blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
-                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT, blockInfo.getAmount(),
-                                snapshotTime,0,
-                                blockInfo.getRemark());
                         blockStore.saveBlockInfo(blockInfo);
+
+                        XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
+                        Address address = new Address(Bytes32.wrap(blockInfo.getHashlow()), fieldType, blockInfo.getAmount(),false);
+
+                        TxHistory txHistory = new TxHistory();
+                        txHistory.setAddress(address);
+                        if(blockInfo.getRemark() != null) {
+                            txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
+                        }
+                        txHistory.setTimeStamp(snapshotTime);
+
+                        txHistoryStore.saveTxHistory(txHistory);
                     }
                 } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
@@ -235,7 +247,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
     }
 
     @Override
-    public void saveAddress(BlockStore blockStore,AddressStore addressStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if(iter.key().length < 20){
@@ -257,9 +269,16 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         }
                     }
                     addressStore.snapshotAddress(address, balance);
-                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)),
-                            XdagField.FieldType.XDAG_FIELD_SNAPSHOT, balance,
-                            snapshotTime,0,"snapshot".getBytes(StandardCharsets.UTF_8));
+
+                    XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
+                    Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), fieldType, balance,false);
+
+                    TxHistory txHistory = new TxHistory();
+                    txHistory.setAddress(addr);
+                    txHistory.setRemark("snapshot");
+                    txHistory.setTimeStamp(snapshotTime);
+
+                    txHistoryStore.saveTxHistory(txHistory);
                 }
             }
         }

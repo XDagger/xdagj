@@ -45,6 +45,8 @@ import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.SnapshotStore;
+import io.xdag.db.TransactionHistoryStore;
+import io.xdag.db.mysql.TransactionHistoryStoreImpl;
 import io.xdag.db.rocksdb.AddressStoreImpl;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
@@ -107,6 +109,7 @@ public class Kernel {
     private AddressStore addressStore;
     private BlockStore blockStore;
     private OrphanBlockStore orphanBlockStore;
+    private TransactionHistoryStore txHistoryStore;
 
     private SnapshotStore SnapshotStore;
     private Blockchain blockchain;
@@ -209,6 +212,9 @@ public class Kernel {
         orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");
         orphanBlockStore.init();
+
+        txHistoryStore = new TransactionHistoryStoreImpl();
+        log.info("Transaction History Store init.");
 
         // ====================================
         // netstatus netdb init

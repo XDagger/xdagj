@@ -57,6 +57,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
+import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.rocksdb.AddressStoreImpl;
 import io.xdag.db.rocksdb.BlockStoreImpl;
 import io.xdag.db.rocksdb.DatabaseFactory;
@@ -79,6 +80,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 @Slf4j
 public class BlockchainTest {
@@ -133,9 +135,12 @@ public class BlockchainTest {
         AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
+        TransactionHistoryStore txHistoryStore = Mockito.mock(TransactionHistoryStore.class);
+
         kernel.setBlockStore(blockStore);
         kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setAddressStore(addressStore);
+        kernel.setTxHistoryStore(txHistoryStore);
         kernel.setWallet(wallet);
     }
 

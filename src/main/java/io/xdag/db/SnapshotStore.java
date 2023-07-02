@@ -39,9 +39,9 @@ public interface SnapshotStore {
 
     void makeSnapshot(RocksdbKVSource blockSource,RocksdbKVSource indexSource,boolean b);
 
-    void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime);
+    void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime);
 
-    void saveAddress(BlockStore blockStore,AddressStore addressStore,List<KeyPair> keys,long snapshotTime);
+    void saveAddress(BlockStore blockStore,AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime);
 
     void save(RocksIterator iter, BlockInfo blockInfo);
 

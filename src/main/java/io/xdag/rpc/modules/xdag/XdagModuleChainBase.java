@@ -86,21 +86,21 @@ public class XdagModuleChainBase implements XdagModuleChain {
     }
 
     @Override
-    public BlockResultDTO getBlockByHash(String hash) {
-        return getBlockDTOByHash(hash);
+    public BlockResultDTO getBlockByHash(String hash, int page) {
+        return getBlockDTOByHash(hash, page);
     }
 
     @Override
-    public BlockResultDTO getBlockByNumber(String bnOrId) {
+    public BlockResultDTO getBlockByNumber(String bnOrId, int page) {
         Block blockFalse = blockchain.getBlockByHeight(Long.parseLong(bnOrId));
         if (null == blockFalse) {
             return null;
         }
         Block blockTrue = blockchain.getBlockByHash(blockFalse.getHash(), true);
         if (blockTrue == null) {
-            return transferBlockInfoToBlockResultDTO(blockFalse);
+            return transferBlockInfoToBlockResultDTO(blockFalse, page);
         }
-        return transferBlockToBlockResultDTO(blockTrue);
+        return transferBlockToBlockResultDTO(blockTrue, page);
     }
 
     @Override
@@ -146,10 +146,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
         return Commands.getBalanceMaxXfer(kernel);
     }
 
-    public BlockResultDTO getBlockDTOByHash(String hash) {
+    public BlockResultDTO getBlockDTOByHash(String hash, int page) {
         Bytes32 blockHash;
         if (checkAddress(hash)) {
-            return transferAccountToBlockResultDTO(hash);
+            return transferAccountToBlockResultDTO(hash, page);
         } else {
             if (StringUtils.length(hash) == 32) {
                 blockHash = address2Hash(hash);
@@ -159,9 +159,9 @@ public class XdagModuleChainBase implements XdagModuleChain {
             Block block = blockchain.getBlockByHash(blockHash, true);
             if (block == null) {
                 block = blockchain.getBlockByHash(blockHash, false);
-                return transferBlockInfoToBlockResultDTO(block);
+                return transferBlockInfoToBlockResultDTO(block, page);
             }
-            return transferBlockToBlockResultDTO(block);
+            return transferBlockToBlockResultDTO(block, page);
         }
     }
 
@@ -185,7 +185,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
         return BlockResultDTOBuilder.build();
     }
 
-    private BlockResultDTO transferBlockInfoToBlockResultDTO(Block block) {
+    private BlockResultDTO transferBlockInfoToBlockResultDTO(Block block, int page) {
         if (null == block) {
             return null;
         }
@@ -204,11 +204,11 @@ public class XdagModuleChainBase implements XdagModuleChain {
 //                .type(getType(block))
 //                .refs(getLinks(block))
 //                .height(block.getInfo().getHeight())
-                .transactions(getTxLinks(block));
+                .transactions(getTxLinks(block, page));
         return BlockResultDTOBuilder.build();
     }
 
-    private BlockResultDTO transferAccountToBlockResultDTO(String address) {
+    private BlockResultDTO transferAccountToBlockResultDTO(String address, int page) {
         XAmount balance = kernel.getAddressStore().getBalanceByAddress(hash2byte(pubAddress2Hash(address).mutableCopy()));
 
         BlockResultDTO.BlockResultDTOBuilder BlockResultDTOBuilder = BlockResultDTO.builder();
@@ -219,11 +219,11 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
                 .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
                 .state("Accepted")
-                .transactions(getTxHistory(address));
+                .transactions(getTxHistory(address, page));
         return BlockResultDTOBuilder.build();
     }
 
-    private BlockResultDTO transferBlockToBlockResultDTO(Block block) {
+    private BlockResultDTO transferBlockToBlockResultDTO(Block block, int page) {
         if (null == block) {
             return null;
         }
@@ -241,7 +241,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .type(getType(block))
                 .refs(getLinks(block))
                 .height(block.getInfo().getHeight())
-                .transactions(getTxLinks(block));
+                .transactions(getTxLinks(block, page));
         return BlockResultDTOBuilder.build();
     }
 
@@ -283,8 +283,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
         return links;
     }
 
-    private List<TxLink> getTxLinks(Block block) {
-        List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(block.getHashLow());
+    private List<TxLink> getTxLinks(Block block, int page) {
+        List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(block.getHashLow(), page);
         List<TxLink> txLinks = Lists.newArrayList();
         // 1. earning info
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
@@ -320,8 +320,8 @@ public class XdagModuleChainBase implements XdagModuleChain {
         return txLinks;
     }
 
-    private List<TxLink> getTxHistory(String address) {
-        List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(pubAddress2Hash(address));
+    private List<TxLink> getTxHistory(String address, int page) {
+        List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(pubAddress2Hash(address), page);
         List<TxLink> txLinks = Lists.newArrayList();
         for (TxHistory txHistory : txHistories) {
             Block b = blockchain.getBlockByHash(txHistory.getAddress().getAddress(), false);

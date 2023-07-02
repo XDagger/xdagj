@@ -80,8 +80,8 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByNumber(String bnOrId) {
-        return web3XdagModule.xdag_getBlockByNumber(bnOrId);
+    public BlockResultDTO xdag_getBlockByNumber(String bnOrId, int page) {
+        return web3XdagModule.xdag_getBlockByNumber(bnOrId, page);
     }
 
     @Override
@@ -100,8 +100,8 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
-    public BlockResultDTO xdag_getBlockByHash(String blockHash) {
-        return web3XdagModule.xdag_getBlockByHash(blockHash);
+    public BlockResultDTO xdag_getBlockByHash(String blockHash, int page) {
+        return web3XdagModule.xdag_getBlockByHash(blockHash, page);
     }
 
     @Override

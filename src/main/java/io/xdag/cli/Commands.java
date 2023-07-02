@@ -515,7 +515,7 @@ public class Commands {
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
         }
-        for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow())) {
+        for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow(), 1)) {
             Address address = txHistory.getAddress();
             BlockInfo blockInfo = kernel.getBlockchain().getBlockByHash(address.getAddress(), false).getInfo();
             if((blockInfo.flags&BI_APPLIED)==0){
@@ -701,7 +701,7 @@ public class Commands {
         return String.format("%s", balance[0].toDecimal(9, XUnit.XDAG).toPlainString());
     }
 
-    public String address(Bytes32 wrap) {
+    public String address(Bytes32 wrap, int page) {
         String ov = " OverView" + "\n"
                 + String.format(" address: %s", toBase58(hash2byte(wrap.mutableCopy()))) + "\n"
                 + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(hash2byte(wrap.mutableCopy())).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
@@ -713,7 +713,7 @@ public class Commands {
                        """;
         StringBuilder tx = new StringBuilder();
 
-        for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(wrap)) {
+        for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(wrap, page)) {
             Address address = txHistory.getAddress();
             Block block = kernel.getBlockchain().getBlockByHash(address.getAddress(), false);
             if(block != null){
