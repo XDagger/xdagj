@@ -92,4 +92,6 @@ public interface Config {
     SnapshotSpec getSnapshotSpec();
 
     RandomxSpec getRandomxSpec();
+
+    boolean getEnableTxHistory();
 }

@@ -225,17 +225,19 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         allBalance = allBalance.add(blockInfo.getAmount());
                         blockStore.saveBlockInfo(blockInfo);
 
-                        XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
-                        Address address = new Address(Bytes32.wrap(blockInfo.getHashlow()), fieldType, blockInfo.getAmount(),false);
+                        if(txHistoryStore != null) {
+                            XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
+                            Address address = new Address(Bytes32.wrap(blockInfo.getHashlow()), fieldType, blockInfo.getAmount(),false);
 
-                        TxHistory txHistory = new TxHistory();
-                        txHistory.setAddress(address);
-                        if(blockInfo.getRemark() != null) {
-                            txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
+                            TxHistory txHistory = new TxHistory();
+                            txHistory.setAddress(address);
+                            if(blockInfo.getRemark() != null) {
+                                txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
+                            }
+                            txHistory.setTimestamp(snapshotTime);
+
+                            txHistoryStore.saveTxHistory(txHistory);
                         }
-                        txHistory.setTimestamp(snapshotTime);
-
-                        txHistoryStore.saveTxHistory(txHistory);
                     }
                 } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
@@ -270,15 +272,15 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     }
                     addressStore.snapshotAddress(address, balance);
 
-                    XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
-                    Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), fieldType, balance,false);
-
-                    TxHistory txHistory = new TxHistory();
-                    txHistory.setAddress(addr);
-                    txHistory.setRemark("snapshot");
-                    txHistory.setTimestamp(snapshotTime);
-
-                    txHistoryStore.saveTxHistory(txHistory);
+                    if(txHistoryStore != null) {
+                        XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
+                        Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), fieldType, balance,false);
+                        TxHistory txHistory = new TxHistory();
+                        txHistory.setAddress(addr);
+                        txHistory.setRemark("snapshot");
+                        txHistory.setTimestamp(snapshotTime);
+                        txHistoryStore.saveTxHistory(txHistory);
+                    }
                 }
             }
         }

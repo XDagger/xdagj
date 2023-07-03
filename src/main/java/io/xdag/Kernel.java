@@ -212,8 +212,10 @@ public class Kernel {
         log.info("Orphan Pool init.");
         orphanBlockStore.init();
 
-        txHistoryStore = new TransactionHistoryStoreImpl();
-        log.info("Transaction History Store init.");
+        if(config.getEnableTxHistory()) {
+            txHistoryStore = new TransactionHistoryStoreImpl();
+            log.info("Transaction History Store init.");
+        }
 
         // ====================================
         // netstatus netdb init

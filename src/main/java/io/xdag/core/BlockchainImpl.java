@@ -503,19 +503,25 @@ public class BlockchainImpl implements Blockchain {
 
     public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
             XAmount amount, long time, byte[] remark) {
-        Address address = new Address(addressHashlow, type, amount,false);
-        TxHistory txHistory = new TxHistory();
-        txHistory.setAddress(address);
-        txHistory.setHash(BasicUtils.hash2Address(txHashlow));
-        if(remark != null) {
-            txHistory.setRemark(new String(remark, StandardCharsets.UTF_8));
+        if(txHistoryStore != null) {
+            Address address = new Address(addressHashlow, type, amount,false);
+            TxHistory txHistory = new TxHistory();
+            txHistory.setAddress(address);
+            txHistory.setHash(BasicUtils.hash2Address(txHashlow));
+            if(remark != null) {
+                txHistory.setRemark(new String(remark, StandardCharsets.UTF_8));
+            }
+            txHistory.setTimestamp(time);
+            txHistoryStore.saveTxHistory(txHistory);
         }
-        txHistory.setTimestamp(time);
-        txHistoryStore.saveTxHistory(txHistory);
     }
 
     public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page) {
-        return txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page);
+        if(txHistoryStore == null) {
+            return Lists.newArrayList();
+        } else {
+            return txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page);
+        }
     }
 
     /**

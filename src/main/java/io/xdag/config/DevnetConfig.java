@@ -36,19 +36,13 @@ public class DevnetConfig extends AbstractConfig {
     public DevnetConfig() {
         super("devnet", "xdag-devnet");
         this.whitelistUrl = StringUtils.EMPTY;
-
         this.waitEpoch = 1;
-
         this.xdagEra = 0x16900000000L;
         this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
-
         this.apolloForkHeight = 1000;
         this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
-
-        this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";
         this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
-
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }
 
