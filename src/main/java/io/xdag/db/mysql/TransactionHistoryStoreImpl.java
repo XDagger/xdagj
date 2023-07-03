@@ -57,8 +57,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
     @Override
     public void saveTxHistory(TxHistory txHistory) {
-        Connection conn;
-        PreparedStatement pstmt;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
 
         try {
             conn = DruidUtils.getConnection();
@@ -77,6 +77,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        } finally {
+            DruidUtils.close(conn, pstmt);
         }
     }
 
