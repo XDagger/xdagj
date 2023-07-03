@@ -221,6 +221,8 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>about.html</exclude>
+                                        <exclude>log4j2.xml</exclude>
+                                        <exclude>rpc_modules.conf</exclude>
                                         <exclude>druid.properties</exclude>
                                         <exclude>xdag-devnet.conf</exclude>
                                         <exclude>xdag-testnet.conf</exclude>
@@ -320,6 +322,8 @@
                                       tofile="${dist.base}/windows/xdag-testnet.conf"/>
                                 <copy file="src/main/resources/xdag-devnet.conf"
                                       tofile="${dist.base}/windows/xdag-devnet.conf"/>
+                                <copy file="src/main/resources/rpc_modules.conf"
+                                      tofile="${dist.base}/windows/rpc_modules.conf"/>
                                 <copy file="src/main/resources/druid.properties"
                                       tofile="${dist.base}/windows/druid.properties"/>
                                 <copy file="${dist.base}/xdag.bat"
@@ -339,6 +343,8 @@
                                       tofile="${dist.base}/linux/xdag-testnet.conf"/>
                                 <copy file="src/main/resources/xdag-devnet.conf"
                                       tofile="${dist.base}/linux/xdag-devnet.conf"/>
+                                <copy file="src/main/resources/rpc_modules.conf"
+                                      tofile="${dist.base}/linux/rpc_modules.conf"/>
                                 <copy file="src/main/resources/druid.properties"
                                       tofile="${dist.base}/linux/druid.properties"/>
                                 <copy file="${dist.base}/xdag.sh"
@@ -359,6 +365,8 @@
                                       tofile="${dist.base}/macos/xdag-testnet.conf"/>
                                 <copy file="src/main/resources/xdag-devnet.conf"
                                       tofile="${dist.base}/macos/xdag-devnet.conf"/>
+                                <copy file="src/main/resources/rpc_modules.conf"
+                                      tofile="${dist.base}/macos/rpc_modules.conf"/>
                                 <copy file="src/main/resources/druid.properties"
                                       tofile="${dist.base}/macos/druid.properties"/>
                                 <copy file="${dist.base}/xdag.sh"

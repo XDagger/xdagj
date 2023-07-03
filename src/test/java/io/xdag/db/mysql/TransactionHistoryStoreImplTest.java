@@ -28,6 +28,7 @@ import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.WalletUtils.toBase58;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -56,7 +57,7 @@ public class TransactionHistoryStoreImplTest {
                 `fid` int NOT NULL AUTO_INCREMENT,
                 `faddress` varchar(64) NOT NULL,
                 `fhash` varchar(64) NOT NULL,
-                `famount` decimal(10,9) NOT NULL,
+                `famount` decimal(20,9) NOT NULL,
                 `ftype` tinyint NOT NULL,
                 `fremark` varchar(64) DEFAULT NULL,
                 `ftime` datetime NOT NULL,
@@ -93,9 +94,9 @@ public class TransactionHistoryStoreImplTest {
         txHistory.setHash(hash);
         txHistory.setRemark(remark);
         txHistory.setTimestamp(timestamp);
-        txHistoryStore.saveTxHistory(txHistory);
+        assertTrue(txHistoryStore.saveTxHistory(txHistory));
 
-        String addr = input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress());
+        String addr = input.getIsAddress()?toBase58(hash2byte(input.getAddress())):hash2Address(input.getAddress());
         List<TxHistory> txHistoryList = txHistoryStore.listTxHistoryByAddress(addr, 1);
         assertNotNull(txHistoryList);
         assertEquals(1, txHistoryList.size());

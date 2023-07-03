@@ -56,10 +56,11 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private static final int PAGE_SIZE = 100;
 
     @Override
-    public void saveTxHistory(TxHistory txHistory) {
+    public boolean saveTxHistory(TxHistory txHistory) {
         Connection conn = null;
         PreparedStatement pstmt = null;
 
+        boolean result = false;
         try {
             conn = DruidUtils.getConnection();
             if (conn != null) {
@@ -73,13 +74,14 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt.setInt(4, txHistory.getAddress().getType().asByte());
                 pstmt.setString(5, txHistory.getRemark());
                 pstmt.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
-                pstmt.execute();
+                result = pstmt.executeUpdate() == 1;
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
             DruidUtils.close(conn, pstmt);
         }
+        return result;
     }
 
     @Override
