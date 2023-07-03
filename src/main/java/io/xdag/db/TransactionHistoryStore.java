@@ -29,7 +29,7 @@ import io.xdag.core.TxHistory;
 
 public interface TransactionHistoryStore {
 
-    void saveTxHistory(TxHistory txHistory);
+    boolean saveTxHistory(TxHistory txHistory);
 
     List<TxHistory> listTxHistoryByAddress(String address, int page);
 

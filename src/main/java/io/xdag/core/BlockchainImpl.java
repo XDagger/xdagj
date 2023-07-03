@@ -42,6 +42,7 @@ import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
@@ -369,34 +370,22 @@ public class BlockchainImpl implements Blockchain {
 
             // remove links
             for (Address ref : all) {
+                FieldType fType;
                 if(!ref.isAddress){
                     removeOrphan(ref.getAddress(),
                             (block.getInfo().flags & BI_EXTRA) != 0
                                     ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                                     : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
-                    // TODO:
-                    //  add backref
-                    //  add newAddress tx history
-                    if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
-                        if (ref.getType().equals(FieldType.XDAG_FIELD_IN)) {
-                            onNewTxHistory(ref.getAddress(), block.getHashLow(), FieldType.XDAG_FIELD_OUT, ref.getAmount(),
-                                    block.getTimestamp(), block.getInfo().getRemark());
-                        } else {
-                            onNewTxHistory(ref.getAddress(), block.getHashLow(), FieldType.XDAG_FIELD_IN, ref.getAmount(),
-                                    block.getTimestamp(), block.getInfo().getRemark());
-                        }
-                    }
+
+                    fType = ref.getType().equals(XDAG_FIELD_IN)?XDAG_FIELD_OUT:XDAG_FIELD_IN;
                 } else {
-                    //Record transaction history of public key addresses
-                    if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
-                        if (ref.getType().equals(XDAG_FIELD_INPUT)) {
-                            onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_OUTPUT, ref.getAmount(),
-                                    block.getTimestamp(), block.getInfo().getRemark());
-                        } else {
-                            onNewTxHistory(ref.getAddress(), block.getHashLow(), XDAG_FIELD_INPUT, ref.getAmount(),
-                                    block.getTimestamp(), block.getInfo().getRemark());
-                        }
-                    }
+                    fType = ref.getType().equals(XDAG_FIELD_INPUT)?XDAG_FIELD_OUTPUT:XDAG_FIELD_INPUT;
+                }
+
+                if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
+                    onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
+                            block.getTimestamp(), block.getInfo().getRemark());
+
                 }
             }
 
@@ -512,16 +501,26 @@ public class BlockchainImpl implements Blockchain {
                 txHistory.setRemark(new String(remark, StandardCharsets.UTF_8));
             }
             txHistory.setTimestamp(time);
-            txHistoryStore.saveTxHistory(txHistory);
+            try {
+                if(!txHistoryStore.saveTxHistory(txHistory)) {
+                    log.warn("tx history write fail:{}", txHistory);
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
         }
     }
 
     public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page) {
-        if(txHistoryStore == null) {
-            return Lists.newArrayList();
-        } else {
-            return txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page);
+        List<TxHistory> txHistory = Lists.newArrayList();
+        if(txHistoryStore != null) {
+            try {
+                txHistory.addAll(txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page));
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
         }
+        return txHistory;
     }
 
     /**
@@ -720,7 +719,7 @@ public class BlockchainImpl implements Blockchain {
 
         for (Address link : links) {
             MutableBytes32 linkAddress = link.getAddress();
-            if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
+            if (link.getType() == XDAG_FIELD_IN) {
                 /*
                  * Compatible with two transfer modes.
                  * When the input is a block, the original processing method is used.
@@ -781,7 +780,7 @@ public class BlockchainImpl implements Blockchain {
             MutableBytes32 linkAddress = link.addressHash;
             if(!link.isAddress){
                 Block ref = getBlockByHash(linkAddress, false);
-                if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
+                if (link.getType() == XDAG_FIELD_IN) {
                     subtractAndAccept(ref,link.getAmount());
                     XAmount allBalance = addressStore.getAllBalance();
                     allBalance = allBalance.add(link.getAmount());
@@ -814,7 +813,7 @@ public class BlockchainImpl implements Blockchain {
             for (Address link : links) {
                 if(!link.isAddress){
                     Block ref = getBlockByHash(link.getAddress(), false);
-                    if (link.getType() == XdagField.FieldType.XDAG_FIELD_IN) {
+                    if (link.getType() == XDAG_FIELD_IN) {
                         addAndAccept(ref,link.getAmount());
                         sum = sum.subtract(link.getAmount());
                         XAmount allBalance = addressStore.getAllBalance();
