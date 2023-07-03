@@ -61,8 +61,6 @@ public interface NodeSpec {
 
     String getLibp2pPrivkey();
 
-    String getDnetKeyFile();
-
     String getStoreDir();
 
     // Store

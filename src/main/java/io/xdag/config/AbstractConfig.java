@@ -91,6 +91,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int maxInboundConnectionsPerIp = 8;
     protected int connectionTimeout = 10000;
     protected int connectionReadTimeout = 10000;
+    protected boolean enableTxHistory = false;
 
     protected String rootDir;
     protected String storeDir;
@@ -105,7 +106,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     protected String whitelistUrl;
     protected boolean enableRefresh = false;
-    protected String dnetKeyFile;
     protected String walletKeyFile;
 
     protected int TTL = 5;
@@ -146,7 +146,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int rpcPortHttp;
     protected int rpcPortWs;
 
-
     // =========================
     // Xdag Snapshot
     // =========================
@@ -159,6 +158,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // Randomx Config
     // =========================
     protected boolean flag;
+
     protected AbstractConfig(String rootDir, String configName) {
         this.rootDir = rootDir;
         this.configName = configName;
@@ -244,6 +244,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         nodeIp = config.hasPath("node.ip")?config.getString("node.ip"):"127.0.0.1";
         nodePort = config.hasPath("node.port")?config.getInt("node.port"):8001;
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
+        enableTxHistory = config.hasPath("node.transaction.history.enable")?config.getBoolean("node.transaction.history.enable"):false;
 
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
@@ -441,6 +442,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     public boolean getRandomxFlag() {
         return flag;
     }
+
+    @Override
+    public boolean getEnableTxHistory() {return enableTxHistory;}
 
     @Override
     public void setSnapshotJ(boolean isSnapshot) {

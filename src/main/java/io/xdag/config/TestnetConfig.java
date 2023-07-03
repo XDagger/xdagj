@@ -34,20 +34,14 @@ public class TestnetConfig extends AbstractConfig {
     public TestnetConfig() {
         super("testnet", "xdag-testnet");
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
-
         // testnet wait 1 epoch
         this.waitEpoch = 1;
-
         this.xdagEra = 0x16900000000L;
         this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
-
         this.apolloForkHeight = 196250;
         this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
-
-        this.dnetKeyFile = this.rootDir + "/dnet_keys.bin";
         this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
-
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }
 
