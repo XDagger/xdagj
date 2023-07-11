@@ -121,7 +121,7 @@ public class AddressStoreImpl implements AddressStore {
     @Override
     public void snapshotAddress(byte[] address, XAmount balance) {
         UInt64 u64V = balance.toXAmount();
-        AddressSource.put(BytesUtils.merge(ADDRESS,address), u64V.toBytes().toArray());
+        AddressSource.put(address, u64V.toBytes().toArray());
     }
 
 }

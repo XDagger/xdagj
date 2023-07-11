@@ -56,6 +56,7 @@ import io.xdag.db.SnapshotStore;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -108,7 +109,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         blockInfo.setFee(preBlockInfo.getFee());
         blockInfo.setHash(preBlockInfo.getHash());
         blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(preBlockInfo.getAmount());
+        blockInfo.setAmount(XAmount.ofXAmount(preBlockInfo.getAmount().toLong()));
         blockInfo.setHashlow(preBlockInfo.getHashlow());
         blockInfo.setFlags(preBlockInfo.getFlags());
         blockInfo.setHeight(preBlockInfo.getHeight());
@@ -231,6 +232,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
 
                             TxHistory txHistory = new TxHistory();
                             txHistory.setAddress(address);
+                            txHistory.setHash(BasicUtils.hash2Address(address.getAddress()));
                             if(blockInfo.getRemark() != null) {
                                 txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
                             }
@@ -277,6 +279,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), fieldType, balance,false);
                         TxHistory txHistory = new TxHistory();
                         txHistory.setAddress(addr);
+                        txHistory.setHash(BasicUtils.hash2Address(addr.getAddress()));
                         txHistory.setRemark("snapshot");
                         txHistory.setTimestamp(snapshotTime);
                         txHistoryStore.saveTxHistory(txHistory);
