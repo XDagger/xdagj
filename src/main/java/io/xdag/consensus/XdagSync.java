@@ -24,15 +24,19 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-import static io.xdag.config.Constants.REQUEST_WAIT;
-
 import com.google.common.util.concurrent.SettableFuture;
 import io.xdag.Kernel;
+import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
+import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
+import io.xdag.core.Block;
+import io.xdag.core.XdagState;
 import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.manager.XdagChannelManager;
 import java.nio.ByteOrder;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -50,6 +54,8 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
+import static io.xdag.config.Constants.*;
+
 @Slf4j
 public class XdagSync {
 
@@ -66,12 +72,20 @@ public class XdagSync {
     @Getter
     private final ConcurrentHashMap<Long, SettableFuture<Bytes>> blocksRequestMap;
 
+    private final LinkedList<Long> syncWindow = new LinkedList<>();
+
     @Getter@Setter
     private Status status;
+
+    private final Kernel kernel;
     private ScheduledFuture<?> sendFuture;
     private volatile boolean isRunning;
 
+    private long lastRequestTime;
+    private int count;
+
     public XdagSync(Kernel kernel) {
+        this.kernel = kernel;
         this.channelMgr = kernel.getChannelMgr();
         this.blockStore = kernel.getBlockStore();
         sendTask = new ScheduledThreadPoolExecutor(1, factory);
@@ -88,74 +102,171 @@ public class XdagSync {
             status = Status.SYNCING;
             // TODO: paulochen 开始同步的时间点/快照时间点
 //            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
-            sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 64, 64, TimeUnit.SECONDS);
+            sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 32, 2, TimeUnit.SECONDS);
         }
     }
 
     private void syncLoop() {
-        log.debug("SyncLoop...");
+//        log.debug("SyncLoop...");
+        count++;
         try {
-            // TODO: paulochen 开始同步的时间点/快照时间点
-            requestBlocks(0, 1L << 48);
+            if (syncWindow.size() < 32) {
+                log.debug("start finding different time periods");
+                requestBlocks(0, 1L << 48);
+            }
+            if (getLastTime() >= lastRequestTime || count == 128) {
+                count = 0;
+                log.debug("start getting blocks");
+                getBlocks();
+            }
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
         }
-        log.debug("End syncLoop");
+//        log.debug("End syncLoop");
     }
 
+    /**
+     *  Use syncWindow to request blocks in segments.
+     */
+    private void getBlocks() {
+        List<Channel> any = getAnyNode();
+        if (any == null || any.size() == 0) {
+            return;
+        }
+        SettableFuture<Bytes> sf = SettableFuture.create();
+        int index = RandomUtils.nextInt() % any.size();
+        Channel xc = any.get(index);
+        long lastTime = getLastTime();
+
+        // Extract the time that has been synchronized.
+        while (!syncWindow.isEmpty() && syncWindow.get(0) < lastTime) {
+            syncWindow.pollFirst();
+        }
+
+        // Segmented requests, each request for 32 time periods.
+        int size = syncWindow.size();
+        for (int i = 0; i < 32; i++) {
+            if (i >= size) {
+                break;
+            }
+            long time = syncWindow.get(i);
+            sendGetBlocks(xc, time, sf);
+            if (i == 30) lastRequestTime = time;
+        }
+
+    }
+
+
+    /**
+     * @param t start time
+     * @param dt interval time
+     */
     private void requestBlocks(long t, long dt) {
         // 如果当前状态不是sync start
         if (status != Status.SYNCING) {
+            stop();
             return;
         }
-        List<Channel> any = getAnyNode();
-        long randomSeq;
-        SettableFuture<Bytes> sf = SettableFuture.create();
-        if (any != null && any.size() != 0) {
-            // TODO:随机选一个
-            int index = RandomUtils.nextInt() % any.size();
-            Channel xc = any.get(index);
-            if (dt <= REQUEST_BLOCKS_MAX_TIME) {
-                randomSeq = xc.getXdag().sendGetBlocks(t, t + dt);
-                blocksRequestMap.put(randomSeq, sf);
-                try {
-                    sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    blocksRequestMap.remove(randomSeq);
-                    log.error(e.getMessage(), e);
-                    return;
-                }
-                blocksRequestMap.remove(randomSeq);
-            } else {
-                MutableBytes lSums = MutableBytes.create(256);
-                Bytes rSums;
-                if (blockStore.loadSum(t, t + dt, lSums) <= 0) {
-                    return;
-                }
-                randomSeq = xc.getXdag().sendGetSums(t, t + dt);
-                sumsRequestMap.put(randomSeq, sf);
-                try {
-                    Bytes sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
-                    rSums = sums.copy();
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    sumsRequestMap.remove(randomSeq);
-                    log.error(e.getMessage(), e);
-                    return;
-                }
-                sumsRequestMap.remove(randomSeq);
-                dt >>= 4;
-                for (int i = 0; i < 16; i++) {
-                    long lSumsSum = lSums.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
-                    long lSumsSize = lSums.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
-                    long rSumsSum = rSums.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
-                    long rSumsSize = rSums.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
 
-                    if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
-                        requestBlocks(t + i * dt, dt);
-                    }
-                }
+        List<Channel> any = getAnyNode();
+        if (any == null || any.size() == 0) {
+            return;
+        }
+
+        SettableFuture<Bytes> sf = SettableFuture.create();
+        int index = RandomUtils.nextInt() % any.size();
+        Channel xc = any.get(index);
+        if (dt > REQUEST_BLOCKS_MAX_TIME) {
+            findGetBlocks(xc, t, dt, sf);
+        } else {
+            if (!kernel.getSyncMgr().isSyncOld() && !kernel.getSyncMgr().isSync()) {
+                log.debug("set sync old");
+                setSyncOld();
+            }
+
+            if ((syncWindow.isEmpty() || t > syncWindow.peekFirst()) && syncWindow.size() < 2048) {
+                syncWindow.offerLast(t);
             }
         }
+    }
+
+    /**
+     * Request blocks from remote nodes.
+     * @param t request time
+     */
+    private void sendGetBlocks(Channel xc, long t, SettableFuture<Bytes> sf) {
+        long randomSeq = xc.getXdag().sendGetBlocks(t, t + REQUEST_BLOCKS_MAX_TIME);
+        blocksRequestMap.put(randomSeq, sf);
+        try {
+            sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            blocksRequestMap.remove(randomSeq);
+            log.error(e.getMessage(), e);
+        }
+    }
+
+
+    /**
+     * Recursively find the time periods to request.
+     */
+    private void findGetBlocks(Channel xc, long t, long dt, SettableFuture<Bytes> sf) {
+        MutableBytes lSums = MutableBytes.create(256);
+        Bytes rSums;
+        if (blockStore.loadSum(t, t + dt, lSums) <= 0) {
+            return;
+        }
+        long randomSeq = xc.getXdag().sendGetSums(t, t + dt);
+        sumsRequestMap.put(randomSeq, sf);
+        try {
+            Bytes sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
+            rSums = sums.copy();
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            sumsRequestMap.remove(randomSeq);
+            log.error(e.getMessage(), e);
+            return;
+        }
+        sumsRequestMap.remove(randomSeq);
+        dt >>= 4;
+        for (int i = 0; i < 16; i++) {
+            long lSumsSum = lSums.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
+            long lSumsSize = lSums.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
+            long rSumsSum = rSums.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
+            long rSumsSize = rSums.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
+
+            if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
+                requestBlocks(t + i * dt, dt);
+            }
+        }
+    }
+
+    public void setSyncOld() {
+        Config config = kernel.getConfig();
+        if (config instanceof MainnetConfig) {
+            if (kernel.getXdagState() != XdagState.CONNP) {
+                kernel.setXdagState(XdagState.CONNP);
+            }
+        } else if (config instanceof TestnetConfig) {
+            if (kernel.getXdagState() != XdagState.CTSTP) {
+                kernel.setXdagState(XdagState.CTSTP);
+            }
+        } else if (config instanceof DevnetConfig) {
+            if (kernel.getXdagState() != XdagState.CDSTP) {
+                kernel.setXdagState(XdagState.CDSTP);
+            }
+        }
+    }
+
+    /**
+     * Obtain the timestamp of the latest confirmed main block.
+     */
+    public long getLastTime() {
+        long height = blockStore.getXdagStatus().nmain;
+        if(height == 0) return 0;
+        Block lastBlock = blockStore.getBlockByHeight(height);
+        if (lastBlock != null) {
+            return lastBlock.getTimestamp();
+        }
+        return 0;
     }
 
     public List<Channel> getAnyNode() {
@@ -167,7 +278,6 @@ public class XdagSync {
         log.debug("stop sync");
         if (isRunning) {
             try {
-
                 if (sendFuture != null) {
                     sendFuture.cancel(true);
                 }

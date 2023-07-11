@@ -79,6 +79,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
             // TODO:process xdagblock transport header
             int ttl = (int) ((BytesUtils.bytesToLong(unCryptData, 0, true) >> 8) & 0xff);
+            boolean isOld = ((BytesUtils.bytesToLong(unCryptData, 0, true) >> 31) & 1) == 1;
             if (isDataIllegal(unCryptData.clone())) {
                 log.debug("Receive error block!");
                 return;
@@ -92,7 +93,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             // 普通区块
             XdagField.FieldType netType = channel.getKernel().getConfig().getXdagFieldHeader();
             if (netType.asByte() == first_field_type) {
-                msg = new NewBlockMessage(xdagBlock, ttl);
+                msg = new NewBlockMessage(xdagBlock, ttl, isOld);
             }
             // 消息区块
             else if (XdagField.FieldType.XDAG_FIELD_NONCE.asByte() == first_field_type) {
@@ -111,7 +112,8 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
     public boolean isDataIllegal(byte[] uncryptData) {
         long transportHeader = BytesUtils.bytesToLong(uncryptData, 0, true);
-        long dataLength = (transportHeader >> 16 & 0xffff);
+        // Read bits 17 to 31 to get the length, and the 32nd bit stores the isOld flag.
+        long dataLength = (transportHeader >> 16 & 0x7fff);
         int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
         // clean transport header
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);

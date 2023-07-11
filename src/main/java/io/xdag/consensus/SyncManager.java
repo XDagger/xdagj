@@ -24,9 +24,12 @@
 
 package io.xdag.consensus;
 
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.core.ImportResult.EXIST;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+import static io.xdag.core.XdagState.*;
+import static io.xdag.utils.XdagTime.msToXdagtimestamp;
 
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
@@ -34,26 +37,20 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagState;
+import io.xdag.core.*;
 import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -65,11 +62,17 @@ public class SyncManager {
     public static final int MAX_SIZE = 500000;
     //If syncMap.size() > MAX_SIZE remove number of keys;
     public static final int DELETE_NUM = 5000;
+
+    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+            .namingPattern("SyncManager-thread-%d")
+            .daemon(true)
+            .build();
     private Kernel kernel;
     private Blockchain blockchain;
     private long importStart;
     private AtomicLong importIdleTime = new AtomicLong();
     private AtomicBoolean syncDone = new AtomicBoolean(false);
+    private AtomicBoolean isUpdateXdagStats = new AtomicBoolean(false);
     private XdagChannelManager channelMgr;
     private ScheduledFuture<?> connectlibp2pFuture;
     private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
@@ -89,16 +92,50 @@ public class SyncManager {
      * Queue for poll oldest block
      */
 //    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Bytes32> syncQueue = new ConcurrentLinkedQueue<>();
+
+    private ScheduledExecutorService checkStateTask;
+
+    private ScheduledFuture<?> checkStateFuture;
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
         this.stateListener = new StateListener();
+        checkStateTask = new ScheduledThreadPoolExecutor(1, factory);
     }
 
-    public void start() {
+    public void start() throws InterruptedException {
         log.debug("Download receiveBlock run...");
         new Thread(this.stateListener, "xdag-stateListener").start();
+        checkStateFuture = checkStateTask.scheduleAtFixedRate(this::checkState, 64, 5, TimeUnit.SECONDS);
+    }
+
+    private void checkState() {
+        if (!isUpdateXdagStats.get()) {
+            return;
+        }
+        if (syncDone.get()) {
+            stopStateTask();
+            return;
+        }
+
+        XdagStats xdagStats = kernel.getBlockchain().getXdagStats();
+        XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
+        long lastTime = kernel.getSync().getLastTime();
+        long curTime = msToXdagtimestamp(System.currentTimeMillis());
+        long curHeight = xdagStats.nmain;
+        long maxHeight = xdagStats.totalnmain;
+        if (!isSync() && (curHeight >= maxHeight - 512 || lastTime >= curTime - 32*REQUEST_BLOCKS_MAX_TIME)) {
+            log.debug("our node height:{} the max height:{}, set sync state", curHeight, maxHeight);
+            setSyncState();
+        }
+        if (curHeight >= maxHeight || xdagTopStatus.getTopDiff().compareTo(xdagStats.maxdifficulty) >= 0) {
+            log.debug("our node height:{} the max height:{}, our diff:{} max diff:{}, make sync done",
+                    curHeight, maxHeight, xdagTopStatus.getTopDiff(), xdagStats.maxdifficulty);
+            makeSyncDone();
+        }
+
     }
 
     /**
@@ -107,23 +144,9 @@ public class SyncManager {
     public boolean isTimeToStart() {
         boolean res = false;
         Config config = kernel.getConfig();
-        if (config instanceof MainnetConfig) {
-            if (kernel.getXdagState() != XdagState.CONN && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
-                    .getPoolSpec().getWaitEpoch())) {
-                res = true;
-            }
-        } else if (config instanceof TestnetConfig){
-            if (kernel.getXdagState() != XdagState.CTST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
-                    .getPoolSpec().getWaitEpoch())) {
-                res = true;
-            }
-        } else if (config instanceof DevnetConfig){
-            if (kernel.getXdagState() != XdagState.CDST && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + config
-                    .getPoolSpec().getWaitEpoch())) {
-                res = true;
-            }
-        } else {
-            throw new IllegalStateException("error xdag network type." + config.toString());
+        int waitEpoch = config.getPoolSpec().getWaitEpoch();
+        if (!isSync() && !isSyncOld() && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + waitEpoch)) {
+            res = true;
         }
         if(res){
             log.debug("Waiting time exceeded,starting pow");
@@ -144,36 +167,13 @@ public class SyncManager {
             log.debug("Block have exist:" + blockWrapper.getBlock().getHashLow());
         }
 
-        if (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST) {
-            BigInteger currentDiff = blockchain.getXdagTopStatus().getTopDiff();
-
-            Config config = kernel.getConfig();
-            // 状态设置为正在同步
-            if (!syncDone.get()) {
-                if (config instanceof MainnetConfig) {
-                    kernel.setXdagState(XdagState.CONN);
-                } else if (config instanceof TestnetConfig) {
-                    kernel.setXdagState(XdagState.CTST);
-                } else if (config instanceof DevnetConfig) {
-                    kernel.setXdagState(XdagState.CDST);
-                }
-
-                if((blockchain.getXdagStats().getMaxdifficulty().compareTo(BigInteger.ZERO) > 0) &&
-                        (currentDiff.compareTo(blockchain.getXdagStats().getMaxdifficulty()) >= 0)) {
-                    log.debug("StatusDiff:{},StatsDiff:{},StatusDiff >= StatsDiff starting pow.",currentDiff,blockchain.getXdagStats().getMaxdifficulty());
-                    makeSyncDone();
+        if (!blockWrapper.isOld() && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
+            if (blockWrapper.getRemoteNode() == null
+                    || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
+                if (blockWrapper.getTtl() > 0) {
+                    distributeBlock(blockWrapper);
                 }
             }
-
-            // TODO:extra区块不广播
-//            if (importResult != IMPORTED_EXTRA) {
-                if (blockWrapper.getRemoteNode() == null
-                        || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
-                    if (blockWrapper.getTtl() > 0) {
-                        distributeBlock(blockWrapper);
-                    }
-                }
-//            }
         }
         return importResult;
     }
@@ -190,7 +190,7 @@ public class SyncManager {
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
                         if (channel.getNode().equals(blockWrapper.getRemoteNode())) {
-                            channel.getXdag().sendGetBlock(result.getHashlow());
+                            channel.getXdag().sendGetBlock(result.getHashlow(), blockWrapper.isOld());
 
                         }
                     }
@@ -280,7 +280,7 @@ public class SyncManager {
                         List<Channel> channels = channelMgr.getActiveChannels();
                         for (Channel channel : channels) {
                             if (channel.getNode().equals(bw.getRemoteNode())) {
-                                channel.getXdag().sendGetBlock(importResult.getHashlow());
+                                channel.getXdag().sendGetBlock(importResult.getHashlow(), blockWrapper.isOld());
                             }
                         }
                     }
@@ -322,11 +322,41 @@ public class SyncManager {
         }
     }
 
+    public void setSyncState() {
+        Config config = kernel.getConfig();
+        if (config instanceof MainnetConfig) {
+            kernel.setXdagState(CONN);
+        } else if (config instanceof TestnetConfig) {
+            kernel.setXdagState(CTST);
+        } else if (config instanceof DevnetConfig) {
+            kernel.setXdagState(CDST);
+        }
+    }
+
+    public boolean isSync() {
+        return kernel.getXdagState() == CONN || kernel.getXdagState() == CTST
+                || kernel.getXdagState() == CDST;
+    }
+
+    public boolean isSyncOld() {
+        return kernel.getXdagState() == CONNP || kernel.getXdagState() == CTSTP
+                || kernel.getXdagState() == CDSTP;
+    }
+
     public void stop() {
         log.debug("sync manager stop");
         if (this.stateListener.isRunning) {
             this.stateListener.isRunning = false;
         }
+        stopStateTask();
+    }
+
+    private void stopStateTask() {
+        if (checkStateFuture != null) {
+            checkStateFuture.cancel(true);
+        }
+        // 关闭线程池
+        checkStateTask.shutdownNow();
     }
 
     public void distributeBlock(BlockWrapper blockWrapper) {

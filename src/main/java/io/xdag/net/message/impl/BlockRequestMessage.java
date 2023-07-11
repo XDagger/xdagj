@@ -44,8 +44,8 @@ import org.apache.tuweni.bytes.MutableBytes32;
 @EqualsAndHashCode(callSuper = false)
 public class BlockRequestMessage extends AbstractMessage {
 
-    public BlockRequestMessage(MutableBytes hash, XdagStats xdagStats, NetDB currentDB) {
-        super(XdagMessageCodes.BLOCK_REQUEST, 0, 0, Bytes32.wrap(hash), xdagStats, currentDB);
+    public BlockRequestMessage(MutableBytes hash, XdagStats xdagStats, NetDB currentDB, boolean isOld) {
+        super(XdagMessageCodes.BLOCK_REQUEST, 0, 0, Bytes32.wrap(hash), xdagStats, currentDB, isOld);
     }
 
     public BlockRequestMessage(MutableBytes hash) {
@@ -90,6 +90,8 @@ public class BlockRequestMessage extends AbstractMessage {
         parsed = true;
         encoded = MutableBytes.create(512);
         int ttl = 1;
+        // This field is 0, can be used to store the isOld flag.
+        starttime = isOld ? 1L : starttime;
         long transportheader = (ttl << 8) | DNET_PKT_XDAG | (XDAG_BLOCK_SIZE << 16);
         long type = (codes.asByte() << 4) | XDAG_FIELD_NONCE.asByte();
 
@@ -144,6 +146,7 @@ public class BlockRequestMessage extends AbstractMessage {
 
         this.starttime = encoded.getLong(16, ByteOrder.LITTLE_ENDIAN);
         this.endtime = encoded.getLong(24, ByteOrder.LITTLE_ENDIAN);
+        this.isOld = this.starttime != 0;
         BigInteger maxdifficulty = encoded.slice(80, 16).toUnsignedBigInteger(ByteOrder.LITTLE_ENDIAN);
         long totalnblocks = encoded.getLong(104, ByteOrder.LITTLE_ENDIAN);
         long totalnmains = encoded.getLong(120, ByteOrder.LITTLE_ENDIAN);

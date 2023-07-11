@@ -61,6 +61,10 @@ public abstract class AbstractMessage extends Message {
     @Setter
     protected Bytes32 hash;
 
+    @Getter
+    @Setter
+    protected boolean isOld;
+
     /**
      * 获取对方节点的netstatus
      */
@@ -91,7 +95,7 @@ public abstract class AbstractMessage extends Message {
     }
 
     public AbstractMessage(XdagMessageCodes type, long starttime, long endtime, Bytes32 hash, XdagStats xdagStats,
-            NetDB currentDB) {
+            NetDB currentDB, boolean isOld) {
         parsed = true;
         this.starttime = starttime;
         this.endtime = endtime;
@@ -99,6 +103,7 @@ public abstract class AbstractMessage extends Message {
         this.xdagStats = xdagStats;
         this.codes = type;
         this.currentDB = currentDB;
+        this.isOld = isOld;
         encode();
     }
 

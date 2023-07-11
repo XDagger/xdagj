@@ -64,13 +64,25 @@ public enum XdagState {
      */
     CDST(0x08),
     /**
+     * Connected to the dev network. Synchronizing from low to high.
+     */
+    CDSTP(0x10),
+    /**
      * Connected to the test network. Synchronizing.
      */
     CTST(0x09),
     /**
+     * Connected to the test network. Synchronizing from low to high.
+     */
+    CTSTP(0x11),
+    /**
      * Connected to the main network. Synchronizing.
      */
     CONN(0x0a),
+    /**
+     * Connected to the main network. Synchronizing from low to high.
+     */
+    CONNP(0x12),
 
     /**
      * Synchronized with the  dev network. Normal testing.
@@ -134,6 +146,9 @@ public enum XdagState {
             case 0x0c -> "Synchronized with the test network. Normal testing.";
             case 0x0d -> "Synchronized with the main network. Normal operation.";
             case 0x0e -> "Waiting for transfer to complete.";
+            case 0x10 -> "Connected to the dev network. Synchronizing from low to high.";
+            case 0x11 -> "Connected to the test network. Synchronizing from low to high.";
+            case 0x12 -> "Connected to the main network. Synchronizing from low to high.";
             default -> "Abnormal State";
         };
     }
