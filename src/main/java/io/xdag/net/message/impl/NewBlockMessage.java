@@ -41,6 +41,8 @@ public class NewBlockMessage extends Message {
     private Block block;
     private int ttl;
 
+    private boolean isOld;
+
     /**
      * 不处理crc
      */
@@ -51,9 +53,10 @@ public class NewBlockMessage extends Message {
     /**
      * 处理crc 创建新的用于发送Block的message
      */
-    public NewBlockMessage(Block block, int ttl) {
+    public NewBlockMessage(Block block, int ttl, boolean isOld) {
         this.block = block;
         this.ttl = ttl;
+        this.isOld = isOld;
         this.parsed = true;
         encode();
     }
@@ -61,15 +64,20 @@ public class NewBlockMessage extends Message {
     /**
      * 不处理crc
      */
-    public NewBlockMessage(XdagBlock xdagBlock, int ttl) {
+    public NewBlockMessage(XdagBlock xdagBlock, int ttl, boolean isOld) {
         super(xdagBlock.getData().mutableCopy());
         this.xdagBlock = xdagBlock;
         this.ttl = ttl;
+        this.isOld = isOld;
     }
 
     public Block getBlock() {
         parse();
         return block;
+    }
+
+    public boolean getIsOld() {
+        return isOld;
     }
 
     private void parse() {
@@ -83,6 +91,10 @@ public class NewBlockMessage extends Message {
     private void encode() {
         this.encoded = this.block.getXdagBlock().getData().mutableCopy();
         long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16);
+        // The 32nd bit stores the isOld flag.
+        if (isOld) {
+            transportheader = transportheader | (1L << 31);
+        }
         this.encoded.set(0, Bytes.wrap(BytesUtils.longToBytes(transportheader, true)));
         updateCrc();
     }

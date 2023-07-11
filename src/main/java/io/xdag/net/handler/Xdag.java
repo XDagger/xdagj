@@ -37,7 +37,7 @@ public interface Xdag {
 
     long sendGetBlocks(long startTime, long endTime);
 
-    long sendGetBlock(MutableBytes32 hash);
+    long sendGetBlock(MutableBytes32 hash, boolean isOld);
 
     long sendGetSums(long startTime, long endTime);
 

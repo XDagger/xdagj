@@ -43,7 +43,7 @@ public class XdagAdapter implements Xdag {
     }
 
     @Override
-    public long sendGetBlock(MutableBytes32 hash) {
+    public long sendGetBlock(MutableBytes32 hash, boolean isOld) {
         // TODO Auto-generated method stub
         return 0;
     }

@@ -524,8 +524,8 @@ public class XdagPow implements PoW, Listener, Runnable {
             while (this.isRunning) {
                 if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
                     log.debug("CurrentTimestamp:{},sendTime:{} Timeout!",XdagTime.getCurrentTimestamp(),timeout);
-                    events.add(new Event(Event.Type.TIMEOUT));
                     timeout = -1;
+                    events.add(new Event(Event.Type.TIMEOUT));
                     continue;
                 }
                 try {

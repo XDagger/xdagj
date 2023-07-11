@@ -117,8 +117,12 @@ public class Xdag03 extends XdagHandler {
      */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getInetSocketAddress());
-        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode());
+        if(syncMgr.isSyncOld() && !msg.getIsOld()) {
+            return;
+        }
+        log.debug("processNewBlock:{} isOld:{} from node {}", block.getHashLow(),
+                msg.getIsOld(), channel.getInetSocketAddress());
+        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode(), msg.getIsOld());
         syncMgr.validateAndAddNewBlock(bw);
     }
 
@@ -126,7 +130,6 @@ public class Xdag03 extends XdagHandler {
      * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
      */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-//        log.debug("processBlocksRequest:" + msg);
         // 更新全网状态
         updateXdagStats(msg);
         long startTime = msg.getStarttime();
@@ -143,7 +146,8 @@ public class Xdag03 extends XdagHandler {
                 channel.getInetSocketAddress());
         List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
-            sendNewBlock(block, 1);
+            NewBlockMessage blockMsg = new NewBlockMessage(block, 1, true);
+            sendMessage(blockMsg);
         }
         sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats(),
                 netDBManager.getNetDB()));
@@ -189,9 +193,10 @@ public class Xdag03 extends XdagHandler {
         MutableBytes32 find = MutableBytes32.create();
         find.set(8, hash.reverse().slice(8, 24));
         Block block = blockchain.getBlockByHash(find, true);
+        int ttl = msg.isOld() ? 1 : kernel.getConfig().getNodeSpec().getTTL();
         if (block != null) {
-//            log.debug("processBlockRequest: findBlock" + Hex.toHexString(block.getHashLow()));
-            NewBlockMessage message = new NewBlockMessage(block, kernel.getConfig().getNodeSpec().getTTL());
+            log.debug("processBlockRequest: findBlock" + Bytes32.wrap(find).toHexString());
+            NewBlockMessage message = new NewBlockMessage(block, ttl, msg.isOld());
             sendMessage(message);
         }
     }
@@ -201,9 +206,8 @@ public class Xdag03 extends XdagHandler {
      */
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
-//        log.debug("sendNewBlock:" + Hex.toHexString(newBlock.getHashLow()));
         log.debug("send block:{} to node:{}", newBlock.getHashLow(), channel.getInetSocketAddress());
-        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
+        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL, false);
         sendMessage(msg);
     }
 
@@ -220,11 +224,11 @@ public class Xdag03 extends XdagHandler {
     }
 
     @Override
-    public long sendGetBlock(MutableBytes32 hash) {
+    public long sendGetBlock(MutableBytes32 hash, boolean isOld) {
 //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
         BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(),
-                netDBManager.getNetDB());
-        log.debug("Request block {} from node {}", hash, channel.getInetSocketAddress());
+                netDBManager.getNetDB(), isOld);
+        log.debug("Request block {} isOld:{} from node {}", hash, isOld, channel.getInetSocketAddress());
         sendMessage(msg);
         return msg.getRandom();
     }
@@ -257,6 +261,8 @@ public class Xdag03 extends XdagHandler {
     }
 
     public void updateXdagStats(AbstractMessage message) {
+        // Confirm that the remote stats has been updated, used to check local state.
+        syncMgr.getIsUpdateXdagStats().compareAndSet(false, true);
         XdagStats remoteXdagStats = message.getXdagStats();
         kernel.getBlockchain().getXdagStats().update(remoteXdagStats);
         kernel.getNetDBMgr().updateNetDB(message.getNetDB());
