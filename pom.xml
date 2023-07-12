@@ -39,8 +39,8 @@
         <okhttp.version>4.10.0</okhttp.version>
         <assertj-core.version>3.24.2</assertj-core.version>
         <crypto.version>22.10.4</crypto.version>
-        <bcprov-jdk18on.version>1.72</bcprov-jdk18on.version>
-        <bcpkix-jdk18on.version>1.72</bcpkix-jdk18on.version>
+        <bcprov-jdk18on.version>1.74</bcprov-jdk18on.version>
+        <bcpkix-jdk18on.version>1.74</bcpkix-jdk18on.version>
         <vertx-core.version>4.4.0</vertx-core.version>
         <discovery.version>22.2.0</discovery.version>
         <jsonrpc4j.version>1.6</jsonrpc4j.version>
