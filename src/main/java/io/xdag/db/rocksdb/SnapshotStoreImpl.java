@@ -228,8 +228,8 @@ public class SnapshotStoreImpl implements SnapshotStore {
                             }
                             txHistory.setTimestamp(snapshotTime);
                             count++;
-                            boolean res = txHistoryStore.batchSaveTxHistory(txHistory, count, isEnd);
-                            if (res) {
+                            boolean writeResult = txHistoryStore.batchSaveTxHistory(txHistory, count, isEnd);
+                            if (writeResult) {
                                 count = 0;
                             }
                             iter.next();

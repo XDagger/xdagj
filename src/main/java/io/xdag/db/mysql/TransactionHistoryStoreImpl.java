@@ -115,7 +115,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 try {
                     conn.close();
                     pstmt.close();
-                    log.info("close mysql");
+                    log.info("The snapshot loading is complete, close mysql.");
                 } catch (SQLException e) {
                     log.error(e.getMessage(), e);
                 }
