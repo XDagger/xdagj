@@ -23,14 +23,14 @@
  */
 package io.xdag.db;
 
-import java.util.List;
-
 import io.xdag.core.TxHistory;
+
+import java.util.List;
 
 public interface TransactionHistoryStore {
 
     boolean saveTxHistory(TxHistory txHistory);
-
+    boolean batchSaveTxHistory(TxHistory txHistory );
     List<TxHistory> listTxHistoryByAddress(String address, int page);
 
     int getTxHistoryCount(String address);

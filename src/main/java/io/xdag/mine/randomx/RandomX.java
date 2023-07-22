@@ -24,16 +24,6 @@
 
 package io.xdag.mine.randomx;
 
-import static io.xdag.config.RandomXConstants.RANDOMX_FORK_HEIGHT;
-import static io.xdag.config.RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT;
-import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_BLOCKS;
-import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_LAG;
-import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS;
-import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG;
-import static io.xdag.config.RandomXConstants.XDAG_RANDOMX;
-import static io.xdag.utils.BytesUtils.bytesToPointer;
-import static io.xdag.utils.BytesUtils.equalBytes;
-
 import com.sun.jna.Memory;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
@@ -47,14 +37,19 @@ import io.xdag.crypto.randomx.RandomXFlag;
 import io.xdag.crypto.randomx.RandomXJNA;
 import io.xdag.crypto.randomx.RandomXUtils;
 import io.xdag.utils.XdagTime;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
+
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static io.xdag.config.RandomXConstants.*;
+import static io.xdag.utils.BytesUtils.bytesToPointer;
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 
 @Slf4j
@@ -429,10 +424,11 @@ public class RandomX {
         Block block;
         long seedEpoch = isTestNet ? SEEDHASH_EPOCH_TESTNET_BLOCKS : SEEDHASH_EPOCH_BLOCKS;
         if (blockchain.getXdagStats().nmain >= config.getSnapshotSpec().getSnapshotHeight()) {
-            block = blockchain.getBlockByHeight(
-                    config.getSnapshotSpec().getSnapshotHeight()-config.getSnapshotSpec().getSnapshotHeight()%seedEpoch);
-            randomXForkTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag;
-
+            if(config.getSnapshotSpec().getSnapshotHeight()>RANDOMX_FORK_HEIGHT) {
+                block = blockchain.getBlockByHeight(
+                        config.getSnapshotSpec().getSnapshotHeight() - config.getSnapshotSpec().getSnapshotHeight() % seedEpoch);
+                randomXForkTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag;
+            }
             seedEpoch -= 1;
             long seedHeight = blockchain.getXdagStats().nmain & ~seedEpoch;
             long preSeedHeight = seedHeight - seedEpoch - 1;
