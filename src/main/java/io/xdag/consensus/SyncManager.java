@@ -24,13 +24,6 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-import static io.xdag.core.ImportResult.EXIST;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagState.*;
-import static io.xdag.utils.XdagTime.msToXdagtimestamp;
-
 import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
@@ -38,21 +31,27 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.core.*;
+import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
 import io.xdag.net.libp2p.discovery.DiscoveryPeer;
 import io.xdag.net.manager.XdagChannelManager;
 import io.xdag.utils.XdagTime;
-import java.math.BigInteger;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.core.ImportResult.*;
+import static io.xdag.core.XdagState.*;
+import static io.xdag.utils.XdagTime.msToXdagtimestamp;
 
 @Slf4j
 @Getter
@@ -97,12 +96,14 @@ public class SyncManager {
     private ScheduledExecutorService checkStateTask;
 
     private ScheduledFuture<?> checkStateFuture;
+    private final TransactionHistoryStore txHistoryStore;
     public SyncManager(Kernel kernel) {
         this.kernel = kernel;
         this.blockchain = kernel.getBlockchain();
         this.channelMgr = kernel.getChannelMgr();
         this.stateListener = new StateListener();
         checkStateTask = new ScheduledThreadPoolExecutor(1, factory);
+        this.txHistoryStore = kernel.getTxHistoryStore();
     }
 
     public void start() throws InterruptedException {
@@ -315,7 +316,7 @@ public class SyncManager {
             log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
             kernel.getSync().setStatus(XdagSync.Status.SYNC_DONE);
             log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
-
+            txHistoryStore.batchSaveTxHistory(null);
             // 检查主块链
             kernel.getMinerServer().start();
             kernel.getPow().start();

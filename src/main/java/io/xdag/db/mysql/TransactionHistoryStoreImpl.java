@@ -44,14 +44,15 @@ import static io.xdag.utils.WalletUtils.toBase58;
 public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
     private static final String SQL_INSERT = "insert into t_transaction_history(faddress,fhash,famount,ftype,fremark,ftime) values(?,?,?,?,?,?)";
-
-    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS = "select faddress,fhash,famount,ftype,fremark,ftime from t_transaction_history where faddress= ? order by fid desc limit ?,?";
-
     private static final String SQL_QUERY_TXHISTORY_COUNT = "select count(*) from t_transaction_history where faddress=?";
+    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS_ORDER_BY_TIME_DESC= "select faddress,fhash,famount,ftype,fremark,ftime " +
+            "from t_transaction_history where faddress= ? order by ftime desc limit ?,?";
 
     private static final int PAGE_SIZE = 100;
-    private Connection conn = null;
-    private PreparedStatement pstmt = null;
+    private Connection connBatch = null;
+    private PreparedStatement pstmtBatch = null;
+    private int count = 0;
+
 
     @Override
     public boolean saveTxHistory(TxHistory txHistory) {
@@ -83,44 +84,47 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     }
 
     @Override
-    public boolean batchSaveTxHistory(TxHistory txHistory, int count, boolean isEnd) {
+    public boolean batchSaveTxHistory(TxHistory txHistory) {
         boolean result = false;
         try {
-            if (conn == null) {
-                conn = DruidUtils.getConnection();
-                conn.setAutoCommit(false);
+            if (connBatch == null) {
+                connBatch = DruidUtils.getConnection();
+                connBatch.setAutoCommit(false);
             }
-            if (pstmt == null) {
-                pstmt = conn.prepareStatement(SQL_INSERT);
+            if (pstmtBatch == null) {
+                pstmtBatch = connBatch.prepareStatement(SQL_INSERT);
             }
-            Address address = txHistory.getAddress();
-            String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
-            pstmt.setString(1, addr);
-            pstmt.setString(2, txHistory.getHash());
-            pstmt.setBigDecimal(3, txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG));
-            pstmt.setInt(4, txHistory.getAddress().getType().asByte());
-            pstmt.setString(5, txHistory.getRemark());
-            pstmt.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
-            pstmt.addBatch();
-            if (count == 50000 || isEnd) {
-                pstmt.executeBatch();
-                conn.commit();
+            if (txHistory != null) {
+                Address address = txHistory.getAddress();
+                String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
+                pstmtBatch.setString(1, addr);
+                pstmtBatch.setString(2, txHistory.getHash());
+                pstmtBatch.setBigDecimal(3, address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmtBatch.setInt(4, address.getType().asByte());
+                pstmtBatch.setString(5, txHistory.getRemark());
+                pstmtBatch.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
+                pstmtBatch.addBatch();
+                count++;
+            }
+            if (count == 50000 || txHistory == null) {
+                pstmtBatch.executeBatch();
+                connBatch.commit();
                 result = true;
+                count = 0;
             }
-
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
-            if (isEnd && conn != null) {
+            if (connBatch != null && txHistory == null) {
                 try {
-                    conn.close();
-                    pstmt.close();
-                    log.info("The snapshot loading is complete, close mysql.");
+                    connBatch.close();
+                    pstmtBatch.close();
+                    log.info("The loading is complete, close mysql.");
                 } catch (SQLException e) {
                     log.error(e.getMessage(), e);
                 }
-                conn = null;
-                pstmt=null;
+                connBatch = null;
+                pstmtBatch = null;
             }
         }
         return result;
@@ -133,11 +137,10 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
-
         try {
             conn = DruidUtils.getConnection();
             if (conn != null) {
-                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS);
+                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS_ORDER_BY_TIME_DESC);
                 pstmt.setString(1, address);
                 pstmt.setInt(2, (page - 1) * PAGE_SIZE);
                 pstmt.setInt(3, PAGE_SIZE);

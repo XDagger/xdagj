@@ -158,12 +158,9 @@ public class SnapshotStoreImpl implements SnapshotStore {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys, long snapshotTime) {
+    public void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
-            int count = 0;
-            boolean isEnd = false;
-            // ArrayList<TxHistory> txHistories = new ArrayList<>(100000);
-            for (iter.seekToFirst(); iter.isValid(); ) {
+            for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == HASH_BLOCK_INFO) {
                     BlockInfo blockInfo = new BlockInfo();
                     if (iter.value() != null) {
@@ -176,10 +173,10 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         }
                         int flag = blockInfo.getFlags();
                         int keyIndex = -1;
-                        // Determine if it is your own address
+                        //Determine if it is your own address
                         SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
                         if (blockInfo.getSnapshotInfo() != null) {
-                            // public key exists
+                            //public key exists
                             if (snapshotInfo.getType()) {
                                 byte[] ecKeyPair = snapshotInfo.getData();
                                 for (int i = 0; i < keys.size(); i++) {
@@ -191,7 +188,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                         break;
                                     }
                                 }
-                            } else {    // Verify signature
+                            } else {    //Verify signature
                                 Block block = new Block(new XdagBlock(snapshotInfo.getData()));
                                 SECPSignature outSig = block.getOutsig();
                                 for (int i = 0; i < keys.size(); i++) {
@@ -216,42 +213,32 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         allBalance = allBalance.add(blockInfo.getAmount());
                         blockStore.saveBlockInfo(blockInfo);
 
-                        if (txHistoryStore != null) {
+                        if(txHistoryStore != null) {
                             XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
-                            Address address = new Address(Bytes32.wrap(blockInfo.getHashlow()), fieldType, blockInfo.getAmount(), false);
+                            Address address = new Address(Bytes32.wrap(blockInfo.getHashlow()), fieldType, blockInfo.getAmount(),false);
 
                             TxHistory txHistory = new TxHistory();
                             txHistory.setAddress(address);
                             txHistory.setHash(BasicUtils.hash2Address(address.getAddress()));
-                            if (blockInfo.getRemark() != null) {
+                            if(blockInfo.getRemark() != null) {
                                 txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
                             }
                             txHistory.setTimestamp(snapshotTime);
-                            count++;
-                            boolean writeResult = txHistoryStore.batchSaveTxHistory(txHistory, count, isEnd);
-                            if (writeResult) {
-                                count = 0;
-                            }
-                            iter.next();
-                            if (!iter.isValid()) {
-                                isEnd = true;
-                                txHistoryStore.batchSaveTxHistory(txHistory, count, true);
-                            }
-                        } else {
-                            iter.next();
+                            txHistoryStore.batchSaveTxHistory(txHistory);
                         }
-                    } else {
-                        iter.next();
                     }
                 } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
-                    iter.next();
                 }
+            }
+            if (txHistoryStore != null) {
+                txHistoryStore.batchSaveTxHistory(null);
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
+
 
     @Override
     public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys, long snapshotTime) {

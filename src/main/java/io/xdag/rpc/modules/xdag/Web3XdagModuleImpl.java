@@ -24,28 +24,7 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import static io.xdag.config.Constants.CLIENT_VERSION;
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.getHash;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.fromBase58;
-import static io.xdag.utils.WalletUtils.toBase58;
-
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-
 import com.google.common.collect.Lists;
-
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
@@ -54,11 +33,7 @@ import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.PoolSpec;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XUnit;
-import io.xdag.core.XdagState;
-import io.xdag.core.XdagStats;
+import io.xdag.core.*;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -69,6 +44,20 @@ import io.xdag.rpc.dto.PoolWorkerDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.utils.BasicUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static io.xdag.config.Constants.CLIENT_VERSION;
+import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
+import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.WalletUtils.*;
 
 @Slf4j
 public class Web3XdagModuleImpl implements Web3XdagModule {
@@ -114,7 +103,6 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
                 return s;
             }
         }
-
         try {
             s.currentBlock = Long.toString(currentBlock);
             s.highestBlock = Long.toString(highestBlock);
