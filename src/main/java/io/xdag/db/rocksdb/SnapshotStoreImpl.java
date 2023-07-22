@@ -23,31 +23,12 @@
  */
 package io.xdag.db.rocksdb;
 
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
-import static io.xdag.db.BlockStore.SUMS_BLOCK_INFO;
-import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
-import static io.xdag.db.AddressStore.ADDRESS_SIZE;
-import static io.xdag.db.AddressStore.AMOUNT_SUM;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.PreBlockInfo;
-import io.xdag.core.SnapshotInfo;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XAmount;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
+import io.xdag.core.*;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
@@ -58,13 +39,6 @@ import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -74,6 +48,19 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.rocksdb.RocksIterator;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.db.AddressStore.ADDRESS_SIZE;
+import static io.xdag.db.AddressStore.AMOUNT_SUM;
+import static io.xdag.db.BlockStore.*;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
 
 @Slf4j
 public class SnapshotStoreImpl implements SnapshotStore {
@@ -120,7 +107,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         blockInfo.setType(preBlockInfo.getType());
     }
 
-    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource indexSource,boolean b) {
+    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource indexSource, boolean b) {
         try (RocksIterator iter = indexSource.getDb().newIterator()) {
             for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.isValid() && iter.key()[0] < SUMS_BLOCK_INFO; iter.next()) {
                 PreBlockInfo preBlockInfo;
@@ -138,14 +125,14 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         log.error("can't deserialize data:{}", Hex.toHexString(iter.value()));
                         log.error(e.getMessage(), e);
                     }
-                    //Has public key or block data
+                    // Has public key or block data
                     if (blockInfo.getSnapshotInfo() != null) {
                         int flag = blockInfo.getFlags();
                         flag &= ~BI_OURS;
                         blockInfo.setFlags(flag);
                         blockInfo.setSnapshot(true);
                         save(iter, blockInfo);
-                    } else { //Storage block data without public key and balance
+                    } else { // Storage block data without public key and balance
                         if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), XAmount.ZERO) != 0)) {
 //                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
@@ -237,27 +224,30 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                 txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
                             }
                             txHistory.setTimestamp(snapshotTime);
-
-                            txHistoryStore.saveTxHistory(txHistory);
+                            txHistoryStore.batchSaveTxHistory(txHistory);
                         }
                     }
                 } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
                 }
             }
+            if (txHistoryStore != null) {
+                txHistoryStore.batchSaveTxHistory(null);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
+
     @Override
-    public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys, long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
-                if(iter.key().length < 20){
-                    if(iter.key()[0] == ADDRESS_SIZE){
+                if (iter.key().length < 20) {
+                    if (iter.key()[0] == ADDRESS_SIZE) {
                         addressStore.saveAddressSize(iter.value());
-                    }else if(iter.key()[0] == AMOUNT_SUM){
+                    } else if (iter.key()[0] == AMOUNT_SUM) {
                         UInt64 u64v = UInt64.fromBytes(Bytes.wrap(iter.value()));
                         addressStore.savaAmountSum(XAmount.ofXAmount(u64v.toLong()));
                         allBalance = addressStore.getAllBalance();
@@ -274,9 +264,9 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     }
                     addressStore.snapshotAddress(address, balance);
 
-                    if(txHistoryStore != null) {
+                    if (txHistoryStore != null) {
                         XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
-                        Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), fieldType, balance,false);
+                        Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address, 1, 21)), fieldType, balance, false);
                         TxHistory txHistory = new TxHistory();
                         txHistory.setAddress(addr);
                         txHistory.setHash(BasicUtils.hash2Address(addr.getAddress()));
@@ -303,7 +293,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         return this.ourBalance;
     }
 
-    public XAmount getAllBalance(){
+    public XAmount getAllBalance() {
         return this.allBalance;
     }
 

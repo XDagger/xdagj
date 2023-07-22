@@ -23,37 +23,36 @@
  */
 package io.xdag.db.mysql;
 
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.WalletUtils.toBase58;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.List;
-
 import com.google.common.collect.Lists;
-
-import io.xdag.core.Address;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XAmount;
-import io.xdag.core.XUnit;
-import io.xdag.core.XdagField;
+import io.xdag.core.*;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.DruidUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.hash2byte;
+import static io.xdag.utils.WalletUtils.toBase58;
+
 @Slf4j
 public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
     private static final String SQL_INSERT = "insert into t_transaction_history(faddress,fhash,famount,ftype,fremark,ftime) values(?,?,?,?,?,?)";
-
-    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS = "select faddress,fhash,famount,ftype,fremark,ftime from t_transaction_history where faddress= ? order by fid desc limit ?,?";
-
     private static final String SQL_QUERY_TXHISTORY_COUNT = "select count(*) from t_transaction_history where faddress=?";
+    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS_ORDER_BY_TIME_DESC= "select faddress,fhash,famount,ftype,fremark,ftime " +
+            "from t_transaction_history where faddress= ? order by ftime desc limit ?,?";
 
     private static final int PAGE_SIZE = 100;
+    private Connection connBatch = null;
+    private PreparedStatement pstmtBatch = null;
+    private int count = 0;
+
 
     @Override
     public boolean saveTxHistory(TxHistory txHistory) {
@@ -85,28 +84,75 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     }
 
     @Override
+    public boolean batchSaveTxHistory(TxHistory txHistory) {
+        boolean result = false;
+        try {
+            if (connBatch == null) {
+                connBatch = DruidUtils.getConnection();
+                connBatch.setAutoCommit(false);
+            }
+            if (pstmtBatch == null) {
+                pstmtBatch = connBatch.prepareStatement(SQL_INSERT);
+            }
+            if (txHistory != null) {
+                Address address = txHistory.getAddress();
+                String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
+                pstmtBatch.setString(1, addr);
+                pstmtBatch.setString(2, txHistory.getHash());
+                pstmtBatch.setBigDecimal(3, address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmtBatch.setInt(4, address.getType().asByte());
+                pstmtBatch.setString(5, txHistory.getRemark());
+                pstmtBatch.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
+                pstmtBatch.addBatch();
+                count++;
+            }
+            if (count == 50000 || txHistory == null) {
+                pstmtBatch.executeBatch();
+                connBatch.commit();
+                result = true;
+                count = 0;
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            if (connBatch != null && txHistory == null) {
+                try {
+                    connBatch.close();
+                    pstmtBatch.close();
+                    log.info("The loading is complete, close mysql.");
+                } catch (SQLException e) {
+                    log.error(e.getMessage(), e);
+                }
+                connBatch = null;
+                pstmtBatch = null;
+            }
+        }
+        return result;
+    }
+
+
+    @Override
     public List<TxHistory> listTxHistoryByAddress(String address, int page) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
-
         try {
             conn = DruidUtils.getConnection();
             if (conn != null) {
-                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS);
+                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS_ORDER_BY_TIME_DESC);
                 pstmt.setString(1, address);
                 pstmt.setInt(2, (page - 1) * PAGE_SIZE);
                 pstmt.setInt(3, PAGE_SIZE);
                 rs = pstmt.executeQuery();
                 while (rs.next()) {
                     TxHistory txHistory = new TxHistory();
-                    //Bytes32 addr = BasicUtils.address2Hash(rs.getString(1));
+                    // Bytes32 addr = BasicUtils.address2Hash(rs.getString(1));
                     String hashlow = rs.getString(2);
                     txHistory.setHash(hashlow);
                     XAmount amount = XAmount.of(rs.getBigDecimal(3), XUnit.XDAG);
                     int fType = rs.getInt(4);
-                    Address addrObj = new Address(BasicUtils.address2Hash(hashlow), XdagField.FieldType.fromByte((byte)fType), amount, false);
+                    Address addrObj = new Address(BasicUtils.address2Hash(hashlow), XdagField.FieldType.fromByte((byte) fType), amount, false);
                     txHistory.setAddress(addrObj);
                     txHistory.setRemark(rs.getString(5));
                     txHistory.setTimestamp(rs.getTimestamp(6).getTime());
@@ -141,7 +187,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
-            DruidUtils.close( conn, pstmt, rs);
+            DruidUtils.close(conn, pstmt, rs);
         }
         return count;
     }
