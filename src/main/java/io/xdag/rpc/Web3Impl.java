@@ -100,6 +100,10 @@ public class Web3Impl implements Web3 {
     }
 
     @Override
+    public BlockResultDTO xdag_getBlockByHash(String blockHash, int page, String startTime, String endTime) {
+        return web3XdagModule.xdag_getBlockByHash(blockHash, page, startTime,endTime);
+    }
+
     public BlockResultDTO xdag_getBlockByHash(String blockHash, int page) {
         return web3XdagModule.xdag_getBlockByHash(blockHash, page);
     }

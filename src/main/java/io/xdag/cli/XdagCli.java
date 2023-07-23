@@ -500,7 +500,7 @@ public class XdagCli extends Launcher {
 
     public void makeSnapshot(boolean b) {
         System.out.println("make snapshot start");
-        System.out.println("convertuint = " + b);
+        System.out.println("convertXAmount = " + b);
         long start = System.currentTimeMillis();
         this.getConfig().getSnapshotSpec().setSnapshotJ(true);
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());

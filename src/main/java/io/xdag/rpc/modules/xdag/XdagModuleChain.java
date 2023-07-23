@@ -30,7 +30,7 @@ public interface XdagModuleChain {
 
     String getCoinBase();
 
-    BlockResultDTO getBlockByHash(String hash, int page);
+    BlockResultDTO getBlockByHash(String hash, int page, Object... timeRange);
 
     BlockResultDTO getBlockByNumber(String bnOrId, int page);
 

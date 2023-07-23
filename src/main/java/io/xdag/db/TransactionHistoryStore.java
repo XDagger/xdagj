@@ -31,7 +31,7 @@ public interface TransactionHistoryStore {
 
     boolean saveTxHistory(TxHistory txHistory);
     boolean batchSaveTxHistory(TxHistory txHistory );
-    List<TxHistory> listTxHistoryByAddress(String address, int page);
+    List<TxHistory> listTxHistoryByAddress(String address, int page, Object... timeRange);
 
     int getTxHistoryCount(String address);
 

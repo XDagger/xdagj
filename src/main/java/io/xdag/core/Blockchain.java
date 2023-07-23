@@ -72,7 +72,7 @@ public interface Blockchain {
     // 注册监听器
     void registerListener(Listener listener);
 
-    List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page);
+    List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page, Object... timeRange);
 
     XdagExtStats getXdagExtStats();
 }
