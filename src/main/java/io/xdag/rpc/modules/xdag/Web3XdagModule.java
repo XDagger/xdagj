@@ -90,6 +90,10 @@ public interface Web3XdagModule {
         return getXdagModule().personalSendTransaction(args, passphrase);
     }
 
+    default BlockResultDTO xdag_getBlockByHash(String blockHash, int page, String startTime, String endTime) {
+        return getXdagModule().getBlockByHash(blockHash, page, startTime, endTime);
+    }
+
     default BlockResultDTO xdag_getBlockByHash(String blockHash, int page) {
         return getXdagModule().getBlockByHash(blockHash, page);
     }

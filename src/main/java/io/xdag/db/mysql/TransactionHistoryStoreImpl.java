@@ -34,25 +34,39 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.WalletUtils.toBase58;
+import com.google.common.collect.Lists;
+
+import io.xdag.core.Address;
+import io.xdag.core.TxHistory;
+import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
+import io.xdag.core.XdagField;
+import io.xdag.db.TransactionHistoryStore;
+import io.xdag.utils.BasicUtils;
+import io.xdag.utils.DruidUtils;
+import io.xdag.utils.XdagTime;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
     private static final String SQL_INSERT = "insert into t_transaction_history(faddress,fhash,famount,ftype,fremark,ftime) values(?,?,?,?,?,?)";
+
+    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS_WITH_TIME = "select faddress,fhash,famount,ftype,fremark,ftime from t_transaction_history where faddress= ? and ftime >=? and ftime <= ? order by ftime desc limit ?,?";
+
     private static final String SQL_QUERY_TXHISTORY_COUNT = "select count(*) from t_transaction_history where faddress=?";
-    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS_ORDER_BY_TIME_DESC= "select faddress,fhash,famount,ftype,fremark,ftime " +
-            "from t_transaction_history where faddress= ? order by ftime desc limit ?,?";
+
+    private static final String SQL_QUERY_TXHISTORY_COUNT_WITH_TIME = "select count(*) from t_transaction_history where faddress=? and ftime >=? and ftime <=?";
 
     private static final int PAGE_SIZE = 100;
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
 
+    public static int totalPage = 1;
 
     @Override
     public boolean saveTxHistory(TxHistory txHistory) {
@@ -132,18 +146,39 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
 
     @Override
-    public List<TxHistory> listTxHistoryByAddress(String address, int page) {
+    public List<TxHistory> listTxHistoryByAddress(String address, int page, Object... timeRange) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
+        int totalcount = 0;
+        long start = 0;
+        long end = XdagTime.msToXdagtimestamp(System.currentTimeMillis());
+
         try {
             conn = DruidUtils.getConnection();
             if (conn != null) {
-                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS_ORDER_BY_TIME_DESC);
+                if(timeRange.length != 0){
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                    start =XdagTime.msToXdagtimestamp(sdf.parse(timeRange[0].toString()).getTime());
+                    end = XdagTime.msToXdagtimestamp(sdf.parse(timeRange[1].toString()).getTime());
+                }
+                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_COUNT_WITH_TIME);
+                pstmt.setString(1,address);
+                pstmt.setTimestamp(2, new java.sql.Timestamp(start));
+                pstmt.setTimestamp(3, new java.sql.Timestamp(end));
+                rs = pstmt.executeQuery();
+                if (rs.next()){
+                    totalcount = rs.getInt(1);
+                }
+                totalPage = totalcount < PAGE_SIZE ?  1 : (int) Math.ceil((double) totalcount / PAGE_SIZE);
+
+                pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS_WITH_TIME);
                 pstmt.setString(1, address);
-                pstmt.setInt(2, (page - 1) * PAGE_SIZE);
-                pstmt.setInt(3, PAGE_SIZE);
+                pstmt.setTimestamp(2, new java.sql.Timestamp(start));
+                pstmt.setTimestamp(3, new java.sql.Timestamp(end));
+                pstmt.setInt(4, (page - 1) * PAGE_SIZE);
+                pstmt.setInt(5, PAGE_SIZE);
                 rs = pstmt.executeQuery();
                 while (rs.next()) {
                     TxHistory txHistory = new TxHistory();
