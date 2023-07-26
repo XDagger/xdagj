@@ -107,7 +107,6 @@ public class XdagSync {
     }
 
     private void syncLoop() {
-//        log.debug("SyncLoop...");
         count++;
         try {
             if (syncWindow.size() < 32) {
@@ -122,7 +121,6 @@ public class XdagSync {
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
         }
-//        log.debug("End syncLoop");
     }
 
     /**
@@ -162,7 +160,7 @@ public class XdagSync {
      * @param dt interval time
      */
     private void requestBlocks(long t, long dt) {
-        // 如果当前状态不是sync start
+        // Not in sync state, synchronization is complete, stop synchronization task.
         if (status != Status.SYNCING) {
             stop();
             return;

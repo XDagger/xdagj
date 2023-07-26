@@ -1,57 +1,35 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2020-2030 The XdagJ Developers
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 package io.xdag.net.message.impl;
-
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
 
 import io.xdag.core.Block;
 import io.xdag.core.XdagBlock;
+import static io.xdag.config.Constants.DNET_PKT_XDAG;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import java.util.zip.CRC32;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
-public class NewBlockMessage extends Message {
+import java.util.zip.CRC32;
 
+@Slf4j
+public class SyncBlockMessage extends Message {
     private XdagBlock xdagBlock;
     private Block block;
     private int ttl;
 
+
     /**
      * 不处理crc
      */
-    public NewBlockMessage(MutableBytes bytes) {
+    public SyncBlockMessage(MutableBytes bytes) {
         super(bytes);
     }
 
     /**
      * 处理crc 创建新的用于发送Block的message
      */
-    public NewBlockMessage(Block block, int ttl) {
+    public SyncBlockMessage(Block block, int ttl) {
         this.block = block;
         this.ttl = ttl;
         this.parsed = true;
@@ -61,7 +39,7 @@ public class NewBlockMessage extends Message {
     /**
      * 不处理crc
      */
-    public NewBlockMessage(XdagBlock xdagBlock, int ttl) {
+    public SyncBlockMessage(XdagBlock xdagBlock, int ttl) {
         super(xdagBlock.getData().mutableCopy());
         this.xdagBlock = xdagBlock;
         this.ttl = ttl;
@@ -82,8 +60,10 @@ public class NewBlockMessage extends Message {
 
     private void encode() {
         this.encoded = this.block.getXdagBlock().getData().mutableCopy();
-        long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16);
+        // (1L << 31):Used to distinguish between newBlockMessage and syncBlockMessage.
+        long transportheader = ((long) ttl << 8) | DNET_PKT_XDAG | (512 << 16) | (1L << 31);
         this.encoded.set(0, Bytes.wrap(BytesUtils.longToBytes(transportheader, true)));
+
         updateCrc();
     }
 
@@ -113,7 +93,7 @@ public class NewBlockMessage extends Message {
 
     @Override
     public XdagMessageCodes getCommand() {
-        return XdagMessageCodes.NEW_BLOCK;
+        return XdagMessageCodes.SYNC_BLOCK;
     }
 
     @Override

@@ -35,6 +35,7 @@ import io.xdag.net.Channel;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.impl.NewBlockMessage;
+import io.xdag.net.message.impl.SyncBlockMessage;
 import io.xdag.utils.BytesUtils;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -79,6 +80,7 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
 
             // TODO:process xdagblock transport header
             int ttl = (int) ((BytesUtils.bytesToLong(unCryptData, 0, true) >> 8) & 0xff);
+            //Used to distinguish between newBlockMessage and syncBlockMessage.
             boolean isOld = ((BytesUtils.bytesToLong(unCryptData, 0, true) >> 31) & 1) == 1;
             if (isDataIllegal(unCryptData.clone())) {
                 log.debug("Receive error block!");
@@ -90,12 +92,12 @@ public class XdagBlockHandler extends ByteToMessageCodec<XdagBlock> {
             XdagBlock xdagBlock = new XdagBlock(unCryptData);
             byte first_field_type = getMsgCode(xdagBlock, 0);
             Message msg = null;
-            // 普通区块
+            // block message
             XdagField.FieldType netType = channel.getKernel().getConfig().getXdagFieldHeader();
             if (netType.asByte() == first_field_type) {
-                msg = new NewBlockMessage(xdagBlock, ttl, isOld);
+                msg = isOld ? new SyncBlockMessage(xdagBlock, ttl) : new NewBlockMessage(xdagBlock, ttl);
             }
-            // 消息区块
+            // other message
             else if (XdagField.FieldType.XDAG_FIELD_NONCE.asByte() == first_field_type) {
                 msg = messageFactory.create(getMsgCode(xdagBlock, 1), xdagBlock.getData());
             }

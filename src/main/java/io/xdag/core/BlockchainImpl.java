@@ -134,8 +134,6 @@ public class BlockchainImpl implements Blockchain {
             this.xdagTopStatus = new XdagTopStatus();
 
             if (kernel.getConfig().getSnapshotSpec().isSnapshotJ()) {
-
-
                 initSnapshotJ();
             }
 
@@ -155,7 +153,10 @@ public class BlockchainImpl implements Blockchain {
             this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
             Block lastBlock = getBlockByHeight(xdagStats.nmain);
             if (lastBlock != null) {
-                this.xdagTopStatus.setTop(lastBlock.getHashLow().toArray());
+                xdagStats.setMaxdifficulty(lastBlock.getInfo().getDifficulty());
+                xdagStats.setDifficulty(lastBlock.getInfo().getDifficulty());
+                xdagTopStatus.setTop(lastBlock.getHashLow().toArray());
+                xdagTopStatus.setTopDiff(lastBlock.getInfo().getDifficulty());
             }
             preSeed = blockStore.getPreSeed();
         }
