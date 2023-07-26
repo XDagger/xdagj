@@ -1,54 +1,28 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2020-2030 The XdagJ Developers
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 package io.xdag.net.message.impl;
-
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
-import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
 
 import io.xdag.core.XdagStats;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.NetDB;
 import io.xdag.net.message.XdagMessageCodes;
 import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-import lombok.EqualsAndHashCode;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 
-@EqualsAndHashCode(callSuper = false)
-public class BlockRequestMessage extends AbstractMessage {
+import java.math.BigInteger;
+import java.nio.ByteOrder;
 
-    public BlockRequestMessage(MutableBytes hash, XdagStats xdagStats, NetDB currentDB) {
-        super(XdagMessageCodes.BLOCK_REQUEST, 0, 0, Bytes32.wrap(hash), xdagStats, currentDB);
+import static io.xdag.config.Constants.DNET_PKT_XDAG;
+import static io.xdag.core.XdagBlock.XDAG_BLOCK_SIZE;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_NONCE;
+
+public class SyncBlockRequestMessage extends AbstractMessage {
+    public SyncBlockRequestMessage(MutableBytes hash, XdagStats xdagStats, NetDB currentDB) {
+        super(XdagMessageCodes.SYNCBLOCK_REQUEST, 0, 0, Bytes32.wrap(hash), xdagStats,currentDB);
     }
 
-    public BlockRequestMessage(MutableBytes hash) {
+    public SyncBlockRequestMessage(MutableBytes hash) {
         super(hash);
     }
 
@@ -82,7 +56,7 @@ public class BlockRequestMessage extends AbstractMessage {
 
     @Override
     public XdagMessageCodes getCommand() {
-        return XdagMessageCodes.BLOCK_REQUEST;
+        return XdagMessageCodes.SYNCBLOCK_REQUEST;
     }
 
     @Override

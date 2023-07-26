@@ -40,6 +40,7 @@ import io.xdag.crypto.DnetKeys;
 import io.xdag.rpc.modules.ModuleDescription;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -92,6 +93,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int connectionTimeout = 10000;
     protected int connectionReadTimeout = 10000;
     protected boolean enableTxHistory = false;
+    protected boolean enableGenerateBlock = false;
 
     protected String rootDir;
     protected String storeDir;
@@ -245,6 +247,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         nodePort = config.hasPath("node.port")?config.getInt("node.port"):8001;
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
         enableTxHistory = config.hasPath("node.transaction.history.enable")?config.getBoolean("node.transaction.history.enable"):false;
+        enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
 
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
@@ -275,7 +278,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
             rpcPortHttp = config.hasPath("rpc.http.port")?config.getInt("rpc.http.port"):10001;
             rpcPortWs = config.hasPath("rpc.ws.port")?config.getInt("rpc.ws.port"):10002;
         }
-        flag = config.hasPath("randomx.flags.fullmem")?config.getBoolean("randomx.flags.fullmem"):false;
+        flag = config.hasPath("randomx.flags.fullmem") && config.getBoolean("randomx.flags.fullmem");
 
     }
 
@@ -445,6 +448,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     @Override
     public boolean getEnableTxHistory() {return enableTxHistory;}
+
+    @Override
+    public boolean getEnableGenerateBlock() {return enableGenerateBlock;}
 
     @Override
     public void setSnapshotJ(boolean isSnapshot) {

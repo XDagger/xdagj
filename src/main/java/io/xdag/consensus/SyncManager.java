@@ -125,12 +125,14 @@ public class SyncManager {
         XdagTopStatus xdagTopStatus = kernel.getBlockchain().getXdagTopStatus();
         long lastTime = kernel.getSync().getLastTime();
         long curTime = msToXdagtimestamp(System.currentTimeMillis());
-        long curHeight = xdagStats.nmain;
-        long maxHeight = xdagStats.totalnmain;
+        long curHeight = xdagStats.getNmain();
+        long maxHeight = xdagStats.getTotalnblocks();
+        //Exit the syncOld state based on time and height.
         if (!isSync() && (curHeight >= maxHeight - 512 || lastTime >= curTime - 32*REQUEST_BLOCKS_MAX_TIME)) {
             log.debug("our node height:{} the max height:{}, set sync state", curHeight, maxHeight);
             setSyncState();
         }
+        //Confirm whether the synchronization is complete based on time and height.
         if (curHeight >= maxHeight || xdagTopStatus.getTopDiff().compareTo(xdagStats.maxdifficulty) >= 0) {
             log.debug("our node height:{} the max height:{}, our diff:{} max diff:{}, make sync done",
                     curHeight, maxHeight, xdagTopStatus.getTopDiff(), xdagStats.maxdifficulty);
@@ -315,11 +317,15 @@ public class SyncManager {
 
             log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
             kernel.getSync().setStatus(XdagSync.Status.SYNC_DONE);
-            log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
-            txHistoryStore.batchSaveTxHistory(null);
-            // 检查主块链
-            kernel.getMinerServer().start();
-            kernel.getPow().start();
+
+            if (config.getEnableGenerateBlock()) {
+                log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
+                // check main chain
+                kernel.getMinerServer().start();
+                kernel.getPow().start();
+            } else {
+                log.info("A non-mining node, will not generate blocks.");
+            }
         }
     }
 
