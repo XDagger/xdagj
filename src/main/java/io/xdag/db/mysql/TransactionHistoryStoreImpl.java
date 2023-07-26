@@ -34,6 +34,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.Date;
 import java.util.List;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
@@ -47,7 +49,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
     private static final String SQL_INSERT = "insert into t_transaction_history(faddress,fhash,famount,ftype,fremark,ftime) values(?,?,?,?,?,?)";
 
-    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS_WITH_TIME = "select faddress,fhash,famount,ftype,fremark,ftime from t_transaction_history where faddress= ? and ftime >=? and ftime <= ? order by ftime desc limit ?,?";
+    private static final String SQL_QUERY_TXHISTORY_BY_ADDRESS_WITH_TIME = "select faddress,fhash,famount,ftype,fremark,ftime from t_transaction_history where faddress= ? and ftime >= ? and ftime <= ? order by ftime desc limit ?,?";
 
     private static final String SQL_QUERY_TXHISTORY_COUNT = "select count(*) from t_transaction_history where faddress=?";
 
@@ -144,17 +146,21 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
         int totalcount = 0;
-        long start = 0;
+        long start = XdagTime.msToXdagtimestamp(new Date(0).getTime());
         long end = XdagTime.msToXdagtimestamp(System.currentTimeMillis());
-
+        if (timeRange.length != 0){
+            try{
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                start =XdagTime.msToXdagtimestamp(sdf.parse(timeRange[0].toString()).getTime());
+                end = XdagTime.msToXdagtimestamp(sdf.parse(timeRange[1].toString()).getTime());
+            }catch (ParseException e){
+                start = XdagTime.msToXdagtimestamp(Long.parseLong(timeRange[0].toString()));
+                end = XdagTime.msToXdagtimestamp(Long.parseLong(timeRange[1].toString()));
+            }
+        }
         try {
             conn = DruidUtils.getConnection();
             if (conn != null) {
-                if(timeRange.length != 0){
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-                    start =XdagTime.msToXdagtimestamp(sdf.parse(timeRange[0].toString()).getTime());
-                    end = XdagTime.msToXdagtimestamp(sdf.parse(timeRange[1].toString()).getTime());
-                }
                 pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_COUNT_WITH_TIME);
                 pstmt.setString(1,address);
                 pstmt.setTimestamp(2, new java.sql.Timestamp(start));
