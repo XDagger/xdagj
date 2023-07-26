@@ -94,4 +94,6 @@ public interface Config {
     RandomxSpec getRandomxSpec();
 
     boolean getEnableTxHistory();
+
+    boolean getEnableGenerateBlock();
 }

@@ -34,13 +34,7 @@ import io.xdag.net.Channel;
 import io.xdag.net.XdagVersion;
 import io.xdag.net.message.AbstractMessage;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.impl.BlockExtRequestMessage;
-import io.xdag.net.message.impl.BlockRequestMessage;
-import io.xdag.net.message.impl.BlocksReplyMessage;
-import io.xdag.net.message.impl.BlocksRequestMessage;
-import io.xdag.net.message.impl.NewBlockMessage;
-import io.xdag.net.message.impl.SumReplyMessage;
-import io.xdag.net.message.impl.SumRequestMessage;
+import io.xdag.net.message.impl.*;
 import io.xdag.utils.XdagTime;
 import java.util.List;
 import lombok.Data;
@@ -76,6 +70,8 @@ public class Xdag03 extends XdagHandler {
             case SUMS_REQUEST -> processSumsRequest((SumRequestMessage) msg);
             case SUMS_REPLY -> processSumsReply((SumReplyMessage) msg);
             case BLOCKEXT_REQUEST -> processBlockExtRequest((BlockExtRequestMessage) msg);
+            case SYNC_BLOCK -> processSyncBlock((SyncBlockMessage) msg);
+            case SYNCBLOCK_REQUEST -> processSyncBlockRequest((SyncBlockRequestMessage) msg);
             default -> {
             }
         }
@@ -117,12 +113,20 @@ public class Xdag03 extends XdagHandler {
      */
     protected void processNewBlock(NewBlockMessage msg) {
         Block block = msg.getBlock();
-        if(syncMgr.isSyncOld() && !msg.getIsOld()) {
+        if (syncMgr.isSyncOld()) {
             return;
         }
-        log.debug("processNewBlock:{} isOld:{} from node {}", block.getHashLow(),
-                msg.getIsOld(), channel.getInetSocketAddress());
-        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode(), msg.getIsOld());
+
+        log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getInetSocketAddress());
+        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode(), false);
+        syncMgr.validateAndAddNewBlock(bw);
+    }
+
+    protected void processSyncBlock(SyncBlockMessage msg) {
+        Block block = msg.getBlock();
+
+        log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getInetSocketAddress());
+        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getNode(), true);
         syncMgr.validateAndAddNewBlock(bw);
     }
 
@@ -146,7 +150,7 @@ public class Xdag03 extends XdagHandler {
                 channel.getInetSocketAddress());
         List<Block> blocks = blockchain.getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
-            NewBlockMessage blockMsg = new NewBlockMessage(block, 1, true);
+            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1);
             sendMessage(blockMsg);
         }
         sendMessage(new BlocksReplyMessage(startTime, endTime, random, kernel.getBlockchain().getXdagStats(),
@@ -193,10 +197,22 @@ public class Xdag03 extends XdagHandler {
         MutableBytes32 find = MutableBytes32.create();
         find.set(8, hash.reverse().slice(8, 24));
         Block block = blockchain.getBlockByHash(find, true);
-        int ttl = msg.isOld() ? 1 : kernel.getConfig().getNodeSpec().getTTL();
+        int ttl = kernel.getConfig().getNodeSpec().getTTL();
         if (block != null) {
             log.debug("processBlockRequest: findBlock" + Bytes32.wrap(find).toHexString());
-            NewBlockMessage message = new NewBlockMessage(block, ttl, msg.isOld());
+            NewBlockMessage message = new NewBlockMessage(block, ttl);
+            sendMessage(message);
+        }
+    }
+
+    private void processSyncBlockRequest(SyncBlockRequestMessage msg) {
+        Bytes32 hash = msg.getHash();
+        MutableBytes32 find = MutableBytes32.create();
+        find.set(8, hash.reverse().slice(8, 24));
+        Block block = blockchain.getBlockByHash(find, true);
+        if (block != null) {
+            log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", Bytes32.wrap(find).toHexString(), channel.getInetSocketAddress());
+            SyncBlockMessage message = new SyncBlockMessage(block, 1);
             sendMessage(message);
         }
     }
@@ -207,7 +223,7 @@ public class Xdag03 extends XdagHandler {
     @Override
     public void sendNewBlock(Block newBlock, int TTL) {
         log.debug("send block:{} to node:{}", newBlock.getHashLow(), channel.getInetSocketAddress());
-        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL, false);
+        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
         sendMessage(msg);
     }
 
@@ -225,10 +241,11 @@ public class Xdag03 extends XdagHandler {
 
     @Override
     public long sendGetBlock(MutableBytes32 hash, boolean isOld) {
+        AbstractMessage msg;
 //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
-        BlockRequestMessage msg = new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(),
-                netDBManager.getNetDB(), isOld);
-        log.debug("Request block {} isOld:{} from node {}", hash, isOld, channel.getInetSocketAddress());
+        msg = isOld ? new SyncBlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(), netDBManager.getNetDB())
+                : new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(), netDBManager.getNetDB());
+        log.debug("Request block {} isold: {} from node {}", hash, isOld,channel.getInetSocketAddress());
         sendMessage(msg);
         return msg.getRandom();
     }
