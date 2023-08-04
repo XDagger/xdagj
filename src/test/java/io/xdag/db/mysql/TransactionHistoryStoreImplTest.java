@@ -60,7 +60,7 @@ public class TransactionHistoryStoreImplTest {
                 `famount` decimal(20,9) NOT NULL,
                 `ftype` tinyint NOT NULL,
                 `fremark` varchar(64) DEFAULT NULL,
-                `ftime` datetime NOT NULL,
+                `ftime` datetime(3) NOT NULL,
                 PRIMARY KEY (`fid`),
                 UNIQUE KEY `id_UNIQUE` (`fid`),
                 KEY `faddress_index` (`faddress`)
