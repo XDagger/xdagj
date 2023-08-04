@@ -80,7 +80,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt.setBigDecimal(3, txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG));
                 pstmt.setInt(4, txHistory.getAddress().getType().asByte());
                 pstmt.setString(5, txHistory.getRemark());
-                pstmt.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
+                pstmt.setTimestamp(6, new java.sql.Timestamp(XdagTime.xdagTimestampToMs(txHistory.getTimestamp())));
                 result = pstmt.executeUpdate() == 1;
             }
         } catch (Exception e) {
@@ -110,7 +110,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmtBatch.setBigDecimal(3, address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmtBatch.setInt(4, address.getType().asByte());
                 pstmtBatch.setString(5, txHistory.getRemark());
-                pstmtBatch.setTimestamp(6, new java.sql.Timestamp(txHistory.getTimestamp()));
+                pstmtBatch.setTimestamp(6, new java.sql.Timestamp(XdagTime.xdagTimestampToMs(txHistory.getTimestamp())));
                 pstmtBatch.addBatch();
                 count++;
             }
@@ -146,16 +146,16 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
         int totalcount = 0;
-        long start = XdagTime.msToXdagtimestamp(new Date(0).getTime());
-        long end = XdagTime.msToXdagtimestamp(System.currentTimeMillis());
+        long start = new Date(0).getTime();
+        long end = System.currentTimeMillis();
         if (timeRange.length != 0){
             try{
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                start =XdagTime.msToXdagtimestamp(sdf.parse(timeRange[0].toString()).getTime());
-                end = XdagTime.msToXdagtimestamp(sdf.parse(timeRange[1].toString()).getTime());
+                start =sdf.parse(timeRange[0].toString()).getTime();
+                end = sdf.parse(timeRange[1].toString()).getTime();
             }catch (ParseException e){
-                start = XdagTime.msToXdagtimestamp(Long.parseLong(timeRange[0].toString()));
-                end = XdagTime.msToXdagtimestamp(Long.parseLong(timeRange[1].toString()));
+                start = Long.parseLong(timeRange[0].toString());
+                end = Long.parseLong(timeRange[1].toString());
             }
         }
         try {

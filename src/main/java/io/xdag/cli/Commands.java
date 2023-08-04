@@ -525,18 +525,18 @@ public class Commands {
                 tx.append(String.format("    input: %s           %s  %s%n", hash2Address(address.getAddress()),
                         address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                .format(txHistory.getTimestamp())));
             } else if (address.getType().equals(XDAG_FIELD_OUT)) {
                 tx.append(String.format("   output: %s           %s   %s%n", hash2Address(address.getAddress()),
                         address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                .format(txHistory.getTimestamp())));
             } else {
                 tx.append(String.format(" snapshot: %s           %s   %s%n",
                         hash2Address(address.getAddress()),
                         address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                .format(txHistory.getTimestamp())));
             }
         }
 
@@ -725,28 +725,28 @@ public class Commands {
                     tx.append(String.format("    input: %s           %s   %s%n", hash2Address(address.getAddress()),
                             address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                    .format(txHistory.getTimestamp())));
                 } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
                     tx.append(String.format("   output: %s           %s   %s%n", hash2Address(address.getAddress()),
                             address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                    .format(txHistory.getTimestamp())));
                 } else if (address.getType().equals(XDAG_FIELD_COINBASE) && (blockInfo.flags&BI_MAIN) != 0) {
                     tx.append(String.format(" coinbase: %s           %s   %s%n", hash2Address(address.getAddress()),
                             address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                    .format(txHistory.getTimestamp())));
                 } else {
                     tx.append(String.format(" snapshot: %s           %s  %s%n", hash2Address(address.getAddress()),
                             address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                    .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                    .format(txHistory.getTimestamp())));
                 }
             }else {
                 tx.append(String.format(" snapshot: %s           %s   %s%n", (toBase58(BytesUtils.byte32ToArray(address.getAddress()))),
                         address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
-                                .format(XdagTime.xdagTimestampToMs(txHistory.getTimestamp()))));
+                                .format(txHistory.getTimestamp())));
             }
         }
 

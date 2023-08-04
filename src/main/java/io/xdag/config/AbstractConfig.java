@@ -81,7 +81,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
-    protected int waitEpoch = 10;
+    protected int waitEpoch = 20;
 
     // =========================
     // Node spec
