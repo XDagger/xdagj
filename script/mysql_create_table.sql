@@ -5,7 +5,7 @@ CREATE TABLE `t_transaction_history` (
   `famount` decimal(20,9) unsigned zerofill NOT NULL,
   `ftype` tinyint NOT NULL,
   `fremark` varchar(64) DEFAULT NULL,
-  `ftime` datetime NOT NULL,
+  `ftime` datetime(3) NOT NULL,
   PRIMARY KEY (`fid`),
   UNIQUE KEY `id_UNIQUE` (`fid`),
   KEY `faddress_index` (`faddress`)

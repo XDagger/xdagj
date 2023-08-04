@@ -196,7 +196,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .balance(String.format("%s", block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                 .type(SNAPSHOT.getDesc())
                 .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
-                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
+                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime());
 //                .flags(Integer.toHexString(block.getInfo().getFlags()))
 //                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
 //                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
@@ -205,8 +205,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
 //                .type(getType(block))
 //                .refs(getLinks(block))
 //                .height(block.getInfo().getHeight())
-                .transactions(getTxLinks(block, page, timeRange))
+                if (page != 0){
+                BlockResultDTOBuilder.transactions(getTxLinks(block, page, timeRange))
                 .totalPage(totalPage);
+                }
         totalPage = 1;
         return BlockResultDTOBuilder.build();
     }
@@ -221,9 +223,11 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .type("Wallet")
                 .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
                 .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
-                .state("Accepted")
-                .transactions(getTxHistory(address, page, timeRange))
+                .state("Accepted");
+        if (page != 0){
+            BlockResultDTOBuilder.transactions(getTxHistory(address, page, timeRange))
                 .totalPage(totalPage);
+        }
         totalPage = 1;
         return BlockResultDTOBuilder.build();
     }
@@ -245,9 +249,11 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 .state(getStateByFlags(block.getInfo().getFlags()))
                 .type(getType(block))
                 .refs(getLinks(block))
-                .height(block.getInfo().getHeight())
-                .transactions(getTxLinks(block, page, timeRange))
-                .totalPage(totalPage);
+                .height(block.getInfo().getHeight());
+        if (page != 0) {
+                BlockResultDTOBuilder.transactions(getTxLinks(block, page, timeRange))
+                    .totalPage(totalPage);
+        }
         totalPage = 1;
         return BlockResultDTOBuilder.build();
     }
@@ -320,7 +326,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                     .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
                             txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)
-                    .time(xdagTimestampToMs(txHistory.getTimestamp()))
+                    .time(txHistory.getTimestamp())
                     .remark(txHistory.getRemark());
             txLinks.add(txLinkBuilder.build());
         }
@@ -344,7 +350,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT) ? 0 :
                                 txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT) ? 1 :
                                         txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
-                        .time(xdagTimestampToMs(txHistory.getTimestamp()))
+                        .time(txHistory.getTimestamp())
                         .remark(txHistory.getRemark());
             } else {
                 txLinkBuilder.address(toBase58(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
