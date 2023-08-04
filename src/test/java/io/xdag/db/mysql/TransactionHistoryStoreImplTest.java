@@ -35,6 +35,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
 
+import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.BeforeClass;
@@ -93,7 +94,7 @@ public class TransactionHistoryStoreImplTest {
         txHistory.setAddress(input);
         txHistory.setHash(hash);
         txHistory.setRemark(remark);
-        txHistory.setTimestamp(timestamp);
+        txHistory.setTimestamp(XdagTime.msToXdagtimestamp(timestamp));
         assertTrue(txHistoryStore.saveTxHistory(txHistory));
 
         String addr = input.getIsAddress()?toBase58(hash2byte(input.getAddress())):hash2Address(input.getAddress());
