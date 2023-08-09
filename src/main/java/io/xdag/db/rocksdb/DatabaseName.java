@@ -48,5 +48,7 @@ public enum DatabaseName {
 
     SNAPSHOT,
 
-    ADDRESS
+    ADDRESS,
+
+    TXHISTORY
 }

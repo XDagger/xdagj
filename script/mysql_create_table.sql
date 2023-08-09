@@ -1,6 +1,7 @@
 CREATE TABLE `t_transaction_history` (
   `fid` int NOT NULL AUTO_INCREMENT,
   `faddress` varchar(64) NOT NULL,
+  `faddresstype` tinyint NOT NULL,
   `fhash` varchar(64) NOT NULL,
   `famount` decimal(20,9) unsigned zerofill NOT NULL,
   `ftype` tinyint NOT NULL,

@@ -24,39 +24,18 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static io.xdag.BlockBuilder.generateExtraBlock;
-import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
-import static io.xdag.cli.Commands.getStateByFlags;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
-
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.BlockchainImpl;
-import io.xdag.core.ImportResult;
+import io.xdag.core.*;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
-import io.xdag.db.rocksdb.BlockStoreImpl;
-import io.xdag.db.rocksdb.DatabaseFactory;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.*;
 import io.xdag.utils.XdagTime;
-import io.xdag.Wallet;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -65,6 +44,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+
+import static io.xdag.BlockBuilder.*;
+import static io.xdag.cli.Commands.getStateByFlags;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.*;
 
 public class SyncTest {
 
@@ -342,7 +331,8 @@ public class SyncTest {
         BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK));
+                dbFactory.getDB(DatabaseName.BLOCK),
+                dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
         OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));

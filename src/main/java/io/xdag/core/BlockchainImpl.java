@@ -74,6 +74,7 @@ import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
+import static io.xdag.utils.WalletUtils.checkAddress;
 import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
@@ -331,7 +332,7 @@ public class BlockchainImpl implements Blockchain {
                 log.debug("Block's input can't be used");
                 return ImportResult.INVALID_BLOCK;
             }
-
+            int id = 0;
             // remove links
             for (Address ref : all) {
                 FieldType fType;
@@ -348,8 +349,9 @@ public class BlockchainImpl implements Blockchain {
 
                 if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
                     onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
-                            block.getTimestamp(), block.getInfo().getRemark());
+                            block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
                 }
+                id++;
             }
 
             // 检查当前主链
@@ -454,9 +456,9 @@ public class BlockchainImpl implements Blockchain {
 
 
     public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
-                               XAmount amount, long time, byte[] remark) {
+                               XAmount amount, long time, byte[] remark, boolean isAddress, int id) {
         if (txHistoryStore != null) {
-            Address address = new Address(addressHashlow, type, amount, false);
+            Address address = new Address(addressHashlow, type, amount, isAddress);
             TxHistory txHistory = new TxHistory();
             txHistory.setAddress(address);
             txHistory.setHash(BasicUtils.hash2Address(txHashlow));
@@ -470,7 +472,19 @@ public class BlockchainImpl implements Blockchain {
                     txHistoryStore.batchSaveTxHistory(txHistory);
                 } else {
                     if (!txHistoryStore.saveTxHistory(txHistory)) {
-                        log.warn("tx history write fail:{}", txHistory);
+                        log.warn("tx history write to mysql fail:{}", txHistory);
+                        // Mysql exception, transaction history transferred to Rocksdb
+                        blockStore.saveTxHistoryToRocksdb(txHistory, id);
+                    } else {
+                        List<TxHistory> txHistoriesInRocksdb = blockStore.getAllTxHistoryFromRocksdb();
+                        if (!txHistoriesInRocksdb.isEmpty()) {
+                            for (TxHistory txHistoryInRocksdb : txHistoriesInRocksdb) {
+                                txHistoryStore.batchSaveTxHistory(txHistoryInRocksdb, txHistoriesInRocksdb.size());
+                            }
+                            if (txHistoryStore.batchSaveTxHistory(null)) {
+                                blockStore.deleteAllTxHistoryFromRocksdb();
+                            }
+                        }
                     }
                 }
 
@@ -483,10 +497,18 @@ public class BlockchainImpl implements Blockchain {
     public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page, Object... timeRange) {
         List<TxHistory> txHistory = Lists.newArrayList();
         if (txHistoryStore != null) {
-            try {
-                txHistory.addAll(txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page, timeRange));
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
+            if (checkAddress(BasicUtils.hash2PubAddress(addressHashlow))) {
+                try {
+                    txHistory.addAll(txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2PubAddress(addressHashlow), page, timeRange));
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            } else {
+                try {
+                    txHistory.addAll(txHistoryStore.listTxHistoryByAddress(BasicUtils.hash2Address(addressHashlow), page, timeRange));
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
             }
         }
         return txHistory;
@@ -999,6 +1021,7 @@ public class BlockchainImpl implements Blockchain {
 
     /**
      * update pretop
+     *
      * @param target     target
      * @param targetDiff difficulty of block
      */

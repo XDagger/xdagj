@@ -23,18 +23,14 @@
  */
 package io.xdag.db;
 
-import java.util.List;
-import java.util.function.Function;
-
+import io.xdag.core.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
+import java.util.List;
+import java.util.function.Function;
 
 public interface BlockStore {
 
@@ -47,6 +43,7 @@ public interface BlockStore {
     byte SNAPSHOT_BOOT = (byte) 0x70;
     byte BLOCK_HEIGHT = (byte) 0x80;
     byte SNAPSHOT_PRESEED = (byte) 0x90;
+    byte TX_HISTORY = (byte) 0xa0;
     String SUM_FILE_NAME = "sums.dat";
 
     void init();
@@ -64,6 +61,12 @@ public interface BlockStore {
     void saveBlockInfo(BlockInfo blockInfo);
 
     void saveOurBlock(int index, byte[] hashlow);
+
+    void saveTxHistoryToRocksdb(TxHistory txHistory,int id);
+
+    List<TxHistory> getAllTxHistoryFromRocksdb();
+
+    void deleteAllTxHistoryFromRocksdb();
 
     boolean hasBlock(Bytes32 hashlow);
 

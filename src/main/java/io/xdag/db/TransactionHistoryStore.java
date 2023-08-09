@@ -30,7 +30,7 @@ import java.util.List;
 public interface TransactionHistoryStore {
 
     boolean saveTxHistory(TxHistory txHistory);
-    boolean batchSaveTxHistory(TxHistory txHistory );
+    boolean batchSaveTxHistory(TxHistory txHistory,int... cacheNum);
     List<TxHistory> listTxHistoryByAddress(String address, int page, Object... timeRange);
 
     int getTxHistoryCount(String address);
