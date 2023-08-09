@@ -24,25 +24,26 @@
 
 package io.xdag.utils;
 
-import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
-import static io.xdag.utils.BytesUtils.equalBytes;
-import static io.xdag.utils.BytesUtils.long2UnsignedLong;
-
 import com.google.common.primitives.UnsignedLong;
-
 import io.xdag.core.XAmount;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
-import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.zip.CRC32;
+
+import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
+import static io.xdag.utils.BytesUtils.equalBytes;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
+import static io.xdag.utils.WalletUtils.toBase58;
 
 public class BasicUtils {
 
@@ -72,6 +73,9 @@ public class BasicUtils {
 
     public static String hash2Address(Bytes32 hash) {
         return hash.reverse().slice(0, 24).toBase64String();
+    }
+    public static String hash2PubAddress(Bytes32 hash) {
+       return toBase58(hash2byte(hash.mutableCopy()));
     }
 
     public static Bytes32 address2Hash(String address) {

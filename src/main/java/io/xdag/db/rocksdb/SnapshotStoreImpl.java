@@ -263,13 +263,13 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         }
                     }
                     addressStore.snapshotAddress(address, balance);
-
                     if (txHistoryStore != null) {
                         XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
-                        Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address, 1, 21)), fieldType, balance, false);
+                        Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address, 1, 21)),
+                                fieldType, balance, true);
                         TxHistory txHistory = new TxHistory();
                         txHistory.setAddress(addr);
-                        txHistory.setHash(BasicUtils.hash2Address(addr.getAddress()));
+                        txHistory.setHash(BasicUtils.hash2PubAddress(addr.getAddress()));
                         txHistory.setRemark("snapshot");
                         txHistory.setTimestamp(snapshotTime);
                         txHistoryStore.saveTxHistory(txHistory);

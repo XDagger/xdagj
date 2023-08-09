@@ -24,24 +24,12 @@
 
 package io.xdag.wallet;
 
-import static io.xdag.crypto.Bip32Test.addChecksum;
-import static io.xdag.crypto.Bip32Test.serializePrivate;
-import static io.xdag.crypto.Bip32Test.serializePublic;
-import static org.junit.Assert.assertEquals;
-
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.*;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
-
-import java.io.IOException;
-import java.util.Collections;
 import org.apache.tuweni.io.Base58;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
@@ -49,6 +37,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import static io.xdag.crypto.Bip32Test.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class WalletUtilsTest {
 
@@ -122,6 +117,11 @@ public class WalletUtilsTest {
         assertEquals(
                 "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
                 Base58.encode(addChecksum(serializePublic(bip44Keypair))));
+    }
+    @Test
+    public void testCheckIsAddress() {
+        String walletAddress="KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf";
+        assertTrue(io.xdag.crypto.Base58.checkAddress(walletAddress));
     }
 
     @After

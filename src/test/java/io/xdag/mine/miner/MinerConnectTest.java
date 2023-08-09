@@ -24,14 +24,12 @@
 
 package io.xdag.mine.miner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.core.BlockchainImpl;
@@ -41,23 +39,10 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
-import io.xdag.db.rocksdb.AddressStoreImpl;
-import io.xdag.db.rocksdb.BlockStoreImpl;
-import io.xdag.db.rocksdb.DatabaseFactory;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.*;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.handler.MinerHandShakeHandler;
 import io.xdag.utils.BytesUtils;
-import io.xdag.Wallet;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.Collections;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -66,6 +51,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MinerConnectTest {
 
@@ -101,7 +97,8 @@ public class MinerConnectTest {
         BlockStore blockStore = new BlockStoreImpl(
                 dbFactory.getDB(DatabaseName.INDEX),
                 dbFactory.getDB(DatabaseName.TIME),
-                dbFactory.getDB(DatabaseName.BLOCK));
+                dbFactory.getDB(DatabaseName.BLOCK),
+                dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
 
@@ -132,7 +129,6 @@ public class MinerConnectTest {
 //        Native.crypt_start();
         KeyPair key = Keys.createEcKeyPair();
         byte[] address = Keys.toBytesAddress(key);
-
         ByteBuf buf = Unpooled.buffer();
         buf.writeBytes(address);
         ByteBuf buf1 = buf.duplicate();

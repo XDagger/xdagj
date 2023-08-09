@@ -24,17 +24,19 @@
 
 package io.xdag.utils;
 
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.crc32Verify;
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import io.xdag.utils.exception.XdagOverFlowException;
-import java.math.BigDecimal;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
+
+import java.math.BigDecimal;
+
+import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.WalletUtils.toBase58;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BasicUtilsTest {
 
@@ -93,6 +95,19 @@ public class BasicUtilsTest {
         String originhashlow = "0000000000000000a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
         Bytes32 hashlow = address2Hash(news);
         assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
+    }
+    @Test
+    public void hash2PubAddress() {
+        Bytes32 hash = Bytes32.fromHexString("0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+        assertEquals(toBase58(hash2byte(hash.mutableCopy())), "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+    }
+
+    @Test
+    public void pubAddress2Hash() {
+        Bytes ret = Bytes.wrap(WalletUtils.fromBase58("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf"));
+        MutableBytes32 res = MutableBytes32.create();
+        res.set(8, ret);
+        assertEquals(res.toHexString(),"0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
     }
 
     @Test
