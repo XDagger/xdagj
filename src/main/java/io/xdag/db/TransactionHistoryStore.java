@@ -31,7 +31,7 @@ public interface TransactionHistoryStore {
 
     boolean saveTxHistory(TxHistory txHistory);
     boolean batchSaveTxHistory(TxHistory txHistory,int... cacheNum);
-    List<TxHistory> listTxHistoryByAddress(String address, int page, Object... timeRange);
+    List<TxHistory> listTxHistoryByAddress(String address, int page, Object... parameters);
 
     int getTxHistoryCount(String address);
 
