@@ -60,7 +60,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private static final int BLOCK_ADDRESS_FLAG = 0;
     private static final int WALLET_ADDRESS_FLAG = 1;
 
-    private static final int PAGE_SIZE = 100;
+    private static final int Default_PAGE_SIZE = 100;
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
@@ -156,23 +156,43 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
 
 
     @Override
-    public List<TxHistory> listTxHistoryByAddress(String address, int page, Object... timeRange) {
+    public List<TxHistory> listTxHistoryByAddress(String address, int page, Object... parameters) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
         int totalcount = 0;
+        int PAGE_SIZE = Default_PAGE_SIZE;
         long start = new Date(0).getTime();
         long end = System.currentTimeMillis();
-        if (timeRange.length != 0) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                start = sdf.parse(timeRange[0].toString()).getTime();
-                end = sdf.parse(timeRange[1].toString()).getTime();
-            } catch (ParseException e) {
-                start = Long.parseLong(timeRange[0].toString());
-                end = Long.parseLong(timeRange[1].toString());
-            }
+        switch (parameters.length) {
+            case 0: break;
+            case 1:
+                int pageSize = Integer.parseInt(parameters[0].toString());
+                PAGE_SIZE = (pageSize > 0 && pageSize <= 500) ? pageSize : PAGE_SIZE;
+                break;
+            case 2:
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    start = sdf.parse(parameters[0].toString()).getTime();
+                    end = sdf.parse(parameters[1].toString()).getTime();
+                } catch (ParseException e) {
+                    start = Long.parseLong(parameters[0].toString());
+                    end = Long.parseLong(parameters[1].toString());
+                }
+                break;
+            case 3:
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    start = sdf.parse(parameters[0].toString()).getTime();
+                    end = sdf.parse(parameters[1].toString()).getTime();
+                } catch (ParseException e) {
+                    start = Long.parseLong(parameters[0].toString());
+                    end = Long.parseLong(parameters[1].toString());
+                }
+                int page_size = Integer.parseInt(parameters[2].toString());
+                PAGE_SIZE = (page_size > 0 && page_size <= 500) ? page_size : PAGE_SIZE;
+                break;
         }
         try {
             conn = DruidUtils.getConnection();

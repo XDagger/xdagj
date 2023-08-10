@@ -98,6 +98,14 @@ public interface Web3XdagModule {
         return getXdagModule().getBlockByHash(blockHash, page);
     }
 
+    default BlockResultDTO xdag_getBlockByHash(String blockHash, int page, String startTime, String endTime, int pageSize) {
+        return getXdagModule().getBlockByHash(blockHash, page, startTime, endTime, pageSize);
+    }
+
+    default BlockResultDTO xdag_getBlockByHash(String blockHash, int page, int pageSize) {
+        return getXdagModule().getBlockByHash(blockHash, page, pageSize);
+    }
+
     StatusDTO xdag_getStatus() throws Exception;
 
     Object xdag_netType() throws Exception;

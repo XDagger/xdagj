@@ -494,12 +494,12 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page, Object... timeRange) {
+    public List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page, Object... parameters) {
         List<TxHistory> txHistory = Lists.newArrayList();
         if (txHistoryStore != null) {
             try {
                 txHistory.addAll(txHistoryStore.listTxHistoryByAddress(checkAddress(addressHashlow) ?
-                        BasicUtils.hash2PubAddress(addressHashlow) : BasicUtils.hash2Address(addressHashlow), page, timeRange));
+                        BasicUtils.hash2PubAddress(addressHashlow) : BasicUtils.hash2Address(addressHashlow), page, parameters));
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
