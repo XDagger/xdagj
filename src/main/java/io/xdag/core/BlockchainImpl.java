@@ -499,7 +499,7 @@ public class BlockchainImpl implements Blockchain {
         if (txHistoryStore != null) {
             try {
                 txHistory.addAll(txHistoryStore.listTxHistoryByAddress(checkAddress(addressHashlow) ?
-                        BasicUtils.hash2PubAddress(addressHashlow) : BasicUtils.hash2Address(addressHashlow), page, parameters);
+                        BasicUtils.hash2PubAddress(addressHashlow) : BasicUtils.hash2Address(addressHashlow), page, parameters));
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
