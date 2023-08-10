@@ -42,6 +42,7 @@ import java.util.List;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
+import static io.xdag.utils.WalletUtils.checkAddress;
 import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
@@ -220,8 +221,10 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                     txHistory.setHash(hash);
                     XAmount amount = XAmount.of(rs.getBigDecimal(4), XUnit.XDAG);
                     int fType = rs.getInt(5);
-                    Address addrObj = new Address(BasicUtils.address2Hash(hash),
-                            XdagField.FieldType.fromByte((byte) fType), amount, false);
+                    Address addrObj =
+                            new Address(checkAddress(hash) ? BasicUtils.pubAddress2Hash(hash) :
+                                    BasicUtils.address2Hash(hash),
+                                    XdagField.FieldType.fromByte((byte) fType), amount, checkAddress(hash));
                     txHistory.setAddress(addrObj);
                     txHistory.setRemark(rs.getString(6));
                     txHistory.setTimestamp(rs.getTimestamp(7).getTime());
