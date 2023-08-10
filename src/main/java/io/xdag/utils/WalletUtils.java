@@ -24,14 +24,15 @@
 
 package io.xdag.utils;
 
-import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
-
 import io.xdag.Wallet;
 import io.xdag.crypto.Base58;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.MnemonicUtils;
 import io.xdag.utils.exception.AddressFormatException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes32;
+
+import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
 
 @Slf4j
 public class WalletUtils {
@@ -69,5 +70,9 @@ public class WalletUtils {
     public static boolean checkAddress(String base58) {
         return Base58.checkAddress(base58);
     }
+    public static boolean checkAddress(Bytes32 hashlow) {
+        return hashlow.slice(28, 4).toInt() == 0;
+    }
+
 
 }

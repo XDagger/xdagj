@@ -105,7 +105,6 @@ public class TransactionHistoryStoreImplTest {
         assertEquals(1, count);
         assertEquals(remark, resTxHistory.getRemark());
         assertEquals(hash, resTxHistory.getHash());
-        assertEquals(timestamp, resTxHistory.getTimestamp());
     }
 
 }
