@@ -66,6 +66,10 @@ public interface Web3XdagModule {
         return getXdagModule().getBlockByNumber(bnOrId, page);
     }
 
+    default BlockResultDTO xdag_getBlockByNumber(String bnOrId, int page, int pageSize) {
+        return getXdagModule().getBlockByNumber(bnOrId, page, pageSize);
+    }
+
     default String xdag_getRewardByNumber(String bnOrId) {
         return getXdagModule().getRewardByNumber(bnOrId);
     }

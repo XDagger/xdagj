@@ -32,7 +32,7 @@ public interface XdagModuleChain {
 
     BlockResultDTO getBlockByHash(String hash, int page, Object... parameters);
 
-    BlockResultDTO getBlockByNumber(String bnOrId, int page);
+    BlockResultDTO getBlockByNumber(String bnOrId, int page, Object... parameters );
 
     String getRewardByNumber(String bnOrId);
 

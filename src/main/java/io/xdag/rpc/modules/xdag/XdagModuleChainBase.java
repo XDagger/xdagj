@@ -92,16 +92,16 @@ public class XdagModuleChainBase implements XdagModuleChain {
     }
 
     @Override
-    public BlockResultDTO getBlockByNumber(String bnOrId, int page) {
+    public BlockResultDTO getBlockByNumber(String bnOrId, int page, Object... parameters) {
         Block blockFalse = blockchain.getBlockByHeight(Long.parseLong(bnOrId));
         if (null == blockFalse) {
             return null;
         }
         Block blockTrue = blockchain.getBlockByHash(blockFalse.getHash(), true);
         if (blockTrue == null) {
-            return transferBlockInfoToBlockResultDTO(blockFalse, page);
+            return transferBlockInfoToBlockResultDTO(blockFalse, page, parameters);
         }
-        return transferBlockToBlockResultDTO(blockTrue, page);
+        return transferBlockToBlockResultDTO(blockTrue, page, parameters);
     }
 
     @Override
