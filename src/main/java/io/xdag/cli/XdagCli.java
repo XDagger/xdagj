@@ -191,12 +191,12 @@ public class XdagCli extends Launcher {
         } else if (cmd.hasOption(XdagOption.IMPORT_MNEMONIC.toString())) {
             importMnemonic(cmd.getOptionValue(XdagOption.IMPORT_MNEMONIC.toString()).trim());
         } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
-            boolean convertUInt = false;
+            boolean convertXAmount = false;
             String action = cmd.getOptionValue(XdagOption.MAKE_SNAPSHOT.toString());
-            if (action != null && action.trim().equals("convertuint")) {
-                convertUInt = true;
+            if (action != null && action.trim().equals("convertxamount")) {
+                convertXAmount = true;
             }
-            makeSnapshot(convertUInt);
+            makeSnapshot(convertXAmount);
         } else {
             if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
                 String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
@@ -500,7 +500,7 @@ public class XdagCli extends Launcher {
 
     public void makeSnapshot(boolean b) {
         System.out.println("make snapshot start");
-        System.out.println("convertuint = " + b);
+        System.out.println("convertXAmount = " + b);
         long start = System.currentTimeMillis();
         this.getConfig().getSnapshotSpec().setSnapshotJ(true);
         RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());

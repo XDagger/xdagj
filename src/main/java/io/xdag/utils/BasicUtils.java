@@ -24,18 +24,10 @@
 
 package io.xdag.utils;
 
-import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
-import static io.xdag.utils.BytesUtils.equalBytes;
-import static io.xdag.utils.BytesUtils.long2UnsignedLong;
-
 import com.google.common.primitives.UnsignedLong;
+import io.xdag.core.XAmount;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.exception.XdagOverFlowException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
-import java.text.NumberFormat;
-import java.util.zip.CRC32;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -43,16 +35,23 @@ import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.util.zip.CRC32;
+
+import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
+import static io.xdag.utils.BytesUtils.equalBytes;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
+import static io.xdag.utils.WalletUtils.toBase58;
+
 public class BasicUtils {
 
     public static BigInteger getDiffByHash(Bytes32 hash) {
-//        byte[] data = new byte[16];
         MutableBytes data = MutableBytes.create(16);
         // 实现了右移32位 4个字节
-//        System.arraycopy(hash, 0, data, 4, 12);
         data.set(4, hash.slice(0, 12));
         BigInteger res = new BigInteger(data.toUnprefixedHexString(), 16);
-//        BigInteger res = data.toUnsignedBigInteger();
         // max是2的128次方减1 这样效率高吗
         BigInteger max = new BigInteger("ffffffffffffffffffffffffffffffff", 16);
         return max.divide(res);
@@ -74,6 +73,9 @@ public class BasicUtils {
 
     public static String hash2Address(Bytes32 hash) {
         return hash.reverse().slice(0, 24).toBase64String();
+    }
+    public static String hash2PubAddress(Bytes32 hash) {
+       return toBase58(hash2byte(hash.mutableCopy()));
     }
 
     public static Bytes32 address2Hash(String address) {
@@ -97,7 +99,7 @@ public class BasicUtils {
         return res;
     }
 
-    public static byte[] Hash2byte(MutableBytes32 hash){
+    public static byte[] hash2byte(MutableBytes32 hash){
         Bytes bytes = hash.slice(8,20);
         return bytes.toArray();
     }
@@ -114,13 +116,6 @@ public class BasicUtils {
         long tmp = (long) Math.ceil(input);
         UInt64 result = res.add(tmp);
         return result;
-    }
-
-    public static String formatDouble(double d) {
-        NumberFormat nf = NumberFormat.getInstance();
-        nf.setMaximumFractionDigits(9);
-        nf.setGroupingUsed(false);
-        return nf.format(d);
     }
 
     /**
@@ -179,11 +174,23 @@ public class BasicUtils {
         return long2UnsignedLong(amount1).compareTo(long2UnsignedLong(amount2));
     }
 
+    public static int compareAmountTo(XAmount amount1, XAmount amount2) {
+        return amount1.compareTo(amount2);
+    }
+
     public static int compareAmountTo(UInt64 amount1, UInt64 amount2) {
         return amount1.compareTo(amount2);
     }
 
     public static int compareAmountTo(UnsignedLong amount1, UnsignedLong amount2) {
         return amount1.compareTo(amount2);
+    }
+
+    public static BigDecimal amount2xdagNew(long xdag) {
+        if(xdag < 0) throw new XdagOverFlowException();
+        long first = xdag >> 32;
+        long temp = xdag - (first << 32);
+        double tem = temp / Math.pow(2, 32);
+        return new BigDecimal(first + tem);
     }
 }

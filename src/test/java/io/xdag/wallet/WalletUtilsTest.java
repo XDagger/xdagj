@@ -24,27 +24,14 @@
 
 package io.xdag.wallet;
 
-import static io.xdag.crypto.Bip32Test.addChecksum;
-import static io.xdag.crypto.Bip32Test.serializePrivate;
-import static io.xdag.crypto.Bip32Test.serializePublic;
-import static org.junit.Assert.assertEquals;
-
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.*;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
-
-import java.io.IOException;
-import java.security.Security;
-import java.util.Collections;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
 import org.junit.Before;
@@ -52,9 +39,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class WalletUtilsTest {
+import java.io.IOException;
+import java.util.Collections;
 
-    static { Security.addProvider(new BouncyCastleProvider());  }
+import static io.xdag.crypto.Bip32Test.*;
+import static io.xdag.utils.WalletUtils.checkAddress;
+import static org.junit.Assert.*;
+
+public class WalletUtilsTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -126,6 +118,22 @@ public class WalletUtilsTest {
         assertEquals(
                 "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
                 Base58.encode(addChecksum(serializePublic(bip44Keypair))));
+    }
+    @Test
+    public void testCheckIsAddress() {
+        String walletAddress="KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf";
+        assertTrue(io.xdag.crypto.Base58.checkAddress(walletAddress));
+    }
+    @Test
+    public void testHashlowIsAddress(){
+        Bytes32 addressHashlow1 = Bytes32.fromHexString(
+                "0x00000000000000000007dcdf530ce2d6db89e6ce126a192c24813e9b3208abcf");//not a wallet address hash
+        Bytes32 addressHashlow2 = Bytes32.fromHexString(
+                "0x000000000000000046a2a0fe035c413d92be9c79a11cfc3695780f6500000000");//a wallet address hash
+        assertNotEquals(0, addressHashlow1.slice(28, 4).toInt());
+        assertEquals(0,addressHashlow2.slice(28,4).toInt());
+        assertFalse(checkAddress(addressHashlow1));
+        assertTrue(checkAddress(addressHashlow2));
     }
 
     @After

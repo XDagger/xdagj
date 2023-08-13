@@ -61,6 +61,7 @@ public abstract class AbstractMessage extends Message {
     @Setter
     protected Bytes32 hash;
 
+
     /**
      * 获取对方节点的netstatus
      */

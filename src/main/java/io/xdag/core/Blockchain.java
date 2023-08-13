@@ -33,7 +33,7 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 public interface Blockchain {
 
-    // for snapshot pre seed
+    // for snapshot pre-seed
     byte[] getPreSeed();
 
     ImportResult tryToConnect(Block block);
@@ -56,9 +56,9 @@ public interface Blockchain {
 
     XdagTopStatus getXdagTopStatus();
 
-    long getReward(long nmain);
+    XAmount getReward(long nmain);
 
-    long getSupply(long nmain);
+    XAmount getSupply(long nmain);
 
     List<Block> getBlocksByTime(long starttime, long endtime);
 
@@ -72,7 +72,7 @@ public interface Blockchain {
     // 注册监听器
     void registerListener(Listener listener);
 
-    List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow);
+    List<TxHistory> getBlockTxHistoryByAddress(Bytes32 addressHashlow, int page, Object... parameters);
 
     XdagExtStats getXdagExtStats();
 }

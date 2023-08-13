@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="http://maven.apache.org/POM/4.0.0"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.6.4</version>
+    <version>0.6.5</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,7 +17,7 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
 
-        <netty.version>4.1.90.Final</netty.version>
+        <netty.version>4.1.92.Final</netty.version>
         <tuweni.version>2.3.1</tuweni.version>
         <libp2p.version>0.10.0-RELEASE</libp2p.version>
         <json.version>2.14.2</json.version>
@@ -27,8 +27,29 @@
         <jline.version>3.23.0</jline.version>
         <junit.version>4.13.2</junit.version>
         <mockito.version>5.2.0</mockito.version>
-        <system-rules.version>1.19.0</system-rules.version>
+        <system-lambda.version>1.2.1</system-lambda.version>
         <log4j.version>2.20.0</log4j.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+        <commons-codec.version>1.15</commons-codec.version>
+        <commons-io.version>2.11.0</commons-io.version>
+        <commons-cli.version>1.5.0</commons-cli.version>
+        <guava.version>32.0.0-jre</guava.version>
+        <rocksdbjni.version>8.0.0</rocksdbjni.version>
+        <okhttp.version>4.10.0</okhttp.version>
+        <assertj-core.version>3.24.2</assertj-core.version>
+        <crypto.version>22.10.4</crypto.version>
+        <bcprov-jdk18on.version>1.74</bcprov-jdk18on.version>
+        <bcpkix-jdk18on.version>1.74</bcpkix-jdk18on.version>
+        <vertx-core.version>4.4.0</vertx-core.version>
+        <discovery.version>22.2.0</discovery.version>
+        <jsonrpc4j.version>1.6</jsonrpc4j.version>
+        <jaxws-ri.version>4.0.1</jaxws-ri.version>
+        <config.version>1.4.2</config.version>
+        <agrona.version>1.17.1</agrona.version>
+        <snappy-java.version>1.1.10.1</snappy-java.version>
+        <druid.version>1.2.18</druid.version>
+        <mysql-connector.version>8.0.33</mysql-connector.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -200,6 +221,12 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>about.html</exclude>
+                                        <exclude>log4j2.xml</exclude>
+                                        <exclude>rpc_modules.conf</exclude>
+                                        <exclude>druid.properties</exclude>
+                                        <exclude>xdag-devnet.conf</exclude>
+                                        <exclude>xdag-testnet.conf</exclude>
+                                        <exclude>xdag-mainnet.conf</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
@@ -237,6 +264,35 @@
                 </executions>
             </plugin>
 
+            <!-- version  -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>replace-version</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/dist</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/script</directory>
+                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>xdag.sh</include>
+                                        <include>xdag.bat</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- prepare distribution -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -257,55 +313,67 @@
                             <target>
                                 <!-- windows build -->
                                 <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                        tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar"/>
+                                      tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar"/>
                                 <copy file="src/main/resources/log4j2.xml"
-                                        tofile="${dist.base}/windows/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.config"
-                                        tofile="${dist.base}/windows/xdag-mainnet.config"/>
-                                <copy file="src/main/resources/xdag-testnet.config"
-                                        tofile="${dist.base}/windows/xdag-testnet.config"/>
-                                <copy file="src/main/resources/xdag-devnet.config"
-                                        tofile="${dist.base}/windows/xdag-devnet.config"/>
-                                <copy file="${project.basedir}/script/xdag.bat"
-                                        tofile="${dist.base}/windows/xdag.bat"/>
+                                      tofile="${dist.base}/windows/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.conf"
+                                      tofile="${dist.base}/windows/xdag-mainnet.conf"/>
+                                <copy file="src/main/resources/xdag-testnet.conf"
+                                      tofile="${dist.base}/windows/xdag-testnet.conf"/>
+                                <copy file="src/main/resources/xdag-devnet.conf"
+                                      tofile="${dist.base}/windows/xdag-devnet.conf"/>
+                                <copy file="src/main/resources/rpc_modules.conf"
+                                      tofile="${dist.base}/windows/rpc_modules.conf"/>
+                                <copy file="src/main/resources/druid.properties"
+                                      tofile="${dist.base}/windows/druid.properties"/>
+                                <copy file="${dist.base}/xdag.bat"
+                                      tofile="${dist.base}/windows/xdag.bat"/>
                                 <zip basedir="${dist.base}/windows/"
-                                        destfile="${dist.base}/xdagj-windows.zip"/>
+                                     destfile="${dist.base}/xdagj-windows.zip"/>
                                 <delete dir="${dist.base}/windows/" includeemptydirs="true"/>
 
                                 <!-- linux build (executable jar) -->
                                 <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                        tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar"/>
+                                      tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar"/>
                                 <copy file="src/main/resources/log4j2.xml"
-                                        tofile="${dist.base}/linux/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.config"
-                                        tofile="${dist.base}/linux/xdag-mainnet.config"/>
-                                <copy file="src/main/resources/xdag-testnet.config"
-                                        tofile="${dist.base}/linux/xdag-testnet.config"/>
-                                <copy file="src/main/resources/xdag-devnet.config"
-                                        tofile="${dist.base}/linux/xdag-devnet.config"/>
-                                <copy file="${project.basedir}/script/xdag.sh"
-                                        tofile="${dist.base}/linux/xdag.sh"/>
+                                      tofile="${dist.base}/linux/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.conf"
+                                      tofile="${dist.base}/linux/xdag-mainnet.conf"/>
+                                <copy file="src/main/resources/xdag-testnet.conf"
+                                      tofile="${dist.base}/linux/xdag-testnet.conf"/>
+                                <copy file="src/main/resources/xdag-devnet.conf"
+                                      tofile="${dist.base}/linux/xdag-devnet.conf"/>
+                                <copy file="src/main/resources/rpc_modules.conf"
+                                      tofile="${dist.base}/linux/rpc_modules.conf"/>
+                                <copy file="src/main/resources/druid.properties"
+                                      tofile="${dist.base}/linux/druid.properties"/>
+                                <copy file="${dist.base}/xdag.sh"
+                                      tofile="${dist.base}/linux/xdag.sh"/>
                                 <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
                                 <zip basedir="${dist.base}/linux/"
-                                        destfile="${dist.base}/xdagj-linux.zip"/>
+                                     destfile="${dist.base}/xdagj-linux.zip"/>
                                 <delete dir="${dist.base}/linux/" includeemptydirs="true"/>
 
                                 <!-- macos build -->
                                 <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                        tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar"/>
+                                      tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar"/>
                                 <copy file="src/main/resources/log4j2.xml"
-                                        tofile="${dist.base}/macos/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.config"
-                                        tofile="${dist.base}/macos/xdag-mainnet.config"/>
-                                <copy file="src/main/resources/xdag-testnet.config"
-                                        tofile="${dist.base}/macos/xdag-testnet.config"/>
-                                <copy file="src/main/resources/xdag-devnet.config"
-                                        tofile="${dist.base}/macos/xdag-devnet.config"/>
-                                <copy file="${project.basedir}/script/xdag.sh"
-                                        tofile="${dist.base}/macos/xdag.sh"/>
+                                      tofile="${dist.base}/macos/log4j2.xml"/>
+                                <copy file="src/main/resources/xdag-mainnet.conf"
+                                      tofile="${dist.base}/macos/xdag-mainnet.conf"/>
+                                <copy file="src/main/resources/xdag-testnet.conf"
+                                      tofile="${dist.base}/macos/xdag-testnet.conf"/>
+                                <copy file="src/main/resources/xdag-devnet.conf"
+                                      tofile="${dist.base}/macos/xdag-devnet.conf"/>
+                                <copy file="src/main/resources/rpc_modules.conf"
+                                      tofile="${dist.base}/macos/rpc_modules.conf"/>
+                                <copy file="src/main/resources/druid.properties"
+                                      tofile="${dist.base}/macos/druid.properties"/>
+                                <copy file="${dist.base}/xdag.sh"
+                                      tofile="${dist.base}/macos/xdag.sh"/>
                                 <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
                                 <zip basedir="${dist.base}/macos/"
-                                        destfile="${dist.base}/xdagj-macos.zip"/>
+                                     destfile="${dist.base}/xdagj-macos.zip"/>
                                 <delete dir="${dist.base}/macos/" includeemptydirs="true"/>
                             </target>
                         </configuration>
@@ -363,55 +431,37 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.12.0</version>
+            <version>${commons-lang3.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>4.4</version>
+            <version>${commons-collections4.version}</version>
         </dependency>
 
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.15</version>
+            <version>${commons-codec.version}</version>
         </dependency>
 
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.11.0</version>
+            <version>${commons-io.version}</version>
         </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
-            <version>1.5.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
-            <version>2.8.0</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-lang3</artifactId>
-                    <groupId>org.apache.commons</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.9.4</version>
+            <version>${commons-cli.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.0.0-jre</version>
+            <version>${guava.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.errorprone</groupId>
@@ -466,7 +516,7 @@
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
-            <version>8.0.0</version>
+            <version>${rocksdbjni.version}</version>
         </dependency>
 
         <dependency>
@@ -554,7 +604,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.10.0</version>
+            <version>${okhttp.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>annotations</artifactId>
@@ -597,8 +647,8 @@
 
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-rules</artifactId>
-            <version>${system-rules.version}</version>
+            <artifactId>system-lambda</artifactId>
+            <version>${system-lambda.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -611,7 +661,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.24.2</version>
+            <version>${assertj-core.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -619,6 +669,13 @@
                     <groupId>net.bytebuddy</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.1.214</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -668,7 +725,7 @@
         <dependency>
             <groupId>org.hyperledger.besu.internal</groupId>
             <artifactId>crypto</artifactId>
-            <version>22.10.4</version>
+            <version>${crypto.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>bcprov-jdk15on</artifactId>
@@ -708,19 +765,19 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.74</version>
+            <version>${bcprov-jdk18on.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.72</version>
+            <version>${bcpkix-jdk18on.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>4.4.0</version>
+            <version>${vertx-core.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -806,7 +863,7 @@
         <dependency>
             <groupId>tech.pegasys.discovery</groupId>
             <artifactId>discovery</artifactId>
-            <version>22.2.0</version>
+            <version>${discovery.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j-api</artifactId>
@@ -891,7 +948,7 @@
         <dependency>
             <groupId>com.github.briandilley.jsonrpc4j</groupId>
             <artifactId>jsonrpc4j</artifactId>
-            <version>1.6</version>
+            <version>${jsonrpc4j.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>slf4j-api</artifactId>
@@ -919,7 +976,7 @@
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-ri</artifactId>
-            <version>4.0.1</version>
+            <version>${jaxws-ri.version}</version>
             <type>pom</type>
             <exclusions>
                 <exclusion>
@@ -934,21 +991,33 @@
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
-            <version>1.4.2</version>
+            <version>${config.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.agrona/agrona -->
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.17.1</version>
+            <version>${agrona.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.10.1</version>
+            <version>${snappy-java.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>${mysql-connector.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>${druid.version}</version>
         </dependency>
 
     </dependencies>

@@ -31,6 +31,7 @@ import io.xdag.config.spec.RPCSpec;
 import io.xdag.config.spec.RandomxSpec;
 import io.xdag.config.spec.SnapshotSpec;
 import io.xdag.config.spec.WalletSpec;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 
 /**
@@ -68,13 +69,13 @@ public interface Config {
      */
     WalletSpec getWalletSpec();
 
-    long getMainStartAmount();
+    XAmount getMainStartAmount();
 
     long getXdagEra();
 
     long getApolloForkHeight();
 
-    long getApolloForkAmount();
+    XAmount getApolloForkAmount();
 
     XdagField.FieldType getXdagFieldHeader();
 
@@ -91,4 +92,8 @@ public interface Config {
     SnapshotSpec getSnapshotSpec();
 
     RandomxSpec getRandomxSpec();
+
+    boolean getEnableTxHistory();
+
+    boolean getEnableGenerateBlock();
 }

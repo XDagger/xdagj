@@ -41,8 +41,6 @@ public enum DatabaseName {
      */
     TIME,
 
-    TXHISTORY,
-
     /**
      * Orphan block index
      */
@@ -50,5 +48,7 @@ public enum DatabaseName {
 
     SNAPSHOT,
 
-    ADDRESS
+    ADDRESS,
+
+    TXHISTORY
 }

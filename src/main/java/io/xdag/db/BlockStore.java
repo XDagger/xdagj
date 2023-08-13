@@ -23,19 +23,14 @@
  */
 package io.xdag.db;
 
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
-import java.util.List;
-import java.util.function.Function;
+import io.xdag.core.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.units.bigints.UInt64;
+
+import java.util.List;
+import java.util.function.Function;
 
 public interface BlockStore {
 
@@ -66,6 +61,12 @@ public interface BlockStore {
     void saveBlockInfo(BlockInfo blockInfo);
 
     void saveOurBlock(int index, byte[] hashlow);
+
+    void saveTxHistoryToRocksdb(TxHistory txHistory,int id);
+
+    List<TxHistory> getAllTxHistoryFromRocksdb();
+
+    void deleteAllTxHistoryFromRocksdb();
 
     boolean hasBlock(Bytes32 hashlow);
 
@@ -101,15 +102,7 @@ public interface BlockStore {
 
     byte[] getPreSeed();
 
-    // tx history
-    void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, UInt64 amount,
-            long time, int id, byte[] remark);
-
-    List<TxHistory> getTxHistoryByAddress(Bytes32 addressHashlow);
-
-
     // sums.dat and sum.dat
-
     void saveBlockSums(Block block);
 
     MutableBytes getSums(String key);

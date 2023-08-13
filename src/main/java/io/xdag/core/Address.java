@@ -48,7 +48,7 @@ public class Address {
     /**
      * 转账金额（输入or输出）
      */
-    protected UInt64 amount = UInt64.ZERO;
+    protected XAmount amount = XAmount.ZERO;
     /**
      * 地址hash低192bit
      */
@@ -81,7 +81,7 @@ public class Address {
         }else {
             this.addressHash.set(8,hashLow.mutableCopy().slice(8,20));
         }
-        this.amount = UInt64.ZERO;
+        this.amount = XAmount.ZERO;
         parsed = true;
     }
 
@@ -91,7 +91,7 @@ public class Address {
     public Address(Block block) {
         this.isAddress = false;
         this.addressHash = block.getHashLow().mutableCopy();
-        this.amount = UInt64.ZERO;
+        this.amount = XAmount.ZERO;
         parsed = true;
     }
 
@@ -108,7 +108,7 @@ public class Address {
     }
 
 
-    public Address(Bytes32 hash, XdagField.FieldType type, UInt64 amount, Boolean isAddress) {
+    public Address(Bytes32 hash, XdagField.FieldType type, XAmount amount, Boolean isAddress) {
         this.isAddress = isAddress;
         this.type = type;
         if(!isAddress){
@@ -130,7 +130,8 @@ public class Address {
             }else {
                 this.data.set(8, this.addressHash.slice(8,20));
             }
-            this.data.set(0, Bytes.wrap(BytesUtils.bigIntegerToBytes(amount,8)));
+            UInt64 u64v = amount.toXAmount();
+            this.data.set(0, Bytes.wrap(BytesUtils.bigIntegerToBytes(u64v,8)));
         }
         return this.data;
     }
@@ -144,12 +145,13 @@ public class Address {
                 this.addressHash = MutableBytes32.create();
                 this.addressHash.set(8,this.data.slice(8,20));
             }
-            this.amount = UInt64.fromBytes(this.data.slice(0, 8));
+            UInt64 u64v = UInt64.fromBytes(this.data.slice(0, 8));
+            this.amount = XAmount.ofXAmount(u64v.toLong());
             this.parsed = true;
         }
     }
 
-    public UInt64 getAmount() {
+    public XAmount getAmount() {
         parse();
         return this.amount;
     }

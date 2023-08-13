@@ -83,10 +83,11 @@ public class SnapshotUnit {
         blockInfo.setDifficulty(BigInteger.ZERO);
         blockInfo.setFlags(snapshotUnit.getBalanceData().flags);
         if (snapshotUnit.type == 2) {
-            blockInfo.setAmount(UInt64.ZERO);
+            blockInfo.setAmount(XAmount.ZERO);
             blockInfo.setTimestamp(0);
         } else {
-            blockInfo.setAmount(UInt64.valueOf(snapshotUnit.getBalanceData().getAmount()));
+            UInt64 u64v = UInt64.valueOf(snapshotUnit.getBalanceData().getAmount());
+            blockInfo.setAmount(XAmount.ofXAmount(u64v.toLong()));
             blockInfo.setTimestamp(snapshotUnit.getBalanceData().getTime());
         }
         blockInfo.setHash(snapshotUnit.getHash());

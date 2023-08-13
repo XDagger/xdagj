@@ -26,6 +26,7 @@ package io.xdag.core;
 import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.tuweni.units.bigints.UInt64;
 
 @Getter
 @Setter
@@ -41,7 +42,7 @@ public class PreBlockInfo {
     private byte[] remark;
     private byte[] hash;
     private byte[] hashlow;
-    private long amount;
+    private UInt64 amount;
     private long timestamp;
 
     // snapshot

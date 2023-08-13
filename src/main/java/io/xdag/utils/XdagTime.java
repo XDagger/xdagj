@@ -81,7 +81,7 @@ public class XdagTime {
     }
 
     public static String format(Date date) {
-        return FastDateFormat.getInstance("yyyy-MM-dd hh:mm:ss").format(date);
+        return FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss").format(date);
     }
 
 }

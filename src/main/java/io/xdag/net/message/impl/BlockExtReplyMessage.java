@@ -26,6 +26,9 @@ package io.xdag.net.message.impl;
 
 import io.xdag.net.message.Message;
 import io.xdag.net.message.XdagMessageCodes;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
@@ -48,8 +51,7 @@ public class BlockExtReplyMessage extends Message {
 
     @Override
     public String toString() {
-        // TODO Auto-generated method stub
-        return null;
+        return new ToStringBuilder(this, ToStringStyle.JSON_STYLE).toString();
     }
 
     @Override

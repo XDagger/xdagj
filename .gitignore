@@ -23,6 +23,6 @@ dist
 .DS_Store
 src/c/
 src/main/resources/native
-src/main/resources/xdag-mainnet.config
+src/main/resources/xdag-mainnet.conf
 dependency-reduced-pom.xml
 pool

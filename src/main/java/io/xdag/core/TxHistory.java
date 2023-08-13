@@ -23,18 +23,43 @@
  */
 package io.xdag.core;
 
-import lombok.Data;
+import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.hash2byte;
+import static io.xdag.utils.WalletUtils.toBase58;
 
-@Data
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class TxHistory {
 
     Address address;
-    long timeStamp;
+    String hash;
+    long timestamp;
     String remark;
 
-    public TxHistory(Address address, long timeStamp, String remark) {
+    public TxHistory(){}
+
+    public TxHistory(Address address, String hash, long timestamp, String remark) {
         this.address = address;
-        this.timeStamp = timeStamp;
+        this.hash = hash;
+        this.timestamp = timestamp;
         this.remark = remark;
+    }
+
+    @Override
+    public String toString() {
+        String addr = address.getIsAddress() ?
+                toBase58(hash2byte(address.getAddress())) :
+                hash2Address(address.getAddress());
+
+        return String.format("[addr:%s, hash:%s, type:%s, amount:%s, remark:%s, time:%s]",
+                addr,
+                hash,
+                address.getType().asByte(),
+                address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
+                remark,
+                timestamp);
     }
 }

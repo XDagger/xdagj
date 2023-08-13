@@ -81,13 +81,13 @@ public class XdagModule implements XdagModuleTransaction, XdagModuleWallet, Xdag
     }
 
     @Override
-    public BlockResultDTO getBlockByHash(String hash) {
-        return xdagModuleChain.getBlockByHash(hash);
+    public BlockResultDTO getBlockByHash(String hash, int page,Object... parameters ) {
+        return xdagModuleChain.getBlockByHash(hash, page, parameters);
     }
 
     @Override
-    public BlockResultDTO getBlockByNumber(String bnOrId) {
-        return xdagModuleChain.getBlockByNumber(bnOrId);
+    public BlockResultDTO getBlockByNumber(String bnOrId, int page, Object... parameters) {
+        return xdagModuleChain.getBlockByNumber(bnOrId, page, parameters);
     }
 
     @Override

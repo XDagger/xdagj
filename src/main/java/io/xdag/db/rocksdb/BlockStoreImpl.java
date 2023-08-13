@@ -24,39 +24,20 @@
 
 package io.xdag.db.rocksdb;
 
-import static io.xdag.utils.BytesUtils.equalBytes;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.google.common.collect.Lists;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.SnapshotInfo;
-import io.xdag.core.TxHistory;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
+import io.xdag.core.*;
 import io.xdag.db.BlockStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.FileUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -66,6 +47,20 @@ import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 import org.objenesis.strategy.StdInstantiatorStrategy;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
+import static io.xdag.utils.BytesUtils.equalBytes;
 
 @Slf4j
 public class BlockStoreImpl implements BlockStore {
@@ -84,7 +79,6 @@ public class BlockStoreImpl implements BlockStore {
      * <hash,rawData>
      */
     private final KVSource<byte[], byte[]> blockSource;
-
     private final KVSource<byte[], byte[]> txHistorySource;
 
     public BlockStoreImpl(
@@ -96,7 +90,6 @@ public class BlockStoreImpl implements BlockStore {
         this.timeSource = time;
         this.blockSource = block;
         this.txHistorySource = txHistory;
-
         this.kryo = new Kryo();
         kryoRegister();
     }
@@ -104,7 +97,6 @@ public class BlockStoreImpl implements BlockStore {
     private void kryoRegister() {
         kryo.setReferences(false);
         kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-
         kryo.register(BigInteger.class);
         kryo.register(byte[].class);
         kryo.register(BlockInfo.class);
@@ -112,6 +104,7 @@ public class BlockStoreImpl implements BlockStore {
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
         kryo.register(UInt64.class);
+        kryo.register(XAmount.class);
     }
 
     private byte[] serialize(final Object obj) throws SerializationException {
@@ -166,7 +159,67 @@ public class BlockStoreImpl implements BlockStore {
         indexSource.put(new byte[]{SETTING_STATS}, value);
     }
 
-    //状态也是存在区块里面的
+    @Override
+    public void saveTxHistoryToRocksdb(TxHistory txHistory, int id) {
+        byte[] remark = new byte[]{};
+        if (txHistory.getRemark() != null) {
+            remark = txHistory.getRemark().getBytes(StandardCharsets.UTF_8);
+        }
+        byte[] isWalletAddress = new byte[]{(byte) (txHistory.getAddress().getIsAddress() ? 1 : 0)};
+        byte[] key = BytesUtils.merge(TX_HISTORY, BytesUtils.merge(txHistory.getAddress().getAddress().toArray(),
+                BasicUtils.address2Hash(txHistory.getHash()).toArray(), BytesUtils.intToBytes(id, true)));
+        // key: 0xa0 + address hash + txHashLow + id
+        byte[] value;
+        value = BytesUtils.merge(txHistory.getAddress().getType().asByte(), BytesUtils.merge(isWalletAddress,
+                txHistory.getAddress().getAddress().toArray(),
+                BasicUtils.address2Hash(txHistory.getHash()).toArray(),
+                txHistory.getAddress().getAmount().toXAmount().toBytes().reverse().toArray(),
+                BytesUtils.longToBytes(txHistory.getTimestamp(), true),
+                BytesUtils.longToBytes(remark.length, true),
+                remark));
+        // value: type  +  isWalletAddress +address hash +txHashLow+ amount + timestamp + remark_length + remark
+        txHistorySource.put(key, value);
+        log.info("MySQL write exception, transaction history stored in Rocksdb. " + txHistory);
+    }
+
+    public List<TxHistory> getAllTxHistoryFromRocksdb() {
+        List<TxHistory> res = Lists.newArrayList();
+        Set<byte[]> Keys = txHistorySource.keys();
+        for (byte[] key : Keys) {
+            byte[] txHistoryBytes = txHistorySource.get(key);
+            byte type = BytesUtils.subArray(txHistoryBytes, 0, 1)[0];
+            boolean isAddress = BytesUtils.subArray(txHistoryBytes, 1, 1)[0] == 1;
+            XdagField.FieldType fieldType = XdagField.FieldType.fromByte(type);
+            Bytes32 addresshashlow = Bytes32.wrap(BytesUtils.subArray(txHistoryBytes, 2, 32));
+            Bytes32 txhashlow = Bytes32.wrap(BytesUtils.subArray(txHistoryBytes, 34, 32));
+            String hash = BasicUtils.hash2Address(txhashlow);
+            XAmount amount =
+                    XAmount.ofXAmount(Bytes.wrap(BytesUtils.subArray(txHistoryBytes, 66, 8)).reverse().toLong());
+            long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(txHistoryBytes, 74, 8), 0, true);
+            Address address = new Address(addresshashlow, fieldType, amount, isAddress);
+            long remarkLength = BytesUtils.bytesToLong(BytesUtils.subArray(txHistoryBytes, 82, 8), 0, true);
+            String remark = null;
+            if (remarkLength != 0) {
+                remark = new String(BytesUtils.subArray(txHistoryBytes, 90, (int) remarkLength),
+                        StandardCharsets.UTF_8).trim();
+            }
+            res.add(new TxHistory(address, hash, timestamp, remark));
+        }
+        return res;
+    }
+
+    public void deleteAllTxHistoryFromRocksdb() {
+        for (byte[] key : txHistorySource.keys()) {
+            try {
+                txHistorySource.delete(key);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+    }
+
+
+    // 状态也是存在区块里面的
     public XdagStats getXdagStatus() {
         XdagStats status = null;
         byte[] value = indexSource.get(new byte[]{SETTING_STATS});
@@ -266,7 +319,6 @@ public class BlockStoreImpl implements BlockStore {
     public void fetchOurBlocks(Function<Pair<Integer, Block>, Boolean> function) {
         indexSource.fetchPrefix(new byte[]{OURS_BLOCK_INFO}, pair -> {
             int index = BlockUtils.getOurIndex(pair.getKey());
-//            Block block = getBlockInfoByHash(Bytes32.wrap(pair.getValue()));
             assert BlockUtils.getOurHash(pair.getKey()) != null;
             Block block = getBlockInfoByHash(Bytes32.wrap(Objects.requireNonNull(BlockUtils.getOurHash(pair.getKey()))));
             if (function.apply(Pair.of(index, block))) {
@@ -453,7 +505,7 @@ public class BlockStoreImpl implements BlockStore {
         return blocks;
     }
 
-    //ADD: 通过高度获取区块
+    // ADD: 通过高度获取区块
     public Block getBlockByHeight(long height) {
         byte[] hashlow = indexSource.get(BlockUtils.getHeight(height));
         if (hashlow == null) {
@@ -528,49 +580,5 @@ public class BlockStoreImpl implements BlockStore {
         return indexSource.get(new byte[]{SNAPSHOT_PRESEED});
     }
 
-
-    public void saveTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type, UInt64 amount,
-            long time, int id, byte[] remark) { // id is used to avoid repeat key
-        if (remark == null) {
-            remark = new byte[]{};
-        }
-        byte[] key = BytesUtils.merge(TX_HISTORY,
-                BytesUtils.merge(addressHashlow.toArray(), BytesUtils.merge(txHashlow.toArray(),
-                        BytesUtils.intToBytes(id, true)))); // key 0xa0 + address hash + tx hash + id
-
-        byte[] value;
-        value = BytesUtils.merge(type.asByte(),
-                BytesUtils.merge(txHashlow.toArray(),
-                            BytesUtils.merge(amount.toBytes().reverse().toArray(),
-                                BytesUtils.merge(BytesUtils.longToBytes(time, true),
-                                        BytesUtils.merge(BytesUtils.longToBytes(remark.length, true),
-                                                remark))))); // type + tx hash + amount + time + remark_length + remark
-        txHistorySource.put(key, value);
-    }
-
-    public List<TxHistory> getTxHistoryByAddress(Bytes32 addressHashlow) {
-        List<byte[]> values = txHistorySource.prefixValueLookup(BytesUtils.merge(TX_HISTORY, addressHashlow.toArray()));
-        List<TxHistory> res = Lists.newArrayList();
-
-        for (byte[] value : values) {
-            byte type = BytesUtils.subArray(value, 0, 1)[0];
-            XdagField.FieldType fieldType = XdagField.FieldType.fromByte(type);
-            Bytes32 hashlow = Bytes32.wrap(BytesUtils.subArray(value, 1, 32));
-            UInt64 amount = UInt64.fromBytes(Bytes.wrap(BytesUtils.subArray(value, 33, 8)).reverse());
-//            long amount = BytesUtils.bytesToLong(, 0, true);
-            long timestamp = BytesUtils.bytesToLong(BytesUtils.subArray(value, 41, 8), 0, true);
-            Address address = new Address(hashlow, fieldType, amount,false);
-
-            long remarkLength = BytesUtils.bytesToLong(BytesUtils.subArray(value, 49, 8), 0, true);
-
-            String remark = "";
-            if (remarkLength != 0) {
-                remark = new String(BytesUtils.subArray(value, 57, (int) remarkLength), StandardCharsets.UTF_8).trim();
-            }
-            res.add(new TxHistory(address, timestamp, remark));
-        }
-        return res;
-
-    }
 }
 

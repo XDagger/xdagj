@@ -62,8 +62,8 @@
   ```shell
   $mkdir run 
 
-  #Please copy xdag-devnet.config, xdag.sh & xdagj-0.5.4-shaded.jar into /run
-  # xdag-devnet.config is in /src-main-resources; xdag.sh is in /script; xdagj-0.5.4-shaded.jar is in /target
+  #Please copy xdag-devnet.conf, xdag.sh & xdagj-0.5.4-shaded.jar into /run
+  # xdag-devnet.conf is in /src-main-resources; xdag.sh is in /script; xdagj-0.5.4-shaded.jar is in /target
 
   $cd run
   $sh xdag.sh -d
@@ -77,7 +77,7 @@
 
 ## Modify pool config
 
-The configuration file is located in `src/main/resources/xdag-devnet.config`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
+The configuration file is located in `src/main/resources/xdag-devnet.conf`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
 
 ```yaml
 # Admin Config

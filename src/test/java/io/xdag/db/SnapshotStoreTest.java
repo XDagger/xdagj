@@ -23,17 +23,9 @@
  */
 package io.xdag.db;
 
-import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
-import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
-import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.BasicUtils.xdag2amount;
-import static org.junit.Assert.*;
-
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
@@ -41,30 +33,15 @@ import io.xdag.core.*;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.db.rocksdb.AddressStoreImpl;
-import io.xdag.db.rocksdb.BlockStoreImpl;
-import io.xdag.db.rocksdb.DatabaseFactory;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
-import io.xdag.db.rocksdb.RocksdbFactory;
-import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.rocksdb.SnapshotStoreImpl;
+import io.xdag.db.rocksdb.*;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
-import io.xdag.Wallet;
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.After;
@@ -72,6 +49,22 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
+
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+
+import static io.xdag.BlockBuilder.generateExtraBlock;
+import static io.xdag.BlockBuilder.generateOldTransactionBlock;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class SnapshotStoreTest {
@@ -145,6 +138,8 @@ public class SnapshotStoreTest {
         OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         orphanBlockStore.reset();
 
+        TransactionHistoryStore txHistoryStore = Mockito.mock(TransactionHistoryStore.class);
+
         snapshotSource =  (RocksdbKVSource)dbFactory.getDB(DatabaseName.SNAPSHOT);
         snapshotStore = new SnapshotStoreImpl(snapshotSource);
         snapshotStore.reset();
@@ -152,6 +147,7 @@ public class SnapshotStoreTest {
         kernel.setBlockStore(blockStore);
         kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setAddressStore(addressStore);
+        kernel.setTxHistoryStore(txHistoryStore);
         kernel.setWallet(wallet);
 
         RandomX nativeRandomX = new RandomX(config);
@@ -177,9 +173,9 @@ public class SnapshotStoreTest {
                 snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address3.toArray())), BlockInfo.class);
 
         //Compare balances
-        assertEquals("924.0", String.valueOf(amount2xdag(blockInfo1.getAmount())));
-        assertEquals("1024.0", String.valueOf(amount2xdag(blockInfo2.getAmount())));
-        assertEquals("1024.0", String.valueOf(amount2xdag(blockInfo3.getAmount())));
+        assertEquals("924.0", String.valueOf(blockInfo1.getAmount().toDecimal(1, XUnit.XDAG)));
+        assertEquals("1024.0", String.valueOf(blockInfo2.getAmount().toDecimal(1, XUnit.XDAG)));
+        assertEquals("1024.0", String.valueOf(blockInfo3.getAmount().toDecimal(1, XUnit.XDAG)));
 
         //Compare public key
 //        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
@@ -206,21 +202,19 @@ public class SnapshotStoreTest {
         List<KeyPair> keys = Lists.newArrayList();
         keys.add(poolKey);
 
-        snapshotStore.saveSnapshotToIndex(blockStore, keys,0);
-//        snapshotStore.saveAddress(blockStore, addressStore, keys,0);
+        snapshotStore.saveSnapshotToIndex(blockStore, kernel.getTxHistoryStore(), keys,0);
 
         //Verify the total balance of the current account
-        assertEquals("45980.0", String.valueOf(BasicUtils.amount2xdag(snapshotStore.getAllBalance())));
+        assertEquals("45980.0", String.valueOf(snapshotStore.getAllBalance().toDecimal(1, XUnit.XDAG)));
         //Verify height
         assertEquals(45, height);
 
         XdagStats xdagStats = new XdagStats();
-        xdagStats.balance = UInt64.valueOf(snapshotStore.getOurBalance());
+        xdagStats.balance = snapshotStore.getOurBalance();
         xdagStats.setTotalnmain(height);
         xdagStats.setNmain(height);
 
         //Verify Stats
-//        assertEquals(xdagStats.balance, stats.balance);
         assertEquals(xdagStats.nmain, stats.nmain);
     }
 
@@ -274,7 +268,7 @@ public class SnapshotStoreTest {
         Address from = new Address(extraBlockList.get(0).getHashLow(), XDAG_FIELD_IN,false);
         Address to = new Address(BasicUtils.keyPair2Hash(addrKey), XDAG_FIELD_OUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, xdag2amount(100));
+        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
 
         // 3. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -306,12 +300,12 @@ public class SnapshotStoreTest {
             pending.clear();
         }
 
-        UInt64 toBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount toBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
 
-        assertEquals("100.0", String.valueOf(amount2xdag(toBalance)));
+        assertEquals("100.0", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));
         // block reword 1024 - 100 = 924.0
-        assertEquals("924.0", String.valueOf(amount2xdag(fromBlock.getInfo().getAmount())));
+        assertEquals("924.0", String.valueOf(fromBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG)));
 
 
         address1 = from.getAddress();

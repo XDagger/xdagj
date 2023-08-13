@@ -24,7 +24,11 @@
 
 package io.xdag.cli;
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.catchSystemExit;
+import static com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOut;
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
+import static java.lang.System.setErr;
+import static java.lang.System.setOut;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -48,40 +52,25 @@ import io.xdag.crypto.Keys;
 import io.xdag.utils.BytesUtils;
 import io.xdag.Wallet;
 
-import java.security.Security;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-import org.junit.contrib.java.lang.system.SystemErrRule;
-import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.mockito.Mockito;
 
 import com.google.common.collect.Lists;
 
 public class XdagCliTest {
-
-    static { Security.addProvider(new BouncyCastleProvider());  }
-
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-    @Rule
-    public final SystemOutRule outRule = new SystemOutRule();
-    @Rule
-    public final SystemErrRule errRule = new SystemErrRule();
     private Config config;
 
     @Before
     public void setUp() throws Exception {
         config = new DevnetConfig();
-        outRule.mute();
-        errRule.mute();
     }
 
     @Test
@@ -94,10 +83,11 @@ public class XdagCliTest {
 
     @Test
     public void testHelp() throws Exception {
+        ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
+        setOut(new PrintStream(captureOutputStream));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.start(new String[]{"--help"});
-        outRule.enableLog();
-        xdagCLI.printHelp();
+
         String helpStr = """
                 usage: ./xdag.sh [options]
                     --account <action>                init|create|list
@@ -112,16 +102,16 @@ public class XdagCliTest {
                     --password <password>             wallet password
                     --version                         show version
                 """;
-        assertEquals(helpStr, outRule.getLog());
+        assertEquals(helpStr, tapSystemOut(xdagCLI::printHelp));
     }
 
     @Test
     public void testVersion() throws Exception {
+        ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
+        setOut(new PrintStream(captureOutputStream));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.start(new String[]{"--version"});
-        outRule.enableLog();
-        xdagCLI.printVersion();
-        assertEquals(Constants.CLIENT_VERSION + "\n", outRule.getLog());
+        assertEquals(Constants.CLIENT_VERSION + "\n", tapSystemOut(xdagCLI::printVersion));
     }
 
     @Test
@@ -258,6 +248,8 @@ public class XdagCliTest {
 
     @Test
     public void testStartKernelWithEmptyWalletInvalidNewPassword() throws Exception {
+        ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
+        setErr(new PrintStream(captureOutputStream));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         // mock wallet
@@ -271,12 +263,8 @@ public class XdagCliTest {
         // mock password
         doReturn("a").doReturn("b").when(xdagCLI).readPassword(any());
 
-        // mock exits
-        doNothing().when(xdagCLI).exit(anyInt());
-
-        exit.expectSystemExitWithStatus(-1);
         // execution
-        xdagCLI.start();
+        assertEquals(-1, catchSystemExit(xdagCLI::start));
     }
 
     @Test
@@ -308,6 +296,8 @@ public class XdagCliTest {
 
     @Test
     public void testCreateAccount() throws Exception {
+        ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
+        setOut(new PrintStream(captureOutputStream));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         // mock wallet
@@ -364,6 +354,8 @@ public class XdagCliTest {
 
     @Test
     public void testChangePasswordIncorrectConfirmation() {
+        ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
+        setErr(new PrintStream(captureOutputStream));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
 
@@ -487,6 +479,8 @@ public class XdagCliTest {
 
     @Test
     public void testImportPrivateKey() throws Exception {
+        ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
+        setOut(new PrintStream(captureOutputStream));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
 

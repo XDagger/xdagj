@@ -24,17 +24,7 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import static io.xdag.config.Constants.CLIENT_VERSION;
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.Hash2byte;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.getHash;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.fromBase58;
-import static io.xdag.utils.WalletUtils.toBase58;
-
+import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
@@ -43,10 +33,7 @@ import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.PoolSpec;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagState;
-import io.xdag.core.XdagStats;
+import io.xdag.core.*;
 import io.xdag.mine.MinerChannel;
 import io.xdag.mine.miner.Miner;
 import io.xdag.mine.miner.MinerCalculate;
@@ -56,20 +43,21 @@ import io.xdag.rpc.dto.NetConnDTO;
 import io.xdag.rpc.dto.PoolWorkerDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.utils.BasicUtils;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 
-import com.google.common.collect.Lists;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static io.xdag.config.Constants.CLIENT_VERSION;
+import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
+import static io.xdag.utils.BasicUtils.*;
+import static io.xdag.utils.WalletUtils.*;
 
 @Slf4j
 public class Web3XdagModuleImpl implements Web3XdagModule {
@@ -115,7 +103,6 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
                 return s;
             }
         }
-
         try {
             s.currentBlock = Long.toString(currentBlock);
             s.highestBlock = Long.toString(highestBlock);
@@ -130,7 +117,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_coinbase() {
-        return toBase58(Hash2byte(kernel.getPoolMiner().getAddressHash().mutableCopy()));
+        return toBase58(hash2byte(kernel.getPoolMiner().getAddressHash().mutableCopy()));
     }
 
     @Override
@@ -148,7 +135,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         if (checkAddress(address)) {
             hash = pubAddress2Hash(address);
             key.set(8, Objects.requireNonNull(hash).slice(8, 20));
-            balance = String.format("%.9f", amount2xdag(kernel.getAddressStore().getBalanceByAddress(fromBase58(address))));
+            balance = String.format("%s", kernel.getAddressStore().getBalanceByAddress(fromBase58(address)).toDecimal(9, XUnit.XDAG).toPlainString());
         } else {
             if (StringUtils.length(address) == 32) {
                 hash = address2Hash(address);
@@ -157,7 +144,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
             }
             key.set(8, Objects.requireNonNull(hash).slice(8, 24));
             Block block = kernel.getBlockStore().getBlockInfoByHash(Bytes32.wrap(key));
-            balance = String.format("%.9f", amount2xdag(block.getInfo().getAmount()));
+            balance = String.format("%s", block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString());
         }
 //        double balance = amount2xdag(block.getInfo().getAmount());
         return balance;
@@ -165,7 +152,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_getTotalBalance() {
-        String balance = String.format("%.9f", amount2xdag(kernel.getBlockchain().getXdagStats().getBalance()));
+        String balance = String.format("%s", kernel.getBlockchain().getXdagStats().getBalance().toDecimal(9, XUnit.XDAG).toPlainString());
         return balance;
     }
 
@@ -184,12 +171,10 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
                 .netDiff(toQuantityJsonHex(xdagStats.getMaxdifficulty()))
                 .hashRateOurs(toQuantityJsonHex(hashrateOurs))
                 .hashRateTotal(toQuantityJsonHex(hashrateTotal))
-                .ourSupply(String.format("%.9f",
-                        amount2xdag(
-                                kernel.getBlockchain().getSupply(xdagStats.nmain))))
-                .netSupply(String.format("%.9f",
-                        amount2xdag(
-                                kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)))));
+                .ourSupply(String.format("%s",
+                                kernel.getBlockchain().getSupply(xdagStats.nmain).toDecimal(9, XUnit.XDAG).toPlainString()))
+                .netSupply(String.format("%s",
+                                kernel.getBlockchain().getSupply(Math.max(xdagStats.nmain, xdagStats.totalnmain)).toDecimal(9, XUnit.XDAG).toPlainString()));
         return builder.build();
     }
 
@@ -224,8 +209,8 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         List<NetConnDTO> netConnDTOList = Lists.newArrayList();
         NetConnDTO.NetConnDTOBuilder netConnDTOBuilder = NetConnDTO.builder();
         Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
-        for (Iterator<Node> it = map.keySet().iterator(); it.hasNext(); ) {
-            Node node = it.next();
+        for (Map.Entry<Node, Long> entry : map.entrySet()) {
+            Node node = entry.getKey();
             netConnDTOBuilder.connectTime(map.get(node) == null ? 0 : map.get(node)) // use default "0"
                     .inBound(node.getStat().Inbound.get())
                     .outBound(node.getStat().Outbound.get())

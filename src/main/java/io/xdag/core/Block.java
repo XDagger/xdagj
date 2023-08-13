@@ -282,7 +282,7 @@ public class Block implements Cloneable {
                             r = xdagBlock.getField(i).getData().toUnsignedBigInteger();
                             s = xdagBlock.getField(signo_s).getData().toUnsignedBigInteger();
 
-                            // r and s are 0, the signature is illegal or it is a pseudo block sent by the miner
+                            // r and s are 0, the signature is illegal, or it is a pseudo block sent by the miner
                             if(r.compareTo(BigInteger.ZERO) == 0 && s.compareTo(BigInteger.ZERO) == 0){
                                 r = BigInteger.ONE;
                                 s = BigInteger.ONE;

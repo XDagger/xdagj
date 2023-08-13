@@ -27,7 +27,6 @@ package io.xdag.core;
 import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.tuweni.units.bigints.UInt64;
 
 @Getter
 @Setter
@@ -45,7 +44,7 @@ public class XdagStats {
     public long nnoref;
     public long nextra;
     public long maintime;
-    public UInt64 balance = UInt64.ZERO;
+    public XAmount balance = XAmount.ZERO;
 
     private byte[] globalMiner;
     private byte[] ourLastBlockHash;

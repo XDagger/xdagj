@@ -41,10 +41,13 @@ public class BlockWrapper implements Cloneable {
     // NO_PARENT waiting time
     private long time;
 
-    public BlockWrapper(Block block, int ttl, Node remoteNode) {
+    private boolean isOld;
+
+    public BlockWrapper(Block block, int ttl, Node remoteNode, boolean isOld) {
         this.block = block;
         this.ttl = ttl;
         this.remoteNode = remoteNode;
+        this.isOld = isOld;
     }
 
     public BlockWrapper(Block block, int ttl) {

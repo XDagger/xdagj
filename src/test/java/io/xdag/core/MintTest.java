@@ -29,23 +29,22 @@ import static io.xdag.utils.BasicUtils.xdag2amount;
 import static org.junit.Assert.assertEquals;
 
 import io.xdag.config.Config;
-import io.xdag.config.MainnetConfig;
+import io.xdag.config.DevnetConfig;
 import org.junit.Test;
 
 public class MintTest {
 
-    Config config = new MainnetConfig();
+    Config config = new DevnetConfig();
 
     @Test
     public void testMint() {
         // 每四年减半 大致就是增加了 2097152个块
         int num = 1017323 + 2097152;
         long reward = getCurrentReward();
-        long reward1 = getReward(0, num);
+        XAmount reward1 = getReward(0, num);
 
         assertEquals(4398046511104L, reward);
-        assertEquals(274877906944L, reward1);
-
+        assertEquals(274877906944L, reward1.toDecimal(0, XUnit.NANO_XDAG).longValue());
     }
 
     /**
@@ -55,14 +54,15 @@ public class MintTest {
         return xdag2amount(1024).toLong();
     }
 
-    public long getReward(long time, long num) {
-        long start = getStartAmount(time, num);
-        return start >> (num >> MAIN_BIG_PERIOD_LOG);
+    public XAmount getReward(long time, long num) {
+        XAmount start = getStartAmount(time, num);
+        long nanoStart = start.toXAmount().toLong();
+        return XAmount.of(nanoStart >> (num >> MAIN_BIG_PERIOD_LOG));
     }
 
-    private long getStartAmount(long time, long num) {
+    private XAmount getStartAmount(long time, long num) {
         long forkHeight = config.getApolloForkHeight();
-        long startAmount;
+        XAmount startAmount;
         if (num >= forkHeight) {
             startAmount = config.getApolloForkAmount();
         } else {

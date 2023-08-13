@@ -35,22 +35,11 @@ import io.xdag.config.TestnetConfig;
 import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
-import io.xdag.core.Block;
-import io.xdag.core.Blockchain;
-import io.xdag.core.BlockchainImpl;
-import io.xdag.core.XdagState;
-import io.xdag.core.XdagStats;
+import io.xdag.core.*;
 import io.xdag.crypto.Keys;
-import io.xdag.db.AddressStore;
-import io.xdag.db.BlockStore;
-import io.xdag.db.OrphanBlockStore;
-import io.xdag.db.SnapshotStore;
-import io.xdag.db.rocksdb.AddressStoreImpl;
-import io.xdag.db.rocksdb.BlockStoreImpl;
-import io.xdag.db.rocksdb.DatabaseFactory;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.*;
+import io.xdag.db.mysql.TransactionHistoryStoreImpl;
+import io.xdag.db.rocksdb.*;
 import io.xdag.mine.MinerServer;
 import io.xdag.mine.manager.AwardManager;
 import io.xdag.mine.manager.AwardManagerImpl;
@@ -70,30 +59,22 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
-import io.xdag.rpc.modules.xdag.Web3XdagModule;
-import io.xdag.rpc.modules.xdag.Web3XdagModuleImpl;
-import io.xdag.rpc.modules.xdag.XdagModule;
-import io.xdag.rpc.modules.xdag.XdagModuleChainBase;
-import io.xdag.rpc.modules.xdag.XdagModuleTransactionEnabled;
-import io.xdag.rpc.modules.xdag.XdagModuleWalletDisabled;
-import io.xdag.rpc.netty.JsonRpcWeb3FilterHandler;
-import io.xdag.rpc.netty.JsonRpcWeb3ServerHandler;
-import io.xdag.rpc.netty.Web3HttpServer;
-import io.xdag.rpc.netty.Web3WebSocketServer;
-import io.xdag.rpc.netty.XdagJsonRpcHandler;
+import io.xdag.rpc.modules.xdag.*;
+import io.xdag.rpc.netty.*;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes;
 
 @Slf4j
 @Getter
@@ -107,6 +88,7 @@ public class Kernel {
     private AddressStore addressStore;
     private BlockStore blockStore;
     private OrphanBlockStore orphanBlockStore;
+    private TransactionHistoryStore txHistoryStore;
 
     private SnapshotStore SnapshotStore;
     private Blockchain blockchain;
@@ -209,6 +191,11 @@ public class Kernel {
         orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
         log.info("Orphan Pool init.");
         orphanBlockStore.init();
+
+        if(config.getEnableTxHistory()) {
+            txHistoryStore = new TransactionHistoryStoreImpl();
+            log.info("Transaction History Store init.");
+        }
 
         // ====================================
         // netstatus netdb init

@@ -24,16 +24,9 @@
 
 package io.xdag.core;
 
-import static io.xdag.BlockBuilder.generateAddressBlock;
-import static io.xdag.BlockBuilder.generateExtraBlock;
-import static io.xdag.BlockBuilder.generateExtraBlockGivenRandom;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
+import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
@@ -41,18 +34,9 @@ import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
-import io.xdag.db.rocksdb.BlockStoreImpl;
-import io.xdag.db.rocksdb.DatabaseFactory;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.OrphanBlockStoreImpl;
-import io.xdag.db.rocksdb.RocksdbFactory;
+import io.xdag.db.rocksdb.*;
 import io.xdag.mine.randomx.RandomX;
 import io.xdag.utils.XdagTime;
-import io.xdag.Wallet;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -61,6 +45,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+
+import static io.xdag.BlockBuilder.*;
+import static io.xdag.core.ImportResult.IMPORTED_BEST;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class RewardTest {
 
@@ -178,7 +173,7 @@ public class RewardTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertEquals(0, blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount().toLong());
+        assertEquals("0", blockchain.getBlockByHash(targetBlock, false).getInfo().getAmount().toString());
     }
 
     static class MockBlockchain extends BlockchainImpl {
@@ -188,9 +183,10 @@ public class RewardTest {
         }
 
         @Override
-        public long getReward(long nmain) {
-            long start = getStartAmount(nmain);
-            return start >> (nmain >> 4);
+        public XAmount getReward(long nmain) {
+            XAmount start = getStartAmount(nmain);
+            long nanoStart = start.toXAmount().toLong();
+            return XAmount.ofXAmount(nanoStart >> (nmain >> 4));
         }
     }
 

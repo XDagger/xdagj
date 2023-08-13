@@ -35,6 +35,7 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.SimpleEncoder;
+import io.xdag.core.XAmount;
 import io.xdag.crypto.Aes;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
@@ -72,7 +73,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -503,7 +503,7 @@ public class Wallet {
 
         // base count a block <header + send address + defKey signature>
         int base = 1 + 1 + 2 + hasRemark;
-        UInt64 amount = UInt64.ZERO;
+        XAmount amount = XAmount.ZERO;
 
         while (stack.size() > 0) {
             Map.Entry<Address, KeyPair> key = stack.peek();
@@ -527,7 +527,7 @@ public class Wallet {
                 keysPerBlock = new HashSet<>();
                 keysPerBlock.add(getDefKey());
                 base = 1 + 1 + 2 + hasRemark;
-                amount = UInt64.ZERO;
+                amount = XAmount.ZERO;
             }
         }
         if (keys.size() != 0) {
@@ -537,7 +537,7 @@ public class Wallet {
         return res;
     }
 
-    private BlockWrapper createTransaction(Bytes32 to, UInt64 amount, Map<Address, KeyPair> keys, String remark) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 

@@ -30,9 +30,9 @@ public interface XdagModuleChain {
 
     String getCoinBase();
 
-    BlockResultDTO getBlockByHash(String hash);
+    BlockResultDTO getBlockByHash(String hash, int page, Object... parameters);
 
-    BlockResultDTO getBlockByNumber(String bnOrId);
+    BlockResultDTO getBlockByNumber(String bnOrId, int page, Object... parameters );
 
     String getRewardByNumber(String bnOrId);
 

@@ -110,8 +110,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
     private void processAddress(CommandInput input) {
         final String[] usage = {
-                "address-  print extended info for the account corresponding to the address",
-                "Usage: address [PUBLIC ADDRESS]",
+                "address-  print extended info for the account corresponding to the address, page size 100",
+                "Usage: address [PUBLIC ADDRESS] [PAGE]",
                 "  -? --help                    Show help",
         };
         try {
@@ -127,6 +127,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             String address = argv.get(0);
+            int page = StringUtils.isNumeric(argv.get(1))?Integer.parseInt(argv.get(1)):1;
             try {
                 Bytes32 hash;
                 if (WalletUtils.checkAddress(address)) {
@@ -135,7 +136,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                     println("Incorrect address");
                     return;
                 }
-                println(commands.address(hash));
+                println(commands.address(hash, page));
             } catch (Exception e) {
                 println("Argument is incorrect.");
             }

@@ -23,41 +23,22 @@
  */
 package io.xdag.db.rocksdb;
 
-import static io.xdag.config.Constants.BI_OURS;
-import static io.xdag.db.BlockStore.HASH_BLOCK_INFO;
-import static io.xdag.db.BlockStore.SUMS_BLOCK_INFO;
-import static io.xdag.db.BlockStore.SNAPSHOT_PRESEED;
-import static io.xdag.db.AddressStore.ADDRESS_SIZE;
-import static io.xdag.db.AddressStore.AMOUNT_SUM;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import io.xdag.core.Block;
-import io.xdag.core.BlockInfo;
-import io.xdag.core.PreBlockInfo;
-import io.xdag.core.SnapshotInfo;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagStats;
-import io.xdag.core.XdagTopStatus;
+import io.xdag.core.*;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.SnapshotStore;
+import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -68,14 +49,27 @@ import org.hyperledger.besu.crypto.SECPSignature;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.rocksdb.RocksIterator;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.db.AddressStore.ADDRESS_SIZE;
+import static io.xdag.db.AddressStore.AMOUNT_SUM;
+import static io.xdag.db.BlockStore.*;
+import static io.xdag.utils.BasicUtils.compareAmountTo;
+
 @Slf4j
 public class SnapshotStoreImpl implements SnapshotStore {
 
     private final RocksdbKVSource snapshotSource;
 
     private final Kryo kryo;
-    private long ourBalance;
-    private long allBalance;
+    private XAmount ourBalance = XAmount.ZERO;
+    private XAmount allBalance = XAmount.ZERO;
     private long nextTime;
     private long height;
 
@@ -102,7 +96,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         blockInfo.setFee(preBlockInfo.getFee());
         blockInfo.setHash(preBlockInfo.getHash());
         blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(UInt64.valueOf(preBlockInfo.getAmount()));
+        blockInfo.setAmount(XAmount.ofXAmount(preBlockInfo.getAmount().toLong()));
         blockInfo.setHashlow(preBlockInfo.getHashlow());
         blockInfo.setFlags(preBlockInfo.getFlags());
         blockInfo.setHeight(preBlockInfo.getHeight());
@@ -113,7 +107,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         blockInfo.setType(preBlockInfo.getType());
     }
 
-    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource indexSource,boolean b) {
+    public void makeSnapshot(RocksdbKVSource blockSource, RocksdbKVSource indexSource, boolean b) {
         try (RocksIterator iter = indexSource.getDb().newIterator()) {
             for (iter.seek(new byte[]{HASH_BLOCK_INFO}); iter.isValid() && iter.key()[0] < SUMS_BLOCK_INFO; iter.next()) {
                 PreBlockInfo preBlockInfo;
@@ -131,15 +125,15 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         log.error("can't deserialize data:{}", Hex.toHexString(iter.value()));
                         log.error(e.getMessage(), e);
                     }
-                    //Has public key or block data
+                    // Has public key or block data
                     if (blockInfo.getSnapshotInfo() != null) {
                         int flag = blockInfo.getFlags();
                         flag &= ~BI_OURS;
                         blockInfo.setFlags(flag);
                         blockInfo.setSnapshot(true);
                         save(iter, blockInfo);
-                    } else { //Storage block data without public key and balance
-                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), UInt64.ZERO) != 0)) {
+                    } else { // Storage block data without public key and balance
+                        if ((blockInfo.getAmount() != null && compareAmountTo(blockInfo.getAmount(), XAmount.ZERO) != 0)) {
 //                        if (blockInfo.getAmount() != 0) {
                             blockInfo.setSnapshot(true);
                             blockInfo.setSnapshotInfo(new SnapshotInfo(false, blockSource.get(
@@ -164,7 +158,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == HASH_BLOCK_INFO) {
@@ -190,7 +184,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                     if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
-                                        ourBalance += blockInfo.getAmount().toLong();
+                                        ourBalance = ourBalance.add(blockInfo.getAmount());
                                         break;
                                     }
                                 }
@@ -206,7 +200,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                     if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
-                                        ourBalance += blockInfo.getAmount().toLong();
+                                        ourBalance = ourBalance.add(blockInfo.getAmount());
                                         break;
                                     }
                                 }
@@ -216,48 +210,70 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         if ((flag & BI_OURS) != 0 && keyIndex > -1) {
                             blockStore.saveOurBlock(keyIndex, blockInfo.getHashlow());
                         }
-                        allBalance += blockInfo.getAmount().toLong();
-                        blockStore.saveTxHistory(Bytes32.wrap(blockInfo.getHashlow()),Bytes32.wrap(blockInfo.getHashlow()),
-                                XdagField.FieldType.XDAG_FIELD_SNAPSHOT,blockInfo.getAmount(),
-                                snapshotTime,0,
-                                blockInfo.getRemark());
+                        allBalance = allBalance.add(blockInfo.getAmount());
                         blockStore.saveBlockInfo(blockInfo);
+
+                        if(txHistoryStore != null) {
+                            XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
+                            Address address = new Address(Bytes32.wrap(blockInfo.getHashlow()), fieldType, blockInfo.getAmount(),false);
+
+                            TxHistory txHistory = new TxHistory();
+                            txHistory.setAddress(address);
+                            txHistory.setHash(BasicUtils.hash2Address(address.getAddress()));
+                            if(blockInfo.getRemark() != null) {
+                                txHistory.setRemark(new String(blockInfo.getRemark(), StandardCharsets.UTF_8));
+                            }
+                            txHistory.setTimestamp(snapshotTime);
+                            txHistoryStore.batchSaveTxHistory(txHistory);
+                        }
                     }
                 } else if (iter.key()[0] == SNAPSHOT_PRESEED) {
                     blockStore.savePreSeed(iter.value());
                 }
+            }
+            if (txHistoryStore != null) {
+                txHistoryStore.batchSaveTxHistory(null);
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
+
     @Override
-    public void saveAddress(BlockStore blockStore,AddressStore addressStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys, long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
-                if(iter.key().length < 20){
-                    if(iter.key()[0] == ADDRESS_SIZE){
+                if (iter.key().length < 20) {
+                    if (iter.key()[0] == ADDRESS_SIZE) {
                         addressStore.saveAddressSize(iter.value());
-                    }else if(iter.key()[0] == AMOUNT_SUM){
-                        addressStore.savaAmountSum(iter.value());
-                        allBalance = addressStore.getAllBalance().toLong();
+                    } else if (iter.key()[0] == AMOUNT_SUM) {
+                        UInt64 u64v = UInt64.fromBytes(Bytes.wrap(iter.value()));
+                        addressStore.savaAmountSum(XAmount.ofXAmount(u64v.toLong()));
+                        allBalance = addressStore.getAllBalance();
                     }
                 } else {
                     byte[] address = iter.key();
-                    byte[] balance = iter.value();
-                    for (int i = 0; i < keys.size(); i++) {
-                        KeyPair keyPair = keys.get(i);
+                    XAmount balance = XAmount.ofXAmount(UInt64.fromBytes(Bytes.wrap(iter.value())).toLong());
+                    for (KeyPair keyPair : keys) {
                         byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
                         byte[] myAddress = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
-                        if (BytesUtils.compareTo(address,1,20,myAddress,0,20) == 0) {
-                            ourBalance += UInt64.fromBytes(Bytes.wrap(balance)).toLong();
+                        if (BytesUtils.compareTo(address, 1, 20, myAddress, 0, 20) == 0) {
+                            ourBalance = ourBalance.add(balance);
                         }
                     }
-                    addressStore.snapshotAddress(address,balance);
-                    blockStore.saveTxHistory(BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)), BytesUtils.arrayToByte32(Arrays.copyOfRange(address,1,21)),
-                            XdagField.FieldType.XDAG_FIELD_SNAPSHOT,UInt64.fromBytes(Bytes.wrap(balance)),
-                            snapshotTime,0,"snapshot".getBytes());
+                    addressStore.snapshotAddress(address, balance);
+                    if (txHistoryStore != null) {
+                        XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
+                        Address addr = new Address(BytesUtils.arrayToByte32(Arrays.copyOfRange(address, 1, 21)),
+                                fieldType, balance, true);
+                        TxHistory txHistory = new TxHistory();
+                        txHistory.setAddress(addr);
+                        txHistory.setHash(BasicUtils.hash2PubAddress(addr.getAddress()));
+                        txHistory.setRemark("snapshot");
+                        txHistory.setTimestamp(snapshotTime);
+                        txHistoryStore.saveTxHistory(txHistory);
+                    }
                 }
             }
         }
@@ -273,11 +289,11 @@ public class SnapshotStoreImpl implements SnapshotStore {
         snapshotSource.put(iter.key(), value);
     }
 
-    public long getOurBalance() {
+    public XAmount getOurBalance() {
         return this.ourBalance;
     }
 
-    public long getAllBalance(){
+    public XAmount getAllBalance() {
         return this.allBalance;
     }
 
@@ -327,6 +343,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         kryo.register(XdagTopStatus.class);
         kryo.register(SnapshotInfo.class);
         kryo.register(UInt64.class);
+        kryo.register(XAmount.class);
         kryo.register(PreBlockInfo.class);
     }
 
