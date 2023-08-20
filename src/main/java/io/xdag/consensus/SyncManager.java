@@ -126,7 +126,7 @@ public class SyncManager {
         long lastTime = kernel.getSync().getLastTime();
         long curTime = msToXdagtimestamp(System.currentTimeMillis());
         long curHeight = xdagStats.getNmain();
-        long maxHeight = xdagStats.getTotalnblocks();
+        long maxHeight = xdagStats.getTotalnmain();
         //Exit the syncOld state based on time and height.
         if (!isSync() && (curHeight >= maxHeight - 512 || lastTime >= curTime - 32*REQUEST_BLOCKS_MAX_TIME)) {
             log.debug("our node height:{} the max height:{}, set sync state", curHeight, maxHeight);
