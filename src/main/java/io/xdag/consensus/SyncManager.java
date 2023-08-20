@@ -317,6 +317,8 @@ public class SyncManager {
 
             log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
             kernel.getSync().setStatus(XdagSync.Status.SYNC_DONE);
+            // sync done, the remaining history is batch written.
+            txHistoryStore.batchSaveTxHistory(null);
 
             if (config.getEnableGenerateBlock()) {
                 log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
