@@ -24,7 +24,6 @@
 package io.xdag.cli;
 
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
 import static junit.framework.TestCase.assertEquals;
 
