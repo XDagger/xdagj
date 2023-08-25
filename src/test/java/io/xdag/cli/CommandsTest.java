@@ -24,12 +24,21 @@
 package io.xdag.cli;
 
 
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
 import static junit.framework.TestCase.assertEquals;
 
 import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
@@ -37,6 +46,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import io.xdag.Kernel;
 import io.xdag.Wallet;
@@ -48,18 +58,24 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.Blockchain;
+import io.xdag.core.TxHistory;
 import io.xdag.core.XAmount;
 import io.xdag.core.XUnit;
 import io.xdag.core.XdagExtStats;
+import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
+import io.xdag.mine.MinerChannel;
+import io.xdag.mine.manager.MinerManager;
+import io.xdag.mine.miner.Miner;
 import io.xdag.net.manager.NetDBManager;
 import io.xdag.net.message.NetDB;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 
 public class CommandsTest {
@@ -114,6 +130,7 @@ public class CommandsTest {
         Mockito.when(kernel.getWallet()).thenReturn(wallet);
         Mockito.when(kernel.getBlockchain()).thenReturn(blockchain);
         Mockito.when(kernel.getSyncMgr()).thenReturn(syncManager);
+        Mockito.when(kernel.getBlockStore()).thenReturn(blockStore);
 
         Mockito.when(wallet.getAccounts()).thenReturn(accounts);
         Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_1))).thenReturn(XAmount.of(9999, XUnit.XDAG));
@@ -200,7 +217,6 @@ public class CommandsTest {
 
         mainblock.setInfo(blockInfo);
         String str = commands.printBlockInfo(mainblock, false);
-        System.out.println(str);
         assertEquals("""
                       time: 1970-01-01 08:00:00.000
                  timestamp: 0
@@ -220,6 +236,133 @@ public class CommandsTest {
                  direction  address                                    amount                 time
 
                 """, str);
+    }
+
+    @Test
+    public void testMainblocks() {
+        List<Block> blocks = Lists.newArrayList();
+        long mainblockTime = generateTime;
+        for (int i = 1; i <= 2; i++) {
+            Block block = BlockBuilder.generateExtraBlock(config, keyPair_1, mainblockTime, null);
+            block.getInfo().setHeight(i);
+            blocks.add(block);
+            mainblockTime += 64000L;
+        }
+        Mockito.when(blockchain.listMainBlocks(Mockito.anyInt())).thenReturn(blocks);
+        String str = commands.mainblocks(2);
+        assertEquals("""
+                ---------------------------------------------------------------------------------------------------------
+                height        address                            time                      state     mined by           \s
+                ---------------------------------------------------------------------------------------------------------
+                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   2019-07-14 19:04:06.093   Pending                                  \s
+                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   2019-07-14 19:05:08.593   Pending                                  \s""", str);
+    }
+
+    @Test
+    public void testMinedBlocks() {
+        List<Block> blocks = Lists.newArrayList();
+        long mainblockTime = generateTime;
+        for (int i = 1; i <= 2; i++) {
+            Block block = BlockBuilder.generateExtraBlock(config, keyPair_1, mainblockTime, null);
+            block.getInfo().setHeight(i);
+            blocks.add(block);
+            mainblockTime += 64000L;
+        }
+        Mockito.when(blockchain.listMinedBlocks(Mockito.anyInt())).thenReturn(blocks);
+        String str = commands.minedBlocks(2);
+        assertEquals("""
+                ---------------------------------------------------------------------------------------------------------
+                height        address                            time                      state     mined by           \s
+                ---------------------------------------------------------------------------------------------------------
+                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   2019-07-14 19:04:06.093   Pending                                  \s
+                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   2019-07-14 19:05:08.593   Pending                                  \s""", str);
+    }
+
+    @Test
+    public void testKeygen()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        Mockito.when(kernel.getXdagState()).thenReturn(XdagState.INIT);
+        String str = commands.keygen();
+        assertEquals("Key 1 generated and set as default,now key size is:2", str);
+    }
+
+    @Test
+    public void testMiners() {
+        Miner mockPoolMiner = new Miner(BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_1.getPublicKey())));
+        Miner mockMiner2 = new Miner(BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_2.getPublicKey())));
+        Map<Bytes, Miner> mockActivateMiners = Maps.newHashMap();
+        mockActivateMiners.put(mockPoolMiner.getAddressHash(), mockPoolMiner);
+        mockActivateMiners.put(mockMiner2.getAddressHash(), mockMiner2);
+
+        MinerManager mockMinerManager = Mockito.mock(MinerManager.class);
+        Mockito.when(kernel.getPoolMiner()).thenReturn(mockPoolMiner);
+        Mockito.when(kernel.getMinerManager()).thenReturn(mockMinerManager);
+        Mockito.when(mockMinerManager.getActivateMiners()).thenReturn(mockActivateMiners);
+
+        String str = commands.miners();
+        assertEquals("fee:PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas\n", str);
+    }
+
+    @Test
+    public void testState() {
+        Mockito.when(kernel.getXdagState()).thenReturn(XdagState.INIT);
+        String str = commands.state();
+        assertEquals("Pool Initializing....", str);
+    }
+
+    @Test
+    public void testDisConnectMinerChannel() {
+        Map<InetSocketAddress, MinerChannel> mockMinerChannels = Maps.newHashMap();
+        MinerChannel mc = Mockito.mock(MinerChannel.class);
+        InetSocketAddress host = new InetSocketAddress("127.0.0.1", 10001);
+
+        MinerManager mockMinerManager = Mockito.mock(MinerManager.class);
+        Mockito.when(mockMinerManager.getActivateMinerChannels()).thenReturn(mockMinerChannels);
+        Mockito.when(kernel.getMinerManager()).thenReturn(mockMinerManager);
+        Mockito.when(mockMinerManager.getChannelByHost(host)).thenReturn(mc);
+
+        String str = commands.disConnectMinerChannel("127.0.0.1:10001");
+        assertEquals("disconnect a channel：127.0.0.1:10001", str);
+        str = commands.disConnectMinerChannel("127.0.0.1:10002");
+        assertEquals("Can't find the corresponding channel, please check", str);
+        str = commands.disConnectMinerChannel("all");
+        assertEquals("disconnect all channels...", str);
+    }
+
+    @Test
+    public void testBalanceMaxXfer() {
+        String str = commands.balanceMaxXfer();
+        assertEquals("0.000000000", str);
+    }
+
+    @Test
+    public void testAddress() {
+        Bytes32 addrByte32 = BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_1.getPublicKey()));
+        List<TxHistory> txHistoryList = Lists.newArrayList();
+        Address addr = new Address(BasicUtils.keyPair2Hash(keyPair_1), XDAG_FIELD_SNAPSHOT, XAmount.of(9999, XUnit.XDAG),true);
+        txHistoryList.add(new TxHistory(addr, Bytes32.random().toHexString(), generateTime, "xdagj_test"));
+        Mockito.when(blockchain.getBlockTxHistoryByAddress(addrByte32, 1)).thenReturn(txHistoryList);
+        String str = commands.address(addrByte32, 1);
+        assertEquals("""
+                 OverView
+                 address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
+                 balance: 9999.000000000
+                                
+                -----------------------------------------------------------------------------------------------------------------------------
+                                               histories of address: details
+                 direction  address                                    amount                 time
+                                
+                 snapshot: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas           9999.000000000   2020-09-20 23:45:00.000
+                """, str);
+    }
+
+    @Test
+    public void testXferToNew() {
+        Mockito.when(wallet.getDefKey()).thenReturn(keyPair_1);
+        String str = commands.xferToNew();
+        assertEquals("""
+                 Transaction :{\s
+                 }, it will take several minutes to complete the transaction.""", str);
     }
 
 }
