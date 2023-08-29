@@ -148,7 +148,7 @@ public class CommandsTest {
         pstr = Commands.printBlock(mainblock, false);
         long time = XdagTime.xdagTimestampToMs(mainblock.getTimestamp());
         assertEquals(String.format("00000000   5H1B51l0jPyaOaS1f0LMsudJV52iglYG   %s   Pending   xdagj_test\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
-                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()), pstr);
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time)), pstr);
     }
 
     @Test
