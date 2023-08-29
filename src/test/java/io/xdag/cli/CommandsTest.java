@@ -217,10 +217,12 @@ public class CommandsTest {
         BlockInfo blockInfo = new BlockInfo();
         blockInfo.setDifficulty(BigInteger.ZERO);
 
+        long time = XdagTime.xdagTimestampToMs(blockInfo.getTimestamp());
+        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time);
         mainblock.setInfo(blockInfo);
         String str = commands.printBlockInfo(mainblock, false);
-        assertEquals("""
-                      time: 1970-01-01 08:00:00.000
+        assertEquals(String.format("""
+                      time: %s
                  timestamp: 0
                      flags: 0
                      state: Pending
@@ -237,7 +239,7 @@ public class CommandsTest {
                                                block as address: details
                  direction  address                                    amount                 time
 
-                """, str);
+                """, st), str);
     }
 
     @Test
