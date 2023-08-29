@@ -60,7 +60,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private static final int BLOCK_ADDRESS_FLAG = 0;
     private static final int WALLET_ADDRESS_FLAG = 1;
 
-    private static final int Default_PAGE_SIZE = 100;
+    private static final int DEFAULT_PAGE_SIZE = 100;
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
@@ -84,7 +84,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt.setString(3, txHistory.getHash());
                 pstmt.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmt.setInt(5, address.getType().asByte());
-                pstmt.setString(6, txHistory.getRemark());
+                pstmt.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmt.setTimestamp(7,
                         new java.sql.Timestamp(XdagTime.xdagTimestampToMs(txHistory.getTimestamp())));
                 result = pstmt.executeUpdate() == 1;
@@ -120,7 +120,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmtBatch.setString(3, txHistory.getHash());
                 pstmtBatch.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmtBatch.setInt(5, address.getType().asByte());
-                pstmtBatch.setString(6, txHistory.getRemark());
+                pstmtBatch.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmtBatch.setTimestamp(7,
                         new java.sql.Timestamp(XdagTime.xdagTimestampToMs(txHistory.getTimestamp())));
                 pstmtBatch.addBatch();
@@ -162,7 +162,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         ResultSet rs = null;
         List<TxHistory> txHistoryList = Lists.newArrayList();
         int totalcount = 0;
-        int PAGE_SIZE = Default_PAGE_SIZE;
+        int PAGE_SIZE = DEFAULT_PAGE_SIZE;
         long start = new Date(0).getTime();
         long end = System.currentTimeMillis();
         switch (parameters.length) {
