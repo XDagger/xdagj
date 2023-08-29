@@ -148,7 +148,7 @@ public class CommandsTest {
         pstr = Commands.printBlock(mainblock, false);
         long time = XdagTime.xdagTimestampToMs(mainblock.getTimestamp());
         assertEquals(String.format("00000000   5H1B51l0jPyaOaS1f0LMsudJV52iglYG   %s   Pending   xdagj_test\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
-                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getTimeZone("GMT+08:00")).format(time)), pstr);
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()), pstr);
     }
 
     @Test
@@ -256,8 +256,8 @@ public class CommandsTest {
         String str = commands.mainblocks(2);
         long time1 = XdagTime.xdagTimestampToMs(blocks.get(0).getTimestamp());
         long time2 = XdagTime.xdagTimestampToMs(blocks.get(1).getTimestamp());
-        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getTimeZone("GMT+08:00")).format(time1);
-        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getTimeZone("GMT+08:00")).format(time2);
+        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time1);
+        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time2);
 
         assertEquals(String.format("""
                 ---------------------------------------------------------------------------------------------------------
@@ -282,8 +282,8 @@ public class CommandsTest {
         String str = commands.minedBlocks(2);
         long time1 = XdagTime.xdagTimestampToMs(blocks.get(0).getTimestamp());
         long time2 = XdagTime.xdagTimestampToMs(blocks.get(1).getTimestamp());
-        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getTimeZone("GMT+08:00")).format(time1);
-        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getTimeZone("GMT+08:00")).format(time2);
+        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time1);
+        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time2);
         assertEquals(String.format("""
                 ---------------------------------------------------------------------------------------------------------
                 height        address                            time                      state     mined by           \s
@@ -359,7 +359,7 @@ public class CommandsTest {
         Mockito.when(blockchain.getBlockTxHistoryByAddress(addrByte32, 1)).thenReturn(txHistoryList);
         String str = commands.address(addrByte32, 1);
 
-        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getTimeZone("GMT+08:00")).format(generateTime);
+        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(generateTime);
 
         assertEquals(String.format("""
                  OverView
