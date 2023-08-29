@@ -59,6 +59,14 @@ public class BlockBuilder {
         return generateExtraBlockGivenRandom(config, key, xdagTime, pendings, "1234");
     }
 
+    public static Block generateExtraBlock(Config config, KeyPair key, long xdagTime, String remark, List<Address> pendings) {
+        Block b = new Block(config, xdagTime, null, pendings, true, null, remark, -1);
+        Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode("1234")));
+        b.signOut(key);
+        b.setNonce(random);
+        return b;
+    }
+
     // TODO:set nonce means this block is a mining block, the mining param need to set true
     public static Block generateExtraBlockGivenRandom(Config config, KeyPair key, long xdagTime,
             List<Address> pendings, String randomS) {
