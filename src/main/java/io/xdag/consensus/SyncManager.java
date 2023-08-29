@@ -126,7 +126,7 @@ public class SyncManager {
         long lastTime = kernel.getSync().getLastTime();
         long curTime = msToXdagtimestamp(System.currentTimeMillis());
         long curHeight = xdagStats.getNmain();
-        long maxHeight = xdagStats.getTotalnblocks();
+        long maxHeight = xdagStats.getTotalnmain();
         //Exit the syncOld state based on time and height.
         if (!isSync() && (curHeight >= maxHeight - 512 || lastTime >= curTime - 32*REQUEST_BLOCKS_MAX_TIME)) {
             log.debug("our node height:{} the max height:{}, set sync state", curHeight, maxHeight);
@@ -317,6 +317,8 @@ public class SyncManager {
 
             log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
             kernel.getSync().setStatus(XdagSync.Status.SYNC_DONE);
+            // sync done, the remaining history is batch written.
+            txHistoryStore.batchSaveTxHistory(null);
 
             if (config.getEnableGenerateBlock()) {
                 log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
