@@ -53,5 +53,6 @@ public class DevnetConfigTest {
         assertEquals("1024.0", String.valueOf(config.getMainStartAmount().toDecimal(1, XUnit.XDAG)));
         assertEquals("128.0", String.valueOf(config.getApolloForkAmount().toDecimal(1, XUnit.XDAG)));
         assertEquals(8, config.getNodeSpec().getMaxInboundConnectionsPerIp());
+        assertEquals(888L, config.getTxPageSizeLimit());
     }
 }
