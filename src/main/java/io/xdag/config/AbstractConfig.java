@@ -93,6 +93,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected int connectionTimeout = 10000;
     protected int connectionReadTimeout = 10000;
     protected boolean enableTxHistory = false;
+    protected long txPageSizeLimit = 500;
     protected boolean enableGenerateBlock = false;
 
     protected String rootDir;
@@ -248,6 +249,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
         enableTxHistory = config.hasPath("node.transaction.history.enable")?config.getBoolean("node.transaction.history.enable"):false;
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
+        txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit")?config.getInt("node.transaction.history.pageSizeLimit"):500;
 
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
@@ -448,6 +450,9 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
 
     @Override
     public boolean getEnableTxHistory() {return enableTxHistory;}
+
+    @Override
+    public long getTxPageSizeLimit(){return txPageSizeLimit;}
 
     @Override
     public boolean getEnableGenerateBlock() {return enableGenerateBlock;}

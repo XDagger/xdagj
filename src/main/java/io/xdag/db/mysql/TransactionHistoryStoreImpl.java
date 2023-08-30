@@ -61,11 +61,14 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private static final int WALLET_ADDRESS_FLAG = 1;
 
     private static final int DEFAULT_PAGE_SIZE = 100;
+    private final long TX_PAGE_SIZE_LIMIT;
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
     public static int totalPage = 1;
-
+    public TransactionHistoryStoreImpl(long txPageSizeLimit){
+        this.TX_PAGE_SIZE_LIMIT = txPageSizeLimit;
+    }
     @Override
     public boolean saveTxHistory(TxHistory txHistory) {
         Connection conn = null;
@@ -169,7 +172,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             case 0: break;
             case 1:
                 int pageSize = Integer.parseInt(parameters[0].toString());
-                PAGE_SIZE = (pageSize > 0 && pageSize <= 500) ? pageSize : PAGE_SIZE;
+                PAGE_SIZE = (pageSize > 0 && pageSize <= TX_PAGE_SIZE_LIMIT ) ? pageSize : PAGE_SIZE;
                 break;
             case 2:
                 try {
@@ -191,7 +194,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                     end = Long.parseLong(parameters[1].toString());
                 }
                 int page_size = Integer.parseInt(parameters[2].toString());
-                PAGE_SIZE = (page_size > 0 && page_size <= 500) ? page_size : PAGE_SIZE;
+                PAGE_SIZE = (page_size > 0 && page_size <= TX_PAGE_SIZE_LIMIT) ? page_size : PAGE_SIZE;
                 break;
         }
         try {

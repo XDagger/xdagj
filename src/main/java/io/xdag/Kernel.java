@@ -193,7 +193,8 @@ public class Kernel {
         orphanBlockStore.init();
 
         if(config.getEnableTxHistory()) {
-            txHistoryStore = new TransactionHistoryStoreImpl();
+            long txPageSizeLimit = config.getTxPageSizeLimit();
+            txHistoryStore = new TransactionHistoryStoreImpl(txPageSizeLimit);
             log.info("Transaction History Store init.");
         }
 
