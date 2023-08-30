@@ -34,8 +34,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -135,7 +137,6 @@ public class CommandsTest {
         Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_1))).thenReturn(XAmount.of(9999, XUnit.XDAG));
         Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_2))).thenReturn(XAmount.of(8888, XUnit.XDAG));
 
-
         commands = new Commands(kernel);
     }
 
@@ -145,7 +146,9 @@ public class CommandsTest {
         assertEquals("5H1B51l0jPyaOaS1f0LMsudJV52iglYG   00000000", pstr);
 
         pstr = Commands.printBlock(mainblock, false);
-        assertEquals("00000000   5H1B51l0jPyaOaS1f0LMsudJV52iglYG   2019-07-14 19:04:31.999   Pending   xdagj_test\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000", pstr);
+        long time = XdagTime.xdagTimestampToMs(mainblock.getTimestamp());
+        assertEquals(String.format("00000000   5H1B51l0jPyaOaS1f0LMsudJV52iglYG   %s   Pending   xdagj_test\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time)), pstr);
     }
 
     @Test
@@ -214,10 +217,12 @@ public class CommandsTest {
         BlockInfo blockInfo = new BlockInfo();
         blockInfo.setDifficulty(BigInteger.ZERO);
 
+        long time = XdagTime.xdagTimestampToMs(blockInfo.getTimestamp());
+        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time);
         mainblock.setInfo(blockInfo);
         String str = commands.printBlockInfo(mainblock, false);
-        assertEquals("""
-                      time: 1970-01-01 08:00:00.000
+        assertEquals(String.format("""
+                      time: %s
                  timestamp: 0
                      flags: 0
                      state: Pending
@@ -234,7 +239,7 @@ public class CommandsTest {
                                                block as address: details
                  direction  address                                    amount                 time
 
-                """, str);
+                """, st), str);
     }
 
     @Test
@@ -246,15 +251,23 @@ public class CommandsTest {
             block.getInfo().setHeight(i);
             blocks.add(block);
             mainblockTime += 64000L;
+
+
         }
         Mockito.when(blockchain.listMainBlocks(Mockito.anyInt())).thenReturn(blocks);
         String str = commands.mainblocks(2);
-        assertEquals("""
+        long time1 = XdagTime.xdagTimestampToMs(blocks.get(0).getTimestamp());
+        long time2 = XdagTime.xdagTimestampToMs(blocks.get(1).getTimestamp());
+        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time1);
+        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time2);
+
+        assertEquals(String.format("""
                 ---------------------------------------------------------------------------------------------------------
                 height        address                            time                      state     mined by           \s
                 ---------------------------------------------------------------------------------------------------------
-                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   2019-07-14 19:04:06.093   Pending                                  \s
-                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   2019-07-14 19:05:08.593   Pending                                  \s""", str);
+                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   %s   Pending                                  \s
+                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   %s   Pending                                  \s""",
+                st1, st2), str);
     }
 
     @Test
@@ -269,12 +282,17 @@ public class CommandsTest {
         }
         Mockito.when(blockchain.listMinedBlocks(Mockito.anyInt())).thenReturn(blocks);
         String str = commands.minedBlocks(2);
-        assertEquals("""
+        long time1 = XdagTime.xdagTimestampToMs(blocks.get(0).getTimestamp());
+        long time2 = XdagTime.xdagTimestampToMs(blocks.get(1).getTimestamp());
+        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time1);
+        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time2);
+        assertEquals(String.format("""
                 ---------------------------------------------------------------------------------------------------------
                 height        address                            time                      state     mined by           \s
                 ---------------------------------------------------------------------------------------------------------
-                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   2019-07-14 19:04:06.093   Pending                                  \s
-                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   2019-07-14 19:05:08.593   Pending                                  \s""", str);
+                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   %s   Pending                                  \s
+                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   %s   Pending                                  \s""",
+        st1, st2), str);
     }
 
     @Test
@@ -342,7 +360,10 @@ public class CommandsTest {
         txHistoryList.add(new TxHistory(addr, Bytes32.random().toHexString(), generateTime, "xdagj_test"));
         Mockito.when(blockchain.getBlockTxHistoryByAddress(addrByte32, 1)).thenReturn(txHistoryList);
         String str = commands.address(addrByte32, 1);
-        assertEquals("""
+
+        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(generateTime);
+
+        assertEquals(String.format("""
                  OverView
                  address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
                  balance: 9999.000000000
@@ -351,8 +372,8 @@ public class CommandsTest {
                                                histories of address: details
                  direction  address                                    amount                 time
                                 
-                 snapshot: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas           9999.000000000   2020-09-20 23:45:00.000
-                """, str);
+                 snapshot: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas           9999.000000000   %s
+                """, st), str);
     }
 
     @Test
