@@ -96,4 +96,6 @@ public interface Config {
     boolean getEnableTxHistory();
 
     boolean getEnableGenerateBlock();
+
+    long getTxPageSizeLimit();
 }
