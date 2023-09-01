@@ -974,10 +974,6 @@
                     <artifactId>tuweni-units</artifactId>
                     <groupId>org.apache.tuweni</groupId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>reactive-streams</artifactId>
-                    <groupId>org.reactivestreams</groupId>
-                </exclusion>
             </exclusions>
         </dependency>
 
