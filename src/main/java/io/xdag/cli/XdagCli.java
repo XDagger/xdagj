@@ -251,6 +251,7 @@ public class XdagCli extends Launcher {
             startKernel(getConfig(), wallet);
         } catch (Exception e) {
             System.err.println("Uncaught exception during kernel startup:" + e.getMessage());
+            e.printStackTrace();
             exit(-1);
         }
     }

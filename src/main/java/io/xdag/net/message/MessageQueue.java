@@ -28,13 +28,16 @@ import static io.xdag.config.Constants.SEND_PERIOD;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.xdag.net.Channel;
+import io.xdag.config.Config;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.xdag.net.message.p2p.DisconnectMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -46,20 +49,21 @@ public class MessageQueue {
                     .namingPattern("MessageQueueTimer-thread-%d")
                     .daemon(true)
                     .build());
-    private final Queue<Message> requestQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<Message> respondQueue = new ConcurrentLinkedQueue<>();
-    private final Channel channel;
-    boolean isRunning = false;
-    private ChannelHandlerContext ctx = null;
+    private final Config config;
+
+    private final Queue<Message> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<Message> prioritized = new ConcurrentLinkedQueue<>();
+    private ChannelHandlerContext ctx;
     private ScheduledFuture<?> timerTask;
 
-    public MessageQueue(Channel channel) {
-        this.channel = channel;
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
+
+    public MessageQueue(Config config) {
+        this.config = config;
     }
 
-    public void activate(ChannelHandlerContext ctx) {
+    public synchronized void activate(ChannelHandlerContext ctx) {
         this.ctx = ctx;
-        isRunning = true;
         timerTask = timer.scheduleAtFixedRate(
                 () -> {
                     try {
@@ -74,6 +78,40 @@ public class MessageQueue {
                 TimeUnit.MILLISECONDS);
     }
 
+    public synchronized void deactivate() {
+        this.timerTask.cancel(false);
+    }
+
+    public boolean isIdle() {
+        return size() == 0;
+    }
+
+    public void disconnect(ReasonCode code) {
+        log.debug("Actively closing the connection: reason = {}", code);
+
+        // avoid repeating close requests
+        if (isClosed.compareAndSet(false, true)) {
+            ctx.writeAndFlush(new DisconnectMessage(code)).addListener((ChannelFutureListener) future -> ctx.close());
+        }
+    }
+
+    public boolean sendMessage(Message msg) {
+        if (size() >= config.getNodeSpec().getNetMaxMessageQueueSize()) {
+            disconnect(ReasonCode.MESSAGE_QUEUE_FULL);
+            return false;
+        }
+
+        if (config.getNodeSpec().getNetPrioritizedMessages().contains(msg.getCode())) {
+            prioritized.add(msg);
+        } else {
+            queue.add(msg);
+        }
+        return true;
+    }
+
+    public int size() {
+        return queue.size() + prioritized.size();
+    }
 
     private void nudgeQueue() {
         int n = Math.min(5, size());
@@ -82,50 +120,11 @@ public class MessageQueue {
         }
         // write out n messages
         for (int i = 0; i < n; i++) {
-            // Now send the next message
-            // log.debug("Sent to Wire with the message,msg:"+msg.getCommand());
-            Message respondMsg = respondQueue.poll();
-            Message requestMsg = requestQueue.poll();
-            if (respondMsg != null) {
-                ctx.write(respondMsg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            }
-            if (requestMsg != null) {
-                ctx.write(requestMsg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            }
+            Message msg = !prioritized.isEmpty() ? prioritized.poll() : queue.poll();
 
+            log.trace("Wiring message: {}", msg);
+            ctx.write(msg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
         }
         ctx.flush();
-    }
-
-    public void sendMessage(Message msg) {
-        if (channel.isDisconnected()) {
-            log.warn("{}: attempt to send [{}] message after disconnect", channel, msg.getCommand().name());
-            return;
-        }
-
-        if (msg.getAnswerMessage() != null) {
-            requestQueue.add(msg);
-        } else {
-            respondQueue.add(msg);
-        }
-    }
-
-    public void disconnect() {
-        ctx.close();
-    }
-
-    public void close() {
-        isRunning = false;
-        if (timerTask != null) {
-            timerTask.cancel(false);
-        }
-    }
-
-    public boolean isRunning() {
-        return isRunning;
-    }
-
-    public int size() {
-        return requestQueue.size() + respondQueue.size();
     }
 }

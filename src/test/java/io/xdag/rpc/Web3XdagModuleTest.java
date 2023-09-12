@@ -73,7 +73,7 @@ public class Web3XdagModuleTest {
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
-        kernel = new Kernel(config);
+        kernel = new Kernel(config, key);
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStoreImpl(

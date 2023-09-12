@@ -26,13 +26,13 @@ package io.xdag.config;
 
 import io.xdag.config.spec.AdminSpec;
 import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.PoolSpec;
 import io.xdag.config.spec.RPCSpec;
 import io.xdag.config.spec.RandomxSpec;
 import io.xdag.config.spec.SnapshotSpec;
 import io.xdag.config.spec.WalletSpec;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
+import io.xdag.net.CapabilityTreeSet;
 
 /**
  * The Xdag blockchain configurations.
@@ -44,15 +44,14 @@ public interface Config {
      */
     String getConfigName();
 
+    String getClientId();
+
+    CapabilityTreeSet getClientCapabilities();
+
     /**
      * Config Root Dir.
      */
     String getRootDir();
-
-    /**
-     * Pool Specification.
-     */
-    PoolSpec getPoolSpec();
 
     /**
      * Node Specification.
@@ -82,8 +81,6 @@ public interface Config {
     void changePara(String[] args);
 
     void setDir();
-
-    void initKeys() throws Exception;
 
     // rpc
     RPCSpec getRPCSpec();

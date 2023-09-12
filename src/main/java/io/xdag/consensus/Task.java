@@ -29,22 +29,17 @@ import io.xdag.utils.XdagSha256Digest;
 import lombok.Getter;
 import lombok.Setter;
 
+@Getter
+@Setter
 public class Task implements Cloneable {
 
-    @Getter
-    @Setter
+
     private XdagField[] task;
 
-    @Getter
-    @Setter
     private long taskTime;
 
-    @Getter
-    @Setter
     private long taskIndex;
 
-    @Getter
-    @Setter
     private XdagSha256Digest digest;
 
     @Override

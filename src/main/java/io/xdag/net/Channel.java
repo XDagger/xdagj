@@ -24,13 +24,15 @@
 
 package io.xdag.net;
 
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
-import io.xdag.net.handler.Xdag;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -39,35 +41,85 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public abstract class Channel {
+public class Channel {
 
-    protected SocketChannel socketChannel;
-    protected InetSocketAddress inetSocketAddress;
-    protected Node node;
-    protected MessageQueue messageQueue;
-    protected Kernel kernel;
-    protected boolean isActive;
-    protected boolean isDisconnected = false;
+    private SocketChannel socket;
+    private boolean isInbound;
+    private InetSocketAddress remoteAddress;
+    private Peer remotePeer;
+    private MessageQueue msgQueue;
+    private boolean isActive;
+    private XdagP2pHandler p2pHandler;
 
-    public abstract InetSocketAddress getInetSocketAddress();
+    /**
+     * Creates a new channel instance.
+     */
+    public Channel(SocketChannel socket) {
+        this.socket = socket;
+    }
 
-    public abstract boolean isActive();
+    /**
+     * Initializes this channel.
+     */
+    public void init(ChannelPipeline pipe, boolean isInbound, InetSocketAddress remoteAddress, Kernel kernel) {
+        this.isInbound = isInbound;
+        this.remoteAddress = remoteAddress;
+        this.remotePeer = null;
 
-    public abstract void setActive(boolean b);
+        this.msgQueue = new MessageQueue(kernel.getConfig());
 
-    public abstract Node getNode();
+        // register channel handlers
+        if (isInbound) {
+            pipe.addLast("inboundLimitHandler",
+                    new ConnectionLimitHandler(kernel.getConfig().getNodeSpec().getNetMaxInboundConnectionsPerIp()));
+        }
+        pipe.addLast("readTimeoutHandler", new ReadTimeoutHandler(kernel.getConfig().getNodeSpec().getNetChannelIdleTimeout(), TimeUnit.MILLISECONDS));
+        pipe.addLast("xdagFrameHandler", new XdagFrameHandler(kernel.getConfig()));
+        pipe.addLast("xdagMessageHandler", new XdagMessageHandler(kernel.getConfig()));
+        p2pHandler = new XdagP2pHandler(this, kernel);
+        pipe.addLast("xdagP2pHandler", p2pHandler);
+    }
 
-    public abstract void sendNewBlock(BlockWrapper blockWrapper);
+    public void close() {
+        socket.close();
+    }
 
-    public abstract void onDisconnect();
+    public MessageQueue getMessageQueue() {
+        return msgQueue;
+    }
 
-    public abstract void dropConnection();
+    public boolean isInbound() {
+        return isInbound;
+    }
 
-    public abstract Xdag getXdag();
+    public boolean isOutbound() {
+        return !isInbound();
+    }
 
-    public abstract boolean isDisconnected();
+    public boolean isActive() {
+        return isActive;
+    }
 
-    public abstract MessageQueue getMessageQueue();
+    public void setActive(Peer remotePeer) {
+        this.remotePeer = remotePeer;
+        this.isActive = true;
+    }
 
-    public abstract Kernel getKernel();
+    public void setInactive() {
+        this.isActive = false;
+    }
+
+    public String getRemoteIp() {
+        return remoteAddress.getAddress().getHostAddress();
+    }
+
+    public int getRemotePort() {
+        return remoteAddress.getPort();
+    }
+
+    @Override
+    public String toString() {
+        return "Channel [" + (isInbound ? "Inbound" : "Outbound") + ", remoteIp = " + getRemoteIp() + ", remotePeer = "
+                + remotePeer + "]";
+    }
 }

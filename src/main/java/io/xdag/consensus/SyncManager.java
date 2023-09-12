@@ -33,12 +33,15 @@ import io.xdag.config.TestnetConfig;
 import io.xdag.core.*;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
-import io.xdag.net.libp2p.discovery.DiscoveryPeer;
-import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.ChannelManager;
+import io.xdag.net.Peer;
+import io.xdag.net.node.Node;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
@@ -72,9 +75,7 @@ public class SyncManager {
     private AtomicLong importIdleTime = new AtomicLong();
     private AtomicBoolean syncDone = new AtomicBoolean(false);
     private AtomicBoolean isUpdateXdagStats = new AtomicBoolean(false);
-    private XdagChannelManager channelMgr;
-    private ScheduledFuture<?> connectlibp2pFuture;
-    private Set<DiscoveryPeer> hadConnectnode = new HashSet<>();
+    private ChannelManager channelMgr;
 
 
     // 监听是否需要自己启动
@@ -147,7 +148,7 @@ public class SyncManager {
     public boolean isTimeToStart() {
         boolean res = false;
         Config config = kernel.getConfig();
-        int waitEpoch = config.getPoolSpec().getWaitEpoch();
+        int waitEpoch = config.getNodeSpec().getWaitEpoch();
         if (!isSync() && !isSyncOld() && (XdagTime.getCurrentEpoch() > kernel.getStartEpoch() + waitEpoch)) {
             res = true;
         }
@@ -171,8 +172,9 @@ public class SyncManager {
         }
 
         if (!blockWrapper.isOld() && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
-            if (blockWrapper.getRemoteNode() == null
-                    || !blockWrapper.getRemoteNode().equals(kernel.getClient().getNode())) {
+            Peer blockPeer = blockWrapper.getRemotePeer();
+            Node node = kernel.getClient().getNode();
+            if (blockPeer == null || !StringUtils.equals(blockPeer.getIp(), node.getIp()) || blockPeer.getPort() != node.getPort()) {
                 if (blockWrapper.getTtl() > 0) {
                     distributeBlock(blockWrapper);
                 }
@@ -192,10 +194,9 @@ public class SyncManager {
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
-                        if (channel.getNode().equals(blockWrapper.getRemoteNode())) {
-                            channel.getXdag().sendGetBlock(result.getHashlow(), blockWrapper.isOld());
-
-                        }
+                        //if (channel.getRemotePeer().equals(blockWrapper.getRemotePeer())) {
+                            channel.getP2pHandler().sendGetBlock(result.getHashlow(), blockWrapper.isOld());
+                        //}
                     }
 
                 }
@@ -258,8 +259,6 @@ public class SyncManager {
 
     /**
      * 根据接收到的区块，将子区块释放
-     *
-     * @param blockWrapper 接收到的区块
      */
     public void syncPopBlock(BlockWrapper blockWrapper) {
         Block block = blockWrapper.getBlock();
@@ -282,9 +281,11 @@ public class SyncManager {
                                 importResult.getHashlow().toHexString());
                         List<Channel> channels = channelMgr.getActiveChannels();
                         for (Channel channel : channels) {
-                            if (channel.getNode().equals(bw.getRemoteNode())) {
-                                channel.getXdag().sendGetBlock(importResult.getHashlow(), blockWrapper.isOld());
-                            }
+//                            Peer remotePeer = channel.getRemotePeer();
+//                            Peer blockPeer = bw.getRemotePeer();
+                            //if (StringUtils.equals(remotePeer.getIp(), blockPeer.getIp()) && remotePeer.getPort() == blockPeer.getPort() ) {
+                                channel.getP2pHandler().sendGetBlock(importResult.getHashlow(), blockWrapper.isOld());
+                            //}
                         }
                     }
                 }
@@ -317,13 +318,15 @@ public class SyncManager {
 
             log.info("sync done, the last main block number = {}", blockchain.getXdagStats().nmain);
             kernel.getSync().setStatus(XdagSync.Status.SYNC_DONE);
-            // sync done, the remaining history is batch written.
-            txHistoryStore.batchSaveTxHistory(null);
+            if(config.getEnableTxHistory() && txHistoryStore != null) {
+                // sync done, the remaining history is batch written.
+                txHistoryStore.batchSaveTxHistory(null);
+            }
 
             if (config.getEnableGenerateBlock()) {
                 log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
                 // check main chain
-                kernel.getMinerServer().start();
+//                kernel.getMinerServer().start();
                 kernel.getPow().start();
             } else {
                 log.info("A non-mining node, will not generate blocks.");

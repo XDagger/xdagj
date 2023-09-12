@@ -30,8 +30,14 @@ import static org.junit.Assert.assertTrue;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
+import io.xdag.crypto.Keys;
+
 import java.net.InetSocketAddress;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +49,7 @@ public class WhliteListTest {
     Config config = new DevnetConfig();
 
     @Before
-    public void setup() {
+    public void setup() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         // 初始化白名单
         String[] list = new String[]{"124.34.34.1:1001", "127.0.0.1:1002"};
         List<InetSocketAddress> addressList = Lists.newArrayList();
@@ -51,12 +57,13 @@ public class WhliteListTest {
             addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
         }
         config.getNodeSpec().setWhiteIPList(addressList);
-        kernel = new Kernel(config);
+        kernel = new Kernel(config, Keys.createEcKeyPair());
     }
 
     @Test
-    public void WhileList() {
-        XdagClient client = new XdagClient(config);
+    public void WhileList()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        PeerClient client = new PeerClient(config, Keys.createEcKeyPair());
         // 新增白名单节点
         client.addWhilteIP("127.0.0.1", 8882);
         //白名单有的节点

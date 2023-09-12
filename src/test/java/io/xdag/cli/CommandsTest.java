@@ -28,17 +28,14 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
 import static junit.framework.TestCase.assertEquals;
 
 import java.math.BigInteger;
-import java.net.InetSocketAddress;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -47,7 +44,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import io.xdag.Kernel;
 import io.xdag.Wallet;
@@ -70,11 +66,8 @@ import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
-import io.xdag.mine.MinerChannel;
-import io.xdag.mine.manager.MinerManager;
-import io.xdag.mine.miner.Miner;
-import io.xdag.net.manager.NetDBManager;
-import io.xdag.net.message.NetDB;
+import io.xdag.net.NetDBManager;
+import io.xdag.net.NetDB;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -304,46 +297,10 @@ public class CommandsTest {
     }
 
     @Test
-    public void testMiners() {
-        Miner mockPoolMiner = new Miner(BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_1.getPublicKey())));
-        Miner mockMiner2 = new Miner(BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_2.getPublicKey())));
-        Map<Bytes, Miner> mockActivateMiners = Maps.newHashMap();
-        mockActivateMiners.put(mockPoolMiner.getAddressHash(), mockPoolMiner);
-        mockActivateMiners.put(mockMiner2.getAddressHash(), mockMiner2);
-
-        MinerManager mockMinerManager = Mockito.mock(MinerManager.class);
-        Mockito.when(kernel.getPoolMiner()).thenReturn(mockPoolMiner);
-        Mockito.when(kernel.getMinerManager()).thenReturn(mockMinerManager);
-        Mockito.when(mockMinerManager.getActivateMiners()).thenReturn(mockActivateMiners);
-
-        String str = commands.miners();
-        assertEquals("fee:PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas\n", str);
-    }
-
-    @Test
     public void testState() {
         Mockito.when(kernel.getXdagState()).thenReturn(XdagState.INIT);
         String str = commands.state();
         assertEquals("Pool Initializing....", str);
-    }
-
-    @Test
-    public void testDisConnectMinerChannel() {
-        Map<InetSocketAddress, MinerChannel> mockMinerChannels = Maps.newHashMap();
-        MinerChannel mc = Mockito.mock(MinerChannel.class);
-        InetSocketAddress host = new InetSocketAddress("127.0.0.1", 10001);
-
-        MinerManager mockMinerManager = Mockito.mock(MinerManager.class);
-        Mockito.when(mockMinerManager.getActivateMinerChannels()).thenReturn(mockMinerChannels);
-        Mockito.when(kernel.getMinerManager()).thenReturn(mockMinerManager);
-        Mockito.when(mockMinerManager.getChannelByHost(host)).thenReturn(mc);
-
-        String str = commands.disConnectMinerChannel("127.0.0.1:10001");
-        assertEquals("disconnect a channel：127.0.0.1:10001", str);
-        str = commands.disConnectMinerChannel("127.0.0.1:10002");
-        assertEquals("Can't find the corresponding channel, please check", str);
-        str = commands.disConnectMinerChannel("all");
-        assertEquals("disconnect all channels...", str);
     }
 
     @Test

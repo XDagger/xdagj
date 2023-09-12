@@ -325,7 +325,7 @@ public class SyncTest {
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
 
-        Kernel kernel = new Kernel(config);
+        Kernel kernel = new Kernel(config, key);
         DatabaseFactory dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStoreImpl(

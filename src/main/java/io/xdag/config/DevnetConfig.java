@@ -29,12 +29,13 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.units.bigints.UInt64;
 
+import io.xdag.Network;
 import io.xdag.core.XAmount;
 
 public class DevnetConfig extends AbstractConfig {
 
     public DevnetConfig() {
-        super("devnet", "xdag-devnet");
+        super("devnet", "xdag-devnet", Network.DEVNET, Constants.DEVNET_VERSION);
         this.whitelistUrl = StringUtils.EMPTY;
         this.waitEpoch = 1;
         this.xdagEra = 0x16900000000L;
