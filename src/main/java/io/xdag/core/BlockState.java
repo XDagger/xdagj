@@ -23,6 +23,9 @@
  */
 package io.xdag.core;
 
+import lombok.Getter;
+
+@Getter
 public enum BlockState {
     MAIN(0, "Main"),
     REJECTED(1, "Rejected"),
@@ -37,11 +40,4 @@ public enum BlockState {
         this.desc = desc;
     }
 
-    public int getCode() {
-        return this.code;
-    }
-
-    public String getDesc() {
-        return this.desc;
-    }
 }

@@ -25,7 +25,6 @@
 package io.xdag.core;
 
 import io.xdag.net.Peer;
-import io.xdag.net.node.Node;
 import lombok.Getter;
 import lombok.Setter;
 

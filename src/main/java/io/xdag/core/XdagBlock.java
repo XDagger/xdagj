@@ -30,6 +30,8 @@ import java.nio.ByteOrder;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 
+import lombok.Getter;
+
 public class XdagBlock {
 
     public static final int XDAG_BLOCK_FIELDS = 16;
@@ -39,6 +41,11 @@ public class XdagBlock {
      * data 以添加签名
      */
     private MutableBytes data;
+    /**
+     * -- GETTER --
+     *  获取区块sums*
+     */
+    @Getter
     private long sum;
     private XdagField[] fields;
 
@@ -101,10 +108,4 @@ public class XdagBlock {
         return data;
     }
 
-    /**
-     * 获取区块sums*
-     */
-    public long getSum() {
-        return sum;
-    }
 }

@@ -24,10 +24,28 @@
 
 package io.xdag.crypto;
 
+import static io.xdag.config.RandomXConstants.RANDOMX_FORK_HEIGHT;
+import static io.xdag.config.RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT;
+import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_BLOCKS;
+import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_LAG;
+import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_BLOCKS;
+import static io.xdag.config.RandomXConstants.SEEDHASH_EPOCH_TESTNET_LAG;
+import static io.xdag.config.RandomXConstants.XDAG_RANDOMX;
+import static io.xdag.utils.BytesUtils.bytesToPointer;
+import static io.xdag.utils.BytesUtils.equalBytes;
+
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
+
 import com.sun.jna.Memory;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
-import com.sun.jna.ptr.PointerByReference;
+
 import io.xdag.config.Config;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
@@ -39,17 +57,6 @@ import io.xdag.crypto.randomx.RandomXUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
-
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static io.xdag.config.RandomXConstants.*;
-import static io.xdag.utils.BytesUtils.bytesToPointer;
-import static io.xdag.utils.BytesUtils.equalBytes;
 
 
 @Slf4j
@@ -179,7 +186,7 @@ public class RandomX {
 
 
     // 矿池初始化dataset
-    public void randomXPoolInitDataset(PointerByReference rxCache, PointerByReference rxDataset) {
+    public void randomXPoolInitDataset(Pointer rxCache, Pointer rxDataset) {
         RandomXJNA.INSTANCE.randomx_init_dataset(rxDataset, rxCache, new NativeLong(0), RandomXJNA.INSTANCE.randomx_dataset_item_count());
     }
 
@@ -250,7 +257,7 @@ public class RandomX {
     }
 
 
-    public PointerByReference randomXUpdateVm(RandomXMemory randomXMemory, boolean isPoolVm) {
+    public Pointer randomXUpdateVm(RandomXMemory randomXMemory, boolean isPoolVm) {
         if (isPoolVm) {
             randomXMemory.poolVm = RandomXJNA.INSTANCE.randomx_create_vm(flags, randomXMemory.rxCache, randomXMemory.rxDataset);
             return randomXMemory.poolVm;

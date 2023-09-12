@@ -24,8 +24,6 @@
 
 package io.xdag.crypto;
 
-import static io.xdag.crypto.SecureRandomUtils.secureRandom;
-
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -37,6 +35,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 
 /**
@@ -47,9 +46,6 @@ public class Keys {
     public static final String ALGORITHM = SignatureAlgorithm.ALGORITHM;
     public static final String PROVIDER = BouncyCastleProvider.PROVIDER_NAME;
     public static final String CURVE_NAME = "secp256k1";
-
-    public static final int PUBLIC_KEY_SIZE = 64;
-    static final int PUBLIC_KEY_LENGTH_IN_HEX = PUBLIC_KEY_SIZE << 1;
 
     static {
         if (Security.getProvider(PROVIDER) == null) {
@@ -70,7 +66,7 @@ public class Keys {
     static KeyPair createSecp256k1KeyPair()
             throws NoSuchProviderException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException {
-        return createSecp256k1KeyPair(secureRandom());
+        return createSecp256k1KeyPair(SecureRandomProvider.publicSecureRandom());
     }
 
     static KeyPair createSecp256k1KeyPair(SecureRandom random)

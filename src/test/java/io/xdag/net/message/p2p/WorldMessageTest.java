@@ -28,13 +28,13 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.junit.Test;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.net.CapabilityTreeSet;
 import io.xdag.net.Peer;
@@ -49,7 +49,7 @@ public class WorldMessageTest {
         String peerId = toBase58(Keys.toBytesAddress(key));
         WorldMessage msg = new WorldMessage(config.getNodeSpec().getNetwork(), config.getNodeSpec().getNetworkVersion(), peerId, 8001,
                 config.getClientId(), config.getClientCapabilities().toArray(), 2,
-                SecureRandomUtils.secureRandom().generateSeed(InitMessage.SECRET_LENGTH), key);
+                SecureRandomProvider.publicSecureRandom().generateSeed(InitMessage.SECRET_LENGTH), key);
         assertTrue(msg.validate(config));
 
         msg = new WorldMessage(msg.getBody());

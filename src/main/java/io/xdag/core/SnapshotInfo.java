@@ -24,9 +24,12 @@
 package io.xdag.core;
 
 import java.util.Arrays;
-import lombok.Data;
 
-@Data
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class SnapshotInfo {
 
     protected boolean type; // true PUBKEY false BLOCK_DATA

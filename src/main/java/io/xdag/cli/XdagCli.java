@@ -33,7 +33,6 @@ import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.db.SnapshotStore;
 import io.xdag.db.rocksdb.DatabaseName;
@@ -57,6 +56,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import com.google.common.collect.Lists;
 
@@ -467,7 +467,7 @@ public class XdagCli extends Launcher {
             // HD Mnemonic
             printer.println("HdWallet Initializing...");
             byte[] initialEntropy = new byte[16];
-            SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
+            SecureRandomProvider.publicSecureRandom().nextBytes(initialEntropy);
             String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
             printer.println("HdWallet Mnemonic:" + phrase);
 
