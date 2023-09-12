@@ -29,7 +29,7 @@ import lombok.Getter;
 public enum MessageCode {
 
     // =======================================
-    // [0x00, 0x2f] Reserved for p2p basics
+    // [0x00, 0x0f] Reserved for p2p basics
     // =======================================
 
     /**
