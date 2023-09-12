@@ -393,7 +393,7 @@
         <dependency>
             <groupId>io.xdag</groupId>
             <artifactId>xdagj-native-randomx</artifactId>
-            <version>0.1.6</version>
+            <version>0.1.7</version>
         </dependency>
 
         <!-- Logging framework -->

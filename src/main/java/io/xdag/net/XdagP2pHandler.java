@@ -38,6 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -52,7 +53,6 @@ import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.Blockchain;
 import io.xdag.core.XdagStats;
-import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.ReasonCode;
@@ -112,7 +112,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     private ScheduledFuture<?> getNodes = null;
     private ScheduledFuture<?> pingPong = null;
 
-    private byte[] secret = SecureRandomUtils.secureRandom().generateSeed(InitMessage.SECRET_LENGTH);
+    private byte[] secret = SecureRandomProvider.publicSecureRandom().generateSeed(InitMessage.SECRET_LENGTH);
     private long timestamp = System.currentTimeMillis();
 
     public XdagP2pHandler(Channel channel, Kernel kernel) {

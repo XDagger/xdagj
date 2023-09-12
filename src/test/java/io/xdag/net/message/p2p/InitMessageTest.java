@@ -26,15 +26,14 @@ package io.xdag.net.message.p2p;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.junit.Test;
-
-import io.xdag.crypto.SecureRandomUtils;
 
 public class InitMessageTest {
 
     @Test
     public void testCodec() {
-        byte[] secret = SecureRandomUtils.secureRandom().generateSeed(32);
+        byte[] secret = SecureRandomProvider.publicSecureRandom().generateSeed(32);
         long timestamp = System.currentTimeMillis();
 
         InitMessage msg = new InitMessage(secret, timestamp);

@@ -51,9 +51,13 @@ public class Bip32ECKeyPair {
     public static final int HARDENED_BIT = 0x80000000;
 
     private final boolean parentHasPrivate;
+    @Getter
     private final int childNumber;
+    @Getter
     private final int depth;
+    @Getter
     private final byte[] chainCode;
+    @Getter
     private final int parentFingerprint;
     private final KeyPair keyPair;
 
@@ -154,22 +158,6 @@ public class Bip32ECKeyPair {
     private int getFingerprint() {
         byte[] id = getIdentifier();
         return id[3] & 0xFF | (id[2] & 0xFF) << 8 | (id[1] & 0xFF) << 16 | (id[0] & 0xFF) << 24;
-    }
-
-    public int getDepth() {
-        return depth;
-    }
-
-    public int getParentFingerprint() {
-        return parentFingerprint;
-    }
-
-    public byte[] getChainCode() {
-        return chainCode;
-    }
-
-    public int getChildNumber() {
-        return childNumber;
     }
 
     private byte[] getIdentifier() {

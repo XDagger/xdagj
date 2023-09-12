@@ -39,6 +39,7 @@ import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -68,9 +69,13 @@ public class SnapshotStoreImpl implements SnapshotStore {
     private final RocksdbKVSource snapshotSource;
 
     private final Kryo kryo;
+    @Getter
     private XAmount ourBalance = XAmount.ZERO;
+    @Getter
     private XAmount allBalance = XAmount.ZERO;
+    @Getter
     private long nextTime;
+    @Getter
     private long height;
 
 
@@ -288,23 +293,6 @@ public class SnapshotStoreImpl implements SnapshotStore {
         }
         snapshotSource.put(iter.key(), value);
     }
-
-    public XAmount getOurBalance() {
-        return this.ourBalance;
-    }
-
-    public XAmount getAllBalance() {
-        return this.allBalance;
-    }
-
-    public long getNextTime() {
-        return nextTime;
-    }
-
-    public long getHeight() {
-        return height;
-    }
-
 
     public Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         synchronized (kryo) {

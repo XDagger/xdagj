@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.core;
+package io.xdag.utils;
 
 import io.xdag.utils.exception.SimpleCodecException;
 import java.io.ByteArrayOutputStream;

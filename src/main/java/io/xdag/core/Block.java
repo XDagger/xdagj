@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import io.xdag.utils.SimpleEncoder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -80,20 +82,25 @@ public class Block implements Cloneable {
     /**
      * 区块的links 列表 输入输出*
      */
+    @Getter
     private List<Address> inputs = new CopyOnWriteArrayList<>();
     /**
      * ouput包含pretop
      */
+    @Getter
     private List<Address> outputs = new CopyOnWriteArrayList<>();
     /**
      * 记录公钥 前缀+压缩公钥*
      */
+    @Getter
     private List<SECPPublicKey> pubKeys = new CopyOnWriteArrayList<>();
+    @Getter
     private Map<SECPSignature, Integer> insigs = new LinkedHashMap<>();
     private SECPSignature outsig;
     /**
      * 主块的nonce记录矿工地址跟nonce*
      */
+    @Getter
     private Bytes32 nonce;
     private XdagBlock xdagBlock;
     private boolean parsed;
@@ -468,28 +475,8 @@ public class Block implements Cloneable {
         return MutableBytes32.wrap(info.getHashlow());
     }
 
-    public List<Address> getOutputs() {
-        return outputs;
-    }
-
-    public List<Address> getInputs() {
-        return inputs;
-    }
-
-    public List<SECPPublicKey> getPubKeys() {
-        return pubKeys;
-    }
-
-    public Bytes32 getNonce() {
-        return nonce;
-    }
-
     public SECPSignature getOutsig() {
         return outsig == null ? null : outsig;
-    }
-
-    public Map<SECPSignature, Integer> getInsigs() {
-        return insigs;
     }
 
     @Override

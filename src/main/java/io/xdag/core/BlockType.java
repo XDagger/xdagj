@@ -23,6 +23,9 @@
  */
 package io.xdag.core;
 
+import lombok.Getter;
+
+@Getter
 public enum BlockType {
     MAIN_BLOCK(0, "Main"),
     WALLET(1, "Wallet"),
@@ -37,11 +40,4 @@ public enum BlockType {
         this.desc = desc;
     }
 
-    public int getCode() {
-        return this.code;
-    }
-
-    public String getDesc() {
-        return this.desc;
-    }
 }

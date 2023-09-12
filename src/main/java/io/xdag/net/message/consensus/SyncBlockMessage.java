@@ -23,17 +23,11 @@
  */
 package io.xdag.net.message.consensus;
 
-import static io.xdag.config.Constants.DNET_PKT_XDAG;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
-
 import io.xdag.core.Block;
-import io.xdag.core.SimpleEncoder;
+import io.xdag.utils.SimpleEncoder;
 import io.xdag.core.XdagBlock;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageCode;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.SimpleDecoder;
 import lombok.Getter;
 import lombok.Setter;

@@ -36,7 +36,7 @@ import org.hyperledger.besu.crypto.SECPSignature;
 
 import io.xdag.Network;
 import io.xdag.config.Config;
-import io.xdag.core.SimpleEncoder;
+import io.xdag.utils.SimpleEncoder;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;

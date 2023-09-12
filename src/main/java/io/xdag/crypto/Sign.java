@@ -111,17 +111,6 @@ public class Sign {
         return new BigInteger(1, Arrays.copyOfRange(bits, 1, bits.length)); // remove prefix
     }
 
-    /**
-     * Verify that the provided precondition holds true.
-     *
-     * @param assertionResult assertion value
-     * @param errorMessage error message if precondition failure
-     */
-    public static void verifyPrecondition(boolean assertionResult, String errorMessage) {
-        if (!assertionResult) {
-            throw new RuntimeException(errorMessage);
-        }
-    }
     public static SECPSignature toCanonical(SECPSignature signature) {
         if(signature.getS().compareTo(HALF_CURVE_ORDER)>0){
             return SECPSignature.create(signature.getR(), CURVE.getN().subtract(signature.getS()), (byte) 0, CURVE.getN());

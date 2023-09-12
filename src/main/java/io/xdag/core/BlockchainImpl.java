@@ -677,7 +677,7 @@ public class BlockchainImpl implements Blockchain {
         updateBlockFlag(block, BI_MAIN_REF, true);
 
         List<Address> links = block.getLinks();
-        if (links == null || links.size() == 0) {
+        if (links == null || links.isEmpty()) {
             updateBlockFlag(block, BI_APPLIED, true);
             return XAmount.ZERO;
         }
@@ -1096,7 +1096,7 @@ public class BlockchainImpl implements Blockchain {
 
         // 临时区块
         Block tmpBlock;
-        if (block.getLinks().size() == 0) {
+        if (block.getLinks().isEmpty()) {
             return cuDiff;
         }
 
@@ -1323,7 +1323,7 @@ public class BlockchainImpl implements Blockchain {
     public boolean canUseInput(Block block) {
         List<SECPPublicKey> keys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
-        if (inputs == null || inputs.size() == 0) {
+        if (inputs == null || inputs.isEmpty()) {
             return true;
         }
         /*
@@ -1727,10 +1727,6 @@ public class BlockchainImpl implements Blockchain {
             temp = getBlockByHash(Bytes32.wrap(temp.getInfo().getMaxDiffLink()), false);
         }
         return res;
-    }
-
-    public Map<Bytes, Integer> getMemOurBlocks() {
-        return memOurBlocks;
     }
 
     enum OrphanRemoveActions {

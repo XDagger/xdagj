@@ -25,10 +25,9 @@ package io.xdag.net.message.consensus;
 
 import java.math.BigInteger;
 
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
-import io.xdag.core.SimpleEncoder;
+import io.xdag.utils.SimpleEncoder;
 import io.xdag.core.XdagStats;
 import io.xdag.net.NetDB;
 import io.xdag.net.message.Message;
