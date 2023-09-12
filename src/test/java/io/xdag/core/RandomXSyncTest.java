@@ -35,7 +35,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
-import io.xdag.mine.randomx.RandomX;
+import io.xdag.crypto.RandomX;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -192,7 +192,7 @@ public class RandomXSyncTest {
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         wallet.setAccounts(Collections.singletonList(key));
 
-        Kernel kernel = new Kernel(config);
+        Kernel kernel = new Kernel(config, key);
         DatabaseFactory dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStoreImpl(

@@ -73,6 +73,9 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
+
+    public static final String CLIENT_NAME = "xdagj";
+
     public static final String CLIENT_VERSION = System.getProperty("xdagj.version");
 
     /**
@@ -87,5 +90,9 @@ public class Constants {
         PRE_TOP,
         NEW_LINK
     }
+
+    public static final short MAINNET_VERSION = 0;
+    public static final short TESTNET_VERSION = 0;
+    public static final short DEVNET_VERSION = 0;
 
 }

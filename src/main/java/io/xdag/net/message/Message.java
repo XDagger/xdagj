@@ -27,30 +27,39 @@ package io.xdag.net.message;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
+import lombok.Getter;
+
+@Getter
 public abstract class Message {
 
-    protected boolean parsed;
-    protected MutableBytes encoded;
-    protected byte code;
+    /**
+     * Message code.
+     */
+    protected final MessageCode code;
 
-    public Message() {
+    /**
+     * Response message class.
+     */
+    protected final Class<?> responseMessageClass;
+
+    /**
+     * Message body.
+     */
+    protected byte[] body;
+
+    /**
+     * Create a message instance.
+     */
+    public Message(MessageCode code, Class<?> responseMessageClass) {
+        this.code = code;
+        this.responseMessageClass = responseMessageClass;
+        this.body = Bytes.EMPTY.toArray();
     }
 
-    public Message(MutableBytes encoded) {
-        this.encoded = encoded;
-        parsed = false;
+    /**
+     * Return the message name.
+     */
+    public String toString() {
+        return getClass().getName();
     }
-
-    public abstract Bytes getEncoded();
-
-    public abstract Class<?> getAnswerMessage();
-
-    public abstract XdagMessageCodes getCommand();
-
-    public byte getCode() {
-        return code;
-    }
-
-    @Override
-    public abstract String toString();
 }

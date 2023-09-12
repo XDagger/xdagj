@@ -34,7 +34,7 @@ import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.rocksdb.*;
-import io.xdag.mine.randomx.RandomX;
+import io.xdag.crypto.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -122,7 +122,7 @@ public class SnapshotStoreTest {
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
-        kernel = new Kernel(config);
+        kernel = new Kernel(config, key);
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStoreImpl(

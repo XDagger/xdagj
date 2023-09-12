@@ -46,6 +46,8 @@ public interface Blockchain {
 
     void checkNewMain();
 
+    long getLatestMainBlockNumber();
+
     List<Block> listMainBlocks(int count);
 
     List<Block> listMinedBlocks(int count);
@@ -62,7 +64,6 @@ public interface Blockchain {
 
     List<Block> getBlocksByTime(long starttime, long endtime);
 
-    // TODO ： 补充单元测试
     // 启动检查主块链线程
     void startCheckMain(long period);
 

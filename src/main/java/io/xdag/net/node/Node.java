@@ -24,57 +24,46 @@
 
 package io.xdag.net.node;
 
-import io.xdag.utils.BytesUtils;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import lombok.Getter;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.RandomUtils;
 
+@Getter
 public class Node {
 
-    @Getter
-    private final String host;
+    private final InetSocketAddress address;
 
-    @Getter
-    private final int port;
-    @Getter
-    private final NodeStat stat = new NodeStat();
-    @Getter
-    private byte[] id;
-
-    public Node(String host, int port) {
-        this.host = host;
-        this.port = port;
-        this.id = BytesUtils.longToBytes(RandomUtils.nextLong(), true);
+    public Node(InetSocketAddress address) {
+        this.address = address;
     }
 
-    public Node(byte[] id, String host, int port) {
-        this.id = id;
-        this.host = host;
-        this.port = port;
+    public Node(String ip, int port) {
+        this(new InetSocketAddress(ip, port));
     }
 
-    public Node(InetAddress address, int port) {
-        this.host = address.getHostAddress();
-        this.port = port;
+    public String getIp() {
+        return address.getAddress().getHostAddress();
     }
 
-    public String getHexId() {
-        return Hex.encodeHexString(id);
+    public int getPort() {
+        return address.getPort();
     }
 
-    public InetSocketAddress getAddress() {
-        return new InetSocketAddress(this.getHost(), this.getPort());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof Node && getAddress().equals(((Node) o).getAddress());
+    public InetSocketAddress toAddress() {
+        return this.address;
     }
 
     @Override
     public int hashCode() {
-        return getAddress().hashCode();
+        return address.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Node && address.equals(((Node) o).toAddress());
+    }
+
+    @Override
+    public String toString() {
+        return getIp() + ":" + getPort();
     }
 }

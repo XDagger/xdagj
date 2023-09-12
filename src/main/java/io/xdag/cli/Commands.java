@@ -29,11 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.xdag.Kernel;
 import io.xdag.core.*;
-import io.xdag.mine.MinerChannel;
-import io.xdag.mine.miner.Miner;
-import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.mine.miner.MinerStates;
-import io.xdag.net.node.Node;
+import io.xdag.net.Channel;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -49,7 +45,6 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -389,11 +384,6 @@ public class Commands {
         kernel.getNodeMgr().doConnect(server, port);
     }
 
-    public void connectbylibp2p(String server, int port, String ip) {
-        //       连接格式 ("/ip4/192.168.3.5/tcp/11112/ipfs/16Uiu2HAmRfT8vNbCbvjQGsfqWUtmZvrj5y8XZXiyUz6HVSqZW8gy")
-        kernel.getLibp2pNetwork().dail("/ip4/" + server + "/tcp/" + port + "/ipfs/" + ip.replaceAll(":", ""));
-    }
-
     /**
      * Query block by hash
      *
@@ -567,19 +557,11 @@ public class Commands {
     }
 
     public String listConnect() {
-        Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
+        List<Channel> channelList = kernel.getChannelMgr().getActiveChannels();
         StringBuilder stringBuilder = new StringBuilder();
-        for (Map.Entry<Node, Long> entry : map.entrySet()) {
-            Node node = entry.getKey();
-            stringBuilder
-                    .append(node.getAddress())
-                    .append(" ")
-                    .append(map.get(node) == null ? null : XdagTime.format(new Date(map.get(node))))
-                    .append(" ")
-                    .append(node.getStat().Inbound.get())
-                    .append(" in/")
-                    .append(node.getStat().Outbound.get())
-                    .append(" out").append(System.getProperty("line.separator"));
+        for (Channel channel : channelList) {
+            stringBuilder.append(channel).append(" ")
+                    .append(System.getProperty("line.separator"));
         }
 
         return stringBuilder.toString();
@@ -596,49 +578,8 @@ public class Commands {
         return "Key " + (size - 1) + " generated and set as default,now key size is:" + size;
     }
 
-    public String miners() {
-        Miner poolMiner = kernel.getPoolMiner();
-        StringBuilder sbd = new StringBuilder();
-        sbd.append("fee:").append(toBase58(poolMiner.getAddressHashByte())).append("\n");
-        if (kernel.getMinerManager().getActivateMiners().size() == 0) {
-            sbd.append(" without activate miners");
-        } else {
-            for (Miner miner : kernel.getMinerManager().getActivateMiners().values()) {
-                if (miner.getMinerStates() == MinerStates.MINER_ACTIVE) {
-                    sbd.append(MinerCalculate.minerStats(miner));
-                }
-            }
-        }
-        return sbd.toString();
-    }
-
     public String state() {
         return kernel.getXdagState().toString();
-    }
-
-    public String disConnectMinerChannel(String command) {
-        // TODO: 2020/6/13 判断输入的ip地址是否是合法的 端口 然后找到特定的channel 断开连接
-        if (StringUtils.equals("all", command)) {
-            Map<InetSocketAddress, MinerChannel> channels = kernel.getMinerManager().getActivateMinerChannels();
-            for (MinerChannel channel : channels.values()) {
-                channel.dropConnection();
-            }
-            return "disconnect all channels...";
-        } else {
-            String[] args = command.split(":");
-            try {
-                InetSocketAddress host = new InetSocketAddress(args[0], Integer.parseInt(args[1]));
-                MinerChannel channel = kernel.getMinerManager().getChannelByHost(host);
-                if (channel != null) {
-                    channel.dropConnection();
-                    return "disconnect a channel：" + command;
-                } else {
-                    return "Can't find the corresponding channel, please check";
-                }
-            } catch (Exception e) {
-                return "Argument is incorrect.";
-            }
-        }
     }
 
     public String balanceMaxXfer() {

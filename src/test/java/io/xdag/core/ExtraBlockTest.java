@@ -86,7 +86,7 @@ public class ExtraBlockTest {
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
-        kernel = new Kernel(config);
+        kernel = new Kernel(config, key);
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStoreImpl(
@@ -236,7 +236,7 @@ public class ExtraBlockTest {
         public void checkOrphan() {
             long nblk = this.getXdagStats().nnoref / 11;
             while (nblk-- > 0) {
-                Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getPoolSpec().getPoolTag());
+                Block linkBlock = createNewBlock(null, null, false, kernel.getConfig().getNodeSpec().getNodeTag());
                 linkBlock.signOut(kernel.getWallet().getDefKey());
                 ImportResult result = this.tryToConnect(linkBlock);
                 assertTrue(result == IMPORTED_BEST || result == IMPORTED_NOT_BEST);
