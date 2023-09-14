@@ -41,7 +41,6 @@
         <bcprov-jdk18on.version>1.76</bcprov-jdk18on.version>
         <bcpkix-jdk18on.version>1.76</bcpkix-jdk18on.version>
         <vertx-core.version>4.4.0</vertx-core.version>
-        <discovery.version>22.2.0</discovery.version>
         <jsonrpc4j.version>1.6</jsonrpc4j.version>
         <jaxws-ri.version>4.0.1</jaxws-ri.version>
         <config.version>1.4.2</config.version>
@@ -802,90 +801,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${json.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>tech.pegasys.discovery</groupId>
-            <artifactId>discovery</artifactId>
-            <version>${discovery.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>log4j-api</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>log4j-core</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty-all</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                    <groupId>org.bouncycastle</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-databind</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>logging-interceptor</artifactId>
-                    <groupId>com.squareup.okhttp3</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>okhttp</artifactId>
-                    <groupId>com.squareup.okhttp3</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-core</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jffi</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jnr-constants</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jnr-ffi</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>vertx-core</artifactId>
-                    <groupId>io.vertx</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>bytes</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>units</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-bytes</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-io</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-units</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->

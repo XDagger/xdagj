@@ -39,7 +39,7 @@ import io.xdag.core.XAmount;
 import io.xdag.crypto.Aes;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
+import io.xdag.utils.MnemonicUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;

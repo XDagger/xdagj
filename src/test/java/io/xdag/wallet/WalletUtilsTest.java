@@ -29,6 +29,7 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.*;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MnemonicUtils;
 import io.xdag.utils.WalletUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
