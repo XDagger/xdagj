@@ -27,7 +27,6 @@ package io.xdag.utils;
 import io.xdag.Wallet;
 import io.xdag.crypto.Base58;
 import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.MnemonicUtils;
 import io.xdag.utils.exception.AddressFormatException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;

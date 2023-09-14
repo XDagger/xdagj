@@ -32,7 +32,7 @@ import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
+import io.xdag.utils.MnemonicUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.db.SnapshotStore;
 import io.xdag.db.rocksdb.DatabaseName;

@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.crypto;
+package io.xdag.utils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -43,6 +43,8 @@ import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 import com.google.common.collect.Lists;
+
+import io.xdag.crypto.Hash;
 
 /**
  * Provides utility methods to generate random mnemonics and also generate seeds from mnemonics.

@@ -22,19 +22,18 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.crypto;
+package io.xdag.utils;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-import io.xdag.utils.Numeric;
 import org.junit.Test;
 
 /**
  * "Unparameterized" tests of {@link MnemonicUtils}.
  */
-public class StaticMnemonicUtilsTest {
+public class MnemonicUtilsTest {
 
     @Test
     public void testShouldGenerateCorrectEntropyFromMnemonic() {

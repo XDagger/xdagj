@@ -222,7 +222,6 @@ public class Block implements Cloneable {
         this.info = blockInfo;
         this.isSaved = true;
         this.parsed = true;
-
     }
 
     /**
