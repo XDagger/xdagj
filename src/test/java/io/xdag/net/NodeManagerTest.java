@@ -43,7 +43,6 @@ import com.google.common.collect.Lists;
 public class NodeManagerTest {
 
     Config config = new DevnetConfig();
-    Kernel kernel;
 
     @Before
     public void setUp() throws Exception {
@@ -53,9 +52,7 @@ public class NodeManagerTest {
             InetSocketAddress inetSocketAddress = new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1]));
             addressList.add(inetSocketAddress);
         }
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         config.getNodeSpec().setWhiteIPList(addressList);
-        kernel = new Kernel(config, key);
     }
 
     @Test

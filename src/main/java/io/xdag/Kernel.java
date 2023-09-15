@@ -80,7 +80,7 @@ public class Kernel {
     protected OrphanBlockStore orphanBlockStore;
     protected TransactionHistoryStore txHistoryStore;
 
-    protected SnapshotStore SnapshotStore;
+    protected SnapshotStore snapshotStore;
     protected Blockchain blockchain;
     protected NetDB netDB;
     protected PeerClient client;

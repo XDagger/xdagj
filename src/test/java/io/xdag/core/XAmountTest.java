@@ -115,7 +115,7 @@ public class XAmountTest {
     }
 
     @Test
-    public void TestAmount2xdag() {
+    public void testAmount2xdag() {
         assertEquals(972.80, XAmount.ofXAmount(4178144185548L).toDecimal(2, XDAG).doubleValue(), 0.0);
 
         // 3333333334

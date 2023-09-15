@@ -64,9 +64,16 @@ public final class DruidUtils {
         }
     }
     public static void close(Connection connection, Statement statement){
-        if (connection != null && statement != null){
+        if (statement != null){
             try {
                 statement.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if (connection != null){
+            try {
                 connection.close();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
@@ -74,11 +81,25 @@ public final class DruidUtils {
         }
     }
     public static void close(Connection connection, Statement statement, ResultSet resultSet){
-        if (connection != null && statement != null && resultSet != null){
+        if(resultSet != null) {
             try {
                 resultSet.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(statement != null) {
+            try {
                 statement.close();
-                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(connection != null) {
+            try {
+                resultSet.close();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
             }
@@ -86,11 +107,25 @@ public final class DruidUtils {
     }
 
     public static void close(Connection connection, PreparedStatement statement, ResultSet resultSet){
-        if (connection != null && statement != null && resultSet != null){
+        if(resultSet != null) {
             try {
                 resultSet.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(statement != null) {
+            try {
                 statement.close();
-                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(connection != null) {
+            try {
+                resultSet.close();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
             }

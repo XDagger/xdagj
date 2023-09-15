@@ -45,6 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -220,8 +221,7 @@ public class SyncManager {
         if(syncMap.size() >= MAX_SIZE){
             for (int j = 0; j < DELETE_NUM; j++) {
                 List<Bytes32> keyList = new ArrayList<>(syncMap.keySet());
-                Random rand = new Random();
-                Bytes32 key = keyList.get(rand.nextInt(keyList.size()));
+                Bytes32 key = keyList.get(SecureRandomProvider.publicSecureRandom().nextInt(keyList.size()));
                 assert key != null;
                 if(syncMap.remove(key) != null) blockchain.getXdagStats().nwaitsync--;
             }

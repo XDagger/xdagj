@@ -58,9 +58,6 @@ public class Web3XdagModuleTest {
     Kernel kernel;
     DatabaseFactory dbFactory;
 
-    BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
-    BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
-
     @Before
     public void setUp() throws Exception {
         config.getNodeSpec().setStoreDir(root.newFolder().getAbsolutePath());

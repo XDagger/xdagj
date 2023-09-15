@@ -34,12 +34,14 @@ import io.xdag.utils.DruidUtils;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Random;
@@ -67,8 +69,7 @@ public class TransactionHistoryStoreImplTest {
                 KEY `faddress_index` (`faddress`)
                 )
             """;
-    Random random = new Random();
-    long txPageSizeLimit = random.nextLong();
+    long txPageSizeLimit = SecureRandomProvider.publicSecureRandom().nextLong();
     private final TransactionHistoryStore txHistoryStore = new TransactionHistoryStoreImpl(txPageSizeLimit);
 
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
@@ -76,13 +77,14 @@ public class TransactionHistoryStoreImplTest {
     SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
     SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
     @BeforeClass
-    public static void setUp() throws Exception {
-        Statement stmt;
+    public static void setUp() throws SQLException {
+        Statement stmt = null;
         Connection conn = DruidUtils.getConnection();
         if (conn != null) {
             stmt = conn.createStatement();
             stmt.execute(SQL_CTEATE_TABLE);
         }
+        DruidUtils.close(conn, stmt);
     }
 
     @Test
