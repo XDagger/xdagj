@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class BasicUtilsTest {
 
     @Test
-    public void TestXdag2amount() {
+    public void testXdag2amount() {
         BigDecimal a = BigDecimal.valueOf(972.8);
         assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()).toLong());
 
@@ -53,13 +53,13 @@ public class BasicUtilsTest {
     }
 
     @Test(expected = XdagOverFlowException.class)
-    public void TestXdag2amountOverflow() {
+    public void testXdag2amountOverflow() {
         double d = -1.3;
         BasicUtils.xdag2amount(d);
     }
 
     @Test
-    public void TestAmount2xdag() {
+    public void testAmount2xdag() {
         long a = 4178144185548L;
         // 3CC CCCC CCCD?
         assertEquals(972.799999999814, BasicUtils.amount2xdag(a), 0.0);

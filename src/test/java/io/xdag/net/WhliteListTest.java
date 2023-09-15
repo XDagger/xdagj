@@ -45,7 +45,6 @@ import com.google.common.collect.Lists;
 
 public class WhliteListTest {
 
-    Kernel kernel;
     Config config = new DevnetConfig();
 
     @Before
@@ -57,11 +56,10 @@ public class WhliteListTest {
             addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
         }
         config.getNodeSpec().setWhiteIPList(addressList);
-        kernel = new Kernel(config, Keys.createEcKeyPair());
     }
 
     @Test
-    public void WhileList()
+    public void whileList()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         PeerClient client = new PeerClient(config, Keys.createEcKeyPair());
         // 新增白名单节点

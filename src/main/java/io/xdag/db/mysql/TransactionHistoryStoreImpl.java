@@ -197,6 +197,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             int page_size = Integer.parseInt(parameters[2].toString());
             PAGE_SIZE = (page_size > 0 && page_size <= TX_PAGE_SIZE_LIMIT) ? page_size : PAGE_SIZE;
         }
+        default -> {
+        }
         }
         try {
             conn = DruidUtils.getConnection();
