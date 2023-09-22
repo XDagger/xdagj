@@ -45,6 +45,7 @@ import io.xdag.net.ChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.NetDB;
 import io.xdag.net.node.NodeManager;
+import io.xdag.net.websocket.WebSocketManger;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
@@ -94,6 +95,7 @@ public class Kernel {
 
     protected byte[] firstAccount;
     protected Block firstBlock;
+    private WebSocketManger webSocketManger;
     protected XdagState xdagState;
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
@@ -280,10 +282,16 @@ public class Kernel {
         log.info("SyncManager start...");
 
         // ====================================
+        // set up pool websocket channel
+        // ====================================
+        webSocketManger = new WebSocketManger(this);
+        // ====================================
         // pow
         // ====================================
         pow = new XdagPow(this);
 
+        webSocketManger.start();
+        webSocketManger.setPoW(pow);
         // register pow
         blockchain.registerListener(pow);
 
@@ -435,6 +443,8 @@ public class Kernel {
         // close client
         client.close();
         log.info("Node client stop.");
+
+        webSocketManger.stop();
 
         // 3. 数据层关闭
         // TODO 关闭checkmain线程
