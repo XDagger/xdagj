@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.net.Channel;
+import io.xdag.net.websocket.ChannelSupervise;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -565,6 +566,10 @@ public class Commands {
         }
 
         return stringBuilder.toString();
+    }
+
+    public String pool(){
+        return ChannelSupervise.showChannel();
     }
 
     public String keygen()

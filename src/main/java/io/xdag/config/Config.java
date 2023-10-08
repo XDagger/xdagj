@@ -95,4 +95,12 @@ public interface Config {
     boolean getEnableGenerateBlock();
 
     long getTxPageSizeLimit();
+
+    //websocket
+    String getPoolIP();
+
+    int getWebsocketServerPort();
+
+    String getPoolTag();
+
 }

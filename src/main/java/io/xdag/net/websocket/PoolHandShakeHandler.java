@@ -1,13 +1,9 @@
 package io.xdag.net.websocket;
 
-
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.xdag.Kernel;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -17,7 +13,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.CharsetUtil;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import static io.netty.handler.codec.http.HttpUtil.isKeepAlive;
 import java.util.Date;
 
@@ -26,38 +21,45 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     private WebSocketServerHandshaker handshaker;
-    private  Kernel kernel;
+    private final int port;
+    private final String ClientIP;
+    private final String ClientTap;
 
-    public PoolHandShakeHandler(Kernel kernel) {
-        this.kernel = kernel;
-
+    public PoolHandShakeHandler(String clienthost,String tag, int port) {
+        this.ClientIP = clienthost;
+        this.ClientTap = tag;
+        this.port = port;
     }
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception{
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         log.debug("recv: "+ msg);
         if (msg instanceof FullHttpRequest ) {
-            //以http请求形式接入，但是走的是websocket
+            //Fullhttprequest for update websocket connect
             handleHttpRequest(ctx, (FullHttpRequest) msg);
             log.debug("Receive request from the pool: {} ", ctx.channel().remoteAddress());
         }else if (msg instanceof  WebSocketFrame){
-            //处理websocket客户端的消息
+            //response the other msg
             handlerWebSocketFrame(ctx, (WebSocketFrame) msg);
         }
     }
 
     /**
-     * 唯一的一次http请求，用于创建websocket
+     * the only one http request，update to websocket connect
      * */
     private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) {
-        //要求Upgrade为websocket，过滤掉get/Post
-        if (!req.decoderResult().isSuccess() || (!"websocket".equals(req.headers().get("Upgrade")))) {
-            //若不是websocket方式，则创建BAD_REQUEST的req，返回给客户端
+        String clientIP = ctx.channel().remoteAddress().toString();
+        //Upgrade to websocket, allow pool client ip in config ,filter 'get/Post'
+        if ((!clientIP.contains(ClientIP))
+                || !req.decoderResult().isSuccess()
+                || (!"websocket".equals(req.headers().get("Upgrade")))) {
+        //if not websocket request ，create BAD_REQUEST return client
             sendHttpResponse(ctx, req, new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST));
             return;
         }
+        String uri = "ws://localhost:" + port + "/websocket";
         WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
-                "ws://localhost:8081/websocket", null, false);
+                uri, null, false);
         handshaker = wsFactory.newHandshaker(req);
         if (handshaker == null) {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
@@ -67,49 +69,49 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        //添加连接
+    public void channelActive(ChannelHandlerContext ctx){
         log.debug("pool {} join in.",ctx.channel());
-        ChannelSupervise.addChannel(ctx.channel());
+        if (ctx.channel().remoteAddress().toString().contains(ClientIP)){
+            ChannelSupervise.addChannel(ctx.channel(), ClientTap);
+        }
     }
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        //断开连接
+    public void channelInactive(ChannelHandlerContext ctx) {
         log.debug("pool {} disconnect.",ctx.channel());
-        ChannelSupervise.removeChannel(ctx.channel());
+        if (ctx.channel().remoteAddress().toString().contains(ClientIP)) {
+            ChannelSupervise.removeChannel(ctx.channel(), ClientTap);
+        }
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.flush();
     }
 
     private void handlerWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame){
-        // 判断是否关闭链路的指令
+        //  close command
         if (frame instanceof CloseWebSocketFrame) {
             handshaker.close(ctx.channel(), (CloseWebSocketFrame) frame.retain());
             return;
         }
-        // 判断是否ping消息
+        // ping msg
         if (frame instanceof PingWebSocketFrame) {
-            ctx.channel().write(
-                    new PongWebSocketFrame(frame.content().retain()));
+            ctx.channel().write(new PongWebSocketFrame(frame.content().retain()));
             return;
         }
-        // 本例程仅支持文本消息，不支持二进制消息
+        // support text msg
         if (!(frame instanceof TextWebSocketFrame)) {
-            log.debug("本例程仅支持文本消息，不支持二进制消息");
+            log.debug("Unsupported msg type ");
             throw new UnsupportedOperationException(String.format(
                     "%s frame types not supported", frame.getClass().getName()));
         }
         // 返回应答消息
         String request = ((TextWebSocketFrame) frame).text();
-        log.debug("服务端收到：" + request);
-
+        log.debug("server recv：" + request);
 
         //TODO:这里看一下发什么响应请求
         TextWebSocketFrame tws = new TextWebSocketFrame(new Date().toString()
-                + ctx.channel().id() + "："+ kernel.getConfig().getNodeSpec().getNodeTag() + request);
+                + ctx.channel().id() + "："+ request);
         // 群发
         //ChannelSupervise.send2All(tws);
         // 返回【谁发的发给谁】
@@ -117,11 +119,11 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     /**
-     * 拒绝不合法的请求，并返回错误信息
+     * reject illegal request, return wrong msg
      * */
     private static void sendHttpResponse(ChannelHandlerContext ctx,
                                          FullHttpRequest req, DefaultFullHttpResponse res) {
-        // 返回应答给客户端
+        // return client
         if (res.status().code() != 200) {
             ByteBuf buf = Unpooled.copiedBuffer(res.status().toString(),
                     CharsetUtil.UTF_8);
@@ -129,29 +131,9 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
             buf.release();
         }
         ChannelFuture f = ctx.channel().writeAndFlush(res);
-        // 如果是非Keep-Alive，关闭连接
+        // if not Keep-Alive，close
         if (!isKeepAlive(req) || res.status().code() != 200) {
             f.addListener(ChannelFutureListener.CLOSE);
-        }
-    }
-
-
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-        try {
-            Channel websocketChannl = ctx.channel();
-            if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete handshakeCompletedEvent){
-                String uri = handshakeCompletedEvent.requestUri();
-                HttpHeaders headers = handshakeCompletedEvent.requestHeaders();
-                if (log.isDebugEnabled()) {
-                    log.debug("HandShake with {} is complete! ",websocketChannl.remoteAddress());
-                }
-                //尝试登录验证
-
-            }
-        }catch (Exception e){
-            log.error(e.getMessage(), e);
         }
     }
 }

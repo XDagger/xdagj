@@ -78,7 +78,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
         commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
-//        commandExecute.put("miners", new CommandMethods(this::processMiners, this::defaultCompleter));
+        commandExecute.put("pool", new CommandMethods(this::processPool, this::defaultCompleter));
 //        commandExecute.put("run", new CommandMethods(this::processRun, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
         commandExecute.put("net", new CommandMethods(this::processNet, this::defaultCompleter));
@@ -391,6 +391,23 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
             println(commands.xfer(amount, hash, remark));
 
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processPool(CommandInput input){
+        final String[] usage = {
+                "pool - for pool, print list of recent connected pool",
+                "Usage: pool ",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+            println(commands.pool());
         } catch (Exception e) {
             saveException(e);
         }
