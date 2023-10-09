@@ -32,11 +32,10 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     }
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        log.debug("recv: "+ msg);
         if (msg instanceof FullHttpRequest ) {
             //Fullhttprequest for update websocket connect
             handleHttpRequest(ctx, (FullHttpRequest) msg);
-            log.debug("Receive request from the pool: {} ", ctx.channel().remoteAddress());
+            log.debug("handshake with pool: {} ", ctx.channel().remoteAddress());
         }else if (msg instanceof  WebSocketFrame){
             //response the other msg
             handlerWebSocketFrame(ctx, (WebSocketFrame) msg);

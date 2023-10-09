@@ -26,7 +26,19 @@ package io.xdag.core;
 
 //import static io.xdag.db.BlockStore.BLOCK_AMOUNT;
 
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
 public class BlockTest {
+
+     @Test
+     public void testTransferXAmount(){
+          XAmount a = XAmount.of(0,XUnit.NANO_XDAG);
+          String s = a.toString();
+          Long l = Long.parseLong(s);
+          assertEquals("0", s);
+          assertEquals(Long.valueOf(0) , l);
+     }
     /**
      Config config = new Config();
      Wallet xdagWallet;

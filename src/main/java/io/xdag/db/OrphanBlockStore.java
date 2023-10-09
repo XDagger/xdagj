@@ -26,6 +26,8 @@ package io.xdag.db;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import java.util.List;
+
+import io.xdag.core.Filter;
 import org.bouncycastle.util.encoders.Hex;
 
 public interface OrphanBlockStore {
@@ -40,7 +42,7 @@ public interface OrphanBlockStore {
 
     void reset();
 
-    List<Address> getOrphan(long num, long[] sendTime);
+    List<Address> getOrphan(long num, long[] sendTime, Filter filter);
 
     void deleteByHash(byte[] hashlow);
 
