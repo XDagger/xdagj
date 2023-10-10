@@ -49,6 +49,27 @@ public class Hash {
         return result.toHexString();
     }
 
+    public static byte[] h256(byte[] input) {
+        MessageDigest digest = newDigest();
+
+        return digest.digest(input);
+    }
+
+    public static byte[] randomXHash(byte[] input, RandomX randomX) {
+        randomX.randomXBlockHash()
+    }
+
+    /**
+     * Merge two byte arrays and compute the 256-bit hash.
+     */
+    public static byte[] h256(byte[] one, byte[] two) {
+        byte[] all = new byte[one.length + two.length];
+        System.arraycopy(one, 0, all, 0, one.length);
+        System.arraycopy(two, 0, all, one.length, two.length);
+
+        return Hash.h256(all);
+    }
+
 
     public static MessageDigest newDigest() {
         try {

@@ -27,8 +27,6 @@ package io.xdag.net;
 import static org.junit.Assert.assertEquals;
 
 import io.xdag.net.message.MessageCode;
-import io.xdag.net.message.consensus.SumReplyMessage;
-import io.xdag.net.message.consensus.XdagMessage;
 import io.xdag.utils.BytesUtils;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -254,22 +252,22 @@ public class MessageTest {
      *         }
      **/
 
-    public void printMessage(XdagMessage message) {
-        System.out.println(message.getCode().name());
-        System.out.println("starttime:" + message.getStarttime());
-        System.out.println("endtime:" + message.getEndtime());
-        System.out.println("status:" + message.getXdagStats());
-        System.out.println("netdb:" + message.getRemoteNetdb());
-        if (message.getCode() == MessageCode.BLOCK_REQUEST) {
-            System.out.println("request hash:" + message.getHash().toHexString());
-        } else {
-            System.out.println("random:" + message.getRandom());
-        }
-        if (message.getCode() == MessageCode.SUMS_REPLY) {
-            SumReplyMessage sumReplyMessage = (SumReplyMessage) message;
-            System.out.println("sum:" + sumReplyMessage.getSum().toHexString());
-        }
-    }
+//    public void printMessage(XdagMessage message) {
+//        System.out.println(message.getCode().name());
+//        System.out.println("starttime:" + message.getStarttime());
+//        System.out.println("endtime:" + message.getEndtime());
+//        System.out.println("status:" + message.getXdagStats());
+//        System.out.println("netdb:" + message.getRemoteNetdb());
+//        if (message.getCode() == MessageCode.BLOCK_REQUEST) {
+//            System.out.println("request hash:" + message.getHash().toHexString());
+//        } else {
+//            System.out.println("random:" + message.getRandom());
+//        }
+//        if (message.getCode() == MessageCode.SUMS_REPLY) {
+//            SumReplyMessage sumReplyMessage = (SumReplyMessage) message;
+//            System.out.println("sum:" + sumReplyMessage.getSum().toHexString());
+//        }
+//    }
 
     @Test
     public void testIP() {

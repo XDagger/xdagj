@@ -33,7 +33,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 /**
  * Keys generated for unit testing purposes.
  */
-public class SampleKeys {
+public final class SampleKeys {
 
     public static final String PRIVATE_KEY_STRING =
             "a392604efc2fad9c0b3da43b5f698a2e3f270f170d859912be0d54742275c5f6";
@@ -58,7 +58,14 @@ public class SampleKeys {
 
     public static final KeyPair KEY_PAIR = new KeyPair(SRIVATE_KEY, SPUBLIC_KEY);
 
-    private SampleKeys() {
-    }
+    public static BigInteger PRIVATE1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
+    public static BigInteger PRIVATE2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
+
+    public static SECPPrivateKey SK1 = SECPPrivateKey.create(PRIVATE1, Sign.CURVE_NAME);
+    public static SECPPrivateKey SK2 = SECPPrivateKey.create(PRIVATE2, Sign.CURVE_NAME);
+
+    public static KeyPair KEY1 = KeyPair.create(SK1, Sign.CURVE, Sign.CURVE_NAME);
+    public static KeyPair KEY2 = KeyPair.create(SK2, Sign.CURVE, Sign.CURVE_NAME);
+
 }
 

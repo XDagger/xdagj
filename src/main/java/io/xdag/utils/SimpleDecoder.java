@@ -24,6 +24,7 @@
 
 package io.xdag.utils;
 
+import io.xdag.core.XAmount;
 import io.xdag.utils.exception.SimpleCodecException;
 import java.io.UnsupportedEncodingException;
 
@@ -77,6 +78,10 @@ public class SimpleDecoder {
         int i2 = readInt();
 
         return (unsignedInt(i1) << 32) | unsignedInt(i2);
+    }
+
+    public XAmount readXAmount() {
+        return XAmount.of(readLong());
     }
 
     /**

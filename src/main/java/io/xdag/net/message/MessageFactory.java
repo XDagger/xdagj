@@ -24,19 +24,18 @@
 
 package io.xdag.net.message;
 
-import io.xdag.net.message.consensus.BlockExtReplyMessage;
-import io.xdag.net.message.consensus.BlockExtRequestMessage;
-import io.xdag.net.message.consensus.BlockRequestMessage;
-import io.xdag.net.message.consensus.BlocksReplyMessage;
-import io.xdag.net.message.consensus.BlocksRequestMessage;
-import io.xdag.net.message.consensus.NewBlockMessage;
-import io.xdag.net.message.consensus.SumReplyMessage;
-import io.xdag.net.message.consensus.SumRequestMessage;
+import io.xdag.net.message.consensus.GetMainBlockHeaderMessage;
+import io.xdag.net.message.consensus.GetMainBlockMessage;
+import io.xdag.net.message.consensus.GetMainBlockPartsMessage;
+import io.xdag.net.message.consensus.MainBlockHeaderMessage;
+import io.xdag.net.message.consensus.MainBlockMessage;
+import io.xdag.net.message.consensus.MainBlockPartsMessage;
 import io.xdag.net.message.p2p.DisconnectMessage;
 import io.xdag.net.message.p2p.HelloMessage;
 import io.xdag.net.message.p2p.InitMessage;
 import io.xdag.net.message.p2p.PingMessage;
 import io.xdag.net.message.p2p.PongMessage;
+import io.xdag.net.message.p2p.TransactionMessage;
 import io.xdag.net.message.p2p.WorldMessage;
 import io.xdag.utils.exception.UnreachableException;
 import lombok.extern.slf4j.Slf4j;
@@ -76,22 +75,38 @@ public class MessageFactory {
                 return new PingMessage(body);
             case PONG:
                 return new PongMessage(body);
-            case BLOCKS_REQUEST:
-                return new BlocksRequestMessage(body);
-            case BLOCKS_REPLY:
-                return new BlocksReplyMessage(body);
-            case SUMS_REQUEST:
-                return new SumRequestMessage(body);
-            case SUMS_REPLY:
-                return new SumReplyMessage(body);
-            case BLOCKEXT_REQUEST:
-                return new BlockExtRequestMessage(body);
-            case BLOCKEXT_REPLY:
-                return new BlockExtReplyMessage(body);
-            case BLOCK_REQUEST:
-                return new BlockRequestMessage(body);
-            case NEW_BLOCK:
-                return new NewBlockMessage(body);
+
+//            case BLOCKS_REQUEST:
+//                return new BlocksRequestMessage(body);
+//            case BLOCKS_REPLY:
+//                return new BlocksReplyMessage(body);
+//            case SUMS_REQUEST:
+//                return new SumRequestMessage(body);
+//            case SUMS_REPLY:
+//                return new SumReplyMessage(body);
+//            case BLOCKEXT_REQUEST:
+//                return new BlockExtRequestMessage(body);
+//            case BLOCKEXT_REPLY:
+//                return new BlockExtReplyMessage(body);
+//            case BLOCK_REQUEST:
+//                return new BlockRequestMessage(body);
+//            case NEW_BLOCK:
+//                return new NewBlockMessage(body);
+
+            case TRANSACTION:
+                return new TransactionMessage(body);
+            case GET_MAIN_BLOCK:
+                return new GetMainBlockMessage(body);
+            case MAIN_BLOCK:
+                return new MainBlockMessage(body);
+            case GET_MAIN_BLOCK_HEADER:
+                return new GetMainBlockHeaderMessage(body);
+            case MAIN_BLOCK_HEADER:
+                return new MainBlockHeaderMessage(body);
+            case GET_MAIN_BLOCK_PARTS:
+                return new GetMainBlockPartsMessage(body);
+            case MAIN_BLOCK_PARTS:
+                return new MainBlockPartsMessage(body);
 
             default:
                 throw new UnreachableException();

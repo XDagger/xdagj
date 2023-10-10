@@ -30,6 +30,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.xdag.Wallet;
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
@@ -59,7 +60,7 @@ public class WalletTest {
     @Before
     public void setUp() {
         pwd = "password";
-        config = new DevnetConfig();
+        config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
         wallet = new Wallet(config);
         wallet.unlock(pwd);
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);

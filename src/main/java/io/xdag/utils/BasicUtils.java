@@ -24,10 +24,13 @@
 
 package io.xdag.utils;
 
-import com.google.common.primitives.UnsignedLong;
-import io.xdag.core.XAmount;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.exception.XdagOverFlowException;
+import static io.xdag.utils.BytesUtils.long2UnsignedLong;
+import static io.xdag.utils.WalletUtils.toBase58;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -35,15 +38,11 @@ import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
-import java.util.zip.CRC32;
+import com.google.common.primitives.UnsignedLong;
 
-import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
-import static io.xdag.utils.BytesUtils.equalBytes;
-import static io.xdag.utils.BytesUtils.long2UnsignedLong;
-import static io.xdag.utils.WalletUtils.toBase58;
+import io.xdag.core.XAmount;
+import io.xdag.crypto.Keys;
+import io.xdag.utils.exception.XdagOverFlowException;
 
 public class BasicUtils {
 
@@ -140,34 +139,6 @@ public class BasicUtils {
         double tem = 1.0*temp.toLong()/Math.pow(2, 32);
         BigDecimal bigDecimal = new BigDecimal(first.toLong() + tem);
         return bigDecimal.setScale(12, RoundingMode.HALF_UP).doubleValue();
-    }
-
-    public static boolean crc32Verify(byte[] src, int crc) {
-        CRC32 crc32 = new CRC32();
-        crc32.update(src, 0, 512);
-        return equalBytes(
-                BytesUtils.intToBytes((int) crc32.getValue(), true), BytesUtils.intToBytes(crc, true));
-    }
-
-    public static double xdag_diff2log(BigInteger diff) {
-        if (diff.compareTo(BigInteger.ZERO) > 0) {
-            return Math.log(diff.doubleValue());
-        } else {
-            return 0.0;
-        }
-    }
-
-    public static double xdag_log_difficulty2hashrate(double logDiff) {
-        return Math.exp(logDiff) * Math.pow(2, -58) * (0.65);
-    }
-
-    public static double xdagHashRate(BigInteger[] diffs){
-        double sum = 0;
-        for (int i = 0; i < HASH_RATE_LAST_MAX_TIME; i++) {
-            sum += xdag_diff2log(diffs[i]);
-        }
-        sum /= HASH_RATE_LAST_MAX_TIME;
-        return Math.exp(sum) * Math.pow(2, -48);
     }
 
     public static int compareAmountTo(long amount1, long amount2) {

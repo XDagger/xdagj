@@ -24,11 +24,7 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagBlock;
+import io.xdag.DagKernel;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.utils.BasicUtils;
@@ -39,9 +35,9 @@ import org.bouncycastle.util.encoders.Hex;
 @Slf4j
 public class XdagModuleTransactionBase implements XdagModuleTransaction {
 
-    private final Kernel kernel;
+    private final DagKernel kernel;
 
-    public XdagModuleTransactionBase(Kernel kernel) {
+    public XdagModuleTransactionBase(DagKernel kernel) {
 
         this.kernel = kernel;
     }
@@ -63,11 +59,12 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
         // 1. build transaction
         // 2. try to add blockchain
 
-        Block block = new Block(new XdagBlock(Hex.decode(rawData)));
-        ImportResult result = kernel.getSyncMgr().importBlock(
-                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
-        return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
-                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.toString();
+//        Block block = new Block(new XdagBlock(Hex.decode(rawData)));
+//        ImportResult result = kernel.getSyncMgr().importBlock(
+//                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
+//        return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
+//                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.toString();
+        return null;
     }
 
     @Override

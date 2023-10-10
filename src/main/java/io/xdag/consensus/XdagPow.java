@@ -21,394 +21,645 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package io.xdag.consensus;
 
-import static io.xdag.utils.BytesUtils.compareTo;
-import static io.xdag.utils.BytesUtils.equalBytes;
-
-import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagState;
-import io.xdag.crypto.Hash;
-import io.xdag.listener.BlockMessage;
-import io.xdag.listener.Listener;
-import io.xdag.listener.PretopMessage;
-import io.xdag.crypto.RandomX;
-import io.xdag.crypto.RandomXMemory;
-import io.xdag.net.ChannelManager;
-import io.xdag.utils.XdagTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
+import org.hyperledger.besu.crypto.KeyPair;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import io.xdag.DagKernel;
+import io.xdag.config.Config;
+import io.xdag.core.BlockHeader;
+import io.xdag.core.Dagchain;
+import io.xdag.core.MainBlock;
+import io.xdag.core.PendingManager;
+import io.xdag.core.PowManager;
+import io.xdag.core.SyncManager;
+import io.xdag.core.Transaction;
+import io.xdag.core.TransactionExecutor;
+import io.xdag.core.TransactionResult;
+import io.xdag.core.XAmount;
+import io.xdag.core.state.AccountState;
+import io.xdag.core.state.ByteArray;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.RandomX;
+import io.xdag.crypto.RandomXMemory;
+import io.xdag.net.Channel;
+import io.xdag.net.ChannelManager;
+import io.xdag.net.message.Message;
+import io.xdag.net.message.consensus.MainBlockMessage;
+import io.xdag.utils.ArrayUtils;
+import io.xdag.utils.MerkleUtils;
+import io.xdag.utils.TimeUtils;
+import io.xdag.utils.XdagTime;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
 
+/**
+ * Implements Xdagj POW engine based on single-thread event model. States are
+ * maintained in the engine and are updated only by the event loop.
+ * <p>
+ * Asides the main event hub, there are complementary threads:
+ * <code>timer</code> and <code>broadcaster</code>. The <code>timer</code>
+ * thread emits a TIMEOUT event when the internal timer times out. The
+ * <code>broadcaster</code> thread is responsible for relaying POW messages to
+ * peers.
+ * <p>
+ * The POW engine may be one of the following status:
+ * <ul>
+ * <li><code>STOPPED</code>: not started</li>
+ * <li><code>SYNCING</code>: waiting for syncing</li>
+ * <li><code>RUNNING</code>: working</li>
+ * </ul>
+ * <p>
+ * It is also a state machine; the possible states include:
+ * <ul>
+ * <li><code>TIMEOUT</code>: epoch time out</li>
+ * <li><code>EPOCH_START</code>: epoch start</li>
+ * <li><code>EPOCH_END</code>: epoch end</li>
+ * </ul>
+ */
 @Slf4j
-public class XdagPow implements PoW, Listener, Runnable {
+@Getter
+@Setter
+public class XdagPow implements PowManager {
 
-    private final Kernel kernel;
-    protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
+    protected DagKernel kernel;
+    protected Config config;
+
+    protected Dagchain dagchain;
+
+    protected ChannelManager channelManager;
+    protected PendingManager pendingManager;
+    protected SyncManager syncManager;
+
+    protected KeyPair coinbase;
+
     protected Timer timer;
     protected Broadcaster broadcaster;
-    // 当前区块
-    protected AtomicReference<Block> generateBlock = new AtomicReference<>();
-    protected AtomicReference<Bytes32> minShare = new AtomicReference<>();
-    protected final AtomicReference<Bytes32> minHash = new AtomicReference<>();
-    protected ChannelManager channelMgr;
-    protected Blockchain blockchain;
-    protected volatile Bytes32 globalPretop;
+    protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
 
-    private boolean isWorking = false;
+    protected Status status;
+    protected State state;
+
+    protected MainBlock mainBlock;
+    protected RandomX randomx;
+
+    protected long height;
+
+    protected Cache<ByteArray, MainBlock> validBlocks = Caffeine.newBuilder().maximumSize(8).build();
+
+    protected List<Channel> activeChannels;
+
+    protected long lastUpdate;
 
 
-    private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
-            .namingPattern("XdagPow-timer-thread")
-            .build());
-
-    private final ExecutorService mainExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
-            .namingPattern("XdagPow-main-thread")
-            .build());
-
-    private final ExecutorService broadcasterExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
-            .namingPattern("XdagPow-broadcaster-thread")
-            .build());
-    /**
-     * 存放的是过去十六个区块的hash
-     */
-    protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>();
-    /**
-     * 存放的是最小的hash
-     */
-    protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-
-    protected RandomX randomXUtils;
-    private boolean isRunning = false;
-
-    public XdagPow(Kernel kernel) {
+    public XdagPow(DagKernel kernel) {
         this.kernel = kernel;
-        this.blockchain = kernel.getBlockchain();
-        this.channelMgr = kernel.getChannelMgr();
+        this.config = kernel.getConfig();
+
+        this.dagchain = kernel.getDagchain();
+        this.channelManager = kernel.getChannelManager();
+        this.pendingManager = kernel.getPendingManager();
+        this.syncManager = kernel.getSyncManager();
+        this.coinbase = kernel.getCoinbase();
+        this.randomx = kernel.getRandomx();
+
         this.timer = new Timer();
         this.broadcaster = new Broadcaster();
-        this.randomXUtils = kernel.getRandomx();
+
+        this.status = Status.STOPPED;
+        this.state = State.EPOCH_START;
+    }
+
+    /**
+     * Pause the pow manager, and do synchronization.
+     */
+    protected void sync(long target) {
+        if (status == Status.RUNNING) {
+            // change status
+            status = Status.SYNCING;
+
+            clearTimerAndEvents();
+
+            // start syncing
+            syncManager.start(target);
+
+            // restore status if not stopped
+            if (status != Status.STOPPED) {
+                status = Status.RUNNING;
+
+                // enter epoch start
+                enterEpochStart();
+            }
+        }
+    }
+
+    /**
+     * Main loop that processes all the POW events.
+     */
+    protected void eventLoop() {
+        while (!Thread.currentThread().isInterrupted() && status != Status.STOPPED) {
+            try {
+                Event ev = events.take();
+                if (status != Status.RUNNING) {
+                    continue;
+                }
+
+                // in case we get stuck at one height for too long
+                if (lastUpdate + 2 * 60 * 1000L < TimeUtils.currentTimeMillis()) {
+                    updateChannels();
+                }
+
+                switch (ev.getType()) {
+                case STOP:
+                    return;
+                case TIMEOUT:
+                    onTimeout();
+                    break;
+                default:
+                    break;
+                }
+            } catch (InterruptedException e) {
+                log.info("PowManager got interrupted");
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.warn("Unexpected exception in event loop", e);
+            }
+        }
     }
 
     @Override
     public void start() {
-        if (!this.isRunning) {
-            this.isRunning = true;
+        if (status == Status.STOPPED) {
+            status = Status.RUNNING;
+            timer.start();
+            log.info("Xdagj POW manager started");
 
-            // 容器的初始化
-            for (int i = 0; i < 16; i++) {
-                this.blockHashs.add(null);
-//                this.minShares.add(null);
-            }
+            enterEpochStart();
+            eventLoop();
 
-            timerExecutor.execute(timer);
-            mainExecutor.execute(this);
-            broadcasterExecutor.execute(this.broadcaster);
+            log.info("Xdagj POW manager stopped");
         }
     }
 
     @Override
     public void stop() {
-        if (isRunning) {
-            isRunning = false;
-            timer.isRunning = false;
-            broadcaster.isRunning = false;
+        if (status != Status.STOPPED) {
+            // interrupt sync
+            if (status == Status.SYNCING) {
+                syncManager.stop();
+            }
+
+            timer.stop();
+
+            status = Status.STOPPED;
+            Event ev = new Event(Event.Type.STOP);
+            if (!events.offer(ev)) {
+                log.error("Failed to add an event to message queue: ev = {}", ev);
+            }
         }
+    }
+
+    @Override
+    public boolean isRunning() {
+        return status == Status.RUNNING;
     }
 
     public void newBlock() {
         log.debug("Start new block generate....");
         long sendTime = XdagTime.getMainTime();
-        resetTimeout(sendTime);
+        //resetTimeout(sendTime);
 
-        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
-            if (randomXUtils.getRandomXPoolMemIndex() == 0) {
-                randomXUtils.setRandomXPoolMemIndex((randomXUtils.getRandomXHashEpochIndex() - 1) & 1);
+        if (randomx != null && randomx.isRandomxFork(XdagTime.getEpoch(sendTime))) {
+            if (randomx.getRandomXPoolMemIndex() == 0) {
+                randomx.setRandomXPoolMemIndex((randomx.getRandomXHashEpochIndex() - 1) & 1);
             }
 
-            if (randomXUtils.getRandomXPoolMemIndex() == -1) {
+            if (randomx.getRandomXPoolMemIndex() == -1) {
 
-                long switchTime0 = randomXUtils.getGlobalMemory()[0] == null ? 0 : randomXUtils.getGlobalMemory()[0].getSwitchTime();
-                long switchTime1 = randomXUtils.getGlobalMemory()[1] == null ? 0 : randomXUtils.getGlobalMemory()[1].getSwitchTime();
+                long switchTime0 = randomx.getGlobalMemory()[0] == null ? 0 : randomx.getGlobalMemory()[0].getSwitchTime();
+                long switchTime1 = randomx.getGlobalMemory()[1] == null ? 0 : randomx.getGlobalMemory()[1].getSwitchTime();
 
                 if (switchTime0 > switchTime1) {
                     if (XdagTime.getEpoch(sendTime) > switchTime0) {
-                        randomXUtils.setRandomXPoolMemIndex(2);
+                        randomx.setRandomXPoolMemIndex(2);
                     } else {
-                        randomXUtils.setRandomXPoolMemIndex(1);
+                        randomx.setRandomXPoolMemIndex(1);
                     }
                 } else {
                     if (XdagTime.getEpoch(sendTime) > switchTime1) {
-                        randomXUtils.setRandomXPoolMemIndex(1);
+                        randomx.setRandomXPoolMemIndex(1);
                     } else {
-                        randomXUtils.setRandomXPoolMemIndex(2);
+                        randomx.setRandomXPoolMemIndex(2);
                     }
                 }
             }
 
-            long randomXMemIndex = randomXUtils.getRandomXPoolMemIndex() + 1;
-            RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) (randomXMemIndex) & 1];
+            long randomXMemIndex = randomx.getRandomXPoolMemIndex() + 1;
+            RandomXMemory memory = randomx.getGlobalMemory()[(int) (randomXMemIndex) & 1];
 
             if ((XdagTime.getEpoch(XdagTime.getMainTime()) >= memory.getSwitchTime()) && (memory.getIsSwitched() == 0)) {
-                randomXUtils.setRandomXPoolMemIndex(randomXUtils.getRandomXPoolMemIndex() + 1);
+                randomx.setRandomXPoolMemIndex(randomx.getRandomXPoolMemIndex() + 1);
                 memory.setIsSwitched(1);
             }
-            generateBlock.set(generateRandomXBlock(sendTime));
-        } else {
-            generateBlock.set(generateBlock(sendTime));
+            generateBlock.set(prepareMainBlock());
         }
     }
 
+    /**
+     * Enter the NEW_EPOCH_START state
+     */
+    protected void enterEpochStart() {
+        state = State.EPOCH_START;
 
-    public Block generateRandomXBlock(long sendTime) {
-        Block block = blockchain.createNewBlock(null, null, true, null);
-        block.signOut(kernel.getWallet().getDefKey());
+        // update channels
+        updateChannels();
 
-        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
-        block.setNonce(minShare.get());
+        // reset events
+        clearTimerAndEvents();
 
-        minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-        return block;
+        // update previous block
+        height = dagchain.getLatestMainBlockNumber() + 1;
+
+        log.info("Entered Epoch Start: height = {}", height);
+        long currentTime = TimeUtils.currentTimeMillis();
+        long delay = XdagTime.getEndOfEpoch(currentTime) - currentTime;
+        long time = delay + config.getDagSpec().getPowEpochTimeout();
+        resetTimeout(time);
     }
 
-    public Block generateBlock(long sendTime) {
-        Block block = blockchain.createNewBlock(null, null, true, null);
-        block.signOut(kernel.getWallet().getDefKey());
+    /**
+     * Enter the EPOCH_END state
+     */
+    protected void enterEpochEnd() {
+        // make sure we only enter FINALIZE state once per height
+        if (state == State.EPOCH_END) {
+            return;
+        }
 
-        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
-        block.setNonce(minShare.get());
-        // 初始nonce, 计算minhash但不作为最终hash
-        minHash.set(block.recalcHash());
-        return block;
+        state = State.EPOCH_END;
+        MainBlock block = prepareMainBlock();
+        log.info("Entered Epoch End: height = {}, mainblock = {}, # connected channels = {}", height, block, activeChannels.size());
+        resetTimeout(0);
+        // validate block nonce
+        boolean valid = (block != null && validateMainBlock(block.getHeader(), block.getTransactions()));
+        if (valid) {
+            // [1] update nonce
+            //block.setNonce(nonce);
+
+            // [2] add the block to chain
+            boolean importResult = dagchain.importBlock(block);
+
+            if(importResult) {
+                broadcaster.broadcast(new MainBlockMessage(block));
+                mainBlock = block;
+            }
+            log.info("import mainblock = {}, result = {}.", block, importResult);
+        } else {
+            sync(height + 1);
+        }
     }
 
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
-        events.removeIf(e->e.type== Event.Type.TIMEOUT);
-    }
 
-    @Override
-    public boolean isRunning() {
-        return this.isRunning;
+        events.removeIf(e -> e.type == Event.Type.TIMEOUT);
     }
 
     /**
-     * 每收到一个miner的信息 之后都会在这里进行一次计算
+     * Timeout handler
      */
-    @Override
-    public void receiveNewShare(MutableBytes data, long time) {
-        if (!this.isRunning) {
-            return;
-        }
-
-        log.debug("Receive Shareinfo From Pool, Shareinfo:{}, time:{}", data.toHexString(), time);
-        onNewShare(data, time);
-    }
-
-    public void receiveNewPretop(Bytes pretop) {
-        // make sure the PoW is running and the main block is generating
-        if (!this.isRunning || !isWorking) {
-            return;
-        }
-
-        // prevent duplicate event
-        if (globalPretop == null || !equalBytes(pretop.toArray(), globalPretop.toArray())) {
-            log.debug("update global pretop:{}", Bytes32.wrap(pretop).toHexString());
-            globalPretop = Bytes32.wrap(pretop);
-            events.add(new Event(Event.Type.NEW_PRETOP, pretop));
-        }
-    }
-
-    protected void onNewShare(MutableBytes data, long taskTime) {
-//        Task task = currentTask.get();
-        try {
-            Bytes32 hash;
-            // if randomx fork
-            if (randomXUtils.isRandomxFork(taskTime)) {
-                MutableBytes taskData = MutableBytes.create(64);
-                taskData.set(0, data);
-                taskData.set(32, data.mutableSlice(0,32).reverse());
-                hash = Bytes32.wrap(randomXUtils.randomXPoolCalcHash(taskData, taskData.size(), taskTime).reverse());
-            } else {
-//                XdagSha256Digest digest = new XdagSha256Digest(task.getDigest());
-//                hash = Bytes32.wrap(digest.sha256Final(data.reverse()));
-                hash = Hash.hashTwice(data.reverse());
-            }
-
-            synchronized (minHash) {
-                Bytes32 mh = minHash.get();
-                if (compareTo(hash.toArray(), 0, 32, mh.toArray(), 0, 32) < 0) {
-                    minHash.set(hash);
-                    minShare.set(Bytes32.wrap(data.reverse()));
-
-                    // put minshare into nonce
-                    Block b = generateBlock.get();
-                    b.setNonce(minShare.get());
-
-                    //minShares.set(index, minShare.get());
-
-                    log.debug("New MinHash :" + mh.toHexString());
-                    log.debug("New MinShare :" + minShare.get().toHexString());
-                }
-            }
-            //update miner state
-//            MinerCalculate.updateMeanLogDiff(channel, currentTask.get(), hash);
-//            MinerCalculate.calculateNopaidShares(kernel.getConfig(), channel, hash, currentTask.get().getTaskTime());
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-    }
-
     protected void onTimeout() {
-        Block b  = generateBlock.get();
-        // stop generate main block
-        isWorking = false;
-        if (b != null) {
-            Block newBlock = new Block(new XdagBlock(b.toBytes()));
-            log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]", newBlock.getHash().toHexString());
-            // add new block and broadcast the new block
-            kernel.getBlockchain().tryToConnect(newBlock);
-
-            BlockWrapper bw = new BlockWrapper(newBlock, kernel.getConfig().getNodeSpec().getTTL());
-            broadcaster.broadcast(bw);
+        switch (state) {
+        case EPOCH_START:
+            enterEpochEnd();
+            break;
+        case EPOCH_END:
+            enterEpochStart();
+            break;
+        default:
+            break;
         }
-        // start generate main block
-        isWorking = true;
-        newBlock();
     }
 
-    protected void onNewPreTop() {
-        log.debug("Receive New PreTop");
-        newBlock();
+    protected void updateChannels() {
+        activeChannels = channelManager.getActiveChannels();
+        lastUpdate = TimeUtils.currentTimeMillis();
     }
 
     /**
-     * 创建RandomX的任务
+     * Reset timer and events.
      */
-    private Task createTaskByRandomXBlock(Block block, long sendTime) {
-        Task newTask = new Task();
-        XdagField[] task = new XdagField[2];
-
-        RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
-
-//        Bytes32 rxHash = Hash.sha256(Bytes.wrap(BytesUtils.subArray(block.getXdagBlock().getData(),0,480)));
-        Bytes32 rxHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 480));
-
-        // todo
-        task[0] = new XdagField(rxHash.mutableCopy());
-        task[1] = new XdagField(MutableBytes.wrap(memory.getSeed()));
-
-        newTask.setTask(task);
-        newTask.setTaskTime(XdagTime.getEpoch(sendTime));
-//        newTask.setTaskIndex(taskIndex.get());
-
-        return newTask;
+    protected void clearTimerAndEvents() {
+        timer.clear();
+        events.clear();
     }
 
-//    /**
-//     * 创建原始任务
-//     */
-//    private Task createTaskByNewBlock(Block block, long sendTime) {
-//        Task newTask = new Task();
-//
-//        XdagField[] task = new XdagField[2];
-//        task[1] = block.getXdagBlock().getField(14);
-////        byte[] data = new byte[448];
-//        MutableBytes data = MutableBytes.create(448);
-//
-////        System.arraycopy(block.getXdagBlock().getData(), 0, data, 0, 448);
-//        data.set(0, block.getXdagBlock().getData().slice(0, 448));
-//
-//        XdagSha256Digest currentTaskDigest = new XdagSha256Digest();
-//        try {
-//            currentTaskDigest.sha256Update(data);
-//            byte[] state = currentTaskDigest.getState();
-//            task[0] = new XdagField(MutableBytes.wrap(state));
-//            currentTaskDigest.sha256Update(block.getXdagBlock().getField(14).getData());
-//        } catch (IOException e) {
-//            log.error(e.getMessage(), e);
-//        }
-//        newTask.setTask(task);
-//        newTask.setTaskTime(XdagTime.getEpoch(sendTime));
-//        newTask.setTaskIndex(taskIndex.get());
-//        newTask.setDigest(currentTaskDigest);
-//        return newTask;
-//    }
+    /**
+     * Create a block for POW main block.
+     */
+    protected MainBlock prepareMainBlock(RandomX randomX) {
+        AccountState asTrack = dagchain.getAccountState().track();
 
-    @Override
-    public void run() {
-        log.info("Main PoW start ....");
- //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
-        timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
-        // init pretop
-        globalPretop = null;
-        while (this.isRunning) {
-            try {
-                Event ev = events.poll(10, TimeUnit.MILLISECONDS);
-                if (ev == null) {
-                    continue;
-                }
-                switch (ev.getType()) {
-                case TIMEOUT -> {
-                    // TODO : 判断当前是否可以进行产块
-                    if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
-                            || kernel.getXdagState() == XdagState.SYNC) {
-                        onTimeout();
-                    }
-                }
-                case NEW_PRETOP -> {
-                    if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
-                            || kernel.getXdagState() == XdagState.SYNC) {
-                        onNewPreTop();
-                    }
-                }
-                default -> {
-                }
-                }
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
+        long t1 = TimeUtils.currentTimeMillis();
+
+        // construct block template
+        BlockHeader parent = dagchain.getBlockHeader(height - 1);
+        long number = height;
+        byte[] prevHash = parent.getHash();
+        long timestamp = TimeUtils.currentTimeMillis();
+        timestamp = timestamp > parent.getTimestamp() ? timestamp : parent.getTimestamp() + 1;
+        byte[] data = dagchain.constructBlockHeaderDataField();
+//        BlockHeader tempHeader = new BlockHeader(height, Keys.toBytesAddress(coinbase), prevHash, timestamp,
+//                new byte[0], new byte[0], data);
+
+        XAmount maxMainBLockFee = config.getDagSpec().getMaxMainBlockTransactionFee();
+        XAmount minTxFee = config.getDagSpec().getMinTransactionFee();
+        // fetch pending transactions
+        final List<PendingManager.PendingTransaction> pendingTxs = pendingManager.getPendingTransactions(maxMainBLockFee);
+        final List<Transaction> includedTxs = new ArrayList<>();
+        final List<TransactionResult> includedResults = new ArrayList<>();
+
+        TransactionExecutor exec = new TransactionExecutor(config);
+
+        // only propose gas used up to configured block gas limit
+        long remainingBlockFee = maxMainBLockFee.toLong();
+//        long feeUsedInBlock = 0;
+        for (PendingManager.PendingTransaction pendingTx : pendingTxs) {
+            Transaction tx = pendingTx.transaction;
+
+            // check if the remaining gas covers the declared gas limit
+            long fee = minTxFee.toLong();
+            if (fee > remainingBlockFee) {
+                break;
+            }
+
+            // re-evaluate the transaction
+            TransactionResult result = exec.execute(tx, asTrack);
+            if (result.getCode().isAcceptable()) {
+                includedTxs.add(tx);
+                includedResults.add(result);
+
+                // update counter
+                long feeUsed = minTxFee.toLong();
+                remainingBlockFee -= feeUsed;
+//                feeUsedInBlock += feeUsed;
             }
         }
+
+        // compute roots
+        byte[] transactionsRoot = MerkleUtils.computeTransactionsRoot(includedTxs);
+        byte[] resultsRoot = MerkleUtils.computeResultsRoot(includedResults);
+
+        BlockHeader header = new BlockHeader(number, Keys.toBytesAddress(coinbase), prevHash, timestamp, transactionsRoot,
+                resultsRoot, data);
+        MainBlock block = new MainBlock(header, includedTxs, includedResults);
+
+        long t2 = TimeUtils.currentTimeMillis();
+        log.debug("Block creation: # txs = {}, time = {} ms", includedTxs.size(), t2 - t1);
+
+        return block;
     }
 
-    @Override
-    public void onMessage(io.xdag.listener.Message msg) {
-        if (msg instanceof BlockMessage message) {
-            BlockWrapper bw = new BlockWrapper(new Block(new XdagBlock(message.getData().toArray())),
-                    kernel.getConfig().getNodeSpec().getTTL());
-            broadcaster.broadcast(bw);
+    /**
+     * Check if a main block is valid.
+     */
+    protected boolean validateMainBlock(BlockHeader header, List<Transaction> transactions) {
+        try {
+            AccountState asTrack = dagchain.getAccountState().track();
+
+//            List< Bytes32> txhashs = Lists.newArrayList();
+//            transactions.forEach(tx -> {
+//                txhashs.add(Bytes32.wrap(tx.getHash()));
+//            });
+
+            MainBlock block = new MainBlock(header, transactions);
+            long t1 = TimeUtils.currentTimeMillis();
+
+            // [1] check block header
+            MainBlock latest = dagchain.getLatestMainBlock();
+            if (!block.validateHeader(header, latest.getHeader())) {
+                log.warn("Invalid block header");
+                return false;
+            }
+
+            // [?] additional checks by consensus
+            // - disallow block time drifting;
+            // - restrict the coinbase to be the proposer
+            if (header.getTimestamp() - TimeUtils.currentTimeMillis() > config.getDagSpec().getPowEpochTimeout()) {
+                log.warn("A block in the future is not allowed");
+                return false;
+            }
+
+            // [2] check transactions
+            List<Transaction> unvalidatedTransactions = getUnvalidatedTransactions(transactions);
+            if (!block.validateTransactions(header, unvalidatedTransactions, transactions, config.getNodeSpec().getNetwork())) {
+                log.warn("Invalid transactions");
+                return false;
+            }
+            if (transactions.stream().anyMatch(tx -> dagchain.hasTransaction(tx.getHash()))) {
+                log.warn("Duplicated transaction hash is not allowed");
+                return false;
+            }
+
+            // [3] evaluate transactions
+            TransactionExecutor transactionExecutor = new TransactionExecutor(config);
+            List<TransactionResult> results = transactionExecutor.execute(transactions, asTrack);
+            if (!block.validateResults(header, results)) {
+                log.error("Invalid transaction results");
+                return false;
+            }
+            block.setResults(results); // overwrite the results
+
+            long t2 = TimeUtils.currentTimeMillis();
+            log.debug("Block validation: # txs = {}, time = {} ms", transactions.size(), t2 - t1);
+
+            validBlocks.put(ByteArray.of(block.getHash()), block);
+            return true;
+        } catch (Exception e) {
+            log.error("Unexpected exception during main block validation", e);
+            return false;
         }
-        if (msg instanceof PretopMessage message) {
-            receiveNewPretop(message.getData());
+    }
+
+    /**
+     * Filter transactions to find ones that have not already been validated via the
+     * pending manager.
+     */
+    protected List<Transaction> getUnvalidatedTransactions(List<Transaction> transactions) {
+
+        Set<Transaction> pendingValidatedTransactions = pendingManager.getPendingTransactions()
+                .stream()
+                .map(pendingTx -> pendingTx.transaction)
+                .collect(Collectors.toSet());
+
+        return transactions
+                .stream()
+                .filter(it -> !pendingValidatedTransactions.contains(it))
+                .collect(Collectors.toList());
+    }
+
+    public enum State {
+        EPOCH_START, EPOCH_END, TIMEOUT
+    }
+
+    /**
+     * Timer used by consensus. It's designed to be single timeout; previous timeout
+     * get cleared when new one being added.
+     * <p>
+     * NOTE: it's possible that a Timeout event has been emitted when setting a new
+     * timeout.
+     */
+    public class Timer implements Runnable {
+        private long timeout;
+
+        private Thread t;
+
+        @Override
+        public void run() {
+            while (!Thread.currentThread().isInterrupted()) {
+                synchronized (this) {
+                    if (timeout != -1 && timeout < TimeUtils.currentTimeMillis()) {
+                        events.add(new Event(Event.Type.TIMEOUT));
+                        timeout = -1;
+                        continue;
+                    }
+                }
+
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        public synchronized void start() {
+            if (t == null) {
+                t = new Thread(this, "pow-timer");
+                t.start();
+            }
+        }
+
+        public synchronized void stop() {
+            if (t != null) {
+                try {
+                    t.interrupt();
+                    t.join(10000);
+                } catch (InterruptedException e) {
+                    log.warn("Failed to stop consensus timer");
+                    Thread.currentThread().interrupt();
+                }
+                t = null;
+            }
+        }
+
+        public synchronized void timeout(long milliseconds) {
+            if (milliseconds < 0) {
+                throw new IllegalArgumentException("Timeout can not be negative");
+            }
+            timeout = TimeUtils.currentTimeMillis() + milliseconds;
+        }
+
+        public synchronized void clear() {
+            timeout = -1;
+        }
+    }
+
+    public class Broadcaster implements Runnable {
+        private final BlockingQueue<Message> queue = new LinkedBlockingQueue<>();
+
+        private Thread t;
+
+        @Override
+        public void run() {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Message msg = queue.take();
+
+                    // thread-safety via volatile
+                    List<Channel> channels = activeChannels;
+                    if (channels != null) {
+                        int[] indices = ArrayUtils.permutation(channels.size());
+                        for (int i = 0; i < indices.length && i < config.getNodeSpec().getNetRelayRedundancy(); i++) {
+                            Channel c = channels.get(indices[i]);
+                            if (c.isActive()) {
+                                c.getMessageQueue().sendMessage(msg);
+                            }
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        public synchronized void start() {
+            if (t == null) {
+                t = new Thread(this, "pow-relay");
+                t.start();
+            }
+        }
+
+        public synchronized void stop() {
+            if (t != null) {
+                try {
+                    t.interrupt();
+                    t.join();
+                } catch (InterruptedException e) {
+                    log.error("Failed to stop consensus broadcaster");
+                    Thread.currentThread().interrupt();
+                }
+                t = null;
+            }
+        }
+
+        public void broadcast(Message msg) {
+            if (!queue.offer(msg)) {
+                log.error("Failed to add a message to the broadcast queue: msg = {}", msg);
+            }
         }
     }
 
     public static class Event {
+        public enum Type {
+            /**
+             * Stop signal
+             */
+            STOP,
+
+            /**
+             * Received a timeout signal.
+             */
+            TIMEOUT,
+
+            /**
+             * Received an epoch start message.
+             */
+            EPOCH_START,
+
+            /**
+             * Received an epoch end message.
+             */
+            EPOCH_END
+        }
 
         @Getter
         private final Type type;
         private final Object data;
-        private Object channel;
 
         public Event(Type type) {
             this(type, null);
@@ -419,100 +670,18 @@ public class XdagPow implements PoW, Listener, Runnable {
             this.data = data;
         }
 
-        public Event(Type type, Object data, Object channel) {
-            this.type = type;
-            this.data = data;
-            this.channel = channel;
-        }
-
         @SuppressWarnings("unchecked")
         public <T> T getData() {
             return (T) data;
-        }
-
-        @SuppressWarnings("unchecked")
-        public <T> T getChannel() {
-            return (T) channel;
         }
 
         @Override
         public String toString() {
             return "Event [type=" + type + ", data=" + data + "]";
         }
-
-        public enum Type {
-            /**
-             * Received a timeout signal.
-             */
-            TIMEOUT,
-            /**
-             * Received a new pretop message.
-             */
-            NEW_PRETOP,
-            /**
-             * Received a new largest diff message.
-             */
-            NEW_DIFF,
-        }
     }
 
-    // TODO: change to scheduleAtFixRate
-    public class Timer implements Runnable {
-
-        private long timeout;
-        private boolean isRunning = false;
-
-        @Override
-        public void run() {
-            this.isRunning = true;
-            while (this.isRunning) {
-                if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
-                    log.debug("CurrentTimestamp:{},sendTime:{} Timeout!",XdagTime.getCurrentTimestamp(),timeout);
-                    timeout = -1;
-                    events.add(new Event(Event.Type.TIMEOUT));
-                    continue;
-                }
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
-
-        public void timeout(long sendtime) {
-            if (sendtime < 0) {
-                throw new IllegalArgumentException("Timeout can not be negative");
-            }
-            this.timeout = sendtime;
-        }
-    }
-
-    public class Broadcaster implements Runnable {
-        private final LinkedBlockingQueue<BlockWrapper> queue = new LinkedBlockingQueue<>();
-        private volatile boolean isRunning = false;
-
-        @Override
-        public void run() {
-            isRunning = true;
-            while (isRunning) {
-                BlockWrapper bw = null;
-                try {
-                    bw = queue.poll(50, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
-                }
-                if (bw != null) {
-                    channelMgr.sendNewBlock(bw);
-                }
-            }
-        }
-
-        public void broadcast(BlockWrapper bw) {
-            if (!queue.offer(bw)) {
-                log.error("Failed to add a message to the broadcast queue: block = {}", bw.getBlock()
-                        .getHash().toHexString());
-            }
-        }
+    public enum Status {
+        STOPPED, RUNNING, SYNCING
     }
 }

@@ -24,36 +24,30 @@
 
 package io.xdag.net;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import io.xdag.Kernel;
-import io.xdag.core.BlockWrapper;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.commons.lang3.StringUtils;
-
-import io.xdag.net.node.Node;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.xdag.DagKernel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ChannelManager {
 
-    private final Kernel kernel;
+    private final DagKernel kernel;
     /**
      * Queue with new blocks from other peers
      */
-    private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
+//    private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
     // 广播区块
-    private final Thread blockDistributeThread;
+//    private final Thread blockDistributeThread;
     private final Set<InetSocketAddress> addressSet = new HashSet<>();
     protected ConcurrentHashMap<InetSocketAddress, Channel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, Channel> activeChannels = new ConcurrentHashMap<>();
@@ -64,16 +58,16 @@ public class ChannelManager {
     private final Cache<InetSocketAddress, Long> channelLastConnect = Caffeine.newBuilder().maximumSize(LRU_CACHE_SIZE).build();
 
 
-    public ChannelManager(Kernel kernel) {
+    public ChannelManager(DagKernel kernel) {
         this.kernel = kernel;
         // Resending new blocks to network in loop
-        this.blockDistributeThread = new Thread(this::newBlocksDistributeLoop, "NewSyncThreadBlocks");
+//        this.blockDistributeThread = new Thread(this::newBlocksDistributeLoop, "NewSyncThreadBlocks");
         initWhiteIPs();
     }
 
-    public void start() {
-        blockDistributeThread.start();
-    }
+//    public void start() {
+//        blockDistributeThread.start();
+//    }
 
     public boolean isAcceptable(InetSocketAddress address) {
         //对于进来的连接，只判断ip，不判断port
@@ -84,8 +78,10 @@ public class ChannelManager {
                     return true;
                 }
             }
+            return false;
+        } else {
+            return true;
         }
-        return false;
     }
 
     public boolean isActiveIP(String ip) {
@@ -189,50 +185,34 @@ public class ChannelManager {
     /**
      * Processing new blocks received from other peers from queue
      */
-    private void newBlocksDistributeLoop() {
-        while (!Thread.currentThread().isInterrupted()) {
-            BlockWrapper wrapper = null;
-            try {
-                wrapper = newForeignBlocks.take();
-                log.debug("no problem..");
-                sendNewBlock(wrapper);
-            } catch (InterruptedException e) {
-                break;
-            } catch (Throwable e) {
-                if (wrapper != null) {
-                    log.error("Block dump: {}", wrapper.getBlock(),e);
-                } else {
-                    log.error("Error broadcasting unknown block", e);
-                }
-            }
-        }
-    }
-
-    // TODO:怎么发送 目前是发给除receive的节点
-    public void sendNewBlock(BlockWrapper blockWrapper) {
-//        Node receive;
-//        Peer blockPeer = blockWrapper.getRemotePeer();
-//        Node node = kernel.getClient().getNode();
-//        // 说明是自己产生的
-//        if (blockPeer == null || (StringUtils.equals(blockPeer.getIp(), node.getIp()) && blockPeer.getPort() == node.getPort())) {
-//            receive = node;
-//        } else {
-//            Channel channel = activeChannels.get(blockWrapper.getRemotePeer().getPeerId());
-//            receive = channel != null ? new Node(channel.getRemoteIp(), channel.getRemotePort()) : null;
-//        }
-        for (Channel channel : activeChannels.values()) {
-//            Peer remotePeer = channel.getRemotePeer();
-//            if (StringUtils.equals(remotePeer.getIp(), receive.getIp()) && remotePeer.getPort() == receive.getPort()) {
-//                log.debug("not send to sender node");
-//                continue;
+//    private void newBlocksDistributeLoop() {
+//        while (!Thread.currentThread().isInterrupted()) {
+//            BlockWrapper wrapper = null;
+//            try {
+//                wrapper = newForeignBlocks.take();
+//                log.debug("no problem..");
+//                sendNewBlock(wrapper);
+//            } catch (InterruptedException e) {
+//                break;
+//            } catch (Throwable e) {
+//                if (wrapper != null) {
+//                    log.error("Block dump: {}", wrapper.getBlock(),e);
+//                } else {
+//                    log.error("Error broadcasting unknown block", e);
+//                }
 //            }
-            channel.getP2pHandler().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
-        }
-    }
+//        }
+//    }
 
-    public void onNewForeignBlock(BlockWrapper blockWrapper) {
-        newForeignBlocks.add(blockWrapper);
-    }
+//    public void sendNewBlock(BlockWrapper blockWrapper) {
+//        for (Channel channel : activeChannels.values()) {
+//            channel.getP2pHandler().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
+//        }
+//    }
+
+//    public void onNewForeignBlock(BlockWrapper blockWrapper) {
+//        newForeignBlocks.add(blockWrapper);
+//    }
 
     private void initWhiteIPs() {
         addressSet.addAll(kernel.getConfig().getNodeSpec().getWhiteIPList());
@@ -246,15 +226,15 @@ public class ChannelManager {
                 .getNodeSpec().getNodePort());
     }
 
-    public void stop() {
-        log.debug("Channel Manager stop...");
-        if (blockDistributeThread != null) {
-            // 中断
-            blockDistributeThread.interrupt();
-        }
-        // 关闭所有连接
-        for (Channel channel : activeChannels.values()) {
-            channel.close();
-        }
-    }
+//    public void stop() {
+//        log.debug("Channel Manager stop...");
+//        if (blockDistributeThread != null) {
+//            // 中断
+//            blockDistributeThread.interrupt();
+//        }
+//        // 关闭所有连接
+//        for (Channel channel : activeChannels.values()) {
+//            channel.close();
+//        }
+//    }
 }

@@ -26,12 +26,16 @@ package io.xdag.wallet;
 
 import io.xdag.Wallet;
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.*;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MnemonicUtils;
 import io.xdag.utils.WalletUtils;
+import io.xdag.utils.exception.AddressFormatException;
+
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.io.Base58;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
@@ -41,6 +45,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.Collections;
 
 import static io.xdag.crypto.Bip32Test.*;
@@ -57,7 +64,7 @@ public class WalletUtilsTest {
     @Before
     public void setUp() {
         pwd = "password";
-        Config config = new DevnetConfig();
+        Config config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
         wallet = new Wallet(config);
         wallet.unlock(pwd);
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
@@ -69,7 +76,6 @@ public class WalletUtilsTest {
 
     @Test
     public void generateBip44KeyPair() {
-
         String mnemonic = "spider elbow fossil truck deal circle divert sleep safe report laundry above";
         byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
         String seedStr = BytesUtils.toHexString(seed);
@@ -120,11 +126,13 @@ public class WalletUtilsTest {
                 "xpub6GammwdVnjqjmtzmxNFQ4db8FsoaZ5MdEWxQNQwWuxWtb9YvYasR3fohNEiSmcG4pzTziN62M3LZvEowb74cgqW78BLZayCgBDRuGH89xni",
                 Base58.encode(addChecksum(serializePublic(bip44Keypair))));
     }
+
     @Test
     public void testCheckIsAddress() {
         String walletAddress="KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf";
         assertTrue(io.xdag.crypto.Base58.checkAddress(walletAddress));
     }
+
     @Test
     public void testHashlowIsAddress(){
         Bytes32 addressHashlow1 = Bytes32.fromHexString(
@@ -135,6 +143,44 @@ public class WalletUtilsTest {
         assertEquals(0,addressHashlow2.slice(28,4).toInt());
         assertFalse(checkAddress(addressHashlow1));
         assertTrue(checkAddress(addressHashlow2));
+    }
+
+    @Test
+    public void testPublicKeyAddress()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        KeyPair key = Keys.createEcKeyPair();
+        byte[] hash160 = Keys.toBytesAddress(key);
+        String base58 = WalletUtils.toBase58(hash160);
+        assertArrayEquals(WalletUtils.fromBase58(base58), hash160);
+    }
+
+    @Test(expected = AddressFormatException.class)
+    public void testAddressFormatException() {
+        //the correct base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"
+        String base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a";
+        WalletUtils.fromBase58(base58);
+    }
+
+    @Test
+    public void testBlackholeAddress() {
+        byte[] zero = new byte[20];
+        assertTrue(WalletUtils.checkAddress("111111111111111111117K4nzc"));
+        assertEquals(WalletUtils.toBase58(zero), "111111111111111111117K4nzc");
+    }
+
+    @Test
+    public void testCheckAddress() {
+        assertTrue(WalletUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"));
+        assertFalse(WalletUtils.checkAddress("7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a"));
+    }
+
+    @Test
+    public void testToByte32() {
+        String addressStr = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C";
+        byte[] addressBytes = WalletUtils.fromBase58(addressStr);
+        MutableBytes32 address = BytesUtils.arrayToByte32(addressBytes);
+        String res = WalletUtils.toBase58(BytesUtils.byte32ToArray(address));
+        assertEquals(addressStr, res);
     }
 
     @After

@@ -24,29 +24,67 @@
 
 package io.xdag.utils;
 
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+
 import com.google.common.collect.Lists;
-import io.xdag.db.BlockStore;
+
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+
 import org.bouncycastle.util.encoders.Hex;
 
+@Slf4j
 public class FileUtils {
 
     /**
      * sum file name
      */
-    public static List<String> getFileName(long time) {
-        List<String> files = Lists.newArrayList(BlockStore.SUM_FILE_NAME);
-        StringBuilder stringBuffer = new StringBuilder(
-                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
-        stringBuffer.append("/");
-        files.add(stringBuffer + BlockStore.SUM_FILE_NAME);
-        stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
-        stringBuffer.append("/");
-        files.add(stringBuffer + BlockStore.SUM_FILE_NAME);
-        stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
-        stringBuffer.append("/");
-        files.add(stringBuffer + BlockStore.SUM_FILE_NAME);
-        return files;
+//    public static List<String> getFileName(long time) {
+//        List<String> files = Lists.newArrayList(BlockStore.SUM_FILE_NAME);
+//        StringBuilder stringBuffer = new StringBuilder(
+//                Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 40) & 0xff), true)));
+//        stringBuffer.append("/");
+//        files.add(stringBuffer + BlockStore.SUM_FILE_NAME);
+//        stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 32) & 0xff), true)));
+//        stringBuffer.append("/");
+//        files.add(stringBuffer + BlockStore.SUM_FILE_NAME);
+//        stringBuffer.append(Hex.toHexString(BytesUtils.byteToBytes((byte) ((time >> 24) & 0xff), true)));
+//        stringBuffer.append("/");
+//        files.add(stringBuffer + BlockStore.SUM_FILE_NAME);
+//        return files;
+//    }
+
+    public static final Set<PosixFilePermission> POSIX_SECURED_PERMISSIONS = Set.of(OWNER_READ, OWNER_WRITE);
+
+    /**
+     * Delete a file or directory recursively.
+     */
+    public static void recursiveDelete(File file) {
+        try {
+            Files.walk(file.toPath())
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        } catch (IOException e) {
+            log.error("Failed to delete file: {}", file, e);
+        }
+    }
+
+    /**
+     * Check if the file's permission is secure.
+     */
+    public static boolean isPosixPermissionSecured(File file) throws IOException {
+        Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(file.toPath());
+        return permissions.containsAll(POSIX_SECURED_PERMISSIONS) && POSIX_SECURED_PERMISSIONS.containsAll(permissions);
     }
 
 }

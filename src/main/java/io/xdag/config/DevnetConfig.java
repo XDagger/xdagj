@@ -24,27 +24,33 @@
 
 package io.xdag.config;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.units.bigints.UInt64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.xdag.Network;
-import io.xdag.core.XAmount;
+import io.xdag.core.Fork;
 
 public class DevnetConfig extends AbstractConfig {
 
-    public DevnetConfig() {
-        super("devnet", "xdag-devnet", Network.DEVNET, Constants.DEVNET_VERSION);
-        this.whitelistUrl = StringUtils.EMPTY;
-        this.waitEpoch = 1;
-        this.xdagEra = 0x16900000000L;
-        this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
-        this.apolloForkHeight = 1000;
-        this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
-        this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
-        this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
-        this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
+    public DevnetConfig(String dataDir) {
+        super(dataDir, Network.DEVNET, Constants.DEVNET_VERSION);
+        this.netMaxInboundConnectionsPerIp = Integer.MAX_VALUE;
+
+        this.forkApolloEnabled = true;
+    }
+
+    @Override
+    public Map<Long, byte[]> checkpoints() {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public Map<Fork, Long> manuallyActivatedForks() {
+        Map<Fork, Long> forks = new HashMap<>();
+        forks.put(Fork.APOLLO_FORK, 1l);
+
+        return forks;
     }
 
 }

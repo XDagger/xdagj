@@ -48,7 +48,7 @@ public class Bip32Test {
         int inputLength = input.length;
         byte[] checksummed = new byte[inputLength + 4];
         System.arraycopy(input, 0, checksummed, 0, inputLength);
-        Bytes32 checksum = hashTwice(Bytes.wrap(input));
+        Bytes32 checksum = Hash.hashTwice(Bytes.wrap(input));
         System.arraycopy(checksum.toArray(), 0, checksummed, inputLength, 4);
         return Bytes.wrap(checksummed);
     }
@@ -59,10 +59,6 @@ public class Bip32Test {
 
     public static byte[] serializePrivate(Bip32ECKeyPair pair) {
         return serialize(pair, 0x0488ADE4, false);
-    }
-
-    private static Bytes32 hashTwice(Bytes input) {
-        return sha256(sha256(input));
     }
 
     private static byte[] serialize(Bip32ECKeyPair pair, int header, boolean pub) {

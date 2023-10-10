@@ -27,9 +27,9 @@ package io.xdag.net.node;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.xdag.Kernel;
+
 import io.xdag.config.Config;
-import io.xdag.net.Channel;
+import io.xdag.DagKernel;
 import io.xdag.net.PeerClient;
 import io.xdag.net.XdagChannelInitializer;
 import io.xdag.net.NetDBManager;
@@ -68,7 +68,7 @@ public class NodeManager {
      * 定时处理
      */
     private final ScheduledExecutorService exec;
-    private final Kernel kernel;
+    private final DagKernel kernel;
     private final PeerClient client;
     private final ChannelManager channelMgr;
     private final NetDBManager netDBManager;
@@ -77,13 +77,13 @@ public class NodeManager {
     private ScheduledFuture<?> connectFuture;
     private ScheduledFuture<?> fetchFuture;
 
-    public NodeManager(Kernel kernel) {
+    public NodeManager(DagKernel kernel) {
         this.kernel = kernel;
         this.client = kernel.getClient();
-        this.channelMgr = kernel.getChannelMgr();
+        this.channelMgr = kernel.getChannelManager();
         this.exec = new ScheduledThreadPoolExecutor(1, factory);
         this.config = kernel.getConfig();
-        this.netDBManager = kernel.getNetDBMgr();
+        this.netDBManager = kernel.getNetDBManager();
     }
 
     /**
@@ -171,7 +171,7 @@ public class NodeManager {
                     && !node.equals(client.getNode())
                     && !activeAddress.contains(node.getAddress())
                     && (lastCon == null || lastCon + RECONNECT_WAIT < now)) {
-                XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, node);
+                XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, node);
                 client.connect(node, initializer);
                 lastConnect.put(node, now);
                 break;
@@ -184,7 +184,7 @@ public class NodeManager {
         Set<InetSocketAddress> activeAddresses = channelMgr.getActiveAddresses();
         Node remotenode = new Node(ip, port);
         if (!client.getNode().equals(remotenode) && !activeAddresses.contains(remotenode.toAddress())) {
-            XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, false, remotenode);
+            XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, remotenode);
             client.connect(new Node(ip, port), initializer);
         }
     }

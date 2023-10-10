@@ -26,25 +26,18 @@ package io.xdag.cli;
 
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
-import io.xdag.Kernel;
+import io.xdag.DagKernel;
 import io.xdag.Launcher;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
+import io.xdag.core.Genesis;
 import io.xdag.crypto.Keys;
 import io.xdag.utils.MnemonicUtils;
 import io.xdag.crypto.Sign;
-import io.xdag.db.SnapshotStore;
-import io.xdag.db.rocksdb.DatabaseName;
-import io.xdag.db.rocksdb.RocksdbKVSource;
-import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagTime;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -196,7 +189,8 @@ public class XdagCli extends Launcher {
             if (action != null && action.trim().equals("convertxamount")) {
                 convertXAmount = true;
             }
-            makeSnapshot(convertXAmount);
+            //makeSnapshot(convertXAmount);
+            // TODO make json Snapshot
         } else {
             if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
                 String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
@@ -259,9 +253,9 @@ public class XdagCli extends Launcher {
     /**
      * Starts the kernel.
      */
-    protected Kernel startKernel(Config config, Wallet wallet) throws Exception {
-        Kernel kernel = new Kernel(config, wallet);
-        kernel.testStart();
+    protected DagKernel startKernel(Config config, Wallet wallet) {
+        DagKernel kernel = new DagKernel(config, Genesis.load(config.getNodeSpec().getNetwork()), wallet, wallet.getDefKey());
+        kernel.start();
         return kernel;
     }
 
@@ -499,66 +493,4 @@ public class XdagCli extends Launcher {
         return new String(console.readPassword(prompt));
     }
 
-    public void makeSnapshot(boolean b) {
-        System.out.println("make snapshot start");
-        System.out.println("convertXAmount = " + b);
-        long start = System.currentTimeMillis();
-        this.getConfig().getSnapshotSpec().setSnapshotJ(true);
-        RocksdbKVSource blockSource = new RocksdbKVSource(DatabaseName.TIME.toString());
-        blockSource.setConfig(getConfig());
-        blockSource.init();
-        RocksdbKVSource snapshotSource = new RocksdbKVSource("SNAPSHOT/BLOCKS");
-        snapshotSource.setConfig(getConfig());
-        snapshotSource.init();
-        RocksdbKVSource indexSource = new RocksdbKVSource(DatabaseName.INDEX.toString());
-        indexSource.setConfig(getConfig());
-        indexSource.init();
-        SnapshotStore snapshotStore = new SnapshotStoreImpl(snapshotSource);
-
-        snapshotStore.makeSnapshot(blockSource,indexSource,b);
-
-        Path source = Paths.get(getConfig().getRootDir() + "/rocksdb/xdagdb/ADDRESS");
-        Path target = Paths.get(getConfig().getRootDir() + "/rocksdb/xdagdb/SNAPSHOT/ADDRESS");
-        copyDir(source.toString(),target.toString());
-        long end = System.currentTimeMillis();
-        System.out.println("make snapshot done");
-        System.out.println("time：" + (end - start) + "ms");
-        System.out.println("snapshot height: " + snapshotStore.getHeight());
-        System.out.println("next start frame: " + Long.toHexString(XdagTime.getEndOfEpoch(snapshotStore.getNextTime()) + 1));
-    }
-    public static void copyDir(String sourcePath, String newPath) {
-        File start = new File(sourcePath);
-        File end = new File(newPath);
-        String[] filePath = start.list();		//获取该文件夹下的所有文件以及目录的名字
-        if(!end.exists()) {
-            end.mkdir();
-        }
-        for(String temp:filePath) {
-            //查看其数组中每一个是文件还是文件夹
-            if(new File(sourcePath+File.separator+temp).isDirectory()) {
-                //为文件夹，进行递归
-                copyDir(sourcePath+File.separator+temp, newPath+File.separator+temp);
-            }else {
-                //为文件则进行拷贝
-                copyFile(sourcePath+File.separator+temp, newPath+File.separator+temp);
-            }
-        }
-    }
-    public static void copyFile(String sourcePath, String newPath) {
-        File start = new File(sourcePath);
-        File end = new File(newPath);
-        try(BufferedInputStream bis=new BufferedInputStream(new FileInputStream(start));
-            BufferedOutputStream bos=new BufferedOutputStream(new FileOutputStream(end))) {
-            int len = 0;
-            byte[] flush = new byte[1024];
-            while((len=bis.read(flush)) != -1) {
-                bos.write(flush, 0, len);
-            }
-            bos.flush();
-        }catch(FileNotFoundException e) {
-            e.printStackTrace();
-        }catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

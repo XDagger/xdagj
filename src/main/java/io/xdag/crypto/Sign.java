@@ -26,14 +26,22 @@ package io.xdag.crypto;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Optional;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
+
+import io.xdag.utils.WalletUtils;
 
 /**
  * Transaction signing logic.
@@ -116,5 +124,32 @@ public class Sign {
             return SECPSignature.create(signature.getR(), CURVE.getN().subtract(signature.getS()), (byte) 0, CURVE.getN());
         }
         return signature;
+    }
+
+    public static boolean verify(final Bytes32 dataHash, final SECPSignature signature) {
+        SECPPublicKey pub = recoverPublicKeyFromSignature(dataHash, signature);
+        return SECP256K1.verify(dataHash, signature, pub);
+    }
+
+    public static SECPSignature sign(final Bytes32 dataHash, KeyPair keyPair) {
+        return SECP256K1.sign(dataHash, keyPair);
+    }
+
+    public static SECPPublicKey recoverPublicKeyFromSignature(final Bytes32 dataHash, final SECPSignature signature) {
+        Optional<SECPPublicKey> publicKey = SECP256K1.recoverPublicKeyFromSignature(dataHash, signature);
+        return publicKey.get();
+    }
+
+    public static SECPSignature decode(byte[] signature) {
+        return SECPSignature.decode(Bytes.wrap(signature), Sign.CURVE.getN());
+    }
+
+    public static byte[] encode(SECPSignature signature) {
+        return signature.encodedBytes().toArray();
+    }
+
+    public static byte[] toAddress(byte[] dataHash, final SECPSignature signature) {
+        SECPPublicKey pub = recoverPublicKeyFromSignature(Bytes32.wrap(dataHash), signature);
+        return Keys.toBytesAddress(pub);
     }
 }

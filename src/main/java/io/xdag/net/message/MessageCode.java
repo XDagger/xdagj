@@ -38,10 +38,6 @@ public enum MessageCode {
     DISCONNECT(0x00),
 
     /**
-     * [0x01] First message over connection. No messages should be sent until
-     * receiving a response.
-     */
-    /**
      * [0x01] A message containing a random bytes
      */
     HANDSHAKE_INIT(0x01),
@@ -52,7 +48,7 @@ public enum MessageCode {
     HANDSHAKE_HELLO(0x02),
 
     /**
-     * [0x13] The new WORLD message.
+     * [0x03] The new WORLD message.
      */
     HANDSHAKE_WORLD(0x03),
 
@@ -76,20 +72,35 @@ public enum MessageCode {
 //     */
 //    NODES(0x07),
 
+    /**
+     * [0x08] xdag transaction.
+     */
+    TRANSACTION(0x08),
+
     // =======================================
     // [0x10, 0x1f] Reserved for node
     // =======================================
-    BLOCKS_REQUEST(0x10),
-    BLOCKS_REPLY(0x11),
-    SUMS_REQUEST(0x12),
-    SUMS_REPLY(0x13),
-    BLOCKEXT_REQUEST(0x14),
-    BLOCKEXT_REPLY(0x15),
-    BLOCK_REQUEST(0x16),
-//    RECEIVE_BLOCK(0x17),
-    NEW_BLOCK(0x18),
-    SYNC_BLOCK(0x19),
-    SYNCBLOCK_REQUEST(0x1A);
+//    BLOCKS_REQUEST(0x10),
+//    BLOCKS_REPLY(0x11),
+//    SUMS_REQUEST(0x12),
+//    SUMS_REPLY(0x13),
+//    BLOCKEXT_REQUEST(0x14),
+//    BLOCKEXT_REPLY(0x15),
+//    BLOCK_REQUEST(0x16),
+////    RECEIVE_BLOCK(0x17),
+//    NEW_BLOCK(0x18),
+//    SYNC_BLOCK(0x19),
+//    SYNCBLOCK_REQUEST(0x1A),
+
+    // =======================================
+    // [0x20, 0x2f] Reserved for new xdag sync
+    // =======================================
+    GET_MAIN_BLOCK(0x20),
+    MAIN_BLOCK(0x21),
+    GET_MAIN_BLOCK_HEADER(0x22),
+    MAIN_BLOCK_HEADER(0x23),
+    GET_MAIN_BLOCK_PARTS(0x24),
+    MAIN_BLOCK_PARTS(0x25);
 
 
     private static final MessageCode[] map = new MessageCode[256];
@@ -104,7 +115,7 @@ public enum MessageCode {
         return map[0xff & code];
     }
 
-    private int code;
+    private final int code;
 
     MessageCode(int code) {
         this.code = code;

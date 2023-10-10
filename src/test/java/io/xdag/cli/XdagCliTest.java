@@ -71,7 +71,7 @@ public class XdagCliTest {
 
     @Before
     public void setUp() throws Exception {
-        config = new DevnetConfig();
+        config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
     }
 
     @Test
@@ -118,7 +118,7 @@ public class XdagCliTest {
     @Test
     public void testMainnet() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
-        xdagCLI.setConfig(new MainnetConfig());
+        xdagCLI.setConfig(new MainnetConfig(Constants.DEFAULT_ROOT_DIR));
 
         // mock accounts
         List<KeyPair> accounts = Lists.newArrayList();
@@ -143,7 +143,7 @@ public class XdagCliTest {
     @Test
     public void testTestnet() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
-        xdagCLI.setConfig(new TestnetConfig());
+        xdagCLI.setConfig(new TestnetConfig(Constants.DEFAULT_ROOT_DIR));
 
         // mock accounts
         List<KeyPair> accounts = Lists.newArrayList();
@@ -168,7 +168,7 @@ public class XdagCliTest {
     @Test
     public void testDevnet() throws Exception {
         XdagCli xdagCLI = spy(new XdagCli());
-        xdagCLI.setConfig(new DevnetConfig());
+        xdagCLI.setConfig(new DevnetConfig(Constants.DEFAULT_ROOT_DIR));
 
         // mock accounts
         List<KeyPair> accounts = Lists.newArrayList();

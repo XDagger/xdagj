@@ -24,8 +24,10 @@
 
 package io.xdag.net;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
@@ -34,20 +36,19 @@ import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.NettyRuntime;
-import io.xdag.Kernel;
+import io.xdag.DagKernel;
 import io.xdag.utils.NettyUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 public class PeerServer {
-    private final Kernel kernel;
+    private final DagKernel kernel;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
-    private ChannelFuture channelFuture;
+    private Channel channel;
     private final int workerThreadPoolSize = NettyRuntime.availableProcessors() * 2;
 
-    public PeerServer(final Kernel kernel) {
+    public PeerServer(DagKernel kernel) {
         this.kernel = kernel;
     }
 
@@ -57,7 +58,6 @@ public class PeerServer {
 
     public void start(String ip, int port) {
         try {
-
             if(SystemUtils.IS_OS_LINUX) {
                 bossGroup = new EpollEventLoopGroup();
                 workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
@@ -69,32 +69,40 @@ public class PeerServer {
                 bossGroup = new NioEventLoopGroup();
                 workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
             }
-
             ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup);
             b.childOption(ChannelOption.TCP_NODELAY, true);
             b.childOption(ChannelOption.SO_KEEPALIVE, true);
             b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
             b.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getNodeSpec().getConnectionTimeout());
             b.handler(new LoggingHandler());
-            b.childHandler(new XdagChannelInitializer(kernel, true, null));
+            b.childHandler(new XdagChannelInitializer(kernel, null));
             log.debug("Xdag Node start host:[{}:{}].", ip, port);
-            channelFuture = b.bind(ip, port).sync();
+            channel = b.bind(ip, port).sync().channel();
         } catch (Exception e) {
             log.error("Xdag Node start error:{}.", e.getMessage(), e);
         }
     }
 
-    public void close() {
-        if (channelFuture != null && channelFuture.channel().isOpen()) {
+    public void stop() {
+        if (isRunning() && channel.isOpen()) {
             try {
-                channelFuture.channel().close().sync();
+                channel.close().sync();
+
                 workerGroup.shutdownGracefully();
                 bossGroup.shutdownGracefully();
-                log.debug("Xdag Node closed.");
+
+                ConnectionLimitHandler.reset();
+
+                channel = null;
             } catch (Exception e) {
-                log.error("Xdag Node close error:{}", e.getMessage(), e);
+                log.error("Failed to close channel", e);
             }
+            log.info("PeerServer shut down");
         }
+    }
+
+    public boolean isRunning() {
+        return channel != null;
     }
 
 }

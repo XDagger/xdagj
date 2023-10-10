@@ -28,8 +28,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.math.BigInteger;
 
-import io.xdag.core.XdagStats;
-import io.xdag.net.message.consensus.SumRequestMessage;
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -86,39 +84,39 @@ public class NetTest {
         assertEquals("7f000001d49d", Hex.toHexString(netDB.getEncoded()));
     }
 
-    @Test
-    public void testNetDBParse() {
-        long starttime = 1600616700000L;
-        long endtime = starttime + 10000;
-
-        XdagStats stats = new XdagStats();
-        stats.maxdifficulty = BigInteger.TWO;
-        stats.totalnblocks = 10001;
-        stats.totalnmain = 1001;
-        stats.totalnhosts = 11;
-        stats.maintime = endtime;
-
-        NetDB netDB = new NetDB();
-        netDB.addNewIP("10.0.0.1", 8001);
-        netDB.addNewIP("10.0.0.2", 8001);
-        netDB.addNewIP("10.0.0.3", 8001);
-        netDB.addNewIP("10.0.0.4", 8001);
-
-        SumRequestMessage sumRequestMessage = new SumRequestMessage(starttime, endtime, stats, netDB);
-
-        String hexString = Bytes.wrap(sumRequestMessage.getBody()).toHexString();
-
-        sumRequestMessage = new SumRequestMessage(Bytes.fromHexString(hexString).toArray());
-
-        assertEquals(starttime, sumRequestMessage.getStarttime());
-        assertEquals(endtime, sumRequestMessage.getEndtime());
-
-        XdagStats xdagStats = sumRequestMessage.getXdagStats();
-        assertEquals(BigInteger.TWO, xdagStats.maxdifficulty);
-        assertEquals(stats.totalnblocks, xdagStats.totalnblocks);
-        assertEquals(stats.totalnmain, xdagStats.totalnmain);
-        assertEquals(stats.totalnhosts, xdagStats.totalnhosts);
-        assertEquals(stats.maintime, xdagStats.maintime);
-    }
+//    @Test
+//    public void testNetDBParse() {
+//        long starttime = 1600616700000L;
+//        long endtime = starttime + 10000;
+//
+//        XdagStats stats = new XdagStats();
+//        stats.maxdifficulty = BigInteger.TWO;
+//        stats.totalnblocks = 10001;
+//        stats.totalnmain = 1001;
+//        stats.totalnhosts = 11;
+//        stats.maintime = endtime;
+//
+//        NetDB netDB = new NetDB();
+//        netDB.addNewIP("10.0.0.1", 8001);
+//        netDB.addNewIP("10.0.0.2", 8001);
+//        netDB.addNewIP("10.0.0.3", 8001);
+//        netDB.addNewIP("10.0.0.4", 8001);
+//
+//        SumRequestMessage sumRequestMessage = new SumRequestMessage(starttime, endtime, stats, netDB);
+//
+//        String hexString = Bytes.wrap(sumRequestMessage.getBody()).toHexString();
+//
+//        sumRequestMessage = new SumRequestMessage(Bytes.fromHexString(hexString).toArray());
+//
+//        assertEquals(starttime, sumRequestMessage.getStarttime());
+//        assertEquals(endtime, sumRequestMessage.getEndtime());
+//
+//        XdagStats xdagStats = sumRequestMessage.getXdagStats();
+//        assertEquals(BigInteger.TWO, xdagStats.maxdifficulty);
+//        assertEquals(stats.totalnblocks, xdagStats.totalnblocks);
+//        assertEquals(stats.totalnmain, xdagStats.totalnmain);
+//        assertEquals(stats.totalnhosts, xdagStats.totalnhosts);
+//        assertEquals(stats.maintime, xdagStats.maintime);
+//    }
 
 }

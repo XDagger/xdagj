@@ -24,41 +24,96 @@
 
 package io.xdag.config;
 
+import static io.xdag.Network.DEVNET;
+import static io.xdag.Network.MAINNET;
+import static io.xdag.Network.TESTNET;
+import static io.xdag.core.Fork.APOLLO_FORK;
+import static io.xdag.core.XUnit.MILLI_XDAG;
+import static io.xdag.core.XUnit.XDAG;
+
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.LongStream;
+
+import org.apache.commons.lang3.SystemUtils;
+
 import com.google.common.collect.Lists;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
 
 import io.xdag.Network;
 import io.xdag.config.spec.AdminSpec;
+import io.xdag.config.spec.DagSpec;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.RPCSpec;
 import io.xdag.config.spec.RandomxSpec;
 import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.core.Fork;
+import io.xdag.core.TransactionType;
 import io.xdag.core.XAmount;
-import io.xdag.core.XdagField;
 import io.xdag.net.Capability;
 import io.xdag.net.CapabilityTreeSet;
 import io.xdag.net.message.MessageCode;
 import io.xdag.rpc.modules.ModuleDescription;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import io.xdag.utils.exception.UnreachableException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.lang3.SystemUtils;
-
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec {
+public class AbstractConfig implements Config, DagSpec, AdminSpec, NodeSpec, RPCSpec, SnapshotSpec, RandomxSpec {
 
-    protected String configName;
+    // =========================
+    // Dag spec
+    // =========================
+    protected XAmount minTransactionFee = XAmount.of(100, MILLI_XDAG);
+    protected XAmount maxMainBlockTransactionFee = XAmount.of(100, XDAG);
+    protected long epochTime = 64 * 1000;
+    protected File rootDir;
+
+    // =========================
+    // Forks
+    // =========================
+    protected boolean forkApolloEnabled = false;
+
+    // =========================
+    // Node spec
+    // =========================
+    protected String nodeIp;
+    protected int nodePort;
+    protected String nodeTag;
+    protected int maxConnections = 1024;
+    protected int maxInboundConnectionsPerIp = 8;
+    protected int connectionTimeout = 10000;
+    protected int connectionReadTimeout = 10000;
+    protected boolean enableTxHistory = false;
+    protected long txPageSizeLimit = 500;
+    protected boolean enableGenerateBlock = false;
+
+    // =========================
+    // Txpool Spec
+    // =========================
+    protected long maxTxPoolTimeDrift = TimeUnit.HOURS.toMillis(2);
+
+
+    // =========================
+    // Sync spec
+    // =========================
+    protected long syncDownloadTimeout = 1_000L;
+    protected int syncMaxQueuedJobs = 10_000;
+    protected int syncMaxPendingJobs = 200;
+    protected int syncMaxPendingBlocks = 2_000;
+    protected boolean syncDisconnectOnInvalidBlock = false;
+    protected boolean syncFastSync = false;
 
     // =========================
     // Admin spec
@@ -66,10 +121,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected String telnetIp = "127.0.0.1";
     protected int telnetPort = 7001;
     protected String telnetPassword;
-
-    protected int maxShareCountPerChannel = 20;
-    protected int awardEpoch = 0xf;
-    protected int waitEpoch = 20;
 
     // =========================
     // Network
@@ -86,54 +137,16 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int netHandshakeExpiry = 5 * 60 * 1000;
     protected int netChannelIdleTimeout = 2 * 60 * 1000;
 
-    protected Set<MessageCode> netPrioritizedMessages = new HashSet<>(Arrays.asList(
-            MessageCode.NEW_BLOCK,
-            MessageCode.BLOCK_REQUEST,
-            MessageCode.BLOCKS_REQUEST));
+    protected Set<MessageCode> netPrioritizedMessages = new HashSet<>(List.of(
+            MessageCode.MAIN_BLOCK,
+            MessageCode.GET_MAIN_BLOCK));
 
-    protected String nodeIp;
-    protected int nodePort;
-    protected String nodeTag;
-    protected int maxConnections = 1024;
-    protected int maxInboundConnectionsPerIp = 8;
-    protected int connectionTimeout = 10000;
-    protected int connectionReadTimeout = 10000;
-    protected boolean enableTxHistory = false;
-    protected long txPageSizeLimit = 500;
-    protected boolean enableGenerateBlock = false;
 
-    protected String rootDir;
-    protected String storeDir;
-    protected String storeBackupDir;
     protected String whiteListDir;
     protected String netDBDir;
-
-    protected int storeMaxOpenFiles = 1024;
-    protected int storeMaxThreads = 1;
-    protected boolean storeFromBackup = false;
-    protected String originStoreDir = "./testdate";
-
     protected String whitelistUrl;
     protected boolean enableRefresh = false;
-    protected String walletKeyFile;
-
-    protected int TTL = 5;
     protected List<InetSocketAddress> whiteIPList = Lists.newArrayList();
-
-
-    // =========================
-    // Wallet spec
-    // =========================
-    protected String walletFilePath;
-
-    // =========================
-    // Xdag spec
-    // =========================
-    protected long xdagEra;
-    protected XdagField.FieldType xdagFieldHeader;
-    protected XAmount mainStartAmount;
-    protected long apolloForkHeight;
-    protected XAmount apolloForkAmount;
 
     // =========================
     // Xdag RPC modules
@@ -157,21 +170,41 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // =========================
     protected boolean flag;
 
-    protected AbstractConfig(String rootDir, String configName, Network network, short networkVersion) {
-        this.rootDir = rootDir;
-        this.configName = configName;
+    protected AbstractConfig(String rootDir, Network network, short networkVersion) {
+        this.rootDir = new File(rootDir);
         this.network = network;
         this.networkVersion = networkVersion;
-
         getSetting();
-        setDir();
     }
 
-    public void setDir() {
-        storeDir = getRootDir() + "/rocksdb/xdagdb";
-        storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
-        whiteListDir = getRootDir() + "/netdb-white.txt";
-        netDBDir = getRootDir() + "/netdb.txt";
+    @Override
+    public File rootDir() {
+        return this.rootDir;
+    }
+
+    @Override
+    public File chainDir() {
+        return chainDir(network);
+    }
+
+    @Override
+    public File chainDir(Network network) {
+        return new File(rootDir, Constants.CHAIN_DIR + File.separator + network.name().toLowerCase(Locale.ROOT));
+    }
+
+    @Override
+    public File configDir() {
+        return new File(rootDir, Constants.CONFIG_DIR);
+    }
+
+    @Override
+    public File walletDir() {
+        return new File(rootDir, Constants.WALLET_DIR);
+    }
+
+    @Override
+    public File logDir() {
+        return new File(rootDir, Constants.LOG_DIR);
     }
 
     @Override
@@ -205,6 +238,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
+    public int getWaitEpoch() {
+        return 0;
+    }
+
+    @Override
     public Set<MessageCode> getNetPrioritizedMessages() {
         return this.netPrioritizedMessages;
     }
@@ -220,7 +258,12 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
     @Override
     public CapabilityTreeSet getClientCapabilities() {
-        return CapabilityTreeSet.of(Capability.FULL_NODE, Capability.LIGHT_NODE);
+        return CapabilityTreeSet.of(Capability.FULL_NODE, Capability.FAST_SYNC);
+    }
+
+    @Override
+    public DagSpec getDagSpec() {
+        return this;
     }
 
     @Override
@@ -233,13 +276,8 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         return this;
     }
 
-    @Override
-    public WalletSpec getWalletSpec() {
-        return this;
-    }
-
     public void getSetting() {
-        com.typesafe.config.Config config = ConfigFactory.load(getConfigName());
+        com.typesafe.config.Config config = ConfigFactory.load(String.format("xdag-%s", network.label()));
 
         telnetIp = config.hasPath("admin.telnet.ip")?config.getString("admin.telnet.ip"):"127.0.0.1";
         telnetPort = config.hasPath("admin.telnet.port")?config.getInt("admin.telnet.port"):6001;
@@ -273,49 +311,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public void changePara(String[] args) {
-        if (args == null || args.length == 0) {
-            System.out.println("Use default configuration");
-            return;
-        }
-
-        for (int i = 0; i < args.length; i++) {
-            switch (args[i]) {
-                case "-a":
-                case "-c":
-                case "-m":
-                case "-s":
-                    i++;
-                    // todo 设置挖矿的线程数
-                    break;
-                case "-f":
-                    i++;
-                    this.rootDir = args[i];
-                    break;
-                case "-p":
-                    i++;
-                    this.changeNode(args[i]);
-                    break;
-                case "-r":
-                    // todo only load block but no run
-                    break;
-                case "-d":
-                case "-t":
-                    // only devnet or testnet
-                    break;
-                default:
-//                    log.error("Illegal instruction");
-            }
-        }
-    }
-
-    public void changeNode(String host) {
-        String[] args = host.split(":");
-        this.nodeIp = args[0];
-        this.nodePort = Integer.parseInt(args[1]);
-    }
-
-    @Override
     public int getNetMaxFrameBodySize() {
         return this.netMaxFrameBodySize;
     }
@@ -329,8 +324,41 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
+    public int getNetHandshakeExpiry() { return this.netHandshakeExpiry; }
+
+    @Override
     public boolean enableRefresh() {
         return this.enableRefresh;
+    }
+
+    @Override
+    public long syncDownloadTimeout() {
+        return this.syncDownloadTimeout;
+    }
+
+    @Override
+    public int syncMaxQueuedJobs() {
+        return this.syncMaxQueuedJobs;
+    }
+
+    @Override
+    public int syncMaxPendingJobs() {
+        return this.syncMaxPendingJobs;
+    }
+
+    @Override
+    public int syncMaxPendingBlocks() {
+        return this.syncMaxPendingBlocks;
+    }
+
+    @Override
+    public boolean syncDisconnectOnInvalidBlock() {
+        return false;
+    }
+
+    @Override
+    public boolean syncFastSync() {
+        return false;
     }
 
     @Override
@@ -399,11 +427,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public boolean isSnapshotJ() {
-        return isSnapshotJ;
-    }
-
-    @Override
     public long getSnapshotHeight() {
         return snapshotHeight;
     }
@@ -414,13 +437,9 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public boolean getEnableTxHistory() {return enableTxHistory;}
-
-    @Override
-    public long getTxPageSizeLimit(){return txPageSizeLimit;}
-
-    @Override
-    public boolean getEnableGenerateBlock() {return enableGenerateBlock;}
+    public Map<Fork, Long> manuallyActivatedForks() {
+        return Collections.emptyMap();
+    }
 
     @Override
     public void setSnapshotJ(boolean isSnapshot) {
@@ -433,7 +452,89 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public long getSnapshotTime() {
-        return snapshotTime;
+    public XAmount getMinTransactionFee() {
+        return minTransactionFee;
+    }
+
+    @Override
+    public XAmount getMaxMainBlockTransactionFee() {
+        return maxMainBlockTransactionFee;
+    }
+
+    @Override
+    public long getMaxTxPoolTimeDrift() {
+        return maxTxPoolTimeDrift;
+    }
+
+    @Override
+    public long getMaxTransactionDataSize(TransactionType type) {
+        switch (type) {
+        case COINBASE:
+        case TRANSFER:
+            return 128; // for memo
+        default:
+            throw new UnreachableException();
+        }
+    }
+
+    @Override
+    public XAmount getMainBlockReward(long number) {
+        if (number <= 1_017_323L) { // before apollo fork
+            return XAmount.of(1024, XDAG);
+        } else if (number <= 6_000_000L) { // ~4 years
+            return XAmount.of(128, XDAG);
+        } else if (number <= 14_000_000L) { // ~8 years
+            return XAmount.of(64, XDAG);
+        } else {
+            return XAmount.ZERO;
+        }
+    }
+
+    @Override
+    public XAmount getMainBlockSupply(long blockNumber) {
+        long totalSupply = LongStream.range(1, blockNumber + 1).map(number -> {
+            if (number <= 1_017_323L) { // before apollo fork
+                return XAmount.of(1024, XDAG).toLong();
+            } else if (number <= 6_000_000L) { // ~4 years
+                return XAmount.of(128, XDAG).toLong();
+            } else if (number <= 14_000_000L) { // ~8 years
+                return XAmount.of(64, XDAG).toLong();
+            } else {
+                return XAmount.ZERO.toLong();
+            }
+        }).sum();
+
+        return XAmount.of(totalSupply, XDAG);
+    }
+
+    @Override
+    public Map<Long, byte[]> checkpoints() {
+        return Collections.emptyMap();
+    }
+
+    private static long[][][] periods = new long[3][64][];
+
+    static {
+        periods[MAINNET.id()][APOLLO_FORK.id()] = new long[] { 1L, 1017_323L };
+
+        periods[TESTNET.id()][APOLLO_FORK.id()] = new long[] { 1L, 1017_323L };
+
+        // as soon as possible
+        periods[DEVNET.id()][APOLLO_FORK.id()] = new long[] { 1L, 10L };
+    }
+
+    @Override
+    public long[] getForkSignalingPeriod(Fork fork) {
+        return periods[getNetwork().id()][fork.id()];
+    }
+
+    @Override
+    public boolean forkApolloEnabled() {
+        return forkApolloEnabled;
+    }
+
+    @Override
+    public long getPowEpochTimeout() {
+        return epochTime;
     }
 }

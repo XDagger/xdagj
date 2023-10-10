@@ -27,11 +27,13 @@
         <junit.version>4.13.2</junit.version>
         <mockito.version>5.2.0</mockito.version>
         <system-lambda.version>1.2.1</system-lambda.version>
+        <awaitility.version>4.2.0</awaitility.version>
         <log4j.version>2.20.0</log4j.version>
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-codec.version>1.16.0</commons-codec.version>
         <commons-io.version>2.13.0</commons-io.version>
+        <commons-net.version>3.9.0</commons-net.version>
         <commons-cli.version>1.5.0</commons-cli.version>
         <guava.version>32.1.2-jre</guava.version>
         <rocksdbjni.version>8.0.0</rocksdbjni.version>
@@ -210,7 +212,6 @@
                                         <exclude>about.html</exclude>
                                         <exclude>log4j2.xml</exclude>
                                         <exclude>rpc_modules.conf</exclude>
-                                        <exclude>druid.properties</exclude>
                                         <exclude>xdag-devnet.conf</exclude>
                                         <exclude>xdag-testnet.conf</exclude>
                                         <exclude>xdag-mainnet.conf</exclude>
@@ -311,8 +312,6 @@
                                       tofile="${dist.base}/windows/xdag-devnet.conf"/>
                                 <copy file="src/main/resources/rpc_modules.conf"
                                       tofile="${dist.base}/windows/rpc_modules.conf"/>
-                                <copy file="src/main/resources/druid.properties"
-                                      tofile="${dist.base}/windows/druid.properties"/>
                                 <copy file="${dist.base}/xdag.bat"
                                       tofile="${dist.base}/windows/xdag.bat"/>
                                 <zip basedir="${dist.base}/windows/"
@@ -332,8 +331,6 @@
                                       tofile="${dist.base}/linux/xdag-devnet.conf"/>
                                 <copy file="src/main/resources/rpc_modules.conf"
                                       tofile="${dist.base}/linux/rpc_modules.conf"/>
-                                <copy file="src/main/resources/druid.properties"
-                                      tofile="${dist.base}/linux/druid.properties"/>
                                 <copy file="${dist.base}/xdag.sh"
                                       tofile="${dist.base}/linux/xdag.sh"/>
                                 <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
@@ -354,8 +351,6 @@
                                       tofile="${dist.base}/macos/xdag-devnet.conf"/>
                                 <copy file="src/main/resources/rpc_modules.conf"
                                       tofile="${dist.base}/macos/rpc_modules.conf"/>
-                                <copy file="src/main/resources/druid.properties"
-                                      tofile="${dist.base}/macos/druid.properties"/>
                                 <copy file="${dist.base}/xdag.sh"
                                       tofile="${dist.base}/macos/xdag.sh"/>
                                 <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
@@ -440,6 +435,12 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>${commons-net.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
             <version>${commons-cli.version}</version>
@@ -504,6 +505,12 @@
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
             <version>${rocksdbjni.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ethereum</groupId>
+            <artifactId>leveldbjni-all</artifactId>
+            <version>1.18.3</version>
         </dependency>
 
         <dependency>
@@ -604,6 +611,13 @@
                     <groupId>net.bytebuddy</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

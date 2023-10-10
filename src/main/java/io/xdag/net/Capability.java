@@ -31,7 +31,7 @@ public enum Capability {
     /**
      * light node.
      */
-    LIGHT_NODE;
+    FAST_SYNC;
 
     public static Capability of(String name) {
         try {
