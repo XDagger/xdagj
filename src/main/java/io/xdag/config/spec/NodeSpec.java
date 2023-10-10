@@ -40,11 +40,17 @@ public interface NodeSpec {
 
     short getNetworkVersion();
 
+    String getNodeIp();
+
+    int getNodePort();
+
     String getNodeTag();
 
     int getWaitEpoch();
 
     int getNetMaxMessageQueueSize();
+
+    int getNetRelayRedundancy();
 
     int getNetHandshakeExpiry();
 
@@ -56,9 +62,7 @@ public interface NodeSpec {
 
     int getNetChannelIdleTimeout();
 
-    String getNodeIp();
 
-    int getNodePort();
 
     int getMaxConnections();
 
@@ -68,30 +72,13 @@ public interface NodeSpec {
 
     int getConnectionTimeout();
 
-    int getTTL();
-
     List<InetSocketAddress> getWhiteIPList();
 
     void setWhiteIPList(List<InetSocketAddress> list);
 
-    String getStoreDir();
-
-    // Store
-    void setStoreDir(String dir);
-
-    String getStoreBackupDir();
-
-    void setStoreBackupDir(String dir);
-
     String getWhiteListDir();
 
     String getNetDBDir();
-
-    int getStoreMaxOpenFiles();
-
-    int getStoreMaxThreads();
-
-    boolean isStoreFromBackup();
 
     int getNetMaxFrameBodySize();
 
@@ -101,5 +88,20 @@ public interface NodeSpec {
     String getWhitelistUrl();
 
     boolean enableRefresh();
+
+    // =========================
+    // Sync
+    // =========================
+    long syncDownloadTimeout();
+
+    int syncMaxQueuedJobs();
+
+    int syncMaxPendingJobs();
+
+    int syncMaxPendingBlocks();
+
+    boolean syncDisconnectOnInvalidBlock();
+
+    boolean syncFastSync();
 
 }

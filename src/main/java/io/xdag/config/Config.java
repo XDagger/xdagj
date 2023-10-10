@@ -24,14 +24,17 @@
 
 package io.xdag.config;
 
+import java.io.File;
+import java.util.Map;
+
+import io.xdag.Network;
 import io.xdag.config.spec.AdminSpec;
+import io.xdag.config.spec.DagSpec;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.RPCSpec;
 import io.xdag.config.spec.RandomxSpec;
 import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
-import io.xdag.core.XAmount;
-import io.xdag.core.XdagField;
+import io.xdag.core.Fork;
 import io.xdag.net.CapabilityTreeSet;
 
 /**
@@ -39,19 +42,26 @@ import io.xdag.net.CapabilityTreeSet;
  */
 public interface Config {
 
-    /**
-     * Config File Name.
-     */
-    String getConfigName();
+    File rootDir();
+
+    File chainDir();
+
+    File chainDir(Network network);
+
+    File configDir();
+
+    File walletDir();
+
+    File logDir();
 
     String getClientId();
 
     CapabilityTreeSet getClientCapabilities();
 
     /**
-     * Config Root Dir.
+     * Returns the chain specification.
      */
-    String getRootDir();
+    DagSpec getDagSpec();
 
     /**
      * Node Specification.
@@ -63,25 +73,6 @@ public interface Config {
      */
     AdminSpec getAdminSpec();
 
-    /**
-     * Wallet Specification.
-     */
-    WalletSpec getWalletSpec();
-
-    XAmount getMainStartAmount();
-
-    long getXdagEra();
-
-    long getApolloForkHeight();
-
-    XAmount getApolloForkAmount();
-
-    XdagField.FieldType getXdagFieldHeader();
-
-    void changePara(String[] args);
-
-    void setDir();
-
     // rpc
     RPCSpec getRPCSpec();
 
@@ -90,9 +81,8 @@ public interface Config {
 
     RandomxSpec getRandomxSpec();
 
-    boolean getEnableTxHistory();
-
-    boolean getEnableGenerateBlock();
-
-    long getTxPageSizeLimit();
+    /**
+     * Returns manually activated forks.
+     */
+    Map<Fork, Long> manuallyActivatedForks();
 }

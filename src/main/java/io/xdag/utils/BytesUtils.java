@@ -24,19 +24,51 @@
 
 package io.xdag.utils;
 
+import static io.xdag.utils.Preconditions.check;
+import static io.xdag.utils.Preconditions.checkArgument;
+
+import java.math.BigInteger;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
+
 import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 
 public class BytesUtils {
+
+    /**
+     * Empty byte array.
+     */
+    public static final byte[] EMPTY_BYTES = new byte[0];
+
+    /**
+     * Empty 4 bytes array.
+     */
+    public static final byte[] EMPTY_4BYTES = new byte[4];
+
+    /**
+     * Empty address.
+     */
+    public static final byte[] EMPTY_ADDRESS = new byte[20];
+
+    /**
+     * Empty 256-bit hash.
+     * <p>
+     * Note: this is not the hash of empty byte array.
+     */
+    public static final byte[] EMPTY_HASH = new byte[32];
+
+    /** Maximum unsigned value that can be expressed by 32 bits. */
+    public static final long MAX_UNSIGNED_INTEGER = Integer.toUnsignedLong(-1);
 
     public static byte[] intToBytes(int value, boolean littleEndian) {
         ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -67,29 +99,12 @@ public class BytesUtils {
         return buffer.array();
     }
 
-    public static long bytesToLong(byte[] input, int offset, boolean littleEndian) {
-        ByteBuffer buffer = ByteBuffer.wrap(input, offset, 8);
-        if (littleEndian) {
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-        }
-        return buffer.getLong();
-    }
-
     public static byte[] shortToBytes(short value, boolean littleEndian) {
         ByteBuffer buffer = ByteBuffer.allocate(2);
         if (littleEndian) {
             buffer.order(ByteOrder.LITTLE_ENDIAN);
         }
         buffer.putShort(value);
-        return buffer.array();
-    }
-
-    public static byte[] byteToBytes(byte value, boolean littleEndian) {
-        ByteBuffer buffer = ByteBuffer.allocate(1);
-        if (littleEndian) {
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-        }
-        buffer.put(value);
         return buffer.array();
     }
 
@@ -109,46 +124,6 @@ public class BytesUtils {
 
     public static String toHexString(byte[] data) {
         return data == null ? "" : BaseEncoding.base16().lowerCase().encode(data);
-    }
-
-    public static byte[] bigIntegerToBytes(BigInteger b, int numBytes) {
-        if (b == null) {
-            return null;
-        }
-        byte[] bytes = new byte[numBytes];
-        byte[] biBytes = b.toByteArray();
-        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
-        int length = Math.min(biBytes.length, numBytes);
-        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
-        return bytes;
-    }
-
-    public static byte[] bigIntegerToBytes(UInt64 b, int numBytes) {
-        if (b == null) {
-            return null;
-        }
-        byte[] bytes = new byte[numBytes];
-        byte[] biBytes = b.toBytes().toArray();
-        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
-        int length = Math.min(biBytes.length, numBytes);
-        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
-        return bytes;
-    }
-    public static byte[] longToBytes(long b, int numBytes) {
-        byte[] bytes = new byte[numBytes];
-        byte[] biBytes = long2UnsignedLong(b).bigIntegerValue().toByteArray();
-        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
-        int length = Math.min(biBytes.length, numBytes);
-        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
-        return bytes;
-    }
-
-    public static byte[] bigIntegerToBytes(BigInteger b, int numBytes, boolean littleEndian) {
-        byte[] bytes = bigIntegerToBytes(b, numBytes);
-        if (littleEndian) {
-            arrayReverse(bytes);
-        }
-        return bytes;
     }
 
     /**
@@ -206,7 +181,7 @@ public class BytesUtils {
      * @return 转换后的byte[]
      */
     public static byte[] hexStringToBytes(String hexString) {
-        if (hexString == null || "".equals(hexString)) {
+        if (hexString == null || hexString.isEmpty()) {
             return null;
         }
         hexString = hexString.toUpperCase();
@@ -225,38 +200,79 @@ public class BytesUtils {
     }
 
     /**
-     * 数组逆序
-     */
-    public static void arrayReverse(byte[] origin) {
-        byte temp;
-        for (int i = 0; i < origin.length / 2; i++) {
-            temp = origin[i];
-            origin[i] = origin[origin.length - i - 1];
-            origin[origin.length - i - 1] = temp;
-        }
-    }
-
-    /**
      * Convert a byte into a byte array.
      */
     public static byte[] of(byte b) {
         return new byte[]{b};
     }
 
-    public static byte toByte(byte[] bytes) {
-        return bytes[0];
+    /**
+     * Convert a short integer into a byte array.
+     */
+    public static byte[] of(short s) {
+        byte[] bytes = new byte[2];
+        bytes[0] = (byte) ((s >> 8) & 0xff);
+        bytes[1] = (byte) (s & 0xff);
+        return bytes;
     }
 
-    public static boolean keyStartsWith(byte[] key, byte[] part) {
-        if (part.length > key.length) {
-            return false;
-        }
-        for (int i = 0; i < part.length; i++) {
-            if (key[i] != part[i]) {
-                return false;
-            }
-        }
-        return true;
+    /**
+     * Convert an integer into a byte array.
+     */
+    public static byte[] of(int i) {
+        byte[] bytes = new byte[4];
+        bytes[0] = (byte) ((i >> 24) & 0xff);
+        bytes[1] = (byte) ((i >> 16) & 0xff);
+        bytes[2] = (byte) ((i >> 8) & 0xff);
+        bytes[3] = (byte) (i & 0xff);
+        return bytes;
+    }
+
+    /**
+     * Convert a long integer into a byte array.
+     */
+    public static byte[] of(long i) {
+        byte[] bytes = new byte[8];
+        bytes[0] = (byte) ((i >> 56) & 0xff);
+        bytes[1] = (byte) ((i >> 48) & 0xff);
+        bytes[2] = (byte) ((i >> 40) & 0xff);
+        bytes[3] = (byte) ((i >> 32) & 0xff);
+        bytes[4] = (byte) ((i >> 24) & 0xff);
+        bytes[5] = (byte) ((i >> 16) & 0xff);
+        bytes[6] = (byte) ((i >> 8) & 0xff);
+        bytes[7] = (byte) (i & 0xff);
+        return bytes;
+    }
+
+    /**
+     * Convert string into a byte array.
+     */
+    public static byte[] of(String str) {
+        return str.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Covert byte array into an integer.
+     */
+    public static int toInt(byte[] bytes) {
+        return ((bytes[0] & 0xff) << 24)
+                | ((bytes[1] & 0xff) << 16)
+                | ((bytes[2] & 0xff) << 8)
+                | (bytes[3] & 0xff);
+    }
+
+    /**
+     * Covert byte array into a long integer.
+     */
+    public static long toLong(byte[] bytes) {
+        return ((bytes[0] & 0xffL) << 56)
+                | ((bytes[1] & 0xffL) << 48)
+                | ((bytes[2] & 0xffL) << 40)
+                | ((bytes[3] & 0xffL) << 32)
+                | ((bytes[4] & 0xffL) << 24)
+                | ((bytes[5] & 0xffL) << 16)
+                | ((bytes[6] & 0xffL) << 8)
+                | (bytes[7] & 0xff);
     }
 
     public static boolean isFullZero(byte[] input) {
@@ -266,22 +282,6 @@ public class BytesUtils {
             }
         }
         return true;
-    }
-
-    /**
-     * 直接将十六进制的byte[]数组转换为都变了的数据
-     *
-     * @param input byte[]类型的hash 这里的hash 是正向排序了的
-     * @param offset 偏移位置
-     * @param littleEndian 是否为大小端
-     */
-    public static double hexBytesToDouble(byte[] input, int offset, boolean littleEndian) {
-        byte[] data = new byte[8];
-        System.arraycopy(input, offset, data, 0, 8);
-        if (littleEndian) {
-            ArrayUtils.reverse(data);
-        }
-        return Numeric.toBigInt(data).doubleValue();
     }
 
     public static boolean equalBytes(byte[] b1, byte[] b2) {
@@ -374,5 +374,238 @@ public class BytesUtils {
 
     public static UnsignedLong long2UnsignedLong(long number) {
         return UnsignedLong.valueOf(toHexString((ByteBuffer.allocate(8).putLong(number).array())),16);
+    }
+
+    public static byte[] random(int n) {
+        byte[] bytes = new byte[n];
+        SecureRandomProvider.publicSecureRandom().nextBytes(bytes);
+        return bytes;
+    }
+
+    /**
+     * MPI encoded numbers are produced by the OpenSSL BN_bn2mpi function. They consist of
+     * a 4 byte big endian length field, followed by the stated number of bytes representing
+     * the number in big endian format (with a sign bit).
+     * @param hasLength can be set to false if the given array is missing the 4 byte length field
+     */
+    public static BigInteger decodeMPI(byte[] mpi, boolean hasLength) {
+        byte[] buf;
+        if (hasLength) {
+            int length = (int) readUint32BE(mpi, 0);
+            buf = new byte[length];
+            System.arraycopy(mpi, 4, buf, 0, length);
+        } else
+            buf = mpi;
+        if (buf.length == 0)
+            return BigInteger.ZERO;
+        boolean isNegative = (buf[0] & 0x80) == 0x80;
+        if (isNegative)
+            buf[0] &= 0x7f;
+        BigInteger result = new BigInteger(buf);
+        return isNegative ? result.negate() : result;
+    }
+
+    /**
+     * Read 4 bytes from the byte array (starting at the offset) as unsigned 32-bit integer in little endian format.
+     * @param bytes buffer to be read from
+     * @param offset offset into the buffer
+     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     *                                        if the read value extends beyond the remaining bytes of the buffer
+     */
+    public static long readUint32(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException {
+        check(offset >= 0 && offset <= bytes.length - 4, () ->
+                new ArrayIndexOutOfBoundsException(offset));
+        return readUint32(ByteBuffer.wrap(bytes, offset, bytes.length - offset));
+    }
+
+    /**
+     * Read 4 bytes from the buffer as unsigned 32-bit integer in little endian format.
+     * @param buf buffer to be read from
+     * @throws BufferUnderflowException if the read value extends beyond the remaining bytes of the buffer
+     */
+    public static long readUint32(ByteBuffer buf) throws BufferUnderflowException {
+        return Integer.toUnsignedLong(buf.order(ByteOrder.LITTLE_ENDIAN).getInt());
+    }
+
+    /**
+     * Read 4 bytes from the buffer as unsigned 32-bit integer in big endian format.
+     * @param buf buffer to be read from
+     * @throws BufferUnderflowException if the read value extends beyond the remaining bytes of the buffer
+     */
+    public static long readUint32BE(ByteBuffer buf) throws BufferUnderflowException {
+        return Integer.toUnsignedLong(buf.order(ByteOrder.BIG_ENDIAN).getInt());
+    }
+
+    /**
+     * Read 4 bytes from the byte array (starting at the offset) as unsigned 32-bit integer in big endian format.
+     * @param bytes buffer to be read from
+     * @param offset offset into the buffer
+     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     *                                        if the read value extends beyond the remaining bytes of the buffer
+     */
+    public static long readUint32BE(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException {
+        check(offset >= 0 && offset <= bytes.length - 4, () ->
+                new ArrayIndexOutOfBoundsException(offset));
+        return readUint32BE(ByteBuffer.wrap(bytes, offset, bytes.length - offset));
+    }
+
+    /**
+     * MPI encoded numbers are produced by the OpenSSL BN_bn2mpi function. They consist of
+     * a 4 byte big endian length field, followed by the stated number of bytes representing
+     * the number in big endian format (with a sign bit).
+     * @param includeLength indicates whether the 4 byte length field should be included
+     */
+    public static byte[] encodeMPI(BigInteger value, boolean includeLength) {
+        if (value.equals(BigInteger.ZERO)) {
+            if (!includeLength)
+                return new byte[] {};
+            else
+                return new byte[] {0x00, 0x00, 0x00, 0x00};
+        }
+        boolean isNegative = value.signum() < 0;
+        if (isNegative)
+            value = value.negate();
+        byte[] array = value.toByteArray();
+        int length = array.length;
+        if ((array[0] & 0x80) == 0x80)
+            length++;
+        if (includeLength) {
+            byte[] result = new byte[length + 4];
+            System.arraycopy(array, 0, result, length - array.length + 3, array.length);
+            writeInt32BE(length, result, 0);
+            if (isNegative)
+                result[4] |= 0x80;
+            return result;
+        } else {
+            byte[] result;
+            if (length != array.length) {
+                result = new byte[length];
+                System.arraycopy(array, 0, result, 1, array.length);
+            }else
+                result = array;
+            if (isNegative)
+                result[0] |= 0x80;
+            return result;
+        }
+    }
+
+    /**
+     * Write a 32-bit integer to a given byte array in big-endian format, starting at a given offset.
+     * <p>
+     * The value is expected as a signed or unsigned {@code int}. If you've got an unsigned {@code long} as per the
+     * Java Unsigned Integer API, use {@link #writeInt32BE(long, byte[], int)}.
+     *
+     * @param val    value to be written
+     * @param out    buffer to be written into
+     * @param offset offset into the buffer
+     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     *                                        if the value doesn't fit the remaining buffer
+     */
+    public static void writeInt32BE(int val, byte[] out, int offset) throws ArrayIndexOutOfBoundsException {
+        writeInt32BE(val, ByteBuffer.wrap(out, offset, out.length - offset));
+    }
+
+    /**
+     * Write a 32-bit integer to a given byte array in big-endian format, starting at a given offset.
+     * <p>
+     * The value is expected as an unsigned {@code long} as per the Java Unsigned Integer API.
+     *
+     * @param val    value to be written
+     * @param out    buffer to be written into
+     * @param offset offset into the buffer
+     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     *                                        if the value doesn't fit the remaining buffer
+     */
+    public static void writeInt32BE(long val, byte[] out, int offset) throws ArrayIndexOutOfBoundsException {
+        check(offset >= 0 && offset <= out.length - 4, () ->
+                new ArrayIndexOutOfBoundsException(offset));
+        writeInt32BE(val, ByteBuffer.wrap(out, offset, out.length - offset));
+    }
+
+    /**
+     * Write a 32-bit integer to a given buffer in big-endian format.
+     * <p>
+     * The value is expected as a signed or unsigned {@code int}. If you've got an unsigned {@code long} as per the
+     * Java Unsigned Integer API, use {@link #writeInt32BE(long, ByteBuffer)}.
+     *
+     * @param val value to be written
+     * @param buf buffer to be written into
+     * @return the buffer
+     * @throws BufferOverflowException if the value doesn't fit the remaining buffer
+     */
+    public static ByteBuffer writeInt32BE(int val, ByteBuffer buf) throws BufferOverflowException {
+        return buf.order(ByteOrder.BIG_ENDIAN).putInt((int) val);
+    }
+
+    /**
+     * Write a 32-bit integer to a given buffer in big-endian format.
+     * <p>
+     * The value is expected as an unsigned {@code long} as per the Java Unsigned Integer API.
+     *
+     * @param val value to be written
+     * @param buf buffer to be written into
+     * @return the buffer
+     * @throws BufferOverflowException if the value doesn't fit the remaining buffer
+     */
+    public static ByteBuffer writeInt32BE(long val, ByteBuffer buf) throws BufferOverflowException {
+        checkArgument(val >= 0 && val <= MAX_UNSIGNED_INTEGER, () ->
+                "value out of range: " + val);
+        return buf.order(ByteOrder.BIG_ENDIAN).putInt((int) val);
+    }
+
+    /**
+     * Write a 32-bit integer to a given buffer in little-endian format.
+     * <p>
+     * The value is expected as an unsigned {@code long} as per the Java Unsigned Integer API.
+     *
+     * @param val value to be written
+     * @param buf buffer to be written into
+     * @return the buffer
+     * @throws BufferOverflowException if the value doesn't fit the remaining buffer
+     */
+    public static ByteBuffer writeInt32LE(long val, ByteBuffer buf) throws BufferOverflowException {
+        checkArgument(val >= 0 && val <= MAX_UNSIGNED_INTEGER, () ->
+                "value out of range: " + val);
+        return buf.order(ByteOrder.LITTLE_ENDIAN).putInt((int) val);
+    }
+
+    /**
+     * Write a 32-bit integer to a given byte array in little-endian format, starting at a given offset.
+     * <p>
+     * The value is expected as an unsigned {@code long} as per the Java Unsigned Integer API.
+     *
+     * @param val    value to be written
+     * @param out    buffer to be written into
+     * @param offset offset into the buffer
+     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     *                                        if the value doesn't fit the remaining buffer
+     */
+    public static void writeInt32LE(long val, byte[] out, int offset) throws ArrayIndexOutOfBoundsException {
+        check(offset >= 0 && offset <= out.length - 4, () ->
+                new ArrayIndexOutOfBoundsException(offset));
+        writeInt32LE(val, ByteBuffer.wrap(out, offset, out.length - offset));
+    }
+
+    /**
+     * <p>The "compact" format is a representation of a whole number N using an unsigned 32 bit number similar to a
+     * floating point format. The most significant 8 bits are the unsigned exponent of base 256. This exponent can
+     * be thought of as "number of bytes of N". The lower 23 bits are the mantissa. Bit number 24 (0x800000) represents
+     * the sign of N. Therefore, N = (-1^sign) * mantissa * 256^(exponent-3).</p>
+     *
+     * <p>Satoshi's original implementation used BN_bn2mpi() and BN_mpi2bn(). MPI uses the most significant bit of the
+     * first byte as sign. Thus 0x1234560000 is compact 0x05123456 and 0xc0de000000 is compact 0x0600c0de. Compact
+     * 0x05c0de00 would be -0x40de000000.</p>
+     *
+     * <p>Bitcoin only uses this "compact" format for encoding difficulty targets, which are unsigned 256bit quantities.
+     * Thus, all the complexities of the sign bit and using base 256 are probably an implementation accident.</p>
+     */
+    public static BigInteger decodeCompactBits(long compact) {
+        int size = ((int) (compact >> 24)) & 0xFF;
+        byte[] bytes = new byte[4 + size];
+        bytes[3] = (byte) size;
+        if (size >= 1) bytes[4] = (byte) ((compact >> 16) & 0xFF);
+        if (size >= 2) bytes[5] = (byte) ((compact >> 8) & 0xFF);
+        if (size >= 3) bytes[6] = (byte) (compact & 0xFF);
+        return decodeMPI(bytes, true);
     }
 }

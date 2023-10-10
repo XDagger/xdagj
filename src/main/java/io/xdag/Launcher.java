@@ -26,6 +26,7 @@ package io.xdag;
 
 import io.xdag.cli.XdagOption;
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
@@ -109,7 +110,6 @@ public class Launcher {
 
     /**
      * Parses options from the given arguments.
-     *
      * Priority: arguments => system property => console input
      */
     protected CommandLine parseOptions(String[] args) throws ParseException {
@@ -129,20 +129,18 @@ public class Launcher {
         Config config = null;
         for (String arg : args) {
             if ("-d".equals(arg)) {
-                config = new DevnetConfig();
+                config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
                 break;
             } else if ("-t".equals(arg)) {
-                config = new TestnetConfig();
+                config = new TestnetConfig(Constants.DEFAULT_ROOT_DIR);
                 break;
             } else {
-                config = new MainnetConfig();
+                config = new MainnetConfig(Constants.DEFAULT_ROOT_DIR);
             }
         }
         if (args.length == 0) {
-            config = new MainnetConfig();
+            config = new MainnetConfig(Constants.DEFAULT_ROOT_DIR);
         }
-        config.changePara(args);
-        config.setDir();
 
         return config;
     }

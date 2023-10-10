@@ -23,6 +23,7 @@
  */
 package io.xdag.net;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -33,47 +34,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.bytes.MutableBytes32;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
-
-import com.google.common.util.concurrent.SettableFuture;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.xdag.Kernel;
 import io.xdag.Network;
 import io.xdag.config.Config;
 import io.xdag.config.spec.NodeSpec;
-import io.xdag.consensus.SyncManager;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagStats;
+import io.xdag.core.BlockHeader;
+import io.xdag.core.BlockPart;
+import io.xdag.DagKernel;
+import io.xdag.core.Dagchain;
+import io.xdag.core.MainBlock;
+import io.xdag.core.PendingManager;
+import io.xdag.core.SyncManager;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.ReasonCode;
-import io.xdag.net.message.consensus.BlockExtRequestMessage;
-import io.xdag.net.message.consensus.BlockRequestMessage;
-import io.xdag.net.message.consensus.BlocksReplyMessage;
-import io.xdag.net.message.consensus.BlocksRequestMessage;
-import io.xdag.net.message.consensus.NewBlockMessage;
-import io.xdag.net.message.consensus.SumReplyMessage;
-import io.xdag.net.message.consensus.SumRequestMessage;
-import io.xdag.net.message.consensus.SyncBlockMessage;
-import io.xdag.net.message.consensus.SyncBlockRequestMessage;
-import io.xdag.net.message.consensus.XdagMessage;
+import io.xdag.net.message.consensus.GetMainBlockHeaderMessage;
+import io.xdag.net.message.consensus.GetMainBlockMessage;
+import io.xdag.net.message.consensus.GetMainBlockPartsMessage;
+import io.xdag.net.message.consensus.MainBlockHeaderMessage;
+import io.xdag.net.message.consensus.MainBlockMessage;
+import io.xdag.net.message.consensus.MainBlockPartsMessage;
 import io.xdag.net.message.p2p.DisconnectMessage;
 import io.xdag.net.message.p2p.HelloMessage;
 import io.xdag.net.message.p2p.InitMessage;
 import io.xdag.net.message.p2p.PingMessage;
 import io.xdag.net.message.p2p.PongMessage;
+import io.xdag.net.message.p2p.TransactionMessage;
 import io.xdag.net.message.p2p.WorldMessage;
-import io.xdag.net.node.NodeManager;
-import io.xdag.utils.XdagTime;
 import io.xdag.utils.exception.UnreachableException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -95,16 +85,17 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
 
     private final Channel channel;
 
-    private final Kernel kernel;
+    private final DagKernel kernel;
     private final Config config;
     private final NodeSpec nodeSpec;
-    private final Blockchain chain;
-    private final ChannelManager channelMgr;
-    private final NodeManager nodeMgr;
-    private final PeerClient client;
-    private final SyncManager syncMgr;
+    private final Dagchain dagChain;
 
-    private final NetDBManager netdbMgr;
+    private final PendingManager pendingMgr;
+    private final ChannelManager channelMgr;
+    private final PeerClient client;
+
+    private final SyncManager dagSync;
+
     private final MessageQueue msgQueue;
 
     private final AtomicBoolean isHandshakeDone = new AtomicBoolean(false);
@@ -115,19 +106,17 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     private byte[] secret = SecureRandomProvider.publicSecureRandom().generateSeed(InitMessage.SECRET_LENGTH);
     private long timestamp = System.currentTimeMillis();
 
-    public XdagP2pHandler(Channel channel, Kernel kernel) {
+    public XdagP2pHandler(Channel channel, DagKernel kernel) {
         this.channel = channel;
         this.kernel = kernel;
         this.config = kernel.getConfig();
         this.nodeSpec = kernel.getConfig().getNodeSpec();
 
-        this.chain = kernel.getBlockchain();
-        this.channelMgr = kernel.getChannelMgr();
-        this.nodeMgr = kernel.getNodeMgr();
+        this.dagChain = kernel.getDagchain();
+        this.pendingMgr = kernel.getPendingManager();
+        this.channelMgr = kernel.getChannelManager();
         this.client = kernel.getClient();
-
-        this.syncMgr = kernel.getSyncMgr();
-        this.netdbMgr = kernel.getNetDBMgr();
+        this.dagSync = kernel.getSyncManager();
         this.msgQueue = channel.getMessageQueue();
     }
 
@@ -191,10 +180,15 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         case HANDSHAKE_INIT -> onHandshakeInit((InitMessage) msg);
         case HANDSHAKE_HELLO -> onHandshakeHello((HelloMessage) msg);
         case HANDSHAKE_WORLD -> onHandshakeWorld((WorldMessage) msg);
+        case TRANSACTION-> onTransaction((TransactionMessage) msg);
 
         /* sync */
-        case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
-                onXdag(msg);
+//        case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
+//                onXdag(msg);
+
+        /* new dag sync */
+        case GET_MAIN_BLOCK, MAIN_BLOCK,GET_MAIN_BLOCK_HEADER,MAIN_BLOCK_HEADER,GET_MAIN_BLOCK_PARTS,MAIN_BLOCK_PARTS->
+                onSync(msg);
         default -> ctx.fireChannelRead(msg);
         }
     }
@@ -226,7 +220,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         // send the HELLO message
         this.msgQueue.sendMessage(new HelloMessage(nodeSpec.getNetwork(), nodeSpec.getNetworkVersion(), client.getPeerId(),
                 client.getPort(), config.getClientId(), config.getClientCapabilities().toArray(),
-                chain.getLatestMainBlockNumber(),
+                dagChain.getLatestMainBlockNumber(),
                 secret, client.getCoinbase()));
     }
 
@@ -253,7 +247,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         // send the WORLD message
         this.msgQueue.sendMessage(new WorldMessage(nodeSpec.getNetwork(), nodeSpec.getNetworkVersion(), client.getPeerId(),
                 client.getPort(), config.getClientId(), config.getClientCapabilities().toArray(),
-                chain.getLatestMainBlockNumber(),
+                dagChain.getLatestMainBlockNumber(),
                 secret, client.getCoinbase()));
 
         // handshake done
@@ -299,22 +293,81 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         }
     }
 
-    protected void onXdag(Message msg) {
+    protected void onTransaction(TransactionMessage msg) {
+        pendingMgr.addTransaction(msg.getTransaction());
+    }
+
+//    protected void onXdag(Message msg) {
+//        if (!isHandshakeDone.get()) {
+//            return;
+//        }
+//
+//        switch (msg.getCode()) {
+//            case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
+//            case BLOCK_REQUEST -> processBlockRequest((BlockRequestMessage) msg);
+//            case BLOCKS_REQUEST -> processBlocksRequest((BlocksRequestMessage) msg);
+//            case BLOCKS_REPLY -> processBlocksReply((BlocksReplyMessage) msg);
+//            case SUMS_REQUEST -> processSumsRequest((SumRequestMessage) msg);
+//            case SUMS_REPLY -> processSumsReply((SumReplyMessage) msg);
+//            case BLOCKEXT_REQUEST -> processBlockExtRequest((BlockExtRequestMessage) msg);
+//            case SYNC_BLOCK -> processSyncBlock((SyncBlockMessage) msg);
+//            case SYNCBLOCK_REQUEST -> processSyncBlockRequest((SyncBlockRequestMessage) msg);
+//            default -> throw new UnreachableException();
+//        }
+//    }
+
+    protected void onSync(Message msg) {
         if (!isHandshakeDone.get()) {
             return;
         }
 
         switch (msg.getCode()) {
-            case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
-            case BLOCK_REQUEST -> processBlockRequest((BlockRequestMessage) msg);
-            case BLOCKS_REQUEST -> processBlocksRequest((BlocksRequestMessage) msg);
-            case BLOCKS_REPLY -> processBlocksReply((BlocksReplyMessage) msg);
-            case SUMS_REQUEST -> processSumsRequest((SumRequestMessage) msg);
-            case SUMS_REPLY -> processSumsReply((SumReplyMessage) msg);
-            case BLOCKEXT_REQUEST -> processBlockExtRequest((BlockExtRequestMessage) msg);
-            case SYNC_BLOCK -> processSyncBlock((SyncBlockMessage) msg);
-            case SYNCBLOCK_REQUEST -> processSyncBlockRequest((SyncBlockRequestMessage) msg);
-            default -> throw new UnreachableException();
+        case GET_MAIN_BLOCK: {
+            GetMainBlockMessage m = (GetMainBlockMessage) msg;
+            MainBlock block = dagChain.getMainBlockByNumber(m.getNumber());
+            channel.getMessageQueue().sendMessage(new MainBlockMessage(block));
+            break;
+        }
+        case GET_MAIN_BLOCK_HEADER: {
+            GetMainBlockHeaderMessage m = (GetMainBlockHeaderMessage) msg;
+            BlockHeader header = dagChain.getBlockHeader(m.getNumber());
+            channel.getMessageQueue().sendMessage(new MainBlockHeaderMessage(header));
+            break;
+        }
+        case GET_MAIN_BLOCK_PARTS: {
+            GetMainBlockPartsMessage m = (GetMainBlockPartsMessage) msg;
+            long number = m.getNumber();
+            int parts = m.getParts();
+
+            List<byte[]> partsSerialized = new ArrayList<>();
+            MainBlock block = dagChain.getMainBlockByNumber(number);
+            for (BlockPart part : BlockPart.decode(parts)) {
+                switch (part) {
+                case HEADER:
+                    partsSerialized.add(block.getEncodedHeader());
+                    break;
+                case TRANSACTIONS:
+                    partsSerialized.add(block.getEncodedTransactions());
+                    break;
+                case RESULTS:
+                    partsSerialized.add(block.getEncodedResults());
+                    break;
+                default:
+                    throw new UnreachableException();
+                }
+            }
+
+            channel.getMessageQueue().sendMessage(new MainBlockPartsMessage(number, parts, partsSerialized));
+            break;
+        }
+        case MAIN_BLOCK:
+        case MAIN_BLOCK_HEADER:
+        case MAIN_BLOCK_PARTS: {
+            dagSync.onMessage(channel, msg);
+            break;
+        }
+        default:
+            throw new UnreachableException();
         }
     }
 
@@ -362,153 +415,153 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     /**
      * ********************** Message Processing * ***********************
      */
-    protected void processNewBlock(NewBlockMessage msg) {
-        Block block = msg.getBlock();
-        if (syncMgr.isSyncOld()) {
-            return;
-        }
+//    protected void processNewBlock(NewBlockMessage msg) {
+//        Block block = msg.getBlock();
+//        if (syncMgr.isSyncOld()) {
+//            return;
+//        }
+//
+//        log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getRemoteAddress());
+//        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), false);
+//        syncMgr.validateAndAddNewBlock(bw);
+//    }
 
-        log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getRemoteAddress());
-        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), false);
-        syncMgr.validateAndAddNewBlock(bw);
-    }
-
-    protected void processSyncBlock(SyncBlockMessage msg) {
-        Block block = msg.getBlock();
-
-        log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getRemoteAddress());
-        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), true);
-        syncMgr.validateAndAddNewBlock(bw);
-    }
+//    protected void processSyncBlock(SyncBlockMessage msg) {
+//        Block block = msg.getBlock();
+//
+//        log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getRemoteAddress());
+//        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), true);
+//        syncMgr.validateAndAddNewBlock(bw);
+//    }
 
     /**
      * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
      */
-    protected void processBlocksRequest(BlocksRequestMessage msg) {
-        // 更新全网状态
-        updateXdagStats(msg);
-        long startTime = msg.getStarttime();
-        long endTime = msg.getEndtime();
-        long random = msg.getRandom();
+//    protected void processBlocksRequest(BlocksRequestMessage msg) {
+//        // 更新全网状态
+//        updateXdagStats(msg);
+//        long startTime = msg.getStarttime();
+//        long endTime = msg.getEndtime();
+//        long random = msg.getRandom();
+//
+//        // TODO: paulochen 处理多区块请求
+//        //        // 如果大于快照点的话 我可以发送
+//        //        if (startTime > 1658318225407L) {
+//        //            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
+//        log.debug("Send blocks between {} and {} to node {}",
+//                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
+//                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
+//                channel.getRemoteAddress());
+//        List<Block> blocks = chain.getBlocksByTime(startTime, endTime);
+//        for (Block block : blocks) {
+//            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1);
+//            msgQueue.sendMessage(blockMsg);
+//        }
+//        msgQueue.sendMessage(new BlocksReplyMessage(startTime, endTime, random, chain.getXdagStats(), netdbMgr.getNetDB()));
+//    }
 
-        // TODO: paulochen 处理多区块请求
-        //        // 如果大于快照点的话 我可以发送
-        //        if (startTime > 1658318225407L) {
-        //            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
-        log.debug("Send blocks between {} and {} to node {}",
-                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
-                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
-                channel.getRemoteAddress());
-        List<Block> blocks = chain.getBlocksByTime(startTime, endTime);
-        for (Block block : blocks) {
-            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1);
-            msgQueue.sendMessage(blockMsg);
-        }
-        msgQueue.sendMessage(new BlocksReplyMessage(startTime, endTime, random, chain.getXdagStats(), netdbMgr.getNetDB()));
-    }
-
-    protected void processBlocksReply(BlocksReplyMessage msg) {
-        updateXdagStats(msg);
-        long randomSeq = msg.getRandom();
-        SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
-        if (sf != null) {
-            sf.set(Bytes.wrap(new byte[]{0}));
-        }
-    }
+//    protected void processBlocksReply(BlocksReplyMessage msg) {
+//        updateXdagStats(msg);
+//        long randomSeq = msg.getRandom();
+//        SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
+//        if (sf != null) {
+//            sf.set(Bytes.wrap(new byte[]{0}));
+//        }
+//    }
 
     /**
      * 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送
      */
-    protected void processSumsRequest(SumRequestMessage msg) {
-        updateXdagStats(msg);
-        MutableBytes sums = MutableBytes.create(256);
-        // TODO: paulochen 处理sum请求
-        kernel.getBlockStore().loadSum(msg.getStarttime(),msg.getEndtime(),sums);
-        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
-                chain.getXdagStats(), sums, netdbMgr.getNetDB());
-        msgQueue.sendMessage(reply);
-    }
+//    protected void processSumsRequest(SumRequestMessage msg) {
+//        updateXdagStats(msg);
+//        MutableBytes sums = MutableBytes.create(256);
+//        // TODO: paulochen 处理sum请求
+//        kernel.getBlockStore().loadSum(msg.getStarttime(),msg.getEndtime(),sums);
+//        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
+//                chain.getXdagStats(), sums, netdbMgr.getNetDB());
+//        msgQueue.sendMessage(reply);
+//    }
 
-    protected void processSumsReply(SumReplyMessage msg) {
-        updateXdagStats(msg);
-        long randomSeq = msg.getRandom();
-        SettableFuture<Bytes> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
-        if (sf != null) {
-            sf.set(msg.getSum());
-        }
-    }
+//    protected void processSumsReply(SumReplyMessage msg) {
+//        updateXdagStats(msg);
+//        long randomSeq = msg.getRandom();
+//        SettableFuture<Bytes> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
+//        if (sf != null) {
+//            sf.set(msg.getSum());
+//        }
+//    }
 
-    protected void processBlockExtRequest(BlockExtRequestMessage msg) {
-    }
-
-    protected void processBlockRequest(BlockRequestMessage msg) {
-        Bytes hash = msg.getHash();
-        Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
-        int ttl = config.getNodeSpec().getTTL();
-        if (block != null) {
-            log.debug("processBlockRequest: findBlock" + Bytes32.wrap(hash).toHexString());
-            NewBlockMessage message = new NewBlockMessage(block, ttl);
-            msgQueue.sendMessage(message);
-        }
-    }
-
-    private void processSyncBlockRequest(SyncBlockRequestMessage msg) {
-        Bytes hash = msg.getHash();
-        Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
-        if (block != null) {
-            log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", Bytes32.wrap(hash).toHexString(), channel.getRemoteAddress());
-            SyncBlockMessage message = new SyncBlockMessage(block, 1);
-            msgQueue.sendMessage(message);
-        }
-    }
-
-    /**
-     * ********************** Xdag Message ************************
-     */
-    public void sendNewBlock(Block newBlock, int TTL) {
-        log.debug("send block:{} to node:{}", newBlock.getHashLow(), channel.getRemoteAddress());
-        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
-        sendMessage(msg);
-    }
-
-    public long sendGetBlocks(long startTime, long endTime) {
-        log.debug("Request blocks between {} and {} from node {}",
-                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
-                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
-                channel.getRemoteAddress());
-        BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, chain.getXdagStats(),
-                netdbMgr.getNetDB());
-        sendMessage(msg);
-        return msg.getRandom();
-    }
-
-    public long sendGetBlock(MutableBytes32 hash, boolean isOld) {
-        XdagMessage msg;
-        //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
-        msg = isOld ? new SyncBlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(), netdbMgr.getNetDB())
-                : new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(), netdbMgr.getNetDB());
-        log.debug("Request block {} isold: {} from node {}", hash, isOld,channel.getRemoteAddress());
-        sendMessage(msg);
-        return msg.getRandom();
-    }
-
-    public long sendGetSums(long startTime, long endTime) {
-        SumRequestMessage msg = new SumRequestMessage(startTime, endTime, chain.getXdagStats(),
-                netdbMgr.getNetDB());
-        sendMessage(msg);
-        return msg.getRandom();
-    }
+//    protected void processBlockExtRequest(BlockExtRequestMessage msg) {
+//    }
+//
+//    protected void processBlockRequest(BlockRequestMessage msg) {
+//        Bytes hash = msg.getHash();
+//        Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
+//        int ttl = config.getNodeSpec().getTTL();
+//        if (block != null) {
+//            log.debug("processBlockRequest: findBlock" + Bytes32.wrap(hash).toHexString());
+//            NewBlockMessage message = new NewBlockMessage(block, ttl);
+//            msgQueue.sendMessage(message);
+//        }
+//    }
+//
+//    private void processSyncBlockRequest(SyncBlockRequestMessage msg) {
+//        Bytes hash = msg.getHash();
+//        Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
+//        if (block != null) {
+//            log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", Bytes32.wrap(hash).toHexString(), channel.getRemoteAddress());
+//            SyncBlockMessage message = new SyncBlockMessage(block, 1);
+//            msgQueue.sendMessage(message);
+//        }
+//    }
+//
+//    /**
+//     * ********************** Xdag Message ************************
+//     */
+//    public void sendNewBlock(Block newBlock, int TTL) {
+//        log.debug("send block:{} to node:{}", newBlock.getHashLow(), channel.getRemoteAddress());
+//        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
+//        sendMessage(msg);
+//    }
+//
+//    public long sendGetBlocks(long startTime, long endTime) {
+//        log.debug("Request blocks between {} and {} from node {}",
+//                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
+//                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
+//                channel.getRemoteAddress());
+//        BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, chain.getXdagStats(),
+//                netdbMgr.getNetDB());
+//        sendMessage(msg);
+//        return msg.getRandom();
+//    }
+//
+//    public long sendGetBlock(MutableBytes32 hash, boolean isOld) {
+//        XdagMessage msg;
+//        //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
+//        msg = isOld ? new SyncBlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(), netdbMgr.getNetDB())
+//                : new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats(), netdbMgr.getNetDB());
+//        log.debug("Request block {} isold: {} from node {}", hash, isOld,channel.getRemoteAddress());
+//        sendMessage(msg);
+//        return msg.getRandom();
+//    }
+//
+//    public long sendGetSums(long startTime, long endTime) {
+//        SumRequestMessage msg = new SumRequestMessage(startTime, endTime, chain.getXdagStats(),
+//                netdbMgr.getNetDB());
+//        sendMessage(msg);
+//        return msg.getRandom();
+//    }
 
     public void sendMessage(Message message) {
         msgQueue.sendMessage(message);
     }
 
-    public void updateXdagStats(XdagMessage message) {
-        // Confirm that the remote stats has been updated, used to check local state.
-        syncMgr.getIsUpdateXdagStats().compareAndSet(false, true);
-        XdagStats remoteXdagStats = message.getXdagStats();
-        chain.getXdagStats().update(remoteXdagStats);
-        netdbMgr.updateNetDB(message.getRemoteNetdb());
-    }
+//    public void updateXdagStats(XdagMessage message) {
+//        // Confirm that the remote stats has been updated, used to check local state.
+//        syncMgr.getIsUpdateXdagStats().compareAndSet(false, true);
+//        XdagStats remoteXdagStats = message.getXdagStats();
+//        chain.getXdagStats().update(remoteXdagStats);
+//        netdbMgr.updateNetDB(message.getRemoteNetdb());
+//    }
 
 }

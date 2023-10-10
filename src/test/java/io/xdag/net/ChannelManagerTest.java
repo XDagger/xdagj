@@ -25,12 +25,7 @@
 package io.xdag.net;
 
 import static org.junit.Assert.assertTrue;
-
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
+import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -38,13 +33,22 @@ import java.util.List;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import com.google.common.collect.Lists;
 
+import io.xdag.DagKernel;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.UnitTestnetConfig;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+
 public class ChannelManagerTest {
 
-    Config config = new DevnetConfig();
-    Kernel kernel;
+    Config config = new UnitTestnetConfig(Constants.DEFAULT_ROOT_DIR);
+    DagKernel kernel;
 
     @Before
     public void setUp() throws Exception {
@@ -55,7 +59,9 @@ public class ChannelManagerTest {
         }
         config.getNodeSpec().setWhiteIPList(addressList);
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        kernel = new Kernel(config, key);
+        Wallet wallet = Mockito.mock(Wallet.class);
+        when(wallet.getDefKey()).thenReturn(key);
+        kernel = new DagKernel(config, wallet);
     }
 
     @Test

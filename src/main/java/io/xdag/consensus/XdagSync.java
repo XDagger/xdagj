@@ -21,287 +21,536 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package io.xdag.consensus;
 
-import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
-import static io.xdag.config.Constants.REQUEST_WAIT;
-
-import com.google.common.util.concurrent.SettableFuture;
-import io.xdag.Kernel;
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.config.MainnetConfig;
-import io.xdag.config.TestnetConfig;
-import io.xdag.core.Block;
-import io.xdag.core.XdagState;
-import io.xdag.db.BlockStore;
-import io.xdag.net.Channel;
-import io.xdag.net.ChannelManager;
-
-import java.nio.ByteOrder;
-import java.util.LinkedList;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.apache.commons.lang3.tuple.Pair;
+
+import io.xdag.DagKernel;
+import io.xdag.config.Config;
+import io.xdag.core.BlockPart;
+import io.xdag.core.Dagchain;
+import io.xdag.core.MainBlock;
+import io.xdag.core.SyncManager;
+import io.xdag.net.Capability;
+import io.xdag.net.Channel;
+import io.xdag.net.ChannelManager;
+import io.xdag.net.Peer;
+import io.xdag.net.message.Message;
+import io.xdag.net.message.ReasonCode;
+import io.xdag.net.message.consensus.GetMainBlockMessage;
+import io.xdag.net.message.consensus.GetMainBlockPartsMessage;
+import io.xdag.net.message.consensus.MainBlockMessage;
+import io.xdag.net.message.consensus.MainBlockPartsMessage;
+import io.xdag.utils.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
-
 @Slf4j
-public class XdagSync {
+public class XdagSync implements SyncManager {
 
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
-            .namingPattern("XdagSync-thread-%d")
-            .daemon(true)
-            .build();
+    private static final ThreadFactory factory = new ThreadFactory() {
+        private final AtomicInteger cnt = new AtomicInteger(0);
 
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "sync-" + cnt.getAndIncrement());
+        }
+    };
+
+    private static final ScheduledExecutorService timer1 = Executors.newSingleThreadScheduledExecutor(factory);
+    private static final ScheduledExecutorService timer2 = Executors.newSingleThreadScheduledExecutor(factory);
+    private static final ScheduledExecutorService timer3 = Executors.newSingleThreadScheduledExecutor(factory);
+
+    private final long DOWNLOAD_TIMEOUT;
+
+    private final int MAX_QUEUED_JOBS;
+    private final int MAX_PENDING_JOBS;
+    private final int MAX_PENDING_BLOCKS;
+
+    private static final Random random = new Random();
+
+    private final Config config;
+
+    private final Dagchain chain;
     private final ChannelManager channelMgr;
-    private final BlockStore blockStore;
-    private final ScheduledExecutorService sendTask;
-    @Getter
-    private final ConcurrentHashMap<Long, SettableFuture<Bytes>> sumsRequestMap;
-    @Getter
-    private final ConcurrentHashMap<Long, SettableFuture<Bytes>> blocksRequestMap;
 
-    private final LinkedList<Long> syncWindow = new LinkedList<>();
+    // task queues
+    private final AtomicLong latestQueuedTask = new AtomicLong();
 
-    @Getter@Setter
-    private Status status;
+    // Blocks to download
+    private final TreeSet<Long> toDownload = new TreeSet<>();
 
-    private final Kernel kernel;
-    private ScheduledFuture<?> sendFuture;
-    private volatile boolean isRunning;
+    // Blocks which were requested but haven't been received
+    private final Map<Long, Long> toReceive = new HashMap<>();
 
-    private long lastRequestTime;
-    private int count;
+    // Blocks which were received but haven't been validated
+    private final TreeSet<Pair<MainBlock, Channel>> toValidate = new TreeSet<>(
+            Comparator.comparingLong(o -> o.getKey().getNumber()));
 
-    public XdagSync(Kernel kernel) {
-        this.kernel = kernel;
-        this.channelMgr = kernel.getChannelMgr();
-        this.blockStore = kernel.getBlockStore();
-        sendTask = new ScheduledThreadPoolExecutor(1, factory);
-        sumsRequestMap = new ConcurrentHashMap<>();
-        blocksRequestMap = new ConcurrentHashMap<>();
+    // Blocks which were validated but haven't been imported
+    private final TreeMap<Long, Pair<MainBlock, Channel>> toImport = new TreeMap<>();
+
+    private final Object lock = new Object();
+
+    // current and target heights
+    private final AtomicLong begin = new AtomicLong();
+    private final AtomicLong current = new AtomicLong();
+    private final AtomicLong target = new AtomicLong();
+    private final AtomicLong lastObserved = new AtomicLong();
+
+    private final AtomicLong beginningTimestamp = new AtomicLong();
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
+
+    // reset at the beginning of a sync task
+    private final Set<String> badPeers = new HashSet<>();
+
+    public XdagSync(DagKernel kernel) {
+        this.config = kernel.getConfig();
+
+        this.chain = kernel.getDagchain();
+        this.channelMgr = kernel.getChannelManager();
+
+        this.DOWNLOAD_TIMEOUT = config.getNodeSpec().syncDownloadTimeout();
+        this.MAX_QUEUED_JOBS = config.getNodeSpec().syncMaxQueuedJobs();
+        this.MAX_PENDING_JOBS = config.getNodeSpec().syncMaxPendingJobs();
+        this.MAX_PENDING_BLOCKS = config.getNodeSpec().syncMaxPendingBlocks();
     }
 
-    /**
-     * 不断发送send request
-     */
-    public void start() {
-        if (status != Status.SYNCING) {
-            isRunning = true;
-            status = Status.SYNCING;
-            // TODO: paulochen 开始同步的时间点/快照时间点
-//            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
-            sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 32, 2, TimeUnit.SECONDS);
+    @Override
+    public void start(long targetHeight) {
+        if (isRunning.compareAndSet(false, true)) {
+            beginningTimestamp.set(System.currentTimeMillis());
+
+            badPeers.clear();
+
+            log.info("Syncing started, best known block = {}", targetHeight - 1);
+
+            // [1] set up queues
+            synchronized (lock) {
+                toDownload.clear();
+                toReceive.clear();
+                toValidate.clear();
+                toImport.clear();
+
+                begin.set(chain.getLatestMainBlockNumber() + 1);
+                current.set(chain.getLatestMainBlockNumber() + 1);
+                target.set(targetHeight);
+                lastObserved.set(chain.getLatestMainBlockNumber());
+                latestQueuedTask.set(chain.getLatestMainBlockNumber());
+                growToDownloadQueue();
+            }
+
+            // [2] start tasks
+            ScheduledFuture<?> download = timer1.scheduleAtFixedRate(this::download, 0, 500, TimeUnit.MICROSECONDS);
+            ScheduledFuture<?> process = timer2.scheduleAtFixedRate(this::process, 0, 1000, TimeUnit.MICROSECONDS);
+            ScheduledFuture<?> reporter = timer3.scheduleAtFixedRate(() -> {
+                long newBlockNumber = chain.getLatestMainBlockNumber();
+                log.info(
+                        "Syncing status: importing {} blocks per second, {} to download, {} to receive, {} to validate, {} to import",
+                        (newBlockNumber - lastObserved.get()) / 30,
+                        toDownload.size(),
+                        toReceive.size(),
+                        toValidate.size(),
+                        toImport.size());
+                lastObserved.set(newBlockNumber);
+            }, 30, 30, TimeUnit.SECONDS);
+
+            // [3] wait until the sync is done
+            while (isRunning.get()) {
+                synchronized (isRunning) {
+                    try {
+                        isRunning.wait(1000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.info("Sync manager got interrupted");
+                        break;
+                    }
+                }
+            }
+
+            // [4] cancel tasks
+            download.cancel(true);
+            process.cancel(false);
+            reporter.cancel(true);
+
+            Instant end = Instant.now();
+            log.info("Syncing finished, took {}",
+                    TimeUtils.formatDuration(Duration.between(Instant.ofEpochMilli(beginningTimestamp.get()), end)));
         }
     }
 
-    private void syncLoop() {
-        count++;
-        try {
-            if (syncWindow.size() < 32) {
-                log.debug("start finding different time periods");
-                requestBlocks(0, 1L << 48);
+    @Override
+    public void stop() {
+        if (isRunning.compareAndSet(true, false)) {
+            synchronized (isRunning) {
+                isRunning.notifyAll();
             }
-            if (getLastTime() >= lastRequestTime || count == 128) {
-                count = 0;
-                log.debug("start getting blocks");
-                getBlocks();
-            }
-        } catch (Throwable e) {
-            log.error("error when requestBlocks {}", e.getMessage());
         }
     }
 
-    /**
-     *  Use syncWindow to request blocks in segments.
-     */
-    private void getBlocks() {
-        List<Channel> any = getAnyNode();
-        if (any == null || any.size() == 0) {
+    @Override
+    public boolean isRunning() {
+        return isRunning.get();
+    }
+
+    protected void addBlock(MainBlock block, Channel channel) {
+        synchronized (lock) {
+            if (toDownload.remove(block.getNumber())) {
+                growToDownloadQueue();
+            }
+            toReceive.remove(block.getNumber());
+            toValidate.add(Pair.of(block, channel));
+        }
+    }
+
+    @Override
+    public void onMessage(Channel channel, Message msg) {
+        if (!isRunning()) {
             return;
         }
-        SettableFuture<Bytes> sf = SettableFuture.create();
-        int index = RandomUtils.nextInt() % any.size();
-        Channel xc = any.get(index);
-        long lastTime = getLastTime();
 
-        // Extract the time that has been synchronized.
-        while (!syncWindow.isEmpty() && syncWindow.get(0) < lastTime) {
-            syncWindow.pollFirst();
+        switch (msg.getCode()) {
+        case MAIN_BLOCK: {
+            MainBlockMessage blockMsg = (MainBlockMessage) msg;
+            MainBlock block = blockMsg.getBlock();
+            addBlock(block, channel);
+            break;
         }
+        case MAIN_BLOCK_PARTS: {
+            // try re-construct a block
+            MainBlockPartsMessage blockPartsMsg = (MainBlockPartsMessage) msg;
+            List<BlockPart> parts = BlockPart.decode(blockPartsMsg.getParts());
+            List<byte[]> data = blockPartsMsg.getData();
 
-        // Segmented requests, each request for 32 time periods.
-        int size = syncWindow.size();
-        for (int i = 0; i < 32; i++) {
-            if (i >= size) {
+            // sanity check
+            if (parts.size() != data.size()) {
+                log.debug("Part set and data do not match");
                 break;
             }
-            long time = syncWindow.get(i);
-            sendGetBlocks(xc, time, sf);
-            if (i == 30) lastRequestTime = time;
-        }
 
-    }
-
-
-    /**
-     * @param t start time
-     * @param dt interval time
-     */
-    private void requestBlocks(long t, long dt) {
-        // Not in sync state, synchronization is complete, stop synchronization task.
-        if (status != Status.SYNCING) {
-            stop();
-            return;
-        }
-
-        List<Channel> any = getAnyNode();
-        if (any == null || any.size() == 0) {
-            return;
-        }
-
-        SettableFuture<Bytes> sf = SettableFuture.create();
-        int index = RandomUtils.nextInt() % any.size();
-        Channel xc = any.get(index);
-        if (dt > REQUEST_BLOCKS_MAX_TIME) {
-            findGetBlocks(xc, t, dt, sf);
-        } else {
-            if (!kernel.getSyncMgr().isSyncOld() && !kernel.getSyncMgr().isSync()) {
-                log.debug("set sync old");
-                setSyncOld();
-            }
-
-            if ((syncWindow.isEmpty() || t > syncWindow.peekFirst()) && syncWindow.size() < 2048) {
-                syncWindow.offerLast(t);
-            }
-        }
-    }
-
-    /**
-     * Request blocks from remote nodes.
-     * @param t request time
-     */
-    private void sendGetBlocks(Channel xc, long t, SettableFuture<Bytes> sf) {
-        long randomSeq = xc.getP2pHandler().sendGetBlocks(t, t + REQUEST_BLOCKS_MAX_TIME);
-        blocksRequestMap.put(randomSeq, sf);
-        try {
-            sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            blocksRequestMap.remove(randomSeq);
-            log.error(e.getMessage(), e);
-        }
-    }
-
-
-    /**
-     * Recursively find the time periods to request.
-     */
-    private void findGetBlocks(Channel xc, long t, long dt, SettableFuture<Bytes> sf) {
-        MutableBytes lSums = MutableBytes.create(256);
-        Bytes rSums;
-        if (blockStore.loadSum(t, t + dt, lSums) <= 0) {
-            return;
-        }
-        long randomSeq = xc.getP2pHandler().sendGetSums(t, t + dt);
-        sumsRequestMap.put(randomSeq, sf);
-        try {
-            Bytes sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
-            rSums = sums.copy();
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            sumsRequestMap.remove(randomSeq);
-            log.error(e.getMessage(), e);
-            return;
-        }
-        sumsRequestMap.remove(randomSeq);
-        dt >>= 4;
-        for (int i = 0; i < 16; i++) {
-            long lSumsSum = lSums.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
-            long lSumsSize = lSums.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
-            long rSumsSum = rSums.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
-            long rSumsSize = rSums.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
-
-            if (lSumsSize != rSumsSize || lSumsSum != rSumsSum) {
-                requestBlocks(t + i * dt, dt);
-            }
-        }
-    }
-
-    public void setSyncOld() {
-        Config config = kernel.getConfig();
-        if (config instanceof MainnetConfig) {
-            if (kernel.getXdagState() != XdagState.CONNP) {
-                kernel.setXdagState(XdagState.CONNP);
-            }
-        } else if (config instanceof TestnetConfig) {
-            if (kernel.getXdagState() != XdagState.CTSTP) {
-                kernel.setXdagState(XdagState.CTSTP);
-            }
-        } else if (config instanceof DevnetConfig) {
-            if (kernel.getXdagState() != XdagState.CDSTP) {
-                kernel.setXdagState(XdagState.CDSTP);
-            }
-        }
-    }
-
-    /**
-     * Obtain the timestamp of the latest confirmed main block.
-     */
-    public long getLastTime() {
-        long height = blockStore.getXdagStatus().nmain;
-        if(height == 0) return 0;
-        Block lastBlock = blockStore.getBlockByHeight(height);
-        if (lastBlock != null) {
-            return lastBlock.getTimestamp();
-        }
-        return 0;
-    }
-
-    public List<Channel> getAnyNode() {
-        return channelMgr.getActiveChannels();
-    }
-
-
-    public void stop() {
-        log.debug("stop sync");
-        if (isRunning) {
-            try {
-                if (sendFuture != null) {
-                    sendFuture.cancel(true);
+            // parse the data
+            byte[] header = null, transactions = null, results = null;
+            for (int i = 0; i < parts.size(); i++) {
+                if (parts.get(i) == BlockPart.HEADER) {
+                    header = data.get(i);
+                } else if (parts.get(i) == BlockPart.TRANSACTIONS) {
+                    transactions = data.get(i);
+                } else if (parts.get(i) == BlockPart.RESULTS) {
+                    results = data.get(i);
                 }
-                // 关闭线程池
-                sendTask.shutdownNow();
-                sendTask.awaitTermination(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
             }
-            isRunning = false;
-            log.debug("Sync Stop");
+
+            // import block
+            try {
+                MainBlock block = MainBlock.fromComponents(header, transactions, results, false);
+                addBlock(block, channel);
+            } catch (Exception e) {
+                log.debug("Failed to parse a block from components", e);
+            }
+            break;
+        }
+        default: {
+            break;
+        }
         }
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    private boolean isFastSyncSupported(Peer peer) {
+        return Stream.of(peer.getCapabilities()).anyMatch(c -> Capability.FAST_SYNC.name().equals(c));
     }
 
-    public enum Status {
-        /**
-         * syncing
-         */
-        SYNCING, SYNC_DONE
+    private void download() {
+        if (!isRunning()) {
+            return;
+        }
+
+        synchronized (lock) {
+            // filter all expired tasks
+            long now = TimeUtils.currentTimeMillis();
+            Iterator<Entry<Long, Long>> itr = toReceive.entrySet().iterator();
+            while (itr.hasNext()) {
+                Entry<Long, Long> entry = itr.next();
+
+                if (entry.getValue() + DOWNLOAD_TIMEOUT < now) {
+                    log.debug("Failed to download block #{}, expired", entry.getKey());
+                    toDownload.add(entry.getKey());
+                    itr.remove();
+                }
+            }
+
+            // quit if too many unfinished jobs
+            if (toReceive.size() > MAX_PENDING_JOBS) {
+                log.trace("Max pending jobs reached");
+                return;
+            }
+
+            // quit if no more tasks
+            if (toDownload.isEmpty()) {
+                return;
+            }
+            Long task = toDownload.first();
+
+            // quit if too many pending blocks
+            int pendingBlocks = toValidate.size() + toImport.size();
+            if (pendingBlocks > MAX_PENDING_BLOCKS && task > toValidate.first().getKey().getNumber()) {
+                log.trace("Max pending blocks reached");
+                return;
+            }
+
+            // get idle channels
+            List<Channel> channels = channelMgr.getIdleChannels().stream()
+                    .filter(channel -> {
+                        Peer peer = channel.getRemotePeer();
+                        // the peer has the block
+                        return peer.getLatestBlockNumber() >= task
+                                // AND is not banned
+                                && !badPeers.contains(peer.getPeerId())
+                        // AND supports FAST_SYNC if we enabled this protocol
+                                && (!config.getNodeSpec().syncFastSync() || isFastSyncSupported(peer));
+                    })
+                    .toList();
+            log.trace("Qualified idle peers = {}", channels.size());
+
+            // quit if no idle channels.
+            if (channels.isEmpty()) {
+                return;
+            }
+            // otherwise, pick a random channel
+            Channel c = channels.get(random.nextInt(channels.size()));
+
+            if (config.getNodeSpec().syncFastSync()) { // use FAST_SYNC protocol
+                log.trace("Requesting block #{} from {}:{}, HEADER + TRANSACTIONS", task,
+                        c.getRemoteIp(),
+                        c.getRemotePort());
+                c.getMessageQueue().sendMessage(new GetMainBlockPartsMessage(task,
+                        BlockPart.encode(BlockPart.HEADER, BlockPart.TRANSACTIONS)));
+
+            } else { // use old protocol
+                log.trace("Requesting block #{} from {}:{}, FULL BLOCK", task, c.getRemoteIp(),
+                        c.getRemotePort());
+                c.getMessageQueue().sendMessage(new GetMainBlockMessage(task));
+            }
+
+            if (toDownload.remove(task)) {
+                growToDownloadQueue();
+            }
+            toReceive.put(task, TimeUtils.currentTimeMillis());
+        }
+    }
+
+    /**
+     * Queue new tasks sequentially starting from
+     * ${@link XdagSync#latestQueuedTask} until the size of
+     * ${@link XdagSync#toDownload} queue is greater than or equal to
+     * MAX_QUEUED_JOBS
+     */
+    private void growToDownloadQueue() {
+        // To avoid overhead, this method doesn't add new tasks before the queue is less
+        // than half-filled
+        if (toDownload.size() >= MAX_QUEUED_JOBS / 2) {
+            return;
+        }
+
+        for (long task = latestQueuedTask.get() + 1; //
+                task < target.get() && toDownload.size() < MAX_QUEUED_JOBS; //
+                task++) {
+            latestQueuedTask.accumulateAndGet(task, (prev, next) -> Math.max(next, prev));
+            if (!chain.hasMainBlock(task)) {
+                toDownload.add(task);
+            }
+        }
+    }
+
+    protected void process() {
+        if (!isRunning()) {
+            return;
+        }
+
+        long latest = chain.getLatestMainBlockNumber();
+        if (latest + 1 >= target.get()) {
+            stop();
+            return; // This is important because stop() only notify
+        }
+
+        // find the check point
+        long checkpoint = latest + 1;
+        checkpoint++;
+
+
+        synchronized (lock) {
+            // Move blocks from validate queue to import queue if within range
+            Iterator<Pair<MainBlock, Channel>> iterator = toValidate.iterator();
+            while (iterator.hasNext()) {
+                Pair<MainBlock, Channel> p = iterator.next();
+                long n = p.getKey().getNumber();
+
+                if (n <= latest) {
+                    iterator.remove();
+                } else if (n <= checkpoint) {
+                    iterator.remove();
+                    toImport.put(n, p);
+                } else {
+                    break;
+                }
+            }
+
+            if (toImport.size() >= checkpoint - latest) {
+                // Validate the block hashes
+                boolean valid = validateBlockHashes(latest + 1, checkpoint);
+
+                if (valid) {
+                    for (long n = latest + 1; n <= checkpoint; n++) {
+                        Pair<MainBlock, Channel> p = toImport.remove(n);
+                        boolean imported = chain.importBlock(p.getKey());
+                        if (!imported) {
+                            handleInvalidBlock(p.getKey(), p.getValue());
+                            break;
+                        }
+
+                        if (n == checkpoint) {
+                            log.info("{}", p.getLeft());
+                        }
+                    }
+                    current.set(chain.getLatestMainBlockNumber() + 1);
+                }
+            }
+        }
+    }
+
+    /**
+     * Validate block hashes in the toImport set.
+     * Assuming that the whole block range is available in the set.
+     *
+     * @param from
+     *            the start block number, inclusive
+     * @param to
+     *            the end block number, inclusive
+     */
+    protected boolean validateBlockHashes(long from, long to) {
+        synchronized (lock) {
+            // Validate votes for the last block in set
+            Pair<MainBlock, Channel> checkpoint = toImport.get(to);
+            MainBlock block = checkpoint.getKey();
+//            if (!chain.validateBlockVotes(block)) {
+//                handleInvalidBlock(block, checkpoint.getValue());
+//                return false;
+//            }
+
+            for (long n = to - 1; n >= from; n--) {
+                Pair<MainBlock, Channel> current = toImport.get(n);
+                Pair<MainBlock, Channel> child = toImport.get(n + 1);
+
+                if (!Arrays.equals(current.getKey().getHash(), child.getKey().getParentHash())) {
+                    handleInvalidBlock(current.getKey(), current.getValue());
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * Handle invalid block: Add block back to download queue. Remove block from all
+     * other queues. Disconnect from the peer that sent the block.
+     */
+    protected void handleInvalidBlock(MainBlock block, Channel channel) {
+        InetSocketAddress a = channel.getRemoteAddress();
+        log.info("Invalid block, peer = {}:{}, block # = {}", a.getAddress().getHostAddress(), a.getPort(),
+                block.getNumber());
+        synchronized (lock) {
+            // add to the request queue
+            toDownload.add(block.getNumber());
+
+            toReceive.remove(block.getNumber());
+            toValidate.remove(Pair.of(block, channel));
+            toImport.remove(block.getNumber());
+        }
+
+        badPeers.add(channel.getRemotePeer().getPeerId());
+
+        if (config.getNodeSpec().syncDisconnectOnInvalidBlock()) {
+            // disconnect if the peer sends us invalid block
+            channel.getMessageQueue().disconnect(ReasonCode.BAD_PEER);
+        }
+    }
+
+    @Override
+    public XdagSyncProgress getProgress() {
+        return new XdagSyncProgress(
+                begin.get(),
+                current.get(),
+                target.get(),
+                Duration.between(Instant.ofEpochMilli(beginningTimestamp.get()), Instant.now()));
+    }
+
+    public static class XdagSyncProgress implements Progress {
+
+        final long startingHeight;
+
+        final long currentHeight;
+
+        final long targetHeight;
+
+        final Duration duration;
+
+        public XdagSyncProgress(long startingHeight, long currentHeight, long targetHeight, Duration duration) {
+            this.startingHeight = startingHeight;
+            this.currentHeight = currentHeight;
+            this.targetHeight = targetHeight;
+            this.duration = duration;
+        }
+
+        @Override
+        public long getStartingHeight() {
+            return startingHeight;
+        }
+
+        @Override
+        public long getCurrentHeight() {
+            return currentHeight;
+        }
+
+        @Override
+        public long getTargetHeight() {
+            return targetHeight;
+        }
+
+        @Override
+        public Duration getSyncEstimation() {
+            long durationInSeconds = duration.toSeconds();
+            long imported = currentHeight - startingHeight;
+            long remaining = targetHeight - currentHeight;
+
+            if (imported == 0) {
+                return null;
+            } else {
+                return Duration.ofSeconds(remaining * durationInSeconds / imported);
+            }
+        }
     }
 }

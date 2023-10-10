@@ -27,8 +27,7 @@ package io.xdag.cli;
 import static io.xdag.utils.BasicUtils.address2Hash;
 import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
-import io.xdag.Kernel;
-import io.xdag.Wallet;
+import io.xdag.DagKernel;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.WalletUtils;
 import java.util.HashMap;
@@ -62,7 +61,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
     public static final String prompt = "xdag> ";
     public Map<String, CommandMethods> commandExecute = new HashMap<>();
     @Setter
-    private Kernel kernel;
+    private DagKernel kernel;
     private Commands commands;
     private LineReader reader;
 
@@ -71,41 +70,15 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("account", new CommandMethods(this::processAccount, this::defaultCompleter));
         commandExecute.put("balance", new CommandMethods(this::processBalance, this::defaultCompleter));
         commandExecute.put("block", new CommandMethods(this::processBlock, this::defaultCompleter));
-        commandExecute.put("lastblocks", new CommandMethods(this::processLastBlocks, this::defaultCompleter));
         commandExecute.put("mainblocks", new CommandMethods(this::processMainBlocks, this::defaultCompleter));
-        commandExecute.put("minedblocks", new CommandMethods(this::processMinedblocks, this::defaultCompleter));
-        commandExecute.put("state", new CommandMethods(this::processState, this::defaultCompleter));
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
-        commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
-        commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
-//        commandExecute.put("miners", new CommandMethods(this::processMiners, this::defaultCompleter));
-//        commandExecute.put("run", new CommandMethods(this::processRun, this::defaultCompleter));
-        commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
+//        commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
         commandExecute.put("net", new CommandMethods(this::processNet, this::defaultCompleter));
 //        commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
         commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
-        commandExecute.put("oldbalance", new CommandMethods(this::processOldBalance, this::defaultCompleter));
         registerCommands(commandExecute);
-    }
-
-    private void processXferToNew(CommandInput input) {
-        final String[] usage = {
-                "xfertonew -  transfer the old balance to new address \n",
-                "Usage: balance xfertonew",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            println(commands.xferToNew());
-
-        } catch (Exception e) {
-            saveException(e);
-        }
     }
 
     private void processAddress(CommandInput input) {
@@ -140,24 +113,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             } catch (Exception e) {
                 println("Argument is incorrect.");
             }
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
-    private void processOldBalance(CommandInput input) {
-        final String[] usage = {
-                "oldbalance -  print max balance we can transfer \n",
-                "Usage: balance oldbalance",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            println(commands.balanceMaxXfer());
-
         } catch (Exception e) {
             saveException(e);
         }
@@ -254,22 +209,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private void processLastBlocks(CommandInput input) {
-        final String[] usage = {
-                "lastblocks - print latest [SIZE] (20 by default, max limit 100) main blocks",
-                "Usage: lastblocks [SIZE]",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
     private void processMainBlocks(CommandInput input) {
         final String[] usage = {
                 "mainblocks -  print latest [SIZE] (20 by default, max limit 100) main blocks",
@@ -292,46 +231,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private void processMinedblocks(CommandInput input) {
-        final String[] usage = {
-                "mineblocks -  print list of [SIZE] (20 by default) main blocks mined by current pool",
-                "Usage: mineblocks [SIZE]",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            List<String> argv = opt.args();
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
-            }
-            println(commands.minedBlocks(num));
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
-    private void processState(CommandInput input) {
-        final String[] usage = {
-                "state -  print the program state",
-                "Usage: state",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            println(commands.state());
-
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
     private void processStats(CommandInput input) {
         final String[] usage = {
                 "stats -  print statistics for loaded and all known blocks",
@@ -344,70 +243,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             println(commands.stats());
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
-    private void processXfer(CommandInput input) {
-        final String[] usage = {
-                "xfer -  transfer [AMOUNT] XDAG to the address [ADDRESS]",
-                "Usage: transfer [AMOUNT] [ADDRESS]",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            List<String> argv = opt.args();
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-
-            if (argv.size() < 2) {
-                println("Lost some param");
-                return;
-            }
-
-            Bytes32 hash;
-            double amount = BasicUtils.getDouble(argv.get(0));
-
-            String remark = argv.size() == 3 ? argv.get(2) : null;
-
-            if (amount < 0) {
-                println("The transfer amount must be greater than 0");
-                return;
-            }
-
-            if (WalletUtils.checkAddress(argv.get(1))) {
-                hash = pubAddress2Hash(argv.get(1));
-            } else {
-                println("Incorrect address");
-                return;
-            }
-
-            Wallet wallet = new Wallet(kernel.getConfig());
-            if (!wallet.unlock(readPassword())) {
-                println("The password is incorrect");
-                return;
-            }
-            println(commands.xfer(amount, hash, remark));
-
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
-    private void processKeygen(CommandInput input) {
-        final String[] usage = {
-                "keygen - generate new private/public key pair and set it by default",
-                "Usage: keygen",
-                "  -? --help                    Show help",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            println(commands.keygen());
         } catch (Exception e) {
             saveException(e);
         }
@@ -489,15 +324,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
 
         return true;
-    }
-
-    private String readPassword() {
-        Character mask = '*';
-        String line;
-        do {
-            line = reader.readLine(WalletUtils.WALLET_PASSWORD_PROMPT, mask);
-        } while (StringUtils.isEmpty(line));
-        return line;
     }
 
     @Override

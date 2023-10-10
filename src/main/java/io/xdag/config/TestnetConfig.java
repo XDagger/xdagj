@@ -24,7 +24,6 @@
 
 package io.xdag.config;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
 import org.apache.tuweni.units.bigints.UInt64;
 
@@ -33,18 +32,9 @@ import io.xdag.core.XAmount;
 
 public class TestnetConfig extends AbstractConfig {
 
-    public TestnetConfig() {
-        super("testnet", "xdag-testnet", Network.TESTNET, Constants.TESTNET_VERSION);
+    public TestnetConfig(String dataDir) {
+        super(dataDir, Network.TESTNET, Constants.TESTNET_VERSION);
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
-        // testnet wait 1 epoch
-        this.waitEpoch = 1;
-        this.xdagEra = 0x16900000000L;
-        this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
-        this.apolloForkHeight = 196250;
-        this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
-        this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
-        this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
-        this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }
 
 }

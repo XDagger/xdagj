@@ -24,6 +24,7 @@
 
 package io.xdag.utils;
 
+import io.xdag.core.XAmount;
 import io.xdag.utils.exception.SimpleCodecException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -97,6 +98,10 @@ public class SimpleEncoder {
         writeInt(i2);
     }
 
+    public void writeXAmount(XAmount a) {
+        writeLong(a.toLong());
+    }
+
     /**
      * Encode a byte array.
      *
@@ -125,7 +130,7 @@ public class SimpleEncoder {
         return out.toByteArray();
     }
 
-    private int getWriteIndex() {
+    public int getWriteIndex() {
         return out.size();
     }
 

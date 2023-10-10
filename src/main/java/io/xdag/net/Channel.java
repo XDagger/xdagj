@@ -27,9 +27,9 @@ package io.xdag.net;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.xdag.Kernel;
+import io.xdag.DagKernel;
 import io.xdag.net.message.MessageQueue;
-import io.xdag.net.node.Node;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -61,7 +61,7 @@ public class Channel {
     /**
      * Initializes this channel.
      */
-    public void init(ChannelPipeline pipe, boolean isInbound, InetSocketAddress remoteAddress, Kernel kernel) {
+    public void init(ChannelPipeline pipe, boolean isInbound, InetSocketAddress remoteAddress, DagKernel kernel) {
         this.isInbound = isInbound;
         this.remoteAddress = remoteAddress;
         this.remotePeer = null;

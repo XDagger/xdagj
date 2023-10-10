@@ -27,8 +27,8 @@ package io.xdag.net;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import io.xdag.Kernel;
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 
@@ -45,7 +45,7 @@ import com.google.common.collect.Lists;
 
 public class WhliteListTest {
 
-    Config config = new DevnetConfig();
+    Config config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
 
     @Before
     public void setup() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {

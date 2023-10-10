@@ -24,45 +24,45 @@
 package io.xdag.utils;
 
 import com.google.common.primitives.UnsignedLong;
-import io.xdag.db.BlockStore;
+
 import org.apache.tuweni.bytes.Bytes32;
 
 public final class BlockUtils {
 
-    public static byte[] getTimeKey(long timestamp, Bytes32 hashlow) {
-        long t = UnsignedLong.fromLongBits(timestamp >> 16).longValue();
-        byte[] key = BytesUtils.merge(BlockStore.TIME_HASH_INFO, BytesUtils.longToBytes(t, false));
-        if (hashlow == null) {
-            return key;
-        }
-        return BytesUtils.merge(key, hashlow.toArray());
-    }
-
-    public static byte[] getOurKey(int index, byte[] hashlow) {
-        byte[] key = BytesUtils.merge(BlockStore.OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
-        key = BytesUtils.merge(key, hashlow);
-        return key;
-    }
-
-    public static byte[] getHeight(long height) {
-        return BytesUtils.merge(BlockStore.BLOCK_HEIGHT, BytesUtils.longToBytes(height, false));
-    }
-
-    public static int getOurIndex(byte[] key) {
-        try {
-            byte[] index = BytesUtils.subArray(key, 1, 4);
-            return BytesUtils.bytesToInt(index, 0, false);
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    public static byte[] getOurHash(byte[] key) {
-        try {
-            return BytesUtils.subArray(key, 5, 32);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+//    public static byte[] getTimeKey(long timestamp, Bytes32 hashlow) {
+//        long t = UnsignedLong.fromLongBits(timestamp >> 16).longValue();
+//        byte[] key = BytesUtils.merge(BlockStore.TIME_HASH_INFO, BytesUtils.longToBytes(t, false));
+//        if (hashlow == null) {
+//            return key;
+//        }
+//        return BytesUtils.merge(key, hashlow.toArray());
+//    }
+//
+//    public static byte[] getOurKey(int index, byte[] hashlow) {
+//        byte[] key = BytesUtils.merge(BlockStore.OURS_BLOCK_INFO, BytesUtils.intToBytes(index, false));
+//        key = BytesUtils.merge(key, hashlow);
+//        return key;
+//    }
+//
+//    public static byte[] getHeight(long height) {
+//        return BytesUtils.merge(BlockStore.BLOCK_HEIGHT, BytesUtils.longToBytes(height, false));
+//    }
+//
+//    public static int getOurIndex(byte[] key) {
+//        try {
+//            byte[] index = BytesUtils.subArray(key, 1, 4);
+//            return BytesUtils.bytesToInt(index, 0, false);
+//        } catch (Exception e) {
+//            return 0;
+//        }
+//    }
+//
+//    public static byte[] getOurHash(byte[] key) {
+//        try {
+//            return BytesUtils.subArray(key, 5, 32);
+//        } catch (Exception e) {
+//            return null;
+//        }
+//    }
 
 }

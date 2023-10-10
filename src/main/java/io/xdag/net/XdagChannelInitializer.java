@@ -24,44 +24,43 @@
 
 package io.xdag.net;
 
+import java.net.InetSocketAddress;
+
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
-import io.xdag.Kernel;
+import io.xdag.DagKernel;
 import io.xdag.net.node.Node;
-import java.net.InetSocketAddress;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final Kernel kernel;
+    private final DagKernel kernel;
     private final ChannelManager channelMgr;
     private final Node remoteNode;
-    private final boolean isServer;
 
-    public XdagChannelInitializer(Kernel kernel, boolean isServer, Node remoteNode) {
+    public XdagChannelInitializer(DagKernel kernel, Node remoteNode) {
         this.kernel = kernel;
-        this.isServer = isServer;
         this.remoteNode = remoteNode;
-        this.channelMgr = kernel.getChannelMgr();
+        this.channelMgr = kernel.getChannelManager();
     }
 
     @Override
     protected void initChannel(SocketChannel ch) {
         try {
-            InetSocketAddress address = isServer ? ch.remoteAddress() : remoteNode.getAddress();
-            log.debug("New {} channel: remoteAddress = {}:{}", isServer ? "inbound" : "outbound",
+            InetSocketAddress address = isServerMode() ? ch.remoteAddress() : remoteNode.getAddress();
+            log.debug("New {} channel: remoteAddress = {}:{}", isServerMode() ? "inbound" : "outbound",
                     address.getAddress().getHostAddress(), address.getPort());
 
-            if (isServer && !channelMgr.isAcceptable(address)) {
+            if (isServerMode() && !channelMgr.isAcceptable(address)) {
                 log.debug("Disallowed inbound connection: {}", address);
                 ch.disconnect();
                 return;
             }
             Channel channel = new Channel(ch);
-            channel.init(ch.pipeline(), isServer, address, kernel);
+            channel.init(ch.pipeline(), isServerMode(), address, kernel);
             channelMgr.add(channel);
             int bufferSize = Frame.HEADER_SIZE + kernel.getConfig().getNodeSpec().getNetMaxFrameBodySize();
             ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(bufferSize));
@@ -70,11 +69,13 @@ public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
             ch.config().setOption(ChannelOption.TCP_NODELAY, true);
 
             // notify disconnection to channel manager
-            ch.closeFuture().addListener(future -> {
-                channelMgr.remove(channel);
-            });
+            ch.closeFuture().addListener(future -> channelMgr.remove(channel));
         } catch (Exception e) {
             log.error("Unexpected error: [{}]", e.getMessage(), e);
         }
+    }
+
+    public boolean isServerMode() {
+        return remoteNode == null;
     }
 }

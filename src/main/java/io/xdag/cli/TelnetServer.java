@@ -24,7 +24,7 @@
 
 package io.xdag.cli;
 
-import io.xdag.Kernel;
+import io.xdag.DagKernel;
 import lombok.extern.slf4j.Slf4j;
 import org.jline.builtins.telnet.Telnet;
 import org.jline.terminal.Terminal;
@@ -33,11 +33,11 @@ import org.jline.terminal.TerminalBuilder;
 @Slf4j
 public class TelnetServer {
 
-    private final Kernel kernel;
+    private final DagKernel kernel;
     private final String ip;
     private final int port;
 
-    public TelnetServer(final String ip, final int port, final Kernel kernel) {
+    public TelnetServer(final String ip, final int port, final DagKernel kernel) {
         this.ip = ip;
         this.port = port;
         this.kernel = kernel;

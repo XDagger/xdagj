@@ -24,75 +24,71 @@
 
 package io.xdag.config;
 
-import org.apache.tuweni.units.bigints.UInt64;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.Numeric;
 
 public class Constants {
 
-    public static final long MAIN_CHAIN_PERIOD = 64 << 10;
-
-    /**
-     * setmain设置区块为主块时标志该位
-     */
-    public static final byte BI_MAIN = 0x01;
-    /**
-     * 跟BI_MAIN差不多 不过BI_MAIN是确定的 BI_MAIN_CHAIN是还未确定的
-     */
-    public static final byte BI_MAIN_CHAIN = 0x02;
-    /**
-     * 区块被应用apply后可能会标志该标识位（因为有可能区块存在问题不过还是被指向了 但是会标示为拒绝状态）
-     */
-    public static final byte BI_APPLIED = 0x04;
-    /**
-     * 区块应用apply过后会置该标识位
-     */
-    public static final byte BI_MAIN_REF = 0x08;
-    /**
-     * 从孤块链中移除 即有区块链接孤块的时候 将孤块置为BI_REF
-     */
-    public static final byte BI_REF = 0x10;
-    /**
-     * 添加区块时如果该区块的签名可以用自身的公钥解 则说明该区块是自己的区块
-     */
-    public static final byte BI_OURS = 0x20;
-    /**
-     * 候补主块未持久化
-     */
-    public static final byte BI_EXTRA = 0x40;
-    public static final byte BI_REMARK = (byte) 0x80;
-    public static final Long SEND_PERIOD = 10L;
-    public static final int DNET_PKT_XDAG = 0x8B;
-
-    public static final long REQUEST_BLOCKS_MAX_TIME = UInt64.valueOf(1L << 20).toLong();
-    public static final long REQUEST_WAIT = 64;
-    public static final long MAX_ALLOWED_EXTRA = 65536;
-    /**
-     * 每一轮的确认数是16
-     */
-    public static final int CONFIRMATIONS_COUNT = 16;
-    public static final int MAIN_BIG_PERIOD_LOG = 21;
-
+    public static final String DEFAULT_ROOT_DIR = ".";
+    public static final String CLIENT_NAME = "xdagj";
     public static final String WALLET_FILE_NAME = "wallet.data";
 
+    public static final String CHAIN_DIR = "chaindata";
+    public static final String CONFIG_DIR = "config";
+    public static final String WALLET_DIR = "wallet";
+    public static final String LOG_DIR = "log";
 
-    public static final String CLIENT_NAME = "xdagj";
+    public static final Long SEND_PERIOD = 10L;
+
 
     public static final String CLIENT_VERSION = System.getProperty("xdagj.version");
 
-    /**
-     * 同步问题 分叉高度
-     */
-    public static final Long SYNC_FIX_HEIGHT = 0L;
-
-    public static final int HASH_RATE_LAST_MAX_TIME = 32;
-
-    public enum MessageType {
-        UPDATE,
-        PRE_TOP,
-        NEW_LINK
-    }
 
     public static final short MAINNET_VERSION = 0;
     public static final short TESTNET_VERSION = 0;
     public static final short DEVNET_VERSION = 0;
+
+    public static final String COINBASE_PRIVATE_KEY_STRING = "a392604efc2fad9c0b3da43b5f698a2e3f270f170d859912be0d54742275c5f6";
+
+    /**
+     * The number of blocks per day.
+     */
+    public static final long MAIN_BLOCKS_PER_DAY = (3600 * 24) / 64;
+
+    /**
+     * The number of blocks per year.
+     */
+    public static final long MAIN_BLOCKS_PER_YEAR = (3600 * 24 * 365) / 64;
+
+    /**
+     * The public-private key pair for signing coinbase transactions.
+     */
+    public static final KeyPair COINBASE_KEY;
+
+    /**
+     * Address bytes of {@link this#COINBASE_KEY}. This is stored as a cache to
+     * avoid redundant h160 calls.
+     */
+    public static final byte[] COINBASE_ADDRESS;
+
+    /** Standard maximum value for difficultyTarget (nBits) (Bitcoin MainNet and TestNet) */
+    public static final long STANDARD_MAX_DIFFICULTY_TARGET = 0x1d00ffffL;
+
+    /** A value for difficultyTarget (nBits) that allows (slightly less than) half of all possible hash solutions. Used in unit testing. */
+    public static final long EASIEST_DIFFICULTY_TARGET = 0x207fFFFFL;
+
+    static {
+        SECPPrivateKey perivkey = SECPPrivateKey.create(Numeric.toBigInt(COINBASE_PRIVATE_KEY_STRING), Sign.CURVE_NAME);
+        COINBASE_KEY = KeyPair.create(perivkey, Sign.CURVE, Sign.CURVE_NAME);
+        COINBASE_ADDRESS = Keys.toBytesAddress(COINBASE_KEY);
+    }
+
+    public static void main(String[] args) {
+        System.out.println();
+    }
 
 }

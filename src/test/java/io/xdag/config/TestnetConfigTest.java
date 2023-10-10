@@ -24,35 +24,18 @@
 
 package io.xdag.config;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import io.xdag.core.XUnit;
+import io.xdag.Network;
 
 public class TestnetConfigTest {
 
-    private Config config;
-    private String whitelistUrl;
-
-    @Before
-    public void setUp() {
-        config = new TestnetConfig();
-        whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
-    }
-
     @Test
-    public void testParams() {
-        assertEquals("testnet", config.getRootDir());
-        assertEquals("xdag-testnet", config.getConfigName());
-        assertEquals(whitelistUrl, config.getNodeSpec().getWhitelistUrl());
-        assertEquals(0x16900000000L, config.getXdagEra());
-        assertEquals(XDAG_FIELD_HEAD_TEST, config.getXdagFieldHeader());
-        assertEquals(196250, config.getApolloForkHeight());
-        assertEquals("1024.0", String.valueOf(config.getMainStartAmount().toDecimal(1, XUnit.XDAG)));
-        assertEquals("128.0", String.valueOf(config.getApolloForkAmount().toDecimal(1, XUnit.XDAG)));
+    public void testNetworkId() {
+        Config config = new TestnetConfig(Constants.DEFAULT_ROOT_DIR);
+        assertEquals(Network.TESTNET, config.getNodeSpec().getNetwork());
     }
 
 }

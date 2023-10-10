@@ -40,15 +40,6 @@ import org.junit.Test;
 
 public class KeysTest {
 
-    private static final byte[] ENCODED;
-
-    static {
-        byte[] privateKey = Numeric.hexStringToByteArray(SampleKeys.PRIVATE_KEY_STRING);
-        byte[] publicKey = Numeric.hexStringToByteArray(SampleKeys.PUBLIC_KEY_STRING);
-        ENCODED = Arrays.copyOf(privateKey, privateKey.length + publicKey.length);
-        System.arraycopy(publicKey, 0, ENCODED, privateKey.length, publicKey.length);
-    }
-
     @Test
     public void testCreateSecp256k1KeyPair() throws Exception {
         KeyPair keyPair = Keys.createSecp256k1KeyPair();

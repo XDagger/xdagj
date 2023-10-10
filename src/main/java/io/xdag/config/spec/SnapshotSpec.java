@@ -27,8 +27,6 @@ public interface SnapshotSpec {
 
     boolean isSnapshotEnabled();
 
-    boolean isSnapshotJ();
-
     long getSnapshotHeight();
 
     void setSnapshotHeight(long height);
@@ -36,8 +34,6 @@ public interface SnapshotSpec {
     void setSnapshotJ(boolean isSnapshotJ);
 
     void snapshotEnable();
-
-    long getSnapshotTime();
 
     void setSnapshotTime(long time);
 }

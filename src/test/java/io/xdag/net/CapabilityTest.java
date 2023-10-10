@@ -34,7 +34,7 @@ public class CapabilityTest {
     @Test
     public void testIsSupported() {
         assertFalse(CapabilityTreeSet.emptyList().isSupported(Capability.FULL_NODE));
-        assertFalse(CapabilityTreeSet.of("FULL_NODE").isSupported(Capability.LIGHT_NODE));
+        assertFalse(CapabilityTreeSet.of("FULL_NODE").isSupported(Capability.FAST_SYNC));
         assertTrue(CapabilityTreeSet.of("FULL_NODE").isSupported(Capability.FULL_NODE));
         assertTrue(CapabilityTreeSet.of(Capability.FULL_NODE).isSupported(Capability.FULL_NODE));
         assertEquals(CapabilityTreeSet.of(Capability.FULL_NODE), CapabilityTreeSet.of(Capability.FULL_NODE));

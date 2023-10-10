@@ -32,6 +32,7 @@ import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.junit.Test;
 
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
@@ -43,7 +44,7 @@ public class HelloMessageTest {
 
     @Test
     public void testCodec() {
-        Config config = new DevnetConfig();
+        Config config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
 
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         String peerId = toBase58(Keys.toBytesAddress(key));
