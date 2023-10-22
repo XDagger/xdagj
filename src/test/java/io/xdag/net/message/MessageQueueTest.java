@@ -98,11 +98,11 @@ public class MessageQueueTest {
         Channel ch = connect();
 
         PingMessage msg = new PingMessage();
-        assertTrue(ch.getMessageQueue().sendMessage(msg));
+        assertTrue(ch.getMsgQueue().sendMessage(msg));
         for (int i = 0; i < server1.getKernel().getConfig().getNodeSpec().getNetMaxMessageQueueSize() * 2; i++) {
-            ch.getMessageQueue().sendMessage(msg);
+            ch.getMsgQueue().sendMessage(msg);
         }
-        assertFalse(ch.getMessageQueue().sendMessage(msg));
+        assertFalse(ch.getMsgQueue().sendMessage(msg));
 
         Thread.sleep(200);
         assertFalse(ch.isActive());
@@ -113,10 +113,10 @@ public class MessageQueueTest {
         Channel ch = connect();
 
         PingMessage msg = new PingMessage();
-        ch.getMessageQueue().sendMessage(msg);
+        ch.getMsgQueue().sendMessage(msg);
 
         Thread.sleep(200);
-        assertTrue(ch.getMessageQueue().isIdle());
+        assertTrue(ch.getMsgQueue().isIdle());
         assertTrue(ch.isActive());
     }
 
@@ -125,10 +125,10 @@ public class MessageQueueTest {
         Channel ch = connect();
 
         PongMessage msg = new PongMessage();
-        ch.getMessageQueue().sendMessage(msg);
+        ch.getMsgQueue().sendMessage(msg);
 
         Thread.sleep(200);
-        assertTrue(ch.getMessageQueue().isIdle());
+        assertTrue(ch.getMsgQueue().isIdle());
         assertTrue(ch.isActive());
     }
 }

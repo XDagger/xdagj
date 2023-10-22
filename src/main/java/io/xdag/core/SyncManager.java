@@ -31,12 +31,18 @@ import io.xdag.net.message.Message;
 public interface SyncManager {
 
     /**
-     * Starts sync manager, and sync blocks in [height, targetHeight).
+     * Starts sync manager, and sync blocks in [begin, target).
      * 
-     * @param targetHeight
+     * @param begin
      *            the target height, exclusive
+     * @Param current
+     *            the current height, exclusive
+     * @Param target
+     *            the current target, exclusive
+     * @param channel
+     *            channel
      */
-    void start(long targetHeight);
+    void start(long begin, long current, long target, Channel channel);
 
     /**
      * Stops sync manager.

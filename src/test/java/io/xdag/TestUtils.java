@@ -24,17 +24,23 @@
 package io.xdag;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt64;
 import org.hyperledger.besu.crypto.KeyPair;
+
+import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.UnsignedLong;
 
 import io.xdag.config.Config;
 import io.xdag.core.XAmount;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.MainBlock;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.core.Transaction;
 import io.xdag.core.TransactionResult;
@@ -56,8 +62,7 @@ public class TestUtils {
         byte[] resultsRoot = MerkleUtils.computeResultsRoot(res);
         byte[] data = {};
 
-        BlockHeader header = new BlockHeader(number, Keys.toBytesAddress(coinbase), prevHash, timestamp, transactionsRoot,
-                resultsRoot, data);
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, Keys.toBytesAddress(coinbase), timestamp, transactionsRoot, resultsRoot, 0L, data);
         List<Bytes32> txHashs = new ArrayList<>();
         txs.forEach(t-> txHashs.add(Bytes32.wrap(t.getHash())));
         return new MainBlock(header, txs, txHashs, res);
@@ -181,5 +186,57 @@ public class TestUtils {
             throw new RuntimeException("Field '" + fieldName + "' was not found in class " + where.getName() + ".");
         }
         return field;
+    }
+
+    static int MAIN_BIG_PERIOD_LOG = 21;
+
+    public static String toHexString(byte[] data) {
+        return data == null ? "" : BaseEncoding.base16().lowerCase().encode(data);
+    }
+    public static UnsignedLong long2UnsignedLong(long number) {
+        return UnsignedLong.valueOf(toHexString((ByteBuffer.allocate(8).putLong(number).array())),16);
+    }
+
+    static XAmount mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());
+    static long apolloForkHeight = 1017323;
+    static XAmount apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
+
+    public static XAmount getOldStartAmount(long nmain) {
+        XAmount startAmount;
+        long forkHeight = apolloForkHeight;
+        if (nmain >= forkHeight) {
+            startAmount = apolloForkAmount;
+        } else {
+            startAmount = mainStartAmount;
+        }
+
+        return startAmount;
+    }
+
+    public static XAmount getOldReward(long nmain) {
+        XAmount start = getOldStartAmount(nmain);
+        long nanoAmount = start.toXAmount().toLong();
+        return XAmount.ofXAmount(nanoAmount >> (nmain >> MAIN_BIG_PERIOD_LOG));
+    }
+
+    public static XAmount getOldSupply(long nmain) {
+        UnsignedLong res = UnsignedLong.ZERO;
+        XAmount amount = getOldStartAmount(nmain);
+        long nanoAmount = amount.toXAmount().toLong();
+        long current_nmain = nmain;
+        while ((current_nmain >> MAIN_BIG_PERIOD_LOG) > 0) {
+            res = res.plus(UnsignedLong.fromLongBits(1L << MAIN_BIG_PERIOD_LOG).times(long2UnsignedLong(nanoAmount)));
+            current_nmain -= 1L << MAIN_BIG_PERIOD_LOG;
+            nanoAmount >>= 1;
+        }
+        res = res.plus(long2UnsignedLong(current_nmain).times(long2UnsignedLong(nanoAmount)));
+        long fork_height = 1017323;
+        if (nmain >= fork_height) {
+            // add before apollo amount
+            XAmount diff = mainStartAmount.subtract(apolloForkAmount);
+            long nanoDiffAmount = diff.toXAmount().toLong();
+            res = res.plus(long2UnsignedLong(fork_height - 1).times(long2UnsignedLong(nanoDiffAmount)));
+        }
+        return XAmount.ofXAmount(res.longValue());
     }
 }

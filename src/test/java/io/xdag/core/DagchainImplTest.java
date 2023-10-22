@@ -53,9 +53,12 @@ import io.xdag.config.AbstractConfig;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.UnitTestnetConfig;
+import io.xdag.core.state.AccountState;
+import io.xdag.core.state.BlockState;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.rules.TemporaryDatabaseRule;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.TimeUtils;
@@ -70,7 +73,7 @@ public class DagchainImplTest {
     private TransactionResult res;
 
     private final byte[] coinbase = BytesUtils.random(30);
-    private final byte[] prevHash = BytesUtils.random(32);
+    private byte[] prevHash;
 
     private final Network network = Network.DEVNET;
     private final KeyPair key = SampleKeys.KEY1;
@@ -93,6 +96,7 @@ public class DagchainImplTest {
         when(pendingMgr.getPendingTransactions()).thenReturn(Lists.newArrayList(new PendingManager.PendingTransaction(tx, res)));
         chain = new DagchainImpl(config, pendingMgr, temporaryDBFactory);
         res = new TransactionResult();
+        prevHash = chain.getLatestMainBlockHash();
     }
 
     @Test
@@ -102,7 +106,9 @@ public class DagchainImplTest {
         assertNotNull(chain.getLatestMainBlock());
 
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertNotEquals(0, chain.getLatestMainBlockNumber());
         assertEquals(newBlock.getNumber(), chain.getLatestMainBlock().getNumber());
@@ -111,7 +117,9 @@ public class DagchainImplTest {
     @Test
     public void testGetLatestMainBlockHash() {
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertEquals(newBlock.getNumber(), chain.getLatestMainBlockNumber());
         assertArrayEquals(newBlock.getHash(), chain.getLatestMainBlockHash());
@@ -124,7 +132,10 @@ public class DagchainImplTest {
 
         long number = 1;
         MainBlock newBlock = createMainBlock(number);
-        chain.addMainBlock(newBlock);
+
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertEquals(number, chain.getMainBlockByNumber(number).getNumber());
         assertEquals(number, chain.getMainBlockByHash(newBlock.getHash()).getNumber());
@@ -141,7 +152,9 @@ public class DagchainImplTest {
     public void testGetBlockNumber() {
         long number = 1;
         MainBlock newBlock = createMainBlock(number);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertEquals(number, chain.getMainBlockNumber(newBlock.getHash()));
     }
@@ -157,7 +170,9 @@ public class DagchainImplTest {
 
         long number = 1;
         MainBlock newBlock = createMainBlock(number);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertArrayEquals(newBlock.getHash(), chain.getBlockHeader(1).getHash());
         assertEquals(newBlock.getNumber(), chain.getBlockHeader(newBlock.getHash()).getNumber());
@@ -168,7 +183,9 @@ public class DagchainImplTest {
         assertNull(chain.getTransaction(tx.getHash()));
 
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         Transaction t = chain.getTransaction(tx.getHash());
         assertNotNull(t);
@@ -185,7 +202,9 @@ public class DagchainImplTest {
         assertFalse(chain.hasTransaction(tx.getHash()));
 
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertTrue(chain.hasTransaction(tx.getHash()));
     }
@@ -195,7 +214,9 @@ public class DagchainImplTest {
         assertNull(chain.getTransaction(tx.getHash()));
 
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         TransactionResult r = chain.getTransactionResult(tx.getHash());
         assertArrayEquals(res.toBytes(), r.toBytes());
@@ -204,8 +225,9 @@ public class DagchainImplTest {
     @Test
     public void testGetTransactionBlockNumber() {
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
-
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
         assertEquals(newBlock.getNumber(), chain.getTransactionBlockNumber(tx.getHash()));
     }
 
@@ -216,7 +238,9 @@ public class DagchainImplTest {
             byte[] coinbase = Keys.toBytesAddress(Keys.createEcKeyPair());
             MainBlock newBlock = createMainBlock(i, coinbase, BytesUtils.EMPTY_BYTES, Collections.emptyList(),
                     Collections.emptyList());
-            chain.addMainBlock(newBlock);
+            BlockState bsTrack = chain.getLatestBlockState().clone();
+            chain.addMainBlock(newBlock, bsTrack);
+            bsTrack.commit();
             List<Transaction> transactions = chain.getTransactions(coinbase, 0, 1);
             assertEquals(1, transactions.size());
             assertEquals(newBlock.getNumber(), transactions.get(0).getNonce());
@@ -230,7 +254,9 @@ public class DagchainImplTest {
         assertNull(chain.getTransaction(tx.getHash()));
 
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         assertEquals(1, chain.getTransactionCount(tx.getFrom()));
     }
@@ -240,7 +266,9 @@ public class DagchainImplTest {
         assertNull(chain.getTransaction(tx.getHash()));
 
         MainBlock newBlock = createMainBlock(1);
-        chain.addMainBlock(newBlock);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
 
         List<Transaction> txs = chain.getTransactions(tx.getFrom(), 0, 100);
         assertEquals(1, txs.size());
@@ -263,7 +291,9 @@ public class DagchainImplTest {
     @Test
     public void testGetTransactions() {
         MainBlock block = createMainBlock(1);
-        chain.addMainBlock(block);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(block, bsTrack);
+        bsTrack.commit();
 
         List<Transaction> list = chain.getTransactions(from, 0, 1024);
         assertEquals(1, list.size());
@@ -285,7 +315,9 @@ public class DagchainImplTest {
         PendingManager.PendingTransaction pt = new PendingManager.PendingTransaction(selfTx, res);
         when(pendingMgr.getPendingTransactions()).thenReturn(Lists.newArrayList(pt));
 
-        chain.addMainBlock(block);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(block, bsTrack);
+        bsTrack.commit();
 
         // there should be only 1 transaction added into index database
         List<Transaction> list = chain.getTransactions(Keys.toBytesAddress(key), 0, 1024);
@@ -297,9 +329,11 @@ public class DagchainImplTest {
     public void testForkActivated() {
         final Fork fork = Fork.APOLLO_FORK;
         for (long i = 1; i <= fork.blocksToCheck(); i++) {
+            BlockState bsTrack = chain.getLatestBlockState().clone();
             chain.addMainBlock(
                     createMainBlock(i, coinbase, new BlockHeaderData(ForkSignalSet.of(fork)).toBytes(),
-                            Collections.singletonList(tx), Collections.singletonList(res)));
+                            Collections.singletonList(tx), Collections.singletonList(res)), bsTrack);
+            bsTrack.commit();
 
             // post-import check
             if (i < fork.blocksRequired()) {
@@ -317,7 +351,8 @@ public class DagchainImplTest {
                 Collections.singletonList(tx), Collections.singletonList(res));
         TestUtils.setInternalState(config, "forkApolloEnabled", false, AbstractConfig.class);
         chain = new DagchainImpl(config, pendingMgr, temporaryDBFactory);
-        chain.addMainBlock(block);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(block, bsTrack);
     }
 
     private MainBlock createMainBlock(long number) {
@@ -334,7 +369,7 @@ public class DagchainImplTest {
         byte[] resultsRoot = MerkleUtils.computeResultsRoot(results);
         long timestamp = TimeUtils.currentTimeMillis();
 
-        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, data);
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
         List<Bytes32> txHashs = new ArrayList<>();
         transactions.forEach(t-> txHashs.add(Bytes32.wrap(t.getHash())));
         return new MainBlock(header, transactions, txHashs, results);

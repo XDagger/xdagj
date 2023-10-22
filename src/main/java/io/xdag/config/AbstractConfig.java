@@ -33,6 +33,7 @@ import static io.xdag.core.XUnit.XDAG;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +94,7 @@ public class AbstractConfig implements Config, DagSpec, AdminSpec, NodeSpec, RPC
     protected String nodeTag;
     protected int maxConnections = 1024;
     protected int maxInboundConnectionsPerIp = 8;
-    protected int connectionTimeout = 10000;
+    protected int connectionTimeout = 4000;
     protected int connectionReadTimeout = 10000;
     protected boolean enableTxHistory = false;
     protected long txPageSizeLimit = 500;
@@ -137,9 +138,8 @@ public class AbstractConfig implements Config, DagSpec, AdminSpec, NodeSpec, RPC
     protected int netHandshakeExpiry = 5 * 60 * 1000;
     protected int netChannelIdleTimeout = 2 * 60 * 1000;
 
-    protected Set<MessageCode> netPrioritizedMessages = new HashSet<>(List.of(
-            MessageCode.MAIN_BLOCK,
-            MessageCode.GET_MAIN_BLOCK));
+    protected Set<MessageCode> netPrioritizedMessages = new HashSet<>(Arrays.asList(
+            MessageCode.EPOCH_BLOCK));
 
 
     protected String whiteListDir;
@@ -479,12 +479,24 @@ public class AbstractConfig implements Config, DagSpec, AdminSpec, NodeSpec, RPC
 
     @Override
     public XAmount getMainBlockReward(long number) {
-        if (number <= 1_017_323L) { // before apollo fork
+        if (number < 1_017_323L) { // before apollo fork
             return XAmount.of(1024, XDAG);
-        } else if (number <= 6_000_000L) { // ~4 years
+        } else if (number < 2_097_152L) { // ~4.25 years
             return XAmount.of(128, XDAG);
-        } else if (number <= 14_000_000L) { // ~8 years
+        } else if (number < 4_194_304L) { // ~8.51 years
             return XAmount.of(64, XDAG);
+        } else if (number < 6_291_456L) { // ~12.77 years
+            return XAmount.of(32, XDAG);
+        } else if (number < 8_388_608L) { // ~17.02 years
+            return XAmount.of(16, XDAG);
+        } else if (number < 10_485_760L) { // ~21.28 years
+            return XAmount.of(8, XDAG);
+        } else if (number < 12_582_912L) {// ~25.53 years
+            return XAmount.of(4, XDAG);
+        } else if (number < 14_680_064L) {// ~29.79 years
+            return XAmount.of(2, XDAG);
+        } else if (number < 16_777_216L) {// ~34.04 years
+            return XAmount.of(1, XDAG);
         } else {
             return XAmount.ZERO;
         }
@@ -493,18 +505,30 @@ public class AbstractConfig implements Config, DagSpec, AdminSpec, NodeSpec, RPC
     @Override
     public XAmount getMainBlockSupply(long blockNumber) {
         long totalSupply = LongStream.range(1, blockNumber + 1).map(number -> {
-            if (number <= 1_017_323L) { // before apollo fork
+            if (number < 1_017_323L) { // before apollo fork
                 return XAmount.of(1024, XDAG).toLong();
-            } else if (number <= 6_000_000L) { // ~4 years
+            } else if (number < 2_097_152L) { // ~4.25 years
                 return XAmount.of(128, XDAG).toLong();
-            } else if (number <= 14_000_000L) { // ~8 years
+            } else if (number < 4_194_304L) { // ~8.51 years
                 return XAmount.of(64, XDAG).toLong();
+            } else if (number < 6_291_456L) { // ~12.77 years
+                return XAmount.of(32, XDAG).toLong();
+            } else if (number < 8_388_608L) { // ~17.02 years
+                return XAmount.of(16, XDAG).toLong();
+            } else if (number < 10_485_760L) { // ~21.28 years
+                return XAmount.of(8, XDAG).toLong();
+            } else if (number < 12_582_912L) {// ~25.53 years
+                return XAmount.of(4, XDAG).toLong();
+            } else if (number < 14_680_064L) {// ~29.79 years
+                return XAmount.of(2, XDAG).toLong();
+            } else if (number <= 16_777_216L) {// ~34.04 years
+                return XAmount.of(1, XDAG).toLong();
             } else {
                 return XAmount.ZERO.toLong();
             }
-        }).sum();
+        }).reduce(0, Long::sum);
 
-        return XAmount.of(totalSupply, XDAG);
+        return XAmount.of(totalSupply);
     }
 
     @Override

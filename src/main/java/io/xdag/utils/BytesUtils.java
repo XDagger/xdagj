@@ -409,7 +409,7 @@ public class BytesUtils {
      * Read 4 bytes from the byte array (starting at the offset) as unsigned 32-bit integer in little endian format.
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
-     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     * @throws ArrayIndexOutOfBoundsException if offset points outside the buffer, or
      *                                        if the read value extends beyond the remaining bytes of the buffer
      */
     public static long readUint32(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException {
@@ -440,7 +440,7 @@ public class BytesUtils {
      * Read 4 bytes from the byte array (starting at the offset) as unsigned 32-bit integer in big endian format.
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
-     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     * @throws ArrayIndexOutOfBoundsException if offset points outside the buffer, or
      *                                        if the read value extends beyond the remaining bytes of the buffer
      */
     public static long readUint32BE(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException {
@@ -498,7 +498,7 @@ public class BytesUtils {
      * @param val    value to be written
      * @param out    buffer to be written into
      * @param offset offset into the buffer
-     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     * @throws ArrayIndexOutOfBoundsException if offset points outside the buffer, or
      *                                        if the value doesn't fit the remaining buffer
      */
     public static void writeInt32BE(int val, byte[] out, int offset) throws ArrayIndexOutOfBoundsException {
@@ -513,7 +513,7 @@ public class BytesUtils {
      * @param val    value to be written
      * @param out    buffer to be written into
      * @param offset offset into the buffer
-     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     * @throws ArrayIndexOutOfBoundsException if offset points outside the buffer, or
      *                                        if the value doesn't fit the remaining buffer
      */
     public static void writeInt32BE(long val, byte[] out, int offset) throws ArrayIndexOutOfBoundsException {
@@ -577,7 +577,7 @@ public class BytesUtils {
      * @param val    value to be written
      * @param out    buffer to be written into
      * @param offset offset into the buffer
-     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
+     * @throws ArrayIndexOutOfBoundsException if offset points outside the buffer, or
      *                                        if the value doesn't fit the remaining buffer
      */
     public static void writeInt32LE(long val, byte[] out, int offset) throws ArrayIndexOutOfBoundsException {

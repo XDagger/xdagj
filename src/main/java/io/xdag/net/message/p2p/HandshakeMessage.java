@@ -36,7 +36,7 @@ import org.hyperledger.besu.crypto.SECPSignature;
 
 import io.xdag.Network;
 import io.xdag.config.Config;
-import io.xdag.utils.SimpleEncoder;
+import io.xdag.core.MainBlock;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.Sign;
@@ -44,6 +44,7 @@ import io.xdag.net.Peer;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageCode;
 import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SimpleEncoder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -60,7 +61,7 @@ public abstract class HandshakeMessage extends Message {
     protected final String clientId;
     protected final String[] capabilities;
 
-    protected final long latestBlockNumber;
+    protected final MainBlock latestMainBlock;
 
     protected final byte[] secret;
     protected final long timestamp;
@@ -70,7 +71,7 @@ public abstract class HandshakeMessage extends Message {
 
     public HandshakeMessage(MessageCode code, Class<?> responseMessageClass,
             Network network, short networkVersion, String peerId, int port,
-            String clientId, String[] capabilities, long latestBlockNumber,
+            String clientId, String[] capabilities, MainBlock latestMainBlock,
             byte[] secret, KeyPair coinbase) {
         super(code, responseMessageClass);
 
@@ -80,7 +81,7 @@ public abstract class HandshakeMessage extends Message {
         this.port = port;
         this.clientId = clientId;
         this.capabilities = capabilities;
-        this.latestBlockNumber = latestBlockNumber;
+        this.latestMainBlock = latestMainBlock;
         this.secret = secret;
         this.timestamp = System.currentTimeMillis();
         this.publicKey = coinbase.getPublicKey();
@@ -108,7 +109,7 @@ public abstract class HandshakeMessage extends Message {
             capabilities.add(dec.readString());
         }
         this.capabilities = capabilities.toArray(new String[0]);
-        this.latestBlockNumber = dec.readLong();
+        this.latestMainBlock = MainBlock.fromBytes(dec.readBytes());
         this.secret = dec.readBytes();
         this.timestamp = dec.readLong();
         this.signature = Sign.SECP256K1.decodeSignature(Bytes.wrap(dec.readBytes()));
@@ -127,7 +128,7 @@ public abstract class HandshakeMessage extends Message {
         for (String capability : capabilities) {
             enc.writeString(capability);
         }
-        enc.writeLong(latestBlockNumber);
+        enc.writeBytes(latestMainBlock.toBytes());
         enc.writeBytes(secret);
         enc.writeLong(timestamp);
 
@@ -145,7 +146,7 @@ public abstract class HandshakeMessage extends Message {
                 && peerId != null && peerId.length() <= 64
                 && port > 0 && port <= 65535
                 && clientId != null && clientId.length() < 128
-                && latestBlockNumber >= 0
+                && latestMainBlock.getHeader().validate()
                 && secret != null && secret.length == InitMessage.SECRET_LENGTH
                 && Math.abs(System.currentTimeMillis() - timestamp) <= config.getNodeSpec().getNetHandshakeExpiry()
                 && signature != null
@@ -159,11 +160,8 @@ public abstract class HandshakeMessage extends Message {
 
     /**
      * Constructs a Peer object from the handshake info.
-     *
-     * @param ip
-     * @return
      */
     public Peer getPeer(String ip) {
-        return new Peer(network, networkVersion, peerId, ip, port, clientId, capabilities, latestBlockNumber);
+        return new Peer(network, networkVersion, peerId, ip, port, clientId, capabilities, latestMainBlock);
     }
 }

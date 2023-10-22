@@ -130,7 +130,6 @@ public class ChannelManager {
     public void onChannelActive(Channel channel, Peer peer) {
         channel.setActive(peer);
         activeChannels.put(peer.getPeerId(), channel);
-        log.debug("activeChannel size:" + activeChannels.size());
     }
 
     public List<Peer> getActivePeers() {
@@ -174,45 +173,13 @@ public class ChannelManager {
         List<Channel> list = new ArrayList<>();
 
         for (Channel c : activeChannels.values()) {
-            if (c.getMessageQueue().isIdle()) {
+            if (c.getMsgQueue().isIdle()) {
                 list.add(c);
             }
         }
 
         return list;
     }
-
-    /**
-     * Processing new blocks received from other peers from queue
-     */
-//    private void newBlocksDistributeLoop() {
-//        while (!Thread.currentThread().isInterrupted()) {
-//            BlockWrapper wrapper = null;
-//            try {
-//                wrapper = newForeignBlocks.take();
-//                log.debug("no problem..");
-//                sendNewBlock(wrapper);
-//            } catch (InterruptedException e) {
-//                break;
-//            } catch (Throwable e) {
-//                if (wrapper != null) {
-//                    log.error("Block dump: {}", wrapper.getBlock(),e);
-//                } else {
-//                    log.error("Error broadcasting unknown block", e);
-//                }
-//            }
-//        }
-//    }
-
-//    public void sendNewBlock(BlockWrapper blockWrapper) {
-//        for (Channel channel : activeChannels.values()) {
-//            channel.getP2pHandler().sendNewBlock(blockWrapper.getBlock(), blockWrapper.getTtl());
-//        }
-//    }
-
-//    public void onNewForeignBlock(BlockWrapper blockWrapper) {
-//        newForeignBlocks.add(blockWrapper);
-//    }
 
     private void initWhiteIPs() {
         addressSet.addAll(kernel.getConfig().getNodeSpec().getWhiteIPList());
@@ -226,15 +193,4 @@ public class ChannelManager {
                 .getNodeSpec().getNodePort());
     }
 
-//    public void stop() {
-//        log.debug("Channel Manager stop...");
-//        if (blockDistributeThread != null) {
-//            // 中断
-//            blockDistributeThread.interrupt();
-//        }
-//        // 关闭所有连接
-//        for (Channel channel : activeChannels.values()) {
-//            channel.close();
-//        }
-//    }
 }

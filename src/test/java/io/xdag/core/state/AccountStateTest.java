@@ -57,7 +57,7 @@ public class AccountStateTest {
     public void setUp() {
         PendingManager pendingMgr = Mockito.mock(PendingManager.class);
         chain = new DagchainImpl(new UnitTestnetConfig(Constants.DEFAULT_ROOT_DIR), pendingMgr, temporaryDBFactory);
-        state = chain.getAccountState();
+        state = chain.getLatestAccountState();
     }
 
     @Test
@@ -102,10 +102,10 @@ public class AccountStateTest {
         state.adjustAvailable(address, XAmount.of(20));
         assertEquals(XAmount.of(20), state.getAccount(address).getAvailable());
 
-        AccountState state2 = state.track();
+        AccountState state2 = state.clone();
         assertEquals(XAmount.of(20), state2.getAccount(address).getAvailable());
 
-        state.rollback();
+        state2.rollback();
         assertEquals(ZERO, state2.getAccount(address).getAvailable());
     }
 
@@ -116,10 +116,10 @@ public class AccountStateTest {
         state.adjustLocked(address, XAmount.of(20));
         assertEquals(XAmount.of(20), state.getAccount(address).getLocked());
 
-        AccountState state2 = state.track();
+        AccountState state2 = state.clone();
         assertEquals(XAmount.of(20), state2.getAccount(address).getLocked());
 
-        state.rollback();
+        state2.rollback();
         assertEquals(ZERO, state2.getAccount(address).getLocked());
     }
 
@@ -130,21 +130,21 @@ public class AccountStateTest {
         state.increaseNonce(address);
         assertEquals(1, state.getAccount(address).getNonce());
 
-        AccountState state2 = state.track();
+        AccountState state2 = state.clone();
         assertEquals(1, state2.getAccount(address).getNonce());
 
-        state.rollback();
+        state2.rollback();
         assertEquals(0, state2.getAccount(address).getNonce());
     }
 
     @Test
-    public void testTrack() {
+    public void testClone() {
         byte[] address = BytesUtils.random(20);
 
         state.adjustAvailable(address, XAmount.of(100, XUnit.XDAG));
 
-        AccountState s1 = state.track();
-        AccountState s2 = state.track();
+        AccountState s1 = state.clone();
+        AccountState s2 = state.clone();
 
         s1.adjustAvailable(address, XAmount.of(10, XUnit.XDAG));
         s2.adjustAvailable(address, XAmount.of(20, XUnit.XDAG));
@@ -156,9 +156,15 @@ public class AccountStateTest {
         assertEquals(XAmount.of(100, XUnit.XDAG), state.getAccount(address).getAvailable());
 
         s1.commit();
-        assertEquals(XAmount.of(110, XUnit.XDAG), state.getAccount(address).getAvailable());
+        assertEquals(XAmount.of(110, XUnit.XDAG), s1.getAccount(address).getAvailable());
 
         s2.commit();
-        assertEquals(XAmount.of(120, XUnit.XDAG), state.getAccount(address).getAvailable());
+        assertEquals(XAmount.of(120, XUnit.XDAG), s2.getAccount(address).getAvailable());
+
+        assertEquals(XAmount.of(100, XUnit.XDAG), state.getAccount(address).getAvailable());
+        state.commit();
+
+        assertEquals(XAmount.of(100, XUnit.XDAG), s1.getAccount(address).getAvailable());
+        assertEquals(XAmount.of(100, XUnit.XDAG), s2.getAccount(address).getAvailable());
     }
 }

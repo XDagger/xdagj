@@ -24,29 +24,36 @@
 
 package io.xdag.net;
 
-import org.apache.commons.lang3.SystemUtils;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.NettyRuntime;
 import io.xdag.DagKernel;
-import io.xdag.utils.NettyUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class PeerServer {
+
+    private static final ThreadFactory factory = new ThreadFactory() {
+        final AtomicInteger cnt = new AtomicInteger(0);
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "server-" + cnt.getAndIncrement());
+        }
+    };
     private final DagKernel kernel;
+    private Channel channel;
+
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
-    private Channel channel;
-    private final int workerThreadPoolSize = NettyRuntime.availableProcessors() * 2;
 
     public PeerServer(DagKernel kernel) {
         this.kernel = kernel;
@@ -58,24 +65,21 @@ public class PeerServer {
 
     public void start(String ip, int port) {
         try {
-            if(SystemUtils.IS_OS_LINUX) {
-                bossGroup = new EpollEventLoopGroup();
-                workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
-            } else if(SystemUtils.IS_OS_MAC) {
-                bossGroup = new KQueueEventLoopGroup();
-                workerGroup = new KQueueEventLoopGroup(workerThreadPoolSize);
+            bossGroup = new NioEventLoopGroup(1, factory);
+            workerGroup = new NioEventLoopGroup(4, factory);
 
-            } else {
-                bossGroup = new NioEventLoopGroup();
-                workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
-            }
-            ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup);
-            b.childOption(ChannelOption.TCP_NODELAY, true);
-            b.childOption(ChannelOption.SO_KEEPALIVE, true);
-            b.childOption(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
-            b.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getNodeSpec().getConnectionTimeout());
+            ServerBootstrap b = new ServerBootstrap();
+
+            b.group(bossGroup, workerGroup);
+            b.channel(NioServerSocketChannel.class);
+
+            b.option(ChannelOption.SO_KEEPALIVE, true);
+            b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
+            b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, kernel.getConfig().getNodeSpec().getConnectionTimeout());
+
             b.handler(new LoggingHandler());
             b.childHandler(new XdagChannelInitializer(kernel, null));
+
             log.debug("Xdag Node start host:[{}:{}].", ip, port);
             channel = b.bind(ip, port).sync().channel();
         } catch (Exception e) {

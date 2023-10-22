@@ -21,30 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils;
+package io.xdag.net.message.consensus;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.kqueue.KQueueServerSocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.apache.commons.lang3.SystemUtils;
+import io.xdag.core.MainBlock;
+import io.xdag.net.message.Message;
+import io.xdag.net.message.MessageCode;
+import lombok.Getter;
 
-public final class NettyUtils {
+@Getter
+public class EpochMessage extends Message  {
+    private final MainBlock mainBlock;
 
-    public static ServerBootstrap nativeEventLoopGroup(EventLoopGroup bossGroup, EventLoopGroup workerGroup) {
-        ServerBootstrap bootstrap = new ServerBootstrap();
+    public EpochMessage(MainBlock mainBlock) {
+        super(MessageCode.EPOCH_BLOCK, null);
 
-        bootstrap.group(bossGroup, workerGroup);
+        this.mainBlock = mainBlock;
 
-        if(SystemUtils.IS_OS_LINUX) {
-            bootstrap.channel(EpollServerSocketChannel.class);
-        } else if(SystemUtils.IS_OS_MAC) {
-            bootstrap.channel(KQueueServerSocketChannel.class);
-        } else {
-            bootstrap.channel(NioServerSocketChannel.class);
-        }
+        this.body = mainBlock.toBytes();
+    }
 
-        return bootstrap;
+    public EpochMessage(byte[] body) {
+        super(MessageCode.EPOCH_BLOCK, null);
+
+        this.mainBlock = MainBlock.fromBytes(body);
+
+        this.body = body;
+    }
+
+    @Override
+    public String toString() {
+        return "EpochMessage [mainBlock=" + mainBlock + "]";
     }
 }

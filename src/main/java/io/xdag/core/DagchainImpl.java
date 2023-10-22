@@ -26,6 +26,7 @@ package io.xdag.core;
 import static io.xdag.core.Fork.APOLLO_FORK;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,9 +38,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -49,13 +52,16 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.spec.DagSpec;
 import io.xdag.core.state.AccountState;
 import io.xdag.core.state.AccountStateImpl;
-import io.xdag.db.Database;
+import io.xdag.core.state.BlockState;
+import io.xdag.core.state.BlockStateImpl;
+import io.xdag.core.state.StateSnapshotKey;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
 import io.xdag.db.LeveldbDatabase;
@@ -98,22 +104,6 @@ public class DagchainImpl implements Dagchain {
 
     protected static final int DATABASE_VERSION = 1;
 
-    protected static final byte TYPE_LATEST_BLOCK_NUMBER = 0x00;
-    protected static final byte TYPE_ACTIVATED_FORKS = 0x06;
-    protected static final byte TYPE_DATABASE_VERSION = (byte) 0xff;
-
-    protected static final byte TYPE_BLOCK_NUMBER_BY_HASH = 0x10;
-    protected static final byte TYPE_BLOCK_COINBASE_BY_NUMBER = 0x11;
-
-    protected static final byte TYPE_TRANSACTION_INDEX_BY_HASH = 0x20;
-    protected static final byte TYPE_TRANSACTION_COUNT_BY_ADDRESS = 0x21;
-    protected static final byte TYPE_TRANSACTION_HASH_BY_ADDRESS_AND_INDEX = 0x21;
-
-    protected static final byte TYPE_BLOCK_HEADER_BY_NUMBER = 0x30;
-    protected static final byte TYPE_BLOCK_TRANSACTIONS_HASH_BY_NUMBER = 0x31;
-    protected static final byte TYPE_BLOCK_TRANSACTIONS_BY_NUMBER = 0x32;
-    protected static final byte TYPE_BLOCK_RESULTS_BY_NUMBER = 0x33;
-
     private final ReentrantReadWriteLock stateLock = new ReentrantReadWriteLock();
 
     private final List<DagchainListener> listeners = new ArrayList<>();
@@ -121,12 +111,12 @@ public class DagchainImpl implements Dagchain {
     private DagSpec dagSpec;
     private Genesis genesis;
 
-    private Database indexDB;
-    private Database blockDB;
+    private Map<StateSnapshotKey, BlockState> blockStateMap;
+    private Map<StateSnapshotKey, AccountState> accountStateMap;
 
-    private AccountState accountState;
 
     private MainBlock latestMainBlock;
+    private MainBlock latestCheckPointMainBlock;
 
     private ActivatedForks forks;
 
@@ -145,46 +135,70 @@ public class DagchainImpl implements Dagchain {
     }
 
     private synchronized void openDb(Config config, DatabaseFactory dbFactory) {
+        BlockState blockState = new BlockStateImpl(dbFactory.getDB(DatabaseName.INDEX), dbFactory.getDB(DatabaseName.BLOCK));
+        this.blockStateMap = Maps.newHashMap();
+
         // upgrade if possible
-        upgradeDatabase(config, dbFactory);
+        upgradeDatabase(blockState, config, dbFactory);
 
-        this.indexDB = dbFactory.getDB(DatabaseName.INDEX);
-        this.blockDB = dbFactory.getDB(DatabaseName.BLOCK);
+        AccountState accountState = new AccountStateImpl(dbFactory.getDB(DatabaseName.ACCOUNT));
+        this.accountStateMap = Maps.newHashMap();
 
-        this.accountState = new AccountStateImpl(dbFactory.getDB(DatabaseName.ACCOUNT));
 
         // checks if the database needs to be initialized
-        byte[] number = indexDB.get(BytesUtils.of(TYPE_LATEST_BLOCK_NUMBER));
+        long number = blockState.getLatestMainBlockNumber();
 
         // load the activate forks from database
-        forks = new ActivatedForks(this, config, getActivatedForks());
+        forks = new ActivatedForks(this, config, getActivatedForks(blockState));
 
-        if (number == null || number.length == 0) {
+        if (number == -1) {
             // initialize the database for the first time
-            initializeDb();
+            initializeDb(blockState, accountState);
         } else {
             // load the latest block
-            latestMainBlock = getMainBlockByNumber(BytesUtils.toLong(number));
+            latestMainBlock = blockState.getMainBlockByNumber(number);
+
+            this.blockStateMap.put(StateSnapshotKey.of(latestMainBlock.getHash(), latestMainBlock.getNumber()), blockState);
+            this.accountStateMap.put(StateSnapshotKey.of(latestMainBlock.getHash(), latestMainBlock.getNumber()), accountState);
         }
     }
 
-    private void initializeDb() {
+    private void initializeDb(BlockState blockState, AccountState accountState) {
         // initialize database version
-        indexDB.put(BytesUtils.of(TYPE_DATABASE_VERSION), BytesUtils.of(DATABASE_VERSION));
+        blockState.putDatabaseVersion(DATABASE_VERSION);
 
         // snapshot
         for (Genesis.XSnapshot s : genesis.getSnapshots().values()) {
             accountState.adjustAvailable(s.getAddress(), s.getAmount());
         }
         accountState.commit();
+        accountStateMap.put(StateSnapshotKey.of(genesis.getHash(), genesis.getNumber()), accountState);
+
+        blockState.commit();
+        blockStateMap.put(StateSnapshotKey.of(genesis.getHash(), genesis.getNumber()), blockState);
 
         // add block
-        addMainBlock(genesis);
+        addMainBlock(genesis, blockState);
     }
 
     @Override
-    public AccountState getAccountState() {
-        return accountState;
+    public AccountState getAccountState(byte[] hash, long snapshotNumber) {
+        return accountStateMap.get(StateSnapshotKey.of(hash, snapshotNumber));
+    }
+
+    @Override
+    public AccountState getLatestAccountState() {
+        return accountStateMap.get(StateSnapshotKey.of(latestMainBlock.getHash(), latestMainBlock.getNumber()));
+    }
+
+    @Override
+    public BlockState getBlockState(byte[] hash, long snapshotNumber) {
+        return blockStateMap.get(StateSnapshotKey.of(hash, snapshotNumber));
+    }
+
+    @Override
+    public BlockState getLatestBlockState() {
+        return blockStateMap.get(StateSnapshotKey.of(latestMainBlock.getHash(), latestMainBlock.getNumber()));
     }
 
     @Override
@@ -204,25 +218,22 @@ public class DagchainImpl implements Dagchain {
 
     @Override
     public long getMainBlockNumber(byte[] hash) {
-        byte[] number = indexDB.get(BytesUtils.merge(TYPE_BLOCK_NUMBER_BY_HASH, hash));
-        return (number == null) ? -1 : BytesUtils.toLong(number);
+        return this.getLatestBlockState().getMainBlockNumber(hash);
     }
 
     @Override
     public MainBlock getMainBlockByNumber(long number) {
-        return getBlock(blockDB, number, false);
+        return this.getLatestBlockState().getMainBlockByNumber(number);
     }
 
     @Override
     public MainBlock getMainBlockByHash(byte[] hash) {
-        long number = getMainBlockNumber(hash);
-        return (number == -1) ? null : getMainBlockByNumber(number);
+        return this.getLatestBlockState().getMainBlockByHash(hash);
     }
 
     @Override
     public BlockHeader getBlockHeader(long number) {
-        byte[] header = blockDB.get(BytesUtils.merge(TYPE_BLOCK_HEADER_BY_NUMBER, BytesUtils.of(number)));
-        return (header == null) ? null : BlockHeader.fromBytes(header);
+        return this.getLatestBlockState().getBlockHeader(number);
     }
 
     @Override
@@ -233,120 +244,40 @@ public class DagchainImpl implements Dagchain {
 
     @Override
     public boolean hasMainBlock(long number) {
-        return blockDB.get(BytesUtils.merge(TYPE_BLOCK_HEADER_BY_NUMBER, BytesUtils.of(number))) != null;
-    }
-
-    private static class TransactionIndex {
-        long blockNumber;
-        int transactionOffset;
-        int resultOffset;
-
-        public TransactionIndex(long blockNumber, int transactionOffset, int resultOffset) {
-            this.blockNumber = blockNumber;
-            this.transactionOffset = transactionOffset;
-            this.resultOffset = resultOffset;
-        }
-
-        public byte[] toBytes() {
-            SimpleEncoder enc = new SimpleEncoder();
-            enc.writeLong(blockNumber);
-            enc.writeInt(transactionOffset);
-            enc.writeInt(resultOffset);
-            return enc.toBytes();
-        }
-
-        public static TransactionIndex fromBytes(byte[] bytes) {
-            SimpleDecoder dec = new SimpleDecoder(bytes);
-            long number = dec.readLong();
-            int transactionOffset = dec.readInt();
-            int resultOffset = dec.readInt();
-            return new TransactionIndex(number, transactionOffset, resultOffset);
-        }
+        return this.getLatestBlockState().hasMainBlock(number);
     }
 
     @Override
     public Transaction getTransaction(byte[] hash) {
-        byte[] bytes = indexDB.get(BytesUtils.merge(TYPE_TRANSACTION_INDEX_BY_HASH, hash));
-        if (bytes != null) {
-            // coinbase transaction
-            if (bytes.length > 64) {
-                return Transaction.fromBytes(bytes);
-            }
-
-            TransactionIndex index = TransactionIndex.fromBytes(bytes);
-            byte[] transactions = blockDB
-                    .get(BytesUtils.merge(TYPE_BLOCK_TRANSACTIONS_BY_NUMBER, BytesUtils.of(index.blockNumber)));
-            SimpleDecoder dec = new SimpleDecoder(transactions, index.transactionOffset);
-            return Transaction.fromBytes(dec.readBytes());
-        }
-
-        return null;
+        return this.getLatestBlockState().getTransaction(hash);
     }
 
     @Override
     public Transaction getCoinbaseTransaction(long blockNumber) {
-        return blockNumber == 0
-                ? null
-                : getTransaction(indexDB.get(BytesUtils.merge(TYPE_BLOCK_COINBASE_BY_NUMBER, BytesUtils.of(blockNumber))));
+        return this.getLatestBlockState().getCoinbaseTransaction(blockNumber);
     }
 
     @Override
     public boolean hasTransaction(final byte[] hash) {
-        return indexDB.get(BytesUtils.merge(TYPE_TRANSACTION_INDEX_BY_HASH, hash)) != null;
+        return this.getLatestBlockState().hasTransaction(hash);
     }
 
     @Override
     public TransactionResult getTransactionResult(byte[] hash) {
-        byte[] bytes = indexDB.get(BytesUtils.merge(TYPE_TRANSACTION_INDEX_BY_HASH, hash));
-        if (bytes != null) {
-            // coinbase transaction
-            if (bytes.length > 64) {
-                return new TransactionResult();
-            }
-
-            TransactionIndex index = TransactionIndex.fromBytes(bytes);
-            byte[] results = blockDB.get(BytesUtils.merge(TYPE_BLOCK_RESULTS_BY_NUMBER, BytesUtils.of(index.blockNumber)));
-            SimpleDecoder dec = new SimpleDecoder(results, index.resultOffset);
-            return TransactionResult.fromBytes(dec.readBytes());
-        }
-
-        return null;
+        return this.getLatestBlockState().getTransactionResult(hash);
     }
 
     @Override
     public long getTransactionBlockNumber(byte[] hash) {
-        Transaction tx = getTransaction(hash);
-        if (tx.getType() == TransactionType.COINBASE) {
-            return tx.getNonce();
-        }
-
-        byte[] bytes = indexDB.get(BytesUtils.merge(TYPE_TRANSACTION_INDEX_BY_HASH, hash));
-        if (bytes != null) {
-            SimpleDecoder dec = new SimpleDecoder(bytes);
-            return dec.readLong();
-        }
-
-        return -1;
+        return this.getLatestBlockState().getTransactionBlockNumber(hash);
     }
 
     @Override
-    public synchronized void addMainBlock(MainBlock block) {
+    public synchronized void addMainBlock(MainBlock block, BlockState bs) {
         long number = block.getNumber();
-        byte[] hash = block.getHash();
-
-        // TODO support 16 parent block
-        if (number != genesis.getNumber() && number != latestMainBlock.getNumber() + 1) {
-            log.error("Adding wrong block: number = {}, expected = {}", number, latestMainBlock.getNumber() + 1);
-            throw new DagchainException("Blocks can only be added sequentially");
-        }
 
         // [1] update block
-        blockDB.put(BytesUtils.merge(TYPE_BLOCK_HEADER_BY_NUMBER, BytesUtils.of(number)), block.getEncodedHeader());
-        blockDB.put(BytesUtils.merge(TYPE_BLOCK_TRANSACTIONS_HASH_BY_NUMBER, BytesUtils.of(number)), block.getEncodedTxHashs());
-        blockDB.put(BytesUtils.merge(TYPE_BLOCK_TRANSACTIONS_BY_NUMBER, BytesUtils.of(number)), block.getEncodedTransactions());
-        blockDB.put(BytesUtils.merge(TYPE_BLOCK_RESULTS_BY_NUMBER, BytesUtils.of(number)), block.getEncodedResults());
-
-        indexDB.put(BytesUtils.merge(TYPE_BLOCK_NUMBER_BY_HASH, hash), BytesUtils.of(number));
+        bs.addMainBlock(block);
 
         // [2] update transaction indices
         List<Transaction> txs = Lists.newArrayList();
@@ -375,16 +306,15 @@ public class DagchainImpl implements Dagchain {
 
         for (int i = 0; i < txs.size(); i++) {
             Transaction tx = txs.get(i);
-            //TransactionResult result = block.getResults().get(i);
 
-            TransactionIndex index = new TransactionIndex(number, txHashIndices.getRight().get(i),
+            BlockState.TransactionIndex index = new BlockState.TransactionIndex(number, txHashIndices.getRight().get(i),
                     resultIndices.getRight().get(i));
-            indexDB.put(BytesUtils.merge(TYPE_TRANSACTION_INDEX_BY_HASH, tx.getHash()), index.toBytes());
+            bs.addTransactionIndex(tx.getHash(), index.toBytes());
 
             // [3] update transaction_by_account index
-            addTransactionToAccount(tx, tx.getFrom());
+            bs.addTransactionToAccount(tx, tx.getFrom());
             if (!Arrays.equals(tx.getFrom(), tx.getTo())) {
-                addTransactionToAccount(tx, tx.getTo());
+                bs.addTransactionToAccount(tx, tx.getTo());
             }
         }
 
@@ -399,20 +329,41 @@ public class DagchainImpl implements Dagchain {
                     block.getTimestamp(),
                     BytesUtils.EMPTY_BYTES);
             tx.sign(Constants.COINBASE_KEY);
-            indexDB.put(BytesUtils.merge(TYPE_TRANSACTION_INDEX_BY_HASH, tx.getHash()), tx.toBytes());
-            indexDB.put(BytesUtils.merge(TYPE_BLOCK_COINBASE_BY_NUMBER, BytesUtils.of(block.getNumber())), tx.getHash());
-            addTransactionToAccount(tx, block.getCoinbase());
+
+            bs.addTransactionIndex(tx.getHash(), tx.toBytes());
+            bs.addBlockCoinbaseByNumber(block.getNumber(), tx.getHash());
+            bs.addTransactionToAccount(tx, block.getCoinbase());
         }
 
         // [7] update latest_block
-        latestMainBlock = block;
-        indexDB.put(BytesUtils.of(TYPE_LATEST_BLOCK_NUMBER), BytesUtils.of(number));
+        if(latestMainBlock == null) {
+            latestMainBlock = block;
+            bs.addLatestBlockNumber(number);
+        } else if(block.getNumber() > latestMainBlock.getNumber()) {
+            latestMainBlock = block;
+            bs.addLatestBlockNumber(number);
+        } else if( block.getNumber() == latestMainBlock.getNumber()) {
+            BigInteger latestHash = new BigInteger(1, latestMainBlock.getHash());
+            BigInteger blockHash = new BigInteger(1, block.getHash());
+            if(blockHash.compareTo(latestHash) < 0) {
+                latestMainBlock = block;
+                bs.addLatestBlockNumber(number);
+                log.warn("reorg chain latest number:{}, header from:{}, to:{}",
+                        block.getNumber(),
+                        Bytes.wrap(latestMainBlock.getHash()).toHexString(),
+                        Bytes.wrap(block.getHash()).toHexString());
+            }
+        } else if(latestMainBlock.getNumber() - block.getNumber() < Constants.EPOCH_FINALIZE_NUMBER) {
+            latestMainBlock = block;
+            bs.addLatestBlockNumber(number);
+        }
 
         for (DagchainListener listener : listeners) {
             listener.onMainBlockAdded(block);
         }
 
         activateForks();
+        blockStateMap.put(StateSnapshotKey.of(block.getHash(), block.getNumber()), bs);
     }
 
     @Override
@@ -427,52 +378,26 @@ public class DagchainImpl implements Dagchain {
 
     @Override
     public int getTransactionCount(byte[] address) {
-        byte[] cnt = indexDB.get(BytesUtils.merge(TYPE_TRANSACTION_COUNT_BY_ADDRESS, address));
-        return (cnt == null) ? 0 : BytesUtils.toInt(cnt);
+        return this.getLatestBlockState().getTransactionCount(address);
     }
 
     @Override
     public List<Transaction> getTransactions(byte[] address, int from, int to) {
-        List<Transaction> list = new ArrayList<>();
-
-        int total = getTransactionCount(address);
-        for (int i = from; i < total && i < to; i++) {
-            byte[] key = getNthTransactionIndexKey(address, i);
-            byte[] value = indexDB.get(key);
-            list.add(getTransaction(value));
-        }
-
-        return list;
+        return this.getLatestBlockState().getTransactions(address, from, to);
     }
 
     /**
      * Sets the total number of transaction of an account
      */
-    protected void setTransactionCount(byte[] address, int total) {
-        indexDB.put(BytesUtils.merge(TYPE_TRANSACTION_COUNT_BY_ADDRESS, address), BytesUtils.of(total));
-    }
-
-    /**
-     * Adds a transaction to an account.
-     */
-    protected void addTransactionToAccount(Transaction tx, byte[] address) {
-        int total = getTransactionCount(address);
-        indexDB.put(getNthTransactionIndexKey(address, total), tx.getHash());
-        setTransactionCount(address, total + 1);
-    }
-
-    /**
-     * Returns the N-th transaction index key of an account.
-     */
-    protected byte[] getNthTransactionIndexKey(byte[] address, int n) {
-        return BytesUtils.merge(BytesUtils.of(TYPE_TRANSACTION_HASH_BY_ADDRESS_AND_INDEX), address, BytesUtils.of(n));
+    protected void setTransactionCount(BlockState blockState, byte[] address, int total) {
+        blockState.setTransactionCount(address, total);
     }
 
     /**
      * Returns the version of current database.
      */
     protected int getDatabaseVersion() {
-        return getDatabaseVersion(indexDB);
+        return this.getLatestBlockState().getDatabaseVersion();
     }
 
     @Override
@@ -514,23 +439,21 @@ public class DagchainImpl implements Dagchain {
     }
 
     @Override
-    public boolean importBlock(MainBlock block) {
-        AccountState asTrack = this.getAccountState().track();
-        return validateBlock(block, asTrack) && applyBlock(block, asTrack);
+    public boolean importBlock(MainBlock block, AccountState accountState, BlockState blockState) {
+        return validateBlock(block, accountState, blockState) && applyBlock(block, accountState, blockState);
     }
 
     /**
      * Validate the block.
      */
-    protected boolean validateBlock(MainBlock block, AccountState asTrack) {
+    protected boolean validateBlock(MainBlock block, AccountState as, BlockState bs) {
         try {
             BlockHeader header = block.getHeader();
             List<Transaction> transactions = block.getTransactions();
 
             // [1] check block header
-            // TODO support 16 parent block
-            MainBlock latest = this.getLatestMainBlock();
-            if (!block.validateHeader(header, latest.getHeader())) {
+            MainBlock parentMainBlock = bs.getMainBlockByHash(block.getParentHash());
+            if (!block.validateHeader(header, parentMainBlock.getHeader())) {
                 log.error("Invalid block header");
                 return false;
             }
@@ -550,14 +473,14 @@ public class DagchainImpl implements Dagchain {
                 log.error("Invalid transactions");
                 return false;
             }
-            if (transactions.stream().anyMatch(tx -> this.hasTransaction(tx.getHash()))) {
+            if (transactions.stream().anyMatch(tx -> bs.hasTransaction(tx.getHash()))) {
                 log.error("Duplicated transaction hash is not allowed");
                 return false;
             }
 
             // [3] evaluate transactions
             TransactionExecutor transactionExecutor = new TransactionExecutor(config);
-            List<TransactionResult> results = transactionExecutor.execute(transactions, asTrack);
+            List<TransactionResult> results = transactionExecutor.execute(transactions, as);
             if (!block.validateResults(header, results)) {
                 log.error("Invalid transaction results");
                 return false;
@@ -571,30 +494,86 @@ public class DagchainImpl implements Dagchain {
         }
     }
 
-    protected boolean applyBlock(MainBlock block, AccountState asTrack) {
+    private void removeStateSnapshot(final long number, final byte[] hash) {
+        Iterator<Entry<StateSnapshotKey, AccountState>> asiterator = accountStateMap.entrySet().iterator();
+        while (asiterator.hasNext()) {
+            Entry<StateSnapshotKey, AccountState> entry = asiterator.next();
+            StateSnapshotKey k = entry.getKey();
+            if(k.getNumber() == number) {
+                if(!Arrays.equals(k.getHash().getData(), hash)) {
+                    asiterator.remove();
+                }
+            }
+        }
+
+        Iterator<Entry<StateSnapshotKey, BlockState>> bsiterator = blockStateMap.entrySet().iterator();
+        while (bsiterator.hasNext()) {
+            Entry<StateSnapshotKey, BlockState> entry = bsiterator.next();
+            StateSnapshotKey k = entry.getKey();
+            if(k.getNumber() == number) {
+                if(!Arrays.equals(k.getHash().getData(), hash)) {
+                    bsiterator.remove();
+                }
+            }
+        }
+    }
+
+    protected boolean applyBlock(MainBlock block, AccountState as, BlockState bs) {
         // [5] apply block reward and tx fees
         XAmount reward = MainBlock.getBlockReward(block, config);
 
         if (reward.isPositive()) {
-            asTrack.adjustAvailable(block.getCoinbase(), reward);
+            as.adjustAvailable(block.getCoinbase(), reward);
         }
 
-        // [6] commit the updates
-        asTrack.commit();
+        // [6] update account state map
+        accountStateMap.put(StateSnapshotKey.of(block.getHash(), block.getNumber()), as);
 
         ReentrantReadWriteLock.WriteLock writeLock = this.stateLock.writeLock();
         writeLock.lock();
         try {
-            // [7] flush state to disk
-            this.getAccountState().commit();
+            // [7] finalize xdag main chain and flush AccountState and BlockState to disk
+            finalizeMainChain(block, as, bs);
 
             // [8] add block to chain
-            this.addMainBlock(block);
+            this.addMainBlock(block, bs);
         } finally {
             writeLock.unlock();
         }
 
         return true;
+    }
+
+    private void finalizeMainChain(MainBlock mainBlock, AccountState as, BlockState bs) {
+        long localNumber = this.getLatestMainBlockNumber();
+        if(mainBlock.getNumber() > Constants.EPOCH_FINALIZE_NUMBER && mainBlock.getNumber() >= localNumber) {
+            MainBlock mb = mainBlock;
+            MainBlock lastParent = mb;
+
+            for(int i = 0; i < Constants.EPOCH_FINALIZE_NUMBER; i++) {
+                lastParent = this.getMainBlockByHash(mb.getParentHash());
+                if(lastParent != null) {
+                    mb = lastParent;
+                } else {
+                    log.trace("finalize forward error from {}.", mb);
+                    return;
+                }
+            }
+            log.trace("finalize at {}.", mainBlock);
+
+            // commit before 16 main block state snapshot
+            AccountState accountState = accountStateMap.get(StateSnapshotKey.of(mb.getHash(), mb.getNumber()));
+            as.removeUpdates(accountState);
+            accountState.commit();
+
+            BlockState blockState = blockStateMap.get(StateSnapshotKey.of(mb.getHash(), mb.getNumber()));
+            bs.removeUpdates(blockState);
+            blockState.commit();
+
+            // remove before 16 main block state snapshot
+            removeStateSnapshot(mb.getNumber(), mb.getHash());
+            latestCheckPointMainBlock = mb;
+        }
     }
 
     /**
@@ -609,9 +588,10 @@ public class DagchainImpl implements Dagchain {
     /**
      * Returns the set of active forks.
      */
-    protected Map<Fork, Fork.Activation> getActivatedForks() {
+    protected Map<Fork, Fork.Activation> getActivatedForks(BlockState blockState) {
         Map<Fork, Fork.Activation> activations = new HashMap<>();
-        byte[] value = indexDB.get(BytesUtils.of(TYPE_ACTIVATED_FORKS));
+//        byte[] value = indexDB.get(BytesUtils.of(TYPE_ACTIVATED_FORKS));
+        byte[] value = blockState.getActivatedForks();
         if (value != null) {
             SimpleDecoder simpleDecoder = new SimpleDecoder(value);
             final int numberOfForks = simpleDecoder.readInt();
@@ -632,17 +612,17 @@ public class DagchainImpl implements Dagchain {
         for (Entry<Fork, Fork.Activation> entry : activatedForks.entrySet()) {
             simpleEncoder.writeBytes(entry.getValue().toBytes());
         }
-        indexDB.put(BytesUtils.of(TYPE_ACTIVATED_FORKS), simpleEncoder.toBytes());
+
+        this.getLatestBlockState().addActivatedForks(simpleEncoder.toBytes());
     }
 
-    private static void upgradeDatabase(Config config, DatabaseFactory dbFactory) {
-        if (getLatestMainBlockNumber(dbFactory.getDB(DatabaseName.INDEX)) != null
-                && getDatabaseVersion(dbFactory.getDB(DatabaseName.INDEX)) < DagchainImpl.DATABASE_VERSION) {
+    private void upgradeDatabase(BlockState blockState, Config config, DatabaseFactory dbFactory) {
+        if (blockState.getLatestMainBlockNumber() != -1 && blockState.getDatabaseVersion() < DagchainImpl.DATABASE_VERSION) {
             upgrade(config, dbFactory, Long.MAX_VALUE);
         }
     }
 
-    public static void upgrade(Config config, DatabaseFactory dbFactory, long to) {
+    public void upgrade(Config config, DatabaseFactory dbFactory, long to) {
         try {
             log.info("Upgrading the database... DO NOT CLOSE THE WALLET!");
             Instant begin = Instant.now();
@@ -658,13 +638,12 @@ public class DagchainImpl implements Dagchain {
 
             // import all blocks
             long imported = 0;
-            Database indexDB = dbFactory.getDB(DatabaseName.INDEX);
-            Database blockDB = dbFactory.getDB(DatabaseName.BLOCK);
-            byte[] bytes = getLatestMainBlockNumber(indexDB);
-            long latestMainBlockNumber = (bytes == null) ? 0 : BytesUtils.toLong(bytes);
+            long latestMainBlockNumber = this.getLatestBlockState().getLatestMainBlockNumber();
             long target = Math.min(latestMainBlockNumber, to);
+            AccountState latestAccountState = this.getLatestAccountState();
+            BlockState latestBlockState = this.getLatestBlockState();
             for (long i = 1; i <= target; i++) {
-                boolean result = tempChain.importBlock(getBlock(blockDB, i, true));
+                boolean result = tempChain.importBlock(getBlock(i, true), latestAccountState, latestBlockState);
                 if (!result) {
                     break;
                 }
@@ -674,6 +653,8 @@ public class DagchainImpl implements Dagchain {
                 }
                 imported++;
             }
+            latestAccountState.commit();
+            latestBlockState.commit();
 
             // close both database factory
             dbFactory.close();
@@ -695,21 +676,8 @@ public class DagchainImpl implements Dagchain {
 
     // THE FOLLOWING TYPE ID SHOULD NEVER CHANGE
 
-    private static MainBlock getBlock(Database blockDB, long number, boolean skipResults) {
-        byte[] header = blockDB.get(BytesUtils.merge(TYPE_BLOCK_HEADER_BY_NUMBER, BytesUtils.of(number)));
-        byte[] transactions = blockDB.get(BytesUtils.merge(TYPE_BLOCK_TRANSACTIONS_BY_NUMBER, BytesUtils.of(number)));
-        byte[] results = skipResults ? null : blockDB.get(BytesUtils.merge(TYPE_BLOCK_RESULTS_BY_NUMBER, BytesUtils.of(number)));
-
-        return (header == null) ? null : MainBlock.fromComponents(header, transactions, results, false);
-    }
-
-    private static byte[] getLatestMainBlockNumber(Database indexDB) {
-        return indexDB.get(BytesUtils.of(TYPE_LATEST_BLOCK_NUMBER));
-    }
-
-    private static int getDatabaseVersion(Database indexDB) {
-        byte[] version = indexDB.get(BytesUtils.of(TYPE_DATABASE_VERSION));
-        return version == null ? 0 : BytesUtils.toInt(version);
+    private MainBlock getBlock(long number, boolean skipResults) {
+        return  this.getLatestBlockState().getBlock(number, skipResults);
     }
 
     private static void delete(Path directory) throws IOException {
@@ -730,5 +698,16 @@ public class DagchainImpl implements Dagchain {
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    public static void main(String[] args) {
+        Random random = new Random();
+        byte[] hash = new byte[32];
+        random.nextBytes(hash);
+        BigInteger latestHash = new BigInteger(1, hash);
+        BigInteger blockHash = new BigInteger(1, hash);
+        if(blockHash.compareTo(latestHash) < 0) {
+            System.out.println("true");
+        }
     }
 }

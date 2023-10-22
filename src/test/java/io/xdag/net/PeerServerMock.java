@@ -25,8 +25,6 @@ package io.xdag.net;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.mockito.Mockito;
-
 import io.xdag.DagKernel;
 import io.xdag.KernelMock;
 import io.xdag.config.Config;

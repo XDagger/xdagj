@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import io.xdag.core.state.AccountState;
+import io.xdag.core.state.BlockState;
 
 public interface Dagchain {
 
@@ -128,12 +129,27 @@ public interface Dagchain {
     /**
      * Add a block to the chain.
      */
-    void addMainBlock(MainBlock block);
+    void addMainBlock(MainBlock block, BlockState bsTrack);
 
     /**
      * Returns account state.
      */
-    AccountState getAccountState();
+    AccountState getAccountState(byte[] hash, long snapshotNumber);
+
+    /**
+     * Returns Latest account state.
+     */
+    AccountState getLatestAccountState();
+
+    /**
+     * Returns Block state.
+     */
+    BlockState getBlockState(byte[] hash, long snapshotNumber);
+
+    /**
+     * Returns Latest block state.
+     */
+    BlockState getLatestBlockState();
 
     /**
      * Returns whether a fork has been activated.
@@ -160,8 +176,12 @@ public interface Dagchain {
      *
      * @param mainblock
      *            the block to import
+     * @param accountState
+     *            the snapshot of AccountState
+     * @param blockState
+     *            the snapshot of BlockState
      * @return true if the block is successfully imported; otherwise, false
      */
-    boolean importBlock(MainBlock mainblock);
+    boolean importBlock(MainBlock mainblock, AccountState accountState, BlockState blockState);
 
 }

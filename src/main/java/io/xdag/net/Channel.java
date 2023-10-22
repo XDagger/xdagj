@@ -25,7 +25,7 @@
 package io.xdag.net;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.xdag.DagKernel;
 import io.xdag.net.message.MessageQueue;
@@ -43,18 +43,17 @@ import lombok.Setter;
 @Setter
 public class Channel {
 
-    private SocketChannel socket;
+    private NioSocketChannel socket;
     private boolean isInbound;
     private InetSocketAddress remoteAddress;
     private Peer remotePeer;
     private MessageQueue msgQueue;
     private boolean isActive;
-    private XdagP2pHandler p2pHandler;
 
     /**
      * Creates a new channel instance.
      */
-    public Channel(SocketChannel socket) {
+    public Channel(NioSocketChannel socket) {
         this.socket = socket;
     }
 
@@ -76,16 +75,11 @@ public class Channel {
         pipe.addLast("readTimeoutHandler", new ReadTimeoutHandler(kernel.getConfig().getNodeSpec().getNetChannelIdleTimeout(), TimeUnit.MILLISECONDS));
         pipe.addLast("xdagFrameHandler", new XdagFrameHandler(kernel.getConfig()));
         pipe.addLast("xdagMessageHandler", new XdagMessageHandler(kernel.getConfig()));
-        p2pHandler = new XdagP2pHandler(this, kernel);
-        pipe.addLast("xdagP2pHandler", p2pHandler);
+        pipe.addLast("xdagP2pHandler", new XdagP2pHandler(this, kernel));
     }
 
     public void close() {
         socket.close();
-    }
-
-    public MessageQueue getMessageQueue() {
-        return msgQueue;
     }
 
     public boolean isInbound() {

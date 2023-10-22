@@ -31,18 +31,16 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
-import io.xdag.core.PowManager;
 import io.xdag.consensus.XdagPow;
+import io.xdag.consensus.XdagSync;
 import io.xdag.core.Dagchain;
 import io.xdag.core.DagchainImpl;
+import io.xdag.core.Genesis;
+import io.xdag.core.PendingManager;
+import io.xdag.crypto.RandomX;
 import io.xdag.db.DatabaseFactory;
 import io.xdag.db.DatabaseName;
-import io.xdag.core.Genesis;
 import io.xdag.db.LeveldbDatabase;
-import io.xdag.core.PendingManager;
-import io.xdag.core.SyncManager;
-import io.xdag.consensus.XdagSync;
-import io.xdag.crypto.RandomX;
 import io.xdag.net.ChannelManager;
 import io.xdag.net.NetDBManager;
 import io.xdag.net.PeerClient;
@@ -78,8 +76,8 @@ public class DagKernel {
     protected PeerServer p2p;
 
     protected Thread consThread;
-    protected XdagSync sync;
-    protected XdagPow pow;
+    protected XdagSync xdagSync;
+    protected XdagPow xdagPow;
     protected RandomX randomx;
     protected TelnetServer telnetServer;
     protected NetDBManager netDBManager;
@@ -121,7 +119,7 @@ public class DagKernel {
                 config.getNodeSpec().getNetworkVersion(),
                 coinbase);
         //printSystemInfo();
-        TimeUtils.startNtpProcess();
+        TimeUtils.startNtpProcess(config);
 
         // ====================================
         // initialize blockchain database
@@ -175,10 +173,10 @@ public class DagKernel {
         // ====================================
         // start sync/consensus
         // ====================================
-        sync = new XdagSync(this);
-        pow = new XdagPow(this);
+        xdagSync = new XdagSync(this);
+        xdagPow = new XdagPow(this);
 
-        consThread = new Thread(pow::start, "consensus");
+        consThread = new Thread(xdagPow::start, "consensus");
         consThread.start();
 
         // ====================================
@@ -289,8 +287,8 @@ public class DagKernel {
 
         // stop consensus
         try {
-            sync.stop();
-            pow.stop();
+            xdagSync.stop();
+            xdagPow.stop();
 
             // make sure consensus thread is fully stopped
             consThread.join();
@@ -329,20 +327,6 @@ public class DagKernel {
      */
     public State state() {
         return state;
-    }
-
-    /**
-     * Returns the syncing manager.
-     */
-    public SyncManager getSyncManager() {
-        return sync;
-    }
-
-    /**
-     * Returns the POW manager.
-     */
-    public PowManager getPowManager() {
-        return pow;
     }
 
     /**

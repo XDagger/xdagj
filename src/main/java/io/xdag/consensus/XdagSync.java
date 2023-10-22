@@ -56,6 +56,8 @@ import io.xdag.core.BlockPart;
 import io.xdag.core.Dagchain;
 import io.xdag.core.MainBlock;
 import io.xdag.core.SyncManager;
+import io.xdag.core.state.AccountState;
+import io.xdag.core.state.BlockState;
 import io.xdag.net.Capability;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
@@ -96,7 +98,9 @@ public class XdagSync implements SyncManager {
     private final Config config;
 
     private final Dagchain chain;
-    private final ChannelManager channelMgr;
+    private final ChannelManager channelManager;
+
+    private volatile Channel channel;
 
     // task queues
     private final AtomicLong latestQueuedTask = new AtomicLong();
@@ -132,7 +136,7 @@ public class XdagSync implements SyncManager {
         this.config = kernel.getConfig();
 
         this.chain = kernel.getDagchain();
-        this.channelMgr = kernel.getChannelManager();
+        this.channelManager = kernel.getChannelManager();
 
         this.DOWNLOAD_TIMEOUT = config.getNodeSpec().syncDownloadTimeout();
         this.MAX_QUEUED_JOBS = config.getNodeSpec().syncMaxQueuedJobs();
@@ -141,13 +145,19 @@ public class XdagSync implements SyncManager {
     }
 
     @Override
-    public void start(long targetHeight) {
+    public void start(long begin, long current, long target, Channel channel) {
         if (isRunning.compareAndSet(false, true)) {
+            this.channel = channel;
             beginningTimestamp.set(System.currentTimeMillis());
 
             badPeers.clear();
 
-            log.info("Syncing started, best known block = {}", targetHeight - 1);
+            log.info("Syncing started, best known block = {}, begin = {}, current = {}, target = {}, peer = {}",
+                    chain.getLatestMainBlockNumber(),
+                    begin,
+                    current,
+                    target,
+                    channel.getRemotePeer());
 
             // [1] set up queues
             synchronized (lock) {
@@ -156,11 +166,11 @@ public class XdagSync implements SyncManager {
                 toValidate.clear();
                 toImport.clear();
 
-                begin.set(chain.getLatestMainBlockNumber() + 1);
-                current.set(chain.getLatestMainBlockNumber() + 1);
-                target.set(targetHeight);
-                lastObserved.set(chain.getLatestMainBlockNumber());
-                latestQueuedTask.set(chain.getLatestMainBlockNumber());
+                this.begin.set(begin);
+                this.current.set(current);
+                this.target.set(target);
+                lastObserved.set(begin - 1);
+                latestQueuedTask.set(begin - 1);
                 growToDownloadQueue();
             }
 
@@ -168,15 +178,14 @@ public class XdagSync implements SyncManager {
             ScheduledFuture<?> download = timer1.scheduleAtFixedRate(this::download, 0, 500, TimeUnit.MICROSECONDS);
             ScheduledFuture<?> process = timer2.scheduleAtFixedRate(this::process, 0, 1000, TimeUnit.MICROSECONDS);
             ScheduledFuture<?> reporter = timer3.scheduleAtFixedRate(() -> {
-                long newBlockNumber = chain.getLatestMainBlockNumber();
                 log.info(
                         "Syncing status: importing {} blocks per second, {} to download, {} to receive, {} to validate, {} to import",
-                        (newBlockNumber - lastObserved.get()) / 30,
+                        (current - lastObserved.get()) / 30,
                         toDownload.size(),
                         toReceive.size(),
                         toValidate.size(),
                         toImport.size());
-                lastObserved.set(newBlockNumber);
+                lastObserved.set(current);
             }, 30, 30, TimeUnit.SECONDS);
 
             // [3] wait until the sync is done
@@ -196,6 +205,7 @@ public class XdagSync implements SyncManager {
             download.cancel(true);
             process.cancel(false);
             reporter.cancel(true);
+            this.channel = null;
 
             Instant end = Instant.now();
             log.info("Syncing finished, took {}",
@@ -273,6 +283,7 @@ public class XdagSync implements SyncManager {
             }
             break;
         }
+        case MAIN_BLOCK_HEADER:
         default: {
             break;
         }
@@ -321,38 +332,44 @@ public class XdagSync implements SyncManager {
                 return;
             }
 
-            // get idle channels
-            List<Channel> channels = channelMgr.getIdleChannels().stream()
-                    .filter(channel -> {
-                        Peer peer = channel.getRemotePeer();
-                        // the peer has the block
-                        return peer.getLatestBlockNumber() >= task
-                                // AND is not banned
-                                && !badPeers.contains(peer.getPeerId())
-                        // AND supports FAST_SYNC if we enabled this protocol
-                                && (!config.getNodeSpec().syncFastSync() || isFastSyncSupported(peer));
-                    })
-                    .toList();
-            log.trace("Qualified idle peers = {}", channels.size());
+            Channel c = null;
+            if(channel == null) {
+                // get idle channels
+                List<Channel> channels = channelManager.getIdleChannels().stream()
+                        .filter(channel -> {
+                            Peer peer = channel.getRemotePeer();
+                            // the peer has the block
+                            return peer.getLatestMainBlock().getNumber() >= task
+                                    // AND is not banned
+                                    && !badPeers.contains(peer.getPeerId())
+                                    // AND supports FAST_SYNC if we enabled this protocol
+                                    && (!config.getNodeSpec().syncFastSync() || isFastSyncSupported(peer));
+                        })
+                        .toList();
+                log.trace("Qualified idle peers = {}", channels.size());
 
-            // quit if no idle channels.
-            if (channels.isEmpty()) {
-                return;
+                // quit if no idle channels.
+                if (channels.isEmpty()) {
+                    return;
+                }
+                // otherwise, pick a random channel
+                c = channels.get(random.nextInt(channels.size()));
+            } else {
+                c = this.channel;
             }
-            // otherwise, pick a random channel
-            Channel c = channels.get(random.nextInt(channels.size()));
+
 
             if (config.getNodeSpec().syncFastSync()) { // use FAST_SYNC protocol
                 log.trace("Requesting block #{} from {}:{}, HEADER + TRANSACTIONS", task,
                         c.getRemoteIp(),
                         c.getRemotePort());
-                c.getMessageQueue().sendMessage(new GetMainBlockPartsMessage(task,
+                c.getMsgQueue().sendMessage(new GetMainBlockPartsMessage(task,
                         BlockPart.encode(BlockPart.HEADER, BlockPart.TRANSACTIONS)));
 
             } else { // use old protocol
                 log.trace("Requesting block #{} from {}:{}, FULL BLOCK", task, c.getRemoteIp(),
                         c.getRemotePort());
-                c.getMessageQueue().sendMessage(new GetMainBlockMessage(task));
+                c.getMsgQueue().sendMessage(new GetMainBlockMessage(task));
             }
 
             if (toDownload.remove(task)) {
@@ -379,9 +396,9 @@ public class XdagSync implements SyncManager {
                 task < target.get() && toDownload.size() < MAX_QUEUED_JOBS; //
                 task++) {
             latestQueuedTask.accumulateAndGet(task, (prev, next) -> Math.max(next, prev));
-            if (!chain.hasMainBlock(task)) {
+//            if (!chain.hasMainBlock(task)) {
                 toDownload.add(task);
-            }
+//            }
         }
     }
 
@@ -390,16 +407,13 @@ public class XdagSync implements SyncManager {
             return;
         }
 
-        long latest = chain.getLatestMainBlockNumber();
+        long latest = current.get();
         if (latest + 1 >= target.get()) {
             stop();
             return; // This is important because stop() only notify
         }
 
-        // find the check point
         long checkpoint = latest + 1;
-        checkpoint++;
-
 
         synchronized (lock) {
             // Move blocks from validate queue to import queue if within range
@@ -419,13 +433,17 @@ public class XdagSync implements SyncManager {
             }
 
             if (toImport.size() >= checkpoint - latest) {
-                // Validate the block hashes
+                // Validate the main block hashes
                 boolean valid = validateBlockHashes(latest + 1, checkpoint);
 
                 if (valid) {
                     for (long n = latest + 1; n <= checkpoint; n++) {
                         Pair<MainBlock, Channel> p = toImport.remove(n);
-                        boolean imported = chain.importBlock(p.getKey());
+                        MainBlock mb = p.getKey();
+                        AccountState parentAccountState = chain.getAccountState(mb.getParentHash(), mb.getNumber() - 1);
+                        BlockState parentBlockState = chain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
+                        boolean imported = chain.importBlock(p.getKey(), parentAccountState.clone(),
+                                parentBlockState.clone());
                         if (!imported) {
                             handleInvalidBlock(p.getKey(), p.getValue());
                             break;
@@ -435,7 +453,7 @@ public class XdagSync implements SyncManager {
                             log.info("{}", p.getLeft());
                         }
                     }
-                    current.set(chain.getLatestMainBlockNumber() + 1);
+                    current.getAndIncrement();
                 }
             }
         }
@@ -452,14 +470,6 @@ public class XdagSync implements SyncManager {
      */
     protected boolean validateBlockHashes(long from, long to) {
         synchronized (lock) {
-            // Validate votes for the last block in set
-            Pair<MainBlock, Channel> checkpoint = toImport.get(to);
-            MainBlock block = checkpoint.getKey();
-//            if (!chain.validateBlockVotes(block)) {
-//                handleInvalidBlock(block, checkpoint.getValue());
-//                return false;
-//            }
-
             for (long n = to - 1; n >= from; n--) {
                 Pair<MainBlock, Channel> current = toImport.get(n);
                 Pair<MainBlock, Channel> child = toImport.get(n + 1);
@@ -495,7 +505,7 @@ public class XdagSync implements SyncManager {
 
         if (config.getNodeSpec().syncDisconnectOnInvalidBlock()) {
             // disconnect if the peer sends us invalid block
-            channel.getMessageQueue().disconnect(ReasonCode.BAD_PEER);
+            channel.getMsgQueue().disconnect(ReasonCode.BAD_PEER);
         }
     }
 

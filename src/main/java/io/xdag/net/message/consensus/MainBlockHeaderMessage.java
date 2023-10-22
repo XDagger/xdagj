@@ -51,6 +51,6 @@ public class MainBlockHeaderMessage extends Message {
 
     @Override
     public String toString() {
-        return "BlockHeaderMessage [header=" + header + "]";
+        return "MainBlockHeaderMessage [header=" + header + "]";
     }
 }

@@ -24,6 +24,9 @@
 
 package io.xdag.net.message;
 
+import org.apache.tuweni.bytes.Bytes;
+
+import io.xdag.net.message.consensus.EpochMessage;
 import io.xdag.net.message.consensus.GetMainBlockHeaderMessage;
 import io.xdag.net.message.consensus.GetMainBlockMessage;
 import io.xdag.net.message.consensus.GetMainBlockPartsMessage;
@@ -57,60 +60,28 @@ public class MessageFactory {
 
         MessageCode c = MessageCode.of(code);
         if (c == null) {
-            //log.debug("Invalid message code: {}", Hex.encode0x(Bytes.of(code)));
+            log.debug("Invalid message code: {}", Bytes.of(code).toHexString());
             return null;
         }
 
         try {
-            switch (c) {
-            case HANDSHAKE_INIT:
-                return new InitMessage(body);
-            case HANDSHAKE_HELLO:
-                return new HelloMessage(body);
-            case HANDSHAKE_WORLD:
-                return new WorldMessage(body);
-            case DISCONNECT:
-                return new DisconnectMessage(body);
-            case PING:
-                return new PingMessage(body);
-            case PONG:
-                return new PongMessage(body);
-
-//            case BLOCKS_REQUEST:
-//                return new BlocksRequestMessage(body);
-//            case BLOCKS_REPLY:
-//                return new BlocksReplyMessage(body);
-//            case SUMS_REQUEST:
-//                return new SumRequestMessage(body);
-//            case SUMS_REPLY:
-//                return new SumReplyMessage(body);
-//            case BLOCKEXT_REQUEST:
-//                return new BlockExtRequestMessage(body);
-//            case BLOCKEXT_REPLY:
-//                return new BlockExtReplyMessage(body);
-//            case BLOCK_REQUEST:
-//                return new BlockRequestMessage(body);
-//            case NEW_BLOCK:
-//                return new NewBlockMessage(body);
-
-            case TRANSACTION:
-                return new TransactionMessage(body);
-            case GET_MAIN_BLOCK:
-                return new GetMainBlockMessage(body);
-            case MAIN_BLOCK:
-                return new MainBlockMessage(body);
-            case GET_MAIN_BLOCK_HEADER:
-                return new GetMainBlockHeaderMessage(body);
-            case MAIN_BLOCK_HEADER:
-                return new MainBlockHeaderMessage(body);
-            case GET_MAIN_BLOCK_PARTS:
-                return new GetMainBlockPartsMessage(body);
-            case MAIN_BLOCK_PARTS:
-                return new MainBlockPartsMessage(body);
-
-            default:
-                throw new UnreachableException();
-            }
+            return switch (c) {
+                case DISCONNECT -> new DisconnectMessage(body);
+                case HANDSHAKE_INIT -> new InitMessage(body);
+                case HANDSHAKE_HELLO -> new HelloMessage(body);
+                case HANDSHAKE_WORLD -> new WorldMessage(body);
+                case PING -> new PingMessage(body);
+                case PONG -> new PongMessage(body);
+                case TRANSACTION -> new TransactionMessage(body);
+                case GET_MAIN_BLOCK -> new GetMainBlockMessage(body);
+                case MAIN_BLOCK -> new MainBlockMessage(body);
+                case GET_MAIN_BLOCK_HEADER -> new GetMainBlockHeaderMessage(body);
+                case MAIN_BLOCK_HEADER -> new MainBlockHeaderMessage(body);
+                case GET_MAIN_BLOCK_PARTS -> new GetMainBlockPartsMessage(body);
+                case MAIN_BLOCK_PARTS -> new MainBlockPartsMessage(body);
+                case EPOCH_BLOCK -> new EpochMessage(body);
+                default -> throw new UnreachableException();
+            };
         } catch (Exception e) {
             throw new MessageException("Failed to decode message", e);
         }

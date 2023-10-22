@@ -23,6 +23,7 @@
  */
 package io.xdag.core.state;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,7 +45,6 @@ public class AccountStateImpl implements Cloneable, AccountState {
     protected static final byte TYPE_ACCOUNT = 0;
 
     protected Database accountDB;
-    protected AccountStateImpl prev;
 
     /**
      * All updates, or deletes if the value is null.
@@ -58,27 +58,18 @@ public class AccountStateImpl implements Cloneable, AccountState {
         this.accountDB = accountDB;
     }
 
-    /**
-     * Create an {@link AccountState} based on a previous AccountState.
-     */
-    public AccountStateImpl(AccountStateImpl prev) {
-        this.prev = prev;
-    }
-
     @Override
     public Account getAccount(byte[] address) {
         ByteArray k = getKey(TYPE_ACCOUNT, address);
         XAmount noAmount = XAmount.ZERO;
 
+        byte[] v;
         if (updates.containsKey(k)) {
-            byte[] v = updates.get(k);
-            return v == null ? new Account(address, noAmount, noAmount, 0) : Account.fromBytes(address, v);
-        } else if (prev != null) {
-            return prev.getAccount(address);
+            v = updates.get(k);
         } else {
-            byte[] v = accountDB.get(k.getData());
-            return v == null ? new Account(address, noAmount, noAmount, 0) : Account.fromBytes(address, v);
+            v = accountDB.get(k.getData());
         }
+        return v == null ? new Account(address, noAmount, noAmount, 0) : Account.fromBytes(address, v);
     }
 
     @Override
@@ -111,28 +102,35 @@ public class AccountStateImpl implements Cloneable, AccountState {
     }
 
     @Override
-    public AccountState track() {
-        return new AccountStateImpl(this);
-    }
-
-    @Override
     public void commit() {
         synchronized (updates) {
-            if (prev == null) {
-                for (Map.Entry<ByteArray, byte[]> entry : updates.entrySet()) {
-                    if (entry.getValue() == null) {
-                        accountDB.delete(entry.getKey().getData());
-                    } else {
-                        accountDB.put(entry.getKey().getData(), entry.getValue());
-                    }
-                }
-            } else {
-                for (Map.Entry<ByteArray, byte[]> e : updates.entrySet()) {
-                    prev.updates.put(e.getKey(), e.getValue());
+            for (Map.Entry<ByteArray, byte[]> entry : updates.entrySet()) {
+                if (entry.getValue() == null) {
+                    accountDB.delete(entry.getKey().getData());
+                } else {
+                    accountDB.put(entry.getKey().getData(), entry.getValue());
                 }
             }
 
             updates.clear();
+        }
+    }
+
+    @Override
+    public Map<ByteArray, byte[]> getUpdates() {
+        return this.updates;
+    }
+
+    @Override
+    public void removeUpdates(AccountState otherAs) {
+        if(!updates.isEmpty() && otherAs!= null && !otherAs.getUpdates().isEmpty()) {
+            Map<ByteArray, byte[]> otherAsUpdates = otherAs.getUpdates();
+            otherAsUpdates.forEach((otherK, otherV) ->{
+                byte[] v = updates.get(otherK);
+                if(v != null && Arrays.equals(v, otherV)) {
+                    updates.remove(otherK);
+                }
+            });
         }
     }
 
@@ -147,8 +145,6 @@ public class AccountStateImpl implements Cloneable, AccountState {
 
         if (updates.containsKey(k)) {
             return true;
-        } else if (prev != null) {
-            return prev.exists(address);
         } else {
             byte[] v = accountDB.get(k.getData());
             return v != null;
@@ -168,7 +164,6 @@ public class AccountStateImpl implements Cloneable, AccountState {
     @Override
     public AccountState clone() {
         AccountStateImpl clone = new AccountStateImpl(accountDB);
-        clone.prev = prev;
         clone.updates.putAll(updates);
 
         return clone;

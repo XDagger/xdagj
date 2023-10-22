@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
 
+import io.xdag.Network;
+import io.xdag.config.Config;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -58,7 +60,10 @@ public final class TimeUtils {
 
     private static long timeOffsetFromNtp = 0;
 
-    public static void startNtpProcess() {
+    public static void startNtpProcess(Config config) {
+        if(config.getNodeSpec().getNetwork() != Network.MAINNET) {
+            return;
+        }
         // inline run at start
         updateNetworkTimeOffset();
         // update time every hour

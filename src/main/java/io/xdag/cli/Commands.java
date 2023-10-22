@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -48,12 +49,12 @@ import com.google.common.collect.Lists;
 import io.xdag.DagKernel;
 import io.xdag.core.Dagchain;
 import io.xdag.core.MainBlock;
-import io.xdag.core.SyncManager;
 import io.xdag.core.XAmount;
 import io.xdag.core.XUnit;
 import io.xdag.core.state.Account;
 import io.xdag.core.state.AccountState;
 import io.xdag.net.Channel;
+import io.xdag.net.Peer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -101,11 +102,11 @@ public class Commands {
      * @return address + balance
      */
     public String account(int num) {
-        // account in memory, do not store in rocksdb, do not show in terminal
         StringBuilder str = new StringBuilder();
         List<KeyPair> list = kernel.getWallet().getAccounts();
 
-        AccountState as = kernel.getDagchain().getAccountState();
+        MainBlock latestMainBlock = kernel.getDagchain().getLatestMainBlock();
+        AccountState as = kernel.getDagchain().getAccountState(latestMainBlock.getHash(), latestMainBlock.getNumber());
         // 按balance降序排序，按key index降序排序
         list.sort((o1, o2) -> {
             Account a1 = as.getAccount(toBytesAddress(o1));
@@ -141,7 +142,8 @@ public class Commands {
      * @return balance of give address
      */
     public String balance(String address) {
-        AccountState as = kernel.getDagchain().getAccountState();
+        MainBlock latestMainBlock = kernel.getDagchain().getLatestMainBlock();
+        AccountState as = kernel.getDagchain().getAccountState(latestMainBlock.getHash(), latestMainBlock.getNumber());
         if (StringUtils.isEmpty(address)) {
             XAmount ourBalance = XAmount.ZERO;
             List<KeyPair> list = kernel.getWallet().getAccounts();
@@ -317,22 +319,30 @@ public class Commands {
      * Current Dagchain Status
      */
     public String stats() {
-        SyncManager.Progress prs = kernel.getSyncManager().getProgress();
+        List<Peer> activePeers = kernel.getChannelManager().getActivePeers();
+
+        int hostsSize = kernel.getNetDBManager().getNetDB().getSize();
+        int activePeersSize = activePeers.size();
+        long localBlockHeight = kernel.getDagchain().getLatestMainBlockNumber();
+        int pendingSize = kernel.getPendingManager().getQueue().size();
+        XAmount localSupply = kernel.getConfig().getDagSpec().getMainBlockSupply(localBlockHeight);
+
+        long[] remoteNumbers = activePeers.stream()
+                .mapToLong(c -> c.getLatestMainBlock().getNumber())
+                .sorted()
+                .toArray();
+        XAmount remoteSupply = kernel.getConfig().getDagSpec().getMainBlockSupply(NumberUtils.max(remoteNumbers));
 
         return String.format("""
                         Statistics for ours and maximum known parameters:
                                     hosts: %d of %d
-                             active peers: %d
                               main blocks: %d of %d
-                         transaction pool: %d
-                            sync progress: [start->%d, current->%d, target->%d, time->%s]
-                              XDAG supply: %s of %s""",
-                kernel.getNetDBManager().getNetDB().getSize(), kernel.getNetDBManager().getWhiteDB().getSize(),
-                kernel.getChannelManager().getActivePeers().size(),
-                kernel.getDagchain().getLatestMainBlockNumber(), kernel.getDagchain().getLatestMainBlockNumber(),
-                kernel.getPendingManager().getQueue().size(),
-                prs.getStartingHeight(), prs.getCurrentHeight(), prs.getTargetHeight(), prs.getSyncEstimation(),
-                kernel.getConfig().getDagSpec().getMainBlockSupply(kernel.getDagchain().getLatestMainBlockNumber()).toDecimal(9, XUnit.XDAG).toPlainString()
+                               pending tx: %d
+                              xdag supply: %s of %s""",
+                activePeersSize, hostsSize,
+                localBlockHeight, localBlockHeight,
+                pendingSize,
+                localSupply.toDecimal(9, XUnit.XDAG).toPlainString(), remoteSupply.toDecimal(9, XUnit.XDAG).toPlainString()
         );
     }
 
@@ -542,9 +552,9 @@ public class Commands {
 //        return "Key " + (size - 1) + " generated and set as default,now key size is:" + size;
 //    }
 
-//    public String state() {
-//        return kernel.getXdagState().toString();
-//    }
+    public String state() {
+        return kernel.getState().name();
+    }
 
 //    public String balanceMaxXfer() {
 //        return getBalanceMaxXfer(kernel);
