@@ -39,14 +39,6 @@ import io.xdag.Network;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.UnitTestnetConfig;
-import io.xdag.core.Dagchain;
-import io.xdag.core.DagchainImpl;
-import io.xdag.core.PendingManager;
-import io.xdag.core.Transaction;
-import io.xdag.core.TransactionExecutor;
-import io.xdag.core.TransactionResult;
-import io.xdag.core.TransactionType;
-import io.xdag.core.XAmount;
 import io.xdag.core.state.AccountState;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
@@ -71,7 +63,7 @@ public class TransactionExecutorTest {
         config = new UnitTestnetConfig(Constants.DEFAULT_ROOT_DIR);
         pendingMgr = Mockito.mock(PendingManager.class);
         chain = new DagchainImpl(config, pendingMgr, temporaryDBFactory);
-        as = chain.getAccountState();
+        as = chain.getLatestAccountState();
         exec = new TransactionExecutor(config);
         network = config.getNodeSpec().getNetwork();
     }
@@ -101,20 +93,20 @@ public class TransactionExecutorTest {
         assertTrue(tx.validate(network));
 
         // insufficient available
-        TransactionResult result = exec.execute(tx, as.track());
+        TransactionResult result = exec.execute(tx, as.clone());
         assertFalse(result.getCode().isSuccess());
 
         XAmount available = XAmount.of(1000, XDAG);
         as.adjustAvailable(Keys.toBytesAddress(key), available);
 
         // execute but not commit
-        result = exec.execute(tx, as.track());
+        result = exec.execute(tx, as.clone());
         assertTrue(result.getCode().isSuccess());
         assertEquals(available, as.getAccount(Keys.toBytesAddress(key)).getAvailable());
         assertEquals(ZERO, as.getAccount(to).getAvailable());
 
         // execute and commit
-        result = executeAndCommit(exec, tx, as.track());
+        result = executeAndCommit(exec, tx, as);
         assertTrue(result.getCode().isSuccess());
         assertEquals(available.subtract(value.add(fee)), as.getAccount(Keys.toBytesAddress(key)).getAvailable());
         assertEquals(value, as.getAccount(to).getAvailable());

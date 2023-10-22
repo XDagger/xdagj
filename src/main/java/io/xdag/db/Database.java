@@ -46,7 +46,7 @@ public interface Database {
     /**
      * Returns the value from snapshort that is mapped to the specified key.
      */
-    public byte[] get(byte[] key, ReadOptions readOptions);
+    byte[] get(byte[] key, ReadOptions readOptions);
 
     /**
      * Associates a value to the specified key.

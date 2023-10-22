@@ -29,11 +29,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections4.MapUtils;
-import org.apache.tuweni.units.bigints.UInt64;
 
 import io.xdag.Network;
 import io.xdag.core.Fork;
-import io.xdag.core.XAmount;
 
 public class MainnetConfig extends AbstractConfig {
 

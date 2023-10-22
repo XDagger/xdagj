@@ -23,6 +23,8 @@
  */
 package io.xdag.core.state;
 
+import java.util.Map;
+
 import io.xdag.core.XAmount;
 
 public interface AccountState {
@@ -48,14 +50,16 @@ public interface AccountState {
     void adjustLocked(byte[] address, XAmount delta);
 
     /**
-     * Makes a snapshot and starts tracking further updates.
-     */
-    AccountState track();
-
-    /**
      * Commits all updates since last snapshot.
      */
     void commit();
+
+    Map<ByteArray, byte[]> getUpdates();
+
+    /**
+     * Remove updates form a AccountState.
+     */
+    void removeUpdates(AccountState otherAs);
 
     /**
      * Reverts all updates since last snapshot.

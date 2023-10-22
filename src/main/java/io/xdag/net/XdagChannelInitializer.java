@@ -29,13 +29,13 @@ import java.net.InetSocketAddress;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.DagKernel;
 import io.xdag.net.node.Node;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
+public class XdagChannelInitializer extends ChannelInitializer<NioSocketChannel> {
 
     private final DagKernel kernel;
     private final ChannelManager channelMgr;
@@ -48,7 +48,7 @@ public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
     }
 
     @Override
-    protected void initChannel(SocketChannel ch) {
+    protected void initChannel(NioSocketChannel ch) {
         try {
             InetSocketAddress address = isServerMode() ? ch.remoteAddress() : remoteNode.getAddress();
             log.debug("New {} channel: remoteAddress = {}:{}", isServerMode() ? "inbound" : "outbound",
@@ -66,7 +66,6 @@ public class XdagChannelInitializer extends ChannelInitializer<SocketChannel> {
             ch.config().setRecvByteBufAllocator(new FixedRecvByteBufAllocator(bufferSize));
             ch.config().setOption(ChannelOption.SO_RCVBUF, bufferSize);
             ch.config().setOption(ChannelOption.SO_BACKLOG, 1024);
-            ch.config().setOption(ChannelOption.TCP_NODELAY, true);
 
             // notify disconnection to channel manager
             ch.closeFuture().addListener(future -> channelMgr.remove(channel));

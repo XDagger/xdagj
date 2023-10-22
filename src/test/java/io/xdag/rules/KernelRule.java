@@ -45,7 +45,6 @@ import io.xdag.Network;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.config.UnitTestnetConfig;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.DagchainImpl;
@@ -58,6 +57,7 @@ import io.xdag.core.TransactionResult;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.db.LeveldbDatabase;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.TimeUtils;
 import lombok.Getter;
@@ -210,14 +210,7 @@ public class KernelRule extends TemporaryFolder {
         byte[] resultsRoot = MerkleUtils.computeResultsRoot(res);
         byte[] data = {};
 
-        BlockHeader header = new BlockHeader(
-                number,
-                coinbase,
-                prevHash,
-                timestamp,
-                transactionsRoot,
-                resultsRoot,
-                data);
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
 
         return new MainBlock(header, txs, res);
     }

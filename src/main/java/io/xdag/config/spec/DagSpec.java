@@ -60,7 +60,7 @@ public interface DagSpec {
     /**
      * Get checkpoints.
      *
-     * @return a map of blockchain checkpoints [block height] => [block hash]
+     * @return a map of blockchain checkpoints [block number] => [block hash]
      */
     Map<Long, byte[]> checkpoints();
 

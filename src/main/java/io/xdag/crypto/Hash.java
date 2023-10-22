@@ -55,9 +55,9 @@ public class Hash {
         return digest.digest(input);
     }
 
-    public static byte[] randomXHash(byte[] input, RandomX randomX) {
-        randomX.randomXBlockHash()
-    }
+//    public static byte[] randomXHash(byte[] input, RandomX randomX) {
+//        randomX.randomXBlockHash()
+//    }
 
     /**
      * Merge two byte arrays and compute the 256-bit hash.

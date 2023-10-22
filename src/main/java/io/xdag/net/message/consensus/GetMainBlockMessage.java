@@ -54,6 +54,6 @@ public class GetMainBlockMessage extends Message {
 
     @Override
     public String toString() {
-        return "GetBlockMessage [number=" + number + "]";
+        return "GetMainBlockMessage [number=" + number + "]";
     }
 }

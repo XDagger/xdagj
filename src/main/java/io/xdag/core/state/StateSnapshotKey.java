@@ -21,16 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.core.state;
 
-package io.xdag.config;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.tuweni.bytes.Bytes;
 
-import io.xdag.Network;
+import lombok.Getter;
+import lombok.Setter;
 
-public class TestnetConfig extends AbstractConfig {
+@Getter
+@Setter
+public class StateSnapshotKey {
 
-    public TestnetConfig(String dataDir) {
-        super(dataDir, Network.TESTNET, Constants.TESTNET_VERSION);
-        this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
+    private ByteArray hash;
+    private long number;
+
+    public StateSnapshotKey(ByteArray hash, long number) {
+        this.hash = hash;
+        this.number = number;
+    }
+
+    public static StateSnapshotKey of(byte[] hash, long number) {
+        return new StateSnapshotKey(ByteArray.of(hash), number);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return (other instanceof StateSnapshotKey) && this.hash.equals(((StateSnapshotKey) other).hash) && number == ((StateSnapshotKey) other).number;
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return number + ":" + Bytes.wrap(hash.getData()).toHexString() ;
     }
 
 }

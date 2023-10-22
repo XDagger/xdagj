@@ -27,6 +27,14 @@ package io.xdag.net;
 import static io.xdag.crypto.Keys.toBytesAddress;
 import static io.xdag.utils.WalletUtils.toBase58;
 
+import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.hyperledger.besu.crypto.KeyPair;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -36,33 +44,27 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
 import io.xdag.net.node.Node;
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ThreadFactory;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.hyperledger.besu.crypto.KeyPair;
 
 @Slf4j
 @Getter
 @Setter
 public class PeerClient {
 
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
-            .namingPattern("XdagClient-thread-%d")
-            .daemon(true)
-            .build();
+    private static final ThreadFactory factory = new ThreadFactory() {
+        final AtomicInteger cnt = new AtomicInteger(0);
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "client-" + cnt.getAndIncrement());
+        }
+    };
 
     private final String ip;
     private final int port;
-
-    @Getter
     private final KeyPair coinbase;
-
     private final EventLoopGroup workerGroup;
 
     private final Config config;
@@ -75,7 +77,7 @@ public class PeerClient {
         this.ip = config.getNodeSpec().getNodeIp();
         this.port = config.getNodeSpec().getNodePort();
         this.coinbase = coinbase;
-        this.workerGroup = new NioEventLoopGroup(0, factory);
+        this.workerGroup = new NioEventLoopGroup(4, factory);
         this.whilelist = new HashSet<>();
         initWhiteIPs();
     }
@@ -91,7 +93,6 @@ public class PeerClient {
         Bootstrap b = new Bootstrap();
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
-        b.option(ChannelOption.TCP_NODELAY, true);
         b.option(ChannelOption.SO_KEEPALIVE, true);
         b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
         b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getNodeSpec().getConnectionTimeout());

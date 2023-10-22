@@ -29,15 +29,16 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.Network;
+import io.xdag.core.MainBlock;
 import io.xdag.net.message.MessageCode;
 
 public class WorldMessage extends HandshakeMessage {
 
     public WorldMessage(Network network, short networkVersion, String peerId, int port,
-            String clientId, String[] capabilities, long latestBlockNumber,
+            String clientId, String[] capabilities, MainBlock latestMainBlock,
             byte[] secret, KeyPair coinbase) {
         super(MessageCode.HANDSHAKE_WORLD, null, network, networkVersion, peerId, port, clientId,
-                capabilities, latestBlockNumber, secret, coinbase);
+                capabilities, latestMainBlock, secret, coinbase);
     }
 
     public WorldMessage(byte[] encoded) {
@@ -53,7 +54,7 @@ public class WorldMessage extends HandshakeMessage {
                 ", port=" + port +
                 ", clientId='" + clientId + '\'' +
                 ", capabilities=" + Arrays.toString(capabilities) +
-                ", latestBlockNumber=" + latestBlockNumber +
+                ", latestBlockNumber=" + latestMainBlock.getNumber() +
                 ", secret=" + Bytes.wrap(secret).toHexString() +
                 ", timestamp=" + timestamp +
                 '}';

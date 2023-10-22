@@ -30,7 +30,7 @@ import java.util.Collections;
 import org.junit.Test;
 
 import io.xdag.core.BlockHeader;
-import io.xdag.net.message.consensus.MainBlockHeaderMessage;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.net.message.MessageCode;
 import io.xdag.utils.BytesUtils;
@@ -48,7 +48,7 @@ public class MainBlockHeaderMessageTest {
         byte[] resultsRoot = MerkleUtils.computeResultsRoot(Collections.emptyList());
         byte[] data = {};
 
-        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, data);
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
 
         MainBlockHeaderMessage m = new MainBlockHeaderMessage(header);
         assertThat(m.getCode()).isEqualTo(MessageCode.MAIN_BLOCK_HEADER);

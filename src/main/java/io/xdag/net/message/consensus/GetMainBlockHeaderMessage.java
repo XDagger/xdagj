@@ -55,6 +55,6 @@ public class GetMainBlockHeaderMessage extends Message {
 
     @Override
     public String toString() {
-        return "GetBlockHeaderMessage [number=" + number + "]";
+        return "GetMainBlockHeaderMessage [number=" + number + "]";
     }
 }

@@ -86,15 +86,15 @@ public class KernelMock extends DagKernel {
     /**
      * Sets the sync manager instance.
      */
-    public void setSyncManager(XdagSync sync) {
-        this.sync = sync;
+    public void setSyncManager(XdagSync xdagSync) {
+        this.xdagSync = xdagSync;
     }
 
     /**
      * Sets the pow manager instance.
      */
-    public void setPowManager(XdagPow pow) {
-        this.pow = pow;
+    public void setPowManager(XdagPow xdagPow) {
+        this.xdagPow = xdagPow;
     }
 
     /**

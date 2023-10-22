@@ -39,6 +39,7 @@ import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.UnitTestnetConfig;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.SimpleDecoder;
@@ -52,6 +53,7 @@ public class MainBlockTest {
     private byte[] coinbase = BytesUtils.random(20);
     private byte[] prevHash = BytesUtils.random(32);
     private long timestamp = TimeUtils.currentTimeMillis();
+    private long nonce = 0;
     private byte[] data = BytesUtils.of("data");
 
     private Transaction tx = new Transaction(Network.DEVNET, TransactionType.TRANSFER, BytesUtils.random(20), ZERO,
@@ -73,7 +75,7 @@ public class MainBlockTest {
 
     @Test
     public void testNew() {
-        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, data);
+        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, nonce, data);
         MainBlock block = new MainBlock(header, transactions, results);
         hash = block.getHash();
 
@@ -82,7 +84,7 @@ public class MainBlockTest {
 
     @Test
     public void testSerialization() {
-        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, data);
+        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, nonce, data);
         MainBlock block = new MainBlock(header, transactions, results);
         hash = block.getHash();
 
@@ -103,7 +105,7 @@ public class MainBlockTest {
 
     @Test
     public void testTransactionIndexes() {
-        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, data);
+        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, nonce, data);
         MainBlock block = new MainBlock(header, transactions, results);
 
         Pair<byte[], List<Integer>> indexes = block.getEncodedTransactionsAndIndices();
@@ -118,9 +120,9 @@ public class MainBlockTest {
     @Test
     public void testValidateTransactions() {
         BlockHeader previousHeader = new BlockHeader(number - 1, coinbase, prevHash, timestamp - 1, transactionsRoot,
-                resultsRoot, data);
-        BlockHeader header = new BlockHeader(number, coinbase, previousHeader.getHash(), timestamp, transactionsRoot,
-                resultsRoot, data);
+                resultsRoot, nonce, data);
+
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(previousHeader.getHash(), number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
         MainBlock block = new MainBlock(header, transactions);
 
         assertTrue(block.validateHeader(header, previousHeader));
@@ -131,9 +133,8 @@ public class MainBlockTest {
     @Test
     public void testValidateTransactionsSparse() {
         BlockHeader previousHeader = new BlockHeader(number - 1, coinbase, prevHash, timestamp - 1, transactionsRoot,
-                resultsRoot, data);
-        BlockHeader header = new BlockHeader(number, coinbase, previousHeader.getHash(), timestamp, transactionsRoot,
-                resultsRoot, data);
+                resultsRoot, nonce, data);
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(previousHeader.getHash(), number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
         MainBlock block = new MainBlock(header, transactions);
 
         assertTrue(block.validateHeader(header, previousHeader));

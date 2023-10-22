@@ -95,8 +95,8 @@ public class BlockHeaderTest {
             nonce += 1;
             header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, difficultyTarget, nonce, data);
         }
-        BigInteger target = header.getDifficultyTargetAsInteger();
-        System.out.println("Nonce:"+ nonce +", Hash is higher than target: " + Bytes.wrap(header.getHash()) + " vs " + target.toString(16));
+//        BigInteger target = header.getDifficultyTargetAsInteger();
+//        System.out.println("Nonce:"+ nonce +", Hash is higher than target: " + Bytes.wrap(header.getHash()) + " vs " + target.toString(16));
     }
 
     private void testFields(BlockHeader header) {

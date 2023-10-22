@@ -38,23 +38,30 @@ import io.xdag.net.NetDB;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import io.xdag.utils.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class NodeManager {
 
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
-            .namingPattern("NodeManager-thread-%d")
-            .daemon(true)
-            .build();
+    private static final ThreadFactory factory = new ThreadFactory() {
+        private final AtomicInteger cnt = new AtomicInteger(0);
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "node-" + cnt.getAndIncrement());
+        }
+    };
 
     private static final long MAX_QUEUE_SIZE = 1024;
     private static final int LRU_CACHE_SIZE = 1024;
@@ -81,7 +88,7 @@ public class NodeManager {
         this.kernel = kernel;
         this.client = kernel.getClient();
         this.channelMgr = kernel.getChannelManager();
-        this.exec = new ScheduledThreadPoolExecutor(1, factory);
+        this.exec = Executors.newSingleThreadScheduledExecutor(factory);
         this.config = kernel.getConfig();
         this.netDBManager = kernel.getNetDBManager();
     }
@@ -142,7 +149,6 @@ public class NodeManager {
      * from net update seed nodes
      */
     protected void doFetch() {
-        log.debug("Do fetch node size:{}", deque.size());
         if (config.getNodeSpec().enableRefresh()) {
             netDBManager.refresh();
         }
@@ -163,14 +169,16 @@ public class NodeManager {
     public void doConnect() {
         Set<InetSocketAddress> activeAddress = channelMgr.getActiveAddresses();
         Node node;
+
         while ((node = deque.pollFirst()) != null && channelMgr.size() < config.getNodeSpec().getMaxConnections()) {
             Long lastCon = lastConnect.getIfPresent(node);
-            long now = System.currentTimeMillis();
+            long now = TimeUtils.currentTimeMillis();
 
             if (!client.getNode().equals(node)
-                    && !node.equals(client.getNode())
+                    && !(Objects.equals(node.getIp(), client.getIp()) && node.getPort() == client.getPort())
                     && !activeAddress.contains(node.getAddress())
                     && (lastCon == null || lastCon + RECONNECT_WAIT < now)) {
+
                 XdagChannelInitializer initializer = new XdagChannelInitializer(kernel, node);
                 client.connect(node, initializer);
                 lastConnect.put(node, now);

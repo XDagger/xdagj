@@ -25,6 +25,7 @@ package io.xdag.core;
 
 import static io.xdag.core.XAmount.ZERO;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,21 +87,6 @@ public class MainBlock {
         this.transactions = Lists.newArrayList();
     }
 
-    /**
-     * Create a new block.
-     *
-     * @param header
-     *            a signed block header
-     * @param txHashs
-     *            list of transactions hash
-     */
-//    private MainBlock(BlockHeader header, List<Bytes32> txHashs, List<TransactionResult> results) {
-//        this.header = header;
-//        this.txHashs = txHashs;
-//        this.results = results;
-//        this.transactions = Collections.emptyList();
-//    }
-
     public MainBlock(BlockHeader header, List<Transaction> transactions, List<Bytes32> txHashs, List<TransactionResult> results) {
         this.header = header;
         this.transactions = transactions;
@@ -122,7 +108,6 @@ public class MainBlock {
             return false;
         }
 
-        // TODO support 16 parent block
         if (header.getNumber() != parentHeader.getNumber() + 1) {
             log.warn("Header number was not one greater than previous block.");
             return false;
@@ -140,6 +125,13 @@ public class MainBlock {
 
         if (Arrays.equals(header.getCoinbase(), Constants.COINBASE_ADDRESS)) {
             log.warn("Header coinbase was a reserved address");
+            return false;
+        }
+
+        // check Proof Of Work
+        if(!header.checkProofOfWork()) {
+            BigInteger target = header.getDifficultyTargetAsInteger();
+            log.warn("Header Proof Of Work is invalid, Nonce {}, , Hash is higher than target {} vs {}", header.getNonce(), Bytes.wrap(header.getHash()), target.toString(16));
             return false;
         }
 
@@ -340,9 +332,7 @@ public class MainBlock {
         if (h == null) {
             throw new IllegalArgumentException("Block header can't be null");
         }
-//        if (ts == null) {
-//            throw new IllegalArgumentException("Block transactions can't be null");
-//        }
+
         if (txs == null) {
             throw new IllegalArgumentException("Block tx hash list can't be null");
         }
@@ -410,7 +400,7 @@ public class MainBlock {
 
     @Override
     public String toString() {
-        return "Block [number = " + getNumber() + ", hash = " + Bytes.wrap(getHash()).toHexString() + ", # hashs = " + txHashs.size() + " ]";
+        return "MainBlock [number = " + getNumber() + ", hash = " + Bytes.wrap(getHash()).toHexString() + ", # hashs = " + txHashs.size() + " ]";
     }
 
 }

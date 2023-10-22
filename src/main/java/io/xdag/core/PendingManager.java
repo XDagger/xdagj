@@ -50,6 +50,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
 public class PendingManager implements Runnable, DagchainListener {
 
     private static final ThreadFactory factory = new ThreadFactory() {
@@ -98,7 +99,7 @@ public class PendingManager implements Runnable, DagchainListener {
     public PendingManager(DagKernel kernel) {
         this.kernel = kernel;
 
-        this.pendingAS = kernel.getDagchain().getAccountState().track();
+        this.pendingAS = kernel.getDagchain().getLatestAccountState();
 
         this.exec = Executors.newSingleThreadScheduledExecutor(factory);
     }
@@ -225,7 +226,7 @@ public class PendingManager implements Runnable, DagchainListener {
      */
     public synchronized List<PendingTransaction> reset() {
         // reset state
-        pendingAS = kernel.getDagchain().getAccountState().track();
+        pendingAS = kernel.getDagchain().getLatestAccountState().clone();
 
         // clear transaction pool
         List<PendingTransaction> txs = new ArrayList<>(validTxs);
@@ -318,12 +319,12 @@ public class PendingManager implements Runnable, DagchainListener {
         while (tx != null && tx.getNonce() == getNonce(tx.getFrom())) {
 
             // execute transactions
-            AccountState as = pendingAS.track();
+            AccountState as = pendingAS;
             TransactionResult result = new TransactionExecutor(kernel.getConfig()).execute(tx, as);
 
             if (result.getCode().isAcceptable()) {
                 // commit state updates
-                as.commit();
+                // as.commit();
 
                 // Add the successfully processed transaction into the pool of transactions
                 // which are ready to be proposed to the network.
@@ -369,7 +370,7 @@ public class PendingManager implements Runnable, DagchainListener {
         TransactionMessage msg = new TransactionMessage(tx);
         for (Channel c : channels) {
             if (c.isActive()) {
-                c.getMessageQueue().sendMessage(msg);
+                c.getMsgQueue().sendMessage(msg);
             }
         }
     }

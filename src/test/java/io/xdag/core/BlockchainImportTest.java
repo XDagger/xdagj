@@ -29,7 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +42,8 @@ import org.junit.Test;
 import io.xdag.TestUtils;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
+import io.xdag.core.state.AccountState;
+import io.xdag.core.state.BlockState;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.rules.KernelRule;
@@ -81,14 +82,18 @@ public class BlockchainImportTest {
                 time,
                 BytesUtils.EMPTY_BYTES).sign(from1);
         kernelRule.getKernel().setDagchain(new DagchainImpl(kernelRule.getKernel().getConfig(), pendingMgr, temporaryDBRule));
-        kernelRule.getKernel().getDagchain().getAccountState().adjustAvailable(Keys.toBytesAddress(from1), XAmount.of(
+        MainBlock latestMainBlock = kernelRule.getKernel().getDagchain().getLatestMainBlock();
+        AccountState latestAccountState = kernelRule.getKernel().getDagchain().getAccountState(latestMainBlock.getHash(), latestMainBlock.getNumber());
+        BlockState latestBlockState = kernelRule.getKernel().getDagchain().getBlockState(latestMainBlock.getHash(), latestMainBlock.getNumber());
+        latestAccountState.adjustAvailable(Keys.toBytesAddress(from1), XAmount.of(
                 1000, XDAG));
         MainBlock block1 = kernelRule.createMainBlock(Collections.singletonList(tx1));
-        kernelRule.getKernel().getDagchain().addMainBlock(block1);
+        kernelRule.getKernel().getDagchain().importBlock(block1, latestAccountState, latestBlockState);
+
         // create a tx with the same hash with tx1 from a different signer in the second
         // block
         KeyPair from2 = SampleKeys.KEY2;
-        kernelRule.getKernel().getDagchain().getAccountState().adjustAvailable(Keys.toBytesAddress(from2), XAmount.of(
+        kernelRule.getKernel().getDagchain().getLatestAccountState().adjustAvailable(Keys.toBytesAddress(from2), XAmount.of(
                 1000, XDAG));
         Transaction tx2 = new Transaction(
                 kernelRule.getKernel().getConfig().getNodeSpec().getNetwork(),
@@ -99,19 +104,26 @@ public class BlockchainImportTest {
                 0,
                 time,
                 BytesUtils.EMPTY_BYTES).sign(from2);
-        MainBlock block2 = kernelRule.createMainBlock(Collections.singletonList(tx2));
+
+        MainBlock block2 = kernelRule.createMainBlock(Collections.singletonList(tx2), block1.getHeader());
 
         // this test case is valid if and only if tx1 and tx2 have the same tx hash
         assert (Arrays.equals(tx1.getHash(), tx2.getHash()));
 
+        latestAccountState = kernelRule.getKernel().getDagchain().getLatestAccountState();
+        latestBlockState = kernelRule.getKernel().getDagchain().getLatestBlockState();
+
         // the block should be rejected because of the duplicated tx
-        assertFalse(kernelRule.getKernel().getDagchain().importBlock(block2));
+        assertFalse(kernelRule.getKernel().getDagchain().importBlock(block2, latestAccountState, latestBlockState));
     }
 
     @Test
     public void testValidateCoinbaseMagic() {
         DagchainImpl chain = spy(new DagchainImpl(kernelRule.getKernel().getConfig(), pendingMgr, temporaryDBRule));
         kernelRule.getKernel().setDagchain(chain);
+
+        AccountState latestAccountState = kernelRule.getKernel().getDagchain().getLatestAccountState();
+        BlockState latestBlockState = kernelRule.getKernel().getDagchain().getLatestBlockState();
 
         // block.coinbase = coinbase magic account
         MainBlock block = TestUtils.createBlock(
@@ -121,7 +133,7 @@ public class BlockchainImportTest {
                 Collections.emptyList(),
                 Collections.emptyList());
 
-        assertFalse(kernelRule.getKernel().getDagchain().importBlock(block));
+        assertFalse(kernelRule.getKernel().getDagchain().importBlock(block, latestAccountState, latestBlockState));
 
         // tx.to = coinbase magic account
         Transaction tx = TestUtils.createTransaction(kernelRule.getKernel().getConfig(), SampleKeys.KEY_PAIR,
@@ -133,7 +145,10 @@ public class BlockchainImportTest {
                 Collections.singletonList(tx),
                 Collections.singletonList(new TransactionResult()));
 
-        assertFalse(kernelRule.getKernel().getDagchain().importBlock(block2));
+        latestAccountState = kernelRule.getKernel().getDagchain().getLatestAccountState();
+        latestBlockState = kernelRule.getKernel().getDagchain().getLatestBlockState();
+
+        assertFalse(kernelRule.getKernel().getDagchain().importBlock(block2, latestAccountState, latestBlockState));
     }
 
     @Test
@@ -151,7 +166,10 @@ public class BlockchainImportTest {
         // prepare block
         MainBlock block = kernelRule.createMainBlock(Collections.emptyList());
 
+        AccountState latestAccountState = kernelRule.getKernel().getDagchain().getLatestAccountState();
+        BlockState latestBlockState = kernelRule.getKernel().getDagchain().getLatestBlockState();
+
         // tests
-        assertFalse(chain.importBlock(block));
+        assertFalse(chain.importBlock(block, latestAccountState, latestBlockState));
     }
 }

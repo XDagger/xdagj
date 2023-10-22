@@ -35,8 +35,6 @@ public class Constants {
 
     public static final String DEFAULT_ROOT_DIR = ".";
     public static final String CLIENT_NAME = "xdagj";
-    public static final String WALLET_FILE_NAME = "wallet.data";
-
     public static final String CHAIN_DIR = "chaindata";
     public static final String CONFIG_DIR = "config";
     public static final String WALLET_DIR = "wallet";
@@ -53,6 +51,11 @@ public class Constants {
     public static final short DEVNET_VERSION = 0;
 
     public static final String COINBASE_PRIVATE_KEY_STRING = "a392604efc2fad9c0b3da43b5f698a2e3f270f170d859912be0d54742275c5f6";
+
+    /**
+     * The number of epoch finaliza
+     */
+    public static final long EPOCH_FINALIZE_NUMBER = 16;
 
     /**
      * The number of blocks per day.

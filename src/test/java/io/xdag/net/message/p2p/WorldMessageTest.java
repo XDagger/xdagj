@@ -23,24 +23,56 @@
  */
 package io.xdag.net.message.p2p;
 
+import static io.xdag.core.XAmount.ZERO;
 import static io.xdag.utils.WalletUtils.toBase58;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Collections;
+import java.util.List;
 
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.junit.Test;
 
+import io.xdag.Network;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
+import io.xdag.core.BlockHeader;
+import io.xdag.core.MainBlock;
+import io.xdag.core.Transaction;
+import io.xdag.core.TransactionResult;
+import io.xdag.core.TransactionType;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.net.CapabilityTreeSet;
 import io.xdag.net.Peer;
+import io.xdag.utils.BlockUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MerkleUtils;
+import io.xdag.utils.TimeUtils;
 
 public class WorldMessageTest {
+
+    private Config config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
+    private long number = 2;
+    private byte[] coinbase = BytesUtils.random(20);
+    private byte[] prevHash = BytesUtils.random(32);
+    private long timestamp = TimeUtils.currentTimeMillis();
+    private long nonce = 0;
+    private byte[] data = BytesUtils.of("data");
+
+    private Transaction tx = new Transaction(Network.DEVNET, TransactionType.TRANSFER, BytesUtils.random(20), ZERO,
+            config.getDagSpec().getMinTransactionFee(),
+            1, TimeUtils.currentTimeMillis(), BytesUtils.EMPTY_BYTES).sign(SampleKeys.KEY1);
+    private TransactionResult res = new TransactionResult();
+    private List<Transaction> transactions = Collections.singletonList(tx);
+    private List<TransactionResult> results = Collections.singletonList(res);
+
+    private byte[] transactionsRoot = MerkleUtils.computeTransactionsRoot(transactions);
+    private byte[] resultsRoot = MerkleUtils.computeResultsRoot(results);
 
     @Test
     public void testCodec() {
@@ -48,8 +80,10 @@ public class WorldMessageTest {
 
         KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
         String peerId = toBase58(Keys.toBytesAddress(key));
+        BlockHeader header = new BlockHeader(number, coinbase, prevHash, timestamp, transactionsRoot, resultsRoot, nonce, data);
+        MainBlock mainBlock = new MainBlock(header, transactions, results);
         WorldMessage msg = new WorldMessage(config.getNodeSpec().getNetwork(), config.getNodeSpec().getNetworkVersion(), peerId, 8001,
-                config.getClientId(), config.getClientCapabilities().toArray(), 2,
+                config.getClientId(), config.getClientCapabilities().toArray(), mainBlock,
                 SecureRandomProvider.publicSecureRandom().generateSeed(InitMessage.SECRET_LENGTH), key);
         assertTrue(msg.validate(config));
 
@@ -65,6 +99,6 @@ public class WorldMessageTest {
         assertEquals(config.getNodeSpec().getNodePort(), peer.getPort());
         assertEquals(config.getClientId(), peer.getClientId());
         assertEquals(config.getClientCapabilities(), CapabilityTreeSet.of(peer.getCapabilities()));
-        assertEquals(2, peer.getLatestBlockNumber());
+        assertEquals(2, peer.getLatestMainBlock().getNumber());
     }
 }

@@ -31,8 +31,9 @@ import com.fasterxml.jackson.databind.KeyDeserializer;
 
 import lombok.Getter;
 
+@Getter
 public class ByteArray implements Comparable<ByteArray> {
-    @Getter
+
     private final byte[] data;
     private final int hash;
 

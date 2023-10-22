@@ -51,6 +51,6 @@ public class MainBlockMessage extends Message {
 
     @Override
     public String toString() {
-        return "BlockMessage [block=" + block + "]";
+        return "MainBlockMessage [block=" + block + "]";
     }
 }

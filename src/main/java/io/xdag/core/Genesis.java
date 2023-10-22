@@ -87,6 +87,7 @@ public class Genesis extends MainBlock {
                 timestamp,
                 BytesUtils.EMPTY_HASH,
                 BytesUtils.EMPTY_HASH,
+                0L,
                 BytesUtils.of(data));
 
         return new Genesis(header, snapshotMap, config);

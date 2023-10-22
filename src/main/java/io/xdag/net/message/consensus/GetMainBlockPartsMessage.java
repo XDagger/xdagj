@@ -59,6 +59,6 @@ public class GetMainBlockPartsMessage extends Message {
 
     @Override
     public String toString() {
-        return "GetBlockPartsMessage [number=" + number + ", parts = " + parts + "]";
+        return "GetMainBlockPartsMessage [number=" + number + ", parts = " + parts + "]";
     }
 }

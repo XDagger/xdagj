@@ -28,19 +28,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
-import com.google.common.collect.Lists;
-import io.xdag.config.Config;
-import io.xdag.utils.SimpleEncoder;
-import io.xdag.core.XAmount;
-import io.xdag.crypto.Aes;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.MnemonicUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.Numeric;
-import io.xdag.utils.SimpleDecoder;
-import io.xdag.utils.WalletUtils;
-import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -50,29 +37,37 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
+
+import com.google.common.collect.Lists;
+
+import io.xdag.config.Config;
+import io.xdag.crypto.Aes;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.MnemonicUtils;
+import io.xdag.utils.Numeric;
+import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SimpleEncoder;
+import io.xdag.utils.WalletUtils;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter
@@ -84,6 +79,11 @@ public class Wallet {
     private static final int SALT_LENGTH = 16;
     private static final int BCRYPT_COST = 12;
     private static final String MNEMONIC_PASS_PHRASE = "";
+    /**
+     * -- GETTER --
+     *  Returns the file where the wallet is persisted.
+     */
+    @Getter
     private final File file;
     private final Config config;
 
@@ -120,13 +120,6 @@ public class Wallet {
      */
     public void delete() throws IOException {
         Files.delete(file.toPath());
-    }
-
-    /**
-     * Returns the file where the wallet is persisted.
-     */
-    public File getFile() {
-        return file;
     }
 
     /**
@@ -479,131 +472,5 @@ public class Wallet {
             throw new IllegalArgumentException("HD Seed is not initialized");
         }
     }
-
-//    public List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark) {
-//        // 判断是否有remark
-//        int hasRemark = remark == null ? 0 : 1;
-//
-//        List<BlockWrapper> res = Lists.newArrayList();
-//
-//        // 遍历ourKeys 计算每个区块最多能放多少个
-//        // int res = 1 + pairs.size() + to.size() + 3*keys.size() + (defKeyIndex == -1 ? 2 : 0);
-//        LinkedList<Entry<Address, KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
-//
-//        // 每次创建区块用到的keys
-//        Map<Address, KeyPair> keys = new HashMap<>();
-//        // 保证key的唯一性
-//        Set<KeyPair> keysPerBlock = new HashSet<>();
-//        // 放入defkey
-//        keysPerBlock.add(getDefKey());
-//
-//        // base count a block <header + send address + defKey signature>
-//        int base = 1 + 1 + 2 + hasRemark;
-//        XAmount amount = XAmount.ZERO;
-//
-//        while (stack.size() > 0) {
-//            Map.Entry<Address, KeyPair> key = stack.peek();
-//            base += 1;
-//            int originSize = keysPerBlock.size();
-//            keysPerBlock.add(key.getValue());
-//            // 说明新增加的key没有重复
-//            if (keysPerBlock.size() > originSize) {
-//                // 一个字段公钥加两个字段签名
-//                base += 3;
-//            }
-//            // 可以将该输入 放进一个区块
-//            if (base < 16) {
-//                amount = amount.add(key.getKey().getAmount());
-//                keys.put(key.getKey(), key.getValue());
-//                stack.poll();
-//            } else {
-//                res.add(createTransaction(to, amount, keys, remark));
-//                // 清空keys，准备下一个
-//                keys = new HashMap<>();
-//                keysPerBlock = new HashSet<>();
-//                keysPerBlock.add(getDefKey());
-//                base = 1 + 1 + 2 + hasRemark;
-//                amount = XAmount.ZERO;
-//            }
-//        }
-//        if (keys.size() != 0) {
-//            res.add(createTransaction(to, amount, keys, remark));
-//        }
-//
-//        return res;
-//    }
-//
-//    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark) {
-//
-//        List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
-//
-//        Block block = createNewBlock(new HashMap<>(keys), tos, remark);
-//
-//        if (block == null) {
-//            return null;
-//        }
-//
-//        KeyPair defaultKey = getDefKey();
-//
-//        boolean isdefaultKey = false;
-//        // 签名
-//        for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
-//            if (ecKey.equals(defaultKey)) {
-//                isdefaultKey = true;
-//                block.signOut(ecKey);
-//            } else {
-//                block.signIn(ecKey);
-//            }
-//        }
-//        // 如果默认密钥被更改，需要重新对输出签名签属
-//        if (!isdefaultKey) {
-//            block.signOut(getDefKey());
-//        }
-//
-//        return new BlockWrapper(block, getConfig().getNodeSpec().getTTL());
-//    }
-//
-//    private Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to,
-//            String remark) {
-//        int hasRemark = remark == null ? 0 : 1;
-//
-//        int defKeyIndex = -1;
-//
-//        // if no input, return null
-//        if (pairs == null || pairs.size() == 0) {
-//            return null;
-//        }
-//
-//        // if no output, return null
-//        if (to == null || to.size() == 0) {
-//            return null;
-//        }
-//
-//        // 遍历所有key 判断是否有defKey
-//        List<KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
-//        for (int i = 0; i < keys.size(); i++) {
-//            if (keys.get(i).equals(getDefKey())) {
-//                defKeyIndex = i;
-//            }
-//        }
-//
-//        List<Address> all = Lists.newArrayList();
-//        all.addAll(pairs.keySet());
-//        all.addAll(to);
-//
-//        // TODO: 判断pair是否有重复
-//        int res = 1 + pairs.size() + to.size() + 3 * keys.size() + (defKeyIndex == -1 ? 2 : 0) + hasRemark;
-//
-//        // TODO : 如果区块字段不足
-//        if (res > 16) {
-//            return null;
-//        }
-//
-//        long sendTime = XdagTime.getCurrentTimestamp();
-//
-//        return new Block(getConfig(), sendTime, all, null, false, keys, remark, defKeyIndex);
-//    }
-
-
 
 }

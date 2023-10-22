@@ -23,6 +23,9 @@
  */
 package io.xdag.core;
 
+import io.xdag.net.Channel;
+import io.xdag.net.message.Message;
+
 public interface PowManager {
 
     /**
@@ -40,5 +43,15 @@ public interface PowManager {
      * Returns if the pow manager is running.
      */
     boolean isRunning();
+
+    /**
+     * Callback when a message is received from network.
+     *
+     * @param channel
+     *            the channel where the message is coming from
+     * @param msg
+     *            the message
+     */
+    void onMessage(Channel channel, Message msg);
 
 }

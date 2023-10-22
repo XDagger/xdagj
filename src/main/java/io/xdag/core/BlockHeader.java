@@ -28,6 +28,7 @@ import java.util.Arrays;
 
 import org.apache.tuweni.bytes.Bytes;
 
+import io.xdag.config.Constants;
 import io.xdag.crypto.Hash;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.SimpleDecoder;
@@ -52,15 +53,15 @@ public class BlockHeader {
     private final byte[] encoded;
 
     public BlockHeader(long number, byte[] coinbase, byte[] prevHash, long timestamp, byte[] transactionsRoot,
-            byte[] resultsRoot, byte[] data) {
+            byte[] resultsRoot, long nonce, byte[] data) {
         this.number = number;
         this.coinbase = coinbase;
         this.parentHash = prevHash;
         this.timestamp = timestamp;
         this.transactionsRoot = transactionsRoot;
         this.resultsRoot = resultsRoot;
-        this.difficultyTarget = 0L;
-        this.nonce = 0L;
+        this.difficultyTarget = Constants.EASIEST_DIFFICULTY_TARGET;
+        this.nonce = nonce;
         this.data = data;
 
         SimpleEncoder enc = new SimpleEncoder();

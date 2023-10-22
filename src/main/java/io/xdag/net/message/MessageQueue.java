@@ -24,31 +24,31 @@
 
 package io.xdag.net.message;
 
-import static io.xdag.config.Constants.SEND_PERIOD;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.config.Config;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.xdag.net.message.p2p.DisconnectMessage;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 @Slf4j
 public class MessageQueue {
-    public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
-            Runtime.getRuntime().availableProcessors(),
-            new BasicThreadFactory.Builder()
-                    .namingPattern("MessageQueueTimer-thread-%d")
-                    .daemon(true)
-                    .build());
+    public static final ScheduledExecutorService timer = Executors.newScheduledThreadPool(4, new ThreadFactory() {
+        private final AtomicInteger cnt = new AtomicInteger(0);
+
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "msg-" + cnt.getAndIncrement());
+        }
+    });
     private final Config config;
 
     private final Queue<Message> queue = new ConcurrentLinkedQueue<>();
@@ -69,13 +69,10 @@ public class MessageQueue {
                     try {
                         nudgeQueue();
                     } catch (Throwable t) {
-                        log.error("Unhandled exception", t);
+                        log.error("Exception in MessageQueue", t);
                     }
                 },
-                10,
-                SEND_PERIOD,
-                // 10 MILLISECONDS
-                TimeUnit.MILLISECONDS);
+                10, 10, TimeUnit.MILLISECONDS);
     }
 
     public synchronized void deactivate() {
@@ -97,6 +94,7 @@ public class MessageQueue {
 
     public boolean sendMessage(Message msg) {
         if (size() >= config.getNodeSpec().getNetMaxMessageQueueSize()) {
+            log.debug("message queue is full, size:{}", size());
             disconnect(ReasonCode.MESSAGE_QUEUE_FULL);
             return false;
         }
