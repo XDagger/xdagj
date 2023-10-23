@@ -393,7 +393,7 @@ public class XdagSync implements SyncManager {
         }
 
         for (long task = latestQueuedTask.get() + 1; //
-                task < target.get() && toDownload.size() < MAX_QUEUED_JOBS; //
+                task <= target.get() && toDownload.size() < MAX_QUEUED_JOBS; //
                 task++) {
             latestQueuedTask.accumulateAndGet(task, (prev, next) -> Math.max(next, prev));
 //            if (!chain.hasMainBlock(task)) {
@@ -450,7 +450,7 @@ public class XdagSync implements SyncManager {
                         }
 
                         if (n == checkpoint) {
-                            log.info("{}", p.getLeft());
+                            log.info("sync checkpoint {}", p.getLeft());
                         }
                     }
                     current.getAndIncrement();

@@ -160,8 +160,17 @@ public class XdagPow implements PowManager {
 
                 clearTimerAndEvents();
                 lastEpochEndtime = dagchain.getLatestMainBlock().getTimestamp();
-                enterEpoch();
+
+                // syncing long time
+                long diff = TimeUtils.currentTimeMillis() - lastEpochEndtime;
+                log.trace(" sync finish diff:{}.", diff);
+                if(diff > 0 && diff < config.getDagSpec().getPowEpochTimeout()/2) {
+                    resetEpoch(0);
+                }
             }
+        } else {
+            log.trace("on syncing, ignore, begin:{}, current:{}, target:{}, peer:{}",
+                    begin, current, target, channel.getRemotePeer());
         }
     }
 
@@ -279,14 +288,24 @@ public class XdagPow implements PowManager {
                         }
 
                         // if fork chain will find (number - 1) state
-                        if (parentBlockState == null || parentAccountState != null
+                        if (parentBlockState == null || parentAccountState == null
                                 || parentBlockState.getMainBlockByHash(remoteMainBlock.getParentHash()) == null) {
                             parentAccountState = dagchain.getAccountState(mb.getParentHash(), mb.getNumber() - 1);
                             parentBlockState = dagchain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
-                            log.warn("onEpoch reorg fork chain on number:{}, hash:{}, local:{}, hash:{}, peer:{}.",
+                            log.warn("onEpoch reorg latest number:{}, hash:{}, local:{}, hash:{}, peer:{}.",
                                     remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(),
                                     localNumber, Bytes.wrap(mb.getHash()).toHexString(),
                                     channel.getRemotePeer());
+                        }
+                    } else {
+                        if (parentBlockState == null || parentAccountState == null
+                                || parentBlockState.getMainBlockByHash(remoteMainBlock.getParentHash()) == null) {
+                            long begin = remoteNumber - 1;
+                            long current = begin;
+                            long target = remoteNumber;
+                            log.warn("onEpoch sync fork chain begin:{}, current:{}, target:{}, peer:{}.", begin, current, target, channel.getRemotePeer());
+                            sync(begin, current, target, channel);
+                            return;
                         }
                     }
                     dagchain.importBlock(remoteMainBlock, parentAccountState.clone(), parentBlockState.clone());
@@ -379,7 +398,7 @@ public class XdagPow implements PowManager {
 
         clearTimerAndEvents();
 
-        long currentEpochEndTime = resetEpoch();
+        long currentEpochEndTime = resetEpoch(0);
         if(this.lastEpochEndtime == currentEpochEndTime) {
             log.warn("jump epoch lastEpochEndtime={}, currentEpochEndTime={}.", lastEpochEndtime, currentEpochEndTime);
             return;
@@ -402,12 +421,17 @@ public class XdagPow implements PowManager {
             }
         }
 
-        // update previous block
-        long number = dagchain.getLatestMainBlockNumber() + 1;
-        MainBlock block = prepareMainBlock(number, currentEpochEndTime, randomx);
-        log.info("Entered Epoch: {}, # active channels = {}", block, activeChannels.size());
-
         synchronized (epochLock) {
+            // update previous block
+            long number = dagchain.getLatestMainBlockNumber() + 1;
+            MainBlock block = prepareMainBlock(number, currentEpochEndTime, randomx);
+            if(block == null) {
+                log.info("block == null", block, activeChannels.size());
+                return;
+            }
+            log.info("Entered Epoch: {}, # active channels = {}", block, activeChannels.size());
+
+
             // if other node epoch befor local and hash less than local
             MainBlock otherMainBlock = dagchain.getMainBlockByNumber(block.getNumber());
             if(otherMainBlock != null) {
@@ -439,12 +463,12 @@ public class XdagPow implements PowManager {
         }
     }
 
-    private long resetEpoch() {
+    private long resetEpoch(long delay) {
         long currentTime = System.currentTimeMillis();
         long currentXTime = XdagTime.msToXdagtimestamp(currentTime);
         long epochEndTime = XdagTime.xdagTimestampToMs(XdagTime.getEndOfEpoch(currentXTime));
-        long delay = epochEndTime - currentTime;
-        resetTimeout(delay);
+        long epochDelay = epochEndTime - currentTime;
+        resetTimeout(epochDelay + delay);
         return epochEndTime;
     }
 
@@ -505,7 +529,10 @@ public class XdagPow implements PowManager {
         BlockHeader parent = dagchain.getBlockHeader(number - 1);
         byte[] prevHash = parent.getHash();
         long timestamp = sandTime;
-        timestamp = timestamp > parent.getTimestamp() ? timestamp : parent.getTimestamp() + 1;
+        if(timestamp == parent.getTimestamp()) {
+            log.error("prepareMainBlock timestamp:{} == parent imestamp:{}", timestamp, parent.getTimestamp());
+            return null;
+        }
         byte[] data = dagchain.constructBlockHeaderDataField();
 
         XAmount maxMainBLockFee = config.getDagSpec().getMaxMainBlockTransactionFee();

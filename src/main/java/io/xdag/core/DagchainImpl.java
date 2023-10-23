@@ -346,14 +346,14 @@ public class DagchainImpl implements Dagchain {
             BigInteger latestHash = new BigInteger(1, latestMainBlock.getHash());
             BigInteger blockHash = new BigInteger(1, block.getHash());
             if(blockHash.compareTo(latestHash) < 0 && !Arrays.equals(block.getHash(), latestMainBlock.getHash())) {
-                latestMainBlock = block;
-                bs.addLatestBlockNumber(number);
                 log.warn("reorg chain latest number:{}, header from:{}, to:{}",
                         block.getNumber(),
                         Bytes.wrap(latestMainBlock.getHash()).toHexString(),
                         Bytes.wrap(block.getHash()).toHexString());
+                latestMainBlock = block;
+                bs.addLatestBlockNumber(number);
             }
-        } else if(latestMainBlock.getNumber() - block.getNumber() < Constants.EPOCH_FINALIZE_NUMBER) {
+        } else if(latestMainBlock.getNumber() - number < Constants.EPOCH_FINALIZE_NUMBER) {
             latestMainBlock = block;
             bs.addLatestBlockNumber(number);
         }
