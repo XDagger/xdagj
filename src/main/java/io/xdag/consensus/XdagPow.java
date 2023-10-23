@@ -40,7 +40,6 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.DagKernel;
 import io.xdag.config.Config;
-import io.xdag.config.Constants;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.Dagchain;
 import io.xdag.core.MainBlock;
@@ -243,7 +242,9 @@ public class XdagPow implements PowManager {
 
         synchronized (epochLock) {
             MainBlock remoteMainBlock = epochMessage.getMainBlock();
-            long localNumber = dagchain.getLatestMainBlockNumber();
+            MainBlock localMainBlock = dagchain.getLatestMainBlock();
+
+            long localNumber = localMainBlock.getNumber();
             long remoteNumber = remoteMainBlock.getNumber();
 
             long diff = remoteNumber - localNumber;
@@ -259,43 +260,46 @@ public class XdagPow implements PowManager {
                 log.trace("onEpoch diff:{}, remote:{}, local:{}, check and import {}, peer:{}", diff, remoteNumber,
                         localNumber, remoteNumber, channel.getRemotePeer());
                 if (remoteMainBlock.getHeader().validate() && remoteMainBlock.getHeader().checkProofOfWork()) {
+                    MainBlock mb = dagchain.getMainBlockByNumber(remoteNumber);
                     // find remote main block parent state
                     AccountState parentAccountState = dagchain.getAccountState(remoteMainBlock.getParentHash(),
                             remoteMainBlock.getNumber() - 1);
                     BlockState parentBlockState = dagchain.getBlockState(remoteMainBlock.getParentHash(),
                             remoteMainBlock.getNumber() - 1);
+                    if (mb != null) {
+                        BigInteger localHash = new BigInteger(1, mb.getHash());
+                        BigInteger remoteHash = new BigInteger(1, remoteMainBlock.getHash());
 
-                    if (parentBlockState == null || parentAccountState == null
-                            || parentBlockState.getMainBlockByHash(remoteMainBlock.getParentHash()) == null) {
-                        // if no parent main block, sync parent
-                        long syncBegin = remoteMainBlock.getNumber() - 1;
-                        long syncCurrent = syncBegin;
-                        long syncTarget = remoteMainBlock.getNumber();
-                        sync(syncBegin, syncCurrent, syncTarget, channel);
-                    } else {
-                        MainBlock mb = dagchain.getMainBlockByNumber(remoteNumber);
-                        if (mb != null) {
-                            BigInteger localHash = new BigInteger(1, mb.getHash());
-                            BigInteger remoteHash = new BigInteger(1, remoteMainBlock.getHash());
-                            if (localHash.compareTo(remoteHash) < 0) {
-                                log.warn("onEpoch reject remote:{}, hash:{}, local:{}, hash:{}, peer:{}.",
-                                        remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(),
-                                        localNumber, Bytes.wrap(mb.getHash()).toHexString(),
-                                        channel.getRemotePeer());
-                                return;
-                            }
-                            if(dagchain.getLatestMainBlockNumber() > remoteNumber) {
-                                log.warn("onEpoch reorg remote:{}, hash:{}, local:{}, hash:{}, peer:{}.",
-                                        remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(),
-                                        localNumber, Bytes.wrap(mb.getHash()).toHexString(),
-                                        channel.getRemotePeer());
-                            }
+                        if (localHash.compareTo(remoteHash) < 0) {
+                            log.warn("onEpoch reject remote:{}, hash:{}, local:{}, hash:{}, peer:{}.",
+                                    remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(),
+                                    localNumber, Bytes.wrap(mb.getHash()).toHexString(),
+                                    channel.getRemotePeer());
+                            return;
                         }
-                        dagchain.importBlock(remoteMainBlock, parentAccountState.clone(), parentBlockState.clone());
+
+                        // if fork chain will find (number - 1) state
+                        if (parentBlockState == null || parentAccountState != null
+                                || parentBlockState.getMainBlockByHash(remoteMainBlock.getParentHash()) == null) {
+                            parentAccountState = dagchain.getAccountState(mb.getParentHash(), mb.getNumber() - 1);
+                            parentBlockState = dagchain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
+                            log.warn("onEpoch reorg fork chain on number:{}, hash:{}, local:{}, hash:{}, peer:{}.",
+                                    remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(),
+                                    localNumber, Bytes.wrap(mb.getHash()).toHexString(),
+                                    channel.getRemotePeer());
+                        }
                     }
+                    dagchain.importBlock(remoteMainBlock, parentAccountState.clone(), parentBlockState.clone());
+                } else {
+                    log.trace("onEpoch reject, no parent, diff:{}, remote:{}, hash:{}, parent hash:{}, local:{}, hash:{}, parent hash:{}, peer:{}",
+                            diff,
+                            remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(), Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(),
+                            localNumber, Bytes.wrap(localMainBlock.getHash()).toHexString(), Bytes.wrap(localMainBlock.getParentHash()).toHexString(),
+                            channel.getRemotePeer());
+                    // find (number - 1) state
                 }
             } else { // reject main block number before current 1 epoch
-                log.warn("onEpoch reject remote:{}, hash:{}, local:{}, peer:{}.",
+                log.warn("onEpoch reject, remote:{}, hash:{}, local:{}, peer:{}.",
                         remoteNumber, Bytes.wrap(remoteMainBlock.getHash()).toHexString(),
                         localNumber,
                         channel.getRemotePeer());

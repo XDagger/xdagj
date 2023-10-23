@@ -345,7 +345,7 @@ public class DagchainImpl implements Dagchain {
         } else if( block.getNumber() == latestMainBlock.getNumber()) {
             BigInteger latestHash = new BigInteger(1, latestMainBlock.getHash());
             BigInteger blockHash = new BigInteger(1, block.getHash());
-            if(blockHash.compareTo(latestHash) < 0) {
+            if(blockHash.compareTo(latestHash) < 0 && !Arrays.equals(block.getHash(), latestMainBlock.getHash())) {
                 latestMainBlock = block;
                 bs.addLatestBlockNumber(number);
                 log.warn("reorg chain latest number:{}, header from:{}, to:{}",
