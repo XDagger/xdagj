@@ -335,13 +335,27 @@ public class DagchainImpl implements Dagchain {
             bs.addTransactionToAccount(tx, block.getCoinbase());
         }
 
-        // [7] update latest_block
+        // [7] check new chain header
+        checkNewChain(block, bs);
+
+        for (DagchainListener listener : listeners) {
+            listener.onMainBlockAdded(block);
+        }
+
+        activateForks();
+        blockStateMap.put(StateSnapshotKey.of(block.getHash(), block.getNumber()), bs);
+    }
+
+    private void checkNewChain(MainBlock block, BlockState bs) {
+        long number = block.getNumber();
         if(latestMainBlock == null) {
             latestMainBlock = block;
             bs.addLatestBlockNumber(number);
         } else if(block.getNumber() > latestMainBlock.getNumber()) {
             latestMainBlock = block;
             bs.addLatestBlockNumber(number);
+            log.info("update latest {}", block);
+            latestMainBlock = block;
         } else if( block.getNumber() == latestMainBlock.getNumber()) {
             BigInteger latestHash = new BigInteger(1, latestMainBlock.getHash());
             BigInteger blockHash = new BigInteger(1, block.getHash());
@@ -354,16 +368,13 @@ public class DagchainImpl implements Dagchain {
                 bs.addLatestBlockNumber(number);
             }
         } else if(latestMainBlock.getNumber() - number < Constants.EPOCH_FINALIZE_NUMBER) {
-            latestMainBlock = block;
-            bs.addLatestBlockNumber(number);
+            log.warn("fork chain at number:{}, old:{}, new:{}",
+                    block.getNumber(),
+                    Bytes.wrap(getMainBlockByNumber(block.getNumber()).getHash()).toHexString(),
+                    Bytes.wrap(block.getHash()).toHexString());
+        } else {
+            log.warn("fork chain is reject, {}", block);
         }
-
-        for (DagchainListener listener : listeners) {
-            listener.onMainBlockAdded(block);
-        }
-
-        activateForks();
-        blockStateMap.put(StateSnapshotKey.of(block.getHash(), block.getNumber()), bs);
     }
 
     @Override
@@ -440,6 +451,9 @@ public class DagchainImpl implements Dagchain {
 
     @Override
     public boolean importBlock(MainBlock block, AccountState accountState, BlockState blockState) {
+        if(Arrays.equals(block.getHash(), latestMainBlock.getHash())) {
+            return true;
+        }
         return validateBlock(block, accountState, blockState) && applyBlock(block, accountState, blockState);
     }
 
@@ -453,6 +467,11 @@ public class DagchainImpl implements Dagchain {
 
             // [1] check block header
             MainBlock parentMainBlock = bs.getMainBlockByHash(block.getParentHash());
+            if(parentMainBlock == null) {
+                log.error("Invalid block header, parent MainBlock is null");
+                return false;
+            }
+
             if (!block.validateHeader(header, parentMainBlock.getHeader())) {
                 log.error("Invalid block header");
                 return false;
@@ -551,7 +570,7 @@ public class DagchainImpl implements Dagchain {
             MainBlock lastParent = mb;
 
             for(int i = 0; i < Constants.EPOCH_FINALIZE_NUMBER; i++) {
-                lastParent = this.getMainBlockByHash(mb.getParentHash());
+                lastParent = bs.getMainBlockByHash(mb.getParentHash());
                 if(lastParent != null) {
                     mb = lastParent;
                 } else {

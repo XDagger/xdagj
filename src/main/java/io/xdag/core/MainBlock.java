@@ -400,7 +400,7 @@ public class MainBlock {
 
     @Override
     public String toString() {
-        return "MainBlock [number = " + getNumber() + ", hash = " + Bytes.wrap(getHash()).toHexString() + ", # hashs = " + txHashs.size() + " ]";
+        return "MainBlock [number = " + getNumber() + ", hash = " + Bytes.wrap(getHash()).toHexString() + ", parent hash = " +Bytes.wrap(getParentHash()).toHexString() + ", # hashs = " + txHashs.size() + " ]";
     }
 
 }
