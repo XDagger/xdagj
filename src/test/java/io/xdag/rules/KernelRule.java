@@ -184,38 +184,54 @@ public class KernelRule extends TemporaryFolder {
 
     /**
      * Helper method to create a testing block.
-     *
+     * @param coinbaseKey
+     *      *     The Key of coinbase
      * @param txs
      *            list of transaction
-     * @param lastBlock
+     * @param lastBlockHeader
      *            last block header
+     * @param hash
+     *            must less block hash
      * @return created block
      */
-    public MainBlock createMainBlock(List<Transaction> txs, BlockHeader lastBlock) {
+    public MainBlock createMainBlockWithMoreDifficulty(KeyPair coinbaseKey, List<Transaction> txs, BlockHeader lastBlockHeader, byte[] hash) {
         List<TransactionResult> res = txs.stream().map(tx -> new TransactionResult()).collect(Collectors.toList());
 
         long number;
         byte[] prevHash;
-        if (lastBlock == null) {
+        if (lastBlockHeader == null) {
             number = getKernel().getDagchain().getLatestMainBlock().getNumber() + 1;
             prevHash = getKernel().getDagchain().getLatestMainBlock().getHash();
         } else {
-            number = lastBlock.getNumber() + 1;
-            prevHash = lastBlock.getHash();
+            number = lastBlockHeader.getNumber() + 1;
+            prevHash = lastBlockHeader.getHash();
         }
-        KeyPair key = SampleKeys.KEY_PAIR;
+        KeyPair key = coinbaseKey;
         byte[] coinbase = Keys.toBytesAddress(key);
         long timestamp = TimeUtils.currentTimeMillis();
         byte[] transactionsRoot = MerkleUtils.computeTransactionsRoot(txs);
         byte[] resultsRoot = MerkleUtils.computeResultsRoot(res);
         byte[] data = {};
 
-        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
+        BlockHeader header;
+        if(hash == null) {
+            header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
+        } else {
+            header = BlockUtils.createProofOfWorkHeadeLessThan(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data, hash);
+        }
 
         return new MainBlock(header, txs, res);
     }
 
-    public MainBlock createMainBlock(List<Transaction> txs) {
-        return createMainBlock(txs, null);
+    public MainBlock createMainBlock(KeyPair coinbaseKey, List<Transaction> txs) {
+        return createMainBlockWithMoreDifficulty(coinbaseKey, txs, null, null);
+    }
+
+    public MainBlock createMainBlock(KeyPair coinbaseKey, List<Transaction> txs, BlockHeader lastBlockHeader) {
+        return createMainBlockWithMoreDifficulty(coinbaseKey, txs, lastBlockHeader, null);
+    }
+
+    public MainBlock createMainBlockWithdifficulty(KeyPair coinbaseKey, List<Transaction> txs, BlockHeader lastBlockHeader, byte[] hash) {
+        return createMainBlockWithMoreDifficulty(coinbaseKey, txs, lastBlockHeader, hash);
     }
 }

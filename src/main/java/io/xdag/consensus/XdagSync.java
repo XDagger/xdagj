@@ -393,7 +393,7 @@ public class XdagSync implements SyncManager {
         }
 
         for (long task = latestQueuedTask.get() + 1; //
-                task < target.get() && toDownload.size() < MAX_QUEUED_JOBS; //
+                task <= target.get() && toDownload.size() < MAX_QUEUED_JOBS; //
                 task++) {
             latestQueuedTask.accumulateAndGet(task, (prev, next) -> Math.max(next, prev));
 //            if (!chain.hasMainBlock(task)) {
@@ -435,22 +435,25 @@ public class XdagSync implements SyncManager {
             if (toImport.size() >= checkpoint - latest) {
                 // Validate the main block hashes
                 boolean valid = validateBlockHashes(latest + 1, checkpoint);
-
+                log.trace("onSync validateBlockHashes(from={}, to={}) == {}.", latest + 1, checkpoint, valid);
                 if (valid) {
                     for (long n = latest + 1; n <= checkpoint; n++) {
                         Pair<MainBlock, Channel> p = toImport.remove(n);
                         MainBlock mb = p.getKey();
-                        AccountState parentAccountState = chain.getAccountState(mb.getParentHash(), mb.getNumber() - 1);
-                        BlockState parentBlockState = chain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
-                        boolean imported = chain.importBlock(p.getKey(), parentAccountState.clone(),
-                                parentBlockState.clone());
+                        AccountState as = chain.getAccountState(mb.getParentHash(), mb.getNumber() - 1);
+                        BlockState bs = chain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
+
+                        log.trace("onSync importBlock {}, as={}, bs={}.", p.getKey(), as, bs);
+                        boolean imported = chain.importBlock(p.getKey(), as.clone(), bs.clone());
+                        log.trace("onSync importBlock result = {}", imported);
+
                         if (!imported) {
                             handleInvalidBlock(p.getKey(), p.getValue());
                             break;
                         }
 
                         if (n == checkpoint) {
-                            log.info("{}", p.getLeft());
+                            log.info("sync checkpoint {}", p.getLeft());
                         }
                     }
                     current.getAndIncrement();

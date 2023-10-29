@@ -178,6 +178,16 @@ public class BlockHeader {
         return h.compareTo(target) <= 0;
     }
 
+    public boolean checkProofOfWorkLessThan(byte[] hash) {
+        BigInteger target = getDifficultyTargetAsInteger();
+        BigInteger h = new BigInteger(1, this.hash);
+        BigInteger h1 = new BigInteger(1, hash);
+        if((h.compareTo(target) <= 0) && h.compareTo(h1) < 0) {
+            return true;
+        }
+        return false;
+    }
+
     public BigInteger getDifficultyTargetAsInteger() {
         return BytesUtils.decodeCompactBits(difficultyTarget);
     }

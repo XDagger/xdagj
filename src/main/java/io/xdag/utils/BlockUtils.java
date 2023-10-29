@@ -38,4 +38,15 @@ public final class BlockUtils {
         return header;
     }
 
+    public static BlockHeader createProofOfWorkHeadeLessThan(byte[]  previousHash, long number, byte[] coinbase, long timestamp, byte[] transactionsRoot, byte[] resultsRoot, long nonce, byte[] data,  byte[] blockHash) {
+        BlockHeader header = new BlockHeader(number, coinbase, previousHash, timestamp, transactionsRoot,
+                resultsRoot, nonce, data);
+        while (!header.checkProofOfWorkLessThan(blockHash)) {
+            nonce += 1;
+            header = new BlockHeader(number, coinbase, previousHash, timestamp, transactionsRoot,
+                    resultsRoot, nonce, data);
+        }
+        return header;
+    }
+
 }
