@@ -42,7 +42,7 @@ public class PreBlockInfo {
     private byte[] remark;
     private byte[] hash;
     private byte[] hashlow;
-    private UInt64 amount;
+    private XAmount amount;
     private long timestamp;
 
     // snapshot

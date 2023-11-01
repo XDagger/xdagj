@@ -98,10 +98,10 @@ public class SnapshotStoreImpl implements SnapshotStore {
     public void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo) {
         blockInfo.setSnapshot(preBlockInfo.isSnapshot());
         blockInfo.setSnapshotInfo(preBlockInfo.getSnapshotInfo());
-        blockInfo.setFee(preBlockInfo.getFee());
+        blockInfo.setFee(XAmount.of(preBlockInfo.getFee()));
         blockInfo.setHash(preBlockInfo.getHash());
         blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(XAmount.ofXAmount(preBlockInfo.getAmount().toLong()));
+        blockInfo.setAmount(preBlockInfo.getAmount());
         blockInfo.setHashlow(preBlockInfo.getHashlow());
         blockInfo.setFlags(preBlockInfo.getFlags());
         blockInfo.setHeight(preBlockInfo.getHeight());

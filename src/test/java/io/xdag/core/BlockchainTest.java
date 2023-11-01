@@ -56,8 +56,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.xdag.BlockBuilder.*;
-import static io.xdag.core.ImportResult.IMPORTED_BEST;
-import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
+import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.utils.BasicUtils.*;
 import static org.junit.Assert.*;
@@ -182,6 +181,7 @@ public class BlockchainTest {
     @Test
     public void testNew2NewTransactionBlock() {
         KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
         KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
@@ -216,6 +216,7 @@ public class BlockchainTest {
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
         Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
         Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
 
@@ -254,8 +255,113 @@ public class BlockchainTest {
 
         XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
         XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());
-        assertEquals("100.00", addressBalance.toDecimal(2, XUnit.XDAG).toString());
+        XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
+        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
+        assertEquals("99.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
+        assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
+
+        //TODO:test wallet create txBlock with fee = 0,
+        List<Block> txList = Lists.newLinkedList();
+        for (int i = 1; i <= 10; i++) {
+            Block txBlock_0;
+            if (i == 1){//TODO:test give miners reward with a TX block :one input several output
+                 txBlock_0 = generateMinerRewardTxBlock(config, poolKey, xdagTime - i, from, to,to1, XAmount.of(20,XUnit.XDAG),XAmount.of(10,XUnit.XDAG), XAmount.of(10,XUnit.XDAG));
+            }else {
+                 txBlock_0 = generateWalletTransactionBlock(config, poolKey, xdagTime - i, from, to, XAmount.of(1,XUnit.XDAG));}
+
+            assertEquals(XAmount.ZERO, txBlock_0.getFee());//fee is zero.
+            // 4. local check
+            assertTrue(blockchain.canUseInput(txBlock_0));
+            assertTrue(blockchain.checkMineAndAdd(txBlock_0));
+            // 5. remote check
+            assertTrue(blockchain.canUseInput(new Block(txBlock_0.getXdagBlock())));
+            assertTrue(blockchain.checkMineAndAdd(txBlock_0));
+
+            result = blockchain.tryToConnect(txBlock_0);
+            // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+            assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+            txList.add(txBlock_0);
+        }
+        pending.clear();
+        for (Block tx : txList) {
+            pending.add(new Address(tx.getHashLow(), false));
+        }
+        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        // 4. confirm transaction block with 16 mainblocks
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+        }
+        XAmount poolBalance_0 = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount addressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount addressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount mainBlockLinkTxBalance_0 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
+        assertEquals("871.00", poolBalance_0.toDecimal(2, XUnit.XDAG).toString());//900 - 20 - 1*9  = 871.00
+        assertEquals("117.90", addressBalance_0.toDecimal(2, XUnit.XDAG).toString());//99.90  + (10-0.1) + (1 - 0.1) * 9  = 117.90  (ps:0.1 is fee)
+        assertEquals("9.90", addressBalance_1.toDecimal(2, XUnit.XDAG).toString());//0 + 10 - 0.1 = 9.90
+        assertEquals("1025.1" , mainBlockLinkTxBalance_0.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1*11 reward.
+    }
+
+    @Test
+    public void testNew2NewTxAboutRejected() {
+        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. first block
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = addressBlock.getHashLow();
+        // 2. create 10 mainblocks
+        for (int i = 1; i <= 10; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+
+        //0.09 is not enough,expect to  be rejected!
+        Block InvalidTxBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(90, XUnit.MILLI_XDAG));
+        result = blockchain.tryToConnect(InvalidTxBlock);
+        assertEquals(INVALID_BLOCK, result);// 0.09 < 0.1, Invalid block!
+
+        KeyPair addrKey1 = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
+        Block txBlock = generateMinerRewardTxBlock(config, poolKey, xdagTime - 1, from, to, to1, XAmount.of(2,XUnit.XDAG),XAmount.of(1901,XUnit.MILLI_XDAG), XAmount.of(99,XUnit.MILLI_XDAG));
+        // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+        result = blockchain.tryToConnect(InvalidTxBlock);
+        assertEquals(INVALID_BLOCK, result);
+        // there is 12 blocks and 10 mainblocks
     }
 
     @Test
@@ -264,8 +370,8 @@ public class BlockchainTest {
         KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        // 1. first block
-        Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
+        // 1. first block get 1024 reward
+        Block addressBlock = generateAddressBlock(config, poolKey, generateTime);//get another 1000 amount
 //        System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
@@ -296,7 +402,13 @@ public class BlockchainTest {
         Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN,false);
         Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
+
+        //TODO: 0.05 is not enough to pay fee.
+        Block InvalidTxBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(50, XUnit.MILLI_XDAG));
+        result = blockchain.tryToConnect(InvalidTxBlock);
+        assertEquals(INVALID_BLOCK, result);//0.05 < 0.1, Invalid block!
+
+        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(1000, XUnit.XDAG));
 
         // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -332,11 +444,12 @@ public class BlockchainTest {
         }
 
         XAmount poolBalance = blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount();
+        XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals("1924.0" , poolBalance.toDecimal(1, XUnit.XDAG).toString());
-        assertEquals("100.0", addressBalance.toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("1024.0" , poolBalance.toDecimal(1, XUnit.XDAG).toString());//2024 - 1000 = 1024,
+        assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
+        assertEquals("999.9", addressBalance.toDecimal(1, XUnit.XDAG).toString());//1000 - 0.1 = 999.9, A TX subtract 0.1 XDAG fee.
     }
-
     @Test
     public void testCanUseInput() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");

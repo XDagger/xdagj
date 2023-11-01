@@ -333,9 +333,9 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         }
 
         // not connected
-        if (client.getPeerId().equals(peer.getPeerId()) || channelMgr.isActivePeer(peer.getPeerId())) {
-            return ReasonCode.DUPLICATED_PEER_ID;
-        }
+//        if (client.getPeerId().equals(peer.getPeerId()) || channelMgr.isActivePeer(peer.getPeerId())) {
+//            return ReasonCode.DUPLICATED_PEER_ID;
+//        }
 
         // validator can't share IP address
         if (channelMgr.isActiveIP(channel.getRemoteIp()) // already connected

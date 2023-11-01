@@ -6,15 +6,11 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-
-import java.net.UnknownHostException;
-import java.util.Date;
-import java.util.Objects;
 import io.netty.handler.logging.LoggingHandler;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 
@@ -43,13 +39,13 @@ public class WebSocketServer {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel ch) throws UnknownHostException {
-                        ch.pipeline().addLast("logging",new LoggingHandler("DEBUG"));//set log listener, level debug
+                    protected void initChannel(SocketChannel ch) {
+                        ch.pipeline().addLast("logging",new LoggingHandler("INFO"));//set log listener, level debug
                         ch.pipeline().addLast("http-codec",new HttpServerCodec());//http decoder
-                        ch.pipeline().addLast("aggregator",new HttpObjectAggregator(65536));
+                        ch.pipeline().addLast("aggregator",new HttpObjectAggregator(65536));//http send segmented data, need to aggregate
                         ch.pipeline().addLast("handler", new PoolHandShakeHandler(ClientHost, ClientTag, ServerPort));//pool handler write by ourselves
                     }
-                });
+                });//initialize worker Group
         webSocketChannel  = b.bind("localhost",ServerPort);
         try {
             webSocketChannel.sync();
@@ -59,13 +55,6 @@ public class WebSocketServer {
         }
     }
 
-    private void sendPeriodicMessage() {
-        // 在这里编写定时发送消息的逻辑
-        TextWebSocketFrame tws = new TextWebSocketFrame(new Date()
-                + "    这是定时推送信息,推送给：");
-        // 发送消息的代码
-        ChannelSupervise.send2All(tws);
-    }
     public void stop() {
         try {
             Objects.requireNonNull(webSocketChannel).channel().close().sync();

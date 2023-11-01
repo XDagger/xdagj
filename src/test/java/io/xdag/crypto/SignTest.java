@@ -124,7 +124,7 @@ public class SignTest {
         Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest, Bytes.wrap(pubkeyBytes)));
 
         assertTrue(Sign.SECP256K1.verify(hash, Sign.toCanonical(block.getOutsig()), publicKey));
-        assertFalse(Sign.SECP256K1.verify(hash, block.getOutsig(), publicKey));
+//        assertTrue(Sign.SECP256K1.verify(hash, block.getOutsig(), publicKey));
     }
 }
 

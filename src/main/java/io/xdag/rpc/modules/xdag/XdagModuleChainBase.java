@@ -269,7 +269,9 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         : hash2Address(Bytes32.wrap(block.getInfo().getRef())))
                 .hashlow(block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                         : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
-                .amount(String.format("%.9f", amount2xdag(0))) // current fee is 0
+                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) : (block.getFee().equals(XAmount.ZERO)?
+                        String.format("%s", XAmount.of(100,XUnit.MILLI_XDAG).multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString()):
+                        String.format(block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString()))) // calculate the fee
                 .direction(2);
         links.add(fee.build());
 

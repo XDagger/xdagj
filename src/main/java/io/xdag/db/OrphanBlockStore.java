@@ -42,7 +42,7 @@ public interface OrphanBlockStore {
 
     void reset();
 
-    List<Address> getOrphan(long num, long[] sendTime, Filter filter);
+    List<Address> getOrphan(long num, long[] sendTime);
 
     void deleteByHash(byte[] hashlow);
 

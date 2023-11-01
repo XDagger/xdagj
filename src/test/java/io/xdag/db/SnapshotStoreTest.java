@@ -303,7 +303,7 @@ public class SnapshotStoreTest {
         XAmount toBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
 
-        assertEquals("100.0", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));
+        assertEquals("99.9", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));
         // block reword 1024 - 100 = 924.0
         assertEquals("924.0", String.valueOf(fromBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG)));
 

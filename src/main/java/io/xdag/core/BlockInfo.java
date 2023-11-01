@@ -41,7 +41,7 @@ public class BlockInfo {
     private BigInteger difficulty;
     private byte[] ref;
     private byte[] maxDiffLink;
-    private XAmount fee;
+    private XAmount fee = XAmount.ZERO;
     private byte[] remark;
     private byte[] hash;
     private byte[] hashlow;

@@ -33,6 +33,7 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof FullHttpRequest ) {
+            log.debug("recv: "+ msg);
             //Fullhttprequest for update websocket connect
             handleHttpRequest(ctx, (FullHttpRequest) msg);
             log.debug("handshake with pool: {} ", ctx.channel().remoteAddress());
@@ -107,14 +108,6 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
         // 返回应答消息
         String request = ((TextWebSocketFrame) frame).text();
         log.debug("server recv：" + request);
-
-        //TODO:这里看一下发什么响应请求
-        TextWebSocketFrame tws = new TextWebSocketFrame(new Date().toString()
-                + ctx.channel().id() + "："+ request);
-        // 群发
-        //ChannelSupervise.send2All(tws);
-        // 返回【谁发的发给谁】
-        ctx.channel().writeAndFlush(tws);
     }
 
     /**
@@ -122,7 +115,7 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
      * */
     private static void sendHttpResponse(ChannelHandlerContext ctx,
                                          FullHttpRequest req, DefaultFullHttpResponse res) {
-        // return client
+        //response client
         if (res.status().code() != 200) {
             ByteBuf buf = Unpooled.copiedBuffer(res.status().toString(),
                     CharsetUtil.UTF_8);
@@ -130,7 +123,7 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
             buf.release();
         }
         ChannelFuture f = ctx.channel().writeAndFlush(res);
-        // if not Keep-Alive，close
+        // if not Keep-Alive,close
         if (!isKeepAlive(req) || res.status().code() != 200) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
