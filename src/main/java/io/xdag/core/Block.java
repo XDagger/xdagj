@@ -63,7 +63,6 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
-
 import com.google.common.collect.Lists;
 
 @Slf4j
@@ -122,11 +121,12 @@ public class Block implements Cloneable {
             boolean mining,
             List<KeyPair> keys,
             String remark,
-            int defKeyIndex) {
+            int defKeyIndex,
+            XAmount fee) {
         parsed = true;
         info = new BlockInfo();
         this.info.setTimestamp(timestamp);
-        this.info.setFee(0);
+        this.info.setFee(fee);
         int lenghth = 0;
 
         setType(config.getXdagFieldHeader(), lenghth++);
@@ -206,7 +206,7 @@ public class Block implements Cloneable {
     public Block(Config config, long timestamp,
             List<Address> pendings,
             boolean mining) {
-        this(config, timestamp, null, pendings, mining, null, null, -1);
+        this(config, timestamp, null, pendings, mining, null, null, -1, XAmount.ZERO);
     }
 
     /**
@@ -257,7 +257,7 @@ public class Block implements Cloneable {
         this.transportHeader = header.getLong(0, ByteOrder.LITTLE_ENDIAN);
         this.info.type = header.getLong(8, ByteOrder.LITTLE_ENDIAN);
         this.info.setTimestamp(header.getLong(16, ByteOrder.LITTLE_ENDIAN));
-        this.info.setFee(header.getLong(24, ByteOrder.LITTLE_ENDIAN));
+        this.info.setFee(XAmount.of(header.getLong(24, ByteOrder.LITTLE_ENDIAN), XUnit.NANO_XDAG));
         for (int i = 1; i < XdagBlock.XDAG_BLOCK_FIELDS; i++) {
             XdagField field = xdagBlock.getField(i);
             if (field == null) {
@@ -375,7 +375,8 @@ public class Block implements Cloneable {
     }
 
     private byte[] getEncodedHeader() {
-        byte[] fee = BytesUtils.longToBytes(getFee(), true);
+        //byte[] fee = BytesUtils.longToBytes(getFee(), true);
+        byte[] fee = BytesUtils.longToBytes(Long.parseLong(getFee().toString()), true);
         byte[] time = BytesUtils.longToBytes(getTimestamp(), true);
         byte[] type = BytesUtils.longToBytes(getType(), true);
         byte[] transport = new byte[8];
@@ -510,7 +511,7 @@ public class Block implements Cloneable {
         return this.info.type;
     }
 
-    public long getFee() {
+    public XAmount getFee() {
         return this.info.getFee();
     }
 

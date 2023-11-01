@@ -67,6 +67,13 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int telnetPort = 7001;
     protected String telnetPassword;
 
+    // =========================
+    // Pool websocket spec
+    // =========================
+    protected String poolIp;
+    protected int WebsocketServerPort;
+    protected String poolTag;
+
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
     protected int waitEpoch = 20;
@@ -245,6 +252,10 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         telnetPort = config.hasPath("admin.telnet.port")?config.getInt("admin.telnet.port"):6001;
         telnetPassword = config.getString("admin.telnet.password");
 
+        poolIp = config.hasPath("pool.ip")?config.getString("pool.ip"):"127.0.0.1";
+        WebsocketServerPort = config.hasPath("pool.ws.port")?config.getInt("pool.ws.port"):7001;
+        poolTag = config.hasPath("pool.tag")?config.getString("pool.tag"):"xdagj";
+
         nodeIp = config.hasPath("node.ip")?config.getString("node.ip"):"127.0.0.1";
         nodePort = config.hasPath("node.port")?config.getInt("node.port"):8001;
         nodeTag = config.hasPath("node.tag")?config.getString("node.tag"):"xdagj";
@@ -372,6 +383,13 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
         return modules;
     }
+
+    @Override
+    public String getPoolIP(){return poolIp;}
+    @Override
+    public int getWebsocketServerPort() {return WebsocketServerPort;}
+    @Override
+    public String getPoolTag(){return poolTag;}
 
     @Override
     public boolean isRPCEnabled() {

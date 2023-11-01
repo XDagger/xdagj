@@ -31,11 +31,8 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
+import io.xdag.core.*;
 import io.xdag.utils.SimpleEncoder;
-import io.xdag.core.XAmount;
 import io.xdag.crypto.Aes;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
@@ -605,7 +602,7 @@ public class Wallet {
 
         long sendTime = XdagTime.getCurrentTimestamp();
 
-        return new Block(getConfig(), sendTime, all, null, false, keys, remark, defKeyIndex);
+        return new Block(getConfig(), sendTime, all, null, false, keys, remark, defKeyIndex, XAmount.of(100, XUnit.MILLI_XDAG));
     }
 
 

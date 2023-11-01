@@ -45,6 +45,7 @@ import io.xdag.net.ChannelManager;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.NetDB;
 import io.xdag.net.node.NodeManager;
+import io.xdag.net.websocket.WebSocketServer;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
@@ -94,6 +95,7 @@ public class Kernel {
 
     protected byte[] firstAccount;
     protected Block firstBlock;
+    protected WebSocketServer webSocketServer;
     protected XdagState xdagState;
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
@@ -206,7 +208,7 @@ public class Kernel {
         // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
-            firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
+            firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1, XAmount.ZERO);
             firstBlock.signOut(wallet.getDefKey());
             xdagStats.setOurLastBlockHash(firstBlock.getHashLow().toArray());
             if (xdagStats.getGlobalMiner() == null) {
@@ -280,6 +282,10 @@ public class Kernel {
         log.info("SyncManager start...");
 
         // ====================================
+        // set up pool websocket channel
+        // ====================================
+        getWsServer().start();
+        // ====================================
         // pow
         // ====================================
         pow = new XdagPow(this);
@@ -336,6 +342,13 @@ public class Kernel {
         }
 
         return jsonRpcWeb3ServerHandler;
+    }
+
+    private WebSocketServer getWsServer(){
+        if (webSocketServer == null) {
+            webSocketServer = new WebSocketServer(config.getPoolIP(), config.getPoolTag(), config.getWebsocketServerPort());
+        }
+        return webSocketServer;
     }
 
     private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {

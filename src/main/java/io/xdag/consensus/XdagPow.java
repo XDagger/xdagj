@@ -28,12 +28,7 @@ import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
 
 import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagState;
+import io.xdag.core.*;
 import io.xdag.crypto.Hash;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
@@ -181,7 +176,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
 
     public Block generateRandomXBlock(long sendTime) {
-        Block block = blockchain.createNewBlock(null, null, true, null);
+        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
         block.signOut(kernel.getWallet().getDefKey());
 
         minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
@@ -192,7 +187,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     public Block generateBlock(long sendTime) {
-        Block block = blockchain.createNewBlock(null, null, true, null);
+        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
         block.signOut(kernel.getWallet().getDefKey());
 
         minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));

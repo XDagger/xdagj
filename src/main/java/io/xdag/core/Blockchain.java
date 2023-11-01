@@ -39,7 +39,7 @@ public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark);
+    Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark, XAmount fee);
 
     Block getBlockByHash(Bytes32 hash, boolean isRaw);
 

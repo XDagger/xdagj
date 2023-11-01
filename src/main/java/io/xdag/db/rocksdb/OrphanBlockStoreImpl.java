@@ -26,6 +26,7 @@ package io.xdag.db.rocksdb;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
+import io.xdag.core.Filter;
 import io.xdag.core.XdagField;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.utils.BytesUtils;
@@ -84,6 +85,13 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                     addNum--;
                     res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT,false));
                     sendtime[1] = Math.max(sendtime[1],time);
+//                    Bytes32 blockHashLow = Bytes32.wrap(an.getKey(),1);
+//                    if(filter.filterOurLinkBlock(blockHashLow)){
+//                        addNum--;
+//                        //TODO:通过address 获取区块 遍历连接块是否都是output如果是 则为链接块 判断是否是自己的是才链接
+//                        res.add(new Address(blockHashLow, XdagField.FieldType.XDAG_FIELD_OUT,false));
+//                        sendtime[1] = Math.max(sendtime[1],time);
+//                    }
                 }
             }
             sendtime[1] = Math.min(sendtime[1]+1,sendtime[0]);

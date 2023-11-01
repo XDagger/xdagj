@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 import io.xdag.Kernel;
 import io.xdag.core.*;
 import io.xdag.net.Channel;
+import io.xdag.net.websocket.ChannelSupervise;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -306,7 +307,7 @@ public class Commands {
 
     private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark) {
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount, true));
-        Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark);
+        Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark, XAmount.of(100,XUnit.MILLI_XDAG));
 
         if (block == null) {
             return null;
@@ -463,6 +464,11 @@ public class Commands {
             tx.append(String.format("    earn: %s           %s   %s%n", hash2Address(block.getHashLow()),
                     kernel.getBlockchain().getReward(block.getInfo().getHeight()).toDecimal(9, XUnit.XDAG).toPlainString(),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
+                            .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))))
+            .append(String.format("fee earn: %s           %s   %s%n", hash2Address(block.getHashLow()),
+                    block.getInfo().getAmount().equals(XAmount.ZERO) ? XAmount.ZERO.toString() :
+                            block.getInfo().getAmount().subtract(kernel.getBlockchain().getReward(block.getInfo().getHeight())).toDecimal(9, XUnit.XDAG).toPlainString(),
+                    FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
         }
         for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(block.getHashLow(), 1)) {
@@ -502,7 +508,9 @@ public class Commands {
                 hash2Address(block.getHash()), block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                 // fee目前为0
                 block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
-                XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString()
+                block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+                        (block.getFee().equals(XAmount.ZERO) ? XAmount.of(100,XUnit.MILLI_XDAG).multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString() :
+                        block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
@@ -565,6 +573,10 @@ public class Commands {
         }
 
         return stringBuilder.toString();
+    }
+
+    public String pool(){
+        return ChannelSupervise.showChannel();
     }
 
     public String keygen()
