@@ -23,15 +23,15 @@
  */
 package io.xdag.core;
 
-import io.xdag.utils.BasicUtils;
-
-import java.math.BigDecimal;
-
 import static java.math.RoundingMode.FLOOR;
 import static java.math.RoundingMode.HALF_UP;
 
+import java.math.BigDecimal;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
+
+import io.xdag.utils.BasicUtils;
 
 public class XAmount implements Comparable<XAmount> {
 

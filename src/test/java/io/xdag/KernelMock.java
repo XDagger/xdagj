@@ -27,10 +27,10 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.config.Config;
 import io.xdag.consensus.XdagPow;
+import io.xdag.consensus.XdagSync;
 import io.xdag.core.Dagchain;
 import io.xdag.core.Genesis;
 import io.xdag.core.PendingManager;
-import io.xdag.consensus.XdagSync;
 import io.xdag.net.ChannelManager;
 import io.xdag.net.PeerClient;
 import io.xdag.net.node.NodeManager;

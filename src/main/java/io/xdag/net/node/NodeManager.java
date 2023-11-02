@@ -24,17 +24,6 @@
 
 package io.xdag.net.node;
 
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
-import io.xdag.config.Config;
-import io.xdag.DagKernel;
-import io.xdag.net.PeerClient;
-import io.xdag.net.XdagChannelInitializer;
-import io.xdag.net.NetDBManager;
-import io.xdag.net.ChannelManager;
-import io.xdag.net.NetDB;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Deque;
@@ -48,6 +37,16 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import io.xdag.DagKernel;
+import io.xdag.config.Config;
+import io.xdag.net.ChannelManager;
+import io.xdag.net.NetDB;
+import io.xdag.net.NetDBManager;
+import io.xdag.net.PeerClient;
+import io.xdag.net.XdagChannelInitializer;
 import io.xdag.utils.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 

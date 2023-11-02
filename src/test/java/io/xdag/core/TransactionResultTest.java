@@ -29,7 +29,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import io.xdag.core.TransactionResult;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

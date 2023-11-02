@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
 import io.xdag.DagKernel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -42,12 +43,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ChannelManager {
 
     private final DagKernel kernel;
-    /**
-     * Queue with new blocks from other peers
-     */
-//    private final BlockingQueue<BlockWrapper> newForeignBlocks = new LinkedBlockingQueue<>();
-    // 广播区块
-//    private final Thread blockDistributeThread;
     private final Set<InetSocketAddress> addressSet = new HashSet<>();
     protected ConcurrentHashMap<InetSocketAddress, Channel> channels = new ConcurrentHashMap<>();
     protected ConcurrentHashMap<String, Channel> activeChannels = new ConcurrentHashMap<>();

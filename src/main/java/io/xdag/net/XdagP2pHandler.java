@@ -38,12 +38,12 @@ import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.xdag.DagKernel;
 import io.xdag.Network;
 import io.xdag.config.Config;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.BlockPart;
-import io.xdag.DagKernel;
 import io.xdag.core.Dagchain;
 import io.xdag.core.MainBlock;
 import io.xdag.core.PendingManager;

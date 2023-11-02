@@ -28,13 +28,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import java.io.File;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
@@ -43,6 +36,7 @@ import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.After;
@@ -50,6 +44,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.DevnetConfig;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
 
 public class WalletTest {
 

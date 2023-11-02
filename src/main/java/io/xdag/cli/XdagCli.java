@@ -26,21 +26,15 @@ package io.xdag.cli;
 
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
-import io.xdag.DagKernel;
-import io.xdag.Launcher;
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.core.Genesis;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.MnemonicUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.BytesUtils;
-import java.io.*;
+import java.io.Console;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -52,6 +46,17 @@ import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import com.google.common.collect.Lists;
+
+import io.xdag.DagKernel;
+import io.xdag.Launcher;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.core.Genesis;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MnemonicUtils;
 
 public class XdagCli extends Launcher {
 

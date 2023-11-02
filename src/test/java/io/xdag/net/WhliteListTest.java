@@ -27,11 +27,6 @@ package io.xdag.net;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
-
 import java.net.InetSocketAddress;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -42,6 +37,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.DevnetConfig;
+import io.xdag.crypto.Keys;
 
 public class WhliteListTest {
 

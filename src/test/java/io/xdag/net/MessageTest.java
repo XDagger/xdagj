@@ -26,12 +26,13 @@ package io.xdag.net;
 
 import static org.junit.Assert.assertEquals;
 
-import io.xdag.net.message.MessageCode;
-import io.xdag.utils.BytesUtils;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
+
+import io.xdag.utils.BytesUtils;
 
 public class MessageTest {
 

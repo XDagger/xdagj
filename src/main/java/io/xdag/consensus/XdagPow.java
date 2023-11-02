@@ -39,7 +39,6 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.DagKernel;
 import io.xdag.config.Config;
-import io.xdag.config.Constants;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.Dagchain;
 import io.xdag.core.MainBlock;
@@ -276,7 +275,7 @@ public class XdagPow implements PowManager {
 
                 if(!Arrays.equals(remoteMainBlock.getParentHash(), parentHash)) {
                     log.trace("onEpoch->no parent from {}.", remoteMainBlock);
-                    long syncBegin = remoteMainBlock.getNumber() > Constants.EPOCH_FINALIZE_NUMBER?  remoteMainBlock.getNumber() -16 : 1;
+                    long syncBegin = Math.max(remoteMainBlock.getNumber() - 2, 1);
                     long syncCurrent = syncBegin;
                     long syncTarget = remoteNumber;
                     sync(syncBegin, syncCurrent, syncTarget, channel);

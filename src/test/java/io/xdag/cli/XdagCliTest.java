@@ -43,15 +43,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.DevnetConfig;
-import io.xdag.config.MainnetConfig;
-import io.xdag.config.TestnetConfig;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.BytesUtils;
-import io.xdag.Wallet;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -65,6 +56,15 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.google.common.collect.Lists;
+
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.DevnetConfig;
+import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
+import io.xdag.crypto.Keys;
+import io.xdag.utils.BytesUtils;
 
 public class XdagCliTest {
     private Config config;

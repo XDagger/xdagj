@@ -27,11 +27,12 @@ package io.xdag.rpc.modules;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import org.junit.Test;
+
 import io.xdag.rpc.modules.xdag.XdagModule;
 import io.xdag.rpc.modules.xdag.XdagModuleChain;
 import io.xdag.rpc.modules.xdag.XdagModuleTransaction;
 import io.xdag.rpc.modules.xdag.XdagModuleWallet;
-import org.junit.Test;
 
 public class XdagModuleTest {
 

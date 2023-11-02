@@ -36,11 +36,11 @@ import org.mockito.Mockito;
 
 import io.xdag.config.Constants;
 import io.xdag.config.UnitTestnetConfig;
-import io.xdag.core.XAmount;
 import io.xdag.core.Dagchain;
 import io.xdag.core.DagchainImpl;
 import io.xdag.core.Genesis;
 import io.xdag.core.PendingManager;
+import io.xdag.core.XAmount;
 import io.xdag.core.XUnit;
 import io.xdag.rules.TemporaryDatabaseRule;
 import io.xdag.utils.BytesUtils;

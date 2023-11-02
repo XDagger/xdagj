@@ -24,6 +24,7 @@
 package io.xdag.core;
 
 import static java.util.Arrays.stream;
+
 import java.math.BigInteger;
 
 /**

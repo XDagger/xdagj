@@ -53,7 +53,6 @@ import io.xdag.config.AbstractConfig;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.UnitTestnetConfig;
-import io.xdag.core.state.AccountState;
 import io.xdag.core.state.BlockState;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;

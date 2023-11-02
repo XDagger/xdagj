@@ -31,14 +31,13 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
 
 import io.xdag.Network;
-import io.xdag.core.Genesis;
 import io.xdag.core.state.ByteArray;
 import io.xdag.utils.BytesUtils;
-import org.bouncycastle.util.encoders.Hex;
 
 public class GenesisTest {
 

@@ -41,8 +41,6 @@ import org.hyperledger.besu.crypto.SECP256K1;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 
-import io.xdag.utils.WalletUtils;
-
 /**
  * Transaction signing logic.
  *

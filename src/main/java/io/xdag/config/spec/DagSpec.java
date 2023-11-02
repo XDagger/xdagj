@@ -25,9 +25,9 @@ package io.xdag.config.spec;
 
 import java.util.Map;
 
-import io.xdag.core.XAmount;
 import io.xdag.core.Fork;
 import io.xdag.core.TransactionType;
+import io.xdag.core.XAmount;
 
 public interface DagSpec {
 

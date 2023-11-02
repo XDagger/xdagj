@@ -28,8 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Test;
 
 import io.xdag.net.message.MessageCode;
-import io.xdag.net.message.consensus.GetMainBlockHeaderMessage;
-import io.xdag.net.message.consensus.MainBlockHeaderMessage;
 
 public class GetMainBlockHeaderMessageTest {
 

@@ -24,14 +24,15 @@
 
 package io.xdag.utils;
 
+import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
+
+import org.apache.tuweni.bytes.Bytes32;
+
 import io.xdag.Wallet;
 import io.xdag.crypto.Base58;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.utils.exception.AddressFormatException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tuweni.bytes.Bytes32;
-
-import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
 
 @Slf4j
 public class WalletUtils {

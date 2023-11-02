@@ -33,9 +33,6 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import io.xdag.core.Fork;
-import io.xdag.core.ForkSignalSet;
-
 public class ForkSignalSetTest {
 
     private static final Fork[] eightPendingForks = new Fork[8];

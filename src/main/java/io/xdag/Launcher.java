@@ -24,18 +24,10 @@
 
 package io.xdag;
 
-import io.xdag.cli.XdagOption;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.DevnetConfig;
-import io.xdag.config.MainnetConfig;
-import io.xdag.config.TestnetConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -44,6 +36,16 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
+
+import io.xdag.cli.XdagOption;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.DevnetConfig;
+import io.xdag.config.MainnetConfig;
+import io.xdag.config.TestnetConfig;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter

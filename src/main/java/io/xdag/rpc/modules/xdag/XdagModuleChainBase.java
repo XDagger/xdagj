@@ -24,35 +24,6 @@
 
 package io.xdag.rpc.modules.xdag;
 
-
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.amount2xdag;
-import static io.xdag.utils.BasicUtils.hash2Address;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
-import static io.xdag.utils.XdagTime.xdagTimestampToMs;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-
-import com.google.common.collect.Lists;
-
-import io.xdag.cli.Commands;
-import io.xdag.core.XAmount;
-import io.xdag.core.XUnit;
-import io.xdag.rpc.dto.BlockResultDTO;
-import io.xdag.rpc.dto.BlockResultDTO.Link;
-import io.xdag.rpc.dto.BlockResultDTO.TxLink;
-import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
-
 public abstract class XdagModuleChainBase implements XdagModuleChain {
 
 //    private final Blockchain blockchain;
