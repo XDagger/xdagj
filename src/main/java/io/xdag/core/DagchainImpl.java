@@ -158,8 +158,12 @@ public class DagchainImpl implements Dagchain {
             // load the latest block
             latestMainBlock = blockState.getMainBlockByNumber(number);
 
-            this.blockStateMap.put(StateSnapshotKey.of(latestMainBlock.getHash(), latestMainBlock.getNumber()), blockState);
-            this.accountStateMap.put(StateSnapshotKey.of(latestMainBlock.getHash(), latestMainBlock.getNumber()), accountState);
+            MainBlock lastParent = latestMainBlock;
+            for(long i = Constants.EPOCH_FINALIZE_NUMBER; i > 0 && (lastParent != null && lastParent.getNumber() > 0); i--) {
+                this.blockStateMap.put(StateSnapshotKey.of(lastParent.getHash(), lastParent.getNumber()), blockState);
+                this.accountStateMap.put(StateSnapshotKey.of(lastParent.getHash(), lastParent.getNumber()), accountState);
+                lastParent = blockState.getMainBlockByHash(lastParent.getParentHash());
+            }
         }
     }
 
@@ -522,6 +526,8 @@ public class DagchainImpl implements Dagchain {
                 if(!Arrays.equals(k.getHash().getData(), hash)) {
                     asiterator.remove();
                 }
+            } else if(k.getNumber() < number) {
+                asiterator.remove();
             }
         }
 
@@ -533,6 +539,8 @@ public class DagchainImpl implements Dagchain {
                 if(!Arrays.equals(k.getHash().getData(), hash)) {
                     bsiterator.remove();
                 }
+            } else if(k.getNumber() < number) {
+                bsiterator.remove();
             }
         }
     }
@@ -578,7 +586,6 @@ public class DagchainImpl implements Dagchain {
                     return;
                 }
             }
-            log.trace("finalize at {}.", mainBlock);
 
             // commit before 16 main block state snapshot
             AccountState accountState = accountStateMap.get(StateSnapshotKey.of(mb.getHash(), mb.getNumber()));
@@ -589,9 +596,10 @@ public class DagchainImpl implements Dagchain {
             bs.removeUpdates(blockState);
             blockState.commit();
 
-            // remove before 16 main block state snapshot
+            // remove before 16 main block state snapshots and same number fork snapshots
             removeStateSnapshot(mb.getNumber(), mb.getHash());
             latestCheckPointMainBlock = mb;
+            log.trace("finalize at {}, as={}, bs={}.", mb, as, bs);
         }
     }
 
@@ -609,7 +617,6 @@ public class DagchainImpl implements Dagchain {
      */
     protected Map<Fork, Fork.Activation> getActivatedForks(BlockState blockState) {
         Map<Fork, Fork.Activation> activations = new HashMap<>();
-//        byte[] value = indexDB.get(BytesUtils.of(TYPE_ACTIVATED_FORKS));
         byte[] value = blockState.getActivatedForks();
         if (value != null) {
             SimpleDecoder simpleDecoder = new SimpleDecoder(value);
