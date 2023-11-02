@@ -224,6 +224,20 @@ public class MainBlock {
     }
 
     /**
+     * Returns the difficulty target
+     */
+    public long getDifficultyTarget() {
+        return header.getDifficultyTarget();
+    }
+
+    /**
+     * Returns the nonce
+     */
+    public long getNonce() {
+        return header.getNonce();
+    }
+
+    /**
      * Returns the hash of the parent block
      */
     public byte[] getParentHash() {
