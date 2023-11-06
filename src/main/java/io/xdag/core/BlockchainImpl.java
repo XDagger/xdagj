@@ -689,7 +689,7 @@ public class BlockchainImpl implements Blockchain {
             return XAmount.ZERO.subtract(XAmount.ONE);
         }
         //the TX block create by wallet or pool will not set fee = minGas, set in this.
-        if (block.getInputs().size() != 0 && block.getFee().equals(XAmount.ZERO)){
+        if (!block.getInputs().isEmpty() && block.getFee().equals(XAmount.ZERO)){
             block.getInfo().setFee(minGas);
         }
         // 设置为已处理
@@ -721,6 +721,7 @@ public class BlockchainImpl implements Blockchain {
                 sumGas = sumGas.add(ret);
                 updateBlockRef(ref, new Address(block));
                 if (flag && sumGas != XAmount.ZERO){//judge if block is mainBlock, true: add fee!
+                    block.getInfo().setFee(block.getFee().add(sumGas));
                     addAndAccept(block, sumGas);
                     sumGas = XAmount.ZERO;
                 }
@@ -795,8 +796,8 @@ public class BlockchainImpl implements Blockchain {
                     XAmount allBalance = addressStore.getAllBalance();
                     allBalance = allBalance.add(link.getAmount());
                     addressStore.updateAllBalance(allBalance);
-                } else {
-                    addAndAccept(ref, link.getAmount().subtract(block.getInfo().getFee().multiply(block.getInputs().size())));
+                } else if(!flag){//递归返回到第一层时，会遍历链接的上一个主块（output）类型，则不允许扣款
+                    addAndAccept(ref, link.getAmount().subtract(block.getInfo().getFee()));
                     gas = gas.add(block.getInfo().getFee()); //Mark the output for Fee
                 }
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗

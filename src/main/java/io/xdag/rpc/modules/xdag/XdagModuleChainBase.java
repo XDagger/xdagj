@@ -269,9 +269,9 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         : hash2Address(Bytes32.wrap(block.getInfo().getRef())))
                 .hashlow(block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                         : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
-                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) : (block.getFee().equals(XAmount.ZERO)?
-                        String.format("%s", XAmount.of(100,XUnit.MILLI_XDAG).multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString()):
-                        String.format(block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString()))) // calculate the fee
+                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) :
+                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+                                block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())) // calculate the fee
                 .direction(2);
         links.add(fee.build());
 
@@ -308,9 +308,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
             if (block.getInfo().getRemark() != null && block.getInfo().getRemark().length != 0) {
                 remark = new String(block.getInfo().getRemark(), StandardCharsets.UTF_8).trim();
             }
+            XAmount earnFee = kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee();
             txLinkBuilder.address(hash2Address(block.getHashLow()))
                     .hashlow(block.getHashLow().toUnprefixedHexString())
-                    .amount(String.format("%s", blockchain.getReward(block.getInfo().getHeight()).toDecimal(9, XUnit.XDAG).toPlainString()))
+                    .amount(String.format("%s", blockchain.getReward(block.getInfo().getHeight()).add(earnFee).toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(2)
                     .time(xdagTimestampToMs(block.getTimestamp()))
                     .remark(remark);
