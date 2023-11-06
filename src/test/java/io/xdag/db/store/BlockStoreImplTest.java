@@ -27,6 +27,7 @@ package io.xdag.db.store;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.core.Block;
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagStats;
 import io.xdag.crypto.Keys;
@@ -115,6 +116,21 @@ public class BlockStoreImplTest {
         assertArrayEquals(block.toBytes(), storedBlock.toBytes());
     }
 
+    @Test
+    public void testSaveBlockInfo()
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,TxHistorySource);
+        bs.init();
+        long time = System.currentTimeMillis();
+        KeyPair key = Keys.createEcKeyPair();
+        Block block = generateAddressBlock(config, key, time);
+        bs.saveBlock(block);
+        Block storedBlock = bs.getBlockByHash(block.getHashLow(), true);
+        assertArrayEquals(block.toBytes(), storedBlock.toBytes());
+        block.getInfo().setFee(XAmount.TEN);
+        bs.saveBlockInfo(block.getInfo());
+        assertEquals(XAmount.TEN, bs.getBlockInfoByHash(block.getHashLow()).getFee());
+    }
     @Test
     public void testSaveOurBlock()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {

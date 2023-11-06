@@ -466,8 +466,7 @@ public class Commands {
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))))
             .append(String.format("fee earn: %s           %s   %s%n", hash2Address(block.getHashLow()),
-                    block.getInfo().getAmount().equals(XAmount.ZERO) ? XAmount.ZERO.toString() :
-                            block.getInfo().getAmount().subtract(kernel.getBlockchain().getReward(block.getInfo().getHeight())).toDecimal(9, XUnit.XDAG).toPlainString(),
+                    kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString(),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
         }
@@ -506,11 +505,10 @@ public class Commands {
                 block.getInfo().getRemark() == null ? StringUtils.EMPTY : new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
-                // fee目前为0
                 block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
                 block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                        (block.getFee().equals(XAmount.ZERO) ? XAmount.of(100,XUnit.MILLI_XDAG).multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString() :
-                        block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())
+                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+                                block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())

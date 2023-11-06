@@ -78,8 +78,8 @@ public class BlockchainTest {
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
-    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
-    SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
+    SECPPrivateKey secretary_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
+    SECPPrivateKey secretary_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
         assertEquals("blocks:", nblocks, bci.getXdagStats().nblocks);
@@ -135,7 +135,7 @@ public class BlockchainTest {
     public void testExtraBlock() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair key = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -180,8 +180,8 @@ public class BlockchainTest {
 
     @Test
     public void testNew2NewTransactionBlock() {
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair addrKey1 = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
         KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
@@ -259,7 +259,8 @@ public class BlockchainTest {
         assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
         assertEquals("99.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
         assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
-
+        XAmount mainBlockFee = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(10).getHashLow()).getFee();
+        assertEquals("0.1",mainBlockFee.toDecimal(1, XUnit.XDAG).toString());
         //TODO:test wallet create txBlock with fee = 0,
         List<Block> txList = Lists.newLinkedList();
         for (int i = 1; i <= 10; i++) {
@@ -310,11 +311,13 @@ public class BlockchainTest {
         assertEquals("117.90", addressBalance_0.toDecimal(2, XUnit.XDAG).toString());//99.90  + (10-0.1) + (1 - 0.1) * 9  = 117.90  (ps:0.1 is fee)
         assertEquals("9.90", addressBalance_1.toDecimal(2, XUnit.XDAG).toString());//0 + 10 - 0.1 = 9.90
         assertEquals("1025.1" , mainBlockLinkTxBalance_0.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1*11 reward.
+        XAmount mainBlockFee_1 = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(26).getHashLow()).getFee();
+        assertEquals("1.1",mainBlockFee_1.toDecimal(1, XUnit.XDAG).toString());
     }
 
     @Test
     public void testNew2NewTxAboutRejected() {
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
         KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
@@ -355,7 +358,7 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(InvalidTxBlock);
         assertEquals(INVALID_BLOCK, result);// 0.09 < 0.1, Invalid block!
 
-        KeyPair addrKey1 = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
         Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
         Block txBlock = generateMinerRewardTxBlock(config, poolKey, xdagTime - 1, from, to, to1, XAmount.of(2,XUnit.XDAG),XAmount.of(1901,XUnit.MILLI_XDAG), XAmount.of(99,XUnit.MILLI_XDAG));
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
@@ -366,7 +369,7 @@ public class BlockchainTest {
 
     @Test
     public void testOld2NewTransaction(){
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
         KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
@@ -454,8 +457,8 @@ public class BlockchainTest {
     public void testCanUseInput() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        KeyPair fromKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair toKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair fromKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair toKey = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
         Block fromAddrBlock = generateAddressBlock(config, fromKey, generateTime);
         Block toAddrBlock = generateAddressBlock(config, toKey, generateTime);
 
@@ -511,8 +514,8 @@ public class BlockchainTest {
         String firstDiff = "3f4a35eaa6";
         String secondDiff = "1a24b50c9f2";
 
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
         long generateTime = 1600616700000L;
         // 1. add one address block
         Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
@@ -571,7 +574,7 @@ public class BlockchainTest {
 
     @Test
     public void testForkAllChain() {
-        KeyPair poolKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
         long generateTime = 1600616700000L;
 
         // 1. add one address block

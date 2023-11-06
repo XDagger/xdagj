@@ -119,13 +119,12 @@ public class TransactionHistoryStoreImplTest {
 
         //test remark input 'null'
         long timestamp1 = System.currentTimeMillis();
-        String remark1 = null;
         String hash1 = BasicUtils.hash2Address(Bytes32.ZERO);
         TxHistory txHistory1 = new TxHistory();
         Address input1 = new Address(secretkey_2.getEncodedBytes(), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
         txHistory1.setAddress(input1);
         txHistory1.setHash(hash1);
-        txHistory1.setRemark(remark1);
+        txHistory1.setRemark(null);
         txHistory1.setTimestamp(XdagTime.msToXdagtimestamp(timestamp1));
         assertTrue(txHistoryStore.saveTxHistory(txHistory1));
 
