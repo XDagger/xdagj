@@ -23,12 +23,12 @@
  */
 package io.xdag.core;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.WalletUtils.toBase58;
-
-import lombok.Getter;
-import lombok.Setter;
 
 @Getter
 @Setter

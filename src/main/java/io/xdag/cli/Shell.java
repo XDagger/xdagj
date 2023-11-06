@@ -24,18 +24,10 @@
 
 package io.xdag.cli;
 
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.WalletUtils;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -54,6 +46,15 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
 @Slf4j
 public class Shell extends JlineCommandRegistry implements CommandRegistry, Telnet.ShellProvider {
@@ -79,10 +80,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
         commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
         commandExecute.put("pool", new CommandMethods(this::processPool, this::defaultCompleter));
-//        commandExecute.put("run", new CommandMethods(this::processRun, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
         commandExecute.put("net", new CommandMethods(this::processNet, this::defaultCompleter));
-//        commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
         commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));

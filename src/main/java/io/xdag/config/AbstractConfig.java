@@ -27,31 +27,24 @@ package io.xdag.config;
 import com.google.common.collect.Lists;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
-
 import io.xdag.Network;
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.RPCSpec;
-import io.xdag.config.spec.RandomxSpec;
-import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.net.Capability;
 import io.xdag.net.CapabilityTreeSet;
 import io.xdag.net.message.MessageCode;
 import io.xdag.rpc.modules.ModuleDescription;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SystemUtils;
+
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-
-import org.apache.commons.lang3.SystemUtils;
 
 @Slf4j
 @Getter
@@ -248,36 +241,37 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     public void getSetting() {
         com.typesafe.config.Config config = ConfigFactory.load(getConfigName());
 
-        telnetIp = config.hasPath("admin.telnet.ip")?config.getString("admin.telnet.ip"):"127.0.0.1";
-        telnetPort = config.hasPath("admin.telnet.port")?config.getInt("admin.telnet.port"):6001;
+        telnetIp = config.hasPath("admin.telnet.ip") ? config.getString("admin.telnet.ip") : "127.0.0.1";
+        telnetPort = config.hasPath("admin.telnet.port") ? config.getInt("admin.telnet.port") : 6001;
         telnetPassword = config.getString("admin.telnet.password");
 
-        poolIp = config.hasPath("pool.ip")?config.getString("pool.ip"):"127.0.0.1";
-        WebsocketServerPort = config.hasPath("pool.ws.port")?config.getInt("pool.ws.port"):7001;
-        poolTag = config.hasPath("pool.tag")?config.getString("pool.tag"):"xdagj";
+        poolIp = config.hasPath("pool.ip") ? config.getString("pool.ip") : "127.0.0.1";
+        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
+        poolTag = config.hasPath("pool.tag") ? config.getString("pool.tag") : "xdagj";
 
-        nodeIp = config.hasPath("node.ip")?config.getString("node.ip"):"127.0.0.1";
-        nodePort = config.hasPath("node.port")?config.getInt("node.port"):8001;
-        nodeTag = config.hasPath("node.tag")?config.getString("node.tag"):"xdagj";
+        nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
+        nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
+        // poolTag=nodeTag
+        nodeTag = config.hasPath("pool.tag") ? config.getString("pool.tag") : "xdagj";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
-        enableTxHistory = config.hasPath("node.transaction.history.enable")?config.getBoolean("node.transaction.history.enable"):false;
+        enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
-        txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit")?config.getInt("node.transaction.history.pageSizeLimit"):500;
+        txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit") ? config.getInt("node.transaction.history.pageSizeLimit") : 500;
 
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
-        for(String addr : whiteIpList) {
+        for (String addr : whiteIpList) {
             String ip = addr.split(":")[0];
             int port = Integer.parseInt(addr.split(":")[1]);
-            whiteIPList.add(new InetSocketAddress(ip,port));
+            whiteIPList.add(new InetSocketAddress(ip, port));
         }
 
         // rpc
-        rpcEnabled = config.hasPath("rpc.enabled")?config.getBoolean("rpc.enabled"):false;
+        rpcEnabled = config.hasPath("rpc.enabled") ? config.getBoolean("rpc.enabled") : false;
         if (rpcEnabled) {
-            rpcHost = config.hasPath("rpc.http.host")?config.getString("rpc.http.host"):"127.0.0.1";
-            rpcPortHttp = config.hasPath("rpc.http.port")?config.getInt("rpc.http.port"):10001;
-            rpcPortWs = config.hasPath("rpc.ws.port")?config.getInt("rpc.ws.port"):10002;
+            rpcHost = config.hasPath("rpc.http.host") ? config.getString("rpc.http.host") : "127.0.0.1";
+            rpcPortHttp = config.hasPath("rpc.http.port") ? config.getInt("rpc.http.port") : 10001;
+            rpcPortWs = config.hasPath("rpc.ws.port") ? config.getInt("rpc.ws.port") : 10002;
         }
         flag = config.hasPath("randomx.flags.fullmem") && config.getBoolean("randomx.flags.fullmem");
 
@@ -332,7 +326,9 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public int getNetMaxPacketSize() { return this.netMaxPacketSize; }
+    public int getNetMaxPacketSize() {
+        return this.netMaxPacketSize;
+    }
 
     @Override
     public int getMaxInboundConnectionsPerIp() {
@@ -385,11 +381,19 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public String getPoolIP(){return poolIp;}
+    public String getPoolIP() {
+        return poolIp;
+    }
+
     @Override
-    public int getWebsocketServerPort() {return WebsocketServerPort;}
+    public int getWebsocketServerPort() {
+        return WebsocketServerPort;
+    }
+
     @Override
-    public String getPoolTag(){return poolTag;}
+    public String getPoolTag() {
+        return poolTag;
+    }
 
     @Override
     public boolean isRPCEnabled() {
@@ -432,13 +436,19 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public boolean getEnableTxHistory() {return enableTxHistory;}
+    public boolean getEnableTxHistory() {
+        return enableTxHistory;
+    }
 
     @Override
-    public long getTxPageSizeLimit(){return txPageSizeLimit;}
+    public long getTxPageSizeLimit() {
+        return txPageSizeLimit;
+    }
 
     @Override
-    public boolean getEnableGenerateBlock() {return enableGenerateBlock;}
+    public boolean getEnableGenerateBlock() {
+        return enableGenerateBlock;
+    }
 
     @Override
     public void setSnapshotJ(boolean isSnapshot) {

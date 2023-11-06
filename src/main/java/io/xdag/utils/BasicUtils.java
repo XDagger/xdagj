@@ -77,6 +77,12 @@ public class BasicUtils {
     public static String hash2PubAddress(Bytes32 hash) {
        return toBase58(hash2byte(hash.mutableCopy()));
     }
+    public static MutableBytes32 hexPubAddress2Hashlow(String hexPubAddress){
+        Bytes hash = Bytes.fromHexString(hexPubAddress);
+        MutableBytes32 hashLow = MutableBytes32.create();
+        hashLow.set(8, hash);
+        return hashLow;
+    }
 
     public static Bytes32 address2Hash(String address) {
         Bytes ret = Bytes.fromBase64String(address);
@@ -100,6 +106,10 @@ public class BasicUtils {
     }
 
     public static byte[] hash2byte(MutableBytes32 hash){
+        Bytes bytes = hash.slice(8,20);
+        return bytes.toArray();
+    }
+    public static byte[] hash2byte(Bytes32 hash){
         Bytes bytes = hash.slice(8,20);
         return bytes.toArray();
     }

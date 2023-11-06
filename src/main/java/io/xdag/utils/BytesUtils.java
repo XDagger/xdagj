@@ -28,13 +28,15 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
+import org.apache.tuweni.units.bigints.UInt64;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.apache.tuweni.units.bigints.UInt64;
 
 public class BytesUtils {
 
@@ -369,6 +371,9 @@ public class BytesUtils {
         return mutableBytes32;
     }
     public static byte[] byte32ToArray(MutableBytes32 value){
+        return value.mutableCopy().slice(8,20).toArray();
+    }
+    public static byte[] byte32ToArray(Bytes32 value){
         return value.mutableCopy().slice(8,20).toArray();
     }
 

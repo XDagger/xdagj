@@ -34,18 +34,15 @@ import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
 import io.xdag.core.*;
 import io.xdag.crypto.Keys;
+import io.xdag.crypto.RandomX;
 import io.xdag.db.*;
 import io.xdag.db.mysql.TransactionHistoryStoreImpl;
 import io.xdag.db.rocksdb.*;
-import io.xdag.crypto.RandomX;
-import io.xdag.net.PeerClient;
-import io.xdag.net.PeerServer;
-import io.xdag.net.NetDBManager;
-import io.xdag.net.ChannelManager;
+import io.xdag.net.*;
 import io.xdag.net.message.MessageQueue;
-import io.xdag.net.NetDB;
 import io.xdag.net.node.NodeManager;
 import io.xdag.net.websocket.WebSocketServer;
+import io.xdag.pool.PoolAwardManagerImpl;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
@@ -96,6 +93,7 @@ public class Kernel {
     protected byte[] firstAccount;
     protected Block firstBlock;
     protected WebSocketServer webSocketServer;
+    protected PoolAwardManagerImpl poolAwardManager;
     protected XdagState xdagState;
 
     protected AtomicInteger channelsAccount = new AtomicInteger(0);
@@ -180,7 +178,7 @@ public class Kernel {
         log.info("Orphan Pool init.");
         orphanBlockStore.init();
 
-        if(config.getEnableTxHistory()) {
+        if (config.getEnableTxHistory()) {
             long txPageSizeLimit = config.getTxPageSizeLimit();
             txHistoryStore = new TransactionHistoryStoreImpl(txPageSizeLimit);
             log.info("Transaction History Store init.");
@@ -280,19 +278,13 @@ public class Kernel {
         syncMgr = new SyncManager(this);
         syncMgr.start();
         log.info("SyncManager start...");
-
-        // ====================================
-        // set up pool websocket channel
-        // ====================================
-        getWsServer().start();
+        poolAwardManager = new PoolAwardManagerImpl(this);
         // ====================================
         // pow
         // ====================================
         pow = new XdagPow(this);
-
         // register pow
         blockchain.registerListener(pow);
-
         if (config instanceof MainnetConfig) {
             xdagState = XdagState.WAIT;
         } else if (config instanceof TestnetConfig) {
@@ -329,24 +321,29 @@ public class Kernel {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
                         new XdagModuleTransactionEnabled(this),
-                        new XdagModuleChainBase(this.getBlockchain(),this)), this);
+                        new XdagModuleChainBase(this.getBlockchain(), this)), this);
         return new Web3Impl(web3XdagModule);
     }
 
     private JsonRpcWeb3ServerHandler getJsonRpcWeb3ServerHandler() {
         if (jsonRpcWeb3ServerHandler == null) {
-            jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
-                    getWeb3(),
-                    config.getRPCSpec().getRpcModules()
-            );
+            try {
+                jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
+                        getWeb3(),
+                        config.getRPCSpec().getRpcModules()
+                );
+            } catch (Exception e) {
+               log.error("catch an error "+e.getMessage());
+            }
         }
 
         return jsonRpcWeb3ServerHandler;
     }
 
-    private WebSocketServer getWsServer(){
+    public WebSocketServer getWsServer() {
         if (webSocketServer == null) {
-            webSocketServer = new WebSocketServer(config.getPoolIP(), config.getPoolTag(), config.getWebsocketServerPort());
+            webSocketServer = new WebSocketServer(this, config.getPoolIP(), config.getPoolTag(),
+                    config.getWebsocketServerPort());
         }
         return webSocketServer;
     }
@@ -460,7 +457,10 @@ public class Kernel {
         // release
         randomx.randomXPoolReleaseMem();
         log.info("Release randomx");
-
+        webSocketServer.stop();
+        log.info("WebSocket server stop.");
+        poolAwardManager.stop();
+        log.info("Pool award manager stop.");
     }
 
 

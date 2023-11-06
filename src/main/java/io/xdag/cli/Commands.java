@@ -684,6 +684,7 @@ public class Commands {
             if (XdagTime.getCurrentEpoch() < XdagTime.getEpoch(block.getTimestamp()) + 2 * CONFIRMATIONS_COUNT) {
                 return false;
             }
+
             if (compareAmountTo(XAmount.ZERO, block.getInfo().getAmount()) < 0) {
                 ourBlocks.put(new Address(block.getHashLow(), XDAG_FIELD_IN, block.getInfo().getAmount(), false),
                         kernel.getWallet().getAccounts().get(index));

@@ -39,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class BasicUtilsTest {
+    protected MutableBytes32 data;
 
     @Test
     public void testXdag2amount() {
@@ -96,10 +97,11 @@ public class BasicUtilsTest {
         Bytes32 hashlow = address2Hash(news);
         assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
     }
+
     @Test
     public void hash2PubAddress() {
-        Bytes32 hash = Bytes32.fromHexString("0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
-        assertEquals(toBase58(hash2byte(hash.mutableCopy())), "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+        Bytes32 hash = Bytes32.fromHexString("0x00000000000000001eadb24287735969f08c33d5a410ca4aa2440fbc00000000");
+        assertEquals(toBase58(hash2byte(hash.mutableCopy())), "3oDMPTzmLvvy7mgkpvn1nhPDfW9tghrwB");
     }
 
     @Test
@@ -107,7 +109,17 @@ public class BasicUtilsTest {
         Bytes ret = Bytes.wrap(WalletUtils.fromBase58("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf"));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
-        assertEquals(res.toHexString(),"0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+        assertEquals(res.toHexString(), "0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+    }
+
+    @Test
+    public void testHexPubAddress2Hashlow() {
+        String hexPubAddress = "0xc7bc5b48517bf2da9e845eacebacf65008e9e763";
+        Bytes hash = Bytes.fromHexString(hexPubAddress);
+        MutableBytes32 hashLow = MutableBytes32.create();
+        hashLow.set(8, hash);
+        assertEquals(toBase58(hash2byte(hashLow.mutableCopy())), "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+        assertEquals(hashLow, BasicUtils.hexPubAddress2Hashlow("0xc7bc5b48517bf2da9e845eacebacf65008e9e763"));
     }
 
     @Test
@@ -123,5 +135,22 @@ public class BasicUtilsTest {
         int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
         assertTrue(crc32Verify(uncryptData, crc));
+    }
+
+    @Test
+    public void testAddress() {
+        Bytes32 blockHashlow = Bytes32.fromHexStringLenient("0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+        boolean isAddress = true;
+        if (!isAddress) {
+            this.data = blockHashlow.mutableCopy();
+        } else {
+            this.data = MutableBytes32.create();
+            data.set(8, blockHashlow.mutableCopy().slice(8, 20));
+        }
+        assertEquals(blockHashlow, data);
+        MutableBytes32 addressHash = MutableBytes32.create();
+        addressHash.set(8, this.data.slice(8, 20));
+        String walletAddress = toBase58(addressHash.slice(8, 20).toArray());
+        assertEquals(walletAddress, "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
     }
 }

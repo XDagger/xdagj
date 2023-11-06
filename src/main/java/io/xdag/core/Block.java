@@ -24,31 +24,11 @@
 
 package io.xdag.core;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
-
+import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import io.xdag.utils.SimpleEncoder;
 import lombok.Getter;
 import lombok.Setter;
@@ -63,7 +43,13 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
-import com.google.common.collect.Lists;
+import java.math.BigInteger;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static io.xdag.core.XdagField.FieldType.*;
 
 @Slf4j
 @Getter

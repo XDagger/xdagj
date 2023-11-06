@@ -59,16 +59,18 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private static final String SQL_QUERY_TXHISTORY_COUNT_WITH_TIME = "select count(*) from t_transaction_history where faddress=? and ftime >=? and ftime <=?";
     private static final int BLOCK_ADDRESS_FLAG = 0;
     private static final int WALLET_ADDRESS_FLAG = 1;
-
     private static final int DEFAULT_PAGE_SIZE = 100;
+    private static final int DEFAULT_CACHE_SIZE = 50000;
     private final long TX_PAGE_SIZE_LIMIT;
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
     public static int totalPage = 1;
-    public TransactionHistoryStoreImpl(long txPageSizeLimit){
+
+    public TransactionHistoryStoreImpl(long txPageSizeLimit) {
         this.TX_PAGE_SIZE_LIMIT = txPageSizeLimit;
     }
+
     @Override
     public boolean saveTxHistory(TxHistory txHistory) {
         Connection conn = null;
@@ -129,7 +131,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmtBatch.addBatch();
                 count++;
             }
-            if (count == (cacheNum.length == 0 ? 50000 : (cacheNum[0] + 1)) || txHistory == null) {
+            if (count == (cacheNum.length == 0 ? DEFAULT_CACHE_SIZE : (cacheNum[0] + 1)) || txHistory == null) {
                 if (pstmtBatch != null) {
                     pstmtBatch.executeBatch();
                 }
@@ -169,36 +171,36 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         long start = new Date(0).getTime();
         long end = System.currentTimeMillis();
         switch (parameters.length) {
-        case 0 -> {
-        }
-        case 1 -> {
-            int pageSize = Integer.parseInt(parameters[0].toString());
-            PAGE_SIZE = (pageSize > 0 && pageSize <= TX_PAGE_SIZE_LIMIT) ? pageSize : PAGE_SIZE;
-        }
-        case 2 -> {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                start = sdf.parse(parameters[0].toString()).getTime();
-                end = sdf.parse(parameters[1].toString()).getTime();
-            } catch (ParseException e) {
-                start = Long.parseLong(parameters[0].toString());
-                end = Long.parseLong(parameters[1].toString());
+            case 0 -> {
             }
-        }
-        case 3 -> {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                start = sdf.parse(parameters[0].toString()).getTime();
-                end = sdf.parse(parameters[1].toString()).getTime();
-            } catch (ParseException e) {
-                start = Long.parseLong(parameters[0].toString());
-                end = Long.parseLong(parameters[1].toString());
+            case 1 -> {
+                int pageSize = Integer.parseInt(parameters[0].toString());
+                PAGE_SIZE = (pageSize > 0 && pageSize <= TX_PAGE_SIZE_LIMIT) ? pageSize : PAGE_SIZE;
             }
-            int page_size = Integer.parseInt(parameters[2].toString());
-            PAGE_SIZE = (page_size > 0 && page_size <= TX_PAGE_SIZE_LIMIT) ? page_size : PAGE_SIZE;
-        }
-        default -> {
-        }
+            case 2 -> {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    start = sdf.parse(parameters[0].toString()).getTime();
+                    end = sdf.parse(parameters[1].toString()).getTime();
+                } catch (ParseException e) {
+                    start = Long.parseLong(parameters[0].toString());
+                    end = Long.parseLong(parameters[1].toString());
+                }
+            }
+            case 3 -> {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    start = sdf.parse(parameters[0].toString()).getTime();
+                    end = sdf.parse(parameters[1].toString()).getTime();
+                } catch (ParseException e) {
+                    start = Long.parseLong(parameters[0].toString());
+                    end = Long.parseLong(parameters[1].toString());
+                }
+                int page_size = Integer.parseInt(parameters[2].toString());
+                PAGE_SIZE = (page_size > 0 && page_size <= TX_PAGE_SIZE_LIMIT) ? page_size : PAGE_SIZE;
+            }
+            default -> {
+            }
         }
         try {
             conn = DruidUtils.getConnection();

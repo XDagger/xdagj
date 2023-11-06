@@ -97,6 +97,6 @@ public class Constants {
     public static final short TESTNET_VERSION = 0;
     public static final short DEVNET_VERSION = 0;
 
-    public static final XAmount minGas = XAmount.of(100, XUnit.MILLI_XDAG);
+    public static final XAmount MIN_GAS = XAmount.of(100, XUnit.MILLI_XDAG);
 
 }

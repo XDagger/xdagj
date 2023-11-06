@@ -28,12 +28,14 @@ import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.*;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MnemonicUtils;
 import io.xdag.utils.WalletUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.jline.utils.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -135,6 +137,10 @@ public class WalletUtilsTest {
         assertEquals(0,addressHashlow2.slice(28,4).toInt());
         assertFalse(checkAddress(addressHashlow1));
         assertTrue(checkAddress(addressHashlow2));
+        Log.info(BasicUtils.hexPubAddress2Hashlow("0x46a2a0fe035c413d92be9c79a11cfc3695780f65"));
+        Log.info(BasicUtils.hash2PubAddress(BasicUtils.hexPubAddress2Hashlow(
+                "46a2a0fe035c413d92be9c79a11cfc3695780f65")));
+
     }
 
     @After

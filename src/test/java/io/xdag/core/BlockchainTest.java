@@ -634,6 +634,7 @@ public class BlockchainTest {
 
     }
 
+
     static class MockBlockchain extends BlockchainImpl {
 
         public MockBlockchain(Kernel kernel) {

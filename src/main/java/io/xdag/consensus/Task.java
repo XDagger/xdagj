@@ -24,36 +24,54 @@
 
 package io.xdag.consensus;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.xdag.core.XdagField;
 import io.xdag.utils.XdagSha256Digest;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Getter
 @Setter
 public class Task implements Cloneable {
-
-
     private XdagField[] task;
 
     private long taskTime;
 
     private long taskIndex;
-
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private XdagSha256Digest digest;
 
     @Override
     public String toString() {
-        return "Task:{ tasktime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + digest.toString() +"}";
+        return "Task:{ tasktime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + (digest != null ?
+                digest.toString() : "null") +
+                "}";
+    }
+    @JsonGetter("task")
+    public Map<String, String> getTaskAsMap() {
+        Map<String, String> map = new HashMap<>();
+            map.put("preHash", task[0].getData().toHexString());
+            map.put("taskSeed", task[1].getData().toHexString());
+        return map;
+    }
+
+    public String toJsonString() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.writeValueAsString(this);
     }
 
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        Task t = (Task)super.clone();
-        if(task != null && task.length > 0) {
+        Task t = (Task) super.clone();
+        if (task != null && task.length > 0) {
             XdagField[] xfArray = new XdagField[task.length];
-            for(int i = 0; i < t.getTask().length; i++) {
-                xfArray[i] = (XdagField)(t.getTask()[i]).clone();
+            for (int i = 0; i < t.getTask().length; i++) {
+                xfArray[i] = (XdagField) (t.getTask()[i]).clone();
             }
             t.setTask(xfArray);
         }
