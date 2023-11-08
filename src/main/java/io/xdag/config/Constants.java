@@ -40,9 +40,6 @@ public class Constants {
     public static final String WALLET_DIR = "wallet";
     public static final String LOG_DIR = "log";
 
-    public static final Long SEND_PERIOD = 10L;
-
-
     public static final String CLIENT_VERSION = System.getProperty("xdagj.version");
 
 
@@ -56,6 +53,11 @@ public class Constants {
      * The number of epoch finaliza
      */
     public static final long EPOCH_FINALIZE_NUMBER = 16;
+
+    /**
+     * Page size of address in commands
+     */
+    public static final int COMMANDS_ADDRESS_TX_PAGE_SIZE = 50;
 
     /**
      * The number of blocks per day.

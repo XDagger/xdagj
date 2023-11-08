@@ -24,11 +24,6 @@
 
 package io.xdag.config;
 
-import static org.junit.Assert.assertEquals;
-
-import io.xdag.core.XUnit;
-
-import org.apache.tuweni.units.bigints.UInt64;
 import org.junit.Test;
 
 public class ConstantsTest {

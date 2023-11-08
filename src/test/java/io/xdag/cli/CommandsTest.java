@@ -23,277 +23,327 @@
  */
 package io.xdag.cli;
 
+import static io.xdag.core.XUnit.MILLI_XDAG;
+import static io.xdag.core.XUnit.XDAG;
+import static io.xdag.utils.WalletUtils.toBase58;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
-import static junit.framework.TestCase.assertEquals;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.assertj.core.util.Lists;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import io.xdag.DagKernel;
+import io.xdag.Network;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.UnitTestnetConfig;
+import io.xdag.core.BlockHeader;
+import io.xdag.core.DagchainImpl;
+import io.xdag.core.MainBlock;
+import io.xdag.core.PendingManager;
+import io.xdag.core.Transaction;
+import io.xdag.core.TransactionResult;
+import io.xdag.core.TransactionType;
+import io.xdag.core.XAmount;
+import io.xdag.core.state.Account;
+import io.xdag.core.state.AccountState;
+import io.xdag.core.state.BlockState;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+import io.xdag.net.ChannelManager;
+import io.xdag.net.NetDB;
+import io.xdag.net.NetDBManager;
+import io.xdag.net.Peer;
+import io.xdag.rules.TemporaryDatabaseRule;
+import io.xdag.utils.BlockUtils;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MerkleUtils;
+import io.xdag.utils.TimeUtils;
+import io.xdag.utils.WalletUtils;
 
 public class CommandsTest {
 
-//    Block mainblock;
-//
-//    Config config = new DevnetConfig();
-//
-//    BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
-//    BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
-//
-//    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
-//
-//    SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
-//
-//    KeyPair keyPair_1 = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-//    KeyPair keyPair_2 = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
-//
-//    Kernel kernel;
-//
-//    Wallet wallet;
-//
-//    AddressStore addressStore;
-//
-//    BlockStore blockStore;
-//
-//    Blockchain blockchain;
-//
-//    SyncManager syncManager;
-//
-//    Commands commands;
-//
-//    long generateTime = 1600616700000L;
-//    long xdagTime = XdagTime.getEndOfEpoch(generateTime);
-//
-//    @Before
-//    public void setUp() throws Exception {
-//        List<Address> pending = Lists.newArrayList();
-//        mainblock = BlockBuilder.generateExtraBlock(config, keyPair_1, xdagTime, "xdagj_test", pending);
-//        List<KeyPair> accounts = Lists.newArrayList();
-//        accounts.add(keyPair_1);
-//        accounts.add(keyPair_2);
-//
-//        kernel = Mockito.mock(Kernel.class);
-//        addressStore = Mockito.mock(AddressStore.class);
-//        wallet = Mockito.mock(Wallet.class);
-//        blockchain = Mockito.mock(Blockchain.class);
-//        syncManager = Mockito.mock(SyncManager.class);
-//        blockStore = Mockito.mock(BlockStore.class);
-//
-//        Mockito.when(kernel.getAddressStore()).thenReturn(addressStore);
-//        Mockito.when(kernel.getWallet()).thenReturn(wallet);
-//        Mockito.when(kernel.getBlockchain()).thenReturn(blockchain);
-//        Mockito.when(kernel.getSyncMgr()).thenReturn(syncManager);
-//        Mockito.when(kernel.getBlockStore()).thenReturn(blockStore);
-//
-//        Mockito.when(wallet.getAccounts()).thenReturn(accounts);
-//        Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_1))).thenReturn(XAmount.of(9999, XUnit.XDAG));
-//        Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_2))).thenReturn(XAmount.of(8888, XUnit.XDAG));
-//
-//        commands = new Commands(kernel);
-//    }
-//
-//    @Test
-//    public void testPrintBlock() {
-//        String pstr = Commands.printBlock(mainblock, true);
-//        assertEquals("5H1B51l0jPyaOaS1f0LMsudJV52iglYG   00000000", pstr);
-//
-//        pstr = Commands.printBlock(mainblock, false);
-//        long time = XdagTime.xdagTimestampToMs(mainblock.getTimestamp());
-//        assertEquals(String.format("00000000   5H1B51l0jPyaOaS1f0LMsudJV52iglYG   %s   Pending   xdagj_test\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
-//                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time)), pstr);
-//    }
-//
-//    @Test
-//    public void testAccount() {
-//        String str = commands.account(2);
-//        assertEquals("""
-//                PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas 9999.000000000 XDAG
-//                35KpNArHncGduckwbaW27tAfwzN4rNtX2 8888.000000000 XDAG
-//                """, str);
-//    }
-//
-//    @Test
-//    public void testBalance() {
-//        String str = commands.balance("PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas");
-//        assertEquals("Account balance: 9999.000000000 XDAG", str);
-//
-//        str = commands.balance("35KpNArHncGduckwbaW27tAfwzN4rNtX2");
-//        assertEquals("Account balance: 8888.000000000 XDAG", str);
-//
-//        // test empty address for all wallet balance
-//        str = commands.balance(StringUtils.EMPTY);
-//        assertEquals("Balance: 18887.000000000 XDAG", str);
-//    }
-//
-//    @Test
-//    public void testXfer() {
-//        XAmount xAmount = XAmount.of(100, XUnit.XDAG);
-//        String str = commands.xfer(xAmount.toDecimal(2, XUnit.XDAG).doubleValue(), BasicUtils.pubAddress2Hash("PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas"), null);
-//        System.out.println(str);
-//        assertEquals("Transaction :{ \n"
-//                + "}, it will take several minutes to complete the transaction.", str);
-//    }
-//
-//    @Test
-//    public void testStats() {
-//        NetDB netDB = new NetDB();
-//        netDB.addNewIP("127.0.0.1:7001");
-//        NetDBManager netDBManager = new NetDBManager(config);
-//
-//        Mockito.when(blockchain.getXdagTopStatus()).thenReturn(new XdagTopStatus());
-//        Mockito.when(blockchain.getXdagStats()).thenReturn(new XdagStats());
-//        Mockito.when(blockchain.getXdagExtStats()).thenReturn(new XdagExtStats());
-//        Mockito.when(blockchain.getSupply(Mockito.anyLong())).thenReturn(XAmount.of(1400000000, XUnit.XDAG));
-//        Mockito.when(addressStore.getAllBalance()).thenReturn(XAmount.of(100000, XUnit.XDAG));
-//        Mockito.when(addressStore.getAddressSize()).thenReturn(UInt64.valueOf(100));
-//        Mockito.when(kernel.getNetDB()).thenReturn(netDB);
-//        Mockito.when(kernel.getNetDBMgr()).thenReturn(netDBManager);
-//        String str = commands.stats();
-//        assertEquals("""
-//                Statistics for ours and maximum known parameters:
-//                            hosts: 1 of 0
-//                           blocks: 0 of 0
-//                      main blocks: 0 of 0
-//                     extra blocks: 0
-//                    orphan blocks: 0
-//                 wait sync blocks: 0
-//                 chain difficulty: 0 of 0
-//                      XDAG supply: 1400000000.000000000 of 1400000000.000000000
-//                  XDAG in address: 100000.000000000
-//                4 hr hashrate KHs: 0.000000000 of 0.000000000
-//                Number of Address: 100""", str);
-//    }
-//
-//    @Test
-//    public void testPrintBlockInfo() {
-//        BlockInfo blockInfo = new BlockInfo();
-//        blockInfo.setDifficulty(BigInteger.ZERO);
-//
-//        long time = XdagTime.xdagTimestampToMs(blockInfo.getTimestamp());
-//        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time);
-//        mainblock.setInfo(blockInfo);
-//        String str = commands.printBlockInfo(mainblock, false);
-//        assertEquals(String.format("""
-//                      time: %s
-//                 timestamp: 0
-//                     flags: 0
-//                     state: Pending
-//                      hash: 3529400c8dd30a759b7fffe8931f5e9e1c57ce53648f5f4a937ec7c2254f98e7
-//                    remark:\s
-//                difficulty: 0
-//                   balance: 55hPJcLHfpNKX49kU85XHJ5eH5Po/3+b  0.000000000
-//                -----------------------------------------------------------------------------------------------------------------------------
-//                                               block as transaction: details
-//                 direction  address                                    amount
-//                       fee: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA           0.000000000
-//
-//                -----------------------------------------------------------------------------------------------------------------------------
-//                                               block as address: details
-//                 direction  address                                    amount                 time
-//
-//                """, st), str);
-//    }
-//
-//    @Test
-//    public void testMainblocks() {
-//        List<Block> blocks = Lists.newArrayList();
-//        long mainblockTime = generateTime;
-//        for (int i = 1; i <= 2; i++) {
-//            Block block = BlockBuilder.generateExtraBlock(config, keyPair_1, mainblockTime, null);
-//            block.getInfo().setHeight(i);
-//            blocks.add(block);
-//            mainblockTime += 64000L;
-//
-//
-//        }
-//        Mockito.when(blockchain.listMainBlocks(Mockito.anyInt())).thenReturn(blocks);
-//        String str = commands.mainblocks(2);
-//        long time1 = XdagTime.xdagTimestampToMs(blocks.get(0).getTimestamp());
-//        long time2 = XdagTime.xdagTimestampToMs(blocks.get(1).getTimestamp());
-//        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time1);
-//        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time2);
-//
-//        assertEquals(String.format("""
-//                ---------------------------------------------------------------------------------------------------------
-//                height        address                            time                      state     mined by           \s
-//                ---------------------------------------------------------------------------------------------------------
-//                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   %s   Pending                                  \s
-//                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   %s   Pending                                  \s""",
-//                st1, st2), str);
-//    }
-//
-//    @Test
-//    public void testMinedBlocks() {
-//        List<Block> blocks = Lists.newArrayList();
-//        long mainblockTime = generateTime;
-//        for (int i = 1; i <= 2; i++) {
-//            Block block = BlockBuilder.generateExtraBlock(config, keyPair_1, mainblockTime, null);
-//            block.getInfo().setHeight(i);
-//            blocks.add(block);
-//            mainblockTime += 64000L;
-//        }
-//        Mockito.when(blockchain.listMinedBlocks(Mockito.anyInt())).thenReturn(blocks);
-//        String str = commands.minedBlocks(2);
-//        long time1 = XdagTime.xdagTimestampToMs(blocks.get(0).getTimestamp());
-//        long time2 = XdagTime.xdagTimestampToMs(blocks.get(1).getTimestamp());
-//        String st1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time1);
-//        String st2 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(time2);
-//        assertEquals(String.format("""
-//                ---------------------------------------------------------------------------------------------------------
-//                height        address                            time                      state     mined by           \s
-//                ---------------------------------------------------------------------------------------------------------
-//                00000001   jIC5NLnZ9PRkodqO2/qoLtSUVkegE28S   %s   Pending                                  \s
-//                00000002   mEa+M9+o6uakriOCoGw3rqaWBmE+TGUe   %s   Pending                                  \s""",
-//        st1, st2), str);
-//    }
-//
-//    @Test
-//    public void testKeygen()
-//            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-//        Mockito.when(kernel.getXdagState()).thenReturn(XdagState.INIT);
-//        String str = commands.keygen();
-//        assertEquals("Key 1 generated and set as default,now key size is:2", str);
-//    }
-//
-//    @Test
-//    public void testState() {
-//        Mockito.when(kernel.getXdagState()).thenReturn(XdagState.INIT);
-//        String str = commands.state();
-//        assertEquals("Pool Initializing....", str);
-//    }
-//
-//    @Test
-//    public void testBalanceMaxXfer() {
-//        String str = commands.balanceMaxXfer();
-//        assertEquals("0.000000000", str);
-//    }
-//
-//    @Test
-//    public void testAddress() {
-//        Bytes32 addrByte32 = BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_1.getPublicKey()));
-//        List<TxHistory> txHistoryList = Lists.newArrayList();
-//        Address addr = new Address(BasicUtils.keyPair2Hash(keyPair_1), XDAG_FIELD_SNAPSHOT, XAmount.of(9999, XUnit.XDAG),true);
-//        txHistoryList.add(new TxHistory(addr, Bytes32.random().toHexString(), generateTime, "xdagj_test"));
-//        Mockito.when(blockchain.getBlockTxHistoryByAddress(addrByte32, 1)).thenReturn(txHistoryList);
-//        String str = commands.address(addrByte32, 1);
-//
-//        String st = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS", TimeZone.getDefault()).format(generateTime);
-//
-//        assertEquals(String.format("""
-//                 OverView
-//                 address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
-//                 balance: 9999.000000000
-//
-//                -----------------------------------------------------------------------------------------------------------------------------
-//                                               histories of address: details
-//                 direction  address                                    amount                 time
-//
-//                 snapshot: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas           9999.000000000   %s
-//                """, st), str);
-//    }
-//
-//    @Test
-//    public void testXferToNew() {
-//        Mockito.when(wallet.getDefKey()).thenReturn(keyPair_1);
-//        String str = commands.xferToNew();
-//        assertEquals("""
-//                 Transaction :{\s
-//                 }, it will take several minutes to complete the transaction.""", str);
-//    }
+    @Rule
+    public TemporaryDatabaseRule temporaryDBFactory = new TemporaryDatabaseRule();
+
+    private Config config;
+    private DagchainImpl chain;
+    private TransactionResult res;
+
+    private final byte[] coinbase = BytesUtils.random(20);
+    private byte[] prevHash;
+
+    private final Network network = Network.DEVNET;
+    private final KeyPair key = SampleKeys.KEY1;
+    private final byte[] from = Keys.toBytesAddress(key);
+    private final byte[] to = BytesUtils.random(20);
+    private final XAmount value = XAmount.of(20, XDAG);
+    private final XAmount fee = XAmount.of(100, MILLI_XDAG);
+    private final long nonce = 12345;
+    private final byte[] data = BytesUtils.of("test");
+    private final long timestamp = TimeUtils.currentTimeMillis() - 60 * 1000;
+    private final Transaction tx = new Transaction(network, TransactionType.TRANSFER, to, value, fee, nonce, timestamp,
+            data).sign(key);
+    private PendingManager pendingMgr;
+    private DagKernel kernel;
+    private Wallet wallet;
+    private String pwd;
+    private Commands commands;
+
+    @Before
+    public void setUp() {
+        config = new UnitTestnetConfig(Constants.DEFAULT_ROOT_DIR);
+        pendingMgr = Mockito.mock(PendingManager.class);
+        kernel = Mockito.mock(DagKernel.class);
+        when(pendingMgr.getPendingTransactions()).thenReturn(Lists.newArrayList(new PendingManager.PendingTransaction(tx, res)));
+        chain = new DagchainImpl(config, pendingMgr, temporaryDBFactory);
+        when(kernel.getDagchain()).thenReturn(chain);
+
+        res = new TransactionResult();
+        prevHash = chain.getLatestMainBlockHash();
+        commands = new Commands(kernel);
+
+        pwd = "password";
+        wallet = new Wallet(config);
+        wallet.unlock(pwd);
+        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        wallet.setAccounts(Collections.singletonList(key));
+        wallet.flush();
+        wallet.lock();
+
+        when(kernel.getWallet()).thenReturn(wallet);
+        when(kernel.getPendingManager()).thenReturn(pendingMgr);
+        when(kernel.getConfig()).thenReturn(config);
+    }
+
+    @Test
+    public void testPrintBlock() {
+        assertEquals(0, chain.getLatestMainBlockNumber());
+        assertNotNull(chain.getLatestMainBlockHash());
+        assertNotNull(chain.getLatestMainBlock());
+
+        String pstr = Commands.printBlock(chain.getLatestMainBlock(), true);
+        assertEquals("0x339e606c89b26eb7e00193c77f1f820b5ba7d1b5d32517e831ee357a6834bf4a   00000000", pstr);
+    }
+
+    @Test
+    public void testAccount() {
+        wallet.unlock(pwd);
+        assertEquals("N3RC53vbaDNrziTdWmctBEeQ4fo38moXu 0 XDAG\n", commands.account(1));
+    }
+
+    @Test
+    public void testBalance() {
+        wallet.unlock(pwd);
+        assertEquals("Balance: 0 XDAG", commands.balance(""));
+    }
+
+    @Test
+    public void testStats() {
+        NetDB netDB = new NetDB();
+        netDB.addNewIP("127.0.0.1:8001");
+        netDB.addNewIP("127.0.0.1:8002");
+        netDB.addNewIP("127.0.0.1:8003");
+        netDB.addNewIP("127.0.0.1:8004");
+
+        NetDBManager netDBManager = Mockito.mock(NetDBManager.class);
+        when(netDBManager.getNetDB()).thenReturn(netDB);
+        when(kernel.getNetDBManager()).thenReturn(netDBManager);
+
+        Peer peer1 = Mockito.mock(Peer.class);
+        Peer peer2 = Mockito.mock(Peer.class);
+        when(peer1.getLatestMainBlock()).thenReturn(chain.getLatestMainBlock());
+        when(peer2.getLatestMainBlock()).thenReturn(chain.getLatestMainBlock());
+
+        List<Peer> peersList = Lists.newArrayList(peer1, peer2);
+        ChannelManager channelManager = Mockito.mock(ChannelManager.class);
+        when(channelManager.getActivePeers()).thenReturn(peersList);
+        when(kernel.getChannelManager()).thenReturn(channelManager);
+
+        String actual = commands.stats();
+        String expected = """
+                        Statistics for ours and maximum known parameters:
+                                    hosts: 2 of 4
+                              main blocks: 0 of 0
+                               pending tx: 0
+                              xdag supply: 0.000000000 of 0.000000000""";
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testPrintBlockInfo() {
+        MainBlock mainBlock = createMainBlock(1);
+
+        String str = commands.printBlockInfo(mainBlock);
+        assertEquals(String.format("""
+                Block Header:
+                  number: 1
+                  previous hash: 0x339e606c89b26eb7e00193c77f1f820b5ba7d1b5d32517e831ee357a6834bf4a
+                  hash: %s
+                  coinbase: %s
+                  timestamp: %s
+                  transactions root: %s
+                  result root: 0x4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a
+                  difficulty target (nBits): 545259519
+                  nonce: %s
+                Block Body:
+                  Transaction [type=TRANSFER, hash=%s, from=%s, to=%s, value=20.00, fee=0.10, nonce=12345, timestamp=%s, data=0x74657374]
+                """,
+
+                Bytes.wrap(mainBlock.getHash()).toHexString(),
+                WalletUtils.toBase58(coinbase),
+                mainBlock.getTimestamp(),
+                Bytes.wrap(mainBlock.getTransactionsRoot()).toHexString(),
+                mainBlock.getNonce(),
+                Bytes.wrap(tx.getHash()).toHexString(),
+                toBase58(Keys.toBytesAddress(key)),
+                toBase58(to),
+                tx.getTimestamp()
+                ), str);
+    }
+
+    @Test
+    public void testBlock() {
+        Bytes hash = Bytes.fromHexString("0x339e606c89b26eb7e00193c77f1f820b5ba7d1b5d32517e831ee357a6834bf4a");
+        assertEquals("""
+                        Block Header:
+                          number: 0
+                          previous hash: 0x0000000000000000000000000000000000000000000000000000000000000000
+                          hash: 0x339e606c89b26eb7e00193c77f1f820b5ba7d1b5d32517e831ee357a6834bf4a
+                          coinbase: 111111111111111111117K4nzc
+                          timestamp: 1604742400000
+                          transactions root: 0x0000000000000000000000000000000000000000000000000000000000000000
+                          result root: 0x0000000000000000000000000000000000000000000000000000000000000000
+                          difficulty target (nBits): 545259519
+                          nonce: 0
+                        Block Body:
+                          empty
+                        """,
+                commands.block(Bytes32.wrap(hash)));
+    }
+
+    @Test
+    public void testMainblocks() {
+        assertEquals("empty", commands.mainblocks(50));
+
+        MainBlock mainBlock = createMainBlock(1);
+        BlockState bs = chain.getLatestBlockState().clone();
+        chain.addMainBlock(mainBlock, bs);
+
+        assertEquals(String.format("""
+                                ---------------------------------------------------------------------------------------------------------
+                                height        hash                            time                      coinbase           \s
+                                ---------------------------------------------------------------------------------------------------------
+                                00000001   %s   %s   %s""",
+                Bytes.wrap(mainBlock.getHash()).toHexString(),
+                FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(mainBlock.getTimestamp()),
+                toBase58(mainBlock.getCoinbase())),
+                commands.mainblocks(50));
+    }
+
+    @Test
+    public void testMinedBlocks() {
+        wallet.unlock(pwd);
+        assertEquals("empty", commands.minedBlocks(50));
+
+        MainBlock mainBlock = createMainBlock(1, Keys.toBytesAddress(wallet.getDefKey()), BytesUtils.EMPTY_BYTES, Collections.singletonList(tx), Collections.singletonList(res));
+        BlockState bs = chain.getLatestBlockState().clone();
+        chain.addMainBlock(mainBlock, bs);
+
+        assertEquals(String.format("""
+                                ---------------------------------------------------------------------------------------------------------
+                                height        hash                            time                      coinbase           \s
+                                ---------------------------------------------------------------------------------------------------------
+                                00000001   %s   %s   %s""",
+                        Bytes.wrap(mainBlock.getHash()).toHexString(),
+                        FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(mainBlock.getTimestamp()),
+                        toBase58(mainBlock.getCoinbase())),
+                commands.minedBlocks(50));
+    }
+
+    @Test
+    public void testState() {
+        Mockito.when(kernel.getState()).thenReturn(DagKernel.State.RUNNING);
+        assertEquals("RUNNING", commands.state());
+    }
+
+    @Test
+    public void testAddress() {
+        wallet.unlock(pwd);
+        String str = commands.address(from, 1);
+        assertEquals("""
+                 OverView
+                 address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
+                 balance: 0.000000000
+                                 
+                -----------------------------------------------------------------------------------------------------------------------------
+                                               histories of address: details
+                 direction  address                                    amount                 time
+                                 
+                """, str);
+
+        Keys.toBytesAddress(wallet.getDefKey());
+
+        AccountState as = chain.getLatestAccountState().clone();
+        BlockState bs = chain.getLatestBlockState().clone();
+
+        byte[] fromAddress = Keys.toBytesAddress(key);
+        Account account = as.getAccount(fromAddress);
+        as.adjustAvailable(fromAddress, XAmount.of(1000, XDAG));
+        Transaction tx = new Transaction(network, TransactionType.TRANSFER, to, value, fee, account.getNonce(), timestamp,
+                data).sign(key);
+
+        MainBlock mainBlock = createMainBlock(1, coinbase, BytesUtils.EMPTY_BYTES, Collections.singletonList(tx), Collections.singletonList(res));
+
+        assertTrue(chain.importBlock(mainBlock, as, bs));
+
+        str = commands.address(from, 0);
+        assertEquals(String.format("""
+                 OverView
+                 address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
+                 balance: 979.900000000
+                                 
+                -----------------------------------------------------------------------------------------------------------------------------
+                                               histories of address: details
+                 direction  address                                    amount                 time
+                                 
+                Transaction [type=TRANSFER, hash=%s, from=PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas, to=%s, value=20.00, fee=0.10, nonce=0, timestamp=%s, data=0x74657374]
+                """, Bytes.wrap(tx.getHash()).toHexString(), toBase58(to), tx.getTimestamp()), str);
+    }
+
+    private MainBlock createMainBlock(long number) {
+        return createMainBlock(number, Collections.singletonList(tx), Collections.singletonList(res));
+    }
+
+    private MainBlock createMainBlock(long number, List<Transaction> transactions, List<TransactionResult> results) {
+        return createMainBlock(number, coinbase, BytesUtils.EMPTY_BYTES, transactions, results);
+    }
+
+    private MainBlock createMainBlock(long number, byte[] coinbase, byte[] data, List<Transaction> transactions,
+            List<TransactionResult> results) {
+        byte[] transactionsRoot = MerkleUtils.computeTransactionsRoot(transactions);
+        byte[] resultsRoot = MerkleUtils.computeResultsRoot(results);
+        long timestamp = TimeUtils.currentTimeMillis();
+
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
+        List<Bytes32> txHashs = new ArrayList<>();
+        transactions.forEach(t-> txHashs.add(Bytes32.wrap(t.getHash())));
+        return new MainBlock(header, transactions, txHashs, results);
+    }
 
 }
