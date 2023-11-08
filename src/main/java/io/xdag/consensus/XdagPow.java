@@ -39,6 +39,7 @@ import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.DagKernel;
 import io.xdag.config.Config;
+import io.xdag.config.Constants;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.Dagchain;
 import io.xdag.core.MainBlock;
@@ -285,8 +286,13 @@ public class XdagPow implements PowManager {
             AccountState as = dagchain.getAccountState(remoteMainBlock.getParentHash(), remoteNumber - 1);
             BlockState bs = dagchain.getBlockState(remoteMainBlock.getParentHash(), remoteNumber - 1);
             if(as == null || bs == null) {
-                log.trace("onEpoch->no parent more than 16 numbers, {}", remoteMainBlock);
-                return;
+                log.trace("onEpoch->no parent {}", remoteMainBlock);
+                if( diff > -Constants.EPOCH_FINALIZE_NUMBER) {
+                    long syncBegin = remoteMainBlock.getNumber() > 16? remoteMainBlock.getNumber() - 16: 1;
+                    long syncCurrent = syncBegin;
+                    long syncTarget = remoteNumber;
+                    sync(syncBegin, syncCurrent, syncTarget, channel);
+                }
             }
 
             log.trace("onEpoch->prepare import={}, parent={}, as=={}, bs={}", remoteMainBlock,
@@ -397,27 +403,26 @@ public class XdagPow implements PowManager {
             }
 
             // update previous block
-            // TODO epoch number must be in local store
-            MainBlock block = prepareMainBlock(currentEpochEndTime, randomx);
-            if(block == null) {
+            MainBlock localMainBlock = prepareMainBlock(currentEpochEndTime, randomx);
+            if(localMainBlock == null) {
                 log.info("enterEpoch-> block == null");
                 return;
             }
 
-            AccountState as = dagchain.getAccountState(block.getParentHash(), block.getNumber() - 1);
-            BlockState bs = dagchain.getBlockState(block.getParentHash(), block.getNumber() - 1);
+            AccountState as = dagchain.getAccountState(localMainBlock.getParentHash(), localMainBlock.getNumber() - 1);
+            BlockState bs = dagchain.getBlockState(localMainBlock.getParentHash(), localMainBlock.getNumber() - 1);
 
-            log.info("enterEpoch->local epoch {}, prepare import, as={}, bs={}", block, as, bs);
+            log.info("enterEpoch->local epoch {}, prepare import, as={}, bs={}", localMainBlock, as, bs);
 
             // [1] update nonce
             //block.setNonce(nonce);
 
             // [2] add the block to chain
-            boolean importResult = dagchain.importBlock(block, as.clone(), bs.clone());
+            boolean importResult = dagchain.importBlock(localMainBlock, as.clone(), bs.clone());
             lastEpochEndtime = currentEpochEndTime;
-            log.info("enterEpoch->local epoch {}, import result = {}.", block, importResult);
+            log.info("enterEpoch->local epoch {}, import result = {}.", localMainBlock, importResult);
             if(importResult) {
-                broadcaster.broadcast(new EpochMessage(block));
+                broadcaster.broadcast(new EpochMessage(localMainBlock));
             }
         }
     }

@@ -444,6 +444,10 @@ public class XdagSync implements SyncManager {
                         BlockState bs = chain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
 
                         log.trace("onSync importBlock {}, as={}, bs={}.", p.getKey(), as, bs);
+                        if(as == null || bs == null) {
+                            log.error("onSync error, no parent state, {}, as={}, bs={}.", p.getKey(), as, bs);
+                            break;
+                        }
                         boolean imported = chain.importBlock(p.getKey(), as.clone(), bs.clone());
                         log.trace("onSync importBlock result = {}", imported);
 
