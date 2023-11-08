@@ -38,15 +38,5 @@ public enum DatabaseName {
     /**
      * Account related data.
      */
-    ACCOUNT,
-
-    /**
-     * Delegate core data.
-     */
-    DELEGATE,
-
-    /**
-     * Delegate vote data.
-     */
-    VOTE
+    ACCOUNT
 }
