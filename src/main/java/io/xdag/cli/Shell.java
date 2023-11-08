@@ -24,9 +24,6 @@
 
 package io.xdag.cli;
 
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.jline.builtins.Options;
 import org.jline.builtins.TTop;
@@ -51,7 +49,6 @@ import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
 
 import io.xdag.DagKernel;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.WalletUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +69,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("account", new CommandMethods(this::processAccount, this::defaultCompleter));
         commandExecute.put("balance", new CommandMethods(this::processBalance, this::defaultCompleter));
         commandExecute.put("block", new CommandMethods(this::processBlock, this::defaultCompleter));
+        commandExecute.put("transaction", new CommandMethods(this::processTransaction, this::defaultCompleter));
         commandExecute.put("mainblocks", new CommandMethods(this::processMainBlocks, this::defaultCompleter));
+        commandExecute.put("minedblocks", new CommandMethods(this::processMinedBlocks, this::defaultCompleter));
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
 //        commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
         commandExecute.put("net", new CommandMethods(this::processNet, this::defaultCompleter));
@@ -97,21 +96,25 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
 
             if (argv.isEmpty()) {
-                println("Need hash or address");
+                println("Need address");
                 return;
             }
 
             String address = argv.get(0);
-            int page = StringUtils.isNumeric(argv.get(1))?Integer.parseInt(argv.get(1)):1;
+            int page = 1;
+            if(argv.get(1) != null) {
+                page = StringUtils.isNumeric(argv.get(1))?Integer.parseInt(argv.get(1)):1;
+            }
+
             try {
-                Bytes32 hash;
+                byte[] addr;
                 if (WalletUtils.checkAddress(address)) {
-                    hash = pubAddress2Hash(address);
+                    addr = WalletUtils.fromBase58(address);
                 } else {
                     println("Incorrect address");
                     return;
                 }
-                println(commands.address(hash, page));
+                println(commands.address(addr, page));
             } catch (Exception e) {
                 println("Argument is incorrect.");
             }
@@ -188,23 +191,54 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            String address = argv.get(0);
-            try {
-                Bytes32 hash;
-                if (address.length() == 32) {
-                    // as address
-                    hash = address2Hash(address);
+            String blockHashStr = argv.get(0);
+            if(StringUtils.isBlank(blockHashStr) ) {
+                println("block hash must not blank");
+            } else if(!StringUtils.startsWith(blockHashStr, "0x")) {
+                println("block hash must start with \"0x\"");
+            } else {
+                Bytes hash = Bytes.fromHexString(blockHashStr);
+                if( hash.toArray().length != 32){
+                    println("Argument is incorrect, length=" +  hash.toArray().length +", must by 32.");
                 } else {
-                    // as hash
-                    hash = BasicUtils.getHash(address);
+                    println(commands.block(Bytes32.wrap(hash)));
                 }
-                if (hash == null) {
-                    println("No param");
-                    return;
+            }
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processTransaction(CommandInput input) {
+        final String[] usage = {
+                "transaction -  print transaction info for hash [A]",
+                "Usage: transaction [HASH]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+
+            if (argv.isEmpty()) {
+                println("Need transaction hash");
+                return;
+            }
+
+            String blockHashStr = argv.get(0);
+            if(StringUtils.isBlank(blockHashStr) ) {
+                println("transaction hash must not blank");
+            } else if(!StringUtils.startsWith(blockHashStr, "0x")) {
+                println("transaction hash must start with \"0x\"");
+            } else {
+                Bytes hash = Bytes.fromHexString(blockHashStr);
+                if( hash.toArray().length != 32){
+                    println("Argument is incorrect, length=" +  hash.toArray().length +", must by 32.");
+                } else {
+                    println(commands.transaction(Bytes32.wrap(hash)));
                 }
-                println(commands.block(Bytes32.wrap(hash)));
-            } catch (Exception e) {
-                println("Argument is incorrect.");
             }
         } catch (Exception e) {
             saveException(e);
@@ -228,6 +262,28 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.mainblocks(num));
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processMinedBlocks(CommandInput input) {
+        final String[] usage = {
+                "minedBlocks -  print latest [SIZE] (20 by default, max limit 100) mined blocks",
+                "Usage: minedblocks [SIZE]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+            int num = DEFAULT_LIST_NUM;
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
+                num = NumberUtils.toInt(argv.get(0));
+            }
+            println(commands.minedBlocks(num));
         } catch (Exception e) {
             saveException(e);
         }
@@ -364,4 +420,5 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             }
         } while (true);
     }
+
 }
