@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.xdag.Network;
 import io.xdag.core.state.ByteArray;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -127,7 +128,7 @@ public class Genesis extends MainBlock {
         public XSnapshot(@JsonProperty("address") String address,
                          @JsonProperty("amount") long amount,
                 @JsonProperty("note") String note) {
-            this(Bytes.fromHexString(address).toArray(), XAmount.of(amount), note);
+            this(WalletUtils.fromBase58(address), XAmount.of(amount), note);
         }
 
     }

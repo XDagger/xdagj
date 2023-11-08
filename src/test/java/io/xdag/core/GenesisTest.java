@@ -76,6 +76,16 @@ public class GenesisTest {
     }
 
     @Test
+    public void testMakeSnapshots() {
+        Map<ByteArray, Genesis.XSnapshot> snapshots = genesis.getSnapshots();
+
+        assertFalse(snapshots.isEmpty());
+        for (Genesis.XSnapshot s : snapshots.values()) {
+            assertTrue(s.getAmount().isPositive());
+        }
+    }
+
+    @Test
     public void testConfig() {
         assertTrue(genesis.getConfig().isEmpty());
     }
