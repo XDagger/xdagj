@@ -40,22 +40,6 @@ import io.xdag.utils.SimpleDecoder;
 
 public class BlockStateImpl implements BlockState {
 
-    protected static final byte TYPE_LATEST_BLOCK_NUMBER = 0x00;
-    protected static final byte TYPE_ACTIVATED_FORKS = 0x06;
-    protected static final byte TYPE_DATABASE_VERSION = (byte) 0xff;
-
-    protected static final byte TYPE_BLOCK_NUMBER_BY_HASH = 0x10;
-    protected static final byte TYPE_BLOCK_COINBASE_BY_NUMBER = 0x11;
-
-    protected static final byte TYPE_TRANSACTION_INDEX_BY_HASH = 0x20;
-    protected static final byte TYPE_TRANSACTION_COUNT_BY_ADDRESS = 0x21;
-    protected static final byte TYPE_TRANSACTION_HASH_BY_ADDRESS_AND_INDEX = 0x21;
-
-    protected static final byte TYPE_BLOCK_HEADER_BY_NUMBER = 0x30;
-    protected static final byte TYPE_BLOCK_TRANSACTIONS_HASH_BY_NUMBER = 0x31;
-    protected static final byte TYPE_BLOCK_TRANSACTIONS_BY_NUMBER = 0x32;
-    protected static final byte TYPE_BLOCK_RESULTS_BY_NUMBER = 0x33;
-
     protected Database blockDB;
     protected Database indexDB;
 

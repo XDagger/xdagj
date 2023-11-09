@@ -42,8 +42,6 @@ import io.xdag.utils.BytesUtils;
  */
 public class AccountStateImpl implements Cloneable, AccountState {
 
-    protected static final byte TYPE_ACCOUNT = 0;
-
     protected Database accountDB;
 
     /**

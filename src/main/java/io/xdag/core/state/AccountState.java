@@ -29,6 +29,8 @@ import io.xdag.core.XAmount;
 
 public interface AccountState {
 
+    byte TYPE_ACCOUNT = 0x00;
+
     /**
      * Returns an account if exists.
      */
