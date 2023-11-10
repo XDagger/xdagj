@@ -172,7 +172,7 @@ public class DagchainImpl implements Dagchain {
         blockState.putDatabaseVersion(DATABASE_VERSION);
 
         // snapshot
-        for (Genesis.XSnapshot s : genesis.getSnapshots().values()) {
+        for (Genesis.XSnapshot s : genesis.getSnapshots()) {
             accountState.adjustAvailable(s.getAddress(), s.getAmount());
         }
         accountState.commit();

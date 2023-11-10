@@ -31,6 +31,7 @@ import static java.lang.System.setErr;
 import static java.lang.System.setOut;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -44,34 +45,82 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.google.common.collect.Lists;
 
+import io.xdag.Network;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
+import io.xdag.core.BlockHeader;
+import io.xdag.core.DagchainImpl;
+import io.xdag.core.MainBlock;
+import io.xdag.core.PendingManager;
+import io.xdag.core.Transaction;
+import io.xdag.core.TransactionResult;
+import io.xdag.core.TransactionType;
+import io.xdag.core.XAmount;
+import io.xdag.core.state.BlockState;
 import io.xdag.crypto.Keys;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.rules.TemporaryDatabaseRule;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MerkleUtils;
+import io.xdag.utils.TimeUtils;
 
 public class XdagCliTest {
+
+    @Rule
+    public TemporaryDatabaseRule temporaryDBFactory = new TemporaryDatabaseRule();
+
     private Config config;
+    private DagchainImpl chain;
+    private TransactionResult res;
+
+    private final byte[] coinbase = BytesUtils.random(30);
+    private byte[] prevHash;
+
+    private final Network network = Network.DEVNET;
+    private final KeyPair key = SampleKeys.KEY1;
+    private final byte[] from = Keys.toBytesAddress(key);
+    private final byte[] to = BytesUtils.random(20);
+    private final XAmount value = XAmount.of(20);
+    private final XAmount fee = XAmount.of(1);
+    private final long nonce = 12345;
+    private final byte[] data = BytesUtils.of("test");
+    private final long timestamp = TimeUtils.currentTimeMillis() - 60 * 1000;
+    private final Transaction tx = new Transaction(network, TransactionType.TRANSFER, to, value, fee, nonce, timestamp,
+            data).sign(key);
+
+    private PendingManager pendingMgr;
 
     @Before
     public void setUp() throws Exception {
         config = new DevnetConfig(Constants.DEFAULT_ROOT_DIR);
+        pendingMgr = Mockito.mock(PendingManager.class);
+        when(pendingMgr.getPendingTransactions()).thenReturn(
+                org.assertj.core.util.Lists.newArrayList(new PendingManager.PendingTransaction(tx, res)));
+        chain = new DagchainImpl(config, pendingMgr, temporaryDBFactory);
+        res = new TransactionResult();
+        prevHash = chain.getLatestMainBlockHash();
     }
 
     @Test
@@ -91,17 +140,17 @@ public class XdagCliTest {
 
         String helpStr = """
                 usage: ./xdag.sh [options]
-                    --account <action>                init|create|list
-                    --changepassword                  change wallet password
-                    --convertoldwallet <filename>     convert xdag old wallet.dat to private key hex
-                    --dumpprivatekey <address>        print hex key
-                    --enablesnapshot <snapshottime>   the parameter snapshottime uses hexadecimal
-                    --help                            print help
-                    --importmnemonic <mnemonic>       import HDWallet mnemonic
-                    --importprivatekey <key>          import hex key
-                    --makesnapshot <covertuint>       make snapshot
-                    --password <password>             wallet password
-                    --version                         show version
+                    --account <action>              init|create|list
+                    --changepassword                change wallet password
+                    --checkdbaccount                check database account
+                    --convertoldwallet <filename>   convert xdag old wallet.dat to private key hex
+                    --dumpprivatekey <address>      print hex key
+                    --exportsnapshot                export snapshot
+                    --help                          print help
+                    --importmnemonic <mnemonic>     import HDWallet mnemonic
+                    --importprivatekey <key>        import hex key
+                    --password <password>           wallet password
+                    --version                       show version
                 """;
         assertEquals(helpStr, tapSystemOut(xdagCLI::printHelp));
     }
@@ -530,6 +579,41 @@ public class XdagCliTest {
         // execution
         assertFalse(xdagCLI.importMnemonic(errorMnemonic));
         assertTrue(xdagCLI.importMnemonic(rightMnemonic));
+    }
+
+    @Test
+    public void testExportSnapshot() throws IOException {
+        XdagCli xdagCLI = spy(new XdagCli());
+        xdagCLI.setConfig(config);
+
+        MainBlock newBlock = createMainBlock(1);
+        BlockState bsTrack = chain.getLatestBlockState().clone();
+        chain.addMainBlock(newBlock, bsTrack);
+        bsTrack.commit();
+
+        when(xdagCLI.getDefaultDatabaseFactory(config)).thenReturn(temporaryDBFactory);
+        File file = xdagCLI.exportSnapshot();
+        assertNotNull(file);
+    }
+
+    private MainBlock createMainBlock(long number) {
+        return createMainBlock(number, Collections.singletonList(tx), Collections.singletonList(res));
+    }
+
+    private MainBlock createMainBlock(long number, List<Transaction> transactions, List<TransactionResult> results) {
+        return createMainBlock(number, coinbase, BytesUtils.EMPTY_BYTES, transactions, results);
+    }
+
+    private MainBlock createMainBlock(long number, byte[] coinbase, byte[] data, List<Transaction> transactions,
+            List<TransactionResult> results) {
+        byte[] transactionsRoot = MerkleUtils.computeTransactionsRoot(transactions);
+        byte[] resultsRoot = MerkleUtils.computeResultsRoot(results);
+        long timestamp = TimeUtils.currentTimeMillis();
+
+        BlockHeader header = BlockUtils.createProofOfWorkHeader(prevHash, number, coinbase, timestamp, transactionsRoot, resultsRoot, 0L, data);
+        List<Bytes32> txHashs = new ArrayList<>();
+        transactions.forEach(t-> txHashs.add(Bytes32.wrap(t.getHash())));
+        return new MainBlock(header, transactions, txHashs, results);
     }
 
 }

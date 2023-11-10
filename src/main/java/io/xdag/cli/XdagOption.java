@@ -44,10 +44,9 @@ public enum XdagOption {
 
     CONVERT_OLD_WALLET("convertoldwallet"),
 
-    // Snapshot enable
-    ENABLE_SNAPSHOT("enablesnapshot"),
+    EXPORT_SNAPSHOT("exportsnapshot"),
 
-    MAKE_SNAPSHOT("makesnapshot");
+    CHECK_DB_ACCOUNT("checkdbaccount");
 
     private final String name;
 

@@ -29,14 +29,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Before;
 import org.junit.Test;
 
 import io.xdag.Network;
-import io.xdag.core.state.ByteArray;
 import io.xdag.utils.BytesUtils;
 
 public class GenesisTest {
@@ -67,20 +66,20 @@ public class GenesisTest {
 
     @Test
     public void testSnapshots() {
-        Map<ByteArray, Genesis.XSnapshot> snapshots = genesis.getSnapshots();
+        List<Genesis.XSnapshot> snapshots = genesis.getSnapshots();
 
         assertFalse(snapshots.isEmpty());
-        for (Genesis.XSnapshot s : snapshots.values()) {
+        for (Genesis.XSnapshot s : snapshots) {
             assertTrue(s.getAmount().isPositive());
         }
     }
 
     @Test
     public void testMakeSnapshots() {
-        Map<ByteArray, Genesis.XSnapshot> snapshots = genesis.getSnapshots();
+        List<Genesis.XSnapshot> snapshots = genesis.getSnapshots();
 
         assertFalse(snapshots.isEmpty());
-        for (Genesis.XSnapshot s : snapshots.values()) {
+        for (Genesis.XSnapshot s : snapshots) {
             assertTrue(s.getAmount().isPositive());
         }
     }

@@ -27,7 +27,7 @@ import static io.xdag.core.XAmount.ZERO;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.util.Map;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -62,11 +62,11 @@ public class AccountStateTest {
 
     @Test
     public void testAtGenesis() {
-        Map<ByteArray, Genesis.XSnapshot> snapshot = chain.getGenesis().getSnapshots();
+        List<Genesis.XSnapshot> snapshots = chain.getGenesis().getSnapshots();
 
-        for (ByteArray k : snapshot.keySet()) {
-            Account acc = state.getAccount(k.getData());
-            assertEquals(snapshot.get(k).getAmount(), acc.getAvailable());
+        for (Genesis.XSnapshot snapshot : snapshots) {
+            Account acc = state.getAccount(snapshot.getAddress());
+            assertEquals(snapshot.getAmount(), acc.getAvailable());
         }
     }
 
