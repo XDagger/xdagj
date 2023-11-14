@@ -359,23 +359,27 @@ public class XdagSync implements SyncManager {
             }
 
 
+            boolean sendResult = false;
             if (config.getNodeSpec().syncFastSync()) { // use FAST_SYNC protocol
                 log.trace("Requesting block #{} from {}:{}, HEADER + TRANSACTIONS", task,
                         c.getRemoteIp(),
                         c.getRemotePort());
-                c.getMsgQueue().sendMessage(new GetMainBlockPartsMessage(task,
+                sendResult = c.getMsgQueue().sendMessage(new GetMainBlockPartsMessage(task,
                         BlockPart.encode(BlockPart.HEADER, BlockPart.TRANSACTIONS)));
 
             } else { // use old protocol
                 log.trace("Requesting block #{} from {}:{}, FULL BLOCK", task, c.getRemoteIp(),
                         c.getRemotePort());
-                c.getMsgQueue().sendMessage(new GetMainBlockMessage(task));
+                sendResult = c.getMsgQueue().sendMessage(new GetMainBlockMessage(task));
             }
 
             if (toDownload.remove(task)) {
                 growToDownloadQueue();
             }
-            toReceive.put(task, TimeUtils.currentTimeMillis());
+
+            if(sendResult) {
+                toReceive.put(task, TimeUtils.currentTimeMillis());
+            }
         }
     }
 

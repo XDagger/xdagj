@@ -295,10 +295,15 @@ public class XdagPow implements PowManager {
                 }
             }
 
-            log.trace("onEpoch->prepare import={}, parent={}, as=={}, bs={}", remoteMainBlock,
-                    Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
+            if(as == null || bs == null) {
+                log.trace("onEpoch->prepare error, import={}, parent={}, as=={}, bs={}", remoteMainBlock,
+                        Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
+                return;
+            }
+
             boolean result = dagchain.importBlock(remoteMainBlock, as.clone(), bs.clone());
-            log.trace("onEpoch->import result:{}.", result);
+            log.trace("onEpoch->result={}, import={}, parent={}, as=={}, bs={}, ", result, remoteMainBlock,
+                    Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
         }
     }
 
