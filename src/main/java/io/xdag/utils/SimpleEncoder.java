@@ -24,11 +24,12 @@
 
 package io.xdag.utils;
 
-import io.xdag.core.XAmount;
-import io.xdag.utils.exception.SimpleCodecException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
+import io.xdag.core.XAmount;
+import io.xdag.utils.exception.SimpleCodecException;
 
 public class SimpleEncoder {
 

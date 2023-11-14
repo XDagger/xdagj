@@ -40,6 +40,7 @@ import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SimpleEncoder;
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -265,9 +266,16 @@ public class Transaction {
 
     @Override
     public String toString() {
-        return "Transaction [type=" + type + ", from=" + Bytes.wrap(getFrom()).toHexString() + ", to=" + Bytes.wrap(to).toHexString() + ", value="
-                + value + ", fee=" + fee + ", nonce=" + nonce + ", timestamp=" + timestamp + ", data="
-                + Bytes.wrap(data).toHexString() + ", hash=" + Bytes.wrap(hash).toHexString() + "]";
+        return String.format("Transaction [type=%s, hash=%s, from=%s, to=%s, value=%s, fee=%s, nonce=%s, timestamp=%s, data=%s]",
+                type,
+                Bytes.wrap(getHash()).toHexString(),
+                WalletUtils.toBase58(getFrom()),
+                WalletUtils.toBase58(to),
+                value.toDecimal(2, XUnit.XDAG).toPlainString(),
+                fee.toDecimal(2, XUnit.XDAG).toPlainString(),
+                nonce,
+                timestamp,
+                Bytes.wrap(data).toHexString());
     }
 
     @Override

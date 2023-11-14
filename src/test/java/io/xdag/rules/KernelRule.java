@@ -55,7 +55,6 @@ import io.xdag.core.PendingManager;
 import io.xdag.core.Transaction;
 import io.xdag.core.TransactionResult;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.SampleKeys;
 import io.xdag.db.LeveldbDatabase;
 import io.xdag.utils.BlockUtils;
 import io.xdag.utils.MerkleUtils;

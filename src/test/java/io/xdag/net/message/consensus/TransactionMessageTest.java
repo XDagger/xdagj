@@ -28,9 +28,9 @@ import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 
 import io.xdag.Network;
-import io.xdag.core.XAmount;
 import io.xdag.core.Transaction;
 import io.xdag.core.TransactionType;
+import io.xdag.core.XAmount;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.net.message.p2p.TransactionMessage;
 import io.xdag.utils.BytesUtils;

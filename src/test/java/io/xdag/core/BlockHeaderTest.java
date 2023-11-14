@@ -26,17 +26,11 @@ package io.xdag.core;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.math.BigInteger;
-import java.time.Duration;
-
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.Test;
 
 import io.xdag.config.Constants;
-import io.xdag.core.BlockHeader;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.Numeric;
 import io.xdag.utils.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 

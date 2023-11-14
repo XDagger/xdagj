@@ -37,6 +37,11 @@ public interface Dagchain {
     MainBlock getLatestMainBlock();
 
     /**
+     * Returns the latest check point main block.
+     */
+    MainBlock getLatestCheckPointMainBlock();
+
+    /**
      * Returns the hash of the latest main block.
      */
     byte[] getLatestMainBlockHash();

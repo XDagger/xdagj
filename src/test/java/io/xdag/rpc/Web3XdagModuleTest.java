@@ -24,24 +24,6 @@
 
 package io.xdag.rpc;
 
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
-import io.xdag.rpc.modules.xdag.Web3XdagModule;
-import io.xdag.rpc.modules.xdag.Web3XdagModuleImpl;
-import io.xdag.rpc.modules.xdag.XdagModule;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.io.IOException;
-import java.util.Collections;
-
 public class Web3XdagModuleTest {
 
 //    @Rule

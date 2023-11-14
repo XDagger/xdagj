@@ -49,7 +49,6 @@ import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.net.CapabilityTreeSet;
 import io.xdag.net.Peer;
-import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.TimeUtils;

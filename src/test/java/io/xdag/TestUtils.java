@@ -37,17 +37,17 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
 
 import io.xdag.config.Config;
-import io.xdag.core.XAmount;
 import io.xdag.core.BlockHeader;
 import io.xdag.core.MainBlock;
-import io.xdag.utils.BlockUtils;
-import io.xdag.utils.MerkleUtils;
 import io.xdag.core.Transaction;
 import io.xdag.core.TransactionResult;
 import io.xdag.core.TransactionType;
+import io.xdag.core.XAmount;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.TimeUtils;
 
 public class TestUtils {

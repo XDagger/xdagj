@@ -359,23 +359,27 @@ public class XdagSync implements SyncManager {
             }
 
 
+            boolean sendResult = false;
             if (config.getNodeSpec().syncFastSync()) { // use FAST_SYNC protocol
                 log.trace("Requesting block #{} from {}:{}, HEADER + TRANSACTIONS", task,
                         c.getRemoteIp(),
                         c.getRemotePort());
-                c.getMsgQueue().sendMessage(new GetMainBlockPartsMessage(task,
+                sendResult = c.getMsgQueue().sendMessage(new GetMainBlockPartsMessage(task,
                         BlockPart.encode(BlockPart.HEADER, BlockPart.TRANSACTIONS)));
 
             } else { // use old protocol
                 log.trace("Requesting block #{} from {}:{}, FULL BLOCK", task, c.getRemoteIp(),
                         c.getRemotePort());
-                c.getMsgQueue().sendMessage(new GetMainBlockMessage(task));
+                sendResult = c.getMsgQueue().sendMessage(new GetMainBlockMessage(task));
             }
 
             if (toDownload.remove(task)) {
                 growToDownloadQueue();
             }
-            toReceive.put(task, TimeUtils.currentTimeMillis());
+
+            if(sendResult) {
+                toReceive.put(task, TimeUtils.currentTimeMillis());
+            }
         }
     }
 
@@ -444,6 +448,10 @@ public class XdagSync implements SyncManager {
                         BlockState bs = chain.getBlockState(mb.getParentHash(), mb.getNumber() - 1);
 
                         log.trace("onSync importBlock {}, as={}, bs={}.", p.getKey(), as, bs);
+                        if(as == null || bs == null) {
+                            log.error("onSync error, no parent state, {}, as={}, bs={}.", p.getKey(), as, bs);
+                            break;
+                        }
                         boolean imported = chain.importBlock(p.getKey(), as.clone(), bs.clone());
                         log.trace("onSync importBlock result = {}", imported);
 

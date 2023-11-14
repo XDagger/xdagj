@@ -24,8 +24,6 @@
 
 package io.xdag.net;
 
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,9 +32,13 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.io.FileUtils;
+
+import io.xdag.config.Config;
+import io.xdag.config.DevnetConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 @Slf4j
 public class NetDBManager {

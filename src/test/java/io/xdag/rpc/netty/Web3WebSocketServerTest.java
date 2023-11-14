@@ -31,13 +31,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.xdag.rpc.Web3;
-import io.xdag.rpc.modules.ModuleDescription;
-import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collections;
@@ -49,6 +42,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
+import io.xdag.rpc.Web3;
+import io.xdag.rpc.modules.ModuleDescription;
+import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import lombok.SneakyThrows;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -58,9 +64,6 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.Buffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class Web3WebSocketServerTest {
 

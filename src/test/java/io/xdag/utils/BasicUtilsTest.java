@@ -24,17 +24,20 @@
 
 package io.xdag.utils;
 
-import io.xdag.utils.exception.XdagOverFlowException;
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.hash2Address;
+import static io.xdag.utils.BasicUtils.hash2byte;
+import static io.xdag.utils.WalletUtils.toBase58;
+import static org.junit.Assert.assertEquals;
+
+import java.math.BigDecimal;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.junit.Test;
 
-import java.math.BigDecimal;
-
-import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.WalletUtils.toBase58;
-import static org.junit.Assert.assertEquals;
+import io.xdag.utils.exception.XdagOverFlowException;
 
 public class BasicUtilsTest {
 

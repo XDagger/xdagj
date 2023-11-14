@@ -25,6 +25,7 @@ package io.xdag.core;
 
 import static io.xdag.core.XAmount.ZERO;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 
 import io.xdag.Network;
@@ -43,6 +48,7 @@ import io.xdag.config.Constants;
 import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SimpleEncoder;
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -205,6 +211,7 @@ public class MainBlock {
     /**
      * Returns the block hash.
      */
+    @JsonSerialize(using = HashJsonSerializer.class)
     public byte[] getHash() {
         return header.getHash();
     }
@@ -219,13 +226,29 @@ public class MainBlock {
     /**
      * Returns the coinbase
      */
+    @JsonSerialize(using = Genesis.AddressJsonSerializer.class)
     public byte[] getCoinbase() {
         return header.getCoinbase();
     }
 
     /**
+     * Returns the difficulty target
+     */
+    public long getDifficultyTarget() {
+        return header.getDifficultyTarget();
+    }
+
+    /**
+     * Returns the nonce
+     */
+    public long getNonce() {
+        return header.getNonce();
+    }
+
+    /**
      * Returns the hash of the parent block
      */
+    @JsonSerialize(using = HashJsonSerializer.class)
     public byte[] getParentHash() {
         return header.getParentHash();
     }
@@ -401,6 +424,20 @@ public class MainBlock {
     @Override
     public String toString() {
         return "MainBlock [number = " + getNumber() + ", hash = " + Bytes.wrap(getHash()).toHexString() + ", parent hash = " +Bytes.wrap(getParentHash()).toHexString() + ", # hashs = " + txHashs.size() + " ]";
+    }
+
+    public static class HashJsonSerializer extends JsonSerializer<byte[]> {
+        @Override
+        public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(Bytes.wrap(value).toHexString());
+        }
+    }
+
+    public static class AddressJsonSerializer extends JsonSerializer<byte[]> {
+        @Override
+        public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(WalletUtils.toBase58(value));
+        }
     }
 
 }

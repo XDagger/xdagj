@@ -276,7 +276,7 @@ public class XdagPow implements PowManager {
 
                 if(!Arrays.equals(remoteMainBlock.getParentHash(), parentHash)) {
                     log.trace("onEpoch->no parent from {}.", remoteMainBlock);
-                    long syncBegin = remoteMainBlock.getNumber() > Constants.EPOCH_FINALIZE_NUMBER?  remoteMainBlock.getNumber() -16 : 1;
+                    long syncBegin = Math.max(remoteMainBlock.getNumber() - 2, 1);
                     long syncCurrent = syncBegin;
                     long syncTarget = remoteNumber;
                     sync(syncBegin, syncCurrent, syncTarget, channel);
@@ -286,14 +286,24 @@ public class XdagPow implements PowManager {
             AccountState as = dagchain.getAccountState(remoteMainBlock.getParentHash(), remoteNumber - 1);
             BlockState bs = dagchain.getBlockState(remoteMainBlock.getParentHash(), remoteNumber - 1);
             if(as == null || bs == null) {
-                log.trace("onEpoch->no parent more than 16 numbers, {}", remoteMainBlock);
+                log.trace("onEpoch->no parent {}", remoteMainBlock);
+                if( diff > -Constants.EPOCH_FINALIZE_NUMBER) {
+                    long syncBegin = remoteMainBlock.getNumber() > 16? remoteMainBlock.getNumber() - 16: 1;
+                    long syncCurrent = syncBegin;
+                    long syncTarget = remoteNumber;
+                    sync(syncBegin, syncCurrent, syncTarget, channel);
+                }
+            }
+
+            if(as == null || bs == null) {
+                log.trace("onEpoch->prepare error, import={}, parent={}, as=={}, bs={}", remoteMainBlock,
+                        Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
                 return;
             }
 
-            log.trace("onEpoch->prepare import={}, parent={}, as=={}, bs={}", remoteMainBlock,
-                    Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
             boolean result = dagchain.importBlock(remoteMainBlock, as.clone(), bs.clone());
-            log.trace("onEpoch->import result:{}.", result);
+            log.trace("onEpoch->result={}, import={}, parent={}, as=={}, bs={}, ", result, remoteMainBlock,
+                    Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
         }
     }
 
@@ -398,27 +408,26 @@ public class XdagPow implements PowManager {
             }
 
             // update previous block
-            // TODO epoch number must be in local store
-            MainBlock block = prepareMainBlock(currentEpochEndTime, randomx);
-            if(block == null) {
+            MainBlock localMainBlock = prepareMainBlock(currentEpochEndTime, randomx);
+            if(localMainBlock == null) {
                 log.info("enterEpoch-> block == null");
                 return;
             }
 
-            AccountState as = dagchain.getAccountState(block.getParentHash(), block.getNumber() - 1);
-            BlockState bs = dagchain.getBlockState(block.getParentHash(), block.getNumber() - 1);
+            AccountState as = dagchain.getAccountState(localMainBlock.getParentHash(), localMainBlock.getNumber() - 1);
+            BlockState bs = dagchain.getBlockState(localMainBlock.getParentHash(), localMainBlock.getNumber() - 1);
 
-            log.info("enterEpoch->local epoch {}, prepare import, as={}, bs={}", block, as, bs);
+            log.info("enterEpoch->local epoch {}, prepare import, as={}, bs={}", localMainBlock, as, bs);
 
             // [1] update nonce
             //block.setNonce(nonce);
 
             // [2] add the block to chain
-            boolean importResult = dagchain.importBlock(block, as.clone(), bs.clone());
+            boolean importResult = dagchain.importBlock(localMainBlock, as.clone(), bs.clone());
             lastEpochEndtime = currentEpochEndTime;
-            log.info("enterEpoch->local epoch {}, import result = {}.", block, importResult);
+            log.info("enterEpoch->local epoch {}, import result = {}.", localMainBlock, importResult);
             if(importResult) {
-                broadcaster.broadcast(new EpochMessage(block));
+                broadcaster.broadcast(new EpochMessage(localMainBlock));
             }
         }
     }

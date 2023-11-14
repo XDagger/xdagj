@@ -23,10 +23,10 @@
  */
 package io.xdag.core;
 
-import static io.xdag.core.XUnit.MILLI_XDAG;
-import static io.xdag.core.XUnit.XDAG;
 import static io.xdag.core.PendingManager.ALLOWED_TIME_DRIFT;
 import static io.xdag.core.TransactionResult.Code.INVALID_TIMESTAMP;
+import static io.xdag.core.XUnit.MILLI_XDAG;
+import static io.xdag.core.XUnit.XDAG;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -52,10 +52,10 @@ import com.google.common.collect.Lists;
 import io.xdag.KernelMock;
 import io.xdag.Network;
 import io.xdag.config.Constants;
-import io.xdag.db.LeveldbDatabase;
 import io.xdag.core.state.AccountState;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.db.LeveldbDatabase;
 import io.xdag.net.ChannelManager;
 import io.xdag.rules.KernelRule;
 import io.xdag.utils.ArrayUtils;

@@ -27,10 +27,7 @@ package io.xdag.rpc.modules.xdag;
 import io.xdag.DagKernel;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
-import io.xdag.utils.BasicUtils;
 import lombok.extern.slf4j.Slf4j;
-
-import org.bouncycastle.util.encoders.Hex;
 
 @Slf4j
 public class XdagModuleTransactionBase implements XdagModuleTransaction {

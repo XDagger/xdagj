@@ -23,15 +23,23 @@
  */
 package io.xdag.core;
 
-import io.xdag.utils.BasicUtils;
-
-import java.math.BigDecimal;
-
 import static java.math.RoundingMode.FLOOR;
 import static java.math.RoundingMode.HALF_UP;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt64;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+
+import io.xdag.utils.BasicUtils;
 
 public class XAmount implements Comparable<XAmount> {
 
@@ -169,6 +177,21 @@ public class XAmount implements Comparable<XAmount> {
 
     public static XAmount sum(XAmount a, XAmount b) throws ArithmeticException {
         return new XAmount(Math.addExact(a.nano, b.nano));
+    }
+
+    public static class XAmountJsonSerializer extends JsonSerializer<XAmount> {
+        @Override
+        public void serialize(XAmount value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeNumber(value.toLong());
+        }
+    }
+
+    public static class XAmountJsonDeserializer extends JsonDeserializer<XAmount> {
+        @Override
+        public XAmount deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            long value = p.getValueAsLong();
+            return XAmount.of(value);
+        }
     }
 
 }

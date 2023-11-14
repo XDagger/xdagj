@@ -23,16 +23,13 @@
  */
 package io.xdag.config;
 
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.units.bigints.UInt64;
 
 import io.xdag.Network;
-import io.xdag.core.XAmount;
 import io.xdag.core.Fork;
 
 public class UnitTestnetConfig extends AbstractConfig {

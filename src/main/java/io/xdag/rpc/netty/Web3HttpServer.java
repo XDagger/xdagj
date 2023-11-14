@@ -24,6 +24,8 @@
 
 package io.xdag.rpc.netty;
 
+import java.net.InetAddress;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -44,8 +46,6 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.xdag.rpc.cors.CorsConfiguration;
 import lombok.extern.slf4j.Slf4j;
-
-import java.net.InetAddress;
 
 @Slf4j
 public class Web3HttpServer {

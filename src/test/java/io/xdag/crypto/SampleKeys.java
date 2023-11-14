@@ -24,11 +24,13 @@
 
 package io.xdag.crypto;
 
-import io.xdag.utils.Numeric;
 import java.math.BigInteger;
+
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
+
+import io.xdag.utils.Numeric;
 
 /**
  * Keys generated for unit testing purposes.

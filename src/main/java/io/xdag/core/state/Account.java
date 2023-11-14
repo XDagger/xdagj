@@ -23,11 +23,11 @@
  */
 package io.xdag.core.state;
 
-import org.apache.tuweni.bytes.Bytes;
-
 import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
 import io.xdag.utils.SimpleDecoder;
 import io.xdag.utils.SimpleEncoder;
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -76,7 +76,10 @@ public class Account {
 
     @Override
     public String toString() {
-        return "Account [address=" + Bytes.wrap(address).toHexString() + ", available=" + available + ", locked=" + locked
-                + ", nonce=" + nonce + "]";
+        return String.format("Account [address=%s, available=%s, locked=%s, nonce=%s]",
+                WalletUtils.toBase58(address),
+                available.toDecimal(9, XUnit.XDAG).toPlainString(),
+                locked.toDecimal(9, XUnit.XDAG).toPlainString(),
+                nonce);
     }
 }

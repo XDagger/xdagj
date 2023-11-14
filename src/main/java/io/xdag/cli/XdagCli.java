@@ -26,21 +26,16 @@ package io.xdag.cli;
 
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
-import io.xdag.DagKernel;
-import io.xdag.Launcher;
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.core.Genesis;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.MnemonicUtils;
-import io.xdag.crypto.Sign;
-import io.xdag.utils.BytesUtils;
-import java.io.*;
+import java.io.Console;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -52,6 +47,20 @@ import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import com.google.common.collect.Lists;
+
+import io.xdag.DagKernel;
+import io.xdag.Launcher;
+import io.xdag.Tools;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.core.Genesis;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.Sign;
+import io.xdag.db.DatabaseFactory;
+import io.xdag.db.LeveldbDatabase;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MnemonicUtils;
 
 public class XdagCli extends Launcher {
 
@@ -112,21 +121,15 @@ public class XdagCli extends Launcher {
                 .build();
         addOption(convertOldWalletOption);
 
-        Option bootSnapshotOption = Option.builder()
-                .longOpt(XdagOption.ENABLE_SNAPSHOT.toString()).desc("enable snapshot")
-                .hasArg(true).numberOfArgs(3).optionalArg(false)
-                .argName("isSnapshotJ").type(Boolean.class)
-                .argName("snapshotheight").type(Integer.class)
-                .argName("snapshottime").type(Integer.class)
-                .desc("the parameter snapshottime uses hexadecimal")
+        Option exportSnapshotOption = Option.builder()
+                .longOpt(XdagOption.EXPORT_SNAPSHOT.toString()).desc("export snapshot")
                 .build();
-        addOption(bootSnapshotOption);
+        addOption(exportSnapshotOption);
 
-        Option makeSnapshotOption = Option.builder()
-                .longOpt(XdagOption.MAKE_SNAPSHOT.toString()).desc("make snapshot")
-                .hasArg(true).optionalArg(true).argName("covertuint").type(String.class)
+        Option checkDbAccountOption = Option.builder()
+                .longOpt(XdagOption.CHECK_DB_ACCOUNT.toString()).desc("check database account")
                 .build();
-        addOption(makeSnapshotOption);
+        addOption(checkDbAccountOption);
     }
 
     public static void main(String[] args, XdagCli cli) throws Exception {
@@ -183,30 +186,11 @@ public class XdagCli extends Launcher {
             importPrivateKey(cmd.getOptionValue(XdagOption.IMPORT_PRIVATE_KEY.toString()).trim());
         } else if (cmd.hasOption(XdagOption.IMPORT_MNEMONIC.toString())) {
             importMnemonic(cmd.getOptionValue(XdagOption.IMPORT_MNEMONIC.toString()).trim());
-        } else if (cmd.hasOption(XdagOption.MAKE_SNAPSHOT.toString())) {
-            boolean convertXAmount = false;
-            String action = cmd.getOptionValue(XdagOption.MAKE_SNAPSHOT.toString());
-            if (action != null && action.trim().equals("convertxamount")) {
-                convertXAmount = true;
-            }
-            //makeSnapshot(convertXAmount);
-            // TODO make json Snapshot
+        } else if (cmd.hasOption(XdagOption.EXPORT_SNAPSHOT.toString())) {
+            exportSnapshot();
+        } else if(cmd.hasOption(XdagOption.CHECK_DB_ACCOUNT.toString())) {
+            checkDbAccount();
         } else {
-            if (cmd.hasOption(XdagOption.ENABLE_SNAPSHOT.toString())) {
-                String[] values = cmd.getOptionValues(XdagOption.ENABLE_SNAPSHOT.toString().trim());
-                try {
-                    boolean isSnapshotJ = Boolean.parseBoolean(values[0]);
-                    long height = Long.parseLong(values[1]);
-                    long time = Long.parseLong(values[2], 16);
-                    config.getSnapshotSpec().setSnapshotJ(isSnapshotJ);
-                    config.getSnapshotSpec().setSnapshotHeight(height);
-                    config.getSnapshotSpec().setSnapshotTime(time);
-                    config.getSnapshotSpec().snapshotEnable();
-                    System.out.println("enable snapshot:" + config.getSnapshotSpec().isSnapshotEnabled());
-                } catch (NumberFormatException e) {
-                    System.out.println("params error");
-                }
-            }
             start();
         }
     }
@@ -491,6 +475,22 @@ public class XdagCli extends Launcher {
             return scanner.nextLine();
         }
         return new String(console.readPassword(prompt));
+    }
+
+    public File exportSnapshot() throws IOException {
+        DatabaseFactory databaseFactory = getDefaultDatabaseFactory(getConfig());
+        File file = Tools.exportSnapshot(databaseFactory);
+        System.out.println("export snapshot:" + file.getName());
+        return file;
+    }
+
+    public void checkDbAccount() {
+        DatabaseFactory databaseFactory = getDefaultDatabaseFactory(getConfig());
+        Tools.checkDbAccount(databaseFactory);
+    }
+
+    public DatabaseFactory getDefaultDatabaseFactory(Config config) {
+        return new LeveldbDatabase.LeveldbFactory(config.chainDir());
     }
 
 }

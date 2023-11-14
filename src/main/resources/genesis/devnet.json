@@ -1,12 +1,12 @@
 {
     "number": 0,
-    "coinbase": "0x0000000000000000000000000000000000000000",
+    "coinbase": "111111111111111111117K4nzc",
     "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "timestamp": 1504742400000,
+    "timestamp": 1604742400000,
     "data": "xdagj",
-    "snapshot": [
+    "snapshots": [
         {
-            "address": "0x23a6049381fd2cfb0661d9de206613b83d53d7df",
+            "address": "4FVXqd3AyEusW7mcJZraJqAKWpTEbfyJT",
             "amount": 1000000000000000,
             "note": "devnet-test"
         }

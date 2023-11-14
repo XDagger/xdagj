@@ -23,11 +23,11 @@
  */
 package io.xdag.net.message.p2p;
 
-import io.xdag.utils.SimpleEncoder;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageCode;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.SimpleDecoder;
+import io.xdag.utils.SimpleEncoder;
 import lombok.Getter;
 
 @Getter

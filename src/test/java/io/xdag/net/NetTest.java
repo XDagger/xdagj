@@ -26,13 +26,12 @@ package io.xdag.net;
 
 import static org.junit.Assert.assertEquals;
 
-import java.math.BigInteger;
-
-import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
+
+import io.xdag.utils.BytesUtils;
 
 public class NetTest {
 

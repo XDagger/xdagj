@@ -26,7 +26,6 @@ package io.xdag.rpc.modules.xdag;
 
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.dto.BlockResultDTO;
-import io.xdag.rpc.dto.ConfigDTO;
 import io.xdag.rpc.dto.StatusDTO;
 
 

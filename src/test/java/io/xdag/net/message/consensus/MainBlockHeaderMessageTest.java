@@ -30,10 +30,10 @@ import java.util.Collections;
 import org.junit.Test;
 
 import io.xdag.core.BlockHeader;
-import io.xdag.utils.BlockUtils;
-import io.xdag.utils.MerkleUtils;
 import io.xdag.net.message.MessageCode;
+import io.xdag.utils.BlockUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MerkleUtils;
 import io.xdag.utils.TimeUtils;
 
 public class MainBlockHeaderMessageTest {

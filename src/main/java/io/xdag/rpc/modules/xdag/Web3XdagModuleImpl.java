@@ -24,33 +24,7 @@
 
 package io.xdag.rpc.modules.xdag;
 
-import com.google.common.collect.Lists;
-
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.DevnetConfig;
-import io.xdag.config.MainnetConfig;
-import io.xdag.config.TestnetConfig;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.core.*;
-import io.xdag.net.Channel;
-import io.xdag.rpc.dto.ConfigDTO;
-import io.xdag.rpc.dto.NetConnDTO;
-import io.xdag.rpc.dto.StatusDTO;
-import io.xdag.utils.BasicUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-
-import java.util.List;
-import java.util.Objects;
-
-import static io.xdag.config.Constants.CLIENT_VERSION;
-import static io.xdag.crypto.Keys.toBytesAddress;
-import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
-import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.WalletUtils.*;
 
 @Slf4j
 public abstract class Web3XdagModuleImpl implements Web3XdagModule {

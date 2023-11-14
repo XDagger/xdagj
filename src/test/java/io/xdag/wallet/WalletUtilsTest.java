@@ -24,15 +24,21 @@
 
 package io.xdag.wallet;
 
-import io.xdag.Wallet;
-import io.xdag.config.Config;
-import io.xdag.config.Constants;
-import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.*;
-import io.xdag.utils.BytesUtils;
-import io.xdag.utils.MnemonicUtils;
-import io.xdag.utils.WalletUtils;
-import io.xdag.utils.exception.AddressFormatException;
+import static io.xdag.crypto.Bip32Test.addChecksum;
+import static io.xdag.crypto.Bip32Test.serializePrivate;
+import static io.xdag.crypto.Bip32Test.serializePublic;
+import static io.xdag.utils.WalletUtils.checkAddress;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.Collections;
 
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
@@ -44,15 +50,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.Collections;
-
-import static io.xdag.crypto.Bip32Test.*;
-import static io.xdag.utils.WalletUtils.checkAddress;
-import static org.junit.Assert.*;
+import io.xdag.Wallet;
+import io.xdag.config.Config;
+import io.xdag.config.Constants;
+import io.xdag.config.DevnetConfig;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MnemonicUtils;
+import io.xdag.utils.WalletUtils;
+import io.xdag.utils.exception.AddressFormatException;
 
 public class WalletUtilsTest {
 

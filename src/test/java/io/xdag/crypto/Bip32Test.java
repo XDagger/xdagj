@@ -25,16 +25,17 @@
 package io.xdag.crypto;
 
 import static io.xdag.crypto.Bip32ECKeyPair.HARDENED_BIT;
-import static io.xdag.crypto.Hash.sha256;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import io.xdag.utils.Numeric;
 import java.nio.ByteBuffer;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
 import org.junit.Test;
+
+import io.xdag.utils.Numeric;
 
 /**
  * BIP-32 implementation test.

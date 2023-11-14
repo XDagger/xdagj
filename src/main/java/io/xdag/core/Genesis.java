@@ -26,20 +26,20 @@ package io.xdag.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.tuweni.bytes.Bytes;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.xdag.Network;
-import io.xdag.core.state.ByteArray;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,21 +47,19 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @Setter
 @Slf4j
+@JsonIncludeProperties({"number", "coinbase", "parentHash", "timestamp", "data", "config", "snapshots"})
 public class Genesis extends MainBlock {
-
-    @JsonDeserialize(keyUsing = ByteArray.ByteArrayKeyDeserializer.class)
-    private final Map<ByteArray, XSnapshot> snapshots;
-
     private final Map<String, Object> config;
+    private final List<XSnapshot> snapshots;
 
     /**
      * Creates a {@link Genesis} block instance.
      */
-    public Genesis(BlockHeader header, Map<ByteArray, XSnapshot> snapshots, Map<String, Object> config) {
+    public Genesis(BlockHeader header, Map<String, Object> config, List<XSnapshot> snapshots) {
         super(header, Collections.emptyList(), Collections.emptyList());
 
-        this.snapshots = snapshots;
         this.config = config;
+        this.snapshots = snapshots;
     }
 
     @JsonCreator
@@ -71,18 +69,11 @@ public class Genesis extends MainBlock {
             @JsonProperty("parentHash") String parentHash,
             @JsonProperty("timestamp") long timestamp,
             @JsonProperty("data") String data,
-            @JsonProperty("snapshot") List<XSnapshot> snapshotsList,
-            @JsonProperty("config") Map<String, Object> config) {
-
-        // load snapshot
-        Map<ByteArray, XSnapshot> snapshotMap = new HashMap<>();
-        for (XSnapshot snapshot : snapshotsList) {
-            snapshotMap.put(new ByteArray(snapshot.getAddress()), snapshot);
-        }
-
+            @JsonProperty("config") Map<String, Object> config,
+            @JsonProperty("snapshots") List<XSnapshot> snapshots) {
         // load block header
         BlockHeader header = new BlockHeader(number,
-                Bytes.fromHexString(coinbase).toArray(),
+                WalletUtils.fromBase58(coinbase),
                 Bytes.fromHexString(parentHash).toArray(),
                 timestamp,
                 BytesUtils.EMPTY_HASH,
@@ -90,7 +81,7 @@ public class Genesis extends MainBlock {
                 0L,
                 BytesUtils.of(data));
 
-        return new Genesis(header, snapshotMap, config);
+        return new Genesis(header, config, snapshots);
     }
 
     /**
@@ -113,7 +104,9 @@ public class Genesis extends MainBlock {
 
     @Getter
     public static class XSnapshot {
+        @JsonSerialize(using = AddressJsonSerializer.class)
         private final byte[] address;
+        @JsonSerialize(using = XAmount.XAmountJsonSerializer.class)
         private final XAmount amount;
         private final String note;
 
@@ -127,8 +120,8 @@ public class Genesis extends MainBlock {
         public XSnapshot(@JsonProperty("address") String address,
                          @JsonProperty("amount") long amount,
                 @JsonProperty("note") String note) {
-            this(Bytes.fromHexString(address).toArray(), XAmount.of(amount), note);
+            this(WalletUtils.fromBase58(address), XAmount.of(amount), note);
         }
-
     }
+
 }

@@ -19,7 +19,7 @@
 
         <netty.version>4.1.97.Final</netty.version>
         <tuweni.version>2.3.1</tuweni.version>
-        <json.version>2.14.2</json.version>
+        <json.version>2.15.1</json.version>
         <kryo.version>5.4.0</kryo.version>
         <lombok.version>1.18.26</lombok.version>
         <caffeine.version>3.1.5</caffeine.version>

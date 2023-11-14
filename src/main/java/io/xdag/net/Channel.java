@@ -24,15 +24,14 @@
 
 package io.xdag.net;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.xdag.DagKernel;
 import io.xdag.net.message.MessageQueue;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-
 import lombok.Getter;
 import lombok.Setter;
 

@@ -27,7 +27,7 @@ import static io.xdag.core.XAmount.ZERO;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.util.Map;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,11 +36,11 @@ import org.mockito.Mockito;
 
 import io.xdag.config.Constants;
 import io.xdag.config.UnitTestnetConfig;
-import io.xdag.core.XAmount;
 import io.xdag.core.Dagchain;
 import io.xdag.core.DagchainImpl;
 import io.xdag.core.Genesis;
 import io.xdag.core.PendingManager;
+import io.xdag.core.XAmount;
 import io.xdag.core.XUnit;
 import io.xdag.rules.TemporaryDatabaseRule;
 import io.xdag.utils.BytesUtils;
@@ -62,11 +62,11 @@ public class AccountStateTest {
 
     @Test
     public void testAtGenesis() {
-        Map<ByteArray, Genesis.XSnapshot> snapshot = chain.getGenesis().getSnapshots();
+        List<Genesis.XSnapshot> snapshots = chain.getGenesis().getSnapshots();
 
-        for (ByteArray k : snapshot.keySet()) {
-            Account acc = state.getAccount(k.getData());
-            assertEquals(snapshot.get(k).getAmount(), acc.getAvailable());
+        for (Genesis.XSnapshot snapshot : snapshots) {
+            Account acc = state.getAccount(snapshot.getAddress());
+            assertEquals(snapshot.getAmount(), acc.getAvailable());
         }
     }
 

@@ -24,11 +24,13 @@
 
 package io.xdag.rpc.serialize;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.xdag.rpc.jsonrpc.JsonRpcMessage;
-import io.xdag.rpc.modules.XdagJsonRpcRequest;
 import java.io.IOException;
 import java.io.InputStream;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import io.xdag.rpc.jsonrpc.JsonRpcMessage;
+import io.xdag.rpc.modules.XdagJsonRpcRequest;
 
 public interface JsonRpcSerializer {
 

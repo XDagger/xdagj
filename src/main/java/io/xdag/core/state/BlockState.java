@@ -35,6 +35,21 @@ import io.xdag.utils.SimpleEncoder;
 
 public interface BlockState {
 
+    byte TYPE_LATEST_BLOCK_NUMBER = 0x00;
+    byte TYPE_ACTIVATED_FORKS = 0x06;
+    byte TYPE_DATABASE_VERSION = (byte) 0xff;
+
+    byte TYPE_BLOCK_NUMBER_BY_HASH = 0x10;
+    byte TYPE_BLOCK_COINBASE_BY_NUMBER = 0x11;
+    byte TYPE_TRANSACTION_INDEX_BY_HASH = 0x20;
+    byte TYPE_TRANSACTION_COUNT_BY_ADDRESS = 0x21;
+    byte TYPE_TRANSACTION_HASH_BY_ADDRESS_AND_INDEX = 0x21;
+
+    byte TYPE_BLOCK_HEADER_BY_NUMBER = 0x30;
+    byte TYPE_BLOCK_TRANSACTIONS_HASH_BY_NUMBER = 0x31;
+    byte TYPE_BLOCK_TRANSACTIONS_BY_NUMBER = 0x32;
+    byte TYPE_BLOCK_RESULTS_BY_NUMBER = 0x33;
+
     /** Database */
     int getDatabaseVersion();
 
