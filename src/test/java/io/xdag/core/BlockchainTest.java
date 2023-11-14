@@ -261,6 +261,17 @@ public class BlockchainTest {
         assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
         XAmount mainBlockFee = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(10).getHashLow()).getFee();
         assertEquals("0.1",mainBlockFee.toDecimal(1, XUnit.XDAG).toString());
+
+        blockchain.unSetMain(extraBlockList.get(10));//test rollback
+
+        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
+        assertEquals("1000.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100*3  = 700.00
+        assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
+        assertEquals("0.0" , RollBackMainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
+
+
         //TODO:test wallet create txBlock with fee = 0,
         List<Block> txList = Lists.newLinkedList();
         for (int i = 1; i <= 10; i++) {
@@ -307,12 +318,25 @@ public class BlockchainTest {
         XAmount addressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
         XAmount addressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
         XAmount mainBlockLinkTxBalance_0 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
-        assertEquals("871.00", poolBalance_0.toDecimal(2, XUnit.XDAG).toString());//900 - 20 - 1*9  = 871.00
-        assertEquals("117.90", addressBalance_0.toDecimal(2, XUnit.XDAG).toString());//99.90  + (10-0.1) + (1 - 0.1) * 9  = 117.90  (ps:0.1 is fee)
+        assertEquals("971.00", poolBalance_0.toDecimal(2, XUnit.XDAG).toString());//1000 - 20 - 1*9  = 971.00
+        assertEquals("18.00", addressBalance_0.toDecimal(2, XUnit.XDAG).toString());//0  + (10-0.1) + (1 - 0.1) * 9  = 18   (ps:0.1 is fee)
         assertEquals("9.90", addressBalance_1.toDecimal(2, XUnit.XDAG).toString());//0 + 10 - 0.1 = 9.90
         assertEquals("1025.1" , mainBlockLinkTxBalance_0.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1*11 reward.
         XAmount mainBlockFee_1 = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(26).getHashLow()).getFee();
         assertEquals("1.1",mainBlockFee_1.toDecimal(1, XUnit.XDAG).toString());
+
+        //TODO:test rollback
+        blockchain.unSetMain(extraBlockList.get(26));
+
+        XAmount RollBackPoolBalance_1 = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount RollBackAddressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount RollBackAddressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount RollBackMainBlockLinkTxBalance_1 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
+        assertEquals("1000.00", RollBackPoolBalance_1.toDecimal(2, XUnit.XDAG).toString());//1000
+        assertEquals("0.00", RollBackAddressBalance_0.toDecimal(2, XUnit.XDAG).toString());//rollback is zero
+        assertEquals("0.00", RollBackAddressBalance_1.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.0" , RollBackMainBlockLinkTxBalance_1.toDecimal(1, XUnit.XDAG).toString());//  rollback is zero
+
     }
 
     @Test
@@ -362,7 +386,7 @@ public class BlockchainTest {
         Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
         Block txBlock = generateMinerRewardTxBlock(config, poolKey, xdagTime - 1, from, to, to1, XAmount.of(2,XUnit.XDAG),XAmount.of(1901,XUnit.MILLI_XDAG), XAmount.of(99,XUnit.MILLI_XDAG));
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
-        result = blockchain.tryToConnect(InvalidTxBlock);
+        result = blockchain.tryToConnect(txBlock);
         assertEquals(INVALID_BLOCK, result);
         // there is 12 blocks and 10 mainblocks
     }
@@ -452,6 +476,18 @@ public class BlockchainTest {
         assertEquals("1024.0" , poolBalance.toDecimal(1, XUnit.XDAG).toString());//2024 - 1000 = 1024,
         assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
         assertEquals("999.9", addressBalance.toDecimal(1, XUnit.XDAG).toString());//1000 - 0.1 = 999.9, A TX subtract 0.1 XDAG fee.
+
+
+        //Rollback mainBlock 10
+        blockchain.unSetMain(extraBlockList.get(10));
+
+        XAmount RollBackPoolBalance = blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount();
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
+        assertEquals("2024.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//1024 + 1000  = 2024
+        assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//rollback is zero.
+        assertEquals("0.0" , RollBackMainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//
+
     }
     @Test
     public void testCanUseInput() {
