@@ -167,8 +167,6 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         TransactionInfoSender transactionInfoSender = new TransactionInfoSender();
         transactionInfoSender.setPreHash(preHash);
         transactionInfoSender.setShare(share);
-        log.info("这个主区实际的share " + block.getNonce().toHexString() + "矿池提交的最小share " + share.toHexString() +
-                "   它们之间相等？" + (block.getNonce().toHexString()).equals(share.toHexString()));
         doPayments(hashlow, sendAmount, poolWalletAddress, keyPos, transactionInfoSender);
         return 0;
     }
@@ -176,11 +174,15 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     public void doPayments(Bytes32 hashLow, XAmount sendAmount, Bytes32 poolWalletAddress, int keyPos,
                            TransactionInfoSender transactionInfoSender) {
         ArrayList<Address> receipt = new ArrayList<>(1);
-        if (sendAmount.compareTo(XAmount.ZERO) > 0) {
+        if (sendAmount.compareTo(MIN_GAS) >= 0) {
             receipt.add(new Address(poolWalletAddress, XDAG_FIELD_OUTPUT, sendAmount, true));
+            log.debug("Start payment...");
+            transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
+        } else {
+            log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
+                            "has been rollback",
+                    hashLow.toHexString());
         }
-        log.debug("Start payment...");
-        transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
         receipt.clear();
     }
 

@@ -31,9 +31,11 @@ import io.xdag.consensus.Task;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.WalletUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.jline.utils.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +44,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static org.junit.Assert.*;
 
@@ -222,6 +223,14 @@ public class PoWTest {
         assertNotNull(currentTask.get());
         assertNull(currentTask.get().getTask());
         assertNull(currentTask.get().getDigest());
-        assertEquals(currentTask.get().getTaskIndex(),0);
+        assertEquals(currentTask.get().getTaskIndex(), 0);
+        Log.info(hash2PubAddress(hexPubAddress2Hashlow(
+                "46a2a0fe035c413d92be9c79a11cfc3695780f65")));
+        Log.info(hash2PubAddress(hexPubAddress2Hashlow(
+                "46a2a0fe035c413d92be9c79a11cfc3695780f66")));
+        assertTrue(WalletUtils.checkAddress(hash2PubAddress(hexPubAddress2Hashlow(
+                "46a2a0fe035c413d92be9c79a11cfc3695780f66"))));
+
+
     }
 }

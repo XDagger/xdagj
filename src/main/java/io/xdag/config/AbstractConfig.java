@@ -251,7 +251,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
-        // poolTag=nodeTag
+        // currently poolTag=nodeTag
         nodeTag = config.hasPath("pool.tag") ? config.getString("pool.tag") : "xdagj";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
         enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
@@ -265,9 +265,8 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
             int port = Integer.parseInt(addr.split(":")[1]);
             whiteIPList.add(new InetSocketAddress(ip, port));
         }
-
         // rpc
-        rpcEnabled = config.hasPath("rpc.enabled") ? config.getBoolean("rpc.enabled") : false;
+        rpcEnabled = config.hasPath("rpc.enabled") && config.getBoolean("rpc.enabled");
         if (rpcEnabled) {
             rpcHost = config.hasPath("rpc.http.host") ? config.getString("rpc.http.host") : "127.0.0.1";
             rpcPortHttp = config.hasPath("rpc.http.port") ? config.getInt("rpc.http.port") : 10001;

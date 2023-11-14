@@ -31,7 +31,7 @@ public class WebSocketServer {
         this.ServerPort = port;
         this.bossGroup = new NioEventLoopGroup();
         this.workerGroup = new NioEventLoopGroup();
-        this.poolHandShakeHandler = new PoolHandShakeHandler(kernel,clientHost, tag,ServerPort);
+        this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, clientHost, tag, ServerPort);
     }
 
 
@@ -43,12 +43,12 @@ public class WebSocketServer {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
-                        ch.pipeline().addLast("http-codec",new HttpServerCodec());//http decoder
-                        ch.pipeline().addLast("aggregator",new HttpObjectAggregator(65536));
-                        ch.pipeline().addLast("handler", poolHandShakeHandler);//pool handler write by ourselves
+                        ch.pipeline().addLast("http-codec", new HttpServerCodec());// http decoder
+                        ch.pipeline().addLast("aggregator", new HttpObjectAggregator(65536));
+                        ch.pipeline().addLast("handler", poolHandShakeHandler);// pool handler write by ourselves
                     }
                 });
-        webSocketChannel  = b.bind("localhost",ServerPort);
+        webSocketChannel = b.bind("localhost", ServerPort);
         try {
             webSocketChannel.sync();
         } catch (InterruptedException e) {
