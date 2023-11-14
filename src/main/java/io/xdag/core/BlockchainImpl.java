@@ -323,8 +323,8 @@ public class BlockchainImpl implements Blockchain {
                         log.debug("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
-                    //ensure TX block's amount is enough to subtract minGas, Amount must >= 0.1;
-                    if(ref != null && ref.getType() == XDAG_FIELD_INPUT  && ref.getAmount().subtract(minGas).isNegative()){
+                    //ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1;
+                    if(ref != null && (ref.getType() == XDAG_FIELD_INPUT || ref.getType() == XDAG_FIELD_OUTPUT ) && ref.getAmount().subtract(minGas).isNegative()){
                         result = ImportResult.INVALID_BLOCK;
                         result.setHashlow(ref.getAddress());
                         result.setErrorInfo("Ref block's balance < minGas");
@@ -720,7 +720,7 @@ public class BlockchainImpl implements Blockchain {
                 }
                 sumGas = sumGas.add(ret);
                 updateBlockRef(ref, new Address(block));
-                if (flag && sumGas != XAmount.ZERO){//judge if block is mainBlock, true: add fee!
+                if (flag && sumGas != XAmount.ZERO){//judge if block is mainBlock, if true: add fee!
                     block.getInfo().setFee(block.getFee().add(sumGas));
                     addAndAccept(block, sumGas);
                     sumGas = XAmount.ZERO;
@@ -794,19 +794,19 @@ public class BlockchainImpl implements Blockchain {
                 if (link.getType() == XDAG_FIELD_IN) {
                     subtractAndAccept(ref, link.getAmount());
                     XAmount allBalance = addressStore.getAllBalance();
-                    allBalance = allBalance.add(link.getAmount());
+                    allBalance = allBalance.add(link.getAmount().subtract(block.getFee()));
                     addressStore.updateAllBalance(allBalance);
-                } else if(!flag){//递归返回到第一层时，会遍历链接的上一个主块（output）类型，则不允许扣款
-                    addAndAccept(ref, link.getAmount().subtract(block.getInfo().getFee()));
-                    gas = gas.add(block.getInfo().getFee()); //Mark the output for Fee
+                } else if(!flag){//递归返回到第一层时，ref上一个主块（output）类型，此时不允许扣款
+                    addAndAccept(ref, link.getAmount().subtract(block.getFee()));
+                    gas = gas.add(block.getFee()); //Mark the output for Fee
                 }
 //            blockStore.saveBlockInfo(ref.getInfo()); // TODO：acceptAmount时已经保存了 这里还需要保存吗
             } else {
                 if (link.getType() == XDAG_FIELD_INPUT) {
                     subtractAmount(BasicUtils.hash2byte(linkAddress), link.getAmount(), block);
                 } else if (link.getType() == XDAG_FIELD_OUTPUT) {
-                    addAmount(BasicUtils.hash2byte(linkAddress), link.getAmount().subtract(block.getInfo().getFee()), block);
-                    gas = gas.add(block.getInfo().getFee()); //Mark the output for Fee
+                    addAmount(BasicUtils.hash2byte(linkAddress), link.getAmount().subtract(block.getFee()), block);
+                    gas = gas.add(block.getFee()); //Mark the output for Fee
                 }
             }
         }
@@ -822,6 +822,10 @@ public class BlockchainImpl implements Blockchain {
         List<Address> links = block.getLinks();
         Collections.reverse(links); // must be reverse
         if ((block.getInfo().flags & BI_APPLIED) != 0) {
+            //the TX block create by wallet or pool will not set fee = minGas, set in this.
+            if (!block.getInputs().isEmpty() && block.getFee().equals(XAmount.ZERO)){
+                block.getInfo().setFee(minGas);
+            }
             XAmount sum = XAmount.ZERO;
             for (Address link : links) {
                 if (!link.isAddress) {
@@ -830,15 +834,16 @@ public class BlockchainImpl implements Blockchain {
                         addAndAccept(ref, link.getAmount());
                         sum = sum.subtract(link.getAmount());
                         XAmount allBalance = addressStore.getAllBalance();
-                        allBalance = allBalance.subtract(link.getAmount());
+                       // allBalance = allBalance.subtract(link.getAmount()); //fix subtract twice.
                         try {
-                            allBalance = allBalance.subtract(link.getAmount());
+                            allBalance = allBalance.subtract(link.getAmount().subtract(block.getFee()));
                         } catch (Exception e) {
                             log.debug("allBalance rollback");
                         }
                         addressStore.updateAllBalance(allBalance);
                     } else if (link.getType() == XDAG_FIELD_OUT) {
-                        subtractAndAccept(ref, link.getAmount());
+                        //when add amount in 'Apply' subtract fee, so unApply also subtract fee.
+                        subtractAndAccept(ref, link.getAmount().subtract(block.getFee()));
                         sum = sum.add(link.getAmount());
                     }
                 } else {
@@ -846,7 +851,8 @@ public class BlockchainImpl implements Blockchain {
                         addAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount(), block);
                         sum = sum.subtract(link.getAmount());
                     } else {
-                        subtractAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount(), block);
+                        //when add amount in 'Apply' subtract fee, so unApply also subtract fee.
+                        subtractAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount().subtract(block.getFee()), block);
                         sum = sum.add(link.getAmount());
                     }
                 }
@@ -910,7 +916,8 @@ public class BlockchainImpl implements Blockchain {
 
             log.debug("UnSet main,{}, mainnumber = {}", block.getHash().toHexString(), xdagStats.nmain);
 
-            XAmount amount = getReward(xdagStats.nmain);
+            XAmount amount = block.getInfo().getAmount();//mainBlock's balance will have fee, subtract all balance.
+            block.getInfo().setFee(XAmount.ZERO);//set the mainBlock's zero.
             updateBlockFlag(block, BI_MAIN, false);
 
             xdagStats.nmain--;

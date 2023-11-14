@@ -26,6 +26,7 @@ package io.xdag.rpc.modules.xdag;
 
 import static io.xdag.cli.Commands.getStateByFlags;
 import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.minGas;
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.BlockType.MAIN_BLOCK;
 import static io.xdag.core.BlockType.SNAPSHOT;
@@ -271,7 +272,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
                 .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) :
                         (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())) // calculate the fee
+                                minGas.multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())) // calculate the fee
                 .direction(2);
         links.add(fee.build());
 
@@ -290,7 +291,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
             if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
             linkBuilder.address(output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
                     .hashlow(output.getAddress().toUnprefixedHexString())
-                    .amount(String.format("%s", output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
+                    .amount(String.format("%s", output.getAmount().subtract(minGas).toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(1);
             links.add(linkBuilder.build());
         }
@@ -309,6 +310,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 remark = new String(block.getInfo().getRemark(), StandardCharsets.UTF_8).trim();
             }
             XAmount earnFee = kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee();
+            if (block.getInfo().getAmount().equals(XAmount.ZERO)){ earnFee = XAmount.ZERO;} //when block amount is zero, fee also should make zero.
             txLinkBuilder.address(hash2Address(block.getHashLow()))
                     .hashlow(block.getHashLow().toUnprefixedHexString())
                     .amount(String.format("%s", blockchain.getReward(block.getInfo().getHeight()).add(earnFee).toDecimal(9, XUnit.XDAG).toPlainString()))
@@ -323,10 +325,15 @@ public class XdagModuleChainBase implements XdagModuleChain {
             if((blockInfo.flags&BI_APPLIED)==0){
                 continue;
             }
+            //TODO:这里查的是账户的，浏览器的input是交易块的output？ 需要验证
+            XAmount Amount =txHistory.getAddress().getAmount();
+            if (txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT)){
+                Amount = Amount.subtract(minGas);
+            }
             TxLink.TxLinkBuilder txLinkBuilder = TxLink.builder();
             txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
                     .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
-                    .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
+                    .amount(String.format("%s", Amount.toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
                             txHistory.getAddress().getType().equals(XDAG_FIELD_OUT) ? 1 : 3)
                     .time(txHistory.getTimestamp())
@@ -347,9 +354,14 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 if ((blockInfo.flags & BI_APPLIED) == 0) {
                     continue;
                 }
+                //output subtract fee
+                XAmount Amount =txHistory.getAddress().getAmount();
+                if (txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT)){
+                    Amount = Amount.subtract(minGas);
+                }
                 txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
                         .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
-                        .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
+                        .amount(String.format("%s", Amount.toDecimal(9, XUnit.XDAG).toPlainString()))
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT) ? 0 :
                                 txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT) ? 1 :
                                         txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
