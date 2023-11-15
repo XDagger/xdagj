@@ -26,14 +26,11 @@ package io.xdag.consensus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.KeyPair;
 
@@ -57,6 +54,7 @@ import io.xdag.crypto.RandomX;
 import io.xdag.crypto.RandomXMemory;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
+import io.xdag.net.Peer;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.consensus.EpochMessage;
 import io.xdag.utils.ArrayUtils;
@@ -144,7 +142,7 @@ public class XdagPow implements PowManager {
     /**
      * Pause the pow manager, and do synchronization.
      */
-    protected void sync(long begin, long current, long target, Channel channel) {
+    protected void sync(long begin, long current, long target, Peer remotePeer) {
         if (status == Status.RUNNING) {
             // change status
             status = Status.SYNCING;
@@ -152,7 +150,7 @@ public class XdagPow implements PowManager {
             clearTimerAndEvents();
 
             // start syncing
-            syncManager.start(begin, current, target, channel);
+            syncManager.start(begin, current, target, remotePeer);
 
             // restore status if not stopped
             if (status != Status.STOPPED) {
@@ -161,14 +159,13 @@ public class XdagPow implements PowManager {
                 clearTimerAndEvents();
                 lastEpochEndtime = dagchain.getLatestMainBlock().getTimestamp();
 
-                // syncing long time
-                long diff = TimeUtils.currentTimeMillis() - lastEpochEndtime;
-                log.trace(" sync finish diff:{}.", diff);
+                // syncing maybe long time
+                log.trace(" sync finish cost:{}.", TimeUtils.currentTimeMillis() - lastEpochEndtime);
                 resetEpoch();
             }
         } else {
             log.trace("on syncing, ignore, begin:{}, current:{}, target:{}, peer:{}",
-                    begin, current, target, channel.getRemotePeer());
+                    begin, current, target, remotePeer);
         }
     }
 
@@ -262,7 +259,7 @@ public class XdagPow implements PowManager {
                 long syncBegin = dagchain.getLatestMainBlockNumber();
                 long syncCurrent = syncBegin;
                 long syncTarget = remoteNumber;
-                sync(syncBegin, syncCurrent, syncTarget, channel);
+                sync(syncBegin, syncCurrent, syncTarget, channel.getRemotePeer());
             } else if (diff >= 0) { // reorg main block in 1 epoch
                 log.trace("onEpoch->diff:{}, remote:{}, local:{}, check and import {}, peer:{}", diff, remoteNumber,
                         localNumber, remoteNumber, channel.getRemotePeer());
@@ -279,7 +276,7 @@ public class XdagPow implements PowManager {
                     long syncBegin = Math.max(remoteMainBlock.getNumber() - 2, 1);
                     long syncCurrent = syncBegin;
                     long syncTarget = remoteNumber;
-                    sync(syncBegin, syncCurrent, syncTarget, channel);
+                    sync(syncBegin, syncCurrent, syncTarget, channel.getRemotePeer());
                 }
             }
 
@@ -291,10 +288,12 @@ public class XdagPow implements PowManager {
                     long syncBegin = remoteMainBlock.getNumber() > 16? remoteMainBlock.getNumber() - 16: 1;
                     long syncCurrent = syncBegin;
                     long syncTarget = remoteNumber;
-                    sync(syncBegin, syncCurrent, syncTarget, channel);
+                    sync(syncBegin, syncCurrent, syncTarget, channel.getRemotePeer());
                 }
             }
 
+            as = dagchain.getAccountState(remoteMainBlock.getParentHash(), remoteNumber - 1);
+            bs = dagchain.getBlockState(remoteMainBlock.getParentHash(), remoteNumber - 1);
             if(as == null || bs == null) {
                 log.trace("onEpoch->prepare error, import={}, parent={}, as=={}, bs={}", remoteMainBlock,
                         Bytes.wrap(remoteMainBlock.getParentHash()).toHexString(), as, bs);
@@ -440,18 +439,6 @@ public class XdagPow implements PowManager {
         return epochEndTime;
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        FastDateFormat df = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS");
-        while (true) {
-            long currentTime = System.currentTimeMillis();
-            long currentXTime = XdagTime.msToXdagtimestamp(currentTime);
-            long epochEndTime = XdagTime.xdagTimestampToMs(XdagTime.getEndOfEpoch(currentXTime));
-            long delay = epochEndTime - currentTime;
-            System.out.println("epoch:" + df.format(epochEndTime) + ", delay:" + delay);
-            Thread.sleep(1000);
-        }
-    }
-
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
 
@@ -550,23 +537,6 @@ public class XdagPow implements PowManager {
         log.debug("Block creation: # txs = {}, time = {} ms", includedTxs.size(), t2 - t1);
 
         return block;
-    }
-
-    /**
-     * Filter transactions to find ones that have not already been validated via the
-     * pending manager.
-     */
-    protected List<Transaction> getUnvalidatedTransactions(List<Transaction> transactions) {
-
-        Set<Transaction> pendingValidatedTransactions = pendingManager.getPendingTransactions()
-                .stream()
-                .map(pendingTx -> pendingTx.transaction)
-                .collect(Collectors.toSet());
-
-        return transactions
-                .stream()
-                .filter(it -> !pendingValidatedTransactions.contains(it))
-                .collect(Collectors.toList());
     }
 
     public enum State {

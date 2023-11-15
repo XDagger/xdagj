@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import io.xdag.DagKernel;
@@ -100,7 +102,7 @@ public class XdagSync implements SyncManager {
     private final Dagchain chain;
     private final ChannelManager channelManager;
 
-    private volatile Channel channel;
+    private Peer remotePeer;
 
     // task queues
     private final AtomicLong latestQueuedTask = new AtomicLong();
@@ -145,9 +147,8 @@ public class XdagSync implements SyncManager {
     }
 
     @Override
-    public void start(long begin, long current, long target, Channel channel) {
+    public void start(long begin, long current, long target, Peer peer) {
         if (isRunning.compareAndSet(false, true)) {
-            this.channel = channel;
             beginningTimestamp.set(System.currentTimeMillis());
 
             badPeers.clear();
@@ -157,7 +158,7 @@ public class XdagSync implements SyncManager {
                     begin,
                     current,
                     target,
-                    channel.getRemotePeer());
+                    peer);
 
             // [1] set up queues
             synchronized (lock) {
@@ -205,7 +206,7 @@ public class XdagSync implements SyncManager {
             download.cancel(true);
             process.cancel(false);
             reporter.cancel(true);
-            this.channel = null;
+            this.remotePeer = null;
 
             Instant end = Instant.now();
             log.info("Syncing finished, took {}",
@@ -333,7 +334,7 @@ public class XdagSync implements SyncManager {
             }
 
             Channel c = null;
-            if(channel == null) {
+            if(this.remotePeer == null) {
                 // get idle channels
                 List<Channel> channels = channelManager.getIdleChannels().stream()
                         .filter(channel -> {
@@ -355,7 +356,14 @@ public class XdagSync implements SyncManager {
                 // otherwise, pick a random channel
                 c = channels.get(random.nextInt(channels.size()));
             } else {
-                c = this.channel;
+                List<Channel> channels = channelManager.getActiveChannels().stream()
+                        .filter(channel -> {
+                            Peer peer = channel.getRemotePeer();
+                            return StringUtils.equals(peer.getPeerId(), this.remotePeer.getPeerId());
+                        }).toList();
+                if(CollectionUtils.isNotEmpty(channels)) {
+                    c = channels.get(0);
+                }
             }
 
 

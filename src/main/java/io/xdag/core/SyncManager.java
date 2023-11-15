@@ -26,6 +26,7 @@ package io.xdag.core;
 import java.time.Duration;
 
 import io.xdag.net.Channel;
+import io.xdag.net.Peer;
 import io.xdag.net.message.Message;
 
 public interface SyncManager {
@@ -39,10 +40,10 @@ public interface SyncManager {
      *            the current height, exclusive
      * @Param target
      *            the current target, exclusive
-     * @param channel
-     *            channel
+     * @param remotePeer
+     *            remote peer
      */
-    void start(long begin, long current, long target, Channel channel);
+    void start(long begin, long current, long target, Peer remotePeer);
 
     /**
      * Stops sync manager.
