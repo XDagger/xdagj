@@ -144,7 +144,12 @@ public class CommandsTest {
     @Test
     public void testAccount() {
         wallet.unlock(pwd);
-        assertEquals("N3RC53vbaDNrziTdWmctBEeQ4fo38moXu 0 XDAG\n", commands.account(1));
+        assertEquals("""
+                ------------------------------------------------------------
+                address                                                 XDAG
+                ------------------------------------------------------------
+                N3RC53vbaDNrziTdWmctBEeQ4fo38moXu                          0
+                """, commands.account(1));
     }
 
     @Test
@@ -246,9 +251,9 @@ public class CommandsTest {
         chain.addMainBlock(mainBlock, bs);
 
         assertEquals(String.format("""
-                                ---------------------------------------------------------------------------------------------------------
-                                height        hash                            time                      coinbase           \s
-                                ---------------------------------------------------------------------------------------------------------
+                                -------------------------------------------------------------------------------------------------------------------------------------------
+                                  height                                                                 hash                      time                            coinbase
+                                -------------------------------------------------------------------------------------------------------------------------------------------
                                 00000001   %s   %s   %s""",
                 Bytes.wrap(mainBlock.getHash()).toHexString(),
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(mainBlock.getTimestamp()),
@@ -266,9 +271,9 @@ public class CommandsTest {
         chain.addMainBlock(mainBlock, bs);
 
         assertEquals(String.format("""
-                                ---------------------------------------------------------------------------------------------------------
-                                height        hash                            time                      coinbase           \s
-                                ---------------------------------------------------------------------------------------------------------
+                                -------------------------------------------------------------------------------------------------------------------------------------------
+                                  height                                                                 hash                      time                            coinbase
+                                -------------------------------------------------------------------------------------------------------------------------------------------
                                 00000001   %s   %s   %s""",
                         Bytes.wrap(mainBlock.getHash()).toHexString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(mainBlock.getTimestamp()),
@@ -293,7 +298,6 @@ public class CommandsTest {
                                  
                 -----------------------------------------------------------------------------------------------------------------------------
                                                histories of address: details
-                 direction  address                                    amount                 time
                                  
                 """, str);
 
@@ -320,7 +324,6 @@ public class CommandsTest {
                                  
                 -----------------------------------------------------------------------------------------------------------------------------
                                                histories of address: details
-                 direction  address                                    amount                 time
                                  
                 Transaction [type=TRANSFER, hash=%s, from=PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas, to=%s, value=20.00, fee=0.10, nonce=0, timestamp=%s, data=0x74657374]
                 """, Bytes.wrap(tx.getHash()).toHexString(), toBase58(to), tx.getTimestamp()), str);

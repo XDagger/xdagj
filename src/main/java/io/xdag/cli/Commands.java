@@ -71,11 +71,14 @@ public class Commands {
     }
 
     public static String printHeaderBlockList() {
-        return """
-                ---------------------------------------------------------------------------------------------------------
-                height        hash                            time                      coinbase           \s
-                ---------------------------------------------------------------------------------------------------------
-                """;
+        return String.format("""
+                %s
+                %8.6s%69.4s%26.4s%36.8s
+                %s
+                """,
+                StringUtils.repeat('-', 139),
+                "height", "hash", "time", "coinbase",
+                StringUtils.repeat('-', 139));
     }
 
     public static String printBlock(MainBlock block) {
@@ -95,6 +98,17 @@ public class Commands {
                     toBase58(block.getCoinbase())));
         }
         return sbd.toString();
+    }
+
+    public static String printHeaderAccountList() {
+        return String.format("""
+                %s
+                %-40.7s%20.4s
+                %s
+                """,
+                StringUtils.repeat('-', 60),
+                "address", "XDAG",
+                StringUtils.repeat('-', 60));
     }
 
     /**
@@ -127,6 +141,7 @@ public class Commands {
             as = null;
         }
 
+        str.append(printHeaderAccountList());
         for (KeyPair keyPair : list) {
             if (num == 0) {
                 break;
@@ -137,11 +152,10 @@ public class Commands {
                 balanceStr = as.getAccount(toBytesAddress(keyPair)).getAvailable().toDecimal(9, XUnit.XDAG).toPlainString();
             }
 
-            str.append(toBase58(toBytesAddress(keyPair)))
-                    .append(" ")
-                    .append(balanceStr)
-                    .append(" XDAG")
-                    .append("\n");
+            String address = toBase58(toBytesAddress(keyPair));
+            str.append(String.format("%-40." + address.length() + "s" + "%20." + balanceStr.length() + "s\n",
+                    address, balanceStr));
+
             num--;
         }
 
@@ -383,7 +397,6 @@ public class Commands {
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
                                                histories of address: details
-                 direction  address                                    amount                 time
                        """;
         StringBuilder tx = new StringBuilder();
         List<Transaction> transactions = bs.getTransactions(address, page * Constants.COMMANDS_ADDRESS_TX_PAGE_SIZE , (page + 1) * Constants.COMMANDS_ADDRESS_TX_PAGE_SIZE);
