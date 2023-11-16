@@ -272,7 +272,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                         : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
                 .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) :
                         (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                minGas.multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())) // calculate the fee
+                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9,XUnit.XDAG).toPlainString() : minGas.multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())) )// calculate the fee
                 .direction(2);
         links.add(fee.build());
 
