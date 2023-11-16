@@ -385,26 +385,47 @@ public class Commands {
         return kernel.getState().name();
     }
 
+
+    public static String printAddressHeader() {
+        return String.format("""
+                %s
+                %10.4s%68.4s%35.4s%35.2s%20.5s%8.3s%14.9s
+                %s
+                """,
+                StringUtils.repeat('-', 190),
+                "type","hash","from","to","value","fee","timestamp",
+                StringUtils.repeat('-', 190));
+    }
+
     public String address(byte[] address, int page) {
         AccountState as  = kernel.getDagchain().getLatestAccountState();
         BlockState bs  = kernel.getDagchain().getLatestBlockState();
         Account account = as.getAccount(address);
 
-        String ov = " OverView" + "\n"
-                + String.format(" address: %s", toBase58(address)) + "\n"
-                + String.format(" balance: %s", account.getAvailable().toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
+        String ov = String.format("address: %s  balance: %s\n", toBase58(address), account.getAvailable().toDecimal(9, XUnit.XDAG).toPlainString());
 
-        String txHisFormat = """
-                -----------------------------------------------------------------------------------------------------------------------------
-                                               histories of address: details
-                       """;
-        StringBuilder tx = new StringBuilder();
+        StringBuilder history = new StringBuilder();
         List<Transaction> transactions = bs.getTransactions(address, page * Constants.COMMANDS_ADDRESS_TX_PAGE_SIZE , (page + 1) * Constants.COMMANDS_ADDRESS_TX_PAGE_SIZE);
 
-        for (Transaction transaction : transactions) {
-            tx.append(transaction).append("\n");
+        for (Transaction tx : transactions) {
+            String typeStr = tx.getType().toString();
+            String hashStr = Bytes.wrap(tx.getHash()).toHexString();
+            String fromStr = toBase58(tx.getFrom());
+            String toStr = toBase58(tx.getTo());
+            String valueStr = tx.getValue().toDecimal(9, XUnit.XDAG).toPlainString();
+            String feeStr = tx.getFee().toDecimal(2, XUnit.XDAG).toPlainString();
+            String timeStr = String.valueOf(tx.getTimestamp());
+
+            history.append(String.format("%10." + typeStr.length() +"s%68." + hashStr.length() +"s%35." + fromStr.length() + "s%35." + toStr.length() +"s%20." + valueStr.length() +"s%8s%14." + timeStr.length() + "s",
+                    typeStr,
+                    hashStr,
+                    fromStr,
+                    toStr,
+                    valueStr,
+                    feeStr,
+                    timeStr)).append("\n");
         }
 
-        return ov + "\n" + txHisFormat + "\n" + tx;
+        return ov + "\n" + printAddressHeader() + "\n" + history;
     }
 }

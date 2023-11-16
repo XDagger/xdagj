@@ -292,13 +292,12 @@ public class CommandsTest {
         wallet.unlock(pwd);
         String str = commands.address(from, 1);
         assertEquals("""
-                 OverView
-                 address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
-                 balance: 0.000000000
-                                 
-                -----------------------------------------------------------------------------------------------------------------------------
-                                               histories of address: details
-                                 
+                address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas  balance: 0.000000000
+                                
+                ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                      type                                                                hash                               from                                 to               value     fee     timestamp
+                ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                
                 """, str);
 
         Keys.toBytesAddress(wallet.getDefKey());
@@ -318,15 +317,14 @@ public class CommandsTest {
 
         str = commands.address(from, 0);
         assertEquals(String.format("""
-                 OverView
-                 address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas
-                 balance: 979.900000000
-                                 
-                -----------------------------------------------------------------------------------------------------------------------------
-                                               histories of address: details
-                                 
-                Transaction [type=TRANSFER, hash=%s, from=PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas, to=%s, value=20.00, fee=0.10, nonce=0, timestamp=%s, data=0x74657374]
-                """, Bytes.wrap(tx.getHash()).toHexString(), toBase58(to), tx.getTimestamp()), str);
+                address: PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas  balance: 979.900000000
+                                
+                ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                      type                                                                hash                               from                                 to               value     fee     timestamp
+                ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                
+                  TRANSFER  %s  %s  %s        20.000000000    0.10 %s
+                """, Bytes.wrap(tx.getHash()).toHexString(), toBase58(from), toBase58(to), tx.getTimestamp()), str);
     }
 
     private MainBlock createMainBlock(long number) {
