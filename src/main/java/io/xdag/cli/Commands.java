@@ -449,8 +449,11 @@ public class Commands {
                     outputs.append(String.format("    output: %s           %s%n",
                             output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
                             getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                    output.getAmount().subtract(minGas).toDecimal(9, XUnit.XDAG).toPlainString()
+                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9,XUnit.XDAG).toPlainString() :
+                                        output.getAmount().subtract(minGas).toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
+                    //three type of block, 1、main block :getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())
+                    //2、link block:block.getInputs().isEmpty()     3、else transaction block
                 }
             }
         }
@@ -497,6 +500,8 @@ public class Commands {
         }
 
         // TODO need add block as transaction
+        //three type of block, main block :getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())
+        //link block:block.getInputs().isEmpty()     else transaction block
         return String.format(heightFormat, block.getInfo().getHeight()) + String.format(otherFormat,
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                 Long.toHexString(block.getTimestamp()),
@@ -509,7 +514,8 @@ public class Commands {
                 block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
                 block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
                         (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                minGas.multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())
+                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9,XUnit.XDAG).toPlainString() :
+                                        minGas.multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString()))
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
