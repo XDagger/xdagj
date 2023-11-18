@@ -125,7 +125,7 @@ public final class DruidUtils {
 
         if(connection != null) {
             try {
-                resultSet.close();
+                connection.close();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
             }

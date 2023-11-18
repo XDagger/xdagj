@@ -448,8 +448,12 @@ public class Commands {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %s%n",
                             output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
-                            output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
+                            getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
+                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9,XUnit.XDAG).toPlainString() :
+                                        output.getAmount().subtract(minGas).toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
+                    //three type of block, 1、main block :getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())
+                    //2、link block:block.getInputs().isEmpty()     3、else transaction block
                 }
             }
         }
@@ -466,8 +470,7 @@ public class Commands {
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))))
             .append(String.format("fee earn: %s           %s   %s%n", hash2Address(block.getHashLow()),
-                    block.getInfo().getAmount().equals(XAmount.ZERO) ? XAmount.ZERO.toString() :
-                            block.getInfo().getAmount().subtract(kernel.getBlockchain().getReward(block.getInfo().getHeight())).toDecimal(9, XUnit.XDAG).toPlainString(),
+                    kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString(),
                     FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                             .format(XdagTime.xdagTimestampToMs(block.getTimestamp()))));
         }
@@ -484,7 +487,7 @@ public class Commands {
                                 .format(txHistory.getTimestamp())));
             } else if (address.getType().equals(XDAG_FIELD_OUT)) {
                 tx.append(String.format("   output: %s           %s   %s%n", hash2Address(address.getAddress()),
-                        address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
+                        address.getAmount().subtract(minGas).toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(txHistory.getTimestamp())));
             } else {
@@ -497,6 +500,8 @@ public class Commands {
         }
 
         // TODO need add block as transaction
+        //three type of block, main block :getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc())
+        //link block:block.getInputs().isEmpty()     else transaction block
         return String.format(heightFormat, block.getInfo().getHeight()) + String.format(otherFormat,
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(time),
                 Long.toHexString(block.getTimestamp()),
@@ -506,11 +511,11 @@ public class Commands {
                 block.getInfo().getRemark() == null ? StringUtils.EMPTY : new String(block.getInfo().getRemark(), StandardCharsets.UTF_8),
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
-                // fee目前为0
                 block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
                 block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                        (block.getFee().equals(XAmount.ZERO) ? XAmount.of(100,XUnit.MILLI_XDAG).multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString() :
-                        block.getFee().multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString())
+                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9,XUnit.XDAG).toPlainString() :
+                                        minGas.multiply(block.getOutputs().size()).toDecimal(9,XUnit.XDAG).toPlainString()))
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
@@ -636,7 +641,7 @@ public class Commands {
                 }
                 if (address.getType().equals(XDAG_FIELD_INPUT)) {
                     tx.append(String.format("    input: %s           %s   %s%n", hash2Address(address.getAddress()),
-                            address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
+                            address.getAmount().subtract(minGas).toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                     .format(txHistory.getTimestamp())));
                 } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
