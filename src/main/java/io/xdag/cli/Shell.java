@@ -102,7 +102,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
 
             String address = argv.get(0);
             int page = 1;
-            if(argv.get(1) != null) {
+            if(argv.size() == 2 && argv.get(1) != null) {
                 page = StringUtils.isNumeric(argv.get(1))?Integer.parseInt(argv.get(1)):1;
             }
 
