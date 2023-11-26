@@ -246,7 +246,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         telnetPassword = config.getString("admin.telnet.password");
 
         poolIp = config.hasPath("pool.ip") ? config.getString("pool.ip") : "127.0.0.1";
-        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
+        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 8081;
         poolTag = config.hasPath("pool.tag") ? config.getString("pool.tag") : "xdagj";
 
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
