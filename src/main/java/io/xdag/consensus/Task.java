@@ -24,45 +24,47 @@
 
 package io.xdag.consensus;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.xdag.core.XdagField;
 import io.xdag.utils.XdagSha256Digest;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Getter
 @Setter
 public class Task implements Cloneable {
     private XdagField[] task;
-
+    private static final int TASK_FLAG = 1;
     private long taskTime;
 
     private long taskIndex;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+
     private XdagSha256Digest digest;
 
     @Override
     public String toString() {
-        return "Task:{ tasktime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + (digest != null ?
+        return "Task:{ taskTime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + (digest != null ?
                 digest.toString() : "null") +
                 "}";
     }
-    @JsonGetter("task")
-    public Map<String, String> getTaskAsMap() {
-        Map<String, String> map = new HashMap<>();
-            map.put("preHash", task[0].getData().toHexString());
-            map.put("taskSeed", task[1].getData().toHexString());
-        return map;
-    }
 
-    public String toJsonString() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(this);
+    public String toJsonString() {
+        String preHash = "";
+        String taskSeed = "";
+        if (task != null && task.length == 2) {
+            preHash = task[0].getData().toUnprefixedHexString();
+            taskSeed = task[1].getData().toUnprefixedHexString();
+        }
+        return "{\n" +
+                "  \"msgType\": " + TASK_FLAG + ",\n" +
+                "  \"msgContent\": {\n" +
+                "    \"task\": {\n" +
+                "      \"preHash\": \"" + preHash + "\",\n" +
+                "      \"taskSeed\": \"" + taskSeed + "\"\n" +
+                "    },\n" +
+                "    \"taskTime\": " + taskTime + ",\n" +
+                "    \"taskIndex\": " + taskIndex + "\n" +
+                "  }\n" +
+                "}";
     }
 
     @Override

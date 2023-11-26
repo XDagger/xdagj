@@ -1,6 +1,7 @@
 package io.xdag.net.websocket;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelId;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
@@ -12,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
+@ChannelHandler.Sharable
 public class ChannelSupervise {// supervise channel
     private static final ChannelGroup GlobalGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     private static final ConcurrentMap<String, ChannelId> ChannelMap = new ConcurrentHashMap<>();
@@ -32,7 +34,7 @@ public class ChannelSupervise {// supervise channel
 
     public static String showChannel() {
         StringBuilder sb = new StringBuilder();
-        // 遍历 ChannelMap 中的键值对并将它们添加到 StringBuilder
+        // Loop through the key-value pairs in the ChannelMap and add them to the StringBuilder
         for (ConcurrentMap.Entry<String, ChannelId> entry : ChannelMap.entrySet()) {
             String key = entry.getKey();
             ChannelId value = entry.getValue();

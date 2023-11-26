@@ -38,6 +38,7 @@ import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MnemonicUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -58,7 +59,6 @@ import java.util.Objects;
 import java.util.Scanner;
 
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 public class XdagCli extends Launcher {
 
@@ -243,7 +243,8 @@ public class XdagCli extends Launcher {
         if (accounts.isEmpty()) {
             KeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            System.out.println("New Address:" + toBase58(Keys.toBytesAddress(key)));
+            System.out.println("New Address (Hex):" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            System.out.println("New Address (Base58):" + WalletUtils.toBase58(Keys.toBytesAddress(key)));
         }
 
         // start kernel

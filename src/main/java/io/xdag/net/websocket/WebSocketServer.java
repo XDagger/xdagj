@@ -1,9 +1,7 @@
 package io.xdag.net.websocket;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -17,26 +15,18 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 
 @Slf4j
+@ChannelHandler.Sharable
 public class WebSocketServer {
 
-    private final int ServerPort;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
-    private @Nullable ChannelFuture webSocketChannel;
+    private final @Nullable ChannelFuture webSocketChannel;
     @Getter
     private final PoolHandShakeHandler poolHandShakeHandler;
-
-
     public WebSocketServer(Kernel kernel, String clientHost, String tag, int port) {
-        this.ServerPort = port;
         this.bossGroup = new NioEventLoopGroup();
         this.workerGroup = new NioEventLoopGroup();
-        this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, clientHost, tag, ServerPort);
-    }
-
-
-    public void start() throws InterruptedException {
-        log.info("Pool WebSocket enabled");
+        this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, clientHost, tag, port);
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -48,15 +38,30 @@ public class WebSocketServer {
                         ch.pipeline().addLast("handler", poolHandShakeHandler);// pool handler write by ourselves
                     }
                 });
-        webSocketChannel = b.bind("localhost", ServerPort);
+        this.webSocketChannel = b.bind("127.0.0.1", port);
+    }
+
+    public void start() throws InterruptedException {
+        log.info("Pool WebSocket enabled");
         try {
-            webSocketChannel.sync();
+            ChannelFuture future = null;
+            if (webSocketChannel != null) {
+                future = webSocketChannel.sync();
+            }
+            if (future != null) {
+                future.addListener((ChannelFutureListener) cf -> {
+                    if (cf.isSuccess()) {
+                        log.info("Pool WebSocket server started successfully");
+                    } else {
+                        log.error("Failed to start the Pool WebSocket server", cf.cause());
+                    }
+                });
+            }
         } catch (InterruptedException e) {
             log.error("The Pool WebSocket server couldn't be started", e);
             Thread.currentThread().interrupt();
         }
     }
-
     public void stop() {
         try {
             Objects.requireNonNull(webSocketChannel).channel().close().sync();

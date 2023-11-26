@@ -308,7 +308,7 @@ public class BlockchainImpl implements Blockchain {
                             return result;
                         }
                         //ensure TX block's amount is enough to subtract minGas, Amount must >= 0.1;
-                        if(ref.getType() == XDAG_FIELD_IN  && ref.getAmount().subtract(minGas).isNegative()){
+                        if(ref.getType() == XDAG_FIELD_IN  && ref.getAmount().subtract(MIN_GAS).isNegative()){
                             result = ImportResult.INVALID_BLOCK;
                             result.setHashlow(ref.getAddress());
                             result.setErrorInfo("Ref block's balance < minGas");
@@ -324,7 +324,7 @@ public class BlockchainImpl implements Blockchain {
                         return result;
                     }
                     //ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1;
-                    if(ref != null && (ref.getType() == XDAG_FIELD_INPUT || ref.getType() == XDAG_FIELD_OUTPUT ) && ref.getAmount().subtract(minGas).isNegative()){
+                    if(ref != null && (ref.getType() == XDAG_FIELD_INPUT || ref.getType() == XDAG_FIELD_OUTPUT ) && ref.getAmount().subtract(MIN_GAS).isNegative()){
                         result = ImportResult.INVALID_BLOCK;
                         result.setHashlow(ref.getAddress());
                         result.setErrorInfo("Ref block's balance < minGas");
@@ -690,7 +690,7 @@ public class BlockchainImpl implements Blockchain {
         }
         //the TX block create by wallet or pool will not set fee = minGas, set in this.
         if (!block.getInputs().isEmpty() && block.getFee().equals(XAmount.ZERO)){
-            block.getInfo().setFee(minGas);
+            block.getInfo().setFee(MIN_GAS);
         }
         // 设置为已处理
         MutableBytes32 blockHashLow = block.getHashLow();
@@ -824,7 +824,7 @@ public class BlockchainImpl implements Blockchain {
         if ((block.getInfo().flags & BI_APPLIED) != 0) {
             //the TX block create by wallet or pool will not set fee = minGas, set in this.
             if (!block.getInputs().isEmpty() && block.getFee().equals(XAmount.ZERO)){
-                block.getInfo().setFee(minGas);
+                block.getInfo().setFee(MIN_GAS);
             }
             XAmount sum = XAmount.ZERO;
             for (Address link : links) {

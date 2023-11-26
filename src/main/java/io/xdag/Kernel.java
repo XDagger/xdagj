@@ -283,6 +283,8 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
+        getWsServer().start();
+        log.info("Node to pool websocket start...");
         // register pow
         blockchain.registerListener(pow);
         if (config instanceof MainnetConfig) {

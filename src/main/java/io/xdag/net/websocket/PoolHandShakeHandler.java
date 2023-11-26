@@ -2,10 +2,7 @@ package io.xdag.net.websocket;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -19,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import static io.netty.handler.codec.http.HttpUtil.isKeepAlive;
 
 @Slf4j
+@ChannelHandler.Sharable
 public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     private WebSocketServerHandshaker handshaker;
     private final int port;
@@ -79,11 +77,12 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.debug("pool {} disconnect.", ctx.channel());
         if (ctx.channel().remoteAddress().toString().contains(ClientIP)) {
             ChannelSupervise.removeChannel(ctx.channel(), ClientTap);
         }
+        super.channelInactive(ctx);
     }
 
     @Override
@@ -132,4 +131,5 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
             f.addListener(ChannelFutureListener.CLOSE);
         }
     }
+
 }

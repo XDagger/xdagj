@@ -167,9 +167,6 @@ public class BasicUtils {
         }
     }
 
-    public static double xdag_log_difficulty2hashrate(double logDiff) {
-        return Math.exp(logDiff) * Math.pow(2, -58) * (0.65);
-    }
 
     public static double xdagHashRate(BigInteger[] diffs){
         double sum = 0;

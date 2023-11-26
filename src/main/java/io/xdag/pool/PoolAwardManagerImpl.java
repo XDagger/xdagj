@@ -25,8 +25,8 @@ import java.util.concurrent.*;
 import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySenderToPool.awardMessageHistoryQueue;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
-import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
@@ -42,7 +42,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     protected List<Bytes32> blockPreHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-    private final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
+    private static final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
+
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("PoolAwardManager-work-thread")
             .daemon(true)
@@ -87,7 +88,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             try {
                 AwardBlock awardBlock = awardBlockBlockingQueue.poll(1, TimeUnit.SECONDS);
                 if (awardBlock != null) {
-                    log.debug("award block:{}", awardBlock.hash.toHexString());
+                    log.debug("Start award this block:{}", awardBlock.hash.toHexString());
                     payAndAddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {
@@ -128,7 +129,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         Bytes32 hash = blockHashs.get(paidBlockIndex) == null ? null : blockHashs.get(paidBlockIndex);
         Bytes32 share = minShares.get(paidBlockIndex) == null ? null : minShares.get(paidBlockIndex);
         if (hash == null || share == null || preHash == null) {
-            log.debug("can not find  the hash or nonce or preHash ,hash is null ?[{}],nonce is null ?[{}],preHash is " +
+            log.debug("Can not find the hash or nonce or preHash ,hash is null ?[{}],nonce is null ?[{}],preHash is " +
                             "null ?[{}]",
                     hash == null,
                     share == null, preHash == null);
@@ -140,11 +141,12 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         Block block = blockchain.getBlockByHash(hashlow, true);
         log.debug("Hash low [{}]", hashlow.toHexString());
         if (block == null) {
-            log.debug("can't find the block");
+            log.debug("Can't find the block");
             return -2;
         }
+        //
         if (compareTo(block.getNonce().slice(0, 20).toArray(), 0,
-                20, Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20).toArray(), 0, 20) == 0) {
+                20, block.getCoinBase().getAddress().slice(8, 20).toArray(), 0, 20) == 0) {
             log.debug("No activity pools, not distributing rewards");
             return -3;
         }
@@ -207,9 +209,18 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XUnit.XDAG).toPlainString());
         transactionInfoSender.setAmount(sendAmount.subtract(MIN_GAS).toDecimal(9,
                 XUnit.XDAG).toPlainString());
-        // Send the award distribute transaction information to pools for pools to validate and then distribute award to
-        // miners
-        ChannelSupervise.send2Pools(new TextWebSocketFrame(transactionInfoSender.toJsonString()));
+        /*
+        * Send the award distribute transaction information to pools for pools to validate and then distribute award
+        to miners
+        * */
+
+        if (awardMessageHistoryQueue.remainingCapacity() == 0) {
+            awardMessageHistoryQueue.poll();
+        }
+        // Send the last 16 reward distribution transaction history to the pool
+        if (awardMessageHistoryQueue.offer(transactionInfoSender.toJsonString())) {
+            ChannelSupervise.send2Pools(new TextWebSocketFrame(BlockRewardHistorySenderToPool.toJsonString()));
+        }
         log.debug("The reward for block {} has been distributed to pool address {} ,send transaction " +
                         "information for pools to validate {}", hashLow, receipt.size() == 1 ?
                         WalletUtils.toBase58(receipt.get(0).getAddress().slice(8, 20).toArray()) : " [Error: receipt error]"
@@ -237,14 +248,28 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
 
 
         public String toJsonString() {
-            return "{" +
-                    "\"txBlock\":\"" + txBlock.toHexString() + "\"," +
-                    "\"preHash\":\"" + preHash.toHexString() + "\"," +
-                    "\"share\":\"" + share.toHexString() + "\"," +
-                    "\"amount\":" + amount + "," +
-                    "\"fee\":" + fee +
+            return "{\n" +
+                    "  \"txBlock\":\"" + txBlock.toUnprefixedHexString() + "\",\n" +
+                    "  \"preHash\":\"" + preHash.toUnprefixedHexString() + "\",\n" +
+                    "  \"share\":\"" + share.toUnprefixedHexString() + "\",\n" +
+                    "  \"amount\":" + amount + ",\n" +
+                    "  \"fee\":" + fee +
+                    "\n}";
+        }
+    }
+
+    public static class BlockRewardHistorySenderToPool {
+        // Cache the last 16 blocks reward transaction history
+        public static final BlockingQueue<String> awardMessageHistoryQueue = new LinkedBlockingQueue<>(16);
+        private static final int REWARD_HISTORIES_FLAG = 3;
+
+        public static String toJsonString() {
+            return "{\n" +
+                    "  \"msgType\": " + REWARD_HISTORIES_FLAG + ",\n" +
+                    "  \"msgContent\": \n" + awardMessageHistoryQueue + "\n" +
                     "}";
         }
+
     }
 
 }
