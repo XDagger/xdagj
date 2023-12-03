@@ -247,12 +247,12 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
         poolIp = config.hasPath("pool.ip") ? config.getString("pool.ip") : "127.0.0.1";
         WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 8081;
-        poolTag = config.hasPath("pool.tag") ? config.getString("pool.tag") : "xdagj";
+        poolTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
 
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
-        // currently poolTag=nodeTag
-        nodeTag = config.hasPath("pool.tag") ? config.getString("pool.tag") : "xdagj";
+        // currently nodeTag = poolTag
+        nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
         enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");

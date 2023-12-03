@@ -195,7 +195,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
         currentTask.set(createTaskByRandomXBlock(block, sendTime));
         ChannelSupervise.send2Pools(new TextWebSocketFrame(currentTask.get().toJsonString()));
-        log.debug("send randomx task to pools taskInfo: " + currentTask.get().toJsonString());
         return block;
     }
 
@@ -270,17 +269,18 @@ public class XdagPow implements PoW, Listener, Runnable {
 
                 taskData.set(0, task.getTask()[0].getData());// preHash
                 taskData.set(32, share);// share
+                // Calculate hash
                 hash = Bytes32.wrap(kernel.getRandomx()
                         .randomXPoolCalcHash(taskData, taskData.size(), task.getTaskTime()).reverse());
-                log.info("receive a hash from pool " + hash.toHexString());
             } else {
                 XdagSha256Digest digest = new XdagSha256Digest(task.getDigest());
                 hash = Bytes32.wrap(digest.sha256Final(share.reverse()));
             }
             synchronized (minHash) {
+                log.info("receive a hash from pool,hash is:" + hash.toHexString());
                 Bytes32 mh = minHash.get();
                 if (compareTo(hash.toArray(), 0, 32, mh.toArray(), 0, 32) < 0) {
-                    log.debug("This hash is valid, hash is: " + hash.toHexString());
+                    log.debug("Hash {} is valid.", hash.toHexString());
                     minHash.set(hash);
                     minShare.set(share);
                     // put minShare into nonce
@@ -288,7 +288,6 @@ public class XdagPow implements PoW, Listener, Runnable {
                     b.setNonce(minShare.get());
                     log.debug("New MinShare :" + share.toHexString());
                     log.debug("New MinHash :" + hash.toHexString());
-
                 }
             }
         } catch (Exception e) {
@@ -316,7 +315,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         newBlock();
     }
 
-    protected void onNewPreTop() throws Exception {
+    protected void onNewPreTop() {
         log.debug("Receive New PreTop");
         newBlock();
     }
@@ -568,6 +567,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
 
         public void getShareInfo(String share) {
+            // todo:Limit the number of shares submitted by each pool within each block production cycle
             if (!shareQueue.offer(share)) {
                 log.error("Failed to get ShareInfo from pools");
             }

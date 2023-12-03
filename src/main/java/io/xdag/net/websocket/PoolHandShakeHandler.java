@@ -57,7 +57,7 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
                     HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST));
             return;
         }
-        String uri = "ws://localhost:" + port + "/websocket";
+        String uri = "ws://0.0.0.0:" + port + "/websocket";
         WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
                 uri, null, false);
         handshaker = wsFactory.newHandshaker(req);
@@ -71,17 +71,13 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         log.debug("pool {} join in.", ctx.channel());
-        if (ctx.channel().remoteAddress().toString().contains(ClientIP)) {
-            ChannelSupervise.addChannel(ctx.channel(), ClientTap);
-        }
+        ChannelSupervise.addChannel(ctx.channel(), ClientTap);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.debug("pool {} disconnect.", ctx.channel());
-        if (ctx.channel().remoteAddress().toString().contains(ClientIP)) {
-            ChannelSupervise.removeChannel(ctx.channel(), ClientTap);
-        }
+        ChannelSupervise.removeChannel(ctx.channel(), ClientTap);
         super.channelInactive(ctx);
     }
 

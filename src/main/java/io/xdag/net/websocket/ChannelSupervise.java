@@ -48,6 +48,7 @@ public class ChannelSupervise {// supervise channel
         if (!ChannelMap.isEmpty()) {
             log.debug("There are active mining pools:" + showChannel());
             GlobalGroup.writeAndFlush(tws);
+            log.debug("send randomx task to pools. taskInfo: " + tws);
         } else {
             log.debug("No active pools.");
         }

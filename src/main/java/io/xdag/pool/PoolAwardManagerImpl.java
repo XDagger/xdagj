@@ -25,7 +25,7 @@ import java.util.concurrent.*;
 import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
-import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySenderToPool.awardMessageHistoryQueue;
+import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySender.awardMessageHistoryQueue;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 import static io.xdag.utils.BytesUtils.compareTo;
 
@@ -92,7 +92,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
                     payAndAddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {
-                log.error(" can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
+                log.error(" Can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
             }
         }
     }
@@ -147,7 +147,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         //
         if (compareTo(block.getNonce().slice(0, 20).toArray(), 0,
                 20, block.getCoinBase().getAddress().slice(8, 20).toArray(), 0, 20) == 0) {
-            log.debug("No activity pools, not distributing rewards");
+            log.debug("This block is not produced by mining and belongs to the node");
             return -3;
         }
         if (kernel.getBlockchain().getMemOurBlocks().get(hashlow) == null) {
@@ -219,12 +219,12 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         }
         // Send the last 16 reward distribution transaction history to the pool
         if (awardMessageHistoryQueue.offer(transactionInfoSender.toJsonString())) {
-            ChannelSupervise.send2Pools(new TextWebSocketFrame(BlockRewardHistorySenderToPool.toJsonString()));
+            ChannelSupervise.send2Pools(new TextWebSocketFrame(BlockRewardHistorySender.toJsonString()));
         }
         log.debug("The reward for block {} has been distributed to pool address {} ,send transaction " +
-                        "information for pools to validate {}", hashLow, receipt.size() == 1 ?
-                        WalletUtils.toBase58(receipt.get(0).getAddress().slice(8, 20).toArray()) : " [Error: receipt error]"
-                , transactionInfoSender.toJsonString());
+                "information for pools to validate {}", hashLow, receipt.size() == 1 ?
+                WalletUtils.toBase58(receipt.get(0).getAddress().slice(8, 20).toArray()) :
+                " [Error: receipt error]", transactionInfoSender.toJsonString());
     }
 
 
@@ -258,7 +258,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         }
     }
 
-    public static class BlockRewardHistorySenderToPool {
+    public static class BlockRewardHistorySender {
         // Cache the last 16 blocks reward transaction history
         public static final BlockingQueue<String> awardMessageHistoryQueue = new LinkedBlockingQueue<>(16);
         private static final int REWARD_HISTORIES_FLAG = 3;

@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -23,6 +22,7 @@ public class WebSocketServer {
     private final @Nullable ChannelFuture webSocketChannel;
     @Getter
     private final PoolHandShakeHandler poolHandShakeHandler;
+
     public WebSocketServer(Kernel kernel, String clientHost, String tag, int port) {
         this.bossGroup = new NioEventLoopGroup();
         this.workerGroup = new NioEventLoopGroup();
@@ -38,7 +38,7 @@ public class WebSocketServer {
                         ch.pipeline().addLast("handler", poolHandShakeHandler);// pool handler write by ourselves
                     }
                 });
-        this.webSocketChannel = b.bind("127.0.0.1", port);
+        this.webSocketChannel = b.bind(port);
     }
 
     public void start() throws InterruptedException {
@@ -62,15 +62,23 @@ public class WebSocketServer {
             Thread.currentThread().interrupt();
         }
     }
+
     public void stop() {
         try {
-            Objects.requireNonNull(webSocketChannel).channel().close().sync();
+            ChannelFuture webSocketChannelFuture = this.webSocketChannel;
+            if (webSocketChannelFuture != null) {
+                webSocketChannelFuture.channel().close().sync();
+            }
+
+            this.bossGroup.shutdownGracefully().sync();
+            this.workerGroup.shutdownGracefully().sync();
+
+            log.info("Pool WebSocket server stopped successfully.");
         } catch (InterruptedException e) {
             log.error("Couldn't stop the Pool WebSocket server", e);
             Thread.currentThread().interrupt();
         }
-        this.bossGroup.shutdownGracefully();
-        this.workerGroup.shutdownGracefully();
     }
+
 }
 

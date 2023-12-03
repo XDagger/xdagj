@@ -42,7 +42,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.jline.utils.Log;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -53,7 +52,7 @@ import java.util.Collections;
 
 import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XUnit.XDAG;
-import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySenderToPool.awardMessageHistoryQueue;
+import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySender.awardMessageHistoryQueue;
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
@@ -134,7 +133,6 @@ public class TaskTest {
         newTask.setTaskIndex(1);
         // Task  json information
         String shareInfo = newTask.toJsonString();
-        Log.info(shareInfo);
         JsonElement element = JsonParser.parseString(shareInfo);
         assertTrue(element.isJsonObject());
         JSONObject jsonObject = new JSONObject(shareInfo);
@@ -164,7 +162,6 @@ public class TaskTest {
         XAmount amount = XAmount.of(64, XDAG);
         transactionInfoSender.setAmount(amount.subtract(MIN_GAS).toDecimal(9,
                 XDAG).toPlainString());
-        Log.info(transactionInfoSender.toJsonString());
         JsonElement element = JsonParser.parseString(transactionInfoSender.toJsonString());
         assertTrue(element.isJsonObject());
         JSONObject jsonObject = new JSONObject(transactionInfoSender.toJsonString());
@@ -209,10 +206,9 @@ public class TaskTest {
         }
         assertEquals(0, awardMessageHistoryQueue.remainingCapacity());
         assertFalse(awardMessageHistoryQueue.offer(transactionInfoSender.toJsonString()));
-        JsonElement element = JsonParser.parseString(PoolAwardManagerImpl.BlockRewardHistorySenderToPool.toJsonString());
-        Log.info(PoolAwardManagerImpl.BlockRewardHistorySenderToPool.toJsonString());
+        JsonElement element = JsonParser.parseString(PoolAwardManagerImpl.BlockRewardHistorySender.toJsonString());
         assertTrue(element.isJsonObject());
-        JSONObject jsonObject = new JSONObject(PoolAwardManagerImpl.BlockRewardHistorySenderToPool.toJsonString());
+        JSONObject jsonObject = new JSONObject(PoolAwardManagerImpl.BlockRewardHistorySender.toJsonString());
         assertEquals(3, jsonObject.getInt("msgType"));
     }
 
