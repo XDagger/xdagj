@@ -24,8 +24,6 @@
 
 package io.xdag.consensus;
 
-import org.apache.tuweni.bytes.MutableBytes;
-
 public interface PoW {
 
     /**
@@ -48,6 +46,6 @@ public interface PoW {
     /**
      * Receive and process shares sent by pool
      */
-    void receiveNewShare(MutableBytes data, long time);
 
+    void receiveNewShare(String share, String hash, long taskIndex);
 }

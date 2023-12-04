@@ -32,10 +32,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Task implements Cloneable {
-
-
     private XdagField[] task;
-
+    private static final int TASK_FLAG = 1;
     private long taskTime;
 
     private long taskIndex;
@@ -44,16 +42,38 @@ public class Task implements Cloneable {
 
     @Override
     public String toString() {
-        return "Task:{ tasktime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + digest.toString() +"}";
+        return "Task:{ taskTime:" + taskTime + ", taskIndex:" + taskIndex + ", digest:" + (digest != null ?
+                digest.toString() : "null") +
+                "}";
+    }
+
+    public String toJsonString() {
+        String preHash = "";
+        String taskSeed = "";
+        if (task != null && task.length == 2) {
+            preHash = task[0].getData().toUnprefixedHexString();
+            taskSeed = task[1].getData().toUnprefixedHexString();
+        }
+        return "{\n" +
+                "  \"msgType\": " + TASK_FLAG + ",\n" +
+                "  \"msgContent\": {\n" +
+                "    \"task\": {\n" +
+                "      \"preHash\": \"" + preHash + "\",\n" +
+                "      \"taskSeed\": \"" + taskSeed + "\"\n" +
+                "    },\n" +
+                "    \"taskTime\": " + taskTime + ",\n" +
+                "    \"taskIndex\": " + taskIndex + "\n" +
+                "  }\n" +
+                "}";
     }
 
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        Task t = (Task)super.clone();
-        if(task != null && task.length > 0) {
+        Task t = (Task) super.clone();
+        if (task != null && task.length > 0) {
             XdagField[] xfArray = new XdagField[task.length];
-            for(int i = 0; i < t.getTask().length; i++) {
-                xfArray[i] = (XdagField)(t.getTask()[i]).clone();
+            for (int i = 0; i < t.getTask().length; i++) {
+                xfArray[i] = (XdagField) (t.getTask()[i]).clone();
             }
             t.setTask(xfArray);
         }

@@ -23,19 +23,13 @@
  */
 package io.xdag.utils;
 
-import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
-
-import com.alibaba.druid.pool.DruidDataSourceFactory;
-
-import lombok.extern.slf4j.Slf4j;
+import java.io.InputStream;
+import java.sql.*;
+import java.util.Properties;
 
 @Slf4j
 public final class DruidUtils {
@@ -99,7 +93,9 @@ public final class DruidUtils {
 
         if(connection != null) {
             try {
-                resultSet.close();
+                if (resultSet != null) {
+                    resultSet.close();
+                }
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
             }

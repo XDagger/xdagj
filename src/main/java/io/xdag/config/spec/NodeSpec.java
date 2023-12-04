@@ -69,6 +69,7 @@ public interface NodeSpec {
     int getConnectionTimeout();
 
     int getTTL();
+    int getAwardEpoch();
 
     List<InetSocketAddress> getWhiteIPList();
 
