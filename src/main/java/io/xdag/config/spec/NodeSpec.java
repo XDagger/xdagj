@@ -100,7 +100,8 @@ public interface NodeSpec {
 
     // White List
     String getWhitelistUrl();
-
+    //reject transaction address;
+    String getRejectAddress();
     boolean enableRefresh();
 
 }

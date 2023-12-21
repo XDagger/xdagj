@@ -41,7 +41,10 @@ public class SumReplyMessage extends XdagMessage {
 
     public SumReplyMessage(long endtime, long random, XdagStats xdagStats, MutableBytes sum, NetDB localNetdb) {
         super(MessageCode.SUMS_REPLY, null, 1, endtime, random, xdagStats, localNetdb);
-        this.sum = sum;
+
+        SimpleEncoder enc = super.encode();
+        enc.writeBytes(sum.toArray());
+        this.body = enc.toBytes();
     }
 
     public SumReplyMessage(byte[] body) {
@@ -51,11 +54,11 @@ public class SumReplyMessage extends XdagMessage {
         this.sum = MutableBytes.wrap(dec.readBytes());
     }
 
-    @Override
-    protected SimpleEncoder encode() {
-        SimpleEncoder enc = super.encode();
-        // add sum
-        enc.writeBytes(sum.toArray());
-        return enc;
-    }
+//    @Override
+//    protected SimpleEncoder encode() {
+//        SimpleEncoder enc = super.encode();
+//        // add sum
+//        enc.writeBytes(sum.toArray());
+//        return enc;
+//    }
 }

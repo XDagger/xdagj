@@ -31,10 +31,10 @@ import io.xdag.net.message.MessageCode;
 
 public class BlocksRequestMessage extends XdagMessage {
     public BlocksRequestMessage(long starttime, long endtime, XdagStats xdagStats, NetDB localNetdb) {
-        super(MessageCode.BLOCKEXT_REQUEST, null, starttime, endtime, RandomUtils.nextLong(), xdagStats, localNetdb);
+        super(MessageCode.BLOCKS_REQUEST, null, starttime, endtime, RandomUtils.nextLong(), xdagStats, localNetdb);
     }
 
     public BlocksRequestMessage(byte[] body) {
-        super(MessageCode.BLOCKEXT_REQUEST, null, body);
+        super(MessageCode.BLOCKS_REQUEST, null, body);
     }
 }

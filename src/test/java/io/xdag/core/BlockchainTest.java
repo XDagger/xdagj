@@ -37,12 +37,15 @@ import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.rocksdb.*;
+import io.xdag.rpc.modules.xdag.XdagModuleTransactionBase;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -130,6 +133,35 @@ public class BlockchainTest {
         wallet.delete();
     }
 
+    @Test
+    public void TestRejectAddress() {
+        String TransactionBlockRawData = "0000000000000000C19D56050000000040f0819c950100000000000000000000"
+                + "0000000081fd3cb36d2e0e4862d51161a687954fb17623690000000001000000"
+                + "00000000f697cfd0d0db99aa3b7cc933f78df090f4f78e4f0000000001000000"
+                + "6b6b000000000000000000000000000000000000000000000000000000000000"
+                + "e81c29e0e0063cf8814239c5f7434f633e7f3a4ab24e461ca2dc724e347ba9a9"
+                + "9130e1cce44266f52538ffc40b927f1e73f6124158f0dafe18ed721d589e2892"
+                + "3ca7c4b76474ce2b3e9c16ac9304f03bfc8ca18acbe8610140390c4eb1204f08"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000"
+                + "0000000000000000000000000000000000000000000000000000000000000000";
+        Block block = new Block(new XdagBlock(Hex.decode(TransactionBlockRawData)));
+        for (Address link : block.getLinks()) {
+            //测试地址
+            if (link.getType() == XDAG_FIELD_INPUT){assertEquals(WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()), "AavSCZUxXbySZXjXcb3mwr5CzwabQXP2A");}
+            if (link.getType() == XDAG_FIELD_OUTPUT){assertEquals(WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()), "8FfenZ1xewHGa3Ydx9zhppgou1hgesX97");}
+        }
+        assertEquals(kernel.getConfig().getNodeSpec().getRejectAddress(), ""); //默认为空
+
+        XdagModuleTransactionBase testRPC = new XdagModuleTransactionBase(kernel);
+        assertTrue(testRPC.checkTransaction(block));
+    }
 
     @Test
     public void testExtraBlock() {

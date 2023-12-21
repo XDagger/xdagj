@@ -101,7 +101,7 @@ public abstract class XdagMessage extends Message  {
         enc.writeBytes(BytesUtils.bigIntegerToBytes(xdagStats.maxdifficulty, 16, false));
 
         enc.writeLong(xdagStats.totalnblocks);
-        enc.writeLong(xdagStats.totalnmain);
+        enc.writeLong(Math.max(xdagStats.totalnmain, xdagStats.nmain));
         enc.writeInt(xdagStats.totalnhosts);
         enc.writeLong(xdagStats.maintime);
 
