@@ -24,12 +24,7 @@
 
 package io.xdag.config;
 
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.RPCSpec;
-import io.xdag.config.spec.RandomxSpec;
-import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.net.CapabilityTreeSet;
@@ -102,5 +97,6 @@ public interface Config {
     int getWebsocketServerPort();
 
     String getPoolTag();
+    FundSpec getFundSpec();
 
 }

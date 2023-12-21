@@ -49,7 +49,7 @@ import java.util.Set;
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec {
+public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec,FundSpec {
 
     protected String configName;
 
@@ -70,7 +70,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
     protected int waitEpoch = 20;
-
+    // =========================
+    // foundation spec
+    // =========================
+    protected String fundAddress;
+    protected double fundRation;
     // =========================
     // Network
     // =========================
@@ -150,7 +154,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // =========================
     protected boolean snapshotEnabled = false;
     protected long snapshotHeight;
-    protected long snapshotTime; // TODO：用于sync时的起始时间
+    protected long snapshotTime;
     protected boolean isSnapshotJ;
 
     // =========================
@@ -187,6 +191,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
     @Override
     public RandomxSpec getRandomxSpec() {
+        return this;
+    }
+
+    @Override
+    public FundSpec getFundSpec() {
         return this;
     }
 
@@ -259,7 +268,8 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
         txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit") ? config.getInt("node.transaction.history.pageSizeLimit") : 500;
-
+        fundAddress = config.hasPath("fund.address") ? config.getString("fund.address") : "4duPWMbYUgAifVYkKDCWxLvRRkSByf5gb";
+        fundRation = config.hasPath("fund.ration") ? config.getDouble("fund.ration") : 5;
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
         for (String addr : whiteIpList) {

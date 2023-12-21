@@ -200,4 +200,18 @@ public class BasicUtils {
         double tem = temp / Math.pow(2, 32);
         return new BigDecimal(first + tem);
     }
+    /**
+     * @param v1 dividend
+     * @param v2 divisor
+     * @param scale Accurate to the number of digits after the decimal point
+     * @return The result after rounding
+     */
+    public static double div(double v1, double v2, int scale) {
+        if (scale < 0) {
+            throw new IllegalArgumentException("The scale must be a positive integer or zero");
+        }
+        BigDecimal b1 = BigDecimal.valueOf(v1);
+        BigDecimal b2 = BigDecimal.valueOf(v2);
+        return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
+    }
 }
