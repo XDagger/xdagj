@@ -24,14 +24,7 @@
 
 package io.xdag.net.message;
 
-import io.xdag.net.message.consensus.BlockExtReplyMessage;
-import io.xdag.net.message.consensus.BlockExtRequestMessage;
-import io.xdag.net.message.consensus.BlockRequestMessage;
-import io.xdag.net.message.consensus.BlocksReplyMessage;
-import io.xdag.net.message.consensus.BlocksRequestMessage;
-import io.xdag.net.message.consensus.NewBlockMessage;
-import io.xdag.net.message.consensus.SumReplyMessage;
-import io.xdag.net.message.consensus.SumRequestMessage;
+import io.xdag.net.message.consensus.*;
 import io.xdag.net.message.p2p.DisconnectMessage;
 import io.xdag.net.message.p2p.HelloMessage;
 import io.xdag.net.message.p2p.InitMessage;
@@ -92,6 +85,10 @@ public class MessageFactory {
                 return new BlockRequestMessage(body);
             case NEW_BLOCK:
                 return new NewBlockMessage(body);
+            case SYNC_BLOCK:
+                return new SyncBlockMessage(body);
+            case SYNCBLOCK_REQUEST:
+                return new SyncBlockRequestMessage(body);
 
             default:
                 throw new UnreachableException();

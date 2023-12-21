@@ -36,4 +36,7 @@ public class SyncBlockRequestMessage extends XdagMessage {
         super(MessageCode.SYNCBLOCK_REQUEST, SyncBlockMessage.class, 0, 0, Bytes32.wrap(hash), xdagStats, localNetdb);
     }
 
+    public SyncBlockRequestMessage(byte[] body) {
+        super(MessageCode.SYNCBLOCK_REQUEST, null, body);
+    }
 }

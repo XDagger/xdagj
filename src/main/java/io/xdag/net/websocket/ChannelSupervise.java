@@ -16,30 +16,29 @@ import java.util.concurrent.ConcurrentMap;
 @ChannelHandler.Sharable
 public class ChannelSupervise {// supervise channel
     private static final ChannelGroup GlobalGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-    private static final ConcurrentMap<String, ChannelId> ChannelMap = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<ChannelId, String> ChannelMap = new ConcurrentHashMap<>();
 
-    public static void addChannel(Channel channel, String tag) {
+    public static void addChannel(Channel channel) {
         GlobalGroup.add(channel);
-        ChannelMap.put(tag, channel.id());
+        ChannelMap.put(channel.id(), channel.remoteAddress().toString());
     }
 
-    public static void removeChannel(Channel channel, String tag) {
+    public static void removeChannel(Channel channel) {
         GlobalGroup.remove(channel);
-        ChannelMap.remove(tag);
+        ChannelMap.remove(channel.id());
     }
 
-    public static Channel findChannel(String id) {
-        return GlobalGroup.find(ChannelMap.get(id));
+    public static Channel findChannel(ChannelId id) {
+        return GlobalGroup.find(id);
     }
 
     public static String showChannel() {
         StringBuilder sb = new StringBuilder();
         // Loop through the key-value pairs in the ChannelMap and add them to the StringBuilder
-        for (ConcurrentMap.Entry<String, ChannelId> entry : ChannelMap.entrySet()) {
-            String key = entry.getKey();
-            ChannelId value = entry.getValue();
-            String host = findChannel(key).remoteAddress().toString();
-            sb.append("PoolTag: ").append(key).append(", PoolIP: ").append(host).append(", ChannelId: ").append(value).append("\n");
+        for (ConcurrentMap.Entry<ChannelId, String> entry : ChannelMap.entrySet()) {
+            ChannelId key = entry.getKey();
+            String value = entry.getValue();
+            sb.append("PoolIP: ").append(value).append(", ChannelId: ").append(value).append("\n");
         }
         return sb.toString();
     }

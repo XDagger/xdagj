@@ -106,6 +106,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected String storeDir;
     protected String storeBackupDir;
     protected String whiteListDir;
+    protected String rejectAddress;
     protected String netDBDir;
 
     protected int storeMaxOpenFiles = 1024;
@@ -253,6 +254,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
         // currently nodeTag = poolTag
         nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
+        rejectAddress = config.hasPath("node.reject.transaction.address") ? config.getString("node.reject.transaction.address") : "";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
         enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
