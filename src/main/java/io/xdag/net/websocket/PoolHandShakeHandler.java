@@ -13,6 +13,8 @@ import io.xdag.Kernel;
 import io.xdag.consensus.XdagPow;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 import static io.netty.handler.codec.http.HttpUtil.isKeepAlive;
 
 @Slf4j
@@ -20,16 +22,18 @@ import static io.netty.handler.codec.http.HttpUtil.isKeepAlive;
 public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
     private WebSocketServerHandshaker handshaker;
     private final int port;
-    private final String ClientIP;
-    private final String ClientTap;
+    // pool whitelist
+    private final List<String> clientIPList;
     private final XdagPow xdagPow;
+    private final boolean allIPAllowed;
 
-    public PoolHandShakeHandler(Kernel kernel, String clienthost, String tag, int port) {
+    public PoolHandShakeHandler(Kernel kernel, List<String> poolWhiteIPList, int port) {
         this.xdagPow = kernel.getPow();
-        this.ClientIP = clienthost;
-        this.ClientTap = tag;
+        this.clientIPList = poolWhiteIPList;
+        this.allIPAllowed = clientIPList.contains("0.0.0.0");
         this.port = port;
     }
+
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
@@ -47,10 +51,15 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
      * the only one http request，update to websocket connect
      */
     private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) {
+        boolean isIPAllowed = false;
         String clientIP = ctx.channel().remoteAddress().toString();
-        boolean isIPAllowed = ClientIP.contains("0.0.0.0");//判断矿池白名单，0.0.0.0全通，否则判断具体ip
-        if (!isIPAllowed)
-            isIPAllowed = clientIP.contains(ClientIP);
+        // Determine the mining pool whitelist. If there is 0.0.0.0 in the whitelist, the whitelist is open.
+        // Any IP can connect to this node to become a pool.
+        // Otherwise, determine the specific IP
+        if (!allIPAllowed) {
+            // If there is no 0.0.0.0 in the whitelist, determine the specific IP
+            isIPAllowed = clientIPList.contains(clientIP);
+        }
         // Upgrade to websocket, allow pool client ip in config ,filter 'get/Post'
         if (!isIPAllowed || !req.decoderResult().isSuccess() || (!"websocket".equals(req.headers().get("Upgrade")))) {
             // if not websocket request ，create BAD_REQUEST return client
@@ -71,13 +80,15 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        log.debug("pool {} join in.", ctx.channel());
+        log.debug("Pool {} join in. Pool channel id {}",
+                ctx.channel().remoteAddress().toString(), ctx.channel().id().toString());
         ChannelSupervise.addChannel(ctx.channel());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("pool {} disconnect.", ctx.channel());
+        log.debug("Pool {} disconnect. Pool channel id {}", ctx.channel().remoteAddress().toString(),
+                ctx.channel().id().toString());
         ChannelSupervise.removeChannel(ctx.channel());
         super.channelInactive(ctx);
     }

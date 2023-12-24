@@ -41,15 +41,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec,FundSpec {
+public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec, FundSpec {
 
     protected String configName;
 
@@ -63,9 +60,8 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // =========================
     // Pool websocket spec
     // =========================
-    protected String poolIp;
+
     protected int WebsocketServerPort;
-    protected String poolTag;
 
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
@@ -124,7 +120,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
     protected int TTL = 5;
     protected List<InetSocketAddress> whiteIPList = Lists.newArrayList();
-
+    protected List<String> poolWhiteIPList = Lists.newArrayList();
 
     // =========================
     // Wallet spec
@@ -255,13 +251,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         telnetPort = config.hasPath("admin.telnet.port") ? config.getInt("admin.telnet.port") : 6001;
         telnetPassword = config.getString("admin.telnet.password");
 
-        poolIp = config.hasPath("pool.ip") ? config.getString("pool.ip") : "127.0.0.1";
-        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 8081;
-        poolTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
-
+        poolWhiteIPList = config.hasPath("pool.whiteIPs") ? config.getStringList("pool.whiteIPs") : Collections.singletonList("127.0.0.1");
+        log.info("Pool whitelist {}. Any IP allowed? {}", poolWhiteIPList, poolWhiteIPList.contains("0.0.0.0"));
+        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
-        // currently nodeTag = poolTag
         nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
         rejectAddress = config.hasPath("node.reject.transaction.address") ? config.getString("node.reject.transaction.address") : "";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
@@ -392,8 +386,8 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public String getPoolIP() {
-        return poolIp;
+    public List<String> getPoolWhiteIPList() {
+        return poolWhiteIPList;
     }
 
     @Override
@@ -401,10 +395,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         return WebsocketServerPort;
     }
 
-    @Override
-    public String getPoolTag() {
-        return poolTag;
-    }
 
     @Override
     public boolean isRPCEnabled() {

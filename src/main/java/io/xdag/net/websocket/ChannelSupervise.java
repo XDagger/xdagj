@@ -28,26 +28,24 @@ public class ChannelSupervise {// supervise channel
         ChannelMap.remove(channel.id());
     }
 
-    public static Channel findChannel(ChannelId id) {
-        return GlobalGroup.find(id);
-    }
-
     public static String showChannel() {
         StringBuilder sb = new StringBuilder();
         // Loop through the key-value pairs in the ChannelMap and add them to the StringBuilder
         for (ConcurrentMap.Entry<ChannelId, String> entry : ChannelMap.entrySet()) {
             ChannelId key = entry.getKey();
             String value = entry.getValue();
-            sb.append("PoolIP: ").append(value).append(", ChannelId: ").append(value).append("\n");
+            sb.append("PoolIP: ").append(value).append(", ChannelId: ").append(key).append("\n");
         }
         return sb.toString();
     }
-
+    public static String findChannel(ChannelId id){
+        return GlobalGroup.find(id).toString();
+    }
     public static void send2Pools(TextWebSocketFrame tws) {
         if (!ChannelMap.isEmpty()) {
             log.debug("There are active mining pools:" + showChannel());
             GlobalGroup.writeAndFlush(tws);
-            log.debug("send randomx task to pools. taskInfo: " + tws);
+            log.debug("Send randomx task to pools successfully. taskInfo: " + tws.text());
         } else {
             log.debug("No active pools.");
         }

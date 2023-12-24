@@ -29,6 +29,8 @@ import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.net.CapabilityTreeSet;
 
+import java.util.List;
+
 /**
  * The Xdag blockchain configurations.
  */
@@ -92,11 +94,10 @@ public interface Config {
     long getTxPageSizeLimit();
 
     //websocket
-    String getPoolIP();
+    List<String> getPoolWhiteIPList();
 
     int getWebsocketServerPort();
 
-    String getPoolTag();
     FundSpec getFundSpec();
 
 }

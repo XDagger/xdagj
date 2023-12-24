@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -23,10 +24,10 @@ public class WebSocketServer {
     @Getter
     private final PoolHandShakeHandler poolHandShakeHandler;
 
-    public WebSocketServer(Kernel kernel, String clientHost, String tag, int port) {
+    public WebSocketServer(Kernel kernel, List<String> poolWhiteIPList, int port) {
         this.bossGroup = new NioEventLoopGroup();
         this.workerGroup = new NioEventLoopGroup();
-        this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, clientHost, tag, port);
+        this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, poolWhiteIPList, port);
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
