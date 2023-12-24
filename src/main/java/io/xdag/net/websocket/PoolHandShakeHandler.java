@@ -51,14 +51,16 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
      * the only one http request，update to websocket connect
      */
     private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) {
-        boolean isIPAllowed = false;
+        boolean isIPAllowed;
         String clientIP = ctx.channel().remoteAddress().toString();
         // Determine the mining pool whitelist. If there is 0.0.0.0 in the whitelist, the whitelist is open.
         // Any IP can connect to this node to become a pool.
         // Otherwise, determine the specific IP
         if (!allIPAllowed) {
-            // If there is no 0.0.0.0 in the whitelist, determine the specific IP
+            // No 0.0.0.0 in the whitelist, determine the specific IP
             isIPAllowed = clientIPList.contains(clientIP);
+        } else {
+            isIPAllowed = true;
         }
         // Upgrade to websocket, allow pool client ip in config ,filter 'get/Post'
         if (!isIPAllowed || !req.decoderResult().isSuccess() || (!"websocket".equals(req.headers().get("Upgrade")))) {
