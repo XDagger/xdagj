@@ -24,7 +24,6 @@
 
 package io.xdag.consensus;
 
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.core.*;
@@ -60,6 +59,7 @@ import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
+@SuppressWarnings({"deprecation"})
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {
@@ -194,7 +194,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         block.setNonce(minShare.get());
         minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
         currentTask.set(createTaskByRandomXBlock(block, sendTime));
-        ChannelSupervise.send2Pools(new TextWebSocketFrame(currentTask.get().toJsonString()));
+        ChannelSupervise.send2Pools(currentTask.get().toJsonString());
         return block;
     }
 
@@ -209,7 +209,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         // initial nonce
         minHash.set(block.recalcHash());
         currentTask.set(createTaskByNewBlock(block, sendTime));
-        ChannelSupervise.send2Pools(new TextWebSocketFrame(currentTask.get().toJsonString()));
+        ChannelSupervise.send2Pools(currentTask.get().toJsonString());
         return block;
     }
 

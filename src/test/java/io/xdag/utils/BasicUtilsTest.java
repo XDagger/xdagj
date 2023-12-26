@@ -99,7 +99,7 @@ public class BasicUtilsTest {
         assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
     }
 
-    // hashLow =>Base58
+    // hashLow => Base58
     @Test
     public void hash2PubAddress() {
         Bytes32 hash = Bytes32.fromHexString("0x00000000000000001eadb24287735969f08c33d5a410ca4aa2440fbc00000000");

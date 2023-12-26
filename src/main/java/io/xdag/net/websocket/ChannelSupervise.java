@@ -38,14 +38,16 @@ public class ChannelSupervise {// supervise channel
         }
         return sb.toString();
     }
-    public static String findChannel(ChannelId id){
+
+    public static String findChannel(ChannelId id) {
         return GlobalGroup.find(id).toString();
     }
-    public static void send2Pools(TextWebSocketFrame tws) {
+
+    public static void send2Pools(String info) {
         if (!ChannelMap.isEmpty()) {
-            log.debug("There are active mining pools:" + showChannel());
-            GlobalGroup.writeAndFlush(tws);
-            log.debug("Send randomx task to pools successfully. taskInfo: " + tws.text());
+            log.debug("There are active mining pools: " + showChannel());
+            GlobalGroup.writeAndFlush(new TextWebSocketFrame(info));
+            log.debug("Send info to pools successfully. Info: " + info);
         } else {
             log.debug("No active pools.");
         }

@@ -1,6 +1,5 @@
 package io.xdag.pool;
 
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
@@ -230,7 +229,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         }
         // Send the last 16 reward distribution transaction history to the pool
         if (awardMessageHistoryQueue.offer(transactionInfoSender.toJsonString())) {
-            ChannelSupervise.send2Pools(new TextWebSocketFrame(BlockRewardHistorySender.toJsonString()));
+            ChannelSupervise.send2Pools(BlockRewardHistorySender.toJsonString());
         } else {
             log.error("Failed to add transaction history");
         }
