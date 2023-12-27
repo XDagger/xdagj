@@ -124,7 +124,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     public int payPools(long time) {
         // Obtain the corresponding +1 position of the current task and delay it for 16 rounds
         int paidBlockIndex = (int) (((time >> 16) + 1) & config.getNodeSpec().getAwardEpoch());
-        log.info("Index of the block paid to the pool " + paidBlockIndex);
+        log.info("Index of the block paid to the pool:{} ", paidBlockIndex);
         int keyPos;
 
         // Obtain the block hash and corresponding nocne to be paid

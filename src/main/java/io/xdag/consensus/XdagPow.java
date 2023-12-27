@@ -277,10 +277,9 @@ public class XdagPow implements PoW, Listener, Runnable {
                 hash = Bytes32.wrap(digest.sha256Final(share.reverse()));
             }
             synchronized (minHash) {
-                log.info("receive a hash from pool,hash is:" + hash.toHexString());
                 Bytes32 mh = minHash.get();
                 if (compareTo(hash.toArray(), 0, 32, mh.toArray(), 0, 32) < 0) {
-                    log.debug("Hash {} is valid.", hash.toHexString());
+                    log.debug("Receive a hash from pool,hash {} is valid.", hash.toHexString());
                     minHash.set(hash);
                     minShare.set(share);
                     // put minShare into nonce
