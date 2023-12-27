@@ -24,6 +24,7 @@
 
 package io.xdag.utils;
 
+import com.google.common.collect.Lists;
 import io.xdag.utils.exception.XdagOverFlowException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -32,11 +33,11 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.WalletUtils.toBase58;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BasicUtilsTest {
     protected MutableBytes32 data;
@@ -98,7 +99,7 @@ public class BasicUtilsTest {
         assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
     }
 
-    // hashLow =>Base58
+    // hashLow => Base58
     @Test
     public void hash2PubAddress() {
         Bytes32 hash = Bytes32.fromHexString("0x00000000000000001eadb24287735969f08c33d5a410ca4aa2440fbc00000000");
@@ -164,5 +165,18 @@ public class BasicUtilsTest {
         addressHash.set(8, this.data.slice(8, 20));
         String walletAddress = toBase58(addressHash.slice(8, 20).toArray());
         assertEquals(walletAddress, "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+    }
+
+    @Test
+    public void testPoolWhiteIPList() {
+        List<String> poolWhiteIPList = Lists.newArrayList();
+        poolWhiteIPList.add("127.0.0.1");
+        poolWhiteIPList.add("127.0.0.2");
+        poolWhiteIPList.add("127.0.0.3");
+        poolWhiteIPList.add("127.0.0.4");
+        poolWhiteIPList.add("0.0.0.0");
+        assertTrue(poolWhiteIPList.contains("127.0.0.2"));
+        assertTrue(poolWhiteIPList.contains("0.0.0.0"));
+        assertFalse(poolWhiteIPList.contains("127.0.0.5"));
     }
 }

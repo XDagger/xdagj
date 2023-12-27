@@ -41,15 +41,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec {
+public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec, FundSpec {
 
     protected String configName;
 
@@ -63,14 +60,17 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // =========================
     // Pool websocket spec
     // =========================
-    protected String poolIp;
+
     protected int WebsocketServerPort;
-    protected String poolTag;
 
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
     protected int waitEpoch = 20;
-
+    // =========================
+    // foundation spec
+    // =========================
+    protected String fundAddress;
+    protected double fundRation;
     // =========================
     // Network
     // =========================
@@ -120,7 +120,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
     protected int TTL = 5;
     protected List<InetSocketAddress> whiteIPList = Lists.newArrayList();
-
+    protected List<String> poolWhiteIPList = Lists.newArrayList();
 
     // =========================
     // Wallet spec
@@ -150,7 +150,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // =========================
     protected boolean snapshotEnabled = false;
     protected long snapshotHeight;
-    protected long snapshotTime; // TODO：用于sync时的起始时间
+    protected long snapshotTime;
     protected boolean isSnapshotJ;
 
     // =========================
@@ -187,6 +187,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
     @Override
     public RandomxSpec getRandomxSpec() {
+        return this;
+    }
+
+    @Override
+    public FundSpec getFundSpec() {
         return this;
     }
 
@@ -246,20 +251,19 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         telnetPort = config.hasPath("admin.telnet.port") ? config.getInt("admin.telnet.port") : 6001;
         telnetPassword = config.getString("admin.telnet.password");
 
-        poolIp = config.hasPath("pool.ip") ? config.getString("pool.ip") : "127.0.0.1";
-        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 8081;
-        poolTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
-
+        poolWhiteIPList = config.hasPath("pool.whiteIPs") ? config.getStringList("pool.whiteIPs") : Collections.singletonList("127.0.0.1");
+        log.info("Pool whitelist {}. Any IP allowed? {}", poolWhiteIPList, poolWhiteIPList.contains("0.0.0.0"));
+        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
-        // currently nodeTag = poolTag
         nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
         rejectAddress = config.hasPath("node.reject.transaction.address") ? config.getString("node.reject.transaction.address") : "";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
         enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
         txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit") ? config.getInt("node.transaction.history.pageSizeLimit") : 500;
-
+        fundAddress = config.hasPath("fund.address") ? config.getString("fund.address") : "4duPWMbYUgAifVYkKDCWxLvRRkSByf5gb";
+        fundRation = config.hasPath("fund.ration") ? config.getDouble("fund.ration") : 5;
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
         for (String addr : whiteIpList) {
@@ -382,8 +386,8 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public String getPoolIP() {
-        return poolIp;
+    public List<String> getPoolWhiteIPList() {
+        return poolWhiteIPList;
     }
 
     @Override
@@ -391,10 +395,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         return WebsocketServerPort;
     }
 
-    @Override
-    public String getPoolTag() {
-        return poolTag;
-    }
 
     @Override
     public boolean isRPCEnabled() {

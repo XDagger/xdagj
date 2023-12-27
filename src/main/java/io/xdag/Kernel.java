@@ -335,7 +335,7 @@ public class Kernel {
                         config.getRPCSpec().getRpcModules()
                 );
             } catch (Exception e) {
-               log.error("catch an error "+e.getMessage());
+                log.error("catch an error " + e.getMessage());
             }
         }
 
@@ -344,7 +344,7 @@ public class Kernel {
 
     public WebSocketServer getWsServer() {
         if (webSocketServer == null) {
-            webSocketServer = new WebSocketServer(this, config.getPoolIP(), config.getPoolTag(),
+            webSocketServer = new WebSocketServer(this, config.getPoolWhiteIPList(),
                     config.getWebsocketServerPort());
         }
         return webSocketServer;

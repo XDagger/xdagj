@@ -1,6 +1,5 @@
 package io.xdag.pool;
 
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
@@ -26,16 +25,18 @@ import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
 import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySender.awardMessageHistoryQueue;
-import static io.xdag.utils.BasicUtils.compareAmountTo;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
-    private static final String TX_REMARK = "Reward to Pool";
+    private static final String TX_REMARK = "Block Reward Distribution";
     private final Kernel kernel;
     protected Config config;
     private final Blockchain blockchain;
     private final Wallet wallet;
+    private final String fundAddress;
+    private final double fundRation;
     /**
      * The hash of the past sixteen blocks
      */
@@ -53,6 +54,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     public PoolAwardManagerImpl(Kernel kernel) {
         this.kernel = kernel;
         this.config = kernel.getConfig();
+        this.fundAddress = config.getFundSpec().getFundAddress();
+        this.fundRation = Math.max(0, Math.min(config.getFundSpec().getFundRation(), 100));
         this.blockchain = kernel.getBlockchain();
         this.wallet = kernel.getWallet();
         init();
@@ -121,7 +124,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     public int payPools(long time) {
         // Obtain the corresponding +1 position of the current task and delay it for 16 rounds
         int paidBlockIndex = (int) (((time >> 16) + 1) & config.getNodeSpec().getAwardEpoch());
-        log.info("Index of the block paid to the pool " + paidBlockIndex);
+        log.info("Index of the block paid to the pool:{} ", paidBlockIndex);
         int keyPos;
 
         // Obtain the block hash and corresponding nocne to be paid
@@ -175,9 +178,18 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
 
     public void doPayments(Bytes32 hashLow, XAmount sendAmount, Bytes32 poolWalletAddress, int keyPos,
                            TransactionInfoSender transactionInfoSender) {
-        ArrayList<Address> receipt = new ArrayList<>(1);
-        if (sendAmount.compareTo(MIN_GAS) >= 0) {
-            receipt.add(new Address(poolWalletAddress, XDAG_FIELD_OUTPUT, sendAmount, true));
+        // Foundation rewards, default reward ratio is 5%
+        XAmount fundAmount = sendAmount.multiply(div(fundRation, 100, 6));
+        // Pool rewards
+        XAmount poolAmount = sendAmount.subtract(fundAmount);
+        ArrayList<Address> receipt = new ArrayList<>(2);
+        if (sendAmount.compareTo(MIN_GAS.multiply(2)) >= 0) {
+            receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, fundAmount, true));
+            receipt.add(new Address(poolWalletAddress, XDAG_FIELD_OUTPUT, poolAmount, true));
+            transactionInfoSender.setAmount(poolAmount.subtract(MIN_GAS).toDecimal(9,
+                    XUnit.XDAG).toPlainString());
+            transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XUnit.XDAG).toPlainString());
+            transactionInfoSender.setDonate(fundAmount.toDecimal(9, XUnit.XDAG).toPlainString());
             log.debug("Start payment...");
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
         } else {
@@ -205,24 +217,24 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         }
         log.debug("tx block hash [{}]", block.getHash().toHexString());
         kernel.getSyncMgr().validateAndAddNewBlock(new BlockWrapper(block, 5));
+        // Rewards to the foundation and pool rewards are in the same transaction block
         transactionInfoSender.setTxBlock(block.getHash());
-        transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XUnit.XDAG).toPlainString());
-        transactionInfoSender.setAmount(sendAmount.subtract(MIN_GAS).toDecimal(9,
-                XUnit.XDAG).toPlainString());
+        transactionInfoSender.setDonateBlock(block.getHash());
         /*
         * Send the award distribute transaction information to pools for pools to validate and then distribute award
         to miners
         * */
-
         if (awardMessageHistoryQueue.remainingCapacity() == 0) {
             awardMessageHistoryQueue.poll();
         }
         // Send the last 16 reward distribution transaction history to the pool
         if (awardMessageHistoryQueue.offer(transactionInfoSender.toJsonString())) {
-            ChannelSupervise.send2Pools(new TextWebSocketFrame(BlockRewardHistorySender.toJsonString()));
+            ChannelSupervise.send2Pools(BlockRewardHistorySender.toJsonString());
+        } else {
+            log.error("Failed to add transaction history");
         }
         log.debug("The reward for block {} has been distributed to pool address {} ,send transaction " +
-                "information for pools to validate {}", hashLow, receipt.size() == 1 ?
+                "information for pools to validate {}", hashLow, receipt.size() == 2 ?
                 WalletUtils.toBase58(receipt.get(0).getAddress().slice(8, 20).toArray()) :
                 " [Error: receipt error]", transactionInfoSender.toJsonString());
     }
@@ -240,12 +252,14 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
 
     @Setter
     public static class TransactionInfoSender {
+        // Single transaction history
         Bytes32 txBlock;
+        Bytes32 donateBlock;
         Bytes32 preHash;
         Bytes32 share;
         String amount;
         String fee;
-
+        String donate;
 
         public String toJsonString() {
             return "{\n" +
@@ -253,7 +267,9 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
                     "  \"preHash\":\"" + preHash.toUnprefixedHexString() + "\",\n" +
                     "  \"share\":\"" + share.toUnprefixedHexString() + "\",\n" +
                     "  \"amount\":" + amount + ",\n" +
-                    "  \"fee\":" + fee +
+                    "  \"fee\":" + fee + ",\n" +
+                    "  \"donateBlock\":\"" + txBlock.toUnprefixedHexString() + "\",\n" +
+                    "  \"donate\":" + donate +
                     "\n}";
         }
     }

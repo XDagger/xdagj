@@ -24,15 +24,12 @@
 
 package io.xdag.config;
 
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.RPCSpec;
-import io.xdag.config.spec.RandomxSpec;
-import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.net.CapabilityTreeSet;
+
+import java.util.List;
 
 /**
  * The Xdag blockchain configurations.
@@ -97,10 +94,10 @@ public interface Config {
     long getTxPageSizeLimit();
 
     //websocket
-    String getPoolIP();
+    List<String> getPoolWhiteIPList();
 
     int getWebsocketServerPort();
 
-    String getPoolTag();
+    FundSpec getFundSpec();
 
 }

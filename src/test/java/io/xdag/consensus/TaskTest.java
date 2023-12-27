@@ -53,8 +53,7 @@ import java.util.Collections;
 import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XUnit.XDAG;
 import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySender.awardMessageHistoryQueue;
-import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static org.junit.Assert.*;
 
@@ -148,11 +147,25 @@ public class TaskTest {
 
     @Test
     public void testSend2PoolsTxInfoConvertToJsonFormat() {
+        // example:
+        // {
+        //   "txBlock":"7aec7d2c57b79bb08339d0875fccc8f88466bb8c9192ca2d19470d6530704da9",
+        //   "preHash":"9a5627d68ac1f9b2be6bb59e403786b90ffa1221abf8a1fbce376d92f19951ad",
+        //   "share":"e6cfaab9a59ba187f0a45db0b169c21bb48f09b32787085b99633ab027c1b49b",
+        //   "amount":60.700000000,
+        //   "fee":0.100000000,
+        //   "donateBlock":"7aec7d2c57b79bb08339d0875fccc8f88466bb8c9192ca2d19470d6530704da9",
+        //   "donate":3.200000000
+        // }
+        double fundRation = 5;
+
         PoolAwardManagerImpl.TransactionInfoSender transactionInfoSender = new PoolAwardManagerImpl.TransactionInfoSender();
         Bytes32 preHash = Bytes32.wrap(RandomUtils.nextBytes(32));
         Bytes32 txHash = Bytes32.wrap(RandomUtils.nextBytes(32));
         transactionInfoSender.setPreHash(preHash);
         transactionInfoSender.setTxBlock(txHash);
+        transactionInfoSender.setDonateBlock(txHash);
+
         Bytes randomBytes = Bytes.random(12);
         wallet.unlock("password");
         transactionInfoSender.setShare(Bytes32.wrap(BytesUtils.merge(
@@ -160,8 +173,10 @@ public class TaskTest {
                 ), randomBytes.toArray())));
         transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XDAG).toPlainString());
         XAmount amount = XAmount.of(64, XDAG);
-        transactionInfoSender.setAmount(amount.subtract(MIN_GAS).toDecimal(9,
+        XAmount fundAmount = amount.multiply(div(fundRation, 100, 6));
+        transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9,
                 XDAG).toPlainString());
+        transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());
         JsonElement element = JsonParser.parseString(transactionInfoSender.toJsonString());
         assertTrue(element.isJsonObject());
         JSONObject jsonObject = new JSONObject(transactionInfoSender.toJsonString());
@@ -170,9 +185,11 @@ public class TaskTest {
         assertEquals(jsonObject.get("share"), Bytes32.wrap(BytesUtils.merge(
                 hash2byte(keyPair2Hash(wallet.getDefKey())
                 ), randomBytes.toArray())).toUnprefixedHexString());
-        assertEquals(jsonObject.get("amount").toString(), amount.subtract(MIN_GAS).toDecimal(9,
+        assertEquals(jsonObject.get("amount").toString(), amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9,
                 XDAG).toPlainString());
         assertEquals(jsonObject.get("fee").toString(), MIN_GAS.toDecimal(9, XDAG).toPlainString());
+        assertEquals(jsonObject.get("donateBlock").toString(), txHash.toUnprefixedHexString());
+        assertEquals(jsonObject.get("donate").toString(), fundAmount.toDecimal(9, XDAG).toPlainString());
     }
 
     @Test
@@ -192,9 +209,13 @@ public class TaskTest {
     public void testSaveRewardDistributionMessageHistory() throws Exception {
         // Cache the last 16 blocks reward messages
         // send to pool
+        double fundRation = 5;
         PoolAwardManagerImpl.TransactionInfoSender transactionInfoSender = new PoolAwardManagerImpl.TransactionInfoSender();
         transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XDAG).toPlainString());
-        transactionInfoSender.setAmount(XAmount.of(64, XDAG).subtract(MIN_GAS).toDecimal(9, XDAG).toPlainString());
+        XAmount amount = XAmount.of(64, XDAG);
+        XAmount fundAmount = amount.multiply(div(fundRation, 100, 6));
+        transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9, XDAG).toPlainString());
+        transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());
         for (int i = 0; i < 16; i++) {
             Bytes32 preHash = Bytes32.wrap(RandomUtils.nextBytes(32));
             Bytes32 txBlock = Bytes32.wrap(RandomUtils.nextBytes(32));
@@ -202,6 +223,7 @@ public class TaskTest {
             transactionInfoSender.setShare(share);
             transactionInfoSender.setTxBlock(txBlock);
             transactionInfoSender.setPreHash(preHash);
+            transactionInfoSender.setDonateBlock(txBlock);
             awardMessageHistoryQueue.put(transactionInfoSender.toJsonString());
         }
         assertEquals(0, awardMessageHistoryQueue.remainingCapacity());

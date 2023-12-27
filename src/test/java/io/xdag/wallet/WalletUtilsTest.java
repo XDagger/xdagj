@@ -129,6 +129,7 @@ public class WalletUtilsTest {
     public void testCheckIsAddress() {
         String walletAddress="KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf";
         assertTrue(io.xdag.crypto.Base58.checkAddress(walletAddress));
+        Log.info(BasicUtils.pubAddress2Hash(walletAddress));
     }
     @Test
     public void testHashlowIsAddress(){
