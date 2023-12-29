@@ -296,7 +296,7 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 remark = new String(block.getInfo().getRemark(), StandardCharsets.UTF_8).trim();
             }
             XAmount earnFee = kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee();
-            if (block.getInfo().getAmount().equals(XAmount.ZERO)){ earnFee = XAmount.ZERO;} //when block amount is zero, fee also should make zero.
+           // if (block.getInfo().getAmount().equals(XAmount.ZERO)){ earnFee = XAmount.ZERO;} //when block amount is zero, fee also should make zero.
             txLinkBuilder.address(hash2Address(block.getHashLow()))
                     .hashlow(block.getHashLow().toUnprefixedHexString())
                     .amount(String.format("%s", blockchain.getReward(block.getInfo().getHeight()).add(earnFee).toDecimal(9, XUnit.XDAG).toPlainString()))
@@ -341,14 +341,10 @@ public class XdagModuleChainBase implements XdagModuleChain {
                 if ((blockInfo.flags & BI_APPLIED) == 0) {
                     continue;
                 }
-                //这里查账户，账户的input是扣手续费的（角色是to），output才不扣（角色是from）
-                XAmount Amount =txHistory.getAddress().getAmount();
-                if (txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT)){
-                    Amount = Amount.subtract(MIN_GAS);
-                }
+
                 txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
                         .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
-                        .amount(String.format("%s", Amount.toDecimal(9, XUnit.XDAG).toPlainString()))
+                        .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_INPUT) ? 0 :
                                 txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT) ? 1 :
                                         txHistory.getAddress().getType().equals(XDAG_FIELD_COINBASE) ? 2 : 3)
