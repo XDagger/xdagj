@@ -40,6 +40,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import static io.xdag.config.Constants.MIN_GAS;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.WalletUtils.checkAddress;
@@ -87,7 +89,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt.setString(1, addr);
                 pstmt.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmt.setString(3, txHistory.getHash());
-                pstmt.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmt.setBigDecimal(4, address.getType().equals(XDAG_FIELD_INPUT) ? address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG) :
+                        address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmt.setInt(5, address.getType().asByte());
                 pstmt.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmt.setTimestamp(7,
@@ -123,7 +126,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmtBatch.setString(1, addr);
                 pstmtBatch.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmtBatch.setString(3, txHistory.getHash());
-                pstmtBatch.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmtBatch.setBigDecimal(4, address.getType().equals(XDAG_FIELD_INPUT) ? address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG) :
+                        address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmtBatch.setInt(5, address.getType().asByte());
                 pstmtBatch.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmtBatch.setTimestamp(7,
