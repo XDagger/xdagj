@@ -679,7 +679,7 @@ public class Commands {
         Bytes32 accountHash = keyPair2Hash(kernel.getWallet().getDefKey());
         to.set(8, accountHash.slice(8, 20));
 
-        String remark = "old balance to new address";
+        String remark = "block balance to new address";
 
         // 转账输入
         Map<Address, KeyPair> ourBlocks = Maps.newHashMap();
