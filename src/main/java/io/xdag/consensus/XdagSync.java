@@ -142,6 +142,12 @@ public class XdagSync {
             if (i >= size) {
                 break;
             }
+            //when the synchronization process channel is removed and reset, update the channel
+            if (!xc.isActive()){
+                log.debug("sync channel need to update");
+                return;
+            }
+
             long time = syncWindow.get(i);
             sendGetBlocks(xc, time, sf);
             if (i == 30) lastRequestTime = time;
