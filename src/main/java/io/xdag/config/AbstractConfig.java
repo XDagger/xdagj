@@ -71,6 +71,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // =========================
     protected String fundAddress;
     protected double fundRation;
+    protected double nodeRation;
     // =========================
     // Network
     // =========================
@@ -264,6 +265,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit") ? config.getInt("node.transaction.history.pageSizeLimit") : 500;
         fundAddress = config.hasPath("fund.address") ? config.getString("fund.address") : "4duPWMbYUgAifVYkKDCWxLvRRkSByf5gb";
         fundRation = config.hasPath("fund.ration") ? config.getDouble("fund.ration") : 5;
+        nodeRation = config.hasPath("node.ration") ? config.getDouble("node.ration") : 5;
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
         for (String addr : whiteIpList) {

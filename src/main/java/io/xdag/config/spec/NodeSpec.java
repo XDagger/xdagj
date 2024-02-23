@@ -103,5 +103,6 @@ public interface NodeSpec {
     //reject transaction address;
     String getRejectAddress();
     boolean enableRefresh();
+    double getNodeRation();
 
 }
