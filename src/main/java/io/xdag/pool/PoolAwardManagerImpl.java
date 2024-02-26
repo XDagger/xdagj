@@ -30,12 +30,13 @@ import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
-    private static final String TX_REMARK = "Block Reward Distribution";
+    private static final String TX_REMARK = "";
     private final Kernel kernel;
     protected Config config;
     private final Blockchain blockchain;
     private final Wallet wallet;
     private final String fundAddress;
+    private final Bytes32 nodeAddress;
     private final double fundRation;
     private final double nodeRation;
     /**
@@ -57,6 +58,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         this.config = kernel.getConfig();
         this.wallet = kernel.getWallet();
         this.fundAddress = config.getFundSpec().getFundAddress();
+        this.nodeAddress = keyPair2Hash(wallet.getDefKey());
         this.fundRation = Math.max(0, Math.min(config.getFundSpec().getFundRation(), 100));
         this.nodeRation = Math.max(0, Math.min(config.getNodeSpec().getNodeRation(), 100));
         this.blockchain = kernel.getBlockchain();
@@ -185,16 +187,18 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         XAmount nodeAmount = sendAmount.multiply(div(nodeRation, 100, 6));
         // Pool rewards
         XAmount poolAmount = sendAmount.subtract(fundAmount).subtract(nodeAmount);
-        if (fundRation + nodeRation >= 100 || poolAmount.lessThan(MIN_GAS)) {
+        if (fundRation + nodeRation >= 100 || fundAmount.lessThan(MIN_GAS) || nodeAmount.lessThan(MIN_GAS)
+                || poolAmount.lessThan(MIN_GAS)) {
             log.error("Block reward distribution failed.The fundRation and nodeRation parameter settings are " +
                     "unreasonable.Your fundRation:{} ," +
                     "nodeRation:{}", fundRation, nodeRation);
             return;
         }
-        // Amount output: community and pool, the remaining part is node reward
-        ArrayList<Address> receipt = new ArrayList<>(2);
-        if (sendAmount.compareTo(MIN_GAS.multiply(2)) >= 0) {
+        // Amount output: community, pool and node
+        ArrayList<Address> receipt = new ArrayList<>(3);
+        if (sendAmount.compareTo(MIN_GAS.multiply(3)) >= 0) {
             receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, fundAmount, true));
+            receipt.add(new Address(nodeAddress, XDAG_FIELD_OUTPUT, nodeAmount, true));
             receipt.add(new Address(poolWalletAddress, XDAG_FIELD_OUTPUT, poolAmount, true));
             transactionInfoSender.setAmount(poolAmount.subtract(MIN_GAS).toDecimal(9,
                     XUnit.XDAG).toPlainString());
@@ -204,8 +208,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
         } else {
             log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
-                            "has been rollback",
-                    hashLow.toHexString());
+                            "has been rollback. Block balance:{}",
+                    hashLow.toHexString(), sendAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         }
         receipt.clear();
     }
