@@ -36,7 +36,6 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     private final Blockchain blockchain;
     private final Wallet wallet;
     private final String fundAddress;
-    private final Bytes32 nodeAddress;
     private final double fundRation;
     private final double nodeRation;
     /**
@@ -58,7 +57,6 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         this.config = kernel.getConfig();
         this.wallet = kernel.getWallet();
         this.fundAddress = config.getFundSpec().getFundAddress();
-        this.nodeAddress = keyPair2Hash(wallet.getDefKey());
         this.fundRation = Math.max(0, Math.min(config.getFundSpec().getFundRation(), 100));
         this.nodeRation = Math.max(0, Math.min(config.getNodeSpec().getNodeRation(), 100));
         this.blockchain = kernel.getBlockchain();
@@ -165,8 +163,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             log.debug("keyPos < 0,keyPos = {}", keyPos);
             return -4;
         }
-        XAmount sendAmount = block.getInfo().getAmount();
-        if (compareAmountTo(sendAmount, XAmount.ZERO) <= 0) {
+        XAmount allAmount = block.getInfo().getAmount();
+        if (compareAmountTo(allAmount, XAmount.ZERO) <= 0) {
             log.debug("no main block,can't pay");
             return -5;
         }
@@ -175,30 +173,30 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         TransactionInfoSender transactionInfoSender = new TransactionInfoSender();
         transactionInfoSender.setPreHash(preHash);
         transactionInfoSender.setShare(share);
-        doPayments(hashlow, sendAmount, poolWalletAddress, keyPos, transactionInfoSender);
+        doPayments(hashlow, allAmount, poolWalletAddress, keyPos, transactionInfoSender);
         return 0;
     }
 
-    public void doPayments(Bytes32 hashLow, XAmount sendAmount, Bytes32 poolWalletAddress, int keyPos,
+    public void doPayments(Bytes32 hashLow, XAmount allAmount, Bytes32 poolWalletAddress, int keyPos,
                            TransactionInfoSender transactionInfoSender) {
         // Foundation rewards, default reward ratio is 5%
-        XAmount fundAmount = sendAmount.multiply(div(fundRation, 100, 6));
+        XAmount fundAmount = allAmount.multiply(div(fundRation, 100, 6));
         // Node rewards, default reward ratio is 5%
-        XAmount nodeAmount = sendAmount.multiply(div(nodeRation, 100, 6));
+        XAmount nodeAmount = allAmount.multiply(div(nodeRation, 100, 6));
         // Pool rewards
-        XAmount poolAmount = sendAmount.subtract(fundAmount).subtract(nodeAmount);
-        if (fundRation + nodeRation >= 100 || fundAmount.lessThan(MIN_GAS) || nodeAmount.lessThan(MIN_GAS)
-                || poolAmount.lessThan(MIN_GAS)) {
+        XAmount poolAmount = allAmount.subtract(fundAmount).subtract(nodeAmount);
+        // sendAmount = Foundation rewards + Pool rewards
+        XAmount sendAmount = allAmount.subtract(nodeAmount);
+        if (fundRation + nodeRation >= 100 || fundAmount.lessThan(MIN_GAS) || poolAmount.lessThan(MIN_GAS)) {
             log.error("Block reward distribution failed.The fundRation and nodeRation parameter settings are " +
                     "unreasonable.Your fundRation:{} ," +
                     "nodeRation:{}", fundRation, nodeRation);
             return;
         }
         // Amount output: community, pool and node
-        ArrayList<Address> receipt = new ArrayList<>(3);
-        if (sendAmount.compareTo(MIN_GAS.multiply(3)) >= 0) {
+        ArrayList<Address> receipt = new ArrayList<>(2);
+        if (sendAmount.compareTo(MIN_GAS.multiply(2)) >= 0) {
             receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, fundAmount, true));
-            receipt.add(new Address(nodeAddress, XDAG_FIELD_OUTPUT, nodeAmount, true));
             receipt.add(new Address(poolWalletAddress, XDAG_FIELD_OUTPUT, poolAmount, true));
             transactionInfoSender.setAmount(poolAmount.subtract(MIN_GAS).toDecimal(9,
                     XUnit.XDAG).toPlainString());
@@ -208,7 +206,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
         } else {
             log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
-                            "has been rollback. Block balance:{}",
+                            "has been rollback. send balance:{}",
                     hashLow.toHexString(), sendAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         }
         receipt.clear();
@@ -216,7 +214,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
 
     public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, XAmount sendAmount, int keypos,
                             TransactionInfoSender transactionInfoSender) {
-        log.debug("All balance in this block: {}", sendAmount);
+        log.debug("Total balance pending transfer: {}", sendAmount);
         log.debug("unlock keypos =[{}]", keypos);
         Map<Address, KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, sendAmount, false);
