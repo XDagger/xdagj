@@ -2,6 +2,7 @@ package io.xdag.pool;
 
 import io.xdag.Kernel;
 import io.xdag.Wallet;
+import io.xdag.cli.Commands;
 import io.xdag.config.Config;
 import io.xdag.core.*;
 import io.xdag.net.websocket.ChannelSupervise;
@@ -38,14 +39,14 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     private final String fundAddress;
     private final double fundRation;
     private final double nodeRation;
-    // private final Commands commands;
+    private final Commands commands;
     /**
      * The hash of the past sixteen blocks
      */
     protected List<Bytes32> blockPreHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-    // private final Map<Address, KeyPair> paymentsToNodesMap = new HashMap<>(10);
+    private final Map<Address, KeyPair> paymentsToNodesMap = new HashMap<>(10);
     private static final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
 
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
@@ -62,7 +63,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         this.fundRation = Math.max(0, Math.min(config.getFundSpec().getFundRation(), 100));
         this.nodeRation = Math.max(0, Math.min(config.getNodeSpec().getNodeRation(), 100));
         this.blockchain = kernel.getBlockchain();
-        // this.commands = new Commands(kernel);
+        this.commands = new Commands(kernel);
         init();
     }
 
@@ -182,11 +183,11 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
 
     public void doPayments(Bytes32 hashLow, XAmount allAmount, Bytes32 poolWalletAddress, int keyPos,
                            TransactionInfoSender transactionInfoSender) {
-        // if (paymentsToNodesMap.size() == 10) {
-        //     StringBuilder txHash = commands.xferToNode(paymentsToNodesMap);
-        //     log.info(String.valueOf(txHash));
-        //     paymentsToNodesMap.clear();
-        // }
+        if (paymentsToNodesMap.size() == 10) {
+            StringBuilder txHash = commands.xferToNode(paymentsToNodesMap);
+            log.info(String.valueOf(txHash));
+            paymentsToNodesMap.clear();
+        }
         // Foundation rewards, default reward ratio is 5%
         XAmount fundAmount = allAmount.multiply(div(fundRation, 100, 6));
         // Node rewards, default reward ratio is 5%
@@ -212,8 +213,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             transactionInfoSender.setDonate(fundAmount.toDecimal(9, XUnit.XDAG).toPlainString());
             log.debug("Start payment...");
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
-            // paymentsToNodesMap.put(new Address(hashLow, XDAG_FIELD_IN, nodeAmount, false),
-            //         wallet.getAccount(keyPos));
+            paymentsToNodesMap.put(new Address(hashLow, XDAG_FIELD_IN, nodeAmount, false),
+                    wallet.getAccount(keyPos));
         } else {
             log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
                             "has been rollback. send balance:{}",

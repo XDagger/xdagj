@@ -712,24 +712,24 @@ public class Commands {
     }
 
     // Distribute block rewards to node
-    // public StringBuilder xferToNode(Map<Address, KeyPair> paymentsToNodesMap) {
-    //     StringBuilder str = new StringBuilder("Tx hash paid to the node :{");
-    //     MutableBytes32 to = MutableBytes32.create();
-    //     Bytes32 accountHash = keyPair2Hash(kernel.getWallet().getDefKey());
-    //     to.set(8, accountHash.slice(8, 20));
-    //     String remark = "Pay to " + kernel.getConfig().getNodeSpec().getNodeTag();
-    //     // Generate tx block to reward node
-    //     List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark);
-    //     for (BlockWrapper blockWrapper : txs) {
-    //         ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
-    //         if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
-    //             kernel.getChannelMgr().sendNewBlock(blockWrapper);
-    //             str.append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
-    //         } else {
-    //             return new StringBuilder("This transaction block is invalid. Tx hash:")
-    //                     .append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
-    //         }
-    //     }
-    //     return str.append("}");
-    // }
+    public StringBuilder xferToNode(Map<Address, KeyPair> paymentsToNodesMap) {
+        StringBuilder str = new StringBuilder("Tx hash paid to the node :{");
+        MutableBytes32 to = MutableBytes32.create();
+        Bytes32 accountHash = keyPair2Hash(kernel.getWallet().getDefKey());
+        to.set(8, accountHash.slice(8, 20));
+        String remark = "Pay to " + kernel.getConfig().getNodeSpec().getNodeTag();
+        // Generate tx block to reward node
+        List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark);
+        for (BlockWrapper blockWrapper : txs) {
+            ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
+            if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
+                kernel.getChannelMgr().sendNewBlock(blockWrapper);
+                str.append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
+            } else {
+                return new StringBuilder("This transaction block is invalid. Tx hash:")
+                        .append(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
+            }
+        }
+        return str.append("}");
+    }
 }
