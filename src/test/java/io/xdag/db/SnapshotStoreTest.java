@@ -158,7 +158,7 @@ public class SnapshotStoreTest {
 
         backup = root2.newFolder();
         createBlockchain();
-  //      FileUtils.copyDirectory(new File(config.getNodeSpec().getStoreDir()),backup);
+        FileUtils.copyDirectory(new File(config.getNodeSpec().getStoreDir()),backup);//这里 windows环境下调试会报错，Linux可过
     }
 
 //    @Test

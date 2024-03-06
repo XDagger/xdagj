@@ -102,6 +102,19 @@ public class WalletUtilsTest {
     }
 
     @Test
+    public void getPrivateKeyFromMnemonic(){
+        //use this function, transform Mnemonic to hex_PrivateKey
+        String mnemonic = "know party bunker fly ribbon combine dilemma omit birth impose submit cost";  //Mnemonic from go wallet,
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
+        Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, 0);
+        byte[] hash160 = Keys.toBytesAddress(bip44Keypair.getKeyPair());
+        String base58 = WalletUtils.toBase58(hash160);
+        assertEquals("36wtmNV53yYyJA7SUxRHhbkDX1o9jq2e8", base58);
+        assertEquals("0x3a35b1a709a9fa5ddddbdf4e03f2ef309005e50be04d92e67f75eabae0335ba9", bip44Keypair.getKeyPair().getPrivateKey().toString());
+    }
+
+    @Test
     public void generateBip44KeyPairTestNet() {
         String mnemonic =
                 "spider elbow fossil truck deal circle divert sleep safe report laundry above";

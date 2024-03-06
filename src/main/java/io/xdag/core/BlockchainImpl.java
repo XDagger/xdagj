@@ -209,7 +209,7 @@ public class BlockchainImpl implements Blockchain {
         xdagTopStatus.setTopDiff(lastBlock.getInfo().getDifficulty());
         xdagTopStatus.setPreTopDiff(lastBlock.getInfo().getDifficulty());
 
-        XAmount allBalance = snapshotStore.getAllBalance().add(snapshotAddressStore.getAllBalance());
+        XAmount allBalance = snapshotStore.getAllBalance().add(snapshotAddressStore.getAllBalance()); //block all balance + address all balance
 
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
