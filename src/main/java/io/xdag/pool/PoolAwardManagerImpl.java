@@ -215,6 +215,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
             paymentsToNodesMap.put(new Address(hashLow, XDAG_FIELD_IN, nodeAmount, false),
                     wallet.getAccount(keyPos));
+            log.info("The node's reward block was successfully placed,block hash:{},current Map size:{}",
+                    hashLow.toHexString(), paymentsToNodesMap.size());
         } else {
             log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
                             "has been rollback. send balance:{}",
