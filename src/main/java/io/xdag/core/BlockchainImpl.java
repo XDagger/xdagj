@@ -209,7 +209,7 @@ public class BlockchainImpl implements Blockchain {
         xdagTopStatus.setTopDiff(lastBlock.getInfo().getDifficulty());
         xdagTopStatus.setPreTopDiff(lastBlock.getInfo().getDifficulty());
 
-        XAmount allBalance = snapshotStore.getAllBalance().add(snapshotAddressStore.getAllBalance());
+        XAmount allBalance = snapshotStore.getAllBalance().add(snapshotAddressStore.getAllBalance()); //block all balance + address all balance
 
         long end = System.currentTimeMillis();
         System.out.println("init snapshotJ done");
@@ -723,6 +723,8 @@ public class BlockchainImpl implements Blockchain {
                 if (flag && sumGas != XAmount.ZERO) {// judge if block is mainBlock, if true: add fee!
                     block.getInfo().setFee(block.getFee().add(sumGas));
                     addAndAccept(block, sumGas);
+                    XAmount allBalance = addressStore.getAllBalance();
+                    addressStore.updateAllBalance(allBalance.subtract(sumGas)); //相当于新地址的钱流回主块，allBalance要扣回去
                     sumGas = XAmount.ZERO;
                 }
             }

@@ -252,10 +252,6 @@ public class SnapshotStoreImpl implements SnapshotStore {
                 if (iter.key().length < 20) {
                     if (iter.key()[0] == ADDRESS_SIZE) {
                         addressStore.saveAddressSize(iter.value());
-                    } else if (iter.key()[0] == AMOUNT_SUM) {
-                        UInt64 u64v = UInt64.fromBytes(Bytes.wrap(iter.value()));
-                        addressStore.savaAmountSum(XAmount.ofXAmount(u64v.toLong()));
-                        allBalance = addressStore.getAllBalance();
                     }
                 } else {
                     byte[] address = iter.key();
@@ -267,6 +263,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                             ourBalance = ourBalance.add(balance);
                         }
                     }
+                    allBalance = allBalance.add(balance); //calculate the address balance
                     addressStore.snapshotAddress(address, balance);
                     if (txHistoryStore != null) {
                         XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
@@ -281,6 +278,8 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     }
                 }
             }
+            //sava Address all Balance as AMOUNT_SUM
+            addressStore.savaAmountSum(allBalance);
         }
     }
 

@@ -56,7 +56,7 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
     }
 
     public boolean checkTransaction(Block block){
-        //reject transaction without input.
+        //reject transaction without input. For link block attack.
         if (block.getInputs().isEmpty()){
             return false;
         }
@@ -83,7 +83,7 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
             result = ImportResult.INVALID_BLOCK;
         }
         return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
-                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.toString();
+                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.getErrorInfo();
     }
 
     @Override

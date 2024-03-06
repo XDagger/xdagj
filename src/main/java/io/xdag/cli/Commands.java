@@ -641,7 +641,7 @@ public class Commands {
                 }
                 if (address.getType().equals(XDAG_FIELD_INPUT)) {
                     tx.append(String.format("    input: %s           %s   %s%n", hash2Address(address.getAddress()),
-                            address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG).toPlainString(),
+                            address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                             FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                     .format(txHistory.getTimestamp())));
                 } else if (address.getType().equals(XDAG_FIELD_OUTPUT)) {
