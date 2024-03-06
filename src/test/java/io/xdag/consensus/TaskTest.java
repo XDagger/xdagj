@@ -42,6 +42,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.jline.utils.Log;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -174,6 +175,7 @@ public class TaskTest {
         transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XDAG).toPlainString());
         XAmount amount = XAmount.of(64, XDAG);
         XAmount fundAmount = amount.multiply(div(fundRation, 100, 6));
+        Log.info(fundAmount.toDecimal(9,XDAG).toPlainString());
         transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9,
                 XDAG).toPlainString());
         transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());

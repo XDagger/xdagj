@@ -2,6 +2,7 @@ package io.xdag.pool;
 
 import io.xdag.Kernel;
 import io.xdag.Wallet;
+import io.xdag.cli.Commands;
 import io.xdag.config.Config;
 import io.xdag.core.*;
 import io.xdag.net.websocket.ChannelSupervise;
@@ -30,19 +31,22 @@ import static io.xdag.utils.BytesUtils.compareTo;
 
 @Slf4j
 public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
-    private static final String TX_REMARK = "Block Reward Distribution";
+    private static final String TX_REMARK = "";
     private final Kernel kernel;
     protected Config config;
     private final Blockchain blockchain;
     private final Wallet wallet;
     private final String fundAddress;
     private final double fundRation;
+    private final double nodeRation;
+    private final Commands commands;
     /**
      * The hash of the past sixteen blocks
      */
     protected List<Bytes32> blockPreHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
+    private final Map<Address, KeyPair> paymentsToNodesMap = new HashMap<>(10);
     private static final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
 
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
@@ -54,10 +58,12 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
     public PoolAwardManagerImpl(Kernel kernel) {
         this.kernel = kernel;
         this.config = kernel.getConfig();
+        this.wallet = kernel.getWallet();
         this.fundAddress = config.getFundSpec().getFundAddress();
         this.fundRation = Math.max(0, Math.min(config.getFundSpec().getFundRation(), 100));
+        this.nodeRation = Math.max(0, Math.min(config.getNodeSpec().getNodeRation(), 100));
         this.blockchain = kernel.getBlockchain();
-        this.wallet = kernel.getWallet();
+        this.commands = new Commands(kernel);
         init();
     }
 
@@ -127,7 +133,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         log.info("Index of the block paid to the pool:{} ", paidBlockIndex);
         int keyPos;
 
-        // Obtain the block hash and corresponding nocne to be paid
+        // Obtain the block hash and corresponding share to be paid
         Bytes32 preHash = blockPreHashs.get(paidBlockIndex) == null ? null : blockPreHashs.get(paidBlockIndex);
         Bytes32 hash = blockHashs.get(paidBlockIndex) == null ? null : blockHashs.get(paidBlockIndex);
         Bytes32 share = minShares.get(paidBlockIndex) == null ? null : minShares.get(paidBlockIndex);
@@ -147,7 +153,6 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             log.debug("Can't find the block");
             return -2;
         }
-        //
         if (compareTo(block.getNonce().slice(0, 20).toArray(), 0,
                 20, block.getCoinBase().getAddress().slice(8, 20).toArray(), 0, 20) == 0) {
             log.debug("This block is not produced by mining and belongs to the node");
@@ -159,29 +164,45 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             keyPos = kernel.getBlockchain().getMemOurBlocks().get(hashlow);
         }
         if (keyPos < 0) {
+            log.debug("keyPos < 0,keyPos = {}", keyPos);
             return -4;
         }
-        XAmount payBalance = block.getInfo().getAmount();
-        if (compareAmountTo(payBalance, XAmount.ZERO) <= 0) {
+        XAmount allAmount = block.getInfo().getAmount();
+        if (compareAmountTo(allAmount, XAmount.ZERO) <= 0) {
             log.debug("no main block,can't pay");
             return -5;
         }
         Bytes32 poolWalletAddress = BasicUtils.hexPubAddress2Hashlow(String.valueOf(block.getNonce().slice(0, 20)));
-        XAmount sendAmount = block.getInfo().getAmount();
         log.debug("=========== At this time {} starts to distribute rewards to pools===========", time);
         TransactionInfoSender transactionInfoSender = new TransactionInfoSender();
         transactionInfoSender.setPreHash(preHash);
         transactionInfoSender.setShare(share);
-        doPayments(hashlow, sendAmount, poolWalletAddress, keyPos, transactionInfoSender);
+        doPayments(hashlow, allAmount, poolWalletAddress, keyPos, transactionInfoSender);
         return 0;
     }
 
-    public void doPayments(Bytes32 hashLow, XAmount sendAmount, Bytes32 poolWalletAddress, int keyPos,
+    public void doPayments(Bytes32 hashLow, XAmount allAmount, Bytes32 poolWalletAddress, int keyPos,
                            TransactionInfoSender transactionInfoSender) {
+        if (paymentsToNodesMap.size() == 10) {
+            StringBuilder txHash = commands.xferToNode(paymentsToNodesMap);
+            log.info(String.valueOf(txHash));
+            paymentsToNodesMap.clear();
+        }
         // Foundation rewards, default reward ratio is 5%
-        XAmount fundAmount = sendAmount.multiply(div(fundRation, 100, 6));
+        XAmount fundAmount = allAmount.multiply(div(fundRation, 100, 6));
+        // Node rewards, default reward ratio is 5%
+        XAmount nodeAmount = allAmount.multiply(div(nodeRation, 100, 6));
         // Pool rewards
-        XAmount poolAmount = sendAmount.subtract(fundAmount);
+        XAmount poolAmount = allAmount.subtract(fundAmount).subtract(nodeAmount);
+        // sendAmount = Foundation rewards + Pool rewards
+        XAmount sendAmount = allAmount.subtract(nodeAmount);
+        if (fundRation + nodeRation >= 100 || fundAmount.lessThan(MIN_GAS) || poolAmount.lessThan(MIN_GAS)) {
+            log.error("Block reward distribution failed.The fundRation and nodeRation parameter settings are " +
+                    "unreasonable.Your fundRation:{} ," +
+                    "nodeRation:{}", fundRation, nodeRation);
+            return;
+        }
+        // Amount output: community, pool and node
         ArrayList<Address> receipt = new ArrayList<>(2);
         if (sendAmount.compareTo(MIN_GAS.multiply(2)) >= 0) {
             receipt.add(new Address(pubAddress2Hash(fundAddress), XDAG_FIELD_OUTPUT, fundAmount, true));
@@ -192,21 +213,25 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
             transactionInfoSender.setDonate(fundAmount.toDecimal(9, XUnit.XDAG).toPlainString());
             log.debug("Start payment...");
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
+            paymentsToNodesMap.put(new Address(hashLow, XDAG_FIELD_IN, nodeAmount, false),
+                    wallet.getAccount(keyPos));
+            log.info("The node's reward block was successfully placed,block hash:{},current Map size:{}",
+                    hashLow.toHexString(), paymentsToNodesMap.size());
         } else {
             log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
-                            "has been rollback",
-                    hashLow.toHexString());
+                            "has been rollback. send balance:{}",
+                    hashLow.toHexString(), sendAmount.toDecimal(9, XUnit.XDAG).toPlainString());
         }
         receipt.clear();
     }
 
-    public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, XAmount sendAmount, int keypos,
+    public void transaction(Bytes32 hashLow, ArrayList<Address> receipt, XAmount sendAmount, int keyPos,
                             TransactionInfoSender transactionInfoSender) {
-        log.debug("All balance in this block: {}", sendAmount);
-        log.debug("unlock keypos =[{}]", keypos);
+        log.debug("Total balance pending transfer: {}", sendAmount);
+        log.debug("unlock keypos =[{}]", keyPos);
         Map<Address, KeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, sendAmount, false);
-        KeyPair inputKey = wallet.getAccount(keypos);
+        KeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, TX_REMARK, MIN_GAS);
         if (inputKey.equals(wallet.getDefKey())) {
@@ -233,10 +258,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         } else {
             log.error("Failed to add transaction history");
         }
-        log.debug("The reward for block {} has been distributed to pool address {} ,send transaction " +
-                "information for pools to validate {}", hashLow, receipt.size() == 2 ?
-                WalletUtils.toBase58(receipt.get(0).getAddress().slice(8, 20).toArray()) :
-                " [Error: receipt error]", transactionInfoSender.toJsonString());
+        log.debug("The reward for block {} has been distributed to pool address {}", hashLow,
+                WalletUtils.toBase58(receipt.get(1).getAddress().slice(8, 20).toArray()));
     }
 
 

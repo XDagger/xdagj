@@ -208,7 +208,7 @@ public class WalletTest {
         Log.info(wallet.getDefKey());
         Log.info(keyPair2Hash(wallet.getDefKey()));
         Log.info(hash2PubAddress(keyPair2Hash(wallet.getDefKey())));
-        WalletUtils.checkAddress(hash2PubAddress(keyPair2Hash(wallet.getDefKey())));
+        assertTrue(WalletUtils.checkAddress(hash2PubAddress(keyPair2Hash(wallet.getDefKey()))));
     }
 
     @After

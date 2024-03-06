@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 
+import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XAmount.ZERO;
 import static io.xdag.core.XUnit.*;
 import static org.junit.Assert.*;
@@ -105,6 +106,11 @@ public class XAmountTest {
         assertTrue(XAmount.of(999, XDAG).greaterThanOrEqual(XAmount.of(999, MILLI_XDAG)));
         assertFalse(XAmount.of(999, XDAG).lessThan(XAmount.of(999, MILLI_XDAG)));
         assertFalse(XAmount.of(999, XDAG).lessThanOrEqual(XAmount.of(999, MILLI_XDAG)));
+        XAmount amount1 = XAmount.of(64, XDAG);
+        XAmount amount2 = XAmount.of(63, XDAG);
+        assertFalse(amount1.lessThanOrEqual(amount2));
+        XAmount amount3 = XAmount.of(101, MILLI_XDAG);
+        assertFalse(amount3.lessThanOrEqual(MIN_GAS));
     }
 
     @Test
