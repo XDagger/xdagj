@@ -83,7 +83,7 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
             result = ImportResult.INVALID_BLOCK;
         }
         return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
-                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.getErrorInfo();
+                BasicUtils.hash2Address(block.getHash()) : "INVALID_BLOCK " + result.getErrorInfo();
     }
 
     @Override
