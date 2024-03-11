@@ -26,7 +26,6 @@ package io.xdag.db.rocksdb;
 
 import io.xdag.core.Address;
 import io.xdag.core.Block;
-import io.xdag.core.Filter;
 import io.xdag.core.XdagField;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.utils.BytesUtils;

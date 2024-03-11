@@ -59,7 +59,6 @@ import java.util.List;
 
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.db.AddressStore.ADDRESS_SIZE;
-import static io.xdag.db.AddressStore.AMOUNT_SUM;
 import static io.xdag.db.BlockStore.*;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 
@@ -236,6 +235,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     blockStore.savePreSeed(iter.value());
                 }
             }
+            System.out.println("amount in blocks: " + allBalance.toDecimal(9, XUnit.XDAG).toPlainString());
             if (txHistoryStore != null) {
                 txHistoryStore.batchSaveTxHistory(null);
             }
@@ -278,6 +278,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     }
                 }
             }
+            System.out.println("amount in address: " + allBalance.toDecimal(9, XUnit.XDAG).toPlainString());
             //sava Address all Balance as AMOUNT_SUM
             addressStore.savaAmountSum(allBalance);
         }
