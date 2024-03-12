@@ -65,7 +65,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
-    protected int waitEpoch = 20;
+    protected int waitEpoch = 32;
     // =========================
     // foundation spec
     // =========================
@@ -164,7 +164,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         this.configName = configName;
         this.network = network;
         this.networkVersion = networkVersion;
-
         getSetting();
         setDir();
     }

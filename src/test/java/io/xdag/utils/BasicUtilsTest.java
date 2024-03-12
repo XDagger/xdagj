@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Random;
 
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.WalletUtils.toBase58;
@@ -178,5 +179,29 @@ public class BasicUtilsTest {
         assertTrue(poolWhiteIPList.contains("127.0.0.2"));
         assertTrue(poolWhiteIPList.contains("0.0.0.0"));
         assertFalse(poolWhiteIPList.contains("127.0.0.5"));
+        assertFalse(poolWhiteIPList.contains(null));
+    }
+
+    public String randomIpAddress(Random random) {
+        StringBuilder ipAddress = new StringBuilder();
+        for (int i = 0; i < 4; i++) {
+            ipAddress.append(random.nextInt(256));
+            if (i < 3) {
+                ipAddress.append(".");
+            }
+        }
+        return ipAddress.toString();
+    }
+
+    @Test
+    public void testParseIP() {
+        Random random = new Random();
+        for (int i = 0; i < 10000; i++) {
+            String ipAddress = randomIpAddress(random);
+            // Generate a random port number between 0 and 65535
+            int port = random.nextInt(65536);
+            String ipAddressWithPort = "/" + ipAddress + ":" + port;
+            assertEquals(ipAddress, extractIpAddress(ipAddressWithPort));
+        }
     }
 }

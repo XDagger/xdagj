@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 import static io.netty.handler.codec.http.HttpUtil.isKeepAlive;
+import static io.xdag.utils.BasicUtils.extractIpAddress;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -52,13 +53,13 @@ public class PoolHandShakeHandler extends SimpleChannelInboundHandler<Object> {
      */
     private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) {
         boolean isIPAllowed;
-        String clientIP = ctx.channel().remoteAddress().toString();
+        String clientIPWithPort = ctx.channel().remoteAddress().toString();
         // Determine the mining pool whitelist. If there is 0.0.0.0 in the whitelist, the whitelist is open.
         // Any IP can connect to this node to become a pool.
         // Otherwise, determine the specific IP
         if (!allIPAllowed) {
             // No 0.0.0.0 in the whitelist, determine the specific IP
-            isIPAllowed = clientIPList.contains(clientIP);
+            isIPAllowed = clientIPList.contains(extractIpAddress(clientIPWithPort));
         } else {
             isIPAllowed = true;
         }

@@ -38,6 +38,8 @@ import org.hyperledger.besu.crypto.KeyPair;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 
 import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
@@ -213,5 +215,16 @@ public class BasicUtils {
         BigDecimal b1 = BigDecimal.valueOf(v1);
         BigDecimal b2 = BigDecimal.valueOf(v2);
         return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
+    }
+    // Parse and extract IP addresses, for example /133.22.245.177:11328 -> 133.22.245.177
+    public static String extractIpAddress(String ipAddressAndPort) {
+        String pattern = "/(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):\\d+";
+        Pattern r = Pattern.compile(pattern);
+        Matcher m = r.matcher(ipAddressAndPort);
+        if (m.find()) {
+            return m.group(1);
+        } else {
+            return null;
+        }
     }
 }

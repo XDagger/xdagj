@@ -155,7 +155,8 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
         }
         if (compareTo(block.getNonce().slice(0, 20).toArray(), 0,
                 20, block.getCoinBase().getAddress().slice(8, 20).toArray(), 0, 20) == 0) {
-            log.debug("This block is not produced by mining and belongs to the node");
+            log.debug("This block is not produced by mining and belongs to the node, block hash:{}",
+                    hashlow.toHexString());
             return -3;
         }
         if (kernel.getBlockchain().getMemOurBlocks().get(hashlow) == null) {
