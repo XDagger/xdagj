@@ -203,10 +203,12 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
         NetConnDTO.NetConnDTOBuilder netConnDTOBuilder = NetConnDTO.builder();
         List<Channel> channelList = kernel.getChannelMgr().getActiveChannels();
         for (Channel channel : channelList) {
-            netConnDTOBuilder.info(channel.toString());
+            netConnDTOBuilder.connectTime(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
+                    .inBound(0)
+                    .outBound(0)
+                    .nodeAddress(channel.getRemoteAddress());
             netConnDTOList.add(netConnDTOBuilder.build());
         }
-
         return netConnDTOList;
     }
 
