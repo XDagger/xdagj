@@ -25,11 +25,14 @@ package io.xdag.rpc.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import java.net.InetSocketAddress;
 
 @Data
 @Builder
 public class NetConnDTO {
 
-    String info;
-
+    InetSocketAddress nodeAddress;
+    long connectTime;
+    long inBound;
+    long outBound;
 }
