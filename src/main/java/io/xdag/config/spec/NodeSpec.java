@@ -24,16 +24,38 @@
 
 package io.xdag.config.spec;
 
-import io.xdag.crypto.DnetKeys;
+import io.xdag.Network;
+import io.xdag.net.message.MessageCode;
+
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The Node Specifications
  */
 public interface NodeSpec {
 
-    // dnet
+    Network getNetwork();
+
+    short getNetworkVersion();
+
+    String getNodeTag();
+
+    int getWaitEpoch();
+
+    int getNetMaxMessageQueueSize();
+
+    int getNetHandshakeExpiry();
+
+    Set<MessageCode> getNetPrioritizedMessages();
+
+    int getNetMaxInboundConnectionsPerIp();
+
+    int getNetMaxInboundConnections();
+
+    int getNetChannelIdleTimeout();
+
     String getNodeIp();
 
     int getNodePort();
@@ -44,22 +66,14 @@ public interface NodeSpec {
 
     int getConnectionReadTimeout();
 
-    DnetKeys getXKeys();
+    int getConnectionTimeout();
 
     int getTTL();
+    int getAwardEpoch();
 
     List<InetSocketAddress> getWhiteIPList();
 
     void setWhiteIPList(List<InetSocketAddress> list);
-
-    // libp2p
-    boolean isBootnode();
-
-    List<String> getBootnodes();
-
-    int getLibp2pPort();
-
-    String getLibp2pPrivkey();
 
     String getStoreDir();
 
@@ -80,14 +94,15 @@ public interface NodeSpec {
 
     boolean isStoreFromBackup();
 
-    /**
-     * 用于测试加载已有区块数据 从C版本生成的数据 请将所需要的数据放在该目录下
-     */
-    String getOriginStoreDir();
+    int getNetMaxFrameBodySize();
+
+    int getNetMaxPacketSize();
 
     // White List
     String getWhitelistUrl();
-
+    //reject transaction address;
+    String getRejectAddress();
     boolean enableRefresh();
+    double getNodeRation();
 
 }

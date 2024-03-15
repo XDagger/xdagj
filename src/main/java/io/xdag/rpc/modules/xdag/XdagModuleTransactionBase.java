@@ -25,13 +25,11 @@
 package io.xdag.rpc.modules.xdag;
 
 import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.ImportResult;
-import io.xdag.core.XdagBlock;
+import io.xdag.core.*;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3.CallArguments;
 import io.xdag.utils.BasicUtils;
+import io.xdag.utils.WalletUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.bouncycastle.util.encoders.Hex;
@@ -57,17 +55,35 @@ public class XdagModuleTransactionBase implements XdagModuleTransaction {
         return null;
     }
 
+    public boolean checkTransaction(Block block){
+        //reject transaction without input. For link block attack.
+        if (block.getInputs().isEmpty()){
+            return false;
+        }
+        //check from address if reject Address.
+        for (Address link : block.getInputs()){
+            if (WalletUtils.toBase58(link.getAddress().slice(8,20).toArray()).equals(kernel.getConfig().getNodeSpec().getRejectAddress())){
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public String sendRawTransaction(String rawData) {
-
         // 1. build transaction
         // 2. try to add blockchain
-
+        // 3. check from address if valid.
         Block block = new Block(new XdagBlock(Hex.decode(rawData)));
-        ImportResult result = kernel.getSyncMgr().importBlock(
-                new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
+        ImportResult result;
+        if (checkTransaction(block)){
+            result = kernel.getSyncMgr().importBlock(
+                    new BlockWrapper(block, kernel.getConfig().getNodeSpec().getTTL()));
+        }else {
+            result = ImportResult.INVALID_BLOCK;
+        }
         return result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST ?
-                BasicUtils.hash2Address(block.getHash()) : "BLOCK " + result.toString();
+                BasicUtils.hash2Address(block.getHash()) : "INVALID_BLOCK " + result.getErrorInfo();
     }
 
     @Override

@@ -24,9 +24,6 @@
 
 package io.xdag;
 
-import io.libp2p.core.crypto.KEY_TYPE;
-import io.libp2p.core.crypto.KeyKt;
-import io.libp2p.core.crypto.PrivKey;
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -37,25 +34,15 @@ import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
 import io.xdag.core.*;
 import io.xdag.crypto.Keys;
+import io.xdag.crypto.RandomX;
 import io.xdag.db.*;
 import io.xdag.db.mysql.TransactionHistoryStoreImpl;
 import io.xdag.db.rocksdb.*;
-import io.xdag.mine.MinerServer;
-import io.xdag.mine.manager.AwardManager;
-import io.xdag.mine.manager.AwardManagerImpl;
-import io.xdag.mine.manager.MinerManager;
-import io.xdag.mine.manager.MinerManagerImpl;
-import io.xdag.mine.miner.Miner;
-import io.xdag.mine.miner.MinerStates;
-import io.xdag.mine.randomx.RandomX;
-import io.xdag.net.XdagClient;
-import io.xdag.net.XdagServer;
-import io.xdag.net.libp2p.Libp2pNetwork;
-import io.xdag.net.manager.NetDBManager;
-import io.xdag.net.manager.XdagChannelManager;
+import io.xdag.net.*;
 import io.xdag.net.message.MessageQueue;
-import io.xdag.net.message.NetDB;
 import io.xdag.net.node.NodeManager;
+import io.xdag.net.websocket.WebSocketServer;
+import io.xdag.pool.PoolAwardManagerImpl;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
@@ -63,12 +50,12 @@ import io.xdag.rpc.modules.xdag.*;
 import io.xdag.rpc.netty.*;
 import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
 import io.xdag.rpc.serialize.JsonRpcSerializer;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.KeyPair;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -81,48 +68,45 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Setter
 public class Kernel {
 
-    private Status status = Status.STOPPED;
-    private Config config;
-    private Wallet wallet;
-    private DatabaseFactory dbFactory;
-    private AddressStore addressStore;
-    private BlockStore blockStore;
-    private OrphanBlockStore orphanBlockStore;
-    private TransactionHistoryStore txHistoryStore;
+    protected Status status = Status.STOPPED;
+    protected Config config;
+    protected Wallet wallet;
+    protected KeyPair coinbase;
+    protected DatabaseFactory dbFactory;
+    protected AddressStore addressStore;
+    protected BlockStore blockStore;
+    protected OrphanBlockStore orphanBlockStore;
+    protected TransactionHistoryStore txHistoryStore;
 
-    private SnapshotStore SnapshotStore;
-    private Blockchain blockchain;
-    private NetDB netDB;
-    private XdagClient client;
-    private XdagChannelManager channelMgr;
-    private NodeManager nodeMgr;
-    private NetDBManager netDBMgr;
-    private XdagServer p2p;
-    private XdagSync sync;
-    private XdagPow pow;
+    protected SnapshotStore snapshotStore;
+    protected Blockchain blockchain;
+    protected NetDB netDB;
+    protected PeerClient client;
+    protected ChannelManager channelMgr;
+    protected NodeManager nodeMgr;
+    protected NetDBManager netDBMgr;
+    protected PeerServer p2p;
+    protected XdagSync sync;
+    protected XdagPow pow;
     private SyncManager syncMgr;
 
-    private byte[] firstAccount;
-    private Block firstBlock;
-    private Miner poolMiner;
-    private AwardManager awardManager;
-    private MinerManager minerManager;
-    private MinerServer minerServer;
-    private XdagState xdagState;
-    private Libp2pNetwork libp2pNetwork;
-    //    protected DiscoveryController discoveryController;
-    private AtomicInteger channelsAccount = new AtomicInteger(0);
-    private PrivKey privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
+    protected byte[] firstAccount;
+    protected Block firstBlock;
+    protected WebSocketServer webSocketServer;
+    protected PoolAwardManagerImpl poolAwardManager;
+    protected XdagState xdagState;
 
-    private TelnetServer telnetServer;
+    protected AtomicInteger channelsAccount = new AtomicInteger(0);
 
-    private RandomX randomx;
+    protected TelnetServer telnetServer;
+
+    protected RandomX randomx;
 
     // 记录运行状态
-    private AtomicBoolean isRunning = new AtomicBoolean(false);
+    protected AtomicBoolean isRunning = new AtomicBoolean(false);
     // 记录启动时间片
     @Getter
-    private long startEpoch;
+    protected long startEpoch;
 
 
     // rpc
@@ -136,13 +120,15 @@ public class Kernel {
     public Kernel(Config config, Wallet wallet) {
         this.config = config;
         this.wallet = wallet;
+        this.coinbase = wallet.getDefKey();
         this.xdagState = XdagState.INIT;
         this.telnetServer = new TelnetServer(config.getAdminSpec().getTelnetIp(), config.getAdminSpec().getTelnetPort(),
                 this);
     }
 
-    public Kernel(Config config) {
+    public Kernel(Config config, KeyPair coinbase) {
         this.config = config;
+        this.coinbase = coinbase;
     }
 
     /**
@@ -158,7 +144,7 @@ public class Kernel {
         // ====================================
         // start channel manager
         // ====================================
-        channelMgr = new XdagChannelManager(this);
+        channelMgr = new ChannelManager(this);
         channelMgr.start();
         log.info("Channel Manager start...");
         netDBMgr = new NetDBManager(this.config);
@@ -192,8 +178,9 @@ public class Kernel {
         log.info("Orphan Pool init.");
         orphanBlockStore.init();
 
-        if(config.getEnableTxHistory()) {
-            txHistoryStore = new TransactionHistoryStoreImpl();
+        if (config.getEnableTxHistory()) {
+            long txPageSizeLimit = config.getTxPageSizeLimit();
+            txHistoryStore = new TransactionHistoryStoreImpl(txPageSizeLimit);
             log.info("Transaction History Store init.");
         }
 
@@ -219,8 +206,7 @@ public class Kernel {
         // 如果是第一次启动，则新建一个创世块
         if (xdagStats.getOurLastBlockHash() == null) {
             firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
-            poolMiner = new Miner(BytesUtils.arrayToByte32(firstAccount));
-            firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1);
+            firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false, null, null, -1, XAmount.ZERO);
             firstBlock.signOut(wallet.getDefKey());
             xdagStats.setOurLastBlockHash(firstBlock.getHashLow().toArray());
             if (xdagStats.getGlobalMiner() == null) {
@@ -229,7 +215,6 @@ public class Kernel {
             blockchain.tryToConnect(firstBlock);
         } else {
             firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
-            poolMiner = new Miner(BytesUtils.arrayToByte32(firstAccount));
         }
         log.info("Blockchain init");
 
@@ -262,11 +247,10 @@ public class Kernel {
         // set up client
         // ====================================
 
-        p2p = new XdagServer(this);
+        p2p = new PeerServer(this);
         p2p.start();
         log.info("Node server start...");
-        client = new XdagClient(this.config);
-        log.info("XdagClient nodeId {}", client.getNode().getHexId());
+        client = new PeerClient(this.config, this.coinbase);
 
 //        libp2pNetwork = new Libp2pNetwork(this);
 //        libp2pNetwork.start();
@@ -294,34 +278,15 @@ public class Kernel {
         syncMgr = new SyncManager(this);
         syncMgr.start();
         log.info("SyncManager start...");
-
-        // ====================================
-        // set up pool miner
-        // ====================================
-        poolMiner.setMinerStates(MinerStates.MINER_SERVICE);
-
-        // ====================================
-        // set up minermanager awardmanager
-        // ====================================
-        minerManager = new MinerManagerImpl(this);
-        awardManager = new AwardManagerImpl(this);
-        // ====================================
-        // poolnode open
-        // ====================================
-        minerServer = new MinerServer(this);
-        log.info("Pool Server init");
-
+        poolAwardManager = new PoolAwardManagerImpl(this);
         // ====================================
         // pow
         // ====================================
         pow = new XdagPow(this);
-        minerManager.setPoW(pow);
-        minerManager.start();
-        awardManager.start();
-
+        getWsServer().start();
+        log.info("Node to pool websocket start...");
         // register pow
         blockchain.registerListener(pow);
-
         if (config instanceof MainnetConfig) {
             xdagState = XdagState.WAIT;
         } else if (config instanceof TestnetConfig) {
@@ -358,19 +323,31 @@ public class Kernel {
         Web3XdagModule web3XdagModule = new Web3XdagModuleImpl(
                 new XdagModule((byte) 0x1, new XdagModuleWalletDisabled(),
                         new XdagModuleTransactionEnabled(this),
-                        new XdagModuleChainBase(this.getBlockchain(),this)), this);
+                        new XdagModuleChainBase(this.getBlockchain(), this)), this);
         return new Web3Impl(web3XdagModule);
     }
 
     private JsonRpcWeb3ServerHandler getJsonRpcWeb3ServerHandler() {
         if (jsonRpcWeb3ServerHandler == null) {
-            jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
-                    getWeb3(),
-                    config.getRPCSpec().getRpcModules()
-            );
+            try {
+                jsonRpcWeb3ServerHandler = new JsonRpcWeb3ServerHandler(
+                        getWeb3(),
+                        config.getRPCSpec().getRpcModules()
+                );
+            } catch (Exception e) {
+                log.error("catch an error " + e.getMessage());
+            }
         }
 
         return jsonRpcWeb3ServerHandler;
+    }
+
+    public WebSocketServer getWsServer() {
+        if (webSocketServer == null) {
+            webSocketServer = new WebSocketServer(this, config.getPoolWhiteIPList(),
+                    config.getWebsocketServerPort());
+        }
+        return webSocketServer;
     }
 
     private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
@@ -460,8 +437,7 @@ public class Kernel {
         log.info("Node manager stop.");
 
         log.info("ChannelManager stop.");
-//        discoveryController.stop();
-//        libp2pNetwork.stop();
+
         // close timer
         MessageQueue.timer.shutdown();
 
@@ -471,12 +447,6 @@ public class Kernel {
         // close client
         client.close();
         log.info("Node client stop.");
-
-        minerServer.close();
-        log.info("Pool server stop.");
-        minerManager.stop();
-        log.info("Miner manager stop.");
-        awardManager.stop();
 
         // 3. 数据层关闭
         // TODO 关闭checkmain线程
@@ -489,7 +459,10 @@ public class Kernel {
         // release
         randomx.randomXPoolReleaseMem();
         log.info("Release randomx");
-
+        webSocketServer.stop();
+        log.info("WebSocket server stop.");
+        poolAwardManager.stop();
+        log.info("Pool award manager stop.");
     }
 
 

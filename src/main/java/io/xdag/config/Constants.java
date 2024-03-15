@@ -24,6 +24,8 @@
 
 package io.xdag.config;
 
+import io.xdag.core.XAmount;
+import io.xdag.core.XUnit;
 import org.apache.tuweni.units.bigints.UInt64;
 
 public class Constants {
@@ -73,6 +75,9 @@ public class Constants {
 
     public static final String WALLET_FILE_NAME = "wallet.data";
 
+
+    public static final String CLIENT_NAME = "xdagj";
+
     public static final String CLIENT_VERSION = System.getProperty("xdagj.version");
 
     /**
@@ -87,5 +92,11 @@ public class Constants {
         PRE_TOP,
         NEW_LINK
     }
+
+    public static final short MAINNET_VERSION = 0;
+    public static final short TESTNET_VERSION = 0;
+    public static final short DEVNET_VERSION = 0;
+
+    public static final XAmount MIN_GAS = XAmount.of(100, XUnit.MILLI_XDAG);
 
 }

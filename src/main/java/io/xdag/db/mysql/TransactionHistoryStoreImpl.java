@@ -40,6 +40,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import static io.xdag.config.Constants.MIN_GAS;
+import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.WalletUtils.checkAddress;
@@ -59,12 +61,17 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private static final String SQL_QUERY_TXHISTORY_COUNT_WITH_TIME = "select count(*) from t_transaction_history where faddress=? and ftime >=? and ftime <=?";
     private static final int BLOCK_ADDRESS_FLAG = 0;
     private static final int WALLET_ADDRESS_FLAG = 1;
-
     private static final int DEFAULT_PAGE_SIZE = 100;
+    private static final int DEFAULT_CACHE_SIZE = 50000;
+    private final long TX_PAGE_SIZE_LIMIT;
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
     public static int totalPage = 1;
+
+    public TransactionHistoryStoreImpl(long txPageSizeLimit) {
+        this.TX_PAGE_SIZE_LIMIT = txPageSizeLimit;
+    }
 
     @Override
     public boolean saveTxHistory(TxHistory txHistory) {
@@ -82,7 +89,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt.setString(1, addr);
                 pstmt.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmt.setString(3, txHistory.getHash());
-                pstmt.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmt.setBigDecimal(4, address.getType().equals(XDAG_FIELD_INPUT) ? address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG) :
+                        address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmt.setInt(5, address.getType().asByte());
                 pstmt.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmt.setTimestamp(7,
@@ -118,7 +126,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmtBatch.setString(1, addr);
                 pstmtBatch.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmtBatch.setString(3, txHistory.getHash());
-                pstmtBatch.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmtBatch.setBigDecimal(4, address.getType().equals(XDAG_FIELD_INPUT) ? address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG) :
+                        address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmtBatch.setInt(5, address.getType().asByte());
                 pstmtBatch.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmtBatch.setTimestamp(7,
@@ -126,7 +135,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmtBatch.addBatch();
                 count++;
             }
-            if (count == (cacheNum.length == 0 ? 50000 : (cacheNum[0] + 1)) || txHistory == null) {
+            if (count == (cacheNum.length == 0 ? DEFAULT_CACHE_SIZE : (cacheNum[0] + 1)) || txHistory == null) {
                 if (pstmtBatch != null) {
                     pstmtBatch.executeBatch();
                 }
@@ -166,12 +175,13 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         long start = new Date(0).getTime();
         long end = System.currentTimeMillis();
         switch (parameters.length) {
-            case 0: break;
-            case 1:
+            case 0 -> {
+            }
+            case 1 -> {
                 int pageSize = Integer.parseInt(parameters[0].toString());
-                PAGE_SIZE = (pageSize > 0 && pageSize <= 500) ? pageSize : PAGE_SIZE;
-                break;
-            case 2:
+                PAGE_SIZE = (pageSize > 0 && pageSize <= TX_PAGE_SIZE_LIMIT) ? pageSize : PAGE_SIZE;
+            }
+            case 2 -> {
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     start = sdf.parse(parameters[0].toString()).getTime();
@@ -180,8 +190,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                     start = Long.parseLong(parameters[0].toString());
                     end = Long.parseLong(parameters[1].toString());
                 }
-                break;
-            case 3:
+            }
+            case 3 -> {
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     start = sdf.parse(parameters[0].toString()).getTime();
@@ -191,8 +201,10 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                     end = Long.parseLong(parameters[1].toString());
                 }
                 int page_size = Integer.parseInt(parameters[2].toString());
-                PAGE_SIZE = (page_size > 0 && page_size <= 500) ? page_size : PAGE_SIZE;
-                break;
+                PAGE_SIZE = (page_size > 0 && page_size <= TX_PAGE_SIZE_LIMIT) ? page_size : PAGE_SIZE;
+            }
+            default -> {
+            }
         }
         try {
             conn = DruidUtils.getConnection();

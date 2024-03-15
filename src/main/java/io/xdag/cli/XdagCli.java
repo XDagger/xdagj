@@ -24,31 +24,22 @@
 
 package io.xdag.cli;
 
-import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
-
+import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.Launcher;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.db.SnapshotStore;
 import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MnemonicUtils;
+import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -57,8 +48,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 
-import com.google.common.collect.Lists;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
+
+import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 public class XdagCli extends Launcher {
 
@@ -243,7 +243,8 @@ public class XdagCli extends Launcher {
         if (accounts.isEmpty()) {
             KeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            System.out.println("New Address (Hex):" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
+            System.out.println("New Address (Base58):" + WalletUtils.toBase58(Keys.toBytesAddress(key)));
         }
 
         // start kernel
@@ -251,6 +252,7 @@ public class XdagCli extends Launcher {
             startKernel(getConfig(), wallet);
         } catch (Exception e) {
             System.err.println("Uncaught exception during kernel startup:" + e.getMessage());
+            e.printStackTrace();
             exit(-1);
         }
     }
@@ -466,7 +468,7 @@ public class XdagCli extends Launcher {
             // HD Mnemonic
             printer.println("HdWallet Initializing...");
             byte[] initialEntropy = new byte[16];
-            SecureRandomUtils.secureRandom().nextBytes(initialEntropy);
+            SecureRandomProvider.publicSecureRandom().nextBytes(initialEntropy);
             String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
             printer.println("HdWallet Mnemonic:" + phrase);
 

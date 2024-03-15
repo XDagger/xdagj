@@ -54,6 +54,7 @@ import io.xdag.Wallet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -84,7 +85,7 @@ public class XdagCliTest {
     @Test
     public void testHelp() throws Exception {
         ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
-        setOut(new PrintStream(captureOutputStream));
+        setOut(new PrintStream(captureOutputStream,true, Charset.defaultCharset()));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.start(new String[]{"--help"});
 
@@ -108,7 +109,7 @@ public class XdagCliTest {
     @Test
     public void testVersion() throws Exception {
         ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
-        setOut(new PrintStream(captureOutputStream));
+        setOut(new PrintStream(captureOutputStream, true, Charset.defaultCharset()));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.start(new String[]{"--version"});
         assertEquals(Constants.CLIENT_VERSION + "\n", tapSystemOut(xdagCLI::printVersion));
@@ -249,7 +250,7 @@ public class XdagCliTest {
     @Test
     public void testStartKernelWithEmptyWalletInvalidNewPassword() throws Exception {
         ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
-        setErr(new PrintStream(captureOutputStream));
+        setErr(new PrintStream(captureOutputStream, true, Charset.defaultCharset()));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         // mock wallet
@@ -297,7 +298,7 @@ public class XdagCliTest {
     @Test
     public void testCreateAccount() throws Exception {
         ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
-        setOut(new PrintStream(captureOutputStream));
+        setOut(new PrintStream(captureOutputStream, true, Charset.defaultCharset()));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
         // mock wallet
@@ -355,7 +356,7 @@ public class XdagCliTest {
     @Test
     public void testChangePasswordIncorrectConfirmation() {
         ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
-        setErr(new PrintStream(captureOutputStream));
+        setErr(new PrintStream(captureOutputStream, true, Charset.defaultCharset()));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
 
@@ -480,7 +481,7 @@ public class XdagCliTest {
     @Test
     public void testImportPrivateKey() throws Exception {
         ByteArrayOutputStream captureOutputStream = new ByteArrayOutputStream();
-        setOut(new PrintStream(captureOutputStream));
+        setOut(new PrintStream(captureOutputStream, true, Charset.defaultCharset()));
         XdagCli xdagCLI = spy(new XdagCli());
         xdagCLI.setConfig(config);
 

@@ -39,6 +39,7 @@ import io.xdag.db.execption.DeserializationException;
 import io.xdag.db.execption.SerializationException;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -58,7 +59,6 @@ import java.util.List;
 
 import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.db.AddressStore.ADDRESS_SIZE;
-import static io.xdag.db.AddressStore.AMOUNT_SUM;
 import static io.xdag.db.BlockStore.*;
 import static io.xdag.utils.BasicUtils.compareAmountTo;
 
@@ -68,9 +68,13 @@ public class SnapshotStoreImpl implements SnapshotStore {
     private final RocksdbKVSource snapshotSource;
 
     private final Kryo kryo;
+    @Getter
     private XAmount ourBalance = XAmount.ZERO;
+    @Getter
     private XAmount allBalance = XAmount.ZERO;
+    @Getter
     private long nextTime;
+    @Getter
     private long height;
 
 
@@ -93,10 +97,10 @@ public class SnapshotStoreImpl implements SnapshotStore {
     public void setBlockInfo(BlockInfo blockInfo, PreBlockInfo preBlockInfo) {
         blockInfo.setSnapshot(preBlockInfo.isSnapshot());
         blockInfo.setSnapshotInfo(preBlockInfo.getSnapshotInfo());
-        blockInfo.setFee(preBlockInfo.getFee());
+        blockInfo.setFee(XAmount.of(preBlockInfo.getFee()));
         blockInfo.setHash(preBlockInfo.getHash());
         blockInfo.setDifficulty(preBlockInfo.getDifficulty());
-        blockInfo.setAmount(XAmount.ofXAmount(preBlockInfo.getAmount().toLong()));
+        blockInfo.setAmount(preBlockInfo.getAmount());
         blockInfo.setHashlow(preBlockInfo.getHashlow());
         blockInfo.setFlags(preBlockInfo.getFlags());
         blockInfo.setHeight(preBlockInfo.getHeight());
@@ -231,6 +235,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     blockStore.savePreSeed(iter.value());
                 }
             }
+            System.out.println("amount in blocks: " + allBalance.toDecimal(9, XUnit.XDAG).toPlainString());
             if (txHistoryStore != null) {
                 txHistoryStore.batchSaveTxHistory(null);
             }
@@ -247,10 +252,6 @@ public class SnapshotStoreImpl implements SnapshotStore {
                 if (iter.key().length < 20) {
                     if (iter.key()[0] == ADDRESS_SIZE) {
                         addressStore.saveAddressSize(iter.value());
-                    } else if (iter.key()[0] == AMOUNT_SUM) {
-                        UInt64 u64v = UInt64.fromBytes(Bytes.wrap(iter.value()));
-                        addressStore.savaAmountSum(XAmount.ofXAmount(u64v.toLong()));
-                        allBalance = addressStore.getAllBalance();
                     }
                 } else {
                     byte[] address = iter.key();
@@ -262,6 +263,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                             ourBalance = ourBalance.add(balance);
                         }
                     }
+                    allBalance = allBalance.add(balance); //calculate the address balance
                     addressStore.snapshotAddress(address, balance);
                     if (txHistoryStore != null) {
                         XdagField.FieldType fieldType = XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
@@ -276,6 +278,9 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     }
                 }
             }
+            System.out.println("amount in address: " + allBalance.toDecimal(9, XUnit.XDAG).toPlainString());
+            //sava Address all Balance as AMOUNT_SUM
+            addressStore.savaAmountSum(allBalance);
         }
     }
 
@@ -288,23 +293,6 @@ public class SnapshotStoreImpl implements SnapshotStore {
         }
         snapshotSource.put(iter.key(), value);
     }
-
-    public XAmount getOurBalance() {
-        return this.ourBalance;
-    }
-
-    public XAmount getAllBalance() {
-        return this.allBalance;
-    }
-
-    public long getNextTime() {
-        return nextTime;
-    }
-
-    public long getHeight() {
-        return height;
-    }
-
 
     public Object deserialize(final byte[] bytes, Class<?> type) throws DeserializationException {
         synchronized (kryo) {

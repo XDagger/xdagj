@@ -6,7 +6,7 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.6.5</version>
+    <version>0.7.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,32 +17,30 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
 
-        <netty.version>4.1.92.Final</netty.version>
+        <netty.version>4.1.107.Final</netty.version>
         <tuweni.version>2.3.1</tuweni.version>
-        <libp2p.version>0.10.0-RELEASE</libp2p.version>
         <json.version>2.14.2</json.version>
         <kryo.version>5.4.0</kryo.version>
         <lombok.version>1.18.26</lombok.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <jline.version>3.23.0</jline.version>
+        <jline.version>3.25.0</jline.version>
         <junit.version>4.13.2</junit.version>
         <mockito.version>5.2.0</mockito.version>
         <system-lambda.version>1.2.1</system-lambda.version>
         <log4j.version>2.20.0</log4j.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <commons-lang3.version>3.13.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <commons-codec.version>1.15</commons-codec.version>
-        <commons-io.version>2.11.0</commons-io.version>
+        <commons-codec.version>1.16.0</commons-codec.version>
+        <commons-io.version>2.13.0</commons-io.version>
         <commons-cli.version>1.5.0</commons-cli.version>
-        <guava.version>32.0.0-jre</guava.version>
+        <guava.version>32.1.2-jre</guava.version>
         <rocksdbjni.version>8.0.0</rocksdbjni.version>
-        <okhttp.version>4.10.0</okhttp.version>
+        <okhttp.version>4.12.0</okhttp.version>
         <assertj-core.version>3.24.2</assertj-core.version>
-        <crypto.version>22.10.4</crypto.version>
-        <bcprov-jdk18on.version>1.74</bcprov-jdk18on.version>
-        <bcpkix-jdk18on.version>1.74</bcpkix-jdk18on.version>
+        <crypto.version>23.1.3</crypto.version>
+        <bcprov-jdk18on.version>1.76</bcprov-jdk18on.version>
+        <bcpkix-jdk18on.version>1.76</bcpkix-jdk18on.version>
         <vertx-core.version>4.4.0</vertx-core.version>
-        <discovery.version>22.2.0</discovery.version>
         <jsonrpc4j.version>1.6</jsonrpc4j.version>
         <jaxws-ri.version>4.0.1</jaxws-ri.version>
         <config.version>1.4.2</config.version>
@@ -86,18 +84,6 @@
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>libp2p-jvm-libp2p</id>
-            <url>https://dl.cloudsmith.io/public/libp2p/jvm-libp2p/maven/</url>
-            <releases>
-              <enabled>true</enabled>
-              <updatePolicy>always</updatePolicy>
-            </releases>
-            <snapshots>
-              <enabled>true</enabled>
-              <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
         <repository>
@@ -406,7 +392,7 @@
         <dependency>
             <groupId>io.xdag</groupId>
             <artifactId>xdagj-native-randomx</artifactId>
-            <version>0.1.6</version>
+            <version>0.1.7</version>
         </dependency>
 
         <!-- Logging framework -->
@@ -414,6 +400,11 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version>
         </dependency>
 
         <dependency>
@@ -528,58 +519,6 @@
                 <exclusion>
                     <artifactId>annotations</artifactId>
                     <groupId>org.jetbrains</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.libp2p</groupId>
-            <artifactId>jvm-libp2p-minimal</artifactId>
-            <version>${libp2p.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jetbrains</groupId>
-                    <artifactId>annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-all</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcpkix-jdk15on</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>kotlin-stdlib</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>kotlin-stdlib-common</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>kotlin-stdlib-jdk8</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -760,6 +699,14 @@
                     <artifactId>slf4j-api</artifactId>
                     <groupId>org.slf4j</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>commons-lang3</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jna</artifactId>
+                    <groupId>net.java.dev.jna</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -861,90 +808,6 @@
             <version>${json.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>tech.pegasys.discovery</groupId>
-            <artifactId>discovery</artifactId>
-            <version>${discovery.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>log4j-api</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>log4j-core</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty-all</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                    <groupId>org.bouncycastle</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-databind</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>logging-interceptor</artifactId>
-                    <groupId>com.squareup.okhttp3</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>okhttp</artifactId>
-                    <groupId>com.squareup.okhttp3</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-core</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jffi</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jnr-constants</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jnr-ffi</artifactId>
-                    <groupId>com.github.jnr</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>vertx-core</artifactId>
-                    <groupId>io.vertx</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>bytes</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>units</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-bytes</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-io</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-units</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
         <dependency>
             <groupId>com.github.briandilley.jsonrpc4j</groupId>
@@ -984,6 +847,18 @@
                     <artifactId>jakarta.activation</artifactId>
                     <groupId>com.sun.activation</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>angus-activation</artifactId>
+                    <groupId>org.eclipse.angus</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>angus-mail</artifactId>
+                    <groupId>org.eclipse.angus</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jakarta.activation-api</artifactId>
+                    <groupId>jakarta.activation</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -1013,12 +888,30 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>${mysql-connector.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>protobuf-java</artifactId>
+                    <groupId>com.google.protobuf</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
             <version>${druid.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.9.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.9.0</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

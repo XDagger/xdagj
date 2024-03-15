@@ -25,11 +25,12 @@
 package io.xdag.core;
 
 import io.xdag.listener.Listener;
-import java.util.List;
-import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
+
+import java.util.List;
+import java.util.Map;
 
 public interface Blockchain {
 
@@ -38,7 +39,7 @@ public interface Blockchain {
 
     ImportResult tryToConnect(Block block);
 
-    Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark);
+    Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to, boolean mining, String remark, XAmount fee);
 
     Block getBlockByHash(Bytes32 hash, boolean isRaw);
 
@@ -46,10 +47,11 @@ public interface Blockchain {
 
     void checkNewMain();
 
+    long getLatestMainBlockNumber();
+
     List<Block> listMainBlocks(int count);
 
     List<Block> listMinedBlocks(int count);
-
     Map<Bytes, Integer> getMemOurBlocks();
 
     XdagStats getXdagStats();
@@ -62,7 +64,6 @@ public interface Blockchain {
 
     List<Block> getBlocksByTime(long starttime, long endtime);
 
-    // TODO ： 补充单元测试
     // 启动检查主块链线程
     void startCheckMain(long period);
 

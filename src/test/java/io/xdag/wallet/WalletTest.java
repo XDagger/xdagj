@@ -24,16 +24,21 @@
 
 package io.xdag.wallet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import com.google.common.collect.Lists;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
+import io.xdag.utils.WalletUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.jline.utils.Log;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
@@ -42,13 +47,10 @@ import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.collections4.CollectionUtils;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
-import com.google.common.collect.Lists;
+import static io.xdag.utils.BasicUtils.hash2PubAddress;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static org.junit.Assert.*;
 
 public class WalletTest {
 
@@ -198,6 +200,15 @@ public class WalletTest {
             keyPairList2.add(key);
         }
         assertTrue(CollectionUtils.isEqualCollection(keyPairList1, keyPairList2));
+    }
+
+    @Test
+    public void testGetWalletAddress() {
+        wallet.unlock(pwd);
+        Log.info(wallet.getDefKey());
+        Log.info(keyPair2Hash(wallet.getDefKey()));
+        Log.info(hash2PubAddress(keyPair2Hash(wallet.getDefKey())));
+        assertTrue(WalletUtils.checkAddress(hash2PubAddress(keyPair2Hash(wallet.getDefKey()))));
     }
 
     @After

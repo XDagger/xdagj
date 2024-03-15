@@ -34,18 +34,7 @@ import io.xdag.core.Block;
 import io.xdag.core.XdagState;
 import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
-import io.xdag.net.manager.XdagChannelManager;
-import java.nio.ByteOrder;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import io.xdag.net.ChannelManager;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +43,13 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 
-import static io.xdag.config.Constants.*;
+import java.nio.ByteOrder;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.*;
+
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.config.Constants.REQUEST_WAIT;
 
 @Slf4j
 public class XdagSync {
@@ -64,7 +59,7 @@ public class XdagSync {
             .daemon(true)
             .build();
 
-    private final XdagChannelManager channelMgr;
+    private final ChannelManager channelMgr;
     private final BlockStore blockStore;
     private final ScheduledExecutorService sendTask;
     @Getter
@@ -147,6 +142,12 @@ public class XdagSync {
             if (i >= size) {
                 break;
             }
+            //when the synchronization process channel is removed and reset, update the channel
+            if (!xc.isActive()){
+                log.debug("sync channel need to update");
+                return;
+            }
+
             long time = syncWindow.get(i);
             sendGetBlocks(xc, time, sf);
             if (i == 30) lastRequestTime = time;
@@ -193,7 +194,7 @@ public class XdagSync {
      * @param t request time
      */
     private void sendGetBlocks(Channel xc, long t, SettableFuture<Bytes> sf) {
-        long randomSeq = xc.getXdag().sendGetBlocks(t, t + REQUEST_BLOCKS_MAX_TIME);
+        long randomSeq = xc.getP2pHandler().sendGetBlocks(t, t + REQUEST_BLOCKS_MAX_TIME);
         blocksRequestMap.put(randomSeq, sf);
         try {
             sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
@@ -213,7 +214,7 @@ public class XdagSync {
         if (blockStore.loadSum(t, t + dt, lSums) <= 0) {
             return;
         }
-        long randomSeq = xc.getXdag().sendGetSums(t, t + dt);
+        long randomSeq = xc.getP2pHandler().sendGetSums(t, t + dt);
         sumsRequestMap.put(randomSeq, sf);
         try {
             Bytes sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);

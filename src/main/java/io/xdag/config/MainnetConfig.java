@@ -27,12 +27,15 @@ package io.xdag.config;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD;
 
 import org.apache.tuweni.units.bigints.UInt64;
+
+import io.xdag.Network;
 import io.xdag.core.XAmount;
 
 public class MainnetConfig extends AbstractConfig {
 
     public MainnetConfig() {
-        super("mainnet", "xdag-mainnet");
+        super("mainnet", "xdag-mainnet", Network.MAINNET, Constants.MAINNET_VERSION);
+        this.network = Network.MAINNET;
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white.txt";
         this.xdagEra = 0x16940000000L;
         this.mainStartAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 42).toLong());

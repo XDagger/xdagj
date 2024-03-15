@@ -31,16 +31,12 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.SimpleEncoder;
-import io.xdag.core.XAmount;
+import io.xdag.core.*;
+import io.xdag.utils.SimpleEncoder;
 import io.xdag.crypto.Aes;
 import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
-import io.xdag.crypto.MnemonicUtils;
-import io.xdag.crypto.SecureRandomUtils;
+import io.xdag.utils.MnemonicUtils;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
@@ -77,6 +73,7 @@ import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 @Slf4j
 @Getter
@@ -222,7 +219,7 @@ public class Wallet {
         synchronized (accounts) {
             enc.writeInt(accounts.size());
             for (KeyPair keyPair : accounts.values()) {
-                byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
+                byte[] iv = SecureRandomProvider.publicSecureRandom().generateSeed(16);
 
                 enc.writeBytes(iv);
                 enc.writeBytes(Aes.encrypt(keyPair.getPrivateKey().getEncoded(), key, iv));
@@ -251,7 +248,7 @@ public class Wallet {
         e.writeString(mnemonicPhrase);
         e.writeInt(nextAccountIndex);
 
-        byte[] iv = SecureRandomUtils.secureRandom().generateSeed(16);
+        byte[] iv = SecureRandomProvider.publicSecureRandom().generateSeed(16);
         byte[] hdSeedRaw = e.toBytes();
         byte[] hdSeedEncrypted = Aes.encrypt(hdSeedRaw, key, iv);
 
@@ -325,7 +322,7 @@ public class Wallet {
             SimpleEncoder enc = new SimpleEncoder();
             enc.writeInt(VERSION);
 
-            byte[] salt = SecureRandomUtils.secureRandom().generateSeed(SALT_LENGTH);
+            byte[] salt = SecureRandomProvider.publicSecureRandom().generateSeed(SALT_LENGTH);
             enc.writeBytes(salt);
 
             byte[] key = BCrypt.generate(password.getBytes(UTF_8), salt, BCRYPT_COST);
@@ -605,7 +602,7 @@ public class Wallet {
 
         long sendTime = XdagTime.getCurrentTimestamp();
 
-        return new Block(getConfig(), sendTime, all, null, false, keys, remark, defKeyIndex);
+        return new Block(getConfig(), sendTime, all, null, false, keys, remark, defKeyIndex, XAmount.of(100, XUnit.MILLI_XDAG));
     }
 
 

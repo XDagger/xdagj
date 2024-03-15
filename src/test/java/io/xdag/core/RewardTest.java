@@ -35,7 +35,7 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
-import io.xdag.mine.randomx.RandomX;
+import io.xdag.crypto.RandomX;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
@@ -84,7 +84,7 @@ public class RewardTest {
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
-        kernel = new Kernel(config);
+        kernel = new Kernel(config, key);
         dbFactory = new RocksdbFactory(config);
 
         BlockStore blockStore = new BlockStoreImpl(

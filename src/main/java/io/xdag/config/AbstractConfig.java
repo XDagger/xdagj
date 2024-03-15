@@ -27,31 +27,26 @@ package io.xdag.config;
 import com.google.common.collect.Lists;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigObject;
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.RPCSpec;
-import io.xdag.config.spec.RandomxSpec;
-import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.Network;
+import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
-import io.xdag.crypto.DnetKeys;
+import io.xdag.net.Capability;
+import io.xdag.net.CapabilityTreeSet;
+import io.xdag.net.message.MessageCode;
 import io.xdag.rpc.modules.ModuleDescription;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
+
+import java.net.InetSocketAddress;
+import java.util.*;
 
 @Slf4j
 @Getter
 @Setter
-public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec {
+public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, RPCSpec, SnapshotSpec, RandomxSpec, FundSpec {
 
     protected String configName;
 
@@ -63,42 +58,56 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected String telnetPassword;
 
     // =========================
-    // Mining Pool spec
+    // Pool websocket spec
     // =========================
-    protected String poolIp;
-    protected int poolPort;
-    protected String poolTag;
-    protected double poolRation;
-    protected double rewardRation;
-    protected double fundRation;
-    protected double directRation;
-    protected String fundAddress;
 
-    protected int globalMinerLimit;
-    protected int globalMinerChannelLimit;
-    protected int maxMinerPerAccount;
-    protected int maxConnectPerIp;
+    protected int WebsocketServerPort;
 
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
-    protected int waitEpoch = 20;
+    protected int waitEpoch = 32;
+    // =========================
+    // foundation spec
+    // =========================
+    protected String fundAddress;
+    protected double fundRation;
+    protected double nodeRation;
+    // =========================
+    // Network
+    // =========================
+    protected Network network;
+    protected short networkVersion;
+    protected int netMaxOutboundConnections = 128;
+    protected int netMaxInboundConnections = 512;
+    protected int netMaxInboundConnectionsPerIp = 5;
+    protected int netMaxMessageQueueSize = 4096;
+    protected int netMaxFrameBodySize = 128 * 1024;
+    protected int netMaxPacketSize = 16 * 1024 * 1024;
+    protected int netRelayRedundancy = 8;
+    protected int netHandshakeExpiry = 5 * 60 * 1000;
+    protected int netChannelIdleTimeout = 2 * 60 * 1000;
 
-    // =========================
-    // Node spec
-    // =========================
+    protected Set<MessageCode> netPrioritizedMessages = new HashSet<>(Arrays.asList(
+            MessageCode.NEW_BLOCK,
+            MessageCode.BLOCK_REQUEST,
+            MessageCode.BLOCKS_REQUEST));
+
     protected String nodeIp;
     protected int nodePort;
+    protected String nodeTag;
     protected int maxConnections = 1024;
     protected int maxInboundConnectionsPerIp = 8;
     protected int connectionTimeout = 10000;
     protected int connectionReadTimeout = 10000;
     protected boolean enableTxHistory = false;
+    protected long txPageSizeLimit = 500;
     protected boolean enableGenerateBlock = false;
 
     protected String rootDir;
     protected String storeDir;
     protected String storeBackupDir;
     protected String whiteListDir;
+    protected String rejectAddress;
     protected String netDBDir;
 
     protected int storeMaxOpenFiles = 1024;
@@ -111,18 +120,8 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected String walletKeyFile;
 
     protected int TTL = 5;
-    protected byte[] dnetKeyBytes = new byte[2048];
-    protected DnetKeys xKeys;
     protected List<InetSocketAddress> whiteIPList = Lists.newArrayList();
-
-
-    // =========================
-    // Libp2p spec
-    // =========================
-    protected int libp2pPort;
-    protected boolean isBootnode;
-    protected String libp2pPrivkey;
-    protected List<String> bootnodes = Lists.newArrayList();
+    protected List<String> poolWhiteIPList = Lists.newArrayList();
 
     // =========================
     // Wallet spec
@@ -138,7 +137,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     protected long apolloForkHeight;
     protected XAmount apolloForkAmount;
 
-
     // =========================
     // Xdag RPC modules
     // =========================
@@ -153,7 +151,7 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected boolean snapshotEnabled = false;
     protected long snapshotHeight;
-    protected long snapshotTime; // TODO：用于sync时的起始时间
+    protected long snapshotTime;
     protected boolean isSnapshotJ;
 
     // =========================
@@ -161,10 +159,11 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     // =========================
     protected boolean flag;
 
-    protected AbstractConfig(String rootDir, String configName) {
+    protected AbstractConfig(String rootDir, String configName, Network network, short networkVersion) {
         this.rootDir = rootDir;
         this.configName = configName;
-
+        this.network = network;
+        this.networkVersion = networkVersion;
         getSetting();
         setDir();
     }
@@ -174,21 +173,6 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
         whiteListDir = getRootDir() + "/netdb-white.txt";
         netDBDir = getRootDir() + "/netdb.txt";
-    }
-
-    public void initKeys() throws Exception {
-        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("dnet_keys.bin");
-        if (inputStream == null) {
-            throw new RuntimeException("can not find dnet_key.bin file.");
-        } else {
-            xKeys = new DnetKeys();
-            byte[] data = new byte[3072];
-            IOUtils.read(inputStream, data);
-            System.arraycopy(data, 0, xKeys.prv, 0, 1024);
-            System.arraycopy(data, 1024, xKeys.pub, 0, 1024);
-            System.arraycopy(data, 2048, xKeys.sect0_encoded, 0, 512);
-            System.arraycopy(data, 2048 + 512, xKeys.sect0, 0, 512);
-        }
     }
 
     @Override
@@ -207,8 +191,42 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     @Override
-    public PoolSpec getPoolSpec() {
+    public FundSpec getFundSpec() {
         return this;
+    }
+
+    @Override
+    public Network getNetwork() {
+        return this.network;
+    }
+
+    @Override
+    public short getNetworkVersion() {
+        return this.networkVersion;
+    }
+
+    @Override
+    public String getNodeTag() {
+        return this.nodeTag;
+    }
+
+    @Override
+    public Set<MessageCode> getNetPrioritizedMessages() {
+        return this.netPrioritizedMessages;
+    }
+
+    @Override
+    public String getClientId() {
+        return String.format("%s/v%s-%s/%s",
+                Constants.CLIENT_NAME,
+                Constants.CLIENT_VERSION,
+                SystemUtils.OS_NAME,
+                SystemUtils.OS_ARCH);
+    }
+
+    @Override
+    public CapabilityTreeSet getClientCapabilities() {
+        return CapabilityTreeSet.of(Capability.FULL_NODE, Capability.LIGHT_NODE);
     }
 
     @Override
@@ -229,54 +247,37 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     public void getSetting() {
         com.typesafe.config.Config config = ConfigFactory.load(getConfigName());
 
-        telnetIp = config.hasPath("admin.telnet.ip")?config.getString("admin.telnet.ip"):"127.0.0.1";
-        telnetPort = config.hasPath("admin.telnet.port")?config.getInt("admin.telnet.port"):6001;
+        telnetIp = config.hasPath("admin.telnet.ip") ? config.getString("admin.telnet.ip") : "127.0.0.1";
+        telnetPort = config.hasPath("admin.telnet.port") ? config.getInt("admin.telnet.port") : 6001;
         telnetPassword = config.getString("admin.telnet.password");
 
-        poolIp = config.hasPath("pool.ip")?config.getString("pool.ip"):"127.0.0.1";
-        poolPort = config.hasPath("pool.port")?config.getInt("pool.port"):7001;
-        poolTag = config.hasPath("pool.tag")?config.getString("pool.tag"):"xdagj";
-
-        poolRation = config.getInt("pool.poolRation");
-        rewardRation = config.getInt("pool.rewardRation");
-        fundRation = config.getInt("pool.fundRation");
-        directRation = config.getInt("pool.directRation");
-        fundAddress = config.hasPath("pool.fundAddress")?config.getString("pool.fundAddress"):"FQglVQtb60vQv2DOWEUL7yh3smtj7g1s";
-
-        nodeIp = config.hasPath("node.ip")?config.getString("node.ip"):"127.0.0.1";
-        nodePort = config.hasPath("node.port")?config.getInt("node.port"):8001;
+        poolWhiteIPList = config.hasPath("pool.whiteIPs") ? config.getStringList("pool.whiteIPs") : Collections.singletonList("127.0.0.1");
+        log.info("Pool whitelist {}. Any IP allowed? {}", poolWhiteIPList, poolWhiteIPList.contains("0.0.0.0"));
+        WebsocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
+        nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
+        nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
+        nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
+        rejectAddress = config.hasPath("node.reject.transaction.address") ? config.getString("node.reject.transaction.address") : "";
         maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
-        enableTxHistory = config.hasPath("node.transaction.history.enable")?config.getBoolean("node.transaction.history.enable"):false;
+        enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
-
+        txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit") ? config.getInt("node.transaction.history.pageSizeLimit") : 500;
+        fundAddress = config.hasPath("fund.address") ? config.getString("fund.address") : "4duPWMbYUgAifVYkKDCWxLvRRkSByf5gb";
+        fundRation = config.hasPath("fund.ration") ? config.getDouble("fund.ration") : 5;
+        nodeRation = config.hasPath("node.ration") ? config.getDouble("node.ration") : 5;
         List<String> whiteIpList = config.getStringList("node.whiteIPs");
         log.debug("{} IP access", whiteIpList.size());
-        for(String addr : whiteIpList) {
+        for (String addr : whiteIpList) {
             String ip = addr.split(":")[0];
             int port = Integer.parseInt(addr.split(":")[1]);
-            whiteIPList.add(new InetSocketAddress(ip,port));
+            whiteIPList.add(new InetSocketAddress(ip, port));
         }
-
-        libp2pPort = config.getInt("node.libp2p.port");
-        libp2pPrivkey = config.getString("node.libp2p.privkey");
-        isBootnode = config.getBoolean("node.libp2p.isbootnode");
-
-        List<String> bootnodeList = config.getStringList("node.libp2p.bootnode");
-        if (bootnodeList != null) {
-            bootnodes.addAll(bootnodeList);
-        }
-
-        globalMinerLimit = config.getInt("miner.globalMinerLimit");
-        globalMinerChannelLimit = config.getInt("miner.globalMinerChannelLimit");
-        maxConnectPerIp = config.getInt("miner.maxConnectPerIp");
-        maxMinerPerAccount = config.getInt("miner.maxMinerPerAccount");
-
         // rpc
-        rpcEnabled = config.hasPath("rpc.enabled")?config.getBoolean("rpc.enabled"):false;
+        rpcEnabled = config.hasPath("rpc.enabled") && config.getBoolean("rpc.enabled");
         if (rpcEnabled) {
-            rpcHost = config.hasPath("rpc.http.host")?config.getString("rpc.http.host"):"127.0.0.1";
-            rpcPortHttp = config.hasPath("rpc.http.port")?config.getInt("rpc.http.port"):10001;
-            rpcPortWs = config.hasPath("rpc.ws.port")?config.getInt("rpc.ws.port"):10002;
+            rpcHost = config.hasPath("rpc.http.host") ? config.getString("rpc.http.host") : "127.0.0.1";
+            rpcPortHttp = config.hasPath("rpc.http.port") ? config.getInt("rpc.http.port") : 10001;
+            rpcPortWs = config.hasPath("rpc.ws.port") ? config.getInt("rpc.ws.port") : 10002;
         }
         flag = config.hasPath("randomx.flags.fullmem") && config.getBoolean("randomx.flags.fullmem");
 
@@ -306,15 +307,8 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
                     i++;
                     this.changeNode(args[i]);
                     break;
-                case "-P":
-                    i++;
-                    this.changePoolPara(args[i]);
-                    break;
                 case "-r":
                     // todo only load block but no run
-                    break;
-                case "-tag":
-                    this.poolTag = StringUtils.substring(args[i + 1], 0, 31);
                     break;
                 case "-d":
                 case "-t":
@@ -332,28 +326,14 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
         this.nodePort = Integer.parseInt(args[1]);
     }
 
-    /**
-     * 设置矿池的分配奖励
-     */
-    public void changePoolPara(String para) {
-        String[] args = para.split(":");
-        if (args.length != 9) {
-            throw new IllegalArgumentException("Illegal instruction");
-        }
-        this.setPoolIp(args[0]);
-        this.setPoolPort(Integer.parseInt(args[1]));
-        this.globalMinerChannelLimit = Integer.parseInt(args[2]);
-        this.maxConnectPerIp = Integer.parseInt(args[3]);
-        this.maxMinerPerAccount = Integer.parseInt(args[4]);
-        this.poolRation = Double.parseDouble(args[5]);
-        this.rewardRation = Double.parseDouble(args[6]);
-        this.directRation = Double.parseDouble(args[7]);
-        this.fundRation = Double.parseDouble(args[8]);
+    @Override
+    public int getNetMaxFrameBodySize() {
+        return this.netMaxFrameBodySize;
     }
 
     @Override
-    public boolean isBootnode() {
-        return this.isBootnode;
+    public int getNetMaxPacketSize() {
+        return this.netMaxPacketSize;
     }
 
     @Override
@@ -407,6 +387,17 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     @Override
+    public List<String> getPoolWhiteIPList() {
+        return poolWhiteIPList;
+    }
+
+    @Override
+    public int getWebsocketServerPort() {
+        return WebsocketServerPort;
+    }
+
+
+    @Override
     public boolean isRPCEnabled() {
         return rpcEnabled;
     }
@@ -447,10 +438,19 @@ public class AbstractConfig implements Config, AdminSpec, PoolSpec, NodeSpec, Wa
     }
 
     @Override
-    public boolean getEnableTxHistory() {return enableTxHistory;}
+    public boolean getEnableTxHistory() {
+        return enableTxHistory;
+    }
 
     @Override
-    public boolean getEnableGenerateBlock() {return enableGenerateBlock;}
+    public long getTxPageSizeLimit() {
+        return txPageSizeLimit;
+    }
+
+    @Override
+    public boolean getEnableGenerateBlock() {
+        return enableGenerateBlock;
+    }
 
     @Override
     public void setSnapshotJ(boolean isSnapshot) {

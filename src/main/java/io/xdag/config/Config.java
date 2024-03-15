@@ -24,15 +24,12 @@
 
 package io.xdag.config;
 
-import io.xdag.config.spec.AdminSpec;
-import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.PoolSpec;
-import io.xdag.config.spec.RPCSpec;
-import io.xdag.config.spec.RandomxSpec;
-import io.xdag.config.spec.SnapshotSpec;
-import io.xdag.config.spec.WalletSpec;
+import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
+import io.xdag.net.CapabilityTreeSet;
+
+import java.util.List;
 
 /**
  * The Xdag blockchain configurations.
@@ -44,15 +41,14 @@ public interface Config {
      */
     String getConfigName();
 
+    String getClientId();
+
+    CapabilityTreeSet getClientCapabilities();
+
     /**
      * Config Root Dir.
      */
     String getRootDir();
-
-    /**
-     * Pool Specification.
-     */
-    PoolSpec getPoolSpec();
 
     /**
      * Node Specification.
@@ -83,8 +79,6 @@ public interface Config {
 
     void setDir();
 
-    void initKeys() throws Exception;
-
     // rpc
     RPCSpec getRPCSpec();
 
@@ -96,4 +90,14 @@ public interface Config {
     boolean getEnableTxHistory();
 
     boolean getEnableGenerateBlock();
+
+    long getTxPageSizeLimit();
+
+    //websocket
+    List<String> getPoolWhiteIPList();
+
+    int getWebsocketServerPort();
+
+    FundSpec getFundSpec();
+
 }

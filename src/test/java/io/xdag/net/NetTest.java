@@ -26,8 +26,10 @@ package io.xdag.net;
 
 import static org.junit.Assert.assertEquals;
 
-import io.xdag.net.message.NetDB;
-import io.xdag.net.message.impl.SumRequestMessage;
+import java.math.BigInteger;
+
+import io.xdag.core.XdagStats;
+import io.xdag.net.message.consensus.SumRequestMessage;
 import io.xdag.utils.BytesUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -64,8 +66,8 @@ public class NetTest {
         assertEquals(all, Hex.toHexString(netDB1.getEncoded()));
 
         MutableBytes mutableBytes = MutableBytes.create(112);
-        long nhosts = netDB.getIpList().size();
-        long totalHosts = netDB.getIpList().size();
+        long nhosts = netDB.getIPList().size();
+        long totalHosts = netDB.getIPList().size();
 
         mutableBytes.set(0, Bytes.wrap(BytesUtils.longToBytes(nhosts, true)));
         mutableBytes.set(8, Bytes.wrap(BytesUtils.longToBytes(totalHosts, true)));
@@ -86,27 +88,37 @@ public class NetTest {
 
     @Test
     public void testNetDBParse() {
-        String sumsRequest = "8b010002f91eb6eb200000000000000000000000000000000000000000000100"
-                + "257b369b5a89d009000000000000000000000000000000000000000000000000"
-                + "511e9e9274800c750200000000000000511e9e9274800c750200000000000000"
-                + "ee00000000000000ee00000000000000d400000000000000d400000000000000"
-                + "04000000040000003ef47801000000007f000001611e7f000001b8227f000001"
-                + "5f767f000001d49d000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000"
-                + "0000000000000000000000000000000000000000000000000000000000000000";
+        long starttime = 1600616700000L;
+        long endtime = starttime + 10000;
 
-        //        SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
-        SumRequestMessage sumRequestMessage = new SumRequestMessage(Bytes.fromHexString(sumsRequest).mutableCopy());
-        NetDB netDB = sumRequestMessage.getNetDB();
-        assertEquals(4, netDB.getSize());
+        XdagStats stats = new XdagStats();
+        stats.maxdifficulty = BigInteger.TWO;
+        stats.totalnblocks = 10001;
+        stats.totalnmain = 1001;
+        stats.totalnhosts = 11;
+        stats.maintime = endtime;
+
+        NetDB netDB = new NetDB();
+        netDB.addNewIP("10.0.0.1", 8001);
+        netDB.addNewIP("10.0.0.2", 8001);
+        netDB.addNewIP("10.0.0.3", 8001);
+        netDB.addNewIP("10.0.0.4", 8001);
+
+        SumRequestMessage sumRequestMessage = new SumRequestMessage(starttime, endtime, stats, netDB);
+
+        String hexString = Bytes.wrap(sumRequestMessage.getBody()).toHexString();
+
+        sumRequestMessage = new SumRequestMessage(Bytes.fromHexString(hexString).toArray());
+
+        assertEquals(starttime, sumRequestMessage.getStarttime());
+        assertEquals(endtime, sumRequestMessage.getEndtime());
+
+        XdagStats xdagStats = sumRequestMessage.getXdagStats();
+        assertEquals(BigInteger.TWO, xdagStats.maxdifficulty);
+        assertEquals(stats.totalnblocks, xdagStats.totalnblocks);
+        assertEquals(stats.totalnmain, xdagStats.totalnmain);
+        assertEquals(stats.totalnhosts, xdagStats.totalnhosts);
+        assertEquals(stats.maintime, xdagStats.maintime);
     }
 
 }

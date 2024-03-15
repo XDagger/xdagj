@@ -23,19 +23,13 @@
  */
 package io.xdag.utils;
 
-import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
-
-import com.alibaba.druid.pool.DruidDataSourceFactory;
-
-import lombok.extern.slf4j.Slf4j;
+import java.io.InputStream;
+import java.sql.*;
+import java.util.Properties;
 
 @Slf4j
 public final class DruidUtils {
@@ -64,9 +58,16 @@ public final class DruidUtils {
         }
     }
     public static void close(Connection connection, Statement statement){
-        if (connection != null && statement != null){
+        if (statement != null){
             try {
                 statement.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if (connection != null){
+            try {
                 connection.close();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
@@ -74,11 +75,27 @@ public final class DruidUtils {
         }
     }
     public static void close(Connection connection, Statement statement, ResultSet resultSet){
-        if (connection != null && statement != null && resultSet != null){
+        if(resultSet != null) {
             try {
                 resultSet.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(statement != null) {
+            try {
                 statement.close();
-                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(connection != null) {
+            try {
+                if (resultSet != null) {
+                    resultSet.close();
+                }
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);
             }
@@ -86,10 +103,24 @@ public final class DruidUtils {
     }
 
     public static void close(Connection connection, PreparedStatement statement, ResultSet resultSet){
-        if (connection != null && statement != null && resultSet != null){
+        if(resultSet != null) {
             try {
                 resultSet.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(statement != null) {
+            try {
                 statement.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+
+        if(connection != null) {
+            try {
                 connection.close();
             } catch (SQLException e) {
                 log.error(e.getMessage(), e);

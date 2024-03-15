@@ -27,12 +27,14 @@ package io.xdag.config;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_HEAD_TEST;
 
 import org.apache.tuweni.units.bigints.UInt64;
+
+import io.xdag.Network;
 import io.xdag.core.XAmount;
 
 public class TestnetConfig extends AbstractConfig {
 
     public TestnetConfig() {
-        super("testnet", "xdag-testnet");
+        super("testnet", "xdag-testnet", Network.TESTNET, Constants.TESTNET_VERSION);
         this.whitelistUrl = "https://raw.githubusercontent.com/XDagger/xdag/master/client/netdb-white-testnet.txt";
         // testnet wait 1 epoch
         this.waitEpoch = 1;

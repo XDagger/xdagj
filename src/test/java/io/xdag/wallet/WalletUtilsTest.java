@@ -27,12 +27,18 @@ package io.xdag.wallet;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.*;
+import io.xdag.crypto.Bip32ECKeyPair;
+import io.xdag.crypto.Keys;
+import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.Sign;
+import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.MnemonicUtils;
 import io.xdag.utils.WalletUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.jline.utils.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,6 +102,19 @@ public class WalletUtilsTest {
     }
 
     @Test
+    public void getPrivateKeyFromMnemonic(){
+        //use this function, transform Mnemonic to hex_PrivateKey
+        String mnemonic = "know party bunker fly ribbon combine dilemma omit birth impose submit cost";  //Mnemonic from go wallet,
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
+        Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+        Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, 0);
+        byte[] hash160 = Keys.toBytesAddress(bip44Keypair.getKeyPair());
+        String base58 = WalletUtils.toBase58(hash160);
+        assertEquals("36wtmNV53yYyJA7SUxRHhbkDX1o9jq2e8", base58);
+        assertEquals("0x3a35b1a709a9fa5ddddbdf4e03f2ef309005e50be04d92e67f75eabae0335ba9", bip44Keypair.getKeyPair().getPrivateKey().toString());
+    }
+
+    @Test
     public void generateBip44KeyPairTestNet() {
         String mnemonic =
                 "spider elbow fossil truck deal circle divert sleep safe report laundry above";
@@ -123,6 +142,7 @@ public class WalletUtilsTest {
     public void testCheckIsAddress() {
         String walletAddress="KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf";
         assertTrue(io.xdag.crypto.Base58.checkAddress(walletAddress));
+        Log.info(BasicUtils.pubAddress2Hash(walletAddress));
     }
     @Test
     public void testHashlowIsAddress(){
@@ -134,12 +154,17 @@ public class WalletUtilsTest {
         assertEquals(0,addressHashlow2.slice(28,4).toInt());
         assertFalse(checkAddress(addressHashlow1));
         assertTrue(checkAddress(addressHashlow2));
+        Log.info(BasicUtils.hexPubAddress2Hashlow("0x46a2a0fe035c413d92be9c79a11cfc3695780f65"));
+        Log.info(BasicUtils.hash2PubAddress(BasicUtils.hexPubAddress2Hashlow(
+                "46a2a0fe035c413d92be9c79a11cfc3695780f65")));
+
     }
 
     @After
     public void tearDown() throws IOException {
         wallet.delete();
     }
+
 
 }
 

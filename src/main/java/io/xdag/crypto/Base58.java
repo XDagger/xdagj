@@ -81,7 +81,7 @@ public class Base58 {
 
 
     public static byte[] decode(String input) throws AddressFormatException {
-        if (input.length() == 0) {
+        if (input.isEmpty()) {
             return new byte[0];
         }
         // Convert the base58-encoded ASCII chars to a base58 byte sequence (base58 digits).
@@ -145,15 +145,6 @@ public class Base58 {
         byte[] actualChecksum = Arrays.copyOfRange(Hash.hashTwice(data), 0, 4);
         return Arrays.equals(checksum, actualChecksum);
     }
-
-    public static boolean checkBytes24(byte[] data) {
-        if (data.length != 24) return false;
-        byte[] data20 = Arrays.copyOfRange(data, 0, data.length - 4);
-        byte[] checksum = Arrays.copyOfRange(data, data.length - 4, data.length);
-        byte[] actualChecksum = Arrays.copyOfRange(Hash.hashTwice(data20), 0, 4);
-        return Arrays.equals(checksum, actualChecksum);
-    }
-
 
     private static byte divmod(byte[] number, int firstDigit, int base, int divisor) {
         // this is just long division which accounts for the base of the input digits

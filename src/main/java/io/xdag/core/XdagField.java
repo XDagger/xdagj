@@ -24,12 +24,13 @@
 
 package io.xdag.core;
 
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.MutableBytes;
+
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 
 public class XdagField implements Cloneable {
 
@@ -92,8 +93,8 @@ public class XdagField implements Cloneable {
         /***
          *new tx type
          */
-        XDAG_FIELD_INPUT(0x0C),
-        XDAG_FIELD_OUTPUT(0x0D),
+        XDAG_FIELD_INPUT(0x0C),//12
+        XDAG_FIELD_OUTPUT(0x0D),//13
         XDAG_FIELD_RESERVE5(0x0E),
         XDAG_FIELD_RESERVE6(0x0F);
 

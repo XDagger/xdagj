@@ -24,30 +24,12 @@
 
 package io.xdag.core;
 
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_COINBASE;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_0;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_PUBLIC_KEY_1;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_REMARK;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_IN;
-import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SIGN_OUT;
-
+import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
-import java.math.BigInteger;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
+import io.xdag.utils.SimpleEncoder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -61,8 +43,13 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
+import java.math.BigInteger;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.google.common.collect.Lists;
+import static io.xdag.core.XdagField.FieldType.*;
 
 @Slf4j
 @Getter
@@ -80,20 +67,25 @@ public class Block implements Cloneable {
     /**
      * 区块的links 列表 输入输出*
      */
+    @Getter
     private List<Address> inputs = new CopyOnWriteArrayList<>();
     /**
      * ouput包含pretop
      */
+    @Getter
     private List<Address> outputs = new CopyOnWriteArrayList<>();
     /**
      * 记录公钥 前缀+压缩公钥*
      */
+    @Getter
     private List<SECPPublicKey> pubKeys = new CopyOnWriteArrayList<>();
+    @Getter
     private Map<SECPSignature, Integer> insigs = new LinkedHashMap<>();
     private SECPSignature outsig;
     /**
      * 主块的nonce记录矿工地址跟nonce*
      */
+    @Getter
     private Bytes32 nonce;
     private XdagBlock xdagBlock;
     private boolean parsed;
@@ -115,11 +107,12 @@ public class Block implements Cloneable {
             boolean mining,
             List<KeyPair> keys,
             String remark,
-            int defKeyIndex) {
+            int defKeyIndex,
+            XAmount fee) {
         parsed = true;
         info = new BlockInfo();
         this.info.setTimestamp(timestamp);
-        this.info.setFee(0);
+        this.info.setFee(fee);
         int lenghth = 0;
 
         setType(config.getXdagFieldHeader(), lenghth++);
@@ -199,7 +192,7 @@ public class Block implements Cloneable {
     public Block(Config config, long timestamp,
             List<Address> pendings,
             boolean mining) {
-        this(config, timestamp, null, pendings, mining, null, null, -1);
+        this(config, timestamp, null, pendings, mining, null, null, -1, XAmount.ZERO);
     }
 
     /**
@@ -215,7 +208,6 @@ public class Block implements Cloneable {
         this.info = blockInfo;
         this.isSaved = true;
         this.parsed = true;
-
     }
 
     /**
@@ -251,7 +243,7 @@ public class Block implements Cloneable {
         this.transportHeader = header.getLong(0, ByteOrder.LITTLE_ENDIAN);
         this.info.type = header.getLong(8, ByteOrder.LITTLE_ENDIAN);
         this.info.setTimestamp(header.getLong(16, ByteOrder.LITTLE_ENDIAN));
-        this.info.setFee(header.getLong(24, ByteOrder.LITTLE_ENDIAN));
+        this.info.setFee(XAmount.of(header.getLong(24, ByteOrder.LITTLE_ENDIAN), XUnit.NANO_XDAG));
         for (int i = 1; i < XdagBlock.XDAG_BLOCK_FIELDS; i++) {
             XdagField field = xdagBlock.getField(i);
             if (field == null) {
@@ -369,7 +361,8 @@ public class Block implements Cloneable {
     }
 
     private byte[] getEncodedHeader() {
-        byte[] fee = BytesUtils.longToBytes(getFee(), true);
+        //byte[] fee = BytesUtils.longToBytes(getFee(), true);
+        byte[] fee = BytesUtils.longToBytes(Long.parseLong(getFee().toString()), true);
         byte[] time = BytesUtils.longToBytes(getTimestamp(), true);
         byte[] type = BytesUtils.longToBytes(getType(), true);
         byte[] transport = new byte[8];
@@ -468,28 +461,8 @@ public class Block implements Cloneable {
         return MutableBytes32.wrap(info.getHashlow());
     }
 
-    public List<Address> getOutputs() {
-        return outputs;
-    }
-
-    public List<Address> getInputs() {
-        return inputs;
-    }
-
-    public List<SECPPublicKey> getPubKeys() {
-        return pubKeys;
-    }
-
-    public Bytes32 getNonce() {
-        return nonce;
-    }
-
     public SECPSignature getOutsig() {
         return outsig == null ? null : outsig;
-    }
-
-    public Map<SECPSignature, Integer> getInsigs() {
-        return insigs;
     }
 
     @Override
@@ -524,7 +497,7 @@ public class Block implements Cloneable {
         return this.info.type;
     }
 
-    public long getFee() {
+    public XAmount getFee() {
         return this.info.getFee();
     }
 

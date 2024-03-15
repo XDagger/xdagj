@@ -32,15 +32,10 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.config.MainnetConfig;
 import io.xdag.config.TestnetConfig;
 import io.xdag.config.spec.NodeSpec;
-import io.xdag.config.spec.PoolSpec;
 import io.xdag.core.*;
-import io.xdag.mine.MinerChannel;
-import io.xdag.mine.miner.Miner;
-import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.net.node.Node;
+import io.xdag.net.Channel;
 import io.xdag.rpc.dto.ConfigDTO;
 import io.xdag.rpc.dto.NetConnDTO;
-import io.xdag.rpc.dto.PoolWorkerDTO;
 import io.xdag.rpc.dto.StatusDTO;
 import io.xdag.utils.BasicUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -48,13 +43,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static io.xdag.config.Constants.CLIENT_VERSION;
+import static io.xdag.crypto.Keys.toBytesAddress;
 import static io.xdag.rpc.utils.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.WalletUtils.*;
@@ -117,7 +110,7 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public String xdag_coinbase() {
-        return toBase58(hash2byte(kernel.getPoolMiner().getAddressHash().mutableCopy()));
+        return toBase58(toBytesAddress(kernel.getCoinbase()));
     }
 
     @Override
@@ -185,22 +178,22 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     @Override
     public Object xdag_poolConfig() {
-        PoolSpec poolSpec = kernel.getConfig().getPoolSpec();
+//        PoolSpec poolSpec = kernel.getConfig().getPoolSpec();
         NodeSpec nodeSpec = kernel.getConfig().getNodeSpec();
         ConfigDTO.ConfigDTOBuilder configDTOBuilder = ConfigDTO.builder();
-        configDTOBuilder.poolIp(poolSpec.getPoolIp());
-        configDTOBuilder.poolPort(poolSpec.getPoolPort());
+//        configDTOBuilder.poolIp(poolSpec.getPoolIp());
+//        configDTOBuilder.poolPort(poolSpec.getPoolPort());
         configDTOBuilder.nodeIp(nodeSpec.getNodeIp());
         configDTOBuilder.nodePort(nodeSpec.getNodePort());
-        configDTOBuilder.globalMinerLimit(poolSpec.getGlobalMinerLimit());
-        configDTOBuilder.maxConnectMinerPerIp(poolSpec.getMaxConnectPerIp());
-        configDTOBuilder.maxMinerPerAccount(poolSpec.getMaxMinerPerAccount());
+//        configDTOBuilder.globalMinerLimit(poolSpec.getGlobalMinerLimit());
+//        configDTOBuilder.maxConnectMinerPerIp(poolSpec.getMaxConnectPerIp());
+//        configDTOBuilder.maxMinerPerAccount(poolSpec.getMaxMinerPerAccount());
 
 
-        configDTOBuilder.poolFundRation(Double.toString(kernel.getAwardManager().getPoolConfig().getFundRation() * 100));
-        configDTOBuilder.poolFeeRation(Double.toString(kernel.getAwardManager().getPoolConfig().getPoolRation() * 100));
-        configDTOBuilder.poolDirectRation(Double.toString(kernel.getAwardManager().getPoolConfig().getDirectRation() * 100));
-        configDTOBuilder.poolRewardRation(Double.toString(kernel.getAwardManager().getPoolConfig().getMinerRewardRation() * 100));
+//        configDTOBuilder.poolFundRation(Double.toString(kernel.getAwardManager().getPoolConfig().getFundRation() * 100));
+//        configDTOBuilder.poolFeeRation(Double.toString(kernel.getAwardManager().getPoolConfig().getPoolRation() * 100));
+//        configDTOBuilder.poolDirectRation(Double.toString(kernel.getAwardManager().getPoolConfig().getDirectRation() * 100));
+//        configDTOBuilder.poolRewardRation(Double.toString(kernel.getAwardManager().getPoolConfig().getMinerRewardRation() * 100));
         return configDTOBuilder.build();
     }
 
@@ -208,16 +201,14 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
     public Object xdag_netConnectionList() {
         List<NetConnDTO> netConnDTOList = Lists.newArrayList();
         NetConnDTO.NetConnDTOBuilder netConnDTOBuilder = NetConnDTO.builder();
-        Map<Node, Long> map = kernel.getNodeMgr().getActiveNode();
-        for (Map.Entry<Node, Long> entry : map.entrySet()) {
-            Node node = entry.getKey();
-            netConnDTOBuilder.connectTime(map.get(node) == null ? 0 : map.get(node)) // use default "0"
-                    .inBound(node.getStat().Inbound.get())
-                    .outBound(node.getStat().Outbound.get())
-                    .nodeAddress(node.getAddress());
+        List<Channel> channelList = kernel.getChannelMgr().getActiveChannels();
+        for (Channel channel : channelList) {
+            netConnDTOBuilder.connectTime(kernel.getConfig().getSnapshotSpec().getSnapshotTime())
+                    .inBound(0)
+                    .outBound(0)
+                    .nodeAddress(channel.getRemoteAddress());
             netConnDTOList.add(netConnDTOBuilder.build());
         }
-
         return netConnDTOList;
     }
 
@@ -229,67 +220,30 @@ public class Web3XdagModuleImpl implements Web3XdagModule {
 
     }
 
-    @Override
-    public Object xdag_updatePoolConfig(ConfigDTO configDTO, String passphrase) {
-        try {
-            //unlock
-            if (checkPassword(passphrase)) {
-                double poolFeeRation = configDTO.getPoolFeeRation() != null ?
-                        Double.parseDouble(configDTO.getPoolFeeRation()) : kernel.getConfig().getPoolSpec().getPoolRation();
-                double poolRewardRation = configDTO.getPoolRewardRation() != null ?
-                        Double.parseDouble(configDTO.getPoolRewardRation()) : kernel.getConfig().getPoolSpec().getRewardRation();
-                double poolDirectRation = configDTO.getPoolDirectRation() != null ?
-                        Double.parseDouble(configDTO.getPoolDirectRation()) : kernel.getConfig().getPoolSpec().getDirectRation();
-                double poolFundRation = configDTO.getPoolFundRation() != null ?
-                        Double.parseDouble(configDTO.getPoolFundRation()) : kernel.getConfig().getPoolSpec().getFundRation();
-                kernel.getAwardManager().updatePoolConfig(poolFeeRation, poolRewardRation, poolDirectRation, poolFundRation);
-            }
-        } catch (NumberFormatException e) {
-            return "Error";
-        }
-        return "Success";
-    }
-
-    @Override
-    public Object xdag_getPoolWorkers() {
-        List<PoolWorkerDTO> poolWorkerDTOList = Lists.newArrayList();
-        PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder = PoolWorkerDTO.builder();
-        Collection<Miner> miners = kernel.getMinerManager().getActivateMiners().values();
-        PoolWorkerDTO poolWorker = getPoolWorkerDTO(poolWorkerDTOBuilder, kernel.getPoolMiner());
-        poolWorker.setStatus("fee");
-        poolWorkerDTOList.add(poolWorker);
-        for (Miner miner : miners) {
-            poolWorkerDTOList.add(getPoolWorkerDTO(poolWorkerDTOBuilder,miner));
-        }
-        return poolWorkerDTOList;
-    }
+//    @Override
+//    public Object xdag_updatePoolConfig(ConfigDTO configDTO, String passphrase) {
+//        try {
+//            //unlock
+//            if (checkPassword(passphrase)) {
+//                double poolFeeRation = configDTO.getPoolFeeRation() != null ?
+//                        Double.parseDouble(configDTO.getPoolFeeRation()) : kernel.getConfig().getPoolSpec().getPoolRation();
+//                double poolRewardRation = configDTO.getPoolRewardRation() != null ?
+//                        Double.parseDouble(configDTO.getPoolRewardRation()) : kernel.getConfig().getPoolSpec().getRewardRation();
+//                double poolDirectRation = configDTO.getPoolDirectRation() != null ?
+//                        Double.parseDouble(configDTO.getPoolDirectRation()) : kernel.getConfig().getPoolSpec().getDirectRation();
+//                double poolFundRation = configDTO.getPoolFundRation() != null ?
+//                        Double.parseDouble(configDTO.getPoolFundRation()) : kernel.getConfig().getPoolSpec().getFundRation();
+//                kernel.getAwardManager().updatePoolConfig(poolFeeRation, poolRewardRation, poolDirectRation, poolFundRation);
+//            }
+//        } catch (NumberFormatException e) {
+//            return "Error";
+//        }
+//        return "Success";
+//    }
 
     @Override
     public String xdag_getMaxXferBalance() {
         return xdagModule.getMaxXferBalance();
-    }
-
-    private PoolWorkerDTO getPoolWorkerDTO(PoolWorkerDTO.PoolWorkerDTOBuilder poolWorkerDTOBuilder,Miner miner){
-        poolWorkerDTOBuilder.address(toBase58(miner.getAddressHashByte()))
-                .status(miner.getMinerStates().toString())
-                .unpaidShares(MinerCalculate.calculateUnpaidShares(miner))
-                .hashrate(BasicUtils.xdag_log_difficulty2hashrate(miner.getMeanLogDiff()))
-                .workers(getWorkers(miner));
-        return poolWorkerDTOBuilder.build();
-    }
-    private List<PoolWorkerDTO.Worker> getWorkers(Miner miner) {
-        List<PoolWorkerDTO.Worker> workersList = Lists.newArrayList();
-        PoolWorkerDTO.Worker.WorkerBuilder workerBuilder = PoolWorkerDTO.Worker.builder();
-        Map<InetSocketAddress, MinerChannel> channels = miner.getChannels();
-        for (Map.Entry<InetSocketAddress, MinerChannel> channel : channels.entrySet()) {
-            workerBuilder.address(channel.getKey()).inBound(channel.getValue().getInBound().get())
-                    .outBound(channel.getValue().getOutBound().get())
-                    .unpaidShares(MinerCalculate.calculateUnpaidShares(channel.getValue()))
-                    .name(channel.getValue().getWorkerName())
-                    .hashrate(BasicUtils.xdag_log_difficulty2hashrate(channel.getValue().getMeanLogDiff()));
-            workersList.add(workerBuilder.build());
-        }
-        return workersList;
     }
 
     private boolean checkPassword(String passphrase) {

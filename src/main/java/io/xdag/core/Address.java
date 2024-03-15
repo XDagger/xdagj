@@ -65,10 +65,6 @@ public class Address {
         parse();
     }
 
-    public Address(XdagField field) {
-
-    }
-
     /**
      * 只用于ref 跟 maxdifflink
      */
@@ -120,7 +116,6 @@ public class Address {
         this.amount = amount;
         parsed = true;
     }
-
 
     public Bytes getData() {
         if (this.data == null) {

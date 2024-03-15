@@ -24,67 +24,66 @@
 
 package io.xdag.consensus;
 
-import static io.xdag.utils.BytesUtils.compareTo;
-import static io.xdag.utils.BytesUtils.equalBytes;
-
 import io.xdag.Kernel;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagBlock;
-import io.xdag.core.XdagField;
-import io.xdag.core.XdagState;
+import io.xdag.Wallet;
+import io.xdag.core.*;
 import io.xdag.crypto.Hash;
+import io.xdag.crypto.RandomX;
+import io.xdag.crypto.RandomXMemory;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
-import io.xdag.mine.MinerChannel;
-import io.xdag.mine.manager.AwardManager;
-import io.xdag.mine.manager.MinerManager;
-import io.xdag.mine.miner.MinerCalculate;
-import io.xdag.mine.randomx.RandomX;
-import io.xdag.mine.randomx.RandomXMemory;
-import io.xdag.net.manager.XdagChannelManager;
-import io.xdag.net.message.Message;
+import io.xdag.net.ChannelManager;
+import io.xdag.net.websocket.ChannelSupervise;
+import io.xdag.pool.PoolAwardManager;
+import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.xdag.utils.BasicUtils.hash2byte;
+import static io.xdag.utils.BasicUtils.keyPair2Hash;
+import static io.xdag.utils.BytesUtils.compareTo;
+import static io.xdag.utils.BytesUtils.equalBytes;
+@SuppressWarnings({"deprecation"})
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {
+
 
     private final Kernel kernel;
     protected BlockingQueue<Event> events = new LinkedBlockingQueue<>();
     protected Timer timer;
     protected Broadcaster broadcaster;
+    @Getter
+    protected GetShares sharesFromPools;
     // 当前区块
     protected AtomicReference<Block> generateBlock = new AtomicReference<>();
     protected AtomicReference<Bytes32> minShare = new AtomicReference<>();
     protected final AtomicReference<Bytes32> minHash = new AtomicReference<>();
-    protected XdagChannelManager channelMgr;
+    protected final Wallet wallet;
+
+    protected ChannelManager channelMgr;
     protected Blockchain blockchain;
     protected volatile Bytes32 globalPretop;
+    protected PoolAwardManager poolAwardManager;
     protected AtomicReference<Task> currentTask = new AtomicReference<>();
     protected AtomicLong taskIndex = new AtomicLong(0L);
-
     private boolean isWorking = false;
-
 
     private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("XdagPow-timer-thread")
@@ -97,21 +96,13 @@ public class XdagPow implements PoW, Listener, Runnable {
     private final ExecutorService broadcasterExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("XdagPow-broadcaster-thread")
             .build());
-    /**
-     * 存放的是过去十六个区块的hash
-     */
-    protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>();
-    /**
-     * 存放的是最小的hash
-     */
-    protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-    /**
-     * 引入矿工与奖励
-     */
-    protected AwardManager awardManager;
-    protected MinerManager minerManager;
+    private final ExecutorService getSharesExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+            .namingPattern("XdagPow-getShares-thread")
+            .build());
+
     protected RandomX randomXUtils;
     private boolean isRunning = false;
+
 
     public XdagPow(Kernel kernel) {
         this.kernel = kernel;
@@ -119,26 +110,21 @@ public class XdagPow implements PoW, Listener, Runnable {
         this.channelMgr = kernel.getChannelMgr();
         this.timer = new Timer();
         this.broadcaster = new Broadcaster();
-        this.minerManager = kernel.getMinerManager();
-        this.awardManager = kernel.getAwardManager();
         this.randomXUtils = kernel.getRandomx();
+        this.sharesFromPools = new GetShares();
+        this.poolAwardManager = kernel.getPoolAwardManager();
+        this.wallet = kernel.getWallet();
+
     }
 
     @Override
     public void start() {
         if (!this.isRunning) {
             this.isRunning = true;
-
-            this.minerManager = kernel.getMinerManager();
-
-            // 容器的初始化
-            for (int i = 0; i < 16; i++) {
-                this.blockHashs.add(null);
-                this.minShares.add(null);
-            }
-
-            timerExecutor.execute(timer);
+            getSharesExecutor.execute(this.sharesFromPools);
             mainExecutor.execute(this);
+            kernel.getPoolAwardManager().start();
+            timerExecutor.execute(timer);
             broadcasterExecutor.execute(this.broadcaster);
         }
     }
@@ -149,6 +135,8 @@ public class XdagPow implements PoW, Listener, Runnable {
             isRunning = false;
             timer.isRunning = false;
             broadcaster.isRunning = false;
+            sharesFromPools.isRunning = false;
+
         }
     }
 
@@ -156,7 +144,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         log.debug("Start new block generate....");
         long sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
-
         if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
             if (randomXUtils.getRandomXPoolMemIndex() == 0) {
                 randomXUtils.setRandomXPoolMemIndex((randomXUtils.getRandomXHashEpochIndex() - 1) & 1);
@@ -197,56 +184,38 @@ public class XdagPow implements PoW, Listener, Runnable {
 
 
     public Block generateRandomXBlock(long sendTime) {
-        // 新增任务
         taskIndex.incrementAndGet();
+        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
+        block.signOut(wallet.getDefKey());
+        // The first 20 bytes of the initial nonce are the node wallet address.
+        minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
+                RandomUtils.nextBytes(12))));
 
-        Block block = blockchain.createNewBlock(null, null, true, null);
-        block.signOut(kernel.getWallet().getDefKey());
-
-        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
         block.setNonce(minShare.get());
-
-//        minHash = Hex.decode("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-
         currentTask.set(createTaskByRandomXBlock(block, sendTime));
-
-        log.info("current task seed is {}",currentTask.get().getTask()[1].getData().toHexString());
-        // 更新poolminer的贡献
-
-        minerManager.updateTask(currentTask.get());
-        awardManager.onNewTask(currentTask.get());
-        log.debug("send randomx task to miners");
-//        log.debug("Generate RandomX block :{}", BasicUtils.hash2Address(block.getHash()));
+        ChannelSupervise.send2Pools(currentTask.get().toJsonString());
         return block;
     }
 
+
     public Block generateBlock(long sendTime) {
-        // 新增任务
         taskIndex.incrementAndGet();
-
-        Block block = blockchain.createNewBlock(null, null, true, null);
-        block.signOut(kernel.getWallet().getDefKey());
-
-        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
+        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
+        block.signOut(wallet.getDefKey());
+        minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
+                RandomUtils.nextBytes(12))));
         block.setNonce(minShare.get());
-        // 初始nonce, 计算minhash但不作为最终hash
+        // initial nonce
         minHash.set(block.recalcHash());
-
         currentTask.set(createTaskByNewBlock(block, sendTime));
-        // 发送给矿工
-
-        // 更新poolminer的贡献
-        minerManager.updateTask(currentTask.get());
-        awardManager.onNewTask(currentTask.get());
-        log.debug("send origin task to Miners");
-//        log.debug("Generate block :{}", BasicUtils.hash2Address(block.getHash()));
+        ChannelSupervise.send2Pools(currentTask.get().toJsonString());
         return block;
     }
 
     protected void resetTimeout(long timeout) {
         timer.timeout(timeout);
-        events.removeIf(e->e.type== Event.Type.TIMEOUT);
+        events.removeIf(e -> e.type == Event.Type.TIMEOUT);
     }
 
     @Override
@@ -255,17 +224,25 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     /**
-     * 每收到一个miner的信息 之后都会在这里进行一次计算
+     * Every time a share sent from a pool is received, it will be recorded here.
      */
     @Override
-    public void receiveNewShare(MinerChannel channel, Message msg) {
+    public void receiveNewShare(String share, String hash, long taskIndex) {
+
         if (!this.isRunning) {
             return;
         }
-
-        XdagField shareInfo = new XdagField(msg.getEncoded().mutableCopy());
-        log.debug("Receive share From PoolChannel, Shareinfo:{}", shareInfo.getData().toHexString());
-        onNewShare(shareInfo, channel);
+        if (currentTask.get() == null) {
+            log.info("Current task is empty");
+        } else if (currentTask.get().getTaskIndex() == taskIndex && Objects.equals(hash,
+                currentTask.get().getTask()[0].getData().toUnprefixedHexString())) {
+            // log.debug("Receive Share-info From Pool, Share: {},preHash: {}, task index: {}", share, preHash,
+            // taskIndex);
+            onNewShare(Bytes32.wrap(Bytes.fromHexString(share)));
+        } else {
+            log.debug("Task index error or preHash error. " + "Current task is " + currentTask.get().getTaskIndex() +
+                    " ,but pool sends task index is " + taskIndex);
+        }
     }
 
     public void receiveNewPretop(Bytes pretop) {
@@ -282,71 +259,58 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
     }
 
-    protected void onNewShare(XdagField shareInfo, MinerChannel channel) {
-        Task task = currentTask.get();
+    protected void onNewShare(Bytes32 share) {
         try {
-//            log.debug("Receive a share:{} from miner:{} for block:{}",shareInfo.getData(),channel.getAddressHash(),BasicUtils.hash2Address(generateBlock.get().getHash()));
+            Task task = currentTask.get();
             Bytes32 hash;
             // if randomx fork
             if (kernel.getRandomx().isRandomxFork(task.getTaskTime())) {
                 MutableBytes taskData = MutableBytes.create(64);
-//                currentTask.getTask()[0].getData().copyTo(taskData, 0);
-                taskData.set(0, task.getTask()[0].getData());
-//                shareInfo.getData().reverse().copyTo(taskData, 32);
-                taskData.set(32, shareInfo.getData().mutableSlice(0,32).reverse());
+
+                taskData.set(0, task.getTask()[0].getData());// preHash
+                taskData.set(32, share);// share
+                // Calculate hash
                 hash = Bytes32.wrap(kernel.getRandomx()
                         .randomXPoolCalcHash(taskData, taskData.size(), task.getTaskTime()).reverse());
             } else {
                 XdagSha256Digest digest = new XdagSha256Digest(task.getDigest());
-//                hash = Bytes32.wrap(digest.sha256Final(Arrays.reverse(shareInfo.getData().toArray())));
-                hash = Bytes32.wrap(digest.sha256Final(shareInfo.getData().reverse()));
+                hash = Bytes32.wrap(digest.sha256Final(share.reverse()));
             }
-
             synchronized (minHash) {
                 Bytes32 mh = minHash.get();
                 if (compareTo(hash.toArray(), 0, 32, mh.toArray(), 0, 32) < 0) {
+                    log.debug("Receive a hash from pool,hash {} is valid.", hash.toHexString());
                     minHash.set(hash);
-                    minShare.set(Bytes32.wrap(shareInfo.getData().reverse()));
-
-                    // put minshare into nonce
+                    minShare.set(share);
+                    // put minShare into nonce
                     Block b = generateBlock.get();
                     b.setNonce(minShare.get());
-
-                    //myron
-                    int index = (int) ((currentTask.get().getTaskTime() >> 16) & kernel.getConfig().getPoolSpec()
-                            .getAwardEpoch());
-                    // int index = (int) ((currentTask.getTaskTime() >> 16) & 7);
-                    minShares.set(index, minShare.get());
-                    blockHashs.set(index, b.recalcHash());
-
-                    log.debug("New MinHash :" + mh.toHexString());
-                    log.debug("New MinShare :" + minShare.get().toHexString());
+                    log.debug("New MinShare :" + share.toHexString());
+                    log.debug("New MinHash :" + hash.toHexString());
                 }
             }
-            //update miner state
-            MinerCalculate.updateMeanLogDiff(channel, currentTask.get(), hash);
-            MinerCalculate.calculateNopaidShares(kernel.getConfig(), channel, hash, currentTask.get().getTaskTime());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
+
     protected void onTimeout() {
-        Block b  = generateBlock.get();
+        Block b = generateBlock.get();
         // stop generate main block
         isWorking = false;
         if (b != null) {
             Block newBlock = new Block(new XdagBlock(b.toBytes()));
-            log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]",
-                    newBlock.getHash().toHexString());
-            // add new block, reward miner, and broadcast the new block
+            log.debug("Broadcast locally generated blockchain, waiting to be verified. block hash = [{}]", newBlock.getHash().toHexString());
+            // add new block and broadcast the new block
             kernel.getBlockchain().tryToConnect(newBlock);
-            awardManager.addAwardBlock(minShare.get(), newBlock.getHash(), newBlock.getTimestamp());
+            Bytes32 currentPreHash = Bytes32.wrap(currentTask.get().getTask()[0].getData());
+            poolAwardManager.addAwardBlock(minShare.get(), currentPreHash, newBlock.getHash(), newBlock.getTimestamp());
             BlockWrapper bw = new BlockWrapper(newBlock, kernel.getConfig().getNodeSpec().getTTL());
             broadcaster.broadcast(bw);
         }
-        // start generate main block
         isWorking = true;
+        // start generate main block
         newBlock();
     }
 
@@ -356,7 +320,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     /**
-     * 创建RandomX的任务
+     * Create a RandomX task
      */
     private Task createTaskByRandomXBlock(Block block, long sendTime) {
         Task newTask = new Task();
@@ -364,11 +328,10 @@ public class XdagPow implements PoW, Listener, Runnable {
 
         RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
 
-//        Bytes32 rxHash = Hash.sha256(Bytes.wrap(BytesUtils.subArray(block.getXdagBlock().getData(),0,480)));
-        Bytes32 rxHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 480));
-
-        // todo
-        task[0] = new XdagField(rxHash.mutableCopy());
+        Bytes32 preHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 480));
+        // task[0]=preHash
+        task[0] = new XdagField(preHash.mutableCopy());
+        // task[1]=taskSeed
         task[1] = new XdagField(MutableBytes.wrap(memory.getSeed()));
 
         newTask.setTask(task);
@@ -379,7 +342,7 @@ public class XdagPow implements PoW, Listener, Runnable {
     }
 
     /**
-     * 创建原始任务
+     * Created original task, now deprecated
      */
     private Task createTaskByNewBlock(Block block, long sendTime) {
         Task newTask = new Task();
@@ -408,10 +371,10 @@ public class XdagPow implements PoW, Listener, Runnable {
         return newTask;
     }
 
+
     @Override
     public void run() {
         log.info("Main PoW start ....");
- //       resetTimeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
         // init pretop
         globalPretop = null;
@@ -422,24 +385,25 @@ public class XdagPow implements PoW, Listener, Runnable {
                     continue;
                 }
                 switch (ev.getType()) {
-                case TIMEOUT -> {
-                    // TODO : 判断当前是否可以进行产块
-                    if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
-                            || kernel.getXdagState() == XdagState.SYNC) {
-                        onTimeout();
+                    case TIMEOUT -> {
+                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
+                                || kernel.getXdagState() == XdagState.SYNC) {
+                            onTimeout();
+                        }
                     }
-                }
-                case NEW_PRETOP -> {
-                    if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
-                            || kernel.getXdagState() == XdagState.SYNC) {
-                        onNewPreTop();
+                    case NEW_PRETOP -> {
+                        if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
+                                || kernel.getXdagState() == XdagState.SYNC) {
+                            onNewPreTop();
+                        }
                     }
-                }
-                default -> {
-                }
+                    default -> {
+                    }
                 }
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -458,6 +422,7 @@ public class XdagPow implements PoW, Listener, Runnable {
 
     public static class Event {
 
+        @Getter
         private final Type type;
         private final Object data;
         private Object channel;
@@ -475,10 +440,6 @@ public class XdagPow implements PoW, Listener, Runnable {
             this.type = type;
             this.data = data;
             this.channel = channel;
-        }
-
-        public Type getType() {
-            return type;
         }
 
         @SuppressWarnings("unchecked")
@@ -512,7 +473,6 @@ public class XdagPow implements PoW, Listener, Runnable {
         }
     }
 
-    // TODO: change to scheduleAtFixRate
     public class Timer implements Runnable {
 
         private long timeout;
@@ -523,7 +483,7 @@ public class XdagPow implements PoW, Listener, Runnable {
             this.isRunning = true;
             while (this.isRunning) {
                 if (timeout != -1 && XdagTime.getCurrentTimestamp() > timeout) {
-                    log.debug("CurrentTimestamp:{},sendTime:{} Timeout!",XdagTime.getCurrentTimestamp(),timeout);
+                    log.debug("CurrentTimestamp:{},sendTime:{} Timeout!", XdagTime.getCurrentTimestamp(), timeout);
                     timeout = -1;
                     events.add(new Event(Event.Type.TIMEOUT));
                     continue;
@@ -568,6 +528,47 @@ public class XdagPow implements PoW, Listener, Runnable {
             if (!queue.offer(bw)) {
                 log.error("Failed to add a message to the broadcast queue: block = {}", bw.getBlock()
                         .getHash().toHexString());
+            }
+        }
+    }
+
+    public class GetShares implements Runnable {
+        private final LinkedBlockingQueue<String> shareQueue = new LinkedBlockingQueue<>();
+        private volatile boolean isRunning = false;
+        private static final int SHARE_FLAG = 2;
+
+        @Override
+        public void run() {
+            isRunning = true;
+            while (isRunning) {
+                String shareInfo = null;
+                try {
+                    shareInfo = shareQueue.poll(50, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    log.error(e.getMessage(), e);
+                }
+                if (shareInfo != null) {
+                    try {
+                        JSONObject shareJson = new JSONObject(shareInfo);
+                        if (shareJson.getInt("msgType") == SHARE_FLAG) {
+                            receiveNewShare(shareJson.getJSONObject("msgContent").getString("share"),
+                                    shareJson.getJSONObject("msgContent").getString("hash"),
+                                    shareJson.getJSONObject("msgContent").getLong("taskIndex"));
+                        } else {
+                            log.error("Share format error! Current share: " + shareInfo);
+                        }
+
+                    } catch (JSONException e) {
+                        log.error("Share format error, current share: " + shareInfo);
+                    }
+                }
+            }
+        }
+
+        public void getShareInfo(String share) {
+            // todo:Limit the number of shares submitted by each pool within each block production cycle
+            if (!shareQueue.offer(share)) {
+                log.error("Failed to get ShareInfo from pools");
             }
         }
     }

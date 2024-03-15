@@ -100,22 +100,6 @@ public class Launcher {
         LogManager.shutdown();
     }
 
-    public static void logPoolInfo(Config config) {
-        log.info(
-                "Xdag Node IP Address：[{}:{}], Xdag Pool Service IP Address：[{}:{}]，Configure：miner[{}],maxip[{}],maxconn[{}],fee[{}],reward[{}],direct[{}],fun[{}]",
-                config.getNodeSpec().getNodeIp(),
-                config.getNodeSpec().getNodePort(),
-                config.getPoolSpec().getPoolIp(),
-                config.getPoolSpec().getPoolPort(),
-                config.getPoolSpec().getGlobalMinerLimit(),
-                config.getPoolSpec().getMaxConnectPerIp(),
-                config.getPoolSpec().getMaxMinerPerAccount(),
-                config.getPoolSpec().getPoolRation(),
-                config.getPoolSpec().getRewardRation(),
-                config.getPoolSpec().getDirectRation(),
-                config.getPoolSpec().getFundRation());
-    }
-
     /**
      * Adds a supported option.
      */
@@ -141,7 +125,7 @@ public class Launcher {
         return cmd;
     }
 
-    protected Config buildConfig(String[] args) throws Exception {
+    protected Config buildConfig(String[] args) {
         Config config = null;
         for (String arg : args) {
             if ("-d".equals(arg)) {
@@ -159,10 +143,6 @@ public class Launcher {
         }
         config.changePara(args);
         config.setDir();
-        logPoolInfo(config);
-
-        // init keys
-        config.initKeys();
 
         return config;
     }

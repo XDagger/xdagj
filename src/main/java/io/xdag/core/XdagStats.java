@@ -97,10 +97,6 @@ public class XdagStats {
         }
     }
 
-    public BigInteger getMaxdifficulty() {
-        return maxdifficulty;
-    }
-
     public void updateMaxDiff(BigInteger maxdifficulty) {
         if (this.getMaxdifficulty().compareTo(maxdifficulty) < 0) {
             this.maxdifficulty = maxdifficulty;

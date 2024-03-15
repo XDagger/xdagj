@@ -41,7 +41,7 @@ public class BlockInfo {
     private BigInteger difficulty;
     private byte[] ref;
     private byte[] maxDiffLink;
-    private long fee;
+    private XAmount fee = XAmount.ZERO;
     private byte[] remark;
     private byte[] hash;
     private byte[] hashlow;
@@ -64,7 +64,7 @@ public class BlockInfo {
                 ", ref=" + Arrays.toString(ref) +
                 ", maxDiffLink=" + Arrays.toString(maxDiffLink) +
                 ", flags=" + Integer.toHexString(flags) +
-                ", fee=" + fee +
+                ", fee=" + fee.toString() +
                 ", timestamp=" + timestamp +
                 ", remark=" + Arrays.toString(remark) +
                 ", isSnapshot=" + isSnapshot +

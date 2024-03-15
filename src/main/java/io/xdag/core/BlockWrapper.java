@@ -24,7 +24,7 @@
 
 package io.xdag.core;
 
-import io.xdag.net.node.Node;
+import io.xdag.net.Peer;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -37,16 +37,16 @@ public class BlockWrapper implements Cloneable {
     /**
      * 记录区块接收节点
      */
-    private Node remoteNode;
+    private Peer remotePeer;
     // NO_PARENT waiting time
     private long time;
 
     private boolean isOld;
 
-    public BlockWrapper(Block block, int ttl, Node remoteNode, boolean isOld) {
+    public BlockWrapper(Block block, int ttl, Peer remotePeer, boolean isOld) {
         this.block = block;
         this.ttl = ttl;
-        this.remoteNode = remoteNode;
+        this.remotePeer = remotePeer;
         this.isOld = isOld;
     }
 

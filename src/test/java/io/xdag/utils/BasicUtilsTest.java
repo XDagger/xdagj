@@ -24,6 +24,7 @@
 
 package io.xdag.utils;
 
+import com.google.common.collect.Lists;
 import io.xdag.utils.exception.XdagOverFlowException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -32,16 +33,18 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Random;
 
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.WalletUtils.toBase58;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BasicUtilsTest {
+    protected MutableBytes32 data;
 
     @Test
-    public void TestXdag2amount() {
+    public void testXdag2amount() {
         BigDecimal a = BigDecimal.valueOf(972.8);
         assertEquals(4178144185549L, BasicUtils.xdag2amount(a.doubleValue()).toLong());
 
@@ -53,13 +56,13 @@ public class BasicUtilsTest {
     }
 
     @Test(expected = XdagOverFlowException.class)
-    public void TestXdag2amountOverflow() {
+    public void testXdag2amountOverflow() {
         double d = -1.3;
         BasicUtils.xdag2amount(d);
     }
 
     @Test
-    public void TestAmount2xdag() {
+    public void testAmount2xdag() {
         long a = 4178144185548L;
         // 3CC CCCC CCCD?
         assertEquals(972.799999999814, BasicUtils.amount2xdag(a), 0.0);
@@ -96,18 +99,32 @@ public class BasicUtilsTest {
         Bytes32 hashlow = address2Hash(news);
         assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
     }
+
+    // hashLow => Base58
     @Test
     public void hash2PubAddress() {
-        Bytes32 hash = Bytes32.fromHexString("0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
-        assertEquals(toBase58(hash2byte(hash.mutableCopy())), "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+        Bytes32 hash = Bytes32.fromHexString("0x00000000000000001eadb24287735969f08c33d5a410ca4aa2440fbc00000000");
+        assertEquals(toBase58(hash2byte(hash.mutableCopy())), "3oDMPTzmLvvy7mgkpvn1nhPDfW9tghrwB");
     }
 
+    // Base58 => hashLow
     @Test
     public void pubAddress2Hash() {
         Bytes ret = Bytes.wrap(WalletUtils.fromBase58("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf"));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
-        assertEquals(res.toHexString(),"0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+        assertEquals(res.toHexString(), "0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+    }
+
+    // HexPubAddress => hashLow
+    @Test
+    public void testHexPubAddress2Hashlow() {
+        String hexPubAddress = "0xc7bc5b48517bf2da9e845eacebacf65008e9e763";
+        Bytes hash = Bytes.fromHexString(hexPubAddress);
+        MutableBytes32 hashLow = MutableBytes32.create();
+        hashLow.set(8, hash);
+        assertEquals(toBase58(hash2byte(hashLow.mutableCopy())), "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+        assertEquals(hashLow, BasicUtils.hexPubAddress2Hashlow("0xc7bc5b48517bf2da9e845eacebacf65008e9e763"));
     }
 
     @Test
@@ -117,11 +134,74 @@ public class BasicUtilsTest {
                 + "c44704e82cf458076643a426a6d35cdb6ff1c168866f00e40000000000000000"
                 + "a31e6283a9f5da4a4f56c3503f3ab27c776fbb2f89f67e20cd875ac0523fe613"
                 + "08e2eda6e9eb9b754d96128a5676b52e6cc9f2a2e102e9896fea58864c489c6b"
-                + "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000097d1511ec1723d118fe19c06ab4ca825a982282a1733b508b6b56f73cc4adeb";
+                + "0000000000000000000000000000000000000000000000000000000000000000000" +
+                "00000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                "000000000000097d1511ec1723d118fe19c06ab4ca825a982282a1733b508b6b56f73cc4adeb";
 
         byte[] uncryptData = Hex.decode(reque);
         int crc = BytesUtils.bytesToInt(uncryptData, 4, true);
         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 4, 4);
         assertTrue(crc32Verify(uncryptData, crc));
+    }
+
+    @Test
+    public void testAddress() {
+        Bytes32 blockHashlow = Bytes32.fromHexStringLenient("0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008" +
+                "e9e76300000000");
+        boolean isAddress = true;
+        if (!isAddress) {
+            this.data = blockHashlow.mutableCopy();
+        } else {
+            this.data = MutableBytes32.create();
+            data.set(8, blockHashlow.mutableCopy().slice(8, 20));
+        }
+        assertEquals(blockHashlow, data);
+        MutableBytes32 addressHash = MutableBytes32.create();
+        addressHash.set(8, this.data.slice(8, 20));
+        String walletAddress = toBase58(addressHash.slice(8, 20).toArray());
+        assertEquals(walletAddress, "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+    }
+
+    @Test
+    public void testPoolWhiteIPList() {
+        List<String> poolWhiteIPList = Lists.newArrayList();
+        poolWhiteIPList.add("127.0.0.1");
+        poolWhiteIPList.add("127.0.0.2");
+        poolWhiteIPList.add("127.0.0.3");
+        poolWhiteIPList.add("127.0.0.4");
+        poolWhiteIPList.add("0.0.0.0");
+        assertTrue(poolWhiteIPList.contains("127.0.0.2"));
+        assertTrue(poolWhiteIPList.contains("0.0.0.0"));
+        assertFalse(poolWhiteIPList.contains("127.0.0.5"));
+        assertFalse(poolWhiteIPList.contains(null));
+    }
+
+    public String randomIpAddress(Random random) {
+        StringBuilder ipAddress = new StringBuilder();
+        for (int i = 0; i < 4; i++) {
+            ipAddress.append(random.nextInt(256));
+            if (i < 3) {
+                ipAddress.append(".");
+            }
+        }
+        return ipAddress.toString();
+    }
+
+    @Test
+    public void testParseIP() {
+        Random random = new Random();
+        for (int i = 0; i < 10000; i++) {
+            String ipAddress = randomIpAddress(random);
+            // Generate a random port number between 0 and 65535
+            int port = random.nextInt(65536);
+            String ipAddressWithPort = "/" + ipAddress + ":" + port;
+            assertEquals(ipAddress, extractIpAddress(ipAddressWithPort));
+        }
     }
 }

@@ -26,6 +26,8 @@ package io.xdag.db;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import java.util.List;
+
+import io.xdag.core.Filter;
 import org.bouncycastle.util.encoders.Hex;
 
 public interface OrphanBlockStore {

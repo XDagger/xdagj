@@ -24,18 +24,10 @@
 
 package io.xdag.cli;
 
-import static io.xdag.utils.BasicUtils.address2Hash;
-import static io.xdag.utils.BasicUtils.pubAddress2Hash;
-
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.WalletUtils;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -54,6 +46,15 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static io.xdag.utils.BasicUtils.address2Hash;
+import static io.xdag.utils.BasicUtils.pubAddress2Hash;
 
 @Slf4j
 public class Shell extends JlineCommandRegistry implements CommandRegistry, Telnet.ShellProvider {
@@ -78,11 +79,9 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
         commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
-        commandExecute.put("miners", new CommandMethods(this::processMiners, this::defaultCompleter));
-//        commandExecute.put("run", new CommandMethods(this::processRun, this::defaultCompleter));
+        commandExecute.put("pool", new CommandMethods(this::processPool, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
         commandExecute.put("net", new CommandMethods(this::processNet, this::defaultCompleter));
-        commandExecute.put("disconnect", new CommandMethods(this::processDisconnect, this::defaultCompleter));
         commandExecute.put("ttop", new CommandMethods(this::processTtop, this::defaultCompleter));
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
         commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
@@ -121,7 +120,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
 
-            if (argv.size() == 0) {
+            if (argv.isEmpty()) {
                 println("Need hash or address");
                 return;
             }
@@ -185,7 +184,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
                 num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.account(num));
@@ -206,7 +205,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             List<String> argv = opt.args();
-            println(commands.balance(argv.size() > 0 ? argv.get(0) : null));
+            println(commands.balance(!argv.isEmpty() ? argv.get(0) : null));
         } catch (Exception e) {
             saveException(e);
         }
@@ -226,7 +225,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
 
-            if (argv.size() == 0) {
+            if (argv.isEmpty()) {
                 println("Need hash or address");
                 return;
             }
@@ -283,7 +282,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
                 num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.mainblocks(num));
@@ -305,7 +304,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (argv.size() > 0 && NumberUtils.isDigits(argv.get(0))) {
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
                 num = NumberUtils.toInt(argv.get(0));
             }
             println(commands.minedBlocks(num));
@@ -396,10 +395,10 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         }
     }
 
-    private void processMiners(CommandInput input) {
+    private void processPool(CommandInput input){
         final String[] usage = {
-                "miners - for pool, print list of recent connected miners",
-                "Usage: miners ",
+                "pool - for pool, print list of recent connected pool",
+                "Usage: pool ",
                 "  -? --help                    Show help",
         };
         try {
@@ -407,12 +406,11 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             if (opt.isSet("help")) {
                 throw new Options.HelpException(opt.usage());
             }
-            println(commands.miners());
+            println(commands.pool());
         } catch (Exception e) {
             saveException(e);
         }
     }
-
 
     private void processKeygen(CommandInput input) {
         final String[] usage = {
@@ -439,7 +437,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 "  -? --help                        Show help",
                 "  -l --list                 list connections",
                 "  -c --connect=IP:PORT     connect to this host",
-                "  -p --plibp2p=IP:PORT:ID      connect to this host by libp2p",
         };
         try {
             Options opt = parseOptions(usage, input.args());
@@ -460,48 +457,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 } else {
                     println("Node ip:port Error");
                 }
-            }
-            if (opt.isSet("plibp2p")) {
-                println("connect to :" + opt.get("plibp2p"));
-                Matcher m = p.matcher(opt.get("plibp2p"));
-                if (m.matches()) {
-                    String host = m.group(1);
-                    int port = Integer.parseInt(m.group(2));
-                    String ip = m.group(3);
-                    commands.connectbylibp2p(host, port, ip);
-                } else {
-                    println("Node ip:port Error");
-                }
-            }
-        } catch (Exception e) {
-            saveException(e);
-        }
-    }
-
-    private void processDisconnect(CommandInput input) {
-        final String[] usage = {
-                "disconnect - disconnect all connections or specified miners",
-                "Usage: disconnect [OPTIONS]",
-                "  -? --help                                Show help",
-                "  -a --all                  all miners",
-                "  -o --address=ADDRESS          [ADDRESS] is the miners' address",
-                "  -i --ip=IP                [IP] is the miners' IP",
-        };
-        try {
-            Options opt = parseOptions(usage, input.args());
-            if (opt.isSet("help")) {
-                throw new Options.HelpException(opt.usage());
-            }
-            if (opt.isSet("all")) {
-                println(commands.disConnectMinerChannel("all"));
-                return;
-            }
-            if (opt.isSet("address")) {
-                println(commands.disConnectMinerChannel(opt.get("address")));
-                return;
-            }
-            if (opt.isSet("ip")) {
-                println(commands.disConnectMinerChannel(opt.get("ip")));
             }
         } catch (Exception e) {
             saveException(e);

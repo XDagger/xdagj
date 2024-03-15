@@ -38,6 +38,8 @@ import org.hyperledger.besu.crypto.KeyPair;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 
 import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
@@ -77,6 +79,12 @@ public class BasicUtils {
     public static String hash2PubAddress(Bytes32 hash) {
        return toBase58(hash2byte(hash.mutableCopy()));
     }
+    public static MutableBytes32 hexPubAddress2Hashlow(String hexPubAddress){
+        Bytes hash = Bytes.fromHexString(hexPubAddress);
+        MutableBytes32 hashLow = MutableBytes32.create();
+        hashLow.set(8, hash);
+        return hashLow;
+    }
 
     public static Bytes32 address2Hash(String address) {
         Bytes ret = Bytes.fromBase64String(address);
@@ -100,6 +108,10 @@ public class BasicUtils {
     }
 
     public static byte[] hash2byte(MutableBytes32 hash){
+        Bytes bytes = hash.slice(8,20);
+        return bytes.toArray();
+    }
+    public static byte[] hash2byte(Bytes32 hash){
         Bytes bytes = hash.slice(8,20);
         return bytes.toArray();
     }
@@ -157,9 +169,6 @@ public class BasicUtils {
         }
     }
 
-    public static double xdag_log_difficulty2hashrate(double logDiff) {
-        return Math.exp(logDiff) * Math.pow(2, -58) * (0.65);
-    }
 
     public static double xdagHashRate(BigInteger[] diffs){
         double sum = 0;
@@ -192,5 +201,30 @@ public class BasicUtils {
         long temp = xdag - (first << 32);
         double tem = temp / Math.pow(2, 32);
         return new BigDecimal(first + tem);
+    }
+    /**
+     * @param v1 dividend
+     * @param v2 divisor
+     * @param scale Accurate to the number of digits after the decimal point
+     * @return The result after rounding
+     */
+    public static double div(double v1, double v2, int scale) {
+        if (scale < 0) {
+            throw new IllegalArgumentException("The scale must be a positive integer or zero");
+        }
+        BigDecimal b1 = BigDecimal.valueOf(v1);
+        BigDecimal b2 = BigDecimal.valueOf(v2);
+        return b1.divide(b2, scale, RoundingMode.HALF_UP).doubleValue();
+    }
+    // Parse and extract IP addresses, for example /133.22.245.177:11328 -> 133.22.245.177
+    public static String extractIpAddress(String ipAddressAndPort) {
+        String pattern = "/(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):\\d+";
+        Pattern r = Pattern.compile(pattern);
+        Matcher m = r.matcher(ipAddressAndPort);
+        if (m.find()) {
+            return m.group(1);
+        } else {
+            return null;
+        }
     }
 }

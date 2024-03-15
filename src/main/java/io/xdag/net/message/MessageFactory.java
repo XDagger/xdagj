@@ -24,10 +24,78 @@
 
 package io.xdag.net.message;
 
-import org.apache.tuweni.bytes.MutableBytes;
+import io.xdag.net.message.consensus.*;
+import io.xdag.net.message.p2p.DisconnectMessage;
+import io.xdag.net.message.p2p.HelloMessage;
+import io.xdag.net.message.p2p.InitMessage;
+import io.xdag.net.message.p2p.PingMessage;
+import io.xdag.net.message.p2p.PongMessage;
+import io.xdag.net.message.p2p.WorldMessage;
+import io.xdag.utils.exception.UnreachableException;
+import lombok.extern.slf4j.Slf4j;
 
-public interface MessageFactory {
+@Slf4j
+public class MessageFactory {
+    /**
+     * Decode a raw message.
+     *
+     * @param code
+     *            The message code
+     * @param body
+     *            The message body
+     * @return The decoded message, or NULL if the message type is not unknown
+     * @throws MessageException
+     *             when the encoding is illegal
+     */
+    public Message create(byte code, byte[] body) throws MessageException {
 
-    Message create(byte code, MutableBytes encoded);
+        MessageCode c = MessageCode.of(code);
+        if (c == null) {
+            //log.debug("Invalid message code: {}", Hex.encode0x(Bytes.of(code)));
+            return null;
+        }
+
+        try {
+            switch (c) {
+            case HANDSHAKE_INIT:
+                return new InitMessage(body);
+            case HANDSHAKE_HELLO:
+                return new HelloMessage(body);
+            case HANDSHAKE_WORLD:
+                return new WorldMessage(body);
+            case DISCONNECT:
+                return new DisconnectMessage(body);
+            case PING:
+                return new PingMessage(body);
+            case PONG:
+                return new PongMessage(body);
+            case BLOCKS_REQUEST:
+                return new BlocksRequestMessage(body);
+            case BLOCKS_REPLY:
+                return new BlocksReplyMessage(body);
+            case SUMS_REQUEST:
+                return new SumRequestMessage(body);
+            case SUMS_REPLY:
+                return new SumReplyMessage(body);
+            case BLOCKEXT_REQUEST:
+                return new BlockExtRequestMessage(body);
+            case BLOCKEXT_REPLY:
+                return new BlockExtReplyMessage(body);
+            case BLOCK_REQUEST:
+                return new BlockRequestMessage(body);
+            case NEW_BLOCK:
+                return new NewBlockMessage(body);
+            case SYNC_BLOCK:
+                return new SyncBlockMessage(body);
+            case SYNCBLOCK_REQUEST:
+                return new SyncBlockRequestMessage(body);
+
+            default:
+                throw new UnreachableException();
+            }
+        } catch (Exception e) {
+            throw new MessageException("Failed to decode message", e);
+        }
+    }
 
 }

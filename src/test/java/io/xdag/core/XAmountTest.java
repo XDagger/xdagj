@@ -28,16 +28,10 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import static io.xdag.core.XUnit.NANO_XDAG;
-import static io.xdag.core.XUnit.MICRO_XDAG;
-import static io.xdag.core.XUnit.MILLI_XDAG;
-import static io.xdag.core.XUnit.XDAG;
+import static io.xdag.config.Constants.MIN_GAS;
 import static io.xdag.core.XAmount.ZERO;
+import static io.xdag.core.XUnit.*;
+import static org.junit.Assert.*;
 
 public class XAmountTest {
 
@@ -112,10 +106,15 @@ public class XAmountTest {
         assertTrue(XAmount.of(999, XDAG).greaterThanOrEqual(XAmount.of(999, MILLI_XDAG)));
         assertFalse(XAmount.of(999, XDAG).lessThan(XAmount.of(999, MILLI_XDAG)));
         assertFalse(XAmount.of(999, XDAG).lessThanOrEqual(XAmount.of(999, MILLI_XDAG)));
+        XAmount amount1 = XAmount.of(64, XDAG);
+        XAmount amount2 = XAmount.of(63, XDAG);
+        assertFalse(amount1.lessThanOrEqual(amount2));
+        XAmount amount3 = XAmount.of(101, MILLI_XDAG);
+        assertFalse(amount3.lessThanOrEqual(MIN_GAS));
     }
 
     @Test
-    public void TestAmount2xdag() {
+    public void testAmount2xdag() {
         assertEquals(972.80, XAmount.ofXAmount(4178144185548L).toDecimal(2, XDAG).doubleValue(), 0.0);
 
         // 3333333334
@@ -151,6 +150,13 @@ public class XAmountTest {
         XAmount amount = XAmount.of(0, XDAG);
         assertEquals("0.000000000", amount.toDecimal(9, XDAG).toPlainString());
         assertEquals("0E-9", amount.toDecimal(9, XDAG).toString());
+    }
+
+    @Test
+    public void testXAmountMultiplicationOperation() {
+        XAmount amount = XAmount.of(64, XDAG);
+        assertEquals(XAmount.of(3200, MILLI_XDAG), amount.multiply(0.05));
+
     }
 
 }
