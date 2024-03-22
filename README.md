@@ -81,7 +81,7 @@ Four stages:
 - [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
 
-#### Expansion phase: XDAGJ & EVM
+#### Expansion phase: XDAGJ & XRC
 
 - [x] Improve the address block structure 
 
