@@ -89,7 +89,7 @@ Four stages:
 
 - [x] Optimize wallets to improve the user experience
 
-- [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
+- [ ] Support XRC standards
 
 - [x] Decrease the threshold of mining pool users 
 
