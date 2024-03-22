@@ -76,7 +76,7 @@ Four stages:
 
 - [x] Introduce the Stratum protocol for miners
 
-- [ ] Lightweight wallet application: connect to MetaMask, join the browser wallet
+- [x] Lightweight wallet application: connect to MetaMask, join the browser wallet
 
 - [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
@@ -85,7 +85,7 @@ Four stages:
 
 - [x] Improve the address block structure 
 
-- [ ] Increase the handling fee
+- [x] Increase the handling fee
 
 - [x] Optimize wallets to improve the user experience
 
