@@ -77,7 +77,6 @@ public class XdagSync {
     private volatile boolean isRunning;
 
     private long lastRequestTime;
-    private int count;
 
     public XdagSync(Kernel kernel) {
         this.kernel = kernel;
@@ -97,22 +96,19 @@ public class XdagSync {
             status = Status.SYNCING;
             // TODO: paulochen 开始同步的时间点/快照时间点
 //            startSyncTime = 1588687929343L; // 1716ffdffff 171e52dffff
-            sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 32, 2, TimeUnit.SECONDS);
+            sendFuture = sendTask.scheduleAtFixedRate(this::syncLoop, 32, 10, TimeUnit.SECONDS);
         }
     }
 
     private void syncLoop() {
-        count++;
         try {
-            if (syncWindow.size() < 32) {
+            if (syncWindow.isEmpty()) {
                 log.debug("start finding different time periods");
                 requestBlocks(0, 1L << 48);
             }
-            if (getLastTime() >= lastRequestTime || count == 128) {
-                count = 0;
-                log.debug("start getting blocks");
-                getBlocks();
-            }
+
+            log.debug("start getting blocks");
+            getBlocks();
         } catch (Throwable e) {
             log.error("error when requestBlocks {}", e.getMessage());
         }
@@ -138,7 +134,7 @@ public class XdagSync {
 
         // Segmented requests, each request for 32 time periods.
         int size = syncWindow.size();
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < 128; i++) {
             if (i >= size) {
                 break;
             }
@@ -149,8 +145,11 @@ public class XdagSync {
             }
 
             long time = syncWindow.get(i);
-            sendGetBlocks(xc, time, sf);
-            if (i == 30) lastRequestTime = time;
+            if (time >= lastRequestTime) {
+                sendGetBlocks(xc, time, sf);
+                lastRequestTime = time;
+            }
+
         }
 
     }
@@ -183,7 +182,7 @@ public class XdagSync {
                 setSyncOld();
             }
 
-            if ((syncWindow.isEmpty() || t > syncWindow.peekFirst()) && syncWindow.size() < 2048) {
+            if (t > getLastTime()) {
                 syncWindow.offerLast(t);
             }
         }

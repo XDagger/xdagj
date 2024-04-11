@@ -284,17 +284,22 @@ public class RandomX {
             // 分配成功
             RandomXJNA.INSTANCE.randomx_init_cache(rx_memory.rxCache, bytesToPointer(rx_memory.seed), new NativeSize(rx_memory.seed.length));
 
-            if (rx_memory.rxDataset == null) {
-                // 分配dataset
-                rx_memory.rxDataset = RandomXJNA.INSTANCE.randomx_alloc_dataset(flags);
+            if (config.getRandomxSpec().getRandomxFlag()) {
                 if (rx_memory.rxDataset == null) {
-                    //分配失败
-                    log.debug("Failed alloc dataset");
-                    return;
+                    // 分配dataset
+                    rx_memory.rxDataset = RandomXJNA.INSTANCE.randomx_alloc_dataset(flags);
+                    if (rx_memory.rxDataset == null) {
+                        //分配失败
+                        log.debug("Failed alloc dataset");
+                        return;
+                    }
                 }
+
+                randomXPoolInitDataset(rx_memory.rxCache, rx_memory.rxDataset);
+            } else {
+                rx_memory.rxDataset = null;
             }
 
-            randomXPoolInitDataset(rx_memory.rxCache, rx_memory.rxDataset);
 
             if (randomXUpdateVm(rx_memory, true) == null) {
                 // update failed
