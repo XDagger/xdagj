@@ -866,6 +866,7 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
+                //even mainBlock duplicate link the TX_block which other mainBlock is handled, we could check the TX ref if this mainBlock.
                 if (ref.getInfo().getRef() != null
                         && equalBytes(ref.getInfo().getRef(), block.getHashLow().toArray())
                         && ((ref.getInfo().flags & BI_MAIN_REF) != 0)) {

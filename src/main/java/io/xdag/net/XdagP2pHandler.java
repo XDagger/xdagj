@@ -338,10 +338,10 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
 //        }
 
         // validator can't share IP address
-        if (channelMgr.isActiveIP(channel.getRemoteIp()) // already connected
-                && nodeSpec.getNetwork() == Network.MAINNET) { // on main net
-            return ReasonCode.VALIDATOR_IP_LIMITED;
-        }
+//        if (channelMgr.isActiveIP(channel.getRemoteIp()) // already connected
+//                && nodeSpec.getNetwork() == Network.MAINNET) { // on main net
+//            return ReasonCode.VALIDATOR_IP_LIMITED;
+//        }
 
         return null;
     }

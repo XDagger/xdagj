@@ -80,7 +80,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int netMaxOutboundConnections = 128;
     protected int netMaxInboundConnections = 512;
     protected int netMaxInboundConnectionsPerIp = 5;
-    protected int netMaxMessageQueueSize = 4096;
+//    protected int netMaxMessageQueueSize = 4096;
     protected int netMaxFrameBodySize = 128 * 1024;
     protected int netMaxPacketSize = 16 * 1024 * 1024;
     protected int netRelayRedundancy = 8;

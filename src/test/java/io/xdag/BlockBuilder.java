@@ -100,6 +100,18 @@ public class BlockBuilder {
         return b;
     }
 
+    public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+                                                    XAmount amount, XAmount VariableFee) {
+        List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, VariableFee); // orphan
+        b.signOut(key);
+        return b;
+    }
+
     public static Block generateWalletTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount) {
         List<Address> refs = Lists.newArrayList();
