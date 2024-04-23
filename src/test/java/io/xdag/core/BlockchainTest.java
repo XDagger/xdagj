@@ -686,6 +686,80 @@ public class BlockchainTest {
 
     }
 
+    @Test
+    public void testIfTxBlockTobeMain() {
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. first block
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+
+        Block TxBlockTobeMain = generateMinerRewardTxBlock(config, poolKey, xdagTime, from, to,to1, XAmount.of(100,XUnit.XDAG),XAmount.of(30,XUnit.XDAG), XAmount.of(70,XUnit.XDAG));
+        result = blockchain.tryToConnect(TxBlockTobeMain);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+
+        blockchain.setMain(TxBlockTobeMain);// set the tx block as mainBlock.
+
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount TxBlockAward =TxBlockTobeMain.getInfo().getAmount();
+
+        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
+        assertEquals("29.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("69.90", addressBalance1.toDecimal(2, XUnit.XDAG).toString());
+
+        //Tx block get mainBlock reward 1024 , and get itself fee reward 0.2
+        assertEquals("1024.2" , TxBlockAward.toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("0.2" , TxBlockTobeMain.getFee().toDecimal(1, XUnit.XDAG).toString());
+        Bytes32 ref = TxBlockTobeMain.getHashLow();
+        //  create 10 mainblocks
+        for (int i = 1; i <= 10; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+        // rollback this TX mainBlock,
+        blockchain.unSetMain(TxBlockTobeMain);
+
+
+        poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        addressBalance1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        TxBlockAward =TxBlockTobeMain.getInfo().getAmount();
+        //tx will be rollback, reward will set 0
+        assertEquals("1000.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.00", addressBalance.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.00", addressBalance1.toDecimal(2, XUnit.XDAG).toString());
+
+        assertEquals("0.0" , TxBlockAward.toDecimal(1, XUnit.XDAG).toString());
+    }
+
+
 
     @Test
     public void testNew2NewTxAboutRejected() {
