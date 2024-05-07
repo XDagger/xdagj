@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
+import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
@@ -42,10 +43,12 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,7 +59,9 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static io.xdag.BlockBuilder.*;
 import static io.xdag.core.ImportResult.*;
@@ -267,7 +272,8 @@ public class BlockchainTest {
         assertChainStatus(12, 10, 1, 1, blockchain);
 
         pending.clear();
-        pending.add(new Address(txBlock.getHashLow(),false));
+        Address txAddress =  new Address(txBlock.getHashLow(), false);
+        pending.add(txAddress);
         ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
         // 4. confirm transaction block with 16 mainblocks
         for (int i = 1; i <= 16; i++) {
@@ -299,9 +305,9 @@ public class BlockchainTest {
         XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
         XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
-        assertEquals("1000.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100*3  = 700.00
-        assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
-        assertEquals("0.0" , RollBackMainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
+        assertEquals("1000.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//rollback 900 + 100 = 1000
+        assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//rollback 99.9 -99.9 = 0
+        assertEquals("0.0" , RollBackMainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock reward back 1024 - 1024 = 0.
 
 
         //TODO:test wallet create txBlock with fee = 0,
@@ -370,6 +376,430 @@ public class BlockchainTest {
         assertEquals("0.0" , RollBackMainBlockLinkTxBalance_1.toDecimal(1, XUnit.XDAG).toString());//  rollback is zero
 
     }
+
+    @Test
+    public void DuplicateLink_Rollback(){
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. first block
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = addressBlock.getHashLow();  //这个是链的创世区块
+        // 2. create 10 mainblocks
+        for (int i = 1; i <= 10; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));//ref 为创世区块
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();   //更新ref为当前区块
+            extraBlockList.add(extraBlock);
+        }
+
+        //构造一笔交易，用于被两个块连续链接
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG));
+
+
+        // 4. local check
+        assertTrue(blockchain.canUseInput(txBlock));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+        // 5. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+        result = blockchain.tryToConnect(txBlock);
+        Block c = blockchain.getBlockByHash(txBlock.getHashLow(),true);
+        // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        // there is 12 blocks ： 10 mainBlocks, 1 txBlock
+        assertChainStatus(12, 10, 1, 1, blockchain);
+
+
+        pending.clear();
+        Address TxblockAddress = new Address(txBlock.getHashLow(),false);
+        pending.add(TxblockAddress);
+        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        //高度 11 主块链接交易块，第一次
+        generateTime += 64000L;
+        pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+        pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                XdagField.FieldType.XDAG_FIELD_COINBASE,
+                true));
+        long time = XdagTime.msToXdagtimestamp(generateTime);
+        xdagTime = XdagTime.getEndOfEpoch(time);
+        Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+        blockchain.tryToConnect(extraBlock);
+        extraBlockList.add(extraBlock);
+        pending.clear();
+
+
+        List<Address> links = extraBlockList.get(10).getLinks();
+        Set<String> linkset = new HashSet<>();
+        for (Address link : links){  //将主块的链接块都放进Hashset里面，用于确认链接了交易块
+            linkset.add(WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()));
+        }
+        //确认高度 11 主块链接了 交易块
+        assertTrue(linkset.contains(WalletUtils.toBase58(TxblockAddress.getAddress().slice(8, 20).toArray())));
+
+        //为高度12的去看构造一笔属于它的交易：
+        from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
+        Block txBlock1 = generateNewTransactionBlock(config, poolKey, xdagTime - 2, from, to1, XAmount.of(10, XUnit.XDAG));
+        assertTrue(blockchain.canUseInput(txBlock1));
+        assertTrue(blockchain.checkMineAndAdd(txBlock1));
+        // 5. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock1.getXdagBlock())));
+        assertTrue(blockchain.checkMineAndAdd(txBlock1));
+        result = blockchain.tryToConnect(txBlock1);
+        // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+
+        //高度 12 主块再次链接交易块，第二次
+        pending.add(TxblockAddress);
+        pending.add(new Address(txBlock1.getHashLow(),false));
+        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+        }
+        links = extraBlockList.get(11).getLinks();
+        linkset = new HashSet<>();
+        for (Address link : links){  //将主块的链接块都放进Hashset里面，用于确认链接了两个交易块
+            linkset.add(WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()));
+        }
+        //确认高度 12 主块链接了 两个交易块
+        assertTrue(linkset.contains(WalletUtils.toBase58(TxblockAddress.getAddress().slice(8, 20).toArray())));
+        assertTrue(linkset.contains(WalletUtils.toBase58(new Address(txBlock1.getHashLow(),false).getAddress().slice(8, 20).toArray())));
+        //16个块确认后，目前高度 11+16 = 27
+
+        //测试重复链接是否影响手续费收取
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
+
+        assertEquals("890.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100 - 10 = 890.00
+        assertEquals("99.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
+        assertEquals("9.90", addressBalance1.toDecimal(2, XUnit.XDAG).toString());//10 - 0.1 = 9.90
+        assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
+        XAmount mainBlockFee = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(10).getHashLow()).getFee();
+        assertEquals("0.1",mainBlockFee.toDecimal(1, XUnit.XDAG).toString());
+
+        //重复连接的第12个主块，只有属于自己交易的手续费
+        XAmount mainBlock_doubleLink_Balance = blockchain.getBlockByHash(extraBlockList.get(11).getHash(), false).getInfo().getAmount();
+        assertEquals("1024.1" , mainBlock_doubleLink_Balance.toDecimal(1, XUnit.XDAG).toString());//double link will not get fee
+        XAmount mainBlock_doubleLink_Fee = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(11).getHashLow()).getFee();
+        assertEquals("0.1",mainBlock_doubleLink_Fee.toDecimal(1, XUnit.XDAG).toString());
+
+        //TODO:回滚重复链接的第12个主块，
+        blockchain.unSetMain(extraBlockList.get(11));
+        poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//890 + 10 = 900, 只回滚自己的交易，不回滚别的主块的交易
+        assertEquals("99.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());//99.90 -99.90 = 0 只回滚自己的交易，不回滚别的主块的交易
+    }
+
+    @Test
+    public void testTransaction_WithVariableFee() {
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. first block
+        Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = addressBlock.getHashLow();
+        // 2. create 10 mainblocks
+        for (int i = 1; i <= 10; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            long xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+
+        // 测试各种交易模式，手续费是可变的：make one transaction(100 XDAG) block(from No.1 mainblock to address block)
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT,true);
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG), XAmount.of(10, XUnit.XDAG) ); //收10 Xdag 手续费
+
+        // 4. local check
+        assertTrue(blockchain.canUseInput(txBlock));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+        // 5. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+
+        result = blockchain.tryToConnect(txBlock);
+        Block c = blockchain.getBlockByHash(txBlock.getHashLow(),true);
+        // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        // there is 12 blocks and 10 mainblocks
+        assertChainStatus(12, 10, 1, 1, blockchain);
+
+        pending.clear();
+        Address txAddress =  new Address(txBlock.getHashLow(), false);
+        pending.add(txAddress);
+        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        // 4. confirm transaction block with 16 mainblocks
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+        }
+
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
+        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
+        assertEquals("90.00", addressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 10 = 90.00
+        assertEquals("1034.0" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 10 reward.
+        XAmount mainBlockFee = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(10).getHashLow()).getFee();
+        assertEquals("10.0",mainBlockFee.toDecimal(1, XUnit.XDAG).toString());
+
+//        blockchain.unSetMain(extraBlockList.get(10));//test rollback
+//
+//        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+//        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+//        XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
+//        assertEquals("1000.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//rollback 900 + 100 = 1000
+//        assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//rollback 99.9 -99.9 = 0
+//        assertEquals("0.0" , RollBackMainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock reward back 1024 - 1024 = 0.
+//
+//
+//        //TODO:test wallet create txBlock with fee = 0,
+//        List<Block> txList = Lists.newLinkedList();
+//        for (int i = 1; i <= 10; i++) {
+//            Block txBlock_0;
+//            if (i == 1){//TODO:test give miners reward with a TX block :one input several output
+//                txBlock_0 = generateMinerRewardTxBlock(config, poolKey, xdagTime - i, from, to,to1, XAmount.of(20,XUnit.XDAG),XAmount.of(10,XUnit.XDAG), XAmount.of(10,XUnit.XDAG));
+//            }else {
+//                txBlock_0 = generateWalletTransactionBlock(config, poolKey, xdagTime - i, from, to, XAmount.of(1,XUnit.XDAG));}
+//
+//            assertEquals(XAmount.ZERO, txBlock_0.getFee());//fee is zero.
+//            // 4. local check
+//            assertTrue(blockchain.canUseInput(txBlock_0));
+//            assertTrue(blockchain.checkMineAndAdd(txBlock_0));
+//            // 5. remote check
+//            assertTrue(blockchain.canUseInput(new Block(txBlock_0.getXdagBlock())));
+//            assertTrue(blockchain.checkMineAndAdd(txBlock_0));
+//
+//            result = blockchain.tryToConnect(txBlock_0);
+//            // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+//            assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+//            txList.add(txBlock_0);
+//        }
+//        pending.clear();
+//        for (Block tx : txList) {
+//            pending.add(new Address(tx.getHashLow(), false));
+//        }
+//        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+//        // 4. confirm transaction block with 16 mainblocks
+//        for (int i = 1; i <= 16; i++) {
+//            generateTime += 64000L;
+//            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+//            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+//                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+//                    true));
+//            long time = XdagTime.msToXdagtimestamp(generateTime);
+//            xdagTime = XdagTime.getEndOfEpoch(time);
+//            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+//            blockchain.tryToConnect(extraBlock);
+//            ref = extraBlock.getHashLow();
+//            extraBlockList.add(extraBlock);
+//            pending.clear();
+//        }
+//        XAmount poolBalance_0 = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+//        XAmount addressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+//        XAmount addressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+//        XAmount mainBlockLinkTxBalance_0 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
+//        assertEquals("971.00", poolBalance_0.toDecimal(2, XUnit.XDAG).toString());//1000 - 20 - 1*9  = 971.00
+//        assertEquals("18.00", addressBalance_0.toDecimal(2, XUnit.XDAG).toString());//0  + (10-0.1) + (1 - 0.1) * 9  = 18   (ps:0.1 is fee)
+//        assertEquals("9.90", addressBalance_1.toDecimal(2, XUnit.XDAG).toString());//0 + 10 - 0.1 = 9.90
+//        assertEquals("1025.1" , mainBlockLinkTxBalance_0.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1*11 reward.
+//        XAmount mainBlockFee_1 = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(26).getHashLow()).getFee();
+//        assertEquals("1.1",mainBlockFee_1.toDecimal(1, XUnit.XDAG).toString());
+//
+//        //TODO:test rollback
+//        blockchain.unSetMain(extraBlockList.get(26));
+//
+//        XAmount RollBackPoolBalance_1 = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
+//        XAmount RollBackAddressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+//        XAmount RollBackAddressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+//        XAmount RollBackMainBlockLinkTxBalance_1 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
+//        assertEquals("1000.00", RollBackPoolBalance_1.toDecimal(2, XUnit.XDAG).toString());//1000
+//        assertEquals("0.00", RollBackAddressBalance_0.toDecimal(2, XUnit.XDAG).toString());//rollback is zero
+//        assertEquals("0.00", RollBackAddressBalance_1.toDecimal(2, XUnit.XDAG).toString());
+//        assertEquals("0.0" , RollBackMainBlockLinkTxBalance_1.toDecimal(1, XUnit.XDAG).toString());//  rollback is zero
+
+    }
+
+    @Test
+    public void testIfTxBlockTobeMain() {
+        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+//        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
+        long generateTime = 1600616700000L;
+        // 1. first block
+        Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        ImportResult result = blockchain.tryToConnect(addressBlock);
+        // import address block, result must be IMPORTED_BEST
+        assertSame(result, IMPORTED_BEST);
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+
+        Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN, false);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT, true);
+        long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+
+        Block TxBlockTobeMain = generateOldTransactionBlock(config, poolKey, xdagTime, from, XAmount.of(100, XUnit.XDAG), to, XAmount.of(30, XUnit.XDAG), to1, XAmount.of(70, XUnit.XDAG));
+        result = blockchain.tryToConnect(TxBlockTobeMain);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+
+        blockchain.setMain(TxBlockTobeMain);// set the tx block as mainBlock.
+
+        XAmount poolBalance = blockchain.getBlockByHash(addressBlock.getHash(), false).getInfo().getAmount();
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount TxBlockAward =TxBlockTobeMain.getInfo().getAmount();
+
+        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
+        assertEquals("29.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("69.90", addressBalance1.toDecimal(2, XUnit.XDAG).toString());
+
+        //Tx block get mainBlock reward 1024 , and get itself fee reward 0.2
+        assertEquals("1024.2" , TxBlockAward.toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("0.2" , TxBlockTobeMain.getFee().toDecimal(1, XUnit.XDAG).toString());
+        Bytes32 ref = TxBlockTobeMain.getHashLow();
+        //  create 10 mainblocks
+        for (int i = 1; i <= 10; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            result = blockchain.tryToConnect(extraBlock);
+            assertSame(result, IMPORTED_BEST);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+
+        from = new Address(TxBlockTobeMain.getHashLow(), XDAG_FIELD_IN, false);
+
+        xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+        Block txBlock = generateOldTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(1000, XUnit.XDAG));
+
+// 4. local check
+        assertTrue(blockchain.canUseInput(txBlock));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+// 5. remote check
+        assertTrue(blockchain.canUseInput(new Block(txBlock.getXdagBlock())));
+        assertTrue(blockchain.checkMineAndAdd(txBlock));
+
+        result = blockchain.tryToConnect(txBlock);
+        Block c = blockchain.getBlockByHash(txBlock.getHashLow(), true);
+// import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+// there is 12 blocks and 10 mainblocks
+
+        pending.clear();
+        pending.add(new Address(txBlock.getHashLow(), false));
+        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+// 4. confirm transaction block with 3 mainblocks
+        for (int i = 1; i <= 4; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT, false));
+            pending.add(new Address(keyPair2Hash(wallet.getDefKey()),
+                    XdagField.FieldType.XDAG_FIELD_COINBASE,
+                    true));
+            long time = XdagTime.msToXdagtimestamp(generateTime);
+            xdagTime = XdagTime.getEndOfEpoch(time);
+            Block extraBlock = generateExtraBlock(config, poolKey, xdagTime, pending);
+            blockchain.tryToConnect(extraBlock);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+        }
+        XAmount TXBalance = blockchain.getBlockByHash(TxBlockTobeMain.getHash(), false).getInfo().getAmount();
+        assertEquals("24.2", TXBalance.toDecimal(1, XUnit.XDAG).toString());
+        addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        assertEquals("1029.80", addressBalance.toDecimal(2, XUnit.XDAG).toString());
+
+
+        // 输出签名只有一个
+        SECPSignature signature = TxBlockTobeMain.getOutsig();
+        byte[] publicKeyBytes = poolKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
+        Bytes digest = Bytes.wrap(TxBlockTobeMain.getSubRawData(TxBlockTobeMain.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
+        Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
+        // use hyperledger besu crypto native secp256k1
+        assertTrue(Sign.SECP256K1.verify(hash, signature, poolKey.getPublicKey()));
+
+    }
+
+
 
     @Test
     public void testNew2NewTxAboutRejected() {

@@ -866,6 +866,7 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
+                //even mainBlock duplicate link the TX_block which other mainBlock is handled, we could check the TX ref if this mainBlock.
                 if (ref.getInfo().getRef() != null
                         && equalBytes(ref.getInfo().getRef(), block.getHashLow().toArray())
                         && ((ref.getInfo().flags & BI_MAIN_REF) != 0)) {
@@ -894,7 +895,11 @@ public class BlockchainImpl implements Blockchain {
             xdagStats.nmain++;
 
             // 递归执行主块引用的区块 并获取手续费
-            applyBlock(true, block);
+            XAmount mainBlockFee = applyBlock(true, block); //the mainBlock may have tx, return the fee to itself.
+            if (!mainBlockFee.equals(XAmount.ZERO)) {// normal mainBlock will not go into this
+                acceptAmount(block, mainBlockFee); //add the fee
+                block.getInfo().setFee(mainBlockFee);
+            }
             // 主块REF指向自身
             // TODO:补充手续费
             updateBlockRef(block, new Address(block));

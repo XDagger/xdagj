@@ -88,6 +88,20 @@ public class BlockBuilder {
         b.signOut(key);
         return b;
     }
+
+    public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, XAmount amount,Address to,
+                                                    XAmount amount1, Address to1, XAmount amount2) {
+        List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
+        refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0,XAmount.of(100,XUnit.MILLI_XDAG)); // orphan
+        b.signOut(key);
+        return b;
+    }
+
     public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount) {
         List<Address> refs = Lists.newArrayList();
@@ -96,6 +110,18 @@ public class BlockBuilder {
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, XAmount.of(100, XUnit.MILLI_XDAG)); // orphan
+        b.signOut(key);
+        return b;
+    }
+
+    public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+                                                    XAmount amount, XAmount VariableFee) {
+        List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, VariableFee); // orphan
         b.signOut(key);
         return b;
     }

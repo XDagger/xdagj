@@ -44,7 +44,7 @@ public interface NodeSpec {
 
     int getWaitEpoch();
 
-    int getNetMaxMessageQueueSize();
+//    int getNetMaxMessageQueueSize();
 
     int getNetHandshakeExpiry();
 

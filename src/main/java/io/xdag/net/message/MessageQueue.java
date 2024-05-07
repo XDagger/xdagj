@@ -30,11 +30,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.xdag.config.Config;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.xdag.net.message.p2p.DisconnectMessage;
@@ -50,8 +46,8 @@ public class MessageQueue {
                     .daemon(true)
                     .build());
     private final Config config;
-
-    private final Queue<Message> queue = new ConcurrentLinkedQueue<>();
+    //'8192' is a value obtained from testing experience, not a standard value.Looking forward to optimization.
+    private final BlockingQueue<Message> queue = new LinkedBlockingQueue<>(8192);
     private final Queue<Message> prioritized = new ConcurrentLinkedQueue<>();
     private ChannelHandlerContext ctx;
     private ScheduledFuture<?> timerTask;
@@ -95,18 +91,18 @@ public class MessageQueue {
         }
     }
 
-    public boolean sendMessage(Message msg) {
-        if (size() >= config.getNodeSpec().getNetMaxMessageQueueSize()) {
-            disconnect(ReasonCode.MESSAGE_QUEUE_FULL);
-            return false;
-        }
-
+    public void sendMessage(Message msg) {
+    //when full message queue, whitelist don't need to disconnect.
         if (config.getNodeSpec().getNetPrioritizedMessages().contains(msg.getCode())) {
             prioritized.add(msg);
         } else {
-            queue.add(msg);
+            try {
+                //update to BlockingQueue, capacity 8192
+                queue.put(msg);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
-        return true;
     }
 
     public int size() {
@@ -114,7 +110,8 @@ public class MessageQueue {
     }
 
     private void nudgeQueue() {
-        int n = Math.min(5, size());
+        //Increase bandwidth consumption of a full used single sync thread to 3 Mbps.
+        int n = Math.min(8, size());
         if (n == 0) {
             return;
         }

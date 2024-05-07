@@ -427,14 +427,14 @@ public class BlockStoreImpl implements BlockStore {
         if ((level & 1) != 0) {
 //            Arrays.fill(sums, (byte)0);
             sums.fill((byte) 0);
-            for (int i = 0; i < 256; i++) {
+            for (int i = 1; i <= 256; i++) {
 //                long totalsum = BytesUtils.bytesToLong(buf, i * 16, true);
-                long totalsum = buf.getLong(i * 16, ByteOrder.LITTLE_ENDIAN);
+                long totalsum = buf.getLong((i-1) * 16, ByteOrder.LITTLE_ENDIAN);
                 sum += totalsum;
 //                long totalsize = BytesUtils.bytesToLong(buf, i * 16 + 8, true);
-                long totalsize = buf.getLong(i * 16 + 8, ByteOrder.LITTLE_ENDIAN);
+                long totalsize = buf.getLong((i-1) * 16 + 8, ByteOrder.LITTLE_ENDIAN);
                 size += totalsize;
-                if (i % 16 == 0 && i != 0) {
+                if (i % 16 == 0) {
 //                    System.arraycopy(BytesUtils.longToBytes(sum, true), 0, sums, i - 16, 8);
                     sums.set(i - 16, Bytes.wrap(BytesUtils.longToBytes(sum, true)));
 //                    System.arraycopy(BytesUtils.longToBytes(size, true), 0, sums, i - 8, 8);
