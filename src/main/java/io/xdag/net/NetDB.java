@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Getter
@@ -166,7 +167,7 @@ public class NetDB {
     }
 
     public void appendNetDB(NetDB netDB) {
-        if (netDB.ipList.size() == 0) {
+        if (netDB.ipList.isEmpty()) {
             log.debug("size 0");
             return;
         }
@@ -183,6 +184,8 @@ public class NetDB {
         return this.ipList.contains(ip);
     }
 
+    @Setter
+    @Getter
     static class IP {
 
         InetAddress ip;
@@ -200,22 +203,6 @@ public class NetDB {
             } catch (UnknownHostException e) {
                 log.error(e.getMessage(), e);
             }
-        }
-
-        public InetAddress getIp() {
-            return ip;
-        }
-
-        public void setIp(InetAddress ip) {
-            this.ip = ip;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
         }
 
         public byte[] getData() {

@@ -31,7 +31,6 @@ import io.xdag.net.message.p2p.InitMessage;
 import io.xdag.net.message.p2p.PingMessage;
 import io.xdag.net.message.p2p.PongMessage;
 import io.xdag.net.message.p2p.WorldMessage;
-import io.xdag.utils.exception.UnreachableException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -56,43 +55,24 @@ public class MessageFactory {
         }
 
         try {
-            switch (c) {
-            case HANDSHAKE_INIT:
-                return new InitMessage(body);
-            case HANDSHAKE_HELLO:
-                return new HelloMessage(body);
-            case HANDSHAKE_WORLD:
-                return new WorldMessage(body);
-            case DISCONNECT:
-                return new DisconnectMessage(body);
-            case PING:
-                return new PingMessage(body);
-            case PONG:
-                return new PongMessage(body);
-            case BLOCKS_REQUEST:
-                return new BlocksRequestMessage(body);
-            case BLOCKS_REPLY:
-                return new BlocksReplyMessage(body);
-            case SUMS_REQUEST:
-                return new SumRequestMessage(body);
-            case SUMS_REPLY:
-                return new SumReplyMessage(body);
-            case BLOCKEXT_REQUEST:
-                return new BlockExtRequestMessage(body);
-            case BLOCKEXT_REPLY:
-                return new BlockExtReplyMessage(body);
-            case BLOCK_REQUEST:
-                return new BlockRequestMessage(body);
-            case NEW_BLOCK:
-                return new NewBlockMessage(body);
-            case SYNC_BLOCK:
-                return new SyncBlockMessage(body);
-            case SYNCBLOCK_REQUEST:
-                return new SyncBlockRequestMessage(body);
-
-            default:
-                throw new UnreachableException();
-            }
+            return switch (c) {
+                case HANDSHAKE_INIT -> new InitMessage(body);
+                case HANDSHAKE_HELLO -> new HelloMessage(body);
+                case HANDSHAKE_WORLD -> new WorldMessage(body);
+                case DISCONNECT -> new DisconnectMessage(body);
+                case PING -> new PingMessage(body);
+                case PONG -> new PongMessage(body);
+                case BLOCKS_REQUEST -> new BlocksRequestMessage(body);
+                case BLOCKS_REPLY -> new BlocksReplyMessage(body);
+                case SUMS_REQUEST -> new SumRequestMessage(body);
+                case SUMS_REPLY -> new SumReplyMessage(body);
+                case BLOCKEXT_REQUEST -> new BlockExtRequestMessage(body);
+                case BLOCKEXT_REPLY -> new BlockExtReplyMessage(body);
+                case BLOCK_REQUEST -> new BlockRequestMessage(body);
+                case NEW_BLOCK -> new NewBlockMessage(body);
+                case SYNC_BLOCK -> new SyncBlockMessage(body);
+                case SYNCBLOCK_REQUEST -> new SyncBlockRequestMessage(body);
+            };
         } catch (Exception e) {
             throw new MessageException("Failed to decode message", e);
         }

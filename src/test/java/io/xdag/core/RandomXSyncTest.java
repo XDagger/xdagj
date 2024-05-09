@@ -141,7 +141,7 @@ public class RandomXSyncTest {
         long forkDate = 0;
 
         for (int i = 1; i <= number; i++) {
-            log.debug("create No." + i + " extra block");
+            log.debug("create No.{} extra block", i);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));

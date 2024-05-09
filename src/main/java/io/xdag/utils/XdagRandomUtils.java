@@ -21,35 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.utils;
 
-package io.xdag.net.node;
+import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.simple.RandomSource;
 
-import java.util.concurrent.atomic.AtomicLong;
+public class XdagRandomUtils {
 
-public class NodeStat {
+    private final static UniformRandomProvider rng = RandomSource.XO_RO_SHI_RO_128_PP.create();
 
-    public final StatHandler Inbound = new StatHandler();
-    public final StatHandler Outbound = new StatHandler();
+    public static int nextInt() {
+        return rng.nextInt();
+    }
 
-    public static class StatHandler {
+    public static int nextInt(int n) {
+        return rng.nextInt(n);
+    }
 
-        AtomicLong count = new AtomicLong(0);
+    public static long nextLong() {
+        return rng.nextLong();
+    }
 
-        public void add() {
-            count.incrementAndGet();
-        }
+    public static long nextLong(long n) {
+        return rng.nextLong(n);
+    }
 
-        public void add(long delta) {
-            count.addAndGet(delta);
-        }
+    public static void nextBytes(byte[] bytes) {
+        rng.nextBytes(bytes);
+    }
 
-        public long get() {
-            return count.get();
-        }
+    public static void nextBytes(byte[] bytes, int start, int len) {
+        rng.nextBytes(bytes, start, len);
+    }
 
-        @Override
-        public String toString() {
-            return count.toString();
-        }
+    public static byte[] nextNewBytes(int count) {
+        final byte[] result = new byte[count];
+        rng.nextBytes(result);
+        return result;
     }
 }
