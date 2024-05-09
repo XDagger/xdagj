@@ -11,15 +11,15 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <kotlin.version>1.7.22</kotlin.version>
+        <kotlin.version>1.8.21</kotlin.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
 
         <netty.version>4.1.108.Final</netty.version>
-        <tuweni.version>2.3.1</tuweni.version>
-        <json.version>2.17.1</json.version>
+        <tuweni.version>2.4.2</tuweni.version>
+        <jackson.version>2.17.1</jackson.version>
         <kryo.version>5.5.0</kryo.version>
         <lombok.version>1.18.32</lombok.version>
         <caffeine.version>3.1.8</caffeine.version>
@@ -50,6 +50,7 @@
         <druid.version>1.2.22</druid.version>
         <mysql-connector.version>8.4.0</mysql-connector.version>
         <h2.version>2.2.224</h2.version>
+        <gson.version>2.10</gson.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -68,33 +69,8 @@
 
     <repositories>
         <repository>
-            <id>bintray</id>
-            <url>https://jcenter.bintray.com</url>
-        </repository>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <repository>
-            <id>consensys-maven</id>
-            <url>https://artifacts.consensys.net/public/maven/maven/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-        <repository>
             <id>hyperledger.jfrog.io</id>
             <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
-        </repository>
-        <repository>
-            <id>maven_central</id>
-            <name>Maven Central</name>
-            <url>https://repo.maven.apache.org/maven2/</url>
         </repository>
     </repositories>
 
@@ -631,7 +607,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.tuweni</groupId>
+            <groupId>io.tmio</groupId>
             <artifactId>tuweni-bytes</artifactId>
             <version>${tuweni.version}</version>
             <exclusions>
@@ -647,7 +623,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.tuweni</groupId>
+            <groupId>io.tmio</groupId>
             <artifactId>tuweni-units</artifactId>
             <version>${tuweni.version}</version>
             <exclusions>
@@ -659,7 +635,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.tuweni</groupId>
+            <groupId>io.tmio</groupId>
             <artifactId>tuweni-io</artifactId>
             <version>${tuweni.version}</version>
             <exclusions>
@@ -805,19 +781,19 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${json.version}</version>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${json.version}</version>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${json.version}</version>
+            <version>${jackson.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
@@ -917,7 +893,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.10</version>
+            <version>${gson.version}</version>
             <scope>compile</scope>
         </dependency>
 
