@@ -191,7 +191,7 @@ public class BlockchainTest {
         Bytes32 ref = addressBlock.getHashLow();
         // 2. create 10 mainblocks
         for (int i = 1; i <= 10; i++) {
-            log.debug("create No." + i + " extra block");
+            log.debug("create No.{} extra block", i);
             generateTime += 64000L;
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
@@ -1147,7 +1147,6 @@ public class BlockchainTest {
 
         @Override
         public void addOurBlock(int keyIndex, Block block) {
-            return;
         }
 
     }

@@ -335,7 +335,7 @@ public class Kernel {
                         config.getRPCSpec().getRpcModules()
                 );
             } catch (Exception e) {
-                log.error("catch an error " + e.getMessage());
+                log.error("catch an error {}", e.getMessage());
             }
         }
 

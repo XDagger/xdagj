@@ -25,6 +25,7 @@ package io.xdag.net;
 
 import io.xdag.Network;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 public class Peer {
@@ -36,7 +37,9 @@ public class Peer {
     private final int port;
     private final String clientId;
     private final String[] capabilities;
+    @Setter
     private long latestBlockNumber;
+    @Setter
     private long latency;
 
     public Peer(Network network, short networkVersion, String peerId, String ip, int port, String clientId,
@@ -49,14 +52,6 @@ public class Peer {
         this.clientId = clientId;
         this.capabilities = capabilities;
         this.latestBlockNumber = latestBlockNumber;
-    }
-
-    public void setLatestBlockNumber(long number) {
-        this.latestBlockNumber = number;
-    }
-
-    public void setLatency(long latency) {
-        this.latency = latency;
     }
 
     @Override

@@ -36,7 +36,6 @@ import io.xdag.crypto.Sign;
 import io.xdag.db.rocksdb.*;
 import io.xdag.crypto.RandomX;
 import io.xdag.utils.BasicUtils;
-import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -63,7 +62,6 @@ import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_IN;
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUT;
-import static io.xdag.db.rocksdb.BlockStoreImpl.HASH_BLOCK_INFO;
 import static org.junit.Assert.*;
 
 @Slf4j

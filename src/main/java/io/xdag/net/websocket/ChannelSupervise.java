@@ -45,9 +45,9 @@ public class ChannelSupervise {// supervise channel
 
     public static void send2Pools(String info) {
         if (!ChannelMap.isEmpty()) {
-            log.debug("There are active mining pools: " + showChannel());
+            log.debug("There are active mining pools: {}", showChannel());
             GlobalGroup.writeAndFlush(new TextWebSocketFrame(info));
-            log.debug("Send info to pools successfully. Info: " + info);
+            log.debug("Send info to pools successfully. Info: {}", info);
         } else {
             log.debug("No active pools.");
         }

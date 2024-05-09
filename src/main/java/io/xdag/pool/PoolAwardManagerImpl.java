@@ -101,7 +101,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
                     payAndAddNewAwardBlock(awardBlock);
                 }
             } catch (InterruptedException e) {
-                log.error(" Can not take the awardBlock from awardBlockQueue" + e.getMessage(), e);
+                log.error(" Can not take the awardBlock from awardBlockQueue{}", e.getMessage(), e);
             }
         }
     }
@@ -118,7 +118,7 @@ public class PoolAwardManagerImpl implements PoolAwardManager, Runnable {
 
     public void payAndAddNewAwardBlock(AwardBlock awardBlock) {
         int awardBlockIndex = (int) ((awardBlock.generateTime >> 16) & config.getNodeSpec().getAwardEpoch());
-        log.debug("Add reward block to index: " + awardBlockIndex);
+        log.debug("Add reward block to index: {}", awardBlockIndex);
         if (payPools(awardBlock.generateTime) == 0) {
             log.debug("Start distributing block rewards...");
         }

@@ -43,11 +43,11 @@ import io.xdag.listener.PretopMessage;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
+import io.xdag.utils.XdagRandomUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -296,7 +296,7 @@ public class BlockchainImpl implements Blockchain {
                         result = ImportResult.NO_PARENT;
                         result.setHashlow(ref.getAddress());
                         result.setErrorInfo("Block have no parent for " + result.getHashlow().toHexString());
-                        log.debug("Block have no parent for " + result.getHashlow().toHexString());
+                        log.debug("Block have no parent for {}", result.getHashlow().toHexString());
                         return result;
                     } else {
                         // ensure ref block's time is earlier than block's time
@@ -320,7 +320,8 @@ public class BlockchainImpl implements Blockchain {
                     if (ref != null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()))) {
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
-                        log.debug("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                        log.debug("Address isn't exist {}",
+                                WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                     // ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1;
@@ -376,7 +377,7 @@ public class BlockchainImpl implements Blockchain {
 
             // 如果是自己的区块
             if (checkMineAndAdd(block)) {
-                log.debug("A block hash:" + block.getHashLow().toHexString() + " become mine");
+                log.debug("A block hash:{} become mine", block.getHashLow().toHexString());
                 updateBlockFlag(block, BI_OURS, true);
             }
 
@@ -1353,10 +1354,6 @@ public class BlockchainImpl implements Blockchain {
         return (block.getTimestamp() & 0xffff) == 0xffff && block.getNonce() != null && !block.isSaved();
     }
 
-    public boolean isMainBlock(Block block) {
-        return ((block.getTimestamp() & 0xffff) == 0xffff && block.getNonce() != null);
-    }
-
     @Override
     public XdagStats getXdagStats() {
         return this.xdagStats;
@@ -1550,7 +1547,7 @@ public class BlockchainImpl implements Blockchain {
     public void checkOrphan() {
         long nblk = xdagStats.nnoref / 11;
         if (nblk > 0) {
-            boolean b = (nblk % 61) > (RandomUtils.nextLong() % 61);
+            boolean b = (nblk % 61) > (XdagRandomUtils.nextLong() % 61);
             nblk = nblk / 61 + (b ? 1 : 0);
         }
         while (nblk-- > 0) {
@@ -1571,23 +1568,6 @@ public class BlockchainImpl implements Blockchain {
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
         }
-    }
-
-    public SECPPublicKey getBlockPubKey(Block block) {
-        List<SECPPublicKey> keys = block.verifiedKeys();
-        MutableBytes subData = block.getSubRawData(block.getOutsigIndex() - 2);
-//            log.debug("verify encoded:{}", Hex.toHexString(subdata));
-        SECPSignature sig = block.getOutsig();
-        for (SECPPublicKey publicKey : keys) {
-            byte[] publicKeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
-            Bytes digest = Bytes.wrap(subData, Bytes.wrap(publicKeyBytes));
-//            log.debug("verify encoded:{}", Hex.toHexString(digest));
-            Bytes32 hash = Hash.hashTwice(digest);
-            if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
-                return publicKey;
-            }
-        }
-        return null;
     }
 
     @Override

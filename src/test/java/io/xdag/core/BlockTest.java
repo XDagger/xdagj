@@ -24,17 +24,13 @@
 
 package io.xdag.core;
 
-//import static io.xdag.db.BlockStore.BLOCK_AMOUNT;
-
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.SimpleEncoder;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 

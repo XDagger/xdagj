@@ -28,7 +28,7 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.UnsignedLong;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
-import org.apache.commons.lang3.ArrayUtils;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -130,14 +130,6 @@ public class BytesUtils {
         }
         byte[] bytes = new byte[numBytes];
         byte[] biBytes = b.toBytes().toArray();
-        int start = (biBytes.length == numBytes + 1) ? 1 : 0;
-        int length = Math.min(biBytes.length, numBytes);
-        System.arraycopy(biBytes, start, bytes, numBytes - length, length);
-        return bytes;
-    }
-    public static byte[] longToBytes(long b, int numBytes) {
-        byte[] bytes = new byte[numBytes];
-        byte[] biBytes = long2UnsignedLong(b).bigIntegerValue().toByteArray();
         int start = (biBytes.length == numBytes + 1) ? 1 : 0;
         int length = Math.min(biBytes.length, numBytes);
         System.arraycopy(biBytes, start, bytes, numBytes - length, length);
@@ -267,22 +259,6 @@ public class BytesUtils {
             }
         }
         return true;
-    }
-
-    /**
-     * 直接将十六进制的byte[]数组转换为都变了的数据
-     *
-     * @param input byte[]类型的hash 这里的hash 是正向排序了的
-     * @param offset 偏移位置
-     * @param littleEndian 是否为大小端
-     */
-    public static double hexBytesToDouble(byte[] input, int offset, boolean littleEndian) {
-        byte[] data = new byte[8];
-        System.arraycopy(input, offset, data, 0, 8);
-        if (littleEndian) {
-            ArrayUtils.reverse(data);
-        }
-        return Numeric.toBigInt(data).doubleValue();
     }
 
     public static boolean equalBytes(byte[] b1, byte[] b2) {
