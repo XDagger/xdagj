@@ -57,12 +57,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int telnetPort = 7001;
     protected String telnetPassword;
 
-    // =========================
-    // Pool websocket spec
-    // =========================
-
-    protected int websocketServerPort;
-
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
     protected int waitEpoch = 32;
@@ -144,7 +138,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected boolean rpcEnabled = false;
     protected String rpcHost;
     protected int rpcPortHttp;
-    protected int rpcPortWs;
 
     // =========================
     // Xdag Snapshot
@@ -253,7 +246,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
         poolWhiteIPList = config.hasPath("pool.whiteIPs") ? config.getStringList("pool.whiteIPs") : Collections.singletonList("127.0.0.1");
         log.info("Pool whitelist {}. Any IP allowed? {}", poolWhiteIPList, poolWhiteIPList.contains("0.0.0.0"));
-        websocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
         nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
@@ -277,7 +269,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         if (rpcEnabled) {
             rpcHost = config.hasPath("rpc.http.host") ? config.getString("rpc.http.host") : "127.0.0.1";
             rpcPortHttp = config.hasPath("rpc.http.port") ? config.getInt("rpc.http.port") : 10001;
-            rpcPortWs = config.hasPath("rpc.ws.port") ? config.getInt("rpc.ws.port") : 10002;
         }
         flag = config.hasPath("randomx.flags.fullmem") && config.getBoolean("randomx.flags.fullmem");
 
@@ -392,12 +383,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public int getWebsocketServerPort() {
-        return websocketServerPort;
-    }
-
-
-    @Override
     public boolean isRPCEnabled() {
         return rpcEnabled;
     }
@@ -410,11 +395,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     @Override
     public int getRPCPortByHttp() {
         return rpcPortHttp;
-    }
-
-    @Override
-    public int getRPCPortByWebSocket() {
-        return rpcPortWs;
     }
 
     @Override

@@ -51,6 +51,7 @@
         <mysql-connector.version>8.4.0</mysql-connector.version>
         <h2.version>2.2.224</h2.version>
         <gson.version>2.10</gson.version>
+        <jws-api.version>2.1.0</jws-api.version>
         <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
     </properties>
 
@@ -370,7 +371,6 @@
     </build>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/io.xdag/xdagj-native-randomx -->
         <dependency>
             <groupId>io.xdag</groupId>
             <artifactId>xdagj-native-randomx</artifactId>
@@ -796,7 +796,6 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
         <dependency>
             <groupId>com.github.briandilley.jsonrpc4j</groupId>
             <artifactId>jsonrpc4j</artifactId>
@@ -850,22 +849,25 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>jakarta.jws</groupId>
+            <artifactId>jakarta.jws-api</artifactId>
+            <version>${jws-api.version}</version>
+        </dependency>
+
         <!--config-->
-        <!-- https://mvnrepository.com/artifact/com.typesafe/config -->
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
             <version>${config.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.agrona/agrona -->
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
             <version>${agrona.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java -->
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
