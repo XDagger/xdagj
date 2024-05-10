@@ -96,8 +96,6 @@ public interface Config {
     //websocket
     List<String> getPoolWhiteIPList();
 
-    int getWebsocketServerPort();
-
     FundSpec getFundSpec();
 
 }
