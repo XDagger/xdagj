@@ -57,6 +57,12 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int telnetPort = 7001;
     protected String telnetPassword;
 
+    // =========================
+    // Pool websocket spec
+    // =========================
+
+    protected int websocketServerPort;
+
     protected int maxShareCountPerChannel = 20;
     protected int awardEpoch = 0xf;
     protected int waitEpoch = 32;
@@ -246,6 +252,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
 
         poolWhiteIPList = config.hasPath("pool.whiteIPs") ? config.getStringList("pool.whiteIPs") : Collections.singletonList("127.0.0.1");
         log.info("Pool whitelist {}. Any IP allowed? {}", poolWhiteIPList, poolWhiteIPList.contains("0.0.0.0"));
+        websocketServerPort = config.hasPath("pool.ws.port") ? config.getInt("pool.ws.port") : 7001;
         nodeIp = config.hasPath("node.ip") ? config.getString("node.ip") : "127.0.0.1";
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
         nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
@@ -380,6 +387,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     @Override
     public List<String> getPoolWhiteIPList() {
         return poolWhiteIPList;
+    }
+
+    @Override
+    public int getWebsocketServerPort() {
+        return websocketServerPort;
     }
 
     @Override

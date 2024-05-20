@@ -41,6 +41,7 @@ import io.xdag.db.rocksdb.*;
 import io.xdag.net.*;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.NodeManager;
+import io.xdag.net.websocket.WebSocketServer;
 import io.xdag.pool.PoolAwardManagerImpl;
 import io.xdag.rpc.Web3;
 import io.xdag.rpc.Web3Impl;
@@ -89,6 +90,7 @@ public class Kernel {
 
     protected byte[] firstAccount;
     protected Block firstBlock;
+    protected WebSocketServer webSocketServer;
     protected PoolAwardManagerImpl poolAwardManager;
     protected XdagState xdagState;
 
@@ -277,7 +279,7 @@ public class Kernel {
         // pow
         // ====================================
         pow = new XdagPow(this);
-
+        getWsServer().start();
         log.info("Node to pool websocket start...");
         // register pow
         blockchain.registerListener(pow);
@@ -351,6 +353,14 @@ public class Kernel {
         return web3HttpServer;
     }
 
+    public WebSocketServer getWsServer() {
+        if (webSocketServer == null) {
+            webSocketServer = new WebSocketServer(this, config.getPoolWhiteIPList(),
+                    config.getWebsocketServerPort());
+        }
+        return webSocketServer;
+    }
+
     private JsonRpcWeb3FilterHandler getJsonRpcWeb3FilterHandler() throws UnknownHostException {
         if (jsonRpcWeb3FilterHandler == null) {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
@@ -418,6 +428,8 @@ public class Kernel {
         // release
         randomx.randomXPoolReleaseMem();
         log.info("Release randomx");
+        webSocketServer.stop();
+        log.info("WebSocket server stop.");
         poolAwardManager.stop();
         log.info("Pool award manager stop.");
     }
