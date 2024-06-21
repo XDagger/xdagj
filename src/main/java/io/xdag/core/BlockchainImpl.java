@@ -1105,6 +1105,11 @@ public class BlockchainImpl implements Blockchain {
         if (block.getInfo().getDifficulty() != null) {
             return block.getInfo().getDifficulty();
         }
+        //TX block would not set diff, fix a diff = 1;
+        if (!block.getInputs().isEmpty()) {
+            return BigInteger.ONE;
+        }
+
         BigInteger blockDiff;
         // 初始区块自身难度设置
         if (randomx != null && randomx.isRandomxFork(XdagTime.getEpoch(block.getTimestamp()))
