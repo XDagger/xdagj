@@ -435,8 +435,9 @@ public class BlockchainImpl implements Blockchain {
 //                result = ImportResult.IMPORTED_EXTRA;
             } else {
                 saveBlock(block);
-                // prohibited non-mining node set Tx pool
-                if (kernel.getConfig().getEnableGenerateBlock()) {
+                // 1. prohibited non-mining node set Tx pool,
+                // 2. all nodes temporarily close tx pool when syncing.
+                if (kernel.getConfig().getEnableGenerateBlock() && kernel.getPow() != null) {
                     orphanBlockStore.addOrphan(block);
                 }
                 xdagStats.nnoref++;
