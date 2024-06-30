@@ -25,18 +25,14 @@ package io.xdag.net.websocket;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.util.NettyRuntime;
 import io.xdag.Kernel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SystemUtils;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -52,18 +48,8 @@ public class WebSocketServer {
     private final PoolHandShakeHandler poolHandShakeHandler;
 
     public WebSocketServer(Kernel kernel, List<String> poolWhiteIPList, int port) {
-        int workerThreadPoolSize = NettyRuntime.availableProcessors() * 2;
-        if(SystemUtils.IS_OS_LINUX) {
-            this.bossGroup = new EpollEventLoopGroup();
-            this.workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
-        } else if(SystemUtils.IS_OS_MAC) {
-            this.bossGroup = new KQueueEventLoopGroup();
-            this.workerGroup = new KQueueEventLoopGroup(workerThreadPoolSize);
-
-        } else {
-            this.bossGroup = new NioEventLoopGroup();
-            this.workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
-        }
+        this.bossGroup = new NioEventLoopGroup();
+        this.workerGroup = new NioEventLoopGroup();
         this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, poolWhiteIPList, port);
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
