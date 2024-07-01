@@ -54,7 +54,7 @@ public class Address {
      */
     protected MutableBytes32 addressHash;
 
-    protected boolean isAddress = false;
+    protected boolean isAddress;
 
     protected boolean parsed = false;
 

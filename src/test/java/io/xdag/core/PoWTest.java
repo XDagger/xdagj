@@ -32,10 +32,9 @@ import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
-import org.apache.commons.lang3.RandomUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.jline.utils.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -180,7 +179,6 @@ public class PoWTest {
 
     @Before
     public void setUp() {
-
         String pwd = "password";
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
@@ -201,14 +199,14 @@ public class PoWTest {
     public void createInitialShare() {
         wallet.unlock("password");
         minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
-                RandomUtils.nextBytes(12))));
+                Bytes.random(12).toArray())));
         assertEquals(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
 
         assertEquals(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
         assertEquals(0, compareTo(minShare.get().slice(0, 20).reverse().toArray(), 0, 20,
                 Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20).reverse().toArray(), 0, 20));
         assertNotSame(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
-        minShare.set(Bytes32.wrap(RandomUtils.nextBytes(32)));
+        minShare.set(Bytes32.wrap(Bytes.random(32)));
         assertNotEquals(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
         assertNotEquals(0, compareTo(minShare.get().slice(0, 20).reverse().toArray(), 0, 20,
                 Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20).reverse().toArray(), 0, 20));
@@ -224,13 +222,7 @@ public class PoWTest {
         assertNull(currentTask.get().getTask());
         assertNull(currentTask.get().getDigest());
         assertEquals(currentTask.get().getTaskIndex(), 0);
-        Log.info(hash2PubAddress(hexPubAddress2Hashlow(
-                "46a2a0fe035c413d92be9c79a11cfc3695780f65")));
-        Log.info(hash2PubAddress(hexPubAddress2Hashlow(
-                "46a2a0fe035c413d92be9c79a11cfc3695780f66")));
         assertTrue(WalletUtils.checkAddress(hash2PubAddress(hexPubAddress2Hashlow(
                 "46a2a0fe035c413d92be9c79a11cfc3695780f66"))));
-
-
     }
 }

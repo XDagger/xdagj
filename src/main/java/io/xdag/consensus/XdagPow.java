@@ -37,11 +37,11 @@ import io.xdag.net.ChannelManager;
 import io.xdag.net.websocket.ChannelSupervise;
 import io.xdag.pool.PoolAwardManager;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagRandomUtils;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -59,7 +59,6 @@ import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.BytesUtils.equalBytes;
-@SuppressWarnings({"deprecation"})
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable {
@@ -189,7 +188,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         block.signOut(wallet.getDefKey());
         // The first 20 bytes of the initial nonce are the node wallet address.
         minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
-                RandomUtils.nextBytes(12))));
+                XdagRandomUtils.nextNewBytes(12))));
 
         block.setNonce(minShare.get());
         minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
@@ -204,7 +203,7 @@ public class XdagPow implements PoW, Listener, Runnable {
         Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
         block.signOut(wallet.getDefKey());
         minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
-                RandomUtils.nextBytes(12))));
+                XdagRandomUtils.nextNewBytes(12))));
         block.setNonce(minShare.get());
         // initial nonce
         minHash.set(block.recalcHash());
@@ -236,12 +235,10 @@ public class XdagPow implements PoW, Listener, Runnable {
             log.info("Current task is empty");
         } else if (currentTask.get().getTaskIndex() == taskIndex && Objects.equals(hash,
                 currentTask.get().getTask()[0].getData().toUnprefixedHexString())) {
-            // log.debug("Receive Share-info From Pool, Share: {},preHash: {}, task index: {}", share, preHash,
-            // taskIndex);
             onNewShare(Bytes32.wrap(Bytes.fromHexString(share)));
         } else {
-            log.debug("Task index error or preHash error. " + "Current task is " + currentTask.get().getTaskIndex() +
-                    " ,but pool sends task index is " + taskIndex);
+            log.debug("Task index error or preHash error. Current task is {} ,but pool sends task index is {}",
+                    currentTask.get().getTaskIndex(), taskIndex);
         }
     }
 
@@ -285,8 +282,8 @@ public class XdagPow implements PoW, Listener, Runnable {
                     // put minShare into nonce
                     Block b = generateBlock.get();
                     b.setNonce(minShare.get());
-                    log.debug("New MinShare :" + share.toHexString());
-                    log.debug("New MinHash :" + hash.toHexString());
+                    log.debug("New MinShare :{}", share.toHexString());
+                    log.debug("New MinHash :{}", hash.toHexString());
                 }
             }
         } catch (Exception e) {
@@ -555,11 +552,11 @@ public class XdagPow implements PoW, Listener, Runnable {
                                     shareJson.getJSONObject("msgContent").getString("hash"),
                                     shareJson.getJSONObject("msgContent").getLong("taskIndex"));
                         } else {
-                            log.error("Share format error! Current share: " + shareInfo);
+                            log.error("Share format error! Current share: {}", shareInfo);
                         }
 
                     } catch (JSONException e) {
-                        log.error("Share format error, current share: " + shareInfo);
+                        log.error("Share format error, current share: {}", shareInfo);
                     }
                 }
             }

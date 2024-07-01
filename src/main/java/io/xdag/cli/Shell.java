@@ -65,6 +65,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
     @Setter
     private Kernel kernel;
     private Commands commands;
+    @Setter
     private LineReader reader;
 
     public Shell() {
@@ -160,10 +161,6 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         } catch (Exception e) {
             saveException(e);
         }
-    }
-
-    public void setReader(LineReader reader) {
-        this.reader = reader;
     }
 
     private void println(final String msg) {

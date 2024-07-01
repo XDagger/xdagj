@@ -48,8 +48,6 @@ import io.xdag.rpc.Web3Impl;
 import io.xdag.rpc.cors.CorsConfiguration;
 import io.xdag.rpc.modules.xdag.*;
 import io.xdag.rpc.netty.*;
-import io.xdag.rpc.serialize.JacksonBasedRpcSerializer;
-import io.xdag.rpc.serialize.JsonRpcSerializer;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -112,10 +110,8 @@ public class Kernel {
     // rpc
     private JsonRpcWeb3ServerHandler jsonRpcWeb3ServerHandler;
     private Web3 web3;
-    private Web3WebSocketServer web3WebSocketServer;
     private Web3HttpServer web3HttpServer;
     private JsonRpcWeb3FilterHandler jsonRpcWeb3FilterHandler;
-    private JacksonBasedRpcSerializer jacksonBasedRpcSerializer;
 
     public Kernel(Config config, Wallet wallet) {
         this.config = config;
@@ -300,7 +296,6 @@ public class Kernel {
         // ====================================
         if (config.getRPCSpec().isRPCEnabled()) {
             getWeb3HttpServer().start();
-            getWeb3WebSocketServer().start();
         }
 
         // ====================================
@@ -335,34 +330,11 @@ public class Kernel {
                         config.getRPCSpec().getRpcModules()
                 );
             } catch (Exception e) {
-                log.error("catch an error " + e.getMessage());
+                log.error("catch an error {}", e.getMessage());
             }
         }
 
         return jsonRpcWeb3ServerHandler;
-    }
-
-    public WebSocketServer getWsServer() {
-        if (webSocketServer == null) {
-            webSocketServer = new WebSocketServer(this, config.getPoolWhiteIPList(),
-                    config.getWebsocketServerPort());
-        }
-        return webSocketServer;
-    }
-
-    private Web3WebSocketServer getWeb3WebSocketServer() throws UnknownHostException {
-        if (web3WebSocketServer == null) {
-            JsonRpcSerializer jsonRpcSerializer = getJsonRpcSerializer();
-            XdagJsonRpcHandler jsonRpcHandler = new XdagJsonRpcHandler(jsonRpcSerializer);
-            web3WebSocketServer = new Web3WebSocketServer(
-                    InetAddress.getByName(config.getRPCSpec().getRPCHost()),
-                    config.getRPCSpec().getRPCPortByWebSocket(),
-                    jsonRpcHandler,
-                    getJsonRpcWeb3ServerHandler()
-            );
-        }
-
-        return web3WebSocketServer;
     }
 
     private Web3HttpServer getWeb3HttpServer() throws UnknownHostException {
@@ -381,6 +353,14 @@ public class Kernel {
         return web3HttpServer;
     }
 
+    public WebSocketServer getWsServer() {
+        if (webSocketServer == null) {
+            webSocketServer = new WebSocketServer(this, config.getPoolWhiteIPList(),
+                    config.getWebsocketServerPort());
+        }
+        return webSocketServer;
+    }
+
     private JsonRpcWeb3FilterHandler getJsonRpcWeb3FilterHandler() throws UnknownHostException {
         if (jsonRpcWeb3FilterHandler == null) {
             jsonRpcWeb3FilterHandler = new JsonRpcWeb3FilterHandler(
@@ -391,14 +371,6 @@ public class Kernel {
         }
 
         return jsonRpcWeb3FilterHandler;
-    }
-
-    private JsonRpcSerializer getJsonRpcSerializer() {
-        if (jacksonBasedRpcSerializer == null) {
-            jacksonBasedRpcSerializer = new JacksonBasedRpcSerializer();
-        }
-
-        return jacksonBasedRpcSerializer;
     }
 
     /**
@@ -415,9 +387,6 @@ public class Kernel {
         //
         if (web3HttpServer != null) {
             web3HttpServer.stop();
-        }
-        if (web3WebSocketServer != null) {
-            web3WebSocketServer.stop();
         }
 
         // 1. 工作层关闭
@@ -464,7 +433,6 @@ public class Kernel {
         poolAwardManager.stop();
         log.info("Pool award manager stop.");
     }
-
 
     public enum Status {
         STOPPED, SYNCING, BLOCK_PRODUCTION_ON, SYNCDONE

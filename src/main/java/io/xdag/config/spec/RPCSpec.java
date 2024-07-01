@@ -37,5 +37,4 @@ public interface RPCSpec {
 
     int getRPCPortByHttp();
 
-    int getRPCPortByWebSocket();
 }

@@ -159,9 +159,6 @@ public abstract class HandshakeMessage extends Message {
 
     /**
      * Constructs a Peer object from the handshake info.
-     *
-     * @param ip
-     * @return
      */
     public Peer getPeer(String ip) {
         return new Peer(network, networkVersion, peerId, ip, port, clientId, capabilities, latestBlockNumber);

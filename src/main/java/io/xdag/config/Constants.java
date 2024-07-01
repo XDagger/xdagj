@@ -62,7 +62,6 @@ public class Constants {
     public static final byte BI_EXTRA = 0x40;
     public static final byte BI_REMARK = (byte) 0x80;
     public static final Long SEND_PERIOD = 10L;
-    public static final int DNET_PKT_XDAG = 0x8B;
 
     public static final long REQUEST_BLOCKS_MAX_TIME = UInt64.valueOf(1L << 20).toLong();
     public static final long REQUEST_WAIT = 64;

@@ -26,7 +26,6 @@ package io.xdag.core;
 import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.tuweni.units.bigints.UInt64;
 
 @Getter
 @Setter

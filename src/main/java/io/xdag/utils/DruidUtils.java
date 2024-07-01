@@ -24,6 +24,8 @@
 package io.xdag.utils;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
+
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
@@ -33,6 +35,7 @@ import java.util.Properties;
 
 @Slf4j
 public final class DruidUtils {
+    @Getter
     private static DataSource dataSource;
 
     static {
@@ -46,9 +49,6 @@ public final class DruidUtils {
         }
     }
 
-    public static DataSource getDataSource() {
-        return dataSource;
-    }
     public static Connection getConnection(){
         try {
             return dataSource.getConnection();

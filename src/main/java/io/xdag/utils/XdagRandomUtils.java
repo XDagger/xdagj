@@ -21,22 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.utils;
 
-package io.xdag.rpc.netty;
+import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.simple.RandomSource;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+public class XdagRandomUtils {
 
-public class Web3ResultWebSocketResponseHandler extends SimpleChannelInboundHandler<Web3Result> {
+    private final static UniformRandomProvider rng = RandomSource.XO_RO_SHI_RO_128_PP.create();
 
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Web3Result msg) {
-        ctx.write(new TextWebSocketFrame(msg.getContent()));
+    public static int nextInt() {
+        return rng.nextInt();
     }
 
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
+    public static int nextInt(int n) {
+        return rng.nextInt(n);
+    }
+
+    public static long nextLong() {
+        return rng.nextLong();
+    }
+
+    public static long nextLong(long n) {
+        return rng.nextLong(n);
+    }
+
+    public static void nextBytes(byte[] bytes) {
+        rng.nextBytes(bytes);
+    }
+
+    public static void nextBytes(byte[] bytes, int start, int len) {
+        rng.nextBytes(bytes, start, len);
+    }
+
+    public static byte[] nextNewBytes(int count) {
+        final byte[] result = new byte[count];
+        rng.nextBytes(result);
+        return result;
     }
 }
