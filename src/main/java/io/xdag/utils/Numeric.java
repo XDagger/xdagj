@@ -141,8 +141,4 @@ public class Numeric {
         return toHexString(input, 0, input.length, true);
     }
 
-    public static byte asByte(int m, int n) {
-        return (byte) ((m << 4) | n);
-    }
-
 }

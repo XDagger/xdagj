@@ -175,12 +175,10 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
         long start = new Date(0).getTime();
         long end = System.currentTimeMillis();
         switch (parameters.length) {
-            case 0 -> {
-            }
             case 1 -> {
-                int pageSize = Integer.parseInt(parameters[0].toString());
-                PAGE_SIZE = (pageSize > 0 && pageSize <= TX_PAGE_SIZE_LIMIT) ? pageSize : PAGE_SIZE;
-            }
+                    int pageSize = Integer.parseInt(parameters[0].toString());
+                    PAGE_SIZE = (pageSize > 0 && pageSize <= TX_PAGE_SIZE_LIMIT) ? pageSize : PAGE_SIZE;
+                }
             case 2 -> {
                 try {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

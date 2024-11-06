@@ -44,7 +44,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Collections;
 
 public class Web3XdagModuleTest {

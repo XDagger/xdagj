@@ -25,7 +25,6 @@
 package io.xdag.net.message;
 
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
 
 import lombok.Getter;
 

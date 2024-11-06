@@ -76,20 +76,20 @@ Four stages:
 
 - [x] Introduce the Stratum protocol for miners
 
-- [ ] Lightweight wallet application: connect to MetaMask, join the browser wallet
+- [x] Lightweight wallet application: join the browser wallet
 
 - [x] Standardize the format of public and private keys, follow the BIPXX specification, and add mnemonic words to generate public and private key pairs
 
 
-#### Expansion phase: XDAGJ & EVM
+#### Expansion phase: XDAGJ & XRC
 
 - [x] Improve the address block structure 
 
-- [ ] Increase the handling fee
+- [x] Increase the handling fee
 
 - [x] Optimize wallets to improve the user experience
 
-- [ ] Support smart contracts, implement EVM that supports Solidity, and be compatible with Ethereum smart contracts
+- [ ] Support XRC standards
 
 - [x] Decrease the threshold of mining pool users 
 

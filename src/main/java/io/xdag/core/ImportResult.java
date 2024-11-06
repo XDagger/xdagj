@@ -27,6 +27,7 @@ package io.xdag.core;
 import org.apache.tuweni.bytes.MutableBytes32;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public enum ImportResult {
     ERROR,
@@ -41,6 +42,7 @@ public enum ImportResult {
 
     MutableBytes32 hashLow;
 
+    @Setter
     @Getter
     String errorInfo;
 
@@ -50,10 +52,6 @@ public enum ImportResult {
 
     public void setHashlow(MutableBytes32 hashLow) {
         this.hashLow = hashLow;
-    }
-
-    public void setErrorInfo(String errorInfo) {
-        this.errorInfo = errorInfo;
     }
 
 }

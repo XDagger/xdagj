@@ -29,7 +29,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.xdag.Kernel;
 import io.xdag.net.message.MessageQueue;
-import io.xdag.net.node.Node;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 

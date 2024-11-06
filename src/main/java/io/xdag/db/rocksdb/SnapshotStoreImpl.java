@@ -171,7 +171,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                         try {
                             blockInfo = (BlockInfo) deserialize(iter.value(), BlockInfo.class);
                         } catch (DeserializationException e) {
-                            log.error("hash low:" + Hex.toHexString(blockInfo.getHashlow()));
+                            log.error("hash low:{}", Hex.toHexString(blockInfo.getHashlow()));
                             log.error("can't deserialize data:{}", Hex.toHexString(iter.value()));
                             log.error(e.getMessage(), e);
                         }

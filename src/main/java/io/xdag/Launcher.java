@@ -109,7 +109,6 @@ public class Launcher {
 
     /**
      * Parses options from the given arguments.
-     *
      * Priority: arguments => system property => console input
      */
     protected CommandLine parseOptions(String[] args) throws ParseException {

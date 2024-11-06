@@ -85,6 +85,11 @@ public class Wallet {
     private static final int SALT_LENGTH = 16;
     private static final int BCRYPT_COST = 12;
     private static final String MNEMONIC_PASS_PHRASE = "";
+    /**
+     * -- GETTER --
+     *  Returns the file where the wallet is persisted.
+     */
+    @Getter
     private final File file;
     private final Config config;
 
@@ -121,13 +126,6 @@ public class Wallet {
      */
     public void delete() throws IOException {
         Files.delete(file.toPath());
-    }
-
-    /**
-     * Returns the file where the wallet is persisted.
-     */
-    public File getFile() {
-        return file;
     }
 
     /**
@@ -502,7 +500,7 @@ public class Wallet {
         int base = 1 + 1 + 2 + hasRemark;
         XAmount amount = XAmount.ZERO;
 
-        while (stack.size() > 0) {
+        while (!stack.isEmpty()) {
             Map.Entry<Address, KeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
@@ -527,7 +525,7 @@ public class Wallet {
                 amount = XAmount.ZERO;
             }
         }
-        if (keys.size() != 0) {
+        if (!keys.isEmpty()) {
             res.add(createTransaction(to, amount, keys, remark));
         }
 
@@ -571,12 +569,12 @@ public class Wallet {
         int defKeyIndex = -1;
 
         // if no input, return null
-        if (pairs == null || pairs.size() == 0) {
+        if (pairs == null || pairs.isEmpty()) {
             return null;
         }
 
         // if no output, return null
-        if (to == null || to.size() == 0) {
+        if (to == null || to.isEmpty()) {
             return null;
         }
 
