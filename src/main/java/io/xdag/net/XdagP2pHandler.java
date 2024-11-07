@@ -45,7 +45,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
-import io.xdag.Network;
 import io.xdag.config.Config;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.consensus.SyncManager;
@@ -446,7 +445,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
         int ttl = config.getNodeSpec().getTTL();
         if (block != null) {
-            log.debug("processBlockRequest: findBlock" + Bytes32.wrap(hash).toHexString());
+            log.debug("processBlockRequest: findBlock{}", Bytes32.wrap(hash).toHexString());
             NewBlockMessage message = new NewBlockMessage(block, ttl);
             msgQueue.sendMessage(message);
         }

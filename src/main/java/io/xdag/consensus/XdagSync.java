@@ -35,10 +35,10 @@ import io.xdag.core.XdagState;
 import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
+import io.xdag.utils.XdagRandomUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -69,7 +69,8 @@ public class XdagSync {
 
     private final LinkedList<Long> syncWindow = new LinkedList<>();
 
-    @Getter@Setter
+    @Getter
+    @Setter
     private Status status;
 
     private final Kernel kernel;
@@ -119,11 +120,11 @@ public class XdagSync {
      */
     private void getBlocks() {
         List<Channel> any = getAnyNode();
-        if (any == null || any.size() == 0) {
+        if (any == null || any.isEmpty()) {
             return;
         }
         SettableFuture<Bytes> sf = SettableFuture.create();
-        int index = RandomUtils.nextInt() % any.size();
+        int index = XdagRandomUtils.nextInt() % any.size();
         Channel xc = any.get(index);
         long lastTime = getLastTime();
 
@@ -167,12 +168,12 @@ public class XdagSync {
         }
 
         List<Channel> any = getAnyNode();
-        if (any == null || any.size() == 0) {
+        if (any == null || any.isEmpty()) {
             return;
         }
 
         SettableFuture<Bytes> sf = SettableFuture.create();
-        int index = RandomUtils.nextInt() % any.size();
+        int index = XdagRandomUtils.nextInt() % any.size();
         Channel xc = any.get(index);
         if (dt > REQUEST_BLOCKS_MAX_TIME) {
             findGetBlocks(xc, t, dt, sf);

@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
+import io.xdag.consensus.XdagPow;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
@@ -102,6 +103,7 @@ public class ExtraBlockTest {
         kernel.setBlockStore(blockStore);
         kernel.setOrphanBlockStore(orphanBlockStore);
         kernel.setWallet(wallet);
+        kernel.setPow(new XdagPow(kernel));
     }
 
     @Test

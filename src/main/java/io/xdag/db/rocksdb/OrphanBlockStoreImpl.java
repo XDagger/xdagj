@@ -109,15 +109,15 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         orphanSource.put(BytesUtils.merge(ORPHAN_PREFEX, block.getHashLow().toArray()),
                 BytesUtils.longToBytes(block.getTimestamp(), true));
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
-        log.debug("orphan current size:" + currentsize);
+        log.debug("orphan current size:{}", currentsize);
 //        log.debug(":" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
         orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentsize + 1, false));
     }
 
     public long getOrphanSize() {
         long currentsize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
-        log.debug("current orphan size:" + currentsize);
-        log.debug("Hex:" + Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
+        log.debug("current orphan size:{}", currentsize);
+        log.debug("Hex:{}", Hex.toHexString(orphanSource.get(ORPHAN_SIZE)));
         return currentsize;
     }
 

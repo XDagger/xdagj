@@ -126,8 +126,7 @@ public class BasicUtils {
         input -= amount; // 小数部分
         input = input * Math.pow(2, 32);
         long tmp = (long) Math.ceil(input);
-        UInt64 result = res.add(tmp);
-        return result;
+        return res.add(tmp);
     }
 
     /**

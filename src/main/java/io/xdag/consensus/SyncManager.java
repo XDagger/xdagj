@@ -172,7 +172,7 @@ public class SyncManager {
                 .tryToConnect(new Block(new XdagBlock(blockWrapper.getBlock().getXdagBlock().getData().toArray())));
 
         if (importResult == EXIST) {
-            log.debug("Block have exist:" + blockWrapper.getBlock().getHashLow());
+            log.debug("Block have exist:{}", blockWrapper.getBlock().getHashLow());
         }
 
         if (!blockWrapper.isOld() && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
@@ -327,7 +327,8 @@ public class SyncManager {
             }
 
             if (config.getEnableGenerateBlock()) {
-                log.info("start pow at:" + FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
+                log.info("start pow at:{}",
+                        FastDateFormat.getInstance("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date()));
                 // check main chain
 //                kernel.getMinerServer().start();
                 kernel.getPow().start();

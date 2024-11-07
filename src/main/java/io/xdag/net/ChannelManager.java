@@ -38,9 +38,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.commons.lang3.StringUtils;
-
-import io.xdag.net.node.Node;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -134,7 +131,7 @@ public class ChannelManager {
     public void onChannelActive(Channel channel, Peer peer) {
         channel.setActive(peer);
         activeChannels.put(peer.getPeerId(), channel);
-        log.debug("activeChannel size:" + activeChannels.size());
+        log.debug("activeChannel size:{}", activeChannels.size());
     }
 
     public List<Peer> getActivePeers() {

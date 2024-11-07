@@ -179,7 +179,7 @@ public class BlockStoreImpl implements BlockStore {
                 remark));
         // value: type  +  isWalletAddress +address hash +txHashLow+ amount + timestamp + remark_length + remark
         txHistorySource.put(key, value);
-        log.info("MySQL write exception, transaction history stored in Rocksdb. " + txHistory);
+        log.info("MySQL write exception, transaction history stored in Rocksdb. {}", txHistory);
     }
 
     public List<TxHistory> getAllTxHistoryFromRocksdb() {
@@ -550,7 +550,7 @@ public class BlockStoreImpl implements BlockStore {
             try {
                 blockInfo = (BlockInfo) deserialize(value, BlockInfo.class);
             } catch (DeserializationException e) {
-                log.error("hash low:" + hashlow.toHexString());
+                log.error("hash low:{}", hashlow.toHexString());
                 log.error("can't deserialize data:{}", Hex.toHexString(value));
                 log.error(e.getMessage(), e);
             }

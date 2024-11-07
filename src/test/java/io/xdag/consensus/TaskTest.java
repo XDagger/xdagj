@@ -35,14 +35,13 @@ import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
 import io.xdag.pool.PoolAwardManagerImpl;
 import io.xdag.utils.BytesUtils;
+import io.xdag.utils.XdagRandomUtils;
 import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.jline.utils.Log;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -119,8 +118,8 @@ public class TaskTest {
         // send to pool
         Task newTask = new Task();
         XdagField[] task = new XdagField[2];
-        MutableBytes preHash = MutableBytes.wrap(RandomUtils.nextBytes(32));
-        MutableBytes taskSeed = MutableBytes.wrap(RandomUtils.nextBytes(32));
+        MutableBytes preHash = MutableBytes.wrap(XdagRandomUtils.nextNewBytes(32));
+        MutableBytes taskSeed = MutableBytes.wrap(XdagRandomUtils.nextNewBytes(32));
         task[0] = new XdagField(preHash);
         task[0].setSum(1);
         task[0].setType(XdagField.FieldType.XDAG_FIELD_HEAD);
@@ -161,8 +160,8 @@ public class TaskTest {
         double fundRation = 5;
 
         PoolAwardManagerImpl.TransactionInfoSender transactionInfoSender = new PoolAwardManagerImpl.TransactionInfoSender();
-        Bytes32 preHash = Bytes32.wrap(RandomUtils.nextBytes(32));
-        Bytes32 txHash = Bytes32.wrap(RandomUtils.nextBytes(32));
+        Bytes32 preHash = Bytes32.wrap(Bytes.random(32));
+        Bytes32 txHash = Bytes32.wrap(Bytes.random(32));
         transactionInfoSender.setPreHash(preHash);
         transactionInfoSender.setTxBlock(txHash);
         transactionInfoSender.setDonateBlock(txHash);
@@ -175,7 +174,6 @@ public class TaskTest {
         transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XDAG).toPlainString());
         XAmount amount = XAmount.of(64, XDAG);
         XAmount fundAmount = amount.multiply(div(fundRation, 100, 6));
-        Log.info(fundAmount.toDecimal(9,XDAG).toPlainString());
         transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9,
                 XDAG).toPlainString());
         transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());
@@ -219,9 +217,9 @@ public class TaskTest {
         transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9, XDAG).toPlainString());
         transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());
         for (int i = 0; i < 16; i++) {
-            Bytes32 preHash = Bytes32.wrap(RandomUtils.nextBytes(32));
-            Bytes32 txBlock = Bytes32.wrap(RandomUtils.nextBytes(32));
-            Bytes32 share = Bytes32.wrap(RandomUtils.nextBytes(32));
+            Bytes32 preHash = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
+            Bytes32 txBlock = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
+            Bytes32 share = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
             transactionInfoSender.setShare(share);
             transactionInfoSender.setTxBlock(txBlock);
             transactionInfoSender.setPreHash(preHash);

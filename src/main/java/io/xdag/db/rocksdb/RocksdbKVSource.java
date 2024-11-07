@@ -83,20 +83,20 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
 
     public RocksdbKVSource(String name) {
         this.name = name;
-        log.debug("New RocksdbKVSource: " + name);
+        log.debug("New RocksdbKVSource: {}", name);
     }
 
     public RocksdbKVSource(String name, int prefixSeekLength) {
         this.name = name;
         this.prefixSeekLength = prefixSeekLength;
-        log.debug("New RocksdbKVSource: " + name);
+        log.debug("New RocksdbKVSource: {}", name);
     }
 
     @Override
     public void init() {
         resetDbLock.writeLock().lock();
         try {
-            log.debug("~> RocksdbKVSource.init(): " + name);
+            log.debug("~> RocksdbKVSource.init(): {}", name);
 
             if (isAlive()) {
                 return;
@@ -171,7 +171,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                     throw new RuntimeException("Failed to initialize database", ioe);
                 }
 
-                log.debug("<~ RocksdbKVSource.init(): " + name);
+                log.debug("<~ RocksdbKVSource.init(): {}", name);
             }
         } finally {
             resetDbLock.writeLock().unlock();
@@ -181,7 +181,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
     public void backup() {
         resetDbLock.readLock().lock();
         if (log.isTraceEnabled()) {
-            log.trace("~> RocksdbKVSource.backup(): " + name);
+            log.trace("~> RocksdbKVSource.backup(): {}", name);
         }
         Path path = backupPath();
         path.toFile().mkdirs();
@@ -191,7 +191,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
             backups.createNewBackup(db, true);
 
             if (log.isTraceEnabled()) {
-                log.trace("<~ RocksdbKVSource.backup(): " + name + " done");
+                log.trace("<~ RocksdbKVSource.backup(): {} done", name);
             }
         } catch (RocksDBException e) {
             log.error("Failed to backup database '{}'", name, e);
@@ -207,13 +207,8 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         resetDbLock.readLock().lock();
         try {
             if (log.isTraceEnabled()) {
-                log.trace(
-                        "~> RocksdbKVSource.put(): "
-                                + name
-                                + ", key: "
-                                + Hex.encodeHexString(key)
-                                + ", "
-                                + (val == null ? "null" : val.length));
+                log.trace("~> RocksdbKVSource.put(): {}, key: {}, {}", name, Hex.encodeHexString(key),
+                        val == null ? "null" : val.length);
             }
             if (val != null) {
                 if (db == null) {
@@ -225,13 +220,8 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                 db.delete(key);
             }
             if (log.isTraceEnabled()) {
-                log.trace(
-                        "<~ RocksdbKVSource.put(): "
-                                + name
-                                + ", key: "
-                                + Hex.encodeHexString(key)
-                                + ", "
-                                + (val == null ? "null" : val.length));
+                log.trace("<~ RocksdbKVSource.put(): {}, key: {}, {}", name, Hex.encodeHexString(key),
+                        val == null ? "null" : val.length);
             }
         } catch (RocksDBException e) {
             log.error("Failed to put into db '{}'", name, e);
@@ -247,17 +237,12 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         resetDbLock.readLock().lock();
         try {
             if (log.isTraceEnabled()) {
-                log.trace("~> RocksdbKVSource.get(): " + name + ", key: " + Hex.encodeHexString(key));
+                log.trace("~> RocksdbKVSource.get(): {}, key: {}", name, Hex.encodeHexString(key));
             }
             byte[] ret = db.get(readOpts, key);
             if (log.isTraceEnabled()) {
-                log.trace(
-                        "<~ RocksdbKVSource.get(): "
-                                + name
-                                + ", key: "
-                                + Hex.encodeHexString(key)
-                                + ", "
-                                + (ret == null ? "null" : ret.length));
+                log.trace("<~ RocksdbKVSource.get(): {}, key: {}, {}", name, Hex.encodeHexString(key),
+                        ret == null ? "null" : ret.length);
             }
             return ret;
         } catch (RocksDBException e) {
@@ -274,11 +259,11 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         resetDbLock.readLock().lock();
         try {
             if (log.isTraceEnabled()) {
-                log.trace("~> RocksdbKVSource.delete(): " + name + ", key: " + Hex.encodeHexString(key));
+                log.trace("~> RocksdbKVSource.delete(): {}, key: {}", name, Hex.encodeHexString(key));
             }
             db.delete(key);
             if (log.isTraceEnabled()) {
-                log.trace("<~ RocksdbKVSource.delete(): " + name + ", key: " + Hex.encodeHexString(key));
+                log.trace("<~ RocksdbKVSource.delete(): {}, key: {}", name, Hex.encodeHexString(key));
             }
         } catch (RocksDBException e) {
             log.error("Failed to delete from db '{}'", name, e);
@@ -293,7 +278,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
         resetDbLock.readLock().lock();
         try {
             if (log.isTraceEnabled()) {
-                log.trace("~> RocksdbKVSource.keys(): " + name);
+                log.trace("~> RocksdbKVSource.keys(): {}", name);
             }
             try (RocksIterator iterator = db.newIterator()) {
                 Set<byte[]> result = new HashSet<>();
@@ -301,7 +286,7 @@ public class RocksdbKVSource implements KVSource<byte[], byte[]> {
                     result.add(iterator.key());
                 }
                 if (log.isTraceEnabled()) {
-                    log.trace("<~ RocksdbKVSource.keys(): " + name + ", " + result.size());
+                    log.trace("<~ RocksdbKVSource.keys(): {}, {}", name, result.size());
                 }
                 return result;
             } catch (Exception e) {

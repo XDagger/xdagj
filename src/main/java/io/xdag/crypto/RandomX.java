@@ -56,6 +56,7 @@ import io.xdag.crypto.randomx.RandomXJNA;
 import io.xdag.crypto.randomx.RandomXUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -78,6 +79,7 @@ public class RandomX {
     protected long randomXPoolMemIndex;
     protected long randomXHashEpochIndex;
 
+    @Setter
     protected Blockchain blockchain;
 
     protected boolean is_full_mem;
@@ -96,10 +98,6 @@ public class RandomX {
         } else {
             flags = RandomXJNA.INSTANCE.randomx_get_flags();
         }
-    }
-
-    public void setBlockchain(Blockchain blockchain) {
-        this.blockchain = blockchain;
     }
 
     // 外部使用

@@ -31,14 +31,12 @@ import io.xdag.crypto.Bip32ECKeyPair;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.Sign;
-import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.MnemonicUtils;
 import io.xdag.utils.WalletUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.io.Base58;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.jline.utils.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -142,8 +140,8 @@ public class WalletUtilsTest {
     public void testCheckIsAddress() {
         String walletAddress="KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf";
         assertTrue(io.xdag.crypto.Base58.checkAddress(walletAddress));
-        Log.info(BasicUtils.pubAddress2Hash(walletAddress));
     }
+
     @Test
     public void testHashlowIsAddress(){
         Bytes32 addressHashlow1 = Bytes32.fromHexString(
@@ -154,17 +152,12 @@ public class WalletUtilsTest {
         assertEquals(0,addressHashlow2.slice(28,4).toInt());
         assertFalse(checkAddress(addressHashlow1));
         assertTrue(checkAddress(addressHashlow2));
-        Log.info(BasicUtils.hexPubAddress2Hashlow("0x46a2a0fe035c413d92be9c79a11cfc3695780f65"));
-        Log.info(BasicUtils.hash2PubAddress(BasicUtils.hexPubAddress2Hashlow(
-                "46a2a0fe035c413d92be9c79a11cfc3695780f65")));
-
     }
 
     @After
     public void tearDown() throws IOException {
         wallet.delete();
     }
-
 
 }
 

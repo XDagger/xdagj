@@ -54,11 +54,4 @@ public class SumReplyMessage extends XdagMessage {
         this.sum = MutableBytes.wrap(dec.readBytes());
     }
 
-//    @Override
-//    protected SimpleEncoder encode() {
-//        SimpleEncoder enc = super.encode();
-//        // add sum
-//        enc.writeBytes(sum.toArray());
-//        return enc;
-//    }
 }

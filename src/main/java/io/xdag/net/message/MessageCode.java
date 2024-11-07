@@ -104,7 +104,7 @@ public enum MessageCode {
         return map[0xff & code];
     }
 
-    private int code;
+    private final int code;
 
     MessageCode(int code) {
         this.code = code;

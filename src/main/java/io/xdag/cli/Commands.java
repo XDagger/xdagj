@@ -61,10 +61,10 @@ import static io.xdag.crypto.Keys.toBytesAddress;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.WalletUtils.*;
 
+@Getter
 @Slf4j
 public class Commands {
 
-    @Getter
     private final Kernel kernel;
 
     public Commands(Kernel kernel) {
@@ -273,7 +273,7 @@ public class Commands {
         int base = 1 + 1 + 2 + hasRemark;
         XAmount amount = XAmount.ZERO;
 
-        while (stack.size() > 0) {
+        while (!stack.isEmpty()) {
             Map.Entry<Address, KeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
@@ -298,7 +298,7 @@ public class Commands {
                 amount = XAmount.ZERO;
             }
         }
-        if (keys.size() != 0) {
+        if (!keys.isEmpty()) {
             res.add(createTransaction(to, amount, keys, remark));
         }
         return res;
@@ -432,7 +432,7 @@ public class Commands {
         StringBuilder inputs = null;
         StringBuilder outputs = null;
         if (raw) {
-            if (block.getInputs().size() != 0) {
+            if (!block.getInputs().isEmpty()) {
                 inputs = new StringBuilder();
                 for (Address input : block.getInputs()) {
                     inputs.append(String.format("     input: %s           %s%n",
@@ -441,7 +441,7 @@ public class Commands {
                     ));
                 }
             }
-            if (block.getOutputs().size() != 0) {
+            if (!block.getOutputs().isEmpty()) {
                 outputs = new StringBuilder();
                 for (Address output : block.getOutputs()) {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
@@ -461,7 +461,7 @@ public class Commands {
                 -----------------------------------------------------------------------------------------------------------------------------
                                                block as address: details
                  direction  address                                    amount                 time
-                       """;
+                """;
         StringBuilder tx = new StringBuilder();
         if (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) && block.getInfo().getHeight() > kernel.getConfig().getSnapshotSpec().getSnapshotHeight()) {
             tx.append(String.format("    earn: %s           %s   %s%n", hash2Address(block.getHashLow()),
@@ -573,7 +573,7 @@ public class Commands {
         StringBuilder stringBuilder = new StringBuilder();
         for (Channel channel : channelList) {
             stringBuilder.append(channel).append(" ")
-                    .append(System.getProperty("line.separator"));
+                    .append(System.lineSeparator());
         }
 
         return stringBuilder.toString();
@@ -627,7 +627,7 @@ public class Commands {
                 -----------------------------------------------------------------------------------------------------------------------------
                                                histories of address: details
                  direction  address                                    amount                 time
-                       """;
+                """;
         StringBuilder tx = new StringBuilder();
 
         for (TxHistory txHistory : kernel.getBlockchain().getBlockTxHistoryByAddress(wrap, page)) {
