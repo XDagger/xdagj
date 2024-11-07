@@ -332,7 +332,7 @@ public class BlockchainImpl implements Blockchain {
                         return result;
                     }
                 }
-
+                //Convenient to track the beginning of transactions
                 if (ref != null && ref.getType() == XDAG_FIELD_INPUT) {
                     String account = toBase58(BytesUtils.byte32ToArray(ref.getAddress()));
                     log.debug("Transfer from: {}", account);
