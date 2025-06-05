@@ -58,6 +58,7 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -78,17 +79,32 @@ public class BlockchainTest {
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
+
     Config config = new DevnetConfig();
     Wallet wallet;
     String pwd;
     Kernel kernel;
     DatabaseFactory dbFactory;
 
+    Config config2 = new DevnetConfig();
+    Wallet wallet2;
+    String pwd2;
+    Kernel kernel2;
+    DatabaseFactory dbFactory2;
+
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
+    BigInteger private_3 = new BigInteger("0fddf91f6ba60a4c558edb6a80de35ac2f2bc3e616d82912a9beaef056a800d6", 16);
+    BigInteger private_4 = new BigInteger("ec5bd494e66520466523aa3171c54c5db959f966470baa537012ccdc1fe05119", 16);
+
+
 
     SECPPrivateKey secretary_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
     SECPPrivateKey secretary_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
+    SECPPrivateKey secretary_3 = SECPPrivateKey.create(private_3, Sign.CURVE_NAME);
+    SECPPrivateKey secretary_4 = SECPPrivateKey.create(private_4, Sign.CURVE_NAME);
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
         assertEquals("blocks:", nblocks, bci.getXdagStats().nblocks);
@@ -134,9 +150,65 @@ public class BlockchainTest {
         kernel.setWallet(wallet);
     }
 
+    public void setUp2() throws Exception {
+        config2.getNodeSpec().setStoreDir(temp.newFolder().getAbsolutePath());
+        config2.getNodeSpec().setStoreBackupDir(temp.newFolder().getAbsolutePath());
+
+        pwd2 = "password";
+        wallet2 = new Wallet(config2);
+        wallet2.unlock(pwd2);
+        KeyPair key2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+        wallet2.setAccounts(Collections.singletonList(key2));
+        wallet2.flush();
+
+        kernel2 = new Kernel(config2, key2);
+        dbFactory2 = new RocksdbFactory(config2);
+
+        BlockStore blockStore2 = new BlockStoreImpl(
+                dbFactory2.getDB(DatabaseName.INDEX),
+                dbFactory2.getDB(DatabaseName.TIME),
+                dbFactory2.getDB(DatabaseName.BLOCK),
+                dbFactory2.getDB(DatabaseName.TXHISTORY));
+        blockStore2.reset();
+
+        OrphanBlockStore orphanBlockStore2 = new OrphanBlockStoreImpl(dbFactory2.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore2.reset();
+
+        AddressStore addressStore2 = new AddressStoreImpl(dbFactory2.getDB(DatabaseName.ADDRESS));
+        addressStore2.reset();
+
+        TransactionHistoryStore txHistoryStore2 = Mockito.mock(TransactionHistoryStore.class);
+
+        kernel2.setBlockStore(blockStore2);
+        kernel2.setOrphanBlockStore(orphanBlockStore2);
+        kernel2.setAddressStore(addressStore2);
+        kernel2.setTxHistoryStore(txHistoryStore2);
+        kernel2.setWallet(wallet2);
+    }
+
     @After
     public void tearDown() throws IOException {
-        wallet.delete();
+        if (wallet != null) {
+            try {
+                wallet.delete();
+            } catch (NoSuchFileException e) {
+                System.err.println("wallet1 已删除或不存在");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (wallet2 != null) {
+            try {
+                wallet2.delete();
+            } catch (NoSuchFileException e) {
+                System.err.println("wallet2 已删除或不存在");
+                wallet2 = null;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        assertNull(wallet2);
     }
 
     @Test
@@ -1531,8 +1603,6 @@ public class BlockchainTest {
 
     }
 
-
-
     @Test
     public void testNew2NewTxAboutRejected() {
         KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
@@ -1887,6 +1957,173 @@ public class BlockchainTest {
         assertEquals(40, blockchain.getXdagStats().nmain);
         Bytes32 second = blockchain.getBlockByHeight(5).getHash();
         assertNotEquals(first, second);
+    }
+
+    //模拟一个两条链通信区块最后状态检验一致的情况
+    @Test
+    public void testFetchAndProcess() throws Exception {
+        long generateTime = 1600616700000L;
+        //为第二条链提供的一些必要条件，第一条链的条件注解已帮助完成了导入，这里手动导入第二条的
+        setUp2();
+        KeyPair nodeKey1 = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair nodeKey2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+
+        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
+
+        MockBlockchain blockchain1 = new MockBlockchain(kernel);
+        MockBlockchain blockchain2 = new MockBlockchain(kernel2);
+
+        /*
+         * 1.先16个块里面打包一笔交易,也就是会在高度是1的区块里面放一笔交易a
+         * 2.再接着再链16个块，然后在高度将会是17的块里面放一笔交易块b，b是对高度是1的区块里的奖励的使用的交易块
+         *                  在高度18的块里面重复引用交易块b
+         * 3.再从链1里面手动取区块塞给链2，看链2是否能接收，且检验执行情况是否与链1一致
+         */
+
+        //先给nodeKey1设置100xdag的初始金额
+        blockchain1.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        //创建交易块a
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey1)), XDAG_FIELD_INPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT,true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT,true);
+        long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
+        Block txA = generateMultiOutputsTxBlock(config, nodeKey1, xdagTime, from, to1, to2, XAmount.of(10,XUnit.XDAG),XAmount.of(6,XUnit.XDAG), XAmount.of(4,XUnit.XDAG), UInt64.ONE);
+        txA = new Block(txA.getXdagBlock());
+        ImportResult result = blockchain1.tryToConnect(txA);
+        assertSame(IMPORTED_BEST, result);
+        assertChainStatus(1, 0, 0, 1, blockchain1);
+
+        //创建16个会成为主块的extra块
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = txA.getHashLow();
+        generateTime -= 64000L;//这里主要是为了避免第一个交易块成为主块
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain1.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            assertChainStatus(i + 1, i < 3 ? 0 : i - 2, 1, i < 2 ? 1 : 0, blockchain1);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+        assertChainStatus(17, 14, 1, 0, blockchain1);
+
+        //检查一下交易块a是否执行，以及执行后的状态,以及执行这笔交易的主块所收到的fee
+        assertNotEquals(0, blockchain1.getBlockByHash(txA.getHashLow(), false).getInfo().flags & BI_APPLIED);
+        assertNotEquals(0, blockchain1.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN);
+        XAmount firstMainAmount = blockchain1.getBlockByHash(extraBlockList.getFirst().getHash(),false).getInfo().getAmount();
+        XAmount firstMainFee = blockchain1.getBlockByHash(extraBlockList.getFirst().getHash(),false).getFee();
+        assertEquals("90.0", blockchain1.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey1)).toDecimal(1, XUnit.XDAG).toString());//100 - 10
+        assertEquals("5.9", blockchain1.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("3.9", blockchain1.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("1024.20", firstMainAmount.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.20", firstMainFee.toDecimal(2, XUnit.XDAG).toString());
+
+        //创建使用高度为1的主块的奖励的交易块b,给account2和account4
+        from = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN,false);
+        to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT,true);
+        to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_OUTPUT,true);
+        xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) + 1;
+        Block rewardDistriTx = generateOldTransactionBlock(config, nodeKey1, xdagTime, from, XAmount.of(500, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(200, XUnit.XDAG));
+        result = blockchain1.tryToConnect(new Block(rewardDistriTx.getXdagBlock()));
+        assertSame(IMPORTED_NOT_BEST, result);
+        assertTrue(blockchain1.canUseInput(rewardDistriTx));
+        assertTrue(blockchain1.checkMineAndAdd(rewardDistriTx));
+        assertChainStatus(18, 15, 1, 1, blockchain1);
+
+        assertArrayEquals(blockchain1.getXdagTopStatus().getTop(), extraBlockList.getLast().getHashLow().toArray());
+
+        //再创建16个会成为主块的extra块
+        pending.clear();
+        pending.add(new Address(rewardDistriTx.getHashLow(),false));
+        ref = extraBlockList.getLast().getHashLow();
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain1.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            assertChainStatus(i + 18, i < 2 ? 15 : 15 + (i - 1), 1, i < 2 ? 1 : 0, blockchain1);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+            if (i == 2) {
+                pending.add(new Address(rewardDistriTx.getHashLow(),false));//重复引用
+                assertArrayEquals(blockchain1.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getInfo().getMaxDiffLink(), extraBlockList.get(16).getHashLow().toArray());
+            }
+        }
+        assertChainStatus(34, 30, 1, 0, blockchain1);
+
+        //检查17,18高度的主块的金额和fee，以及确认奖励块是在高度17里执行的
+        assertNotEquals(0, blockchain1.getBlockByHash(rewardDistriTx.getHashLow(), false).getInfo().flags & BI_APPLIED);
+        assertNotEquals(0, blockchain1.getBlockByHash(extraBlockList.get(16).getHashLow(), false).getInfo().flags & BI_MAIN);
+        assertNotEquals(0, blockchain1.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getInfo().flags & BI_MAIN);
+        XAmount height17Amount = blockchain1.getBlockByHash(extraBlockList.get(16).getHashLow(), false).getInfo().getAmount();
+        XAmount height18Amount = blockchain1.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getInfo().getAmount();
+        XAmount height17Fee = blockchain1.getBlockByHash(extraBlockList.get(16).getHashLow(), false).getFee();
+        XAmount height18Fee = blockchain1.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getFee();
+        XAmount rewardTxFee = blockchain1.getBlockByHash(rewardDistriTx.getHashLow(), false).getFee();
+        assertEquals("1024.20", height17Amount.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("1024.00", height18Amount.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.20", height17Fee.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.00", height18Fee.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.20", rewardTxFee.toDecimal(2, XUnit.XDAG).toString());
+        assertArrayEquals(blockchain1.getBlockByHash(rewardDistriTx.getHashLow(), false).getInfo().getRef(), extraBlockList.get(16).getHashLow().toArray());
+
+        //手动将blockchain1这条链收的区块取出，逐个让blockchain2接收，看状态是否正常且一致
+        List<Block> blockList = Lists.newLinkedList();
+        for (int i = 1; i <= 34 ; i++) {
+            if (i == 1) {
+                blockList.add(txA);
+            } else if (i == 18) {
+                blockList.add(rewardDistriTx);
+            } else if (i < 18) {
+                blockList.add(extraBlockList.get(i - 2));
+            } else {
+                blockList.add(extraBlockList.get(i - 3));
+            }
+        }
+        blockchain2.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        for(Block block:blockList) {
+            Block from1 = blockchain1.getBlockByHash(block.getHashLow(), true);
+            result = blockchain2.tryToConnect(new Block(from1.getXdagBlock()));
+            assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+            assertEquals("0.0", blockchain2.getBlockByHash(from1.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+            assertEquals("0.0", blockchain2.getBlockByHash(from1.getHashLow(), false).getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
+        }
+
+        assertNotEquals(0, blockchain2.getBlockByHash(txA.getHashLow(), false).getInfo().flags & BI_APPLIED);
+        assertNotEquals(0, blockchain2.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN);
+        XAmount firstMainAmount2 = blockchain2.getBlockByHash(extraBlockList.getFirst().getHash(),false).getInfo().getAmount();
+        XAmount firstMainFee2 = blockchain2.getBlockByHash(extraBlockList.getFirst().getHash(),false).getFee();
+        assertEquals("90.0", blockchain2.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey1)).toDecimal(1, XUnit.XDAG).toString());//100 - 10
+        assertEquals("5.9", blockchain2.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("3.9", blockchain2.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("524.20", firstMainAmount2.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.20", firstMainFee2.toDecimal(2, XUnit.XDAG).toString());
+
+        assertNotEquals(0, blockchain2.getBlockByHash(rewardDistriTx.getHashLow(), false).getInfo().flags & BI_APPLIED);
+        assertNotEquals(0, blockchain2.getBlockByHash(extraBlockList.get(16).getHashLow(), false).getInfo().flags & BI_MAIN);
+        assertNotEquals(0, blockchain2.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getInfo().flags & BI_MAIN);
+        XAmount height17Amount2 = blockchain2.getBlockByHash(extraBlockList.get(16).getHashLow(), false).getInfo().getAmount();
+        XAmount height18Amount2 = blockchain2.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getInfo().getAmount();
+        XAmount height17Fee2 = blockchain2.getBlockByHash(extraBlockList.get(16).getHashLow(), false).getFee();
+        XAmount height18Fee2 = blockchain2.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getFee();
+        XAmount rewardTxFee2 = blockchain2.getBlockByHash(rewardDistriTx.getHashLow(), false).getFee();
+        assertEquals("1024.20", height17Amount2.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("1024.00", height18Amount2.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.20", height17Fee2.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.00", height18Fee2.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.20", rewardTxFee2.toDecimal(2, XUnit.XDAG).toString());
+        assertArrayEquals(blockchain2.getBlockByHash(rewardDistriTx.getHashLow(), false).getInfo().getRef(), extraBlockList.get(16).getHashLow().toArray());
     }
 
 

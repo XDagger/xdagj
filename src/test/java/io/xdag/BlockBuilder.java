@@ -152,4 +152,17 @@ public class BlockBuilder {
         return b;
     }
 
+    public static Block generateMultiOutputsTxBlock(Config config, KeyPair key, long xdagTime, Address from, Address to1,Address to2,
+                                                   XAmount amount, XAmount amount1, XAmount amount2, UInt64 nonce) {
+        List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
+        refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
+        refs.add(new Address(to2.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, XAmount.ZERO, nonce); // orphan
+        b.signOut(key);
+        return b;
+    }
+
 }
