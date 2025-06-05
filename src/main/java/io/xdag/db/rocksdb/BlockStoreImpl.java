@@ -279,6 +279,8 @@ public class BlockStoreImpl implements BlockStore {
         timeSource.put(BlockUtils.getTimeKey(time, block.getHashLow()), new byte[]{0});
         blockSource.put(block.getHashLow().toArray(), block.getXdagBlock().getData().toArray());
         saveBlockSums(block);
+        //我们读取的fee，确保只能是我们自己节点执行该区块后赋的值才行，此时属于还没执行，统一置为零
+        block.getInfo().setFee(XAmount.ZERO);
         saveBlockInfo(block.getInfo());
     }
 

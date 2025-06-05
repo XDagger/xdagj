@@ -217,7 +217,7 @@ public class BlockchainTest {
             });
         }
 
-        @Test
+    @Test
     public void testNew2NewTransactionBlock() {
             KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
             KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
@@ -328,7 +328,7 @@ public class BlockchainTest {
             if (i == 1) {
                 assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.0", blockchain.getBlockByHash(extraBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-                assertEquals("0.1", blockchain.getBlockByHash(txBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals("0.0", blockchain.getBlockByHash(txBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
                 assertChainStatus(13, 10, 1, 1, blockchain);
             } else if (i == 2) {
                 assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_APPLIED);
@@ -764,7 +764,7 @@ public class BlockchainTest {
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(),false).getInfo().flags & BI_REF);
         assertNull(blockchain.getBlockByHash(txBlock.getHashLow(),false).getInfo().getRef());
         assertEquals("0.0", blockchain.getBlockByHash(txBlock.getHashLow(),false).getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
-        assertEquals("0.1", blockchain.getBlockByHash(txBlock.getHashLow(),false).getFee().toDecimal(1, XUnit.XDAG).toString());//这种属于签名里面填了fee
+        assertEquals("0.0", blockchain.getBlockByHash(txBlock.getHashLow(),false).getFee().toDecimal(1, XUnit.XDAG).toString());//这种属于签名里面填了fee,但现在是希望即使填了，没执行前，也不读取
 
         // there is 12 blocks ： 10 mainBlocks, 1 txBlock
         assertChainStatus(12, 10, 1, 1, blockchain);
@@ -867,7 +867,7 @@ public class BlockchainTest {
         assertEquals(0, blockchain.getBlockByHash(txBlock1.getHashLow(),false).getInfo().flags & BI_REF);
         assertNull(blockchain.getBlockByHash(txBlock.getHashLow(),false).getInfo().getRef());
         assertEquals("0.0", blockchain.getBlockByHash(txBlock1.getHashLow(),false).getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
-        assertEquals("0.1", blockchain.getBlockByHash(txBlock1.getHashLow(),false).getFee().toDecimal(1, XUnit.XDAG).toString());//这种属于签名里面填了fee
+        assertEquals("0.0", blockchain.getBlockByHash(txBlock1.getHashLow(),false).getFee().toDecimal(1, XUnit.XDAG).toString());//这种属于签名里面填了fee
 
         assertChainStatus(14, 11, 1, 2, blockchain);
 
@@ -1168,7 +1168,7 @@ public class BlockchainTest {
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_REF);
         assertEquals("0.0", blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
         //todo:此处我们希望是即使用户填了手续费，但是由于我们还未执行，所以希望没拿原数据块的时候，对于没执行过的区块而言，还是希望fee此时仍为0，此处先写10.0是暂时的，后续需要改为0.0通过测试才行
-        assertEquals("10.0", blockchain.getBlockByHash(txBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("0.0", blockchain.getBlockByHash(txBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
         //此处，是因为签名里写了fee，所以这里拿原数据是可以读到用户填的愿意支付的手续费的
         assertEquals("10.0", blockchain.getBlockByHash(txBlock.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
         assertEquals("10.0", blockchain.getTxFee(txBlock).toDecimal(1, XUnit.XDAG).toString());
@@ -1324,7 +1324,7 @@ public class BlockchainTest {
         assertEquals("0.00", TxBlockAward.toDecimal(2, XUnit.XDAG).toString());
         assertEquals("0.00", addressBlockFee.toDecimal(2, XUnit.XDAG).toString());
         //todo:需要修改代码，这里虽然签名填了，但我们也希望在没执行前，拿不到，此处先暂时写0.10，后续需要改为0.00通过才行
-        assertEquals("0.10", TxBlockFee.toDecimal(2, XUnit.XDAG).toString());
+        assertEquals("0.00", TxBlockFee.toDecimal(2, XUnit.XDAG).toString());
 
 //        assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());
 //        assertEquals("29.90", addressBalance.toDecimal(2, XUnit.XDAG).toString());
@@ -1379,7 +1379,7 @@ public class BlockchainTest {
                 //手续费fee
                 assertEquals("0.0", blockchain.getBlockByHash(addressBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
                 //todo:理由同上，需要改为0.0通过测试案例才行
-                assertEquals("0.1", blockchain.getBlockByHash(TxBlockTobeMain.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals("0.0", blockchain.getBlockByHash(TxBlockTobeMain.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
                 assertEquals("0.0", blockchain.getBlockByHash(extraBlock.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
                 //最大难度指向maxDiffLink
                 assertNull(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getMaxDiffLink());
@@ -1543,9 +1543,18 @@ public class BlockchainTest {
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        assertEquals("1000.0", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey)).toDecimal(1, XUnit.XDAG).toString());
+
+        assertEquals("1000.0", addressBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
+        addressBlock = new Block(addressBlock.getXdagBlock());//所以共识处理区块前的这一步很重要
+        assertEquals("0.0", addressBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
+
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
+
+        assertEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_OURS);
+
         List<Address> pending = Lists.newArrayList();
         List<Block> extraBlockList = Lists.newLinkedList();
         Bytes32 ref = addressBlock.getHashLow();
@@ -1595,6 +1604,7 @@ public class BlockchainTest {
         Block addressBlock = generateAddressBlock(config, poolKey, generateTime);//get another 1000 amount
 //        System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
         MockBlockchain blockchain = new MockBlockchain(kernel);
+        addressBlock = new Block(addressBlock.getXdagBlock());
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
@@ -1667,21 +1677,26 @@ public class BlockchainTest {
         XAmount poolBalance = blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount();
         XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        assertEquals("1024.0" , poolBalance.toDecimal(1, XUnit.XDAG).toString());//2024 - 1000 = 1024,
+        assertEquals("24.0" , poolBalance.toDecimal(1, XUnit.XDAG).toString());//1024 - 1000 = 24,
         assertEquals("1024.1" , mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
         assertEquals("999.9", addressBalance.toDecimal(1, XUnit.XDAG).toString());//1000 - 0.1 = 999.9, A TX subtract 0.1 XDAG fee.
 
 
         //Rollback mainBlock 10
-        blockchain.unSetMain(extraBlockList.get(10));
+//        blockchain.unSetMain(extraBlockList.get(10));
+        Block height12 = blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), true);
+        BlockInfo info = kernel.getBlockStore().getBlockInfo(extraBlockList.get(10).getHashLow());
+        if (info != null) {
+            height12.getInfo().setFee(info.getFee());
+        }
+        blockchain.unSetMain(height12);
 
         XAmount RollBackPoolBalance = blockchain.getBlockByHash(addressBlock.getHash(),false).getInfo().getAmount();
         XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
-        assertEquals("2024.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//1024 + 1000  = 2024
+        assertEquals("1024.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//24 + 1000  = 1024
         assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//rollback is zero.
         assertEquals("0.0" , RollBackMainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//
-
     }
     @Test
     public void testCanUseInput() {
@@ -1835,11 +1850,15 @@ public class BlockchainTest {
         }
         Bytes32 first = blockchain.getBlockByHeight(5).getHash();
 
+        assertChainStatus(21, 19, 1, 0, blockchain);
+
         generateTime = 1600616700001L;
         Block addressBlock1 = generateAddressBlock(config, poolKey, generateTime);
         result = blockchain.tryToConnect(addressBlock1);
         pending = Lists.newArrayList();
         ref = addressBlock1.getHashLow();
+
+        assertChainStatus(22, 20, 1, 1, blockchain);
 
         // 3. create 30 fork blocks
         for (int i = 0; i < 40; i++) {
@@ -1857,11 +1876,17 @@ public class BlockchainTest {
 //            assertSame(result, IMPORTED_BEST);
 //            assertChainStatus(i + 1, i - 1, 1, i < 2 ? 1 : 0, blockchain);
             ref = extraBlock.getHashLow();
+//            System.out.println("......" + i + "......" + i + "......" + blockchain.getXdagStats().nmain);
         }
-        assertEquals(13, blockchain.getXdagStats().nmain);
+        for (int i = 0; i < 27; i++) {
+            blockchain.checkMain();
+        }
+
+        assertChainStatus(62, 40, 2, 0, blockchain);//nextra=2是因为前面分叉的时候还有分叉的链的最后一个
+//        assertEquals(13, blockchain.getXdagStats().nmain);
+        assertEquals(40, blockchain.getXdagStats().nmain);
         Bytes32 second = blockchain.getBlockByHeight(5).getHash();
         assertNotEquals(first, second);
-
     }
 
 
@@ -1878,7 +1903,6 @@ public class BlockchainTest {
         @Override
         public void addOurBlock(int keyIndex, Block block) {
         }
-
     }
 
 }

@@ -178,7 +178,7 @@ public class Kernel {
             if (xdagStats.getGlobalMiner() == null) {
                 xdagStats.setGlobalMiner(firstAccount);
             }
-            blockchain.tryToConnect(firstBlock);
+            blockchain.tryToConnect(new Block(firstBlock.getXdagBlock()));
         } else {
             firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
         }

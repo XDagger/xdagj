@@ -491,6 +491,7 @@ public class BlockchainImpl implements Blockchain {
             xdagStats.totalnblocks = Math.max(xdagStats.nblocks, xdagStats.totalnblocks);
 
             if ((block.getInfo().flags & BI_EXTRA) != 0) {
+                block.getInfo().setFee(XAmount.ZERO);
                 memOrphanPool.put(block.getHashLow(), block);
                 xdagStats.nextra++;
             } else {
