@@ -165,4 +165,10 @@ public class BlockBuilder {
         return b;
     }
 
+    public static Block generateLinkBlock(Config config, KeyPair key, long xdagTime, String remark, List<Address> pendings) {
+        Block b = new Block(config, xdagTime, null, pendings, false, null, remark, -1,XAmount.ZERO, null);
+        b.signOut(key);
+        return b;
+    }
+
 }

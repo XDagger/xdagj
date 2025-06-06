@@ -497,7 +497,19 @@ public class BlockchainImpl implements Blockchain {
             } else {
                 saveBlock(block);
                 if (kernel.getConfig().getEnableGenerateBlock() && kernel.getPow() != null) {
-                    orphanBlockStore.addOrphan(block);
+                    UInt64 nonce = UInt64.ZERO;
+                    XAmount fee = getTxFee(block);
+                    byte[] address = null;
+                    if (isAccountTx(block)) {
+                        for(Address ref : all) {
+                            if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                                address = BytesUtils.byte32ToArray(ref.getAddress());
+                                nonce = block.getTxNonceField().getTransactionNonce();
+                                break;
+                            }
+                        }
+                    }
+                    orphanBlockStore.addOrphan(block, isTxBlock(block), nonce, fee, address);
                 }
                 xdagStats.nnoref++;
             }
@@ -1472,7 +1484,22 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(removeBlockRaw, BI_EXTRA, false);
                 xdagStats.nextra--;
             } else {
-                orphanBlockStore.deleteByHash(b.getHashLow().toArray());
+                b = getBlockByHash(b.getHashLow(), true);
+                List<Address> in = b.getInputs();
+                UInt64 nonce = UInt64.ZERO;
+                XAmount fee = getTxFee(b);
+                byte[] address = null;
+                if (isAccountTx(b)) {
+                    for(Address ref : in) {
+                        if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                            address = BytesUtils.byte32ToArray(ref.getAddress());
+                            nonce = b.getTxNonceField().getTransactionNonce();
+                            break;
+                        }
+                    }
+                }
+
+                orphanBlockStore.deleteByKey(b.getHashLow().toArray(), isTxBlock(b), nonce, fee, address);
                 xdagStats.nnoref--;
             }
             // Update this block's flag

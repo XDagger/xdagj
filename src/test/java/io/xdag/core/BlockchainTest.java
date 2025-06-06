@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
+import io.xdag.consensus.XdagPow;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
@@ -42,6 +43,7 @@ import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
@@ -59,15 +61,13 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.NoSuchFileException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static io.xdag.BlockBuilder.*;
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagField.FieldType.*;
+import static io.xdag.db.OrphanBlockStore.ORPHAN_PREFEX;
 import static io.xdag.utils.BasicUtils.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.spy;
@@ -2124,6 +2124,409 @@ public class BlockchainTest {
         assertEquals("0.00", height18Fee2.toDecimal(2, XUnit.XDAG).toString());
         assertEquals("0.20", rewardTxFee2.toDecimal(2, XUnit.XDAG).toString());
         assertArrayEquals(blockchain2.getBlockByHash(rewardDistriTx.getHashLow(), false).getInfo().getRef(), extraBlockList.get(16).getHashLow().toArray());
+    }
+
+    //测试两种交易块以及链接块进入孤块池后能否被存为正确的k,v，以及验证存了之后，能否被正确的取出
+    @Test
+    public void testOrpharnStorage() {
+        /*
+          创建普通交易块、主块交易块、链接块分别进行检验
+         */
+        long generateTime = 1600616700000L;
+        KeyPair nodeKey1 = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        kernel.setPow(new XdagPow(kernel));
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+
+        //先给nodeKey1设置100xdag的初始金额
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        //创建一个交易块
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey1)), XDAG_FIELD_INPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT,true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT,true);
+        long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
+        Block txAccount = generateMultiOutputsTxBlock(config, nodeKey1, xdagTime, from, to1, to2, XAmount.of(10,XUnit.XDAG),XAmount.of(6,XUnit.XDAG), XAmount.of(4,XUnit.XDAG), UInt64.ONE);
+        txAccount = new Block(txAccount.getXdagBlock());
+        ImportResult result = blockchain.tryToConnect(txAccount);
+        assertSame(IMPORTED_BEST, result);
+        assertChainStatus(1, 0, 0, 1, blockchain);
+        //拼接k,v并检验和孤块池里放的是否相等
+        List<Address> output = txAccount.getLinks().stream().distinct().toList();
+        byte[] address = null;
+        for(Address ref : output) {
+            if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                address = BytesUtils.byte32ToArray(ref.getAddress());
+                break;
+            }
+        }
+        UInt64 nonce = txAccount.getTxNonceField().getTxNonce();
+        XAmount fee = blockchain.getTxFee(txAccount);
+
+        byte[] k1 = Arrays.copyOfRange(txAccount.getHashLow().toArray(), 8, 32);//24B
+        byte[] k2 = BytesUtils.bigIntegerToBytes(nonce, 8);//8B
+        byte[] k3 = BytesUtils.byteToBytes((byte) 1, false);//1B
+        byte[] key = BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(k1, k2, k3));//key: 0x00 + hashlow(24B) + nonce(8B) + isTx(1B)
+//        System.out.println("Key: " + Arrays.toString(key));
+
+        byte[] v1 = BytesUtils.longToBytes(txAccount.getTimestamp(), true);//time(8B)
+        byte[] v2 = fee.toXAmount().toBytes().toArray();//fee(8B)
+        byte[] v3 = address;//address(20B)
+        byte[] value = BytesUtils.merge(v1, v2, v3);// value: time(8B) + fee(8B) + address(20B)
+//        System.out.println("Value: " + Arrays.toString(value));
+
+        //验证orphanSource里的k,v和我们构造的k,v是否一致
+        byte[] vInDB =((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
+        assertTrue(kernel.getConfig().getEnableGenerateBlock());
+        assertNotNull(kernel.getPow());
+        assertEquals(1, kernel.getOrphanBlockStore().getOrphanSize());
+        assertNotNull(vInDB);
+        assertArrayEquals(value, vInDB);//验证普通交易块可以正确加入到孤块池中
+
+        //创建16个主块
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = txAccount.getHashLow();
+        generateTime -= 64000L;//这里主要是为了避免第一个交易块成为主块
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            assertChainStatus(i + 1, i < 3 ? 0 : i - 2, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            if (i == 2) {
+                vInDB =((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
+                assertNull(vInDB);//验证普通交易块可以从孤块池中删除
+            }
+        }
+
+        //创建使用高度为1的主块的奖励的交易块b,给account1和account2
+        from = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN,false);
+        to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT,true);
+        to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT,true);
+        xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) + 1;
+        Block rewardDistriTx = generateOldTransactionBlock(config, nodeKey1, xdagTime, from, XAmount.of(500, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(200, XUnit.XDAG));
+        rewardDistriTx = new Block(rewardDistriTx.getXdagBlock());
+        result = blockchain.tryToConnect(rewardDistriTx);
+        assertSame(IMPORTED_NOT_BEST, result);
+        assertTrue(blockchain.canUseInput(rewardDistriTx));
+        assertTrue(blockchain.checkMineAndAdd(rewardDistriTx));
+        assertChainStatus(18, 15, 1, 1, blockchain);
+
+        //再创建16个会成为主块的extra块
+        pending.clear();
+        pending.add(new Address(rewardDistriTx.getHashLow(),false));
+        ref = extraBlockList.getLast().getHashLow();
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            assertChainStatus(i + 18, i < 2 ? 15 : 15 + (i - 1), 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+            if (i == 1) {
+                //验证orphanSource里的k,v和我们构造的k,v是否一致
+                fee = blockchain.getTxFee(rewardDistriTx);
+                k1 = Arrays.copyOfRange(rewardDistriTx.getHashLow().toArray(), 8, 32);//24B
+                k2 = BytesUtils.bigIntegerToBytes(UInt64.ZERO, 8);//8B
+                k3 = BytesUtils.byteToBytes((byte) 1, false);//1B
+                key = BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(k1, k2, k3));//key: 0x00 + hashlow(24B) + nonce(8B) + isTx(1B)
+//        System.out.println("Key: " + Arrays.toString(key));
+
+                v1 = BytesUtils.longToBytes(rewardDistriTx.getTimestamp(), true);//time(8B)
+                v2 = fee.toXAmount().toBytes().toArray();//fee(8B)
+                v3 = new byte[20];//address(20B)
+                value = BytesUtils.merge(v1, v2, v3);// value: time(8B) + fee(8B) + address(20B)
+
+                vInDB =((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
+                assertNotNull(vInDB);
+                assertArrayEquals(value, vInDB);//验证主块交易块可以加入到孤块池中
+            } else if (i == 2) {
+                fee = blockchain.getTxFee(rewardDistriTx);
+                k1 = Arrays.copyOfRange(rewardDistriTx.getHashLow().toArray(), 8, 32);//24B
+                k2 = BytesUtils.bigIntegerToBytes(UInt64.ZERO, 8);//8B
+                k3 = BytesUtils.byteToBytes((byte) 1, false);//1B
+                key = BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(k1, k2, k3));//key: 0x00 + hashlow(24B) + nonce(8B) + isTx(1B)
+                vInDB =((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
+                assertNull(vInDB);//验证主块交易块能够从孤块池中被去掉
+            }
+        }
+        assertChainStatus(34, 30, 1, 0, blockchain);
+
+        //创建一个链接块
+        pending.clear();
+        pending.add(new Address(txAccount.getHashLow(),false));
+        pending.add(new Address(rewardDistriTx.getHashLow(),false));
+        Block link = generateLinkBlock(config, nodeKey1, xdagTime + 1,null, pending);//Config config, KeyPair key, long xdagTime, String remark, List<Address> pendings
+        link = new Block(link.getXdagBlock());
+        result = blockchain.tryToConnect(link);
+        assertSame(IMPORTED_NOT_BEST, result);
+        assertNull(link.getNonce());
+//        assertNotNull(link.getNonce());//字段未用满的非竞争块，在解析数据块的时候会将nonce赋值为全零
+        assertEquals(0, blockchain.getBlockByHash(link.getHashLow(), false).getInfo().flags & BI_EXTRA);
+
+        //验证orphanSource里的k,v和我们构造的k,v是否一致
+        fee = blockchain.getTxFee(link);
+        k1 = Arrays.copyOfRange(link.getHashLow().toArray(), 8, 32);//24B
+        k2 = BytesUtils.bigIntegerToBytes(UInt64.ZERO, 8);//8B
+        k3 = BytesUtils.byteToBytes((byte) 0, false);//1B
+        key = BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(k1, k2, k3));//key: 0x00 + hashlow(24B) + nonce(8B) + isTx(1B)
+//        System.out.println("Key: " + Arrays.toString(key));
+
+        v1 = BytesUtils.longToBytes(link.getTimestamp(), true);//time(8B)
+        v2 = fee.toXAmount().toBytes().toArray();//fee(8B)
+        v3 = new byte[20];//address(20B)
+        value = BytesUtils.merge(v1, v2, v3);// value: time(8B) + fee(8B) + address(20B)
+
+        vInDB =((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
+        assertNotNull(vInDB);
+        assertArrayEquals(value, vInDB);//验证链接块可以正确加入到孤块池中
+//        System.out.println("Value: " + Arrays.toString(value));
+
+        pending.clear();
+        pending.add(new Address(link.getHashLow(),false));
+        ref = extraBlockList.getLast().getHashLow();
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+            if (i == 2) {
+                vInDB =((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
+                assertNull(vInDB);//验证链接块可以从孤块池中被去除
+            }
+        }
+    }
+
+    //测试孤块池里面定义的内部类OrphanMeta能被正确赋值
+    @Test
+    public void testOrphanMetaParse() {
+        /*
+            测试普通交易块、主块交易块、链接块加入孤块池后，孤块池的OrphanMeta的赋值与取值是否与预期一致
+         */
+        long generateTime = 1600616700000L;
+        KeyPair nodeKey1 = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        kernel.setPow(new XdagPow(kernel));
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+
+        //先给nodeKey1设置100xdag的初始金额
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        //创建一个交易块
+        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey1)), XDAG_FIELD_INPUT,true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT,true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT,true);
+        long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
+        Block txAccount = generateMultiOutputsTxBlock(config, nodeKey1, xdagTime, from, to1, to2, XAmount.of(10,XUnit.XDAG),XAmount.of(6,XUnit.XDAG), XAmount.of(4,XUnit.XDAG), UInt64.ONE);
+        txAccount = new Block(txAccount.getXdagBlock());
+        ImportResult result = blockchain.tryToConnect(txAccount);
+        assertSame(IMPORTED_BEST, result);
+        assertChainStatus(1, 0, 0, 1, blockchain);
+
+        List<Address> output = txAccount.getLinks().stream().distinct().toList();
+        byte[] address = null;
+        for(Address ref : output) {
+            if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                address = BytesUtils.byte32ToArray(ref.getAddress());
+                break;
+            }
+        }
+        UInt64 nonce = txAccount.getTxNonceField().getTxNonce();
+        XAmount fee = blockchain.getTxFee(txAccount);
+
+        Bytes32 hashlow = txAccount.getHashLow();
+        long nonceLong = BytesUtils.bytesToLong(BytesUtils.bigIntegerToBytes(nonce, 8),0, false);//BytesUtils.bigIntegerToBytes(nonce, 8);
+        boolean isTx = true;
+        long time = txAccount.getTimestamp();
+        long feeLong = BytesUtils.bytesToLong(fee.toXAmount().toBytes().toArray(), 0, true);//fee.toXAmount().toBytes().toArray()
+        //检查
+        List<Pair<byte[], byte[]>> raw = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyAndValueLookup(BytesUtils.of(ORPHAN_PREFEX));
+        OrphanBlockStoreImpl.OrphanMeta meta = OrphanBlockStoreImpl.OrphanMeta.parse(raw.getFirst());
+        assertArrayEquals(hashlow.toArray(), meta.getHashlow().toArray());
+        assertEquals(nonceLong, meta.getNonce());
+        assertTrue(meta.isTx());
+        assertEquals(feeLong, meta.getFee());
+        assertArrayEquals(address, meta.getAddress());
+
+        //创建16个主块
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        Bytes32 ref = txAccount.getHashLow();
+        generateTime -= 64000L;//这里主要是为了避免第一个交易块成为主块
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            assertChainStatus(i + 1, i < 3 ? 0 : i - 2, 1, i < 2 ? 1 : 0, blockchain);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+        }
+
+        //创建使用高度为1的主块的奖励的交易块b,给account1和account2
+        from = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN,false);
+        to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT,true);
+        to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT,true);
+        xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) + 1;
+        Block rewardDistriTx = generateOldTransactionBlock(config, nodeKey1, xdagTime, from, XAmount.of(500, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(200, XUnit.XDAG));
+        rewardDistriTx = new Block(rewardDistriTx.getXdagBlock());
+        result = blockchain.tryToConnect(rewardDistriTx);
+        assertSame(IMPORTED_NOT_BEST, result);
+        assertTrue(blockchain.canUseInput(rewardDistriTx));
+        assertTrue(blockchain.checkMineAndAdd(rewardDistriTx));
+        assertChainStatus(18, 15, 1, 1, blockchain);
+
+
+        fee = blockchain.getTxFee(rewardDistriTx);
+        hashlow = rewardDistriTx.getHashLow();
+
+        nonceLong = BytesUtils.bytesToLong(BytesUtils.bigIntegerToBytes(UInt64.ZERO, 8),0, false);
+        time = txAccount.getTimestamp();
+
+        raw = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyAndValueLookup(BytesUtils.of(ORPHAN_PREFEX));
+        meta = OrphanBlockStoreImpl.OrphanMeta.parse(raw.getFirst());
+        feeLong = BytesUtils.bytesToLong(fee.toXAmount().toBytes().toArray(), 0, true);
+
+        assertArrayEquals(hashlow.toArray(), meta.getHashlow().toArray());
+        assertEquals(nonceLong, meta.getNonce());
+        assertTrue(meta.isTx());
+        assertEquals(feeLong, meta.getFee());
+        assertArrayEquals(new byte[20], meta.getAddress());
+
+        //再创建16个会成为主块的extra块
+        pending.clear();
+        pending.add(new Address(rewardDistriTx.getHashLow(),false));
+        ref = extraBlockList.getLast().getHashLow();
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey1, xdagTime, pending);
+            result = blockchain.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+        }
+        assertChainStatus(34, 30, 1, 0, blockchain);
+
+        //创建一个链接块
+        pending.clear();
+        pending.add(new Address(txAccount.getHashLow(),false));
+        pending.add(new Address(rewardDistriTx.getHashLow(),false));
+        Block link = generateLinkBlock(config, nodeKey1, xdagTime + 1,null, pending);//Config config, KeyPair key, long xdagTime, String remark, List<Address> pendings
+        link = new Block(link.getXdagBlock());
+        result = blockchain.tryToConnect(link);
+        assertSame(IMPORTED_NOT_BEST, result);
+        assertNull(link.getNonce());
+        assertEquals(0, blockchain.getBlockByHash(link.getHashLow(), false).getInfo().flags & BI_EXTRA);
+
+        fee = blockchain.getTxFee(link);
+        hashlow = link.getHashLow();
+        nonceLong = BytesUtils.bytesToLong(BytesUtils.bigIntegerToBytes(UInt64.ZERO, 8),0, false);
+        time = txAccount.getTimestamp();
+
+        raw = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyAndValueLookup(BytesUtils.of(ORPHAN_PREFEX));
+        meta = OrphanBlockStoreImpl.OrphanMeta.parse(raw.getFirst());
+        feeLong = BytesUtils.bytesToLong(fee.toXAmount().toBytes().toArray(), 0, true);
+
+        assertArrayEquals(hashlow.toArray(), meta.getHashlow().toArray());
+        assertEquals(nonceLong, meta.getNonce());
+        assertFalse(meta.isTx());
+        assertEquals(feeLong, meta.getFee());
+        assertArrayEquals(new byte[20], meta.getAddress());
+    }
+
+    @Test
+    public void testOrphanSort() {
+        /*
+           时间: t1 < t2 < t3 < t4
+           fee: fee1 < fee2 < fee3 < fee4
+           账户：a、b、c、d
+           1.(t4,fee3,a)、(t1,fee2,b)、(t2,fee4,c)、(t3,fee1,d)
+             以前的顺序：(t1,fee2,b)、(t2,fee4,c)、(t3,fee1,d)、(t4,fee3,a)
+             现在预期的顺序：(t2,fee4,c)、(t4,fee3,a)、(t1,fee2,b)、(t3,fee1,d)
+         */
+        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair nodeKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        kernel.setPow(new XdagPow(kernel));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account1), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account2), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account3), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account4), XAmount.of(1000, XUnit.XDAG));
+
+        long generateTime = 1600616700000L;
+        long t1 = XdagTime.msToXdagtimestamp(generateTime + 10);
+        long t2 = XdagTime.msToXdagtimestamp(generateTime + 20);
+        long t3 = XdagTime.msToXdagtimestamp(generateTime + 30);
+        long t4 = XdagTime.msToXdagtimestamp(generateTime + 40);
+
+        Address from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT,true);
+        Address from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT,true);
+        Address from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT,true);
+        Address from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_INPUT,true);
+
+        Block tx1 = generateNewTransactionBlock(config, account2, t1, from2, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);
+        Block tx2 = generateNewTransactionBlock(config, account3, t2, from3, to, XAmount.of(100, XUnit.XDAG), XAmount.of(8, XUnit.XDAG), UInt64.ONE);
+        Block tx3 = generateNewTransactionBlock(config, account4, t3, from4, to, XAmount.of(100, XUnit.XDAG), XAmount.of(1, XUnit.XDAG), UInt64.ONE);
+        Block tx4 = generateNewTransactionBlock(config, account1, t4, from1, to, XAmount.of(100, XUnit.XDAG), XAmount.of(4, XUnit.XDAG), UInt64.ONE);
+
+        tx1 = new Block(tx1.getXdagBlock());
+        tx2 = new Block(tx2.getXdagBlock());
+        tx3 = new Block(tx3.getXdagBlock());
+        tx4 = new Block(tx4.getXdagBlock());
+
+        ImportResult result = blockchain.tryToConnect(tx1);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        result = blockchain.tryToConnect(tx2);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        result = blockchain.tryToConnect(tx3);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        result = blockchain.tryToConnect(tx4);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+
+        assertChainStatus(4, 0, 0, 4, blockchain);
+
+        long[] sendTime = new long[2];
+        sendTime[0] = t4 + 20;
+        List<Address> orphan = blockchain.getBlockFromOrphanPool(4, sendTime);
+        for (int i = 0; i < orphan.size(); i++) {
+            Address orp = orphan.get(i);
+            if (i == 0) {
+                assertArrayEquals(orp.addressHash.toArray(), tx2.getHashLow().toArray());
+            } else if (i == 1) {
+                assertArrayEquals(orp.addressHash.toArray(), tx4.getHashLow().toArray());
+            }else if (i == 2) {
+                assertArrayEquals(orp.addressHash.toArray(), tx1.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), tx3.getHashLow().toArray());
+            }
+        }
+
     }
 
 
