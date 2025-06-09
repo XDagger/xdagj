@@ -64,7 +64,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 import static io.xdag.BlockBuilder.*;
-import static io.xdag.BlockBuilder.generateOldTransactionBlock;
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagField.FieldType.*;
@@ -2976,6 +2975,226 @@ public class BlockchainTest {
                 assertArrayEquals(orp.addressHash.toArray(), b9.getHashLow().toArray());
             }
         }
+
+    }
+
+    /**
+     * 1.网络中，节点可能会收到来自多个其他节点各自的链接块，虽然他们实际包含的引用大概率是相通的，但链接块这个壳，
+     *   各个节点生成的是不一样的，因此这里模拟三个链接块，其中两个链接块的引用使用完全相同，第三个链接块人为少包含一个引用
+     * 2.生成链接块后，account1创建两笔nonce相同的交易，但是时间不同；account2创建两笔nonce相同时间也相同的交易；
+     *   account3创建三笔交易nonce=2,4,5；account4创建两笔nonce=2,3的交易，但是t1 > t2；然后还有一笔发放奖励的交易
+     */
+    @Test
+    public void testLinkAndNonceImpactOnSorting() {
+        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair nodeKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        KeyPair nodeKey2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+
+        MockBlockchain blockchain = new MockBlockchain(kernel);
+        kernel.setPow(new XdagPow(kernel));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account1), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account2), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account3), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account4), XAmount.of(1000, XUnit.XDAG));
+
+        long generateTime = 1600616700000L;
+        long t1 = XdagTime.msToXdagtimestamp(generateTime + 10);
+        long t2 = XdagTime.msToXdagtimestamp(generateTime + 20);
+        long t3 = XdagTime.msToXdagtimestamp(generateTime + 30);
+        long t4 = XdagTime.msToXdagtimestamp(generateTime + 40);
+
+        Address from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT,true);
+        Address from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT,true);
+        Address from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT,true);
+        Address from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT,true);
+        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_OUTPUT,true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey2)), XDAG_FIELD_OUTPUT,true);
+        Address to3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT,true);
+
+        Block tx1 = generateNewTransactionBlock(config, account2, t1, from2, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);
+        Block tx2 = generateNewTransactionBlock(config, account3, t2, from3, to, XAmount.of(100, XUnit.XDAG), XAmount.of(8, XUnit.XDAG), UInt64.ONE);
+        Block tx3 = generateNewTransactionBlock(config, account4, t3, from4, to, XAmount.of(100, XUnit.XDAG), XAmount.of(1, XUnit.XDAG), UInt64.ONE);
+        Block tx4 = generateNewTransactionBlock(config, account1, t4, from1, to, XAmount.of(100, XUnit.XDAG), XAmount.of(4, XUnit.XDAG), UInt64.ONE);
+
+        tx1 = new Block(tx1.getXdagBlock());
+        tx2 = new Block(tx2.getXdagBlock());
+        tx3 = new Block(tx3.getXdagBlock());
+        tx4 = new Block(tx4.getXdagBlock());
+
+        ImportResult result = blockchain.tryToConnect(tx1);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        result = blockchain.tryToConnect(tx2);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        result = blockchain.tryToConnect(tx3);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        result = blockchain.tryToConnect(tx4);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+
+        assertChainStatus(4, 0, 0, 4, blockchain);
+
+        long[] sendTime = new long[2];
+        sendTime[0] = t4 + 20;
+        List<Address> orphan = blockchain.getBlockFromOrphanPool(4, sendTime);
+
+        List<Address> pending1 = Lists.newArrayList();
+        List<Address> pending2 = Lists.newArrayList();
+
+        for (int i = 0; i < 3; i++) {
+            pending1.add(orphan.get(i));
+        }
+
+        for (int i = 0; i < 4; i++) {
+            pending2.add(orphan.get(i));
+        }
+
+        Block link1 = generateLinkBlock(config, nodeKey, t4 + 21, "link", pending1);
+        Block link2 = generateLinkBlock(config, nodeKey, t4 + 25, "link", pending2);
+        Block link3 = generateLinkBlock(config, nodeKey, t4 + 25, "link2", pending2);
+
+        link1 = new Block(link1.getXdagBlock());
+        link2 = new Block(link2.getXdagBlock());
+        link3 = new Block(link3.getXdagBlock());
+
+        System.out.println(link2.getHashLow().toHexString());
+        System.out.println(link3.getHashLow().toHexString());
+
+        assertNotEquals(link2.getHashLow(), link3.getHashLow());
+
+        result = blockchain.tryToConnect(link1);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        assertChainStatus(5, 0, 0, 2, blockchain);
+        result = blockchain.tryToConnect(link2);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        assertChainStatus(6, 0, 0, 2, blockchain);
+        result = blockchain.tryToConnect(link3);
+        assertTrue(result == IMPORTED_NOT_BEST || result == IMPORTED_BEST);
+        assertChainStatus(7, 0, 0, 3, blockchain);
+
+        List<Address> pending = Lists.newArrayList();
+        List<Block> extraBlockList = Lists.newLinkedList();
+        long xdagTime = 0;
+        for (int i = 1; i <= 16; i++) {
+            generateTime += 64000L;
+            xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
+            Block extraBlock = generateExtraBlock(config, nodeKey, xdagTime, pending);
+            result = blockchain.tryToConnect(new Block(extraBlock.getXdagBlock()));
+            assertSame(IMPORTED_BEST, result);
+            Bytes32 ref = extraBlock.getHashLow();
+            extraBlockList.add(extraBlock);
+            pending.clear();
+            pending.add(new Address(ref, XDAG_FIELD_OUT,false));
+//            System.out.println("第" + i + "轮" + " ," + "generateTime = " + generateTime + " ," + "xdagTime = " + xdagTime);
+        }
+        assertChainStatus(23, 14, 1, 3, blockchain);
+
+        t1 = xdagTime;
+        t2 = xdagTime + 10;
+        t3 = xdagTime + 20;
+        t4 = xdagTime + 30;
+        long t5 = xdagTime + 40;
+        long t6 = xdagTime + 50;
+        long t7 = xdagTime + 60;
+        long t8 = xdagTime + 70;
+        long t9 = xdagTime + 80;
+        long t10 = xdagTime + 90;
+        long t11 = xdagTime + 100;
+
+        assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_APPLIED);
+        assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN_CHAIN);
+        assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN);
+        assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN_REF);
+        assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_REF);
+        assertEquals("1024.0", blockchain.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
+        Address fromMTX = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN,false);
+
+        Block a23 = generateNewTransactionBlock(config, account1, t3, from1, to, XAmount.of(10, XUnit.XDAG), XAmount.of(100, XUnit.MILLI_XDAG), UInt64.valueOf(2));
+        Block a24 = generateNewTransactionBlock(config, account1, t4, from1, to, XAmount.of(10, XUnit.XDAG), XAmount.of(200, XUnit.MILLI_XDAG), UInt64.valueOf(2));
+        Block b26x = generateNewTransactionBlock(config, account2, t6, from2, to, XAmount.of(10, XUnit.XDAG), XAmount.of(200, XUnit.MILLI_XDAG), UInt64.valueOf(2));
+        Block b26y = generateNewTransactionBlock(config, account2, t6+1, from2, to, XAmount.of(10, XUnit.XDAG), XAmount.of(200, XUnit.MILLI_XDAG), UInt64.valueOf(2));
+        Block c2 = generateNewTransactionBlock(config, account3, t5, from3, to, XAmount.of(10, XUnit.XDAG), XAmount.of(100, XUnit.MILLI_XDAG), UInt64.valueOf(2));
+        Block c4 = generateNewTransactionBlock(config, account3, t7, from3, to, XAmount.of(10, XUnit.XDAG), XAmount.of(400, XUnit.MILLI_XDAG), UInt64.valueOf(4));
+        Block c5 = generateNewTransactionBlock(config, account3, t8, from3, to, XAmount.of(10, XUnit.XDAG), XAmount.of(300, XUnit.MILLI_XDAG), UInt64.valueOf(5));
+        Block d2 = generateNewTransactionBlock(config, account4, t11, from4, to, XAmount.of(10, XUnit.XDAG), XAmount.of(400, XUnit.MILLI_XDAG), UInt64.valueOf(2));
+        Block d3 = generateNewTransactionBlock(config, account4, t9, from4, to, XAmount.of(10, XUnit.XDAG), XAmount.of(300, XUnit.MILLI_XDAG), UInt64.valueOf(3));
+        Block mTX = generateMTxWithFee(config, nodeKey, t10, fromMTX, XAmount.of(1000, XUnit.XDAG), to3, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(700, XUnit.XDAG), XAmount.of(200,XUnit.MILLI_XDAG));
+
+
+        a23 = new Block(a23.getXdagBlock());
+        a24 = new Block(a24.getXdagBlock());
+        b26x = new Block(b26x.getXdagBlock());
+        b26y = new Block(b26y.getXdagBlock());
+        c2 = new Block(c2.getXdagBlock());
+        c4 = new Block(c4.getXdagBlock());
+        c5 = new Block(c5.getXdagBlock());
+        d2 = new Block(d2.getXdagBlock());
+        d3 = new Block(d3.getXdagBlock());
+        mTX = new Block(mTX.getXdagBlock());
+
+
+        result = blockchain.tryToConnect(a23);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(a24);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(b26x);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(b26y);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(c2);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(c4);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(c5);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(d2);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(d3);
+        assertSame(IMPORTED_NOT_BEST, result);
+        result = blockchain.tryToConnect(mTX);
+        assertSame(IMPORTED_NOT_BEST, result);
+
+        assertChainStatus(33, 15, 1, 13, blockchain);
+
+        sendTime = new long[2];
+        sendTime[0] = t11 + 20;
+        orphan = blockchain.getBlockFromOrphanPool(13, sendTime);
+        assertEquals(13, orphan.size());
+
+        for (int i = 0; i < orphan.size(); i++) {
+            Address orp = orphan.get(i);
+            if (i == 0) {
+                assertArrayEquals(orp.addressHash.toArray(), link1.getHashLow().toArray());
+            } else if (i == 1) {
+//                System.out.println("link2 hashlow = " + Bytes32.wrap(link2.getInfo().getHashlow()).toHexString());0x0000000000000000ccb30b70ac423dd1a959af288d6ee8db2b79e98244f5a298
+//                System.out.println("link3 hashlow = " + Bytes32.wrap(link3.getInfo().getHashlow()).toHexString());0x0000000000000000df5d41f537495990915a09803e7419401d0ca9de91cc1bbc
+                assertArrayEquals(orp.addressHash.toArray(), link2.getHashLow().toArray());
+            } else if (i == 2) {
+                assertArrayEquals(orp.addressHash.toArray(), link3.getHashLow().toArray());
+            } else if (i == 3) {
+                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
+            } else if (i == 4) {
+                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
+            } else if (i == 5) {
+                assertArrayEquals(orp.addressHash.toArray(), b26x.getHashLow().toArray());
+            } else if (i == 6) {
+                assertArrayEquals(orp.addressHash.toArray(), b26y.getHashLow().toArray());
+            } else if (i == 7) {
+                assertArrayEquals(orp.addressHash.toArray(), mTX.getHashLow().toArray());
+            } else if (i == 8) {
+                assertArrayEquals(orp.addressHash.toArray(), a23.getHashLow().toArray());
+            } else if (i == 9) {
+                assertArrayEquals(orp.addressHash.toArray(), a24.getHashLow().toArray());
+            } else if (i == 10) {
+                assertArrayEquals(orp.addressHash.toArray(), c2.getHashLow().toArray());
+            } else if (i == 11) {
+                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), c5.getHashLow().toArray());
+            }
+        }
+
 
     }
 
