@@ -24,6 +24,7 @@
 
 package io.xdag.db.rocksdb;
 
+import com.google.common.primitives.UnsignedBytes;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XAmount;
@@ -36,6 +37,7 @@ import java.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
@@ -75,19 +77,47 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         this.orphanSource.reset();
         this.orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(0, false));
     }
+
     /**
-     * 1. 从 orphanSource 中获取所有 prefix 为 ORPHAN_PREFEX 的数据
-     * 2. 解析为 OrphanMeta (hashlow, nonce, isTx, time, fee, address)
-     * 3. 链接块 isTx=false，按时间排序
-     * 4. 交易块 isTx=true，先按 fee 降序 + time 升序排序
-     * 5. 遇到含 nonce 的账户交易块：
-     *    - 检查其后所有相同 address 的块中是否有 nonce 更小或相等但时间更早的
-     *    - 插入这些块到当前块前
-     * 6. 将所有处理好的交易块拼接在链接块之后
-     * 7. 取前 num 个返回
-     * @param num
-     * @param sendtime
-     * @return
+     * Retrieve a sorted list of orphan block addresses based on a structured sorting and nonce-consistency strategy.
+     *
+     * Sorting Strategy:
+     * 1. All orphan entries are parsed from the underlying key-value storage (prefix = ORPHAN_PREFIX).
+     * 2. Entries are classified as:
+     *    - Link blocks (non-transaction): isTx == false
+     *    - Transaction blocks: isTx == true
+     *
+     * 3. Link blocks are sorted by:
+     *    - Ascending timestamp (time)
+     *    - Lexicographical order of hashlow (to break ties deterministically)
+     *
+     * 4. Transaction blocks are first globally sorted by:
+     *    - Descending fee
+     *    - Ascending timestamp (for equal fees)
+     *    - Ascending hashlow (for completely identical fee and time)
+     *
+     * 5. Then, to satisfy nonce execution order constraints (i.e., tx[n] cannot be executed before tx[n-1]):
+     *    - For each transaction block with a valid account (address + nonce),
+     *      we collect all same-account transactions that appear after or at the same index (including itself).
+     *    - This group is sorted by:
+     *        - Ascending nonce
+     *        - Ascending time
+     *        - Ascending hashlow (to resolve ties deterministically)
+     *    - The group is inserted one-by-one into the output list `fixedTxBlocks`, ensuring:
+     *        - The first transaction is inserted based on fee priority in the full list.
+     *        - Each subsequent transaction in the group only compares from the insertion point of the previous one onwards,
+     *          ensuring nonce order is preserved and higher-nonce txs never appear before lower-nonce ones.
+     *
+     * 6. Any unprocessed transaction blocks are inserted into the output list using standard fee-priority rules.
+     *
+     * 7. Final result list is constructed as:
+     *    - All sorted link blocks
+     *    - All nonce-aware ordered transaction blocks
+     *    - Up to `num` entries are selected, updating `sendtime[1]` with the latest timestamp seen.
+     *
+     * @param num       Maximum number of orphan block addresses to return
+     * @param sendtime  A two-element array: [0] is the cutoff time, [1] will be updated with latest used time
+     * @return          List of sorted and filtered orphan block addresses
      */
     public List<Address> getOrphan(long num, long[] sendtime) {
         List<Address> result = Lists.newArrayList();
@@ -113,10 +143,14 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             }
         }
 
-        // 链接块：按时间升序
-        linkBlocks.sort(Comparator.comparingLong(m -> m.time));
-        // 交易块：按 fee 降序、time 升序
-        txBlocks.sort(Comparator.<OrphanMeta>comparingLong(m -> -m.fee).thenComparingLong(m -> m.time));
+        // 链接块：按时间升序、以及区块hash降序
+        linkBlocks.sort(Comparator.<OrphanMeta>comparingLong(m -> m.time)
+                  .thenComparing(m -> m.getHashlow().toArray(), UnsignedBytes.lexicographicalComparator()));
+        // 交易块：按 fee 降序、time 升序、以及区块hash降序
+        txBlocks.sort(Comparator.<OrphanMeta>comparingLong(m -> -m.fee)
+                .thenComparingLong(m -> m.time)
+                .thenComparing(m -> m.getHashlow().toArray(), UnsignedBytes.lexicographicalComparator()));
+
 
         // 标记已插入的交易块，避免重复处理
         Set<OrphanMeta> handled = new HashSet<>();
@@ -131,34 +165,39 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
             // 若是非账户交易块，直接添加，无需插入前置
             if (current.nonce == 0 && BytesUtils.isFullZero(current.address)) {
-                fixedTxBlocks.add(current);
+                insertInOrder(fixedTxBlocks, current, 0);
                 handled.add(current);
                 continue;
             }
 
-            List<OrphanMeta> inserts = new ArrayList<>();
+            List<OrphanMeta> sameAccountTxs = new ArrayList<>();
+            sameAccountTxs.add(current);
+            handled.add(current);
 
             for (int j = i + 1; j < txBlocks.size(); j++) {
-                OrphanMeta later = txBlocks.get(j);
-                if (handled.contains(later)) {
+                OrphanMeta candidate = txBlocks.get(j);
+                if (handled.contains(candidate)) {
                     continue;
                 }
-                if (!Arrays.equals(current.address, later.address)) {
+                if (!Arrays.equals(current.address, candidate.address)) {
                     continue;
                 }
 
-                if (later.nonce < current.nonce
-                        || (later.nonce == current.nonce && later.time < current.time && later.fee < current.fee)) {
-                    inserts.add(later);
-                    handled.add(later);
-                }
+                sameAccountTxs.add(candidate);
+                handled.add(candidate);
             }
 
-            // 插入顺序：nonce 升序、相同 nonce 按时间升序
-            inserts.sort(Comparator.<OrphanMeta>comparingLong(m -> m.nonce).thenComparingLong(m -> m.time));
-            fixedTxBlocks.addAll(inserts);
-            fixedTxBlocks.add(current);
-            handled.add(current);
+            sameAccountTxs.sort(Comparator.<OrphanMeta>comparingLong(m -> m.nonce)
+                    .thenComparingLong(m -> m.time)
+                    .thenComparing(m -> m.getHashlow().toArray(), UnsignedBytes.lexicographicalComparator()));
+
+
+            int insertFrom = 0;
+            for (OrphanMeta tx : sameAccountTxs) {
+                insertFrom = insertInOrder(fixedTxBlocks, tx, insertFrom);
+                insertFrom++;
+            }
+
         }
 
         // 补全未被处理的交易块 兜底，保险
@@ -180,40 +219,25 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             sendtime[1] = Math.max(sendtime[1], m.time);
             addNum--;
         }
-//        List<Address> res = Lists.newArrayList();
-//        if (orphanSource.get(ORPHAN_SIZE) == null || getOrphanSize() == 0) {
-//            return null;
-//        } else {
-//            long orphanSize = getOrphanSize();
-//            long addNum = Math.min(orphanSize, num);
-//            byte[] key = BytesUtils.of(ORPHAN_PREFEX);
-//            List<Pair<byte[],byte[]>> ans = orphanSource.prefixKeyAndValueLookup(key);
-//            ans.sort(Comparator.comparingLong(a -> BytesUtils.bytesToLong(a.getValue(), 0, true)));
-//            for (Pair<byte[],byte[]> an : ans) {
-//                if (addNum == 0) {
-//                    break;
-//                }
-//                // TODO:判断时间，这里出现过orphanSource获取key时为空的情况
-//                if (an.getValue() == null) {
-//                    continue;
-//                }
-//                long time =  BytesUtils.bytesToLong(an.getValue(), 0, true);
-//                if (time <= sendtime[0]) {
-//                    addNum--;
-//                    res.add(new Address(Bytes32.wrap(an.getKey(), 1), XdagField.FieldType.XDAG_FIELD_OUT,false));
-//                    sendtime[1] = Math.max(sendtime[1],time);
-////                    Bytes32 blockHashLow = Bytes32.wrap(an.getKey(),1);
-////                    if(filter.filterOurLinkBlock(blockHashLow)){
-////                        addNum--;
-////                        //TODO:通过address 获取区块 遍历连接块是否都是output如果是 则为链接块 判断是否是自己的是才链接
-////                        res.add(new Address(blockHashLow, XdagField.FieldType.XDAG_FIELD_OUT,false));
-////                        sendtime[1] = Math.max(sendtime[1],time);
-////                    }
-//                }
-//            }
-            sendtime[1] = Math.min(sendtime[1]+1,sendtime[0]);
-            return result;
+
+        sendtime[1] = Math.min(sendtime[1]+1,sendtime[0]);
+        return result;
+    }
+
+    private int insertInOrder(List<OrphanMeta> list, OrphanMeta tx, int startIndex) {
+        int index = startIndex;
+        while (index < list.size()) {
+            OrphanMeta existing = list.get(index);
+            int cmp = Comparator.<OrphanMeta>comparingLong(m -> -m.fee)
+                    .thenComparingLong(m -> m.time)
+                    .thenComparing(m -> m.getHashlow().toArray(), UnsignedBytes.lexicographicalComparator())
+                    .compare(tx, existing);
+            if (cmp < 0) break;
+            index++;
         }
+        list.add(index, tx);
+        return index;
+    }
 
     public void deleteByKey(byte[] hashlow, boolean isTxBlock , UInt64 nonce, XAmount fee, byte[] address) {
         log.debug("deleteByKey");
@@ -235,7 +259,8 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 //        System.out.println("OrphanKey: " + Arrays.toString(key));
         // value: time(8B) + fee(8B) + address(20B)，若非账户交易块则 address 全 0
         byte[] timeBytes = BytesUtils.longToBytes(block.getTimestamp(), true);
-        byte[] feeBytes = fee.toXAmount().toBytes().toArray(); // XAmount -> long -> 8B
+//        byte[] feeBytes = fee.toXAmount().toBytes().toArray(); // XAmount -> long -> 8B
+        byte[] feeBytes = Bytes.wrap(BytesUtils.bigIntegerToBytes(fee.toXAmount(),8)).toArray();
         byte[] addrBytes = (address == null) ? new byte[20] : address;
         byte[] value = BytesUtils.merge(timeBytes, feeBytes, addrBytes);
 //        System.out.println("OrphanValue: " + Arrays.toString(value));
@@ -279,12 +304,14 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             byte[] fullHash = new byte[32];
             System.arraycopy(key, 1, fullHash, 8, 24);
             m.hashlow = Bytes32.wrap(fullHash);
-            m.nonce = BytesUtils.bytesToLong(key, 25, false);
+//            m.nonce = BytesUtils.bytesToLong(key, 25, false);
+            m.nonce = UInt64.fromBytes(Bytes.wrap(key).slice(25, 8)).toLong();
             m.isTx = BytesUtils.toByte(BytesUtils.subArray(key, 33, 1)) == 1;
 
             // value 解析：time(8B) + fee(8B) + address(20B)
             m.time = BytesUtils.bytesToLong(value, 0, true);
-            m.fee = BytesUtils.bytesToLong(value, 8, true);
+//            m.fee = BytesUtils.bytesToLong(value, 8, true);//UInt64.fromBytes(value.slice(8, 8)).toLong()
+            m.fee = UInt64.fromBytes(Bytes.wrap(value).slice(8, 8)).toLong();//UInt64.fromBytes(Bytes.wrap(BytesUtils.bigIntegerToBytes(fee.toXAmount(),8))).toLong()
             m.address = BytesUtils.subArray(value, 16, 20);
 
             return m;

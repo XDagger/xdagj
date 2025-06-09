@@ -103,6 +103,19 @@ public class BlockBuilder {
         return b;
     }
 
+    public static Block generateMTxWithFee(Config config, KeyPair key, long xdagTime, Address from, XAmount amount,Address to,
+                                                    XAmount amount1, Address to1, XAmount amount2, XAmount fee) {
+        List<Address> refs = Lists.newArrayList();
+        List<KeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
+        refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, fee, null); // orphan
+        b.signOut(key);
+        return b;
+    }
+
     public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount, UInt64 nonce) {
         List<Address> refs = Lists.newArrayList();

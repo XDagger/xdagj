@@ -423,7 +423,7 @@ public class BlockchainImpl implements Blockchain {
 
                 if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
                     onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
-                            block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
+                    block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
                 }
                 id++;
             }
