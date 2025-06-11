@@ -199,7 +199,7 @@ public class SyncManager extends AbstractXdagLifecycle {
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
-                if (syncPushBlock(blockWrapper, result.getHashlow())) {
+                if (syncPushBlock(blockWrapper, result.getHashlow())) {//返回true表示距离上一次因为缺少父引用而放到这里的时间超过了60s，请求再次向其他节点询问付父区块
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {

@@ -813,13 +813,13 @@ public class BlockchainImpl implements Blockchain {
             log.debug("now pretop : {}", xdagTopStatus.getPreTop() == null ? "null" : Bytes32.wrap(xdagTopStatus.getPreTop()).toHexString());
             for (Block tmp = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), true); tmp != null
                     && !blockEqual(block, tmp); tmp = getMaxDiffLink(tmp, true)) {
+                BlockInfo info = blockStore.getBlockInfo(tmp.getHashLow());
+                if (info != null) {
+                    tmp.getInfo().setFee(info.getFee());
+                }
                 updateBlockFlag(tmp, BI_MAIN_CHAIN, false);
                 // Update corresponding flag information
                 if ((tmp.getInfo().flags & BI_MAIN) != 0) {
-                    BlockInfo info = blockStore.getBlockInfo(tmp.getHashLow());
-                    if (info != null) {
-                        tmp.getInfo().setFee(info.getFee());
-                    }
                     unSetMain(tmp);
                     // Fix: Need to update block info in database like height 210729
                     blockStore.saveBlockInfo(tmp.getInfo());
@@ -859,6 +859,7 @@ public class BlockchainImpl implements Blockchain {
                 Block ref = getBlockByHash(link.getAddress(), false);
                 if ((ref.getInfo().flags & BI_MAIN_REF) != 0) continue;
                 ref = getBlockByHash(link.getAddress(), true);
+                ref.getInfo().setFee(XAmount.ZERO);
 
                 XAmount childGas = applyBlock(false, ref);
                 if (!childGas.equals(XAmount.ZERO.subtract(XAmount.ONE))) {
@@ -938,10 +939,14 @@ public class BlockchainImpl implements Blockchain {
 
 //        XAmount totalFee = gasCollected.add(blockGas);
 //        block.getInfo().setFee(totalFee);
-        if (!flag) {
+        if (!flag && isTxBlock(block)) {
             block.getInfo().setFee(blockGas);
             blockStore.saveBlockInfo(block.getInfo());
             return blockGas;
+        } else if (!flag && !isTxBlock(block)) {
+            block.getInfo().setFee(gasCollected);
+            blockStore.saveBlockInfo(block.getInfo());
+            return gasCollected;
         } else {
             //若是交易块做了主块，则拿blockGas,否则都返回gasCollected
             return ((gasCollected.compareTo(XAmount.ZERO) == 0) && (blockGas.compareTo(XAmount.ZERO) > 0)) ? blockGas : gasCollected;
@@ -1019,17 +1024,21 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
+                XAmount fee;
                 // Even if mainBlock duplicate links the TX_block which other mainBlock handled, we can check if this TX ref is this mainBlock
                 if (ref.getInfo().getRef() != null
                         && equalBytes(ref.getInfo().getRef(), block.getHashLow().toArray())
                         && ((ref.getInfo().flags & BI_MAIN_REF) != 0)) {
 //                    addAndAccept(block, unApplyBlock(getBlockByHash(ref.getHashLow(), true)));
-                    XAmount fee = ref.getFee();
+                    fee = ref.getFee();
                     ref = getBlockByHash(ref.getHashLow(), true);
                     ref.getInfo().setFee(fee);
                     unApplyBlock(ref, false);
                 }
                 //取消nonce错误的交易块被置位的标志位，将其恢复为Pending状态
+                fee = ref.getFee();
+                ref = getBlockByHash(ref.getHashLow(), true);
+                ref.getInfo().setFee(fee);
                 if (isTxBlock(ref) && ref.getInfo().getRef() == null && (ref.getInfo().flags & BI_MAIN_REF) != 0) {
                     updateBlockFlag(ref, BI_MAIN_REF, false);
                 }
