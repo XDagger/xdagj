@@ -570,14 +570,14 @@ public class BlockStoreImpl implements BlockStore {
                 log.error(e.getMessage(), e);
             }
         }
-        Block block = new Block(blockInfo);
-        if (blockSource.get(hashlow.toArray()) == null) {
-//            log.error("No block origin data");
-            return block;
-        } else {
-            block.setXdagBlock(new XdagBlock(blockSource.get(hashlow.toArray())));
-            return block;
-        }
+        return new Block(blockInfo);
+//        if (blockSource.get(hashlow.toArray()) == null) {
+////            log.error("No block origin data");
+//            return block;
+//        } else {
+//            block.setXdagBlock(new XdagBlock(blockSource.get(hashlow.toArray())));
+//            return block;
+//        }
     }
 
     public BlockInfo getBlockInfo(Bytes32 hashlow) {

@@ -241,11 +241,12 @@ public class Commands {
      * @param address Recipient address
      * @param remark Optional transaction remark
      */
-    public String xfer(double sendAmount, Bytes32 address, String remark) {
+    public String xfer(double sendAmount, Bytes32 address, String remark, double fee) {
         StringBuilder str = new StringBuilder();
         str.append("Transaction :{ ").append("\n");
 
         XAmount amount = XAmount.of(BigDecimal.valueOf(sendAmount), XUnit.XDAG);
+        XAmount txFee = XAmount.of(BigDecimal.valueOf(fee), XUnit.XDAG);
         MutableBytes32 to = MutableBytes32.create();
         to.set(8, address.slice(8, 20));
 
@@ -281,7 +282,7 @@ public class Commands {
         }
 
         // Create and broadcast transaction blocks
-        List<BlockWrapper> txs = createTransactionBlock(ourAccounts, to, remark, txNonce);
+        List<BlockWrapper> txs = createTransactionBlock(ourAccounts, to, remark, txNonce, txFee);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -307,7 +308,7 @@ public class Commands {
     /**
      * Create transaction blocks from inputs to recipient
      */
-    private List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
         // Check if remark exists
         int hasRemark = remark == null ? 0 : 1;
 
@@ -349,7 +350,7 @@ public class Commands {
                 stack.poll();
             } else {
                 // Create block and reset for next
-                res.add(createTransaction(to, amount, keys, remark, txNonce));
+                res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
                 keys = new HashMap<>();
                 keysPerBlock = new HashSet<>();
                 keysPerBlock.add(kernel.getWallet().getDefKey());
@@ -364,7 +365,7 @@ public class Commands {
         
         // Create final block if needed
         if (!keys.isEmpty()) {
-            res.add(createTransaction(to, amount, keys, remark, txNonce));
+            res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
         }
         return res;
     }
@@ -372,10 +373,10 @@ public class Commands {
     /**
      * Create single transaction block
      */
-    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount, true));
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark,
-                XAmount.of(100, XUnit.MILLI_XDAG), txNonce);
+                txFee, txNonce);
 
         if (block == null) {
             return null;
@@ -517,9 +518,9 @@ public class Commands {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %s%n",
                             output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
-                            getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                                            output.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG).toPlainString()
+//                            getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+                                            output.getAmount().subtract(kernel.getBlockchain().outPutLimit(block)).toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
             }
@@ -576,10 +577,10 @@ public class Commands {
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                 block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
-                block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString()))
+                block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :  kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString()
+//                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString()))
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
@@ -795,7 +796,7 @@ public class Commands {
         });
 
         // Generate multiple transaction blocks
-        List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark, null);
+        List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark, null, XAmount.ZERO);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -819,7 +820,7 @@ public class Commands {
         String remark = "Pay to " + kernel.getConfig().getNodeSpec().getNodeTag();
         
         // Generate transaction blocks to reward node
-        List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark, null);
+        List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark, null, XAmount.ZERO);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {

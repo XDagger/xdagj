@@ -541,6 +541,10 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                 block = blockchain.getBlockByHash(blockHash, false);
                 return transferBlockInfoToBlockResultDTO(block, page, parameters);
             }
+            BlockInfo blockInfo = kernel.getBlockStore().getBlockInfo(blockHash);
+            if (blockInfo != null) {
+                block.getInfo().setFee(blockInfo.getFee());
+            }
             return transferBlockToBlockResultDTO(block, page, parameters);
         }
     }
@@ -575,9 +579,9 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
             XAmount Amount = txHistory.getAddress().getAmount();
             // Check if it's a transaction block, only subtract 0.1 if it has inputs
-            if (!block.getInputs().isEmpty() && txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT)) {
-                Amount = Amount.subtract(MIN_GAS);
-            }
+//            if (!block.getInputs().isEmpty() && txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT)) {
+//                Amount = Amount.subtract(MIN_GAS);
+//            }
             BlockResponse.TxLink.TxLinkBuilder txLinkBuilder = BlockResponse.TxLink.builder();
             txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
                     .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
@@ -602,10 +606,10 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                         : hash2Address(Bytes32.wrap(block.getInfo().getRef())))
                 .hashlow(block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                         : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
-                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) :
-                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString())))// calculate the fee
+                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) : kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString())
+//                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString())))// calculate the fee
                 .direction(2);
         links.add(fee.build());
 
@@ -624,7 +628,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
             XAmount Amount = output.getAmount();
             if (!block.getInputs().isEmpty()) {
-                Amount = Amount.subtract(MIN_GAS);
+                Amount = Amount.subtract(blockchain.outPutLimit(block));
             }
             linkBuilder.address(output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
                     .hashlow(output.getAddress().toUnprefixedHexString())

@@ -334,11 +334,11 @@ public class BlockchainImpl implements Blockchain {
                             return result;
                         }
                         // Ensure TX block's amount is enough to subtract minGas, Amount must >= 0.1
-                        if (ref.getType() == XDAG_FIELD_IN && ref.getAmount().subtract(MIN_GAS).isNegative()) {
+                        if (ref.getType() == XDAG_FIELD_IN && ref.getAmount().subtract(getTxFee(block)).isNegative()) {
                             result = ImportResult.INVALID_BLOCK;
                             result.setHashlow(ref.getAddress());
-                            result.setErrorInfo("Ref block's balance < minGas");
-                            log.debug("Ref block's balance < minGas");
+                            result.setErrorInfo("Ref block's balance < fee");
+                            log.debug("Ref block's balance < fee");
                             return result;
                         }
                     }
@@ -361,12 +361,24 @@ public class BlockchainImpl implements Blockchain {
                         return result;
                     }
                     // Ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1
-                    if (ref != null && (ref.getType() == XDAG_FIELD_INPUT || ref.getType() == XDAG_FIELD_OUTPUT) && ref.getAmount().subtract(outPutLimit(block)).isNegative()) {
-                        result = ImportResult.INVALID_BLOCK;
-                        result.setHashlow(ref.getAddress());
-                        result.setErrorInfo("Ref block's balance < minGas");
-                        log.debug("Ref block's balance < minGas");
-                        return result;
+                    if (ref != null && (ref.getType() == XDAG_FIELD_INPUT || ref.getType() == XDAG_FIELD_OUTPUT)) {
+                        if (getTxFee(block).isPositive() && outPutLimit(block).isPositive()) {
+                            if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(getTxFee(block)).isNegative()) {
+                                result = ImportResult.INVALID_BLOCK;
+                                result.setHashlow(ref.getAddress());
+                                result.setErrorInfo("Ref input amount < Gas");
+                                return result;
+                            } else if (ref.getType() == XDAG_FIELD_OUTPUT && ref.getAmount().subtract(outPutLimit(block)).isNegative()) {
+                                result = ImportResult.INVALID_BLOCK;
+                                result.setHashlow(ref.getAddress());
+                                result.setErrorInfo("Ref output amount < Gas");
+                                return result;
+                            }
+                        } else {
+                            result = ImportResult.INVALID_BLOCK;
+                            result.setErrorInfo("When constructing a block, the fee entered is illegal");
+                            return result;
+                        }
                     }
                 }
                 
@@ -422,8 +434,14 @@ public class BlockchainImpl implements Blockchain {
                 }
 
                 if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
-                    onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
-                    block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
+                    if (fType.equals(XDAG_FIELD_OUT) || fType.equals(XDAG_FIELD_OUTPUT)) {
+                        onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
+                                block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
+                    } else {
+                        XAmount singleOutputFee = outPutLimit(block);
+                        onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount().subtract(singleOutputFee),
+                                block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
+                    }
                 }
                 id++;
             }
@@ -618,7 +636,7 @@ public class BlockchainImpl implements Blockchain {
         if (num == -1) {
             return XAmount.ZERO;
         } else if (MIN_GAS.compareTo(allFee.divide(num)) > 0) {
-            return XAmount.ZERO;
+            return MIN_GAS;
         } else {
             return allFee.divide(num);
         }
@@ -1771,7 +1789,7 @@ public class BlockchainImpl implements Blockchain {
             Block linkBlock = createNewBlock(null, null, false,
                     kernel.getConfig().getNodeSpec().getNodeTag(), XAmount.ZERO, null);
             linkBlock.signOut(kernel.getWallet().getDefKey());
-            ImportResult result = this.tryToConnect(linkBlock);
+            ImportResult result = this.tryToConnect(new Block(linkBlock.getXdagBlock()));
             if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
                 onNewBlock(linkBlock);
             }
