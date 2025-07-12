@@ -28,7 +28,7 @@
         <mockito.version>5.17.0</mockito.version>
         <system-stubs-jupiter.version>2.1.8</system-stubs-jupiter.version>
         <log4j.version>2.24.3</log4j.version>
-        <commons-lang3.version>3.17.0</commons-lang3.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <commons-rng.version>1.6</commons-rng.version>
         <commons-collections4.version>4.5.0</commons-collections4.version>
         <commons-codec.version>1.18.0</commons-codec.version>
