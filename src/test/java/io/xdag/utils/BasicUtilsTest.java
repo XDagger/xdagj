@@ -25,6 +25,7 @@
 package io.xdag.utils;
 
 import com.google.common.collect.Lists;
+import io.xdag.crypto.exception.AddressFormatException;
 import io.xdag.utils.exception.XdagOverFlowException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -109,7 +110,7 @@ public class BasicUtilsTest {
 
     // Base58 => hashLow
     @Test
-    public void pubAddress2Hash() {
+    public void pubAddress2Hash() throws AddressFormatException {
         Bytes ret = Bytes.wrap(WalletUtils.fromBase58("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf"));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
@@ -166,7 +167,7 @@ public class BasicUtilsTest {
         assertEquals(blockHashlow, data);
         MutableBytes32 addressHash = MutableBytes32.create();
         addressHash.set(8, this.data.slice(8, 20));
-        String walletAddress = toBase58(addressHash.slice(8, 20).toArray());
+        String walletAddress = toBase58(addressHash.slice(8, 20));
         assertEquals("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf", walletAddress);
     }
 

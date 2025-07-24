@@ -27,6 +27,7 @@ package io.xdag.core;
 import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Class for tracking XDAG network statistics
@@ -49,7 +50,7 @@ public class XdagStats {
     public long maintime;         // Timestamp of the main block
     public XAmount balance = XAmount.ZERO;
 
-    private byte[] globalMiner;       // Global miner address
+    private Bytes globalMiner;       // Global miner address
     private byte[] ourLastBlockHash;  // Hash of our last block
 
     /**

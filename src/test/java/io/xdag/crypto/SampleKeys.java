@@ -24,11 +24,11 @@
 
 package io.xdag.crypto;
 
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
+import io.xdag.crypto.keys.PublicKey;
 import io.xdag.utils.Numeric;
 import java.math.BigInteger;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 
 /**
  * Keys generated for unit testing purposes.
@@ -47,16 +47,15 @@ public class SampleKeys {
 
     public static final String PASSWORD = "Insecure Pa55w0rd";
     public static final String MNEMONIC =
-            "scatter major grant return flee easy female jungle"
-                    + " vivid movie bicycle absent weather inspire carry";
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
     public static final BigInteger PRIVATE_KEY = Numeric.toBigInt(PRIVATE_KEY_STRING);
     public static final BigInteger PUBLIC_KEY = Numeric.toBigInt(PUBLIC_KEY_STRING);
 
-    public static final SECPPrivateKey SRIVATE_KEY = SECPPrivateKey.create(PRIVATE_KEY, Sign.CURVE_NAME);
-    public static final SECPPublicKey SPUBLIC_KEY = SECPPublicKey.create(PUBLIC_KEY, Sign.CURVE_NAME);
+    public static final PrivateKey PRIVATE_KEY_OBJ = PrivateKey.fromBigInteger(PRIVATE_KEY);
+    public static final PublicKey PUBLIC_KEY_OBJ = PublicKey.fromBigInteger(PUBLIC_KEY);
 
-    public static final KeyPair KEY_PAIR = new KeyPair(SRIVATE_KEY, SPUBLIC_KEY);
+    public static final ECKeyPair KEY_PAIR = ECKeyPair.fromPrivateKey(PRIVATE_KEY_OBJ);
 
     private SampleKeys() {
     }

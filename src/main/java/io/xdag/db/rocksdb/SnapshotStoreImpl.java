@@ -29,8 +29,10 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import io.xdag.core.*;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.hash.HashUtils;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.Signature;
+import io.xdag.crypto.keys.Signer;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.SnapshotStore;
@@ -45,8 +47,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.rocksdb.RocksIterator;
 
@@ -163,7 +163,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
         snapshotSource.put(new byte[]{SNAPSHOT_PRESEED}, preSeed);
     }
 
-    public void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime) {
+    public void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<ECKeyPair> keys,long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key()[0] == HASH_BLOCK_INFO) {
@@ -185,8 +185,8 @@ public class SnapshotStoreImpl implements SnapshotStore {
                             if (snapshotInfo.getType()) {
                                 byte[] ecKeyPair = snapshotInfo.getData();
                                 for (int i = 0; i < keys.size(); i++) {
-                                    KeyPair key = keys.get(i);
-                                    if (Bytes.wrap(key.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true)).compareTo(Bytes.wrap(ecKeyPair)) == 0) {
+                                    ECKeyPair key = keys.get(i);
+                                    if (key.getPublicKey().toBytes().compareTo(Bytes.wrap(ecKeyPair)) == 0) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance = ourBalance.add(blockInfo.getAmount());
@@ -195,14 +195,16 @@ public class SnapshotStoreImpl implements SnapshotStore {
                                 }
                             } else {    //Verify signature
                                 Block block = new Block(new XdagBlock(snapshotInfo.getData()));
-                                SECPSignature outSig = block.getOutsig();
+                                Signature outSig = block.getOutsig();
                                 for (int i = 0; i < keys.size(); i++) {
-                                    KeyPair keyPair = keys.get(i);
-                                    byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
+                                    ECKeyPair keyPair = keys.get(i);
+                                    byte[] publicKeyBytes = keyPair.getPublicKey().toBytes().toArray();
                                     Bytes digest = Bytes
                                             .wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
-                                    Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
-                                    if (Sign.SECP256K1.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
+                                    Bytes32 hash = HashUtils.doubleSha256(Bytes.wrap(digest));
+//                                    if (Signer.verify(hash, Sign.toCanonical(outSig), keyPair.getPublicKey())) {
+                                    // TODO FIXME toCanonical
+                                    if (Signer.verify(hash, outSig, keyPair.getPublicKey())) {
                                         flag |= BI_OURS;
                                         keyIndex = i;
                                         ourBalance = ourBalance.add(blockInfo.getAmount());
@@ -247,7 +249,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
 
 
     @Override
-    public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys, long snapshotTime) {
+    public void saveAddress(BlockStore blockStore, AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<ECKeyPair> keys, long snapshotTime) {
         try (RocksIterator iter = snapshotSource.getDb().newIterator()) {
             for (iter.seekToFirst(); iter.isValid(); iter.next()) {
                 if (iter.key().length < 20) {
@@ -258,9 +260,9 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     byte[] address = iter.key(); // address = flag + accountAddress: 30(byte ADDRESS = (byte) 0x30) + fb3fb15072826ffa5f5b6c123029798a27cd0c64
                     if (Hex.toHexString(address).startsWith("30")) {
                         XAmount balance = XAmount.ofXAmount(UInt64.fromBytes(Bytes.wrap(iter.value())).toLong());
-                        for (KeyPair keyPair : keys) {
-                            byte[] publicKeyBytes = keyPair.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
-                            byte[] myAddress = Hash.sha256hash160(Bytes.wrap(publicKeyBytes));
+                        for (ECKeyPair keyPair : keys) {
+                            byte[] publicKeyBytes = keyPair.getPublicKey().toBytes().toArray();
+                            byte[] myAddress = HashUtils.sha256hash160(Bytes.wrap(publicKeyBytes)).toArray();
                             if (BytesUtils.compareTo(address, 1, 20, myAddress, 0, 20) == 0) {
                                 ourBalance = ourBalance.add(balance);
                             }
@@ -281,7 +283,7 @@ public class SnapshotStoreImpl implements SnapshotStore {
                     } // TODO: Restore the transaction quantity for each address from the snapshot.
                     else if (Hex.toHexString(address).startsWith("50")) {
                         UInt64 exeTxNonceNum = UInt64.fromBytes(Bytes.wrap(iter.value())).toUInt64();
-                        byte[] TxQuantityKey = BytesUtils.merge(CURRENT_TRANSACTION_QUANTITY, BytesUtils.byte32ToArray(BytesUtils.arrayToByte32(Arrays.copyOfRange(address, 1, 21))));
+                        byte[] TxQuantityKey = BytesUtils.merge(CURRENT_TRANSACTION_QUANTITY, BytesUtils.byte32ToArray(BytesUtils.arrayToByte32(Arrays.copyOfRange(address, 1, 21))).toArrayUnsafe());
                         addressStore.snapshotTxQuantity(TxQuantityKey, exeTxNonceNum);
                         addressStore.snapshotExeTxNonceNum(address, exeTxNonceNum);
                     }

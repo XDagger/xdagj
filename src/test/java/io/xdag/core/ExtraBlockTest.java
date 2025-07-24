@@ -31,14 +31,13 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.consensus.XdagPow;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,8 +71,8 @@ public class ExtraBlockTest {
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
-    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
-    SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
+    PrivateKey secretkey_1 = PrivateKey.fromBigInteger(private_1);
+    PrivateKey secretkey_2 = PrivateKey.fromBigInteger(private_2);
 
     @Before
     public void setUp() throws Exception {
@@ -83,7 +82,7 @@ public class ExtraBlockTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -108,8 +107,8 @@ public class ExtraBlockTest {
 
     @Test
     public void testExtraBlockReUse() {
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretkey_1);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(secretkey_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block
@@ -156,8 +155,8 @@ public class ExtraBlockTest {
 
     @Test
     public void testExtraGenerate() {
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretkey_1);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(secretkey_2);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block

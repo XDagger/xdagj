@@ -25,6 +25,7 @@
 package io.xdag.rpc.api;
 
 import io.xdag.core.XdagLifecycle;
+import io.xdag.crypto.exception.AddressFormatException;
 import io.xdag.rpc.model.response.*;
 import io.xdag.rpc.model.request.TransactionRequest;
 
@@ -128,7 +129,7 @@ public interface XdagApi extends XdagLifecycle {
      * @param address XDAG address
      * @return Balance as string
      */
-    String xdag_getBalance(String address);
+    String xdag_getBalance(String address) throws AddressFormatException;
 
     /**
      * Get the transaction nonce of a specific address.
@@ -136,7 +137,7 @@ public interface XdagApi extends XdagLifecycle {
      * @param address XDAG address
      * @return Transaction nonce as string
      */
-    String xdag_getTransactionNonce(String address);
+    String xdag_getTransactionNonce(String address) throws AddressFormatException;
 
     /**
      * Get the total balance of the node.

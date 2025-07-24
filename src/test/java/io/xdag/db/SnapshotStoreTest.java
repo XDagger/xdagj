@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 package io.xdag.db;
-
+import io.xdag.crypto.keys.AddressUtils;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
@@ -30,9 +30,9 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.core.*;
-import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import io.xdag.db.rocksdb.*;
 import io.xdag.crypto.RandomX;
 import io.xdag.utils.BasicUtils;
@@ -41,8 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,9 +80,9 @@ public class SnapshotStoreTest {
     DatabaseFactory dbFactory;
 
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
-    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
+    PrivateKey secretkey_1 = PrivateKey.fromBigInteger(private_1);
 
-    KeyPair poolKey;
+    ECKeyPair poolKey;
 
     long height;
     MutableBytes32 address1;
@@ -116,7 +114,8 @@ public class SnapshotStoreTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -164,24 +163,24 @@ public class SnapshotStoreTest {
 //        makeSnapshot();
 //
 //        BlockInfo blockInfo1 = (BlockInfo) snapshotStore.deserialize(
-//                snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address1.toArray())), BlockInfo.class);
+//                snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address1.toArray()), BlockInfo.class);
 //        BlockInfo blockInfo2 = (BlockInfo) snapshotStore.deserialize(
-//                snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address2.toArray())), BlockInfo.class);
+//                snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address2.toArray()), BlockInfo.class);
 //        BlockInfo blockInfo3 = (BlockInfo) snapshotStore.deserialize(
-//                snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address3.toArray())), BlockInfo.class);
+//                snapshotSource.get(BytesUtils.merge(HASH_BLOCK_INFO, address3.toArray()), BlockInfo.class);
 //
 //        //Compare balances
-//        assertEquals("924.0", String.valueOf(blockInfo1.getAmount().toDecimal(1, XUnit.XDAG)));
-//        assertEquals("1024.0", String.valueOf(blockInfo2.getAmount().toDecimal(1, XUnit.XDAG)));
-//        assertEquals("1024.0", String.valueOf(blockInfo3.getAmount().toDecimal(1, XUnit.XDAG)));
+//        assertEquals("924.0", String.valueOf(blockInfo1.getAmount().toDecimal(1, XUnit.XDAG));
+//        assertEquals("1024.0", String.valueOf(blockInfo2.getAmount().toDecimal(1, XUnit.XDAG));
+//        assertEquals("1024.0", String.valueOf(blockInfo3.getAmount().toDecimal(1, XUnit.XDAG));
 //
 //        //Compare public key
-////        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-//        assertArrayEquals(poolKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true), blockInfo1.getSnapshotInfo().getData());
+////        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretkey_1);
+//        assertArrayEquals(poolKey.getPublicKey().asEcPoint().getEncoded(true), blockInfo1.getSnapshotInfo().getData();
 //
 //        //Compare 512 bytes of data
-//        assertArrayEquals(extraBlockList.get(11).getXdagBlock().getData().toArray(), blockInfo2.getSnapshotInfo().getData());
-//        assertArrayEquals(extraBlockList.get(23).getXdagBlock().getData().toArray(), blockInfo3.getSnapshotInfo().getData());
+//        assertArrayEquals(extraBlockList.get(11).getXdagBlock().getData().toArray(), blockInfo2.getSnapshotInfo().getData();
+//        assertArrayEquals(extraBlockList.get(23).getXdagBlock().getData().toArray(), blockInfo3.getSnapshotInfo().getData();
 //    }
 
     @Test
@@ -197,13 +196,13 @@ public class SnapshotStoreTest {
         AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         keys.add(poolKey);
 
         snapshotStore.saveSnapshotToIndex(blockStore, kernel.getTxHistoryStore(), keys,0);
 
         //Verify the total balance of the current account
-//        assertEquals("45980.0", String.valueOf(snapshotStore.getAllBalance().toDecimal(1, XUnit.XDAG)));
+//        assertEquals("45980.0", String.valueOf(snapshotStore.getAllBalance().toDecimal(1, XUnit.XDAG));
         //Verify height
 //        assertEquals(45, height);
 
@@ -237,8 +236,8 @@ public class SnapshotStoreTest {
     }
 
     public void createBlockchain() {
-        KeyPair addrKey = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-        poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretkey_1);
+        poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
 
         //Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
@@ -298,7 +297,7 @@ public class SnapshotStoreTest {
             pending.clear();
         }
 
-        XAmount toBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount toBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
 
         assertEquals("99.9", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));

@@ -29,12 +29,11 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.consensus.Task;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.WalletUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,23 +65,23 @@ public class PoWTest {
      * + "0000000000000000000000000000000000000000000000000000000000000000"
      * + "0000000000000000000000000000000000000000000000000000000000000000"
      * + "0000000000000000000000000000000000000000000000000000000000000000";
-     * Block first = new Block(new XdagBlock(Hex.decode(blockRawdata)));
+     * Block first = new Block(new XdagBlock(Hex.decode(blockRawdata));
      * <p>
      * System.out.println(
      * "=====================================first block use key1========================================");
      * <p>
-     * long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()); // extra
+     * long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp(); // extra
      * List<Address> pending = new ArrayList<>();
-     * pending.add(new Address(first.getHashLow()));
+     * pending.add(new Address(first.getHashLow());
      * Block txfirst = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
      * ECKey ecKey1 = new ECKey();
      * txfirst.signOut(ecKey1);
      * <p>
      * System.out.println(
      * "=====================================second block use key2========================================");
-     * time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()); // extra
+     * time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp(); // extra
      * pending = new ArrayList<>();
-     * pending.add(new Address(first.getHashLow()));
+     * pending.add(new Address(first.getHashLow());
      * Block txsecond = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
      * ECKey ecKey2 = new ECKey();
      * txsecond.signOut(ecKey2);
@@ -91,9 +90,9 @@ public class PoWTest {
      * System.out.println(
      * "=====================================main block use key2========================================");
      * pending = new ArrayList<>();
-     * pending.add(new Address(txfirst.getHashLow()));
-     * pending.add(new Address(txsecond.getHashLow()));
-     * Block main = new Block(time, new Address(first.getHashLow()), null, pending, true, null, -1); // extra
+     * pending.add(new Address(txfirst.getHashLow());
+     * pending.add(new Address(txsecond.getHashLow());
+     * Block main = new Block(time, new Address(first.getHashLow(), null, pending, true, null, -1); // extra
      * main.signOut(ecKey2);
      * byte[] minShare = new byte[32];
      * new Random().nextBytes(minShare);
@@ -108,54 +107,54 @@ public class PoWTest {
      * }
      * <p>
      * public void printBlockInfo(Block block) {
-     * System.out.println("timestamp:" + Long.toHexString(block.getTimestamp()));
+     * System.out.println("timestamp:" + Long.toHexString(block.getTimestamp());
      * printHash(block.getHash(), "blockhash:");
      * printHash(block.getHashLow(), "blockhashlow:");
-     * System.out.println("type:" + block.getType());
+     * System.out.println("type:" + block.getType();
      * if (block.getFirstOutput() != null)
      * printHash(block.getFirstOutput().getHashLow(), "firstoutput:");
-     * System.out.println("inputs:" + block.getInputs().size());
-     * printListAddress(block.getInputs());
-     * System.out.println("outputs:" + block.getOutputs().size());
-     * printListAddress(block.getOutputs());
+     * System.out.println("inputs:" + block.getInputs().size();
+     * printListAddress(block.getInputs();
+     * System.out.println("outputs:" + block.getOutputs().size();
+     * printListAddress(block.getOutputs();
      * System.out.println("keys size:");
-     * System.out.println(block.getPubKeys().size());
+     * System.out.println(block.getPubKeys().size();
      * System.out.println("verified keys size");
-     * System.out.println(block.verifiedKeys().size());
-     * System.out.println("blockdiff:" + block.getInfo().getDifficulty());
+     * System.out.println(block.verifiedKeys().size();
+     * System.out.println("blockdiff:" + block.getInfo().getDifficulty();
      * printXdagBlock(block.getXdagBlock(), "xdagblock:");
-     * printListKeys(block.getPubKeys());
+     * printListKeys(block.getPubKeys();
      * printHash(block.getOutsig().toByteArray(), "outsig:");
-     * System.out.println("outsigindex:" + block.getOutsigIndex());
-     * printMapInsig(block.getInsigs());
+     * System.out.println("outsigindex:" + block.getOutsigIndex();
+     * printMapInsig(block.getInsigs();
      * if (block.getNonce() != null) {
-     * System.out.println("nonce:" + Hex.toHexString(block.getNonce()));
+     * System.out.println("nonce:" + Hex.toHexString(block.getNonce());
      * }
      * }
      * <p>
      * public void printXdagBlock(XdagBlock block, String prefix) {
      * System.out.println(prefix);
-     * for (XdagField field : block.getFields()) {
-     * System.out.println(Hex.toHexString(field.getData()));
+     * for (XdagField field : block.getFields() {
+     * System.out.println(Hex.toHexString(field.getData());
      * }
      * }
      * <p>
      * public void printMapInsig(Map<ECKey.ECDSASignature, Integer> input) {
-     * for (ECKey.ECDSASignature sig : input.keySet()) {
-     * System.out.println("inputsig:" + sig.toHex());
-     * System.out.println("inputsigindex:" + input.get(sig));
+     * for (ECKey.ECDSASignature sig : input.keySet() {
+     * System.out.println("inputsig:" + sig.toHex();
+     * System.out.println("inputsigindex:" + input.get(sig);
      * }
      * }
      * <p>
      * public void printHash(byte[] hash, String prefix) {
-     * System.out.println(prefix + Hex.toHexString(hash));
+     * System.out.println(prefix + Hex.toHexString(hash);
      * }
      * <p>
      * public void printListAddress(List<Address> input) {
      * for (Address address : input) {
-     * System.out.println("address data:" + Hex.toHexString(address.getData()));
-     * System.out.println("address hashlow:" + Hex.toHexString(address.getHashLow()));
-     * System.out.println("address amount:" + address.getAmount());
+     * System.out.println("address data:" + Hex.toHexString(address.getData());
+     * System.out.println("address hashlow:" + Hex.toHexString(address.getHashLow());
+     * System.out.println("address amount:" + address.getAmount();
      * }
      * }
      * <p>
@@ -183,7 +182,7 @@ public class PoWTest {
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
         wallet.lock();
@@ -198,18 +197,15 @@ public class PoWTest {
     @Test
     public void createInitialShare() {
         wallet.unlock("password");
-        minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
-                Bytes.random(12).toArray())));
-        assertEquals(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
+        minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())), Bytes.random(12).toArray())));
+        assertEquals(minShare.get().slice(0, 20), keyPair2Hash(wallet.getDefKey()).slice(8, 20));
 
-        assertEquals(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
-        assertEquals(0, compareTo(minShare.get().slice(0, 20).reverse().toArray(), 0, 20,
-                Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20).reverse().toArray(), 0, 20));
-        assertNotSame(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
+        assertEquals(minShare.get().slice(0, 20), keyPair2Hash(wallet.getDefKey()).slice(8, 20));
+        assertEquals(0, compareTo(minShare.get().slice(0, 20).reverse().toArray(), 0, 20, keyPair2Hash(wallet.getDefKey()).slice(8, 20).reverse().toArray(), 0, 20));
+        assertNotSame(minShare.get().slice(0, 20), keyPair2Hash(wallet.getDefKey()).slice(8, 20));
         minShare.set(Bytes32.wrap(Bytes.random(32)));
-        assertNotEquals(minShare.get().slice(0, 20), Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20));
-        assertNotEquals(0, compareTo(minShare.get().slice(0, 20).reverse().toArray(), 0, 20,
-                Bytes32.wrap(keyPair2Hash(wallet.getDefKey())).slice(8, 20).reverse().toArray(), 0, 20));
+        assertNotEquals(minShare.get().slice(0, 20), keyPair2Hash(wallet.getDefKey()).slice(8, 20));
+        assertNotEquals(0, compareTo(minShare.get().slice(0, 20).reverse().toArray(), 0, 20, keyPair2Hash(wallet.getDefKey()).slice(8, 20).reverse().toArray(), 0, 20));
     }
 
     @Test
@@ -222,7 +218,6 @@ public class PoWTest {
         assertNull(currentTask.get().getTask());
         assertNull(currentTask.get().getDigest());
         assertEquals(0, currentTask.get().getTaskIndex());
-        assertTrue(WalletUtils.checkAddress(hash2PubAddress(hexPubAddress2Hashlow(
-                "46a2a0fe035c413d92be9c79a11cfc3695780f66"))));
+        assertTrue(WalletUtils.checkAddress(hash2PubAddress(hexPubAddress2Hashlow("46a2a0fe035c413d92be9c79a11cfc3695780f66"))));
     }
 }

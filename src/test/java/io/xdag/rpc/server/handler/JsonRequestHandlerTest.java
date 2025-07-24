@@ -114,8 +114,8 @@ public class JsonRequestHandlerTest {
 //            handler.handle(request);
 //            fail("Should throw JsonRpcException for invalid page number");
 //        } catch (JsonRpcException e) {
-//            assertEquals("Error code should be invalid params", JsonRpcError.ERR_INVALID_PARAMS, e.getCode());
-//            assertEquals("Error message should match", "Page number must be greater than 0", e.getMessage());
+//            assertEquals("Error code should be invalid params", JsonRpcError.ERR_INVALID_PARAMS, e.getCode();
+//            assertEquals("Error message should match", "Page number must be greater than 0", e.getMessage();
 //        }
 //    }
 
@@ -135,8 +135,8 @@ public class JsonRequestHandlerTest {
 //            handler.handle(request);
 //            fail("Should throw JsonRpcException for invalid page size");
 //        } catch (JsonRpcException e) {
-//            assertEquals("Error code should be invalid params", JsonRpcError.ERR_INVALID_PARAMS, e.getCode());
-//            assertEquals("Error message should match", "Page size must be between 1 and 100", e.getMessage());
+//            assertEquals("Error code should be invalid params", JsonRpcError.ERR_INVALID_PARAMS, e.getCode();
+//            assertEquals("Error message should match", "Page size must be between 1 and 100", e.getMessage();
 //        }
 //    }
 
@@ -156,8 +156,8 @@ public class JsonRequestHandlerTest {
 //            handler.handle(request);
 //            fail("Should throw JsonRpcException for invalid time format");
 //        } catch (JsonRpcException e) {
-//            assertEquals("Error code should be invalid params", JsonRpcError.ERR_INVALID_PARAMS, e.getCode());
-//            assertTrue("Error message should match", e.getMessage().contains("Invalid start time"));
+//            assertEquals("Error code should be invalid params", JsonRpcError.ERR_INVALID_PARAMS, e.getCode();
+//            assertTrue("Error message should match", e.getMessage().contains("Invalid start time");
 //        }
 //    }
 

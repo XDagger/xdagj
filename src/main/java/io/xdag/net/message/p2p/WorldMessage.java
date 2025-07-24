@@ -23,11 +23,11 @@
  */
 package io.xdag.net.message.p2p;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import java.util.Arrays;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.Network;
 import io.xdag.net.message.MessageCode;
@@ -44,7 +44,7 @@ public class WorldMessage extends HandshakeMessage {
             String[] capabilities,
             long latestBlockNumber,
             byte[] secret,
-            KeyPair coinbase,
+            ECKeyPair coinbase,
             boolean isGenerateBlock,
             String nodeTag
     ) {

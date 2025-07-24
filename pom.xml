@@ -16,9 +16,9 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
 
+        <xdagj-crypto.version>0.1.0</xdagj-crypto.version>
         <xdagj-native-randomx.version>0.2.4</xdagj-native-randomx.version>
         <netty.version>4.2.1.Final</netty.version>
-        <tuweni.version>2.7.0</tuweni.version>
         <jackson.version>2.18.2</jackson.version>
         <kryo.version>5.5.0</kryo.version>
         <lombok.version>1.18.38</lombok.version>
@@ -36,9 +36,6 @@
         <commons-cli.version>1.9.0</commons-cli.version>
         <guava.version>33.4.8-jre</guava.version>
         <rocksdbjni.version>9.8.4</rocksdbjni.version>
-        <algorithms.version>25.5.0</algorithms.version>
-        <bcprov-jdk18on.version>1.80</bcprov-jdk18on.version>
-        <bcpkix-jdk18on.version>1.80</bcpkix-jdk18on.version>
         <jws-api.version>2.1.0</jws-api.version>
         <config.version>1.4.3</config.version>
         <snappy-java.version>1.1.10.7</snappy-java.version>
@@ -67,14 +64,6 @@
         <repository>
             <id>bintray</id>
             <url>https://jcenter.bintray.com</url>
-        </repository>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <repository>
-            <id>hyperledger.jfrog.io</id>
-            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
         </repository>
         <repository>
             <id>maven_central</id>
@@ -284,6 +273,13 @@
     </build>
 
     <dependencies>
+
+        <dependency>
+            <groupId>io.xdag</groupId>
+            <artifactId>xdagj-crypto</artifactId>
+            <version>${xdagj-crypto.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.xdag</groupId>
             <artifactId>xdagj-native-randomx</artifactId>
@@ -457,86 +453,6 @@
             <artifactId>h2</artifactId>
             <version>${h2.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.consensys.tuweni</groupId>
-            <artifactId>tuweni-bytes</artifactId>
-            <version>${tuweni.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>kotlin-stdlib</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>vertx-core</artifactId>
-                    <groupId>io.vertx</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.consensys.tuweni</groupId>
-            <artifactId>tuweni-units</artifactId>
-            <version>${tuweni.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.consensys.tuweni</groupId>
-            <artifactId>tuweni-io</artifactId>
-            <version>${tuweni.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-codec</artifactId>
-                    <groupId>commons-codec</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hyperledger.besu.internal</groupId>
-            <artifactId>algorithms</artifactId>
-            <version>${algorithms.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>jna</artifactId>
-                    <groupId>net.java.dev.jna</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>${bcprov-jdk18on.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bcpkix-jdk18on.version}</version>
         </dependency>
 
         <dependency>

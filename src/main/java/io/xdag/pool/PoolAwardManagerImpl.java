@@ -28,6 +28,8 @@ import io.xdag.Wallet;
 import io.xdag.cli.Commands;
 import io.xdag.config.Config;
 import io.xdag.core.*;
+import io.xdag.crypto.exception.AddressFormatException;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.utils.BasicUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +37,6 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +69,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
     protected List<Bytes32> blockPreHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
-    private final Map<Address, KeyPair> paymentsToNodesMap = new HashMap<>(10);
+    private final Map<Address, ECKeyPair> paymentsToNodesMap = new HashMap<>(10);
     private static final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
 
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
@@ -196,7 +196,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         }
 
         Bytes32 poolWalletAddress = BasicUtils.hexPubAddress2Hashlow(String.valueOf(block.getNonce().slice(12, 20)));
-        if (!checkAddress(toBase58(block.getNonce().slice(12, 20).toArray()))) {
+        if (!checkAddress(toBase58(block.getNonce().slice(12, 20)))) {
             log.error("mining pool wallet address format error");
             return -6;
         }
@@ -208,12 +208,17 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         TransactionInfoSender transactionInfoSender = new TransactionInfoSender();
         transactionInfoSender.setPreHash(preHash);
         transactionInfoSender.setShare(share);
+      try {
         doPayments(hashlow, allAmount, poolWalletAddress, keyPos, transactionInfoSender);
-        return 0;
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
+      return 0;
     }
 
     public void doPayments(Bytes32 hashLow, XAmount allAmount, Bytes32 poolWalletAddress, int keyPos,
-                           TransactionInfoSender transactionInfoSender) {
+                           TransactionInfoSender transactionInfoSender)
+        throws AddressFormatException {
         if (paymentsToNodesMap.size() == 10) {
             StringBuilder txHash = commands.xferToNode(paymentsToNodesMap);
             log.info(String.valueOf(txHash));
@@ -260,9 +265,9 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
                             TransactionInfoSender transactionInfoSender) {
         log.debug("Total balance pending transfer: {}", sendAmount);
         log.debug("unlock keypos =[{}]", keyPos);
-        Map<Address, KeyPair> inputMap = new HashMap<>();
+        Map<Address, ECKeyPair> inputMap = new HashMap<>();
         Address input = new Address(hashLow, XDAG_FIELD_IN, sendAmount, false);
-        KeyPair inputKey = wallet.getAccount(keyPos);
+        ECKeyPair inputKey = wallet.getAccount(keyPos);
         inputMap.put(input, inputKey);
         Block block = blockchain.createNewBlock(inputMap, receipt, false, TX_REMARK, MIN_GAS, null);
         if (inputKey.equals(wallet.getDefKey())) {
@@ -290,7 +295,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
             log.error("Failed to add transaction history");
         }
         log.debug("The reward for block {} has been distributed to pool address {}", hashLow,
-                toBase58(receipt.get(1).getAddress().slice(8, 20).toArray()));
+                toBase58(receipt.get(1).getAddress().slice(8, 20)));
     }
 
 

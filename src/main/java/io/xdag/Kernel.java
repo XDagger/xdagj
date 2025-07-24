@@ -24,6 +24,8 @@
 
 package io.xdag;
 
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
+
 import io.xdag.cli.TelnetServer;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
@@ -33,8 +35,8 @@ import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
 import io.xdag.core.*;
-import io.xdag.crypto.Keys;
 import io.xdag.crypto.RandomX;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.db.*;
 import io.xdag.db.mysql.TransactionHistoryStoreImpl;
 import io.xdag.db.rocksdb.*;
@@ -50,7 +52,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.KeyPair;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,7 +65,7 @@ public class Kernel {
     protected Status status = Status.STOPPED;
     protected Config config;
     protected Wallet wallet;
-    protected KeyPair coinbase;
+    protected ECKeyPair coinbase;
     protected DatabaseFactory dbFactory;
     protected AddressStore addressStore;
     protected BlockStore blockStore;
@@ -83,7 +84,7 @@ public class Kernel {
     protected XdagPow pow;
     private SyncManager syncMgr;
 
-    protected byte[] firstAccount;
+    protected Bytes firstAccount;
     protected Block firstBlock;
     protected WebSocketServer webSocketServer;
     protected PoolAwardManagerImpl poolAwardManager;
@@ -112,7 +113,7 @@ public class Kernel {
         this.xdagState = XdagState.INIT;
     }
 
-    public Kernel(Config config, KeyPair coinbase) {
+    public Kernel(Config config, ECKeyPair coinbase) {
         this.config = config;
         this.coinbase = coinbase;
     }
@@ -170,7 +171,7 @@ public class Kernel {
         
         // Create genesis block if first startup
         if (xdagStats.getOurLastBlockHash() == null) {
-            firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
+            firstAccount = toBytesAddress(wallet.getDefKey().getPublicKey());
             firstBlock = new Block(config, XdagTime.getCurrentTimestamp(), null, null, false,
                     null, null, -1, XAmount.ZERO, null);
             firstBlock.signOut(wallet.getDefKey());
@@ -180,7 +181,7 @@ public class Kernel {
             }
             blockchain.tryToConnect(firstBlock);
         } else {
-            firstAccount = Keys.toBytesAddress(wallet.getDefKey().getPublicKey());
+            firstAccount = toBytesAddress(wallet.getDefKey().getPublicKey());
         }
 
         // Initialize RandomX based on snapshot configuration

@@ -34,21 +34,21 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import io.xdag.core.XAmount;
 import io.xdag.core.XUnit;
-import io.xdag.crypto.Hash;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.hash.HashUtils;
 
 public class BlockBuilder {
 
-    public static Block generateAddressBlock(Config config, KeyPair key, long xdagTime) {
+    public static Block generateAddressBlock(Config config, ECKeyPair key, long xdagTime) {
         return generateAddressBlockWithAmount(config, key, xdagTime, XAmount.of(1000, XUnit.XDAG) );
     }
 
-    public static Block generateAddressBlockWithAmount(Config config, KeyPair key, long xdagTime, XAmount balance) {
+    public static Block generateAddressBlockWithAmount(Config config, ECKeyPair key, long xdagTime, XAmount balance) {
         Block b = new Block(config, xdagTime, null, null, false, null, null, -1, XAmount.ZERO, null);
         b.signOut(key);
         b.getInfo().setAmount(balance);
@@ -56,32 +56,32 @@ public class BlockBuilder {
     }
 
     // TODO:set nonce means this block is a mining block, the mining param need to set true
-    public static Block generateExtraBlock(Config config, KeyPair key, long xdagTime, List<Address> pendings) {
+    public static Block generateExtraBlock(Config config, ECKeyPair key, long xdagTime, List<Address> pendings) {
         return generateExtraBlockGivenRandom(config, key, xdagTime, pendings, "1234");
     }
 
-    public static Block generateExtraBlock(Config config, KeyPair key, long xdagTime, String remark, List<Address> pendings) {
+    public static Block generateExtraBlock(Config config, ECKeyPair key, long xdagTime, String remark, List<Address> pendings) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, remark, -1,XAmount.ZERO, null);
-        Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode("1234")));
+        Bytes32 random = HashUtils.sha256(Bytes.wrap(Hex.decode("1234")));
         b.signOut(key);
         b.setNonce(random);
         return b;
     }
 
     // TODO:set nonce means this block is a mining block, the mining param need to set true
-    public static Block generateExtraBlockGivenRandom(Config config, KeyPair key, long xdagTime,
+    public static Block generateExtraBlockGivenRandom(Config config, ECKeyPair key, long xdagTime,
             List<Address> pendings, String randomS) {
         Block b = new Block(config, xdagTime, null, pendings, true, null, null, -1, XAmount.ZERO, null);
-        Bytes32 random = Hash.sha256(Bytes.wrap(Hex.decode(randomS)));
+        Bytes32 random = HashUtils.sha256(Bytes.wrap(Hex.decode(randomS)));
         b.signOut(key);
         b.setNonce(random);
         return b;
     }
 
-    public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+    public static Block generateOldTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to,
                                                  XAmount amount) {
         List<Address> refs = Lists.newArrayList();
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         keys.add(key);
@@ -90,10 +90,10 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateOldTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, XAmount amount,Address to,
+    public static Block generateOldTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, XAmount amount,Address to,
                                                     XAmount amount1, Address to1, XAmount amount2) {
         List<Address> refs = Lists.newArrayList();
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
         refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
@@ -103,10 +103,10 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+    public static Block generateNewTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount, UInt64 nonce) {
         List<Address> refs = Lists.newArrayList();
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         keys.add(key);
@@ -115,10 +115,10 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateNewTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+    public static Block generateNewTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount, XAmount VariableFee, UInt64 nonce) {
         List<Address> refs = Lists.newArrayList();
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         keys.add(key);
@@ -127,10 +127,10 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateWalletTransactionBlock(Config config, KeyPair key, long xdagTime, Address from, Address to,
+    public static Block generateWalletTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount, UInt64 nonce) {
         List<Address> refs = Lists.newArrayList();
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
         refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount,true));
         keys.add(key);
@@ -139,10 +139,10 @@ public class BlockBuilder {
         return b;
     }
 
-    public static Block generateMinerRewardTxBlock(Config config, KeyPair key, long xdagTime, Address from, Address to1,Address to2,
+    public static Block generateMinerRewardTxBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to1,Address to2,
                                                        XAmount amount, XAmount amount1, XAmount amount2, UInt64 nonce) {
         List<Address> refs = Lists.newArrayList();
-        List<KeyPair> keys = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
         refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
         refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
         refs.add(new Address(to2.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
