@@ -16,7 +16,7 @@
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
 
-        <xdagj-crypto.version>0.1.0</xdagj-crypto.version>
+        <xdagj-crypto.version>0.1.1</xdagj-crypto.version>
         <xdagj-native-randomx.version>0.2.4</xdagj-native-randomx.version>
         <netty.version>4.2.1.Final</netty.version>
         <jackson.version>2.18.2</jackson.version>
