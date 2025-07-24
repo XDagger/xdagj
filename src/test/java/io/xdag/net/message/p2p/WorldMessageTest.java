@@ -22,20 +22,19 @@
  * THE SOFTWARE.
  */
 package io.xdag.net.message.p2p;
-
+import io.xdag.crypto.keys.AddressUtils;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.WalletUtils.toBase58;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.Test;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.net.CapabilityTreeSet;
 import io.xdag.net.Peer;
 
@@ -45,11 +44,11 @@ public class WorldMessageTest {
     public void testCodec() {
         Config config = new DevnetConfig();
 
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        String peerId = toBase58(Keys.toBytesAddress(key));
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        String peerId = toBase58(toBytesAddress(key));
         WorldMessage msg = new WorldMessage(config.getNodeSpec().getNetwork(), config.getNodeSpec().getNetworkVersion(),
                 peerId, 8001, config.getClientId(), config.getClientCapabilities().toArray(), 2,
-                SecureRandomProvider.publicSecureRandom().generateSeed(InitMessage.SECRET_LENGTH), key,
+                CryptoProvider.nextBytes(InitMessage.SECRET_LENGTH), key,
                 config.getEnableGenerateBlock(), config.getNodeTag());
         assertTrue(msg.validate(config));
 
@@ -60,7 +59,7 @@ public class WorldMessageTest {
         Peer peer = msg.getPeer(ip);
         assertEquals(config.getNodeSpec().getNetwork(), peer.getNetwork());
         assertEquals(config.getNodeSpec().getNetworkVersion(), peer.getNetworkVersion());
-        assertEquals(toBase58(Keys.toBytesAddress(key)), peer.getPeerId());
+        assertEquals(toBase58(toBytesAddress(key)), peer.getPeerId());
         assertEquals(ip, peer.getIp());
         assertEquals(config.getNodeSpec().getNodePort(), peer.getPort());
         assertEquals(config.getClientId(), peer.getClientId());

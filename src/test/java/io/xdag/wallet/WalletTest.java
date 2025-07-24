@@ -23,17 +23,15 @@
  */
 
 package io.xdag.wallet;
-
+import io.xdag.crypto.keys.AddressUtils;
 import com.google.common.collect.Lists;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.utils.WalletUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.jline.utils.Log;
 import org.junit.After;
 import org.junit.Before;
@@ -64,7 +62,7 @@ public class WalletTest {
         config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
         wallet.lock();
@@ -98,12 +96,12 @@ public class WalletTest {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         wallet.unlock(pwd);
         wallet.setAccounts(Collections.emptyList());
-        KeyPair key1 = Keys.createEcKeyPair();
-        KeyPair key2 = Keys.createEcKeyPair();
+        ECKeyPair key1 = ECKeyPair.generate();
+        ECKeyPair key2 = ECKeyPair.generate();
         wallet.addAccounts(Arrays.asList(key1, key2));
-        List<KeyPair> accounts = wallet.getAccounts();
-        KeyPair k1 = accounts.get(0);
-        KeyPair k2 = accounts.get(1);
+        List<ECKeyPair> accounts = wallet.getAccounts();
+        ECKeyPair k1 = accounts.get(0);
+        ECKeyPair k2 = accounts.get(1);
         assertEquals(k1, key1);
         assertEquals(k2, key2);
     }
@@ -149,14 +147,14 @@ public class WalletTest {
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         wallet.unlock(pwd);
         int oldAccountSize = wallet.getAccounts().size();
-        KeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.generate();
         wallet.addAccount(key);
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
         wallet.removeAccount(key);
         assertEquals(oldAccountSize, wallet.getAccounts().size());
         wallet.addAccount(key);
         assertEquals(oldAccountSize + 1, wallet.getAccounts().size());
-        wallet.removeAccount(Keys.toBytesAddress(key));
+        wallet.removeAccount(AddressUtils.toBytesAddress(key).toArrayUnsafe());
         assertEquals(oldAccountSize, wallet.getAccounts().size());
     }
 
@@ -182,10 +180,10 @@ public class WalletTest {
     public void testHDKeyRecover() {
         wallet.unlock(pwd);
         wallet.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<KeyPair> keyPairList1 = Lists.newArrayList();
+        List<ECKeyPair> keyPairList1 = Lists.newArrayList();
         int hdkeyCount = 5;
         for (int i = 0; i < hdkeyCount; i++) {
-            KeyPair key = wallet.addAccountWithNextHdKey();
+            ECKeyPair key = wallet.addAccountWithNextHdKey();
             keyPairList1.add(key);
         }
 
@@ -194,9 +192,9 @@ public class WalletTest {
         // use different password and same mnemonic
         wallet2.unlock(pwd + pwd);
         wallet2.initializeHdWallet(SampleKeys.MNEMONIC);
-        List<KeyPair> keyPairList2 = Lists.newArrayList();
+        List<ECKeyPair> keyPairList2 = Lists.newArrayList();
         for (int i = 0; i < hdkeyCount; i++) {
-            KeyPair key = wallet2.addAccountWithNextHdKey();
+            ECKeyPair key = wallet2.addAccountWithNextHdKey();
             keyPairList2.add(key);
         }
         assertTrue(CollectionUtils.isEqualCollection(keyPairList1, keyPairList2));

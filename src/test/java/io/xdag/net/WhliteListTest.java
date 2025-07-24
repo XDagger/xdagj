@@ -29,8 +29,8 @@ import static org.junit.Assert.assertTrue;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import java.net.InetSocketAddress;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -60,7 +60,7 @@ public class WhliteListTest {
     @Test
     public void whileList()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        PeerClient client = new PeerClient(config, Keys.createEcKeyPair());
+        PeerClient client = new PeerClient(config, ECKeyPair.generate());
         // 新增白名单节点
         client.addWhilteIP("127.0.0.1", 8882);
         //白名单有的节点

@@ -30,12 +30,11 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,7 +53,7 @@ public class ChannelManagerTest {
             addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
         }
         config.getNodeSpec().setWhiteIPList(addressList);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         kernel = new Kernel(config, key);
     }
 

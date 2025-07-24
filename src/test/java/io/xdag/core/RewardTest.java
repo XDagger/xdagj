@@ -31,15 +31,14 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
 import io.xdag.crypto.RandomX;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,7 +69,7 @@ public class RewardTest {
 
     String privString = "c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4";
     BigInteger privateKey = new BigInteger(privString, 16);
-    SECPPrivateKey secretKey = SECPPrivateKey.create(privateKey, Sign.CURVE_NAME);
+    PrivateKey secretKey = PrivateKey.fromBigInteger(privateKey);
 
     @Before
     public void setUp() throws Exception {
@@ -80,7 +79,7 @@ public class RewardTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -120,8 +119,8 @@ public class RewardTest {
 
         Bytes32 targetBlock = Bytes32.ZERO;
 
-        KeyPair addrKey = KeyPair.create(secretKey, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(secretKey, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretKey);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(secretKey);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. add one address block

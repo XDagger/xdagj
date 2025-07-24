@@ -146,11 +146,11 @@ public class MessageTest {
      *         // status netdb一获取到新message 就更新status,netdb starttime endtime
      *         // sumreply 只更新6个 因为后面8个字段是sum 其余更新14个字段
      *
-     *         // System.out.println(Hex.toHexString(uncryptData));
-     *         SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
-     *         SumReplyMessage sumReplyMessage = new SumReplyMessage(Hex.decode(sumsReply));
-     *         BlockRequestMessage blockRequestMessage = new BlockRequestMessage(Hex.decode(blockrequest));
-     *         BlocksRequestMessage blocksRequestMessage = new BlocksRequestMessage(Hex.decode(blocksRequest));
+     *         // System.out.println(Hex.toHexString(uncryptData);
+     *         SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest);
+     *         SumReplyMessage sumReplyMessage = new SumReplyMessage(Hex.decode(sumsReply);
+     *         BlockRequestMessage blockRequestMessage = new BlockRequestMessage(Hex.decode(blockrequest);
+     *         BlocksRequestMessage blocksRequestMessage = new BlocksRequestMessage(Hex.decode(blocksRequest);
      *
      *         System.out.println(
      *         "=====================================sum request message========================================");
@@ -172,8 +172,8 @@ public class MessageTest {
      *
      *         long current = XdagTime.getCurrentTimestamp();
      *         XdagStats xdagStats = new XdagStats();
-     *         xdagStats.setMaxdifficulty(new BigInteger(String.valueOf(100000)));
-     *         xdagStats.setDifficulty(new BigInteger(String.valueOf(100000)));
+     *         xdagStats.setMaxdifficulty(new BigInteger(String.valueOf(100000));
+     *         xdagStats.setDifficulty(new BigInteger(String.valueOf(100000));
      *         xdagStats.setTotalnmain(100);
      *         xdagStats.setNmain(100);
      *         xdagStats.setTotalnblocks(200);
@@ -189,22 +189,22 @@ public class MessageTest {
      *         System.out.println(
      *         "=====================================sum request message========================================");
      *         printMessage(sumRequestMessage1);
-     *         System.out.println("rawdata:" + Hex.toHexString(sumRequestMessage1.getEncoded()));
+     *         System.out.println("rawdata:" + Hex.toHexString(sumRequestMessage1.getEncoded());
      *
      *         System.out.println(
      *         "=====================================sum reply message========================================");
      *         printMessage(sumReplyMessage1);
-     *         System.out.println("rawdata:" + Hex.toHexString(sumReplyMessage1.getEncoded()));
+     *         System.out.println("rawdata:" + Hex.toHexString(sumReplyMessage1.getEncoded());
      *
      *         System.out.println(
      *         "=====================================sum request message========================================");
      *         printMessage(blocksRequestMessage1);
-     *         System.out.println("rawdata:" + Hex.toHexString(blocksRequestMessage1.getEncoded()));
+     *         System.out.println("rawdata:" + Hex.toHexString(blocksRequestMessage1.getEncoded());
      *
      *         System.out.println(
      *         "=====================================sum request message========================================");
      *         printMessage(blockRequestMessage1);
-     *         System.out.println("rawdata:" + Hex.toHexString(blockRequestMessage1.getEncoded()));
+     *         System.out.println("rawdata:" + Hex.toHexString(blockRequestMessage1.getEncoded());
      *
      *         String blockRawdata = "000000000000000038324654050000004d3782fa780100000000000000000000"
      *         + "c86357a2f57bb9df4f8b43b7a60e24d1ccc547c606f2d7980000000000000000"
@@ -222,22 +222,22 @@ public class MessageTest {
      *         + "0000000000000000000000000000000000000000000000000000000000000000"
      *         + "0000000000000000000000000000000000000000000000000000000000000000"
      *         + "0000000000000000000000000000000000000000000000000000000000000000";
-     *         Block first = new Block(new XdagBlock(Hex.decode(blockRawdata)));
+     *         Block first = new Block(new XdagBlock(Hex.decode(blockRawdata));
      *
      *         System.out.println(
      *         "=====================================first block use key1========================================");
      *
-     *         long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp());
+     *         long time = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp();
      *         List<Address> pending = new ArrayList<>();
-     *         pending.add(new Address(first.getHashLow()));
+     *         pending.add(new Address(first.getHashLow());
      *         Block txfirst = new Block(time, first.getFirstOutput(), null, pending, false, null, -1);
      *         ECKey ecKey1 = new ECKey();
      *         txfirst.signOut(ecKey1);
      *
      *         NewBlockMessage newBlockMessage1 = new NewBlockMessage(first, 5);
      *         NewBlockMessage newBlockMessage2 = new NewBlockMessage(txfirst, 5);
-     *         NewBlockMessage newBlockMessage3 = new NewBlockMessage(Hex.decode(blockRawdata));
-     *         NewBlockMessage newBlockMessage4 = new NewBlockMessage(new XdagBlock(Hex.decode(blockRawdata)), 5);
+     *         NewBlockMessage newBlockMessage3 = new NewBlockMessage(Hex.decode(blockRawdata);
+     *         NewBlockMessage newBlockMessage4 = new NewBlockMessage(new XdagBlock(Hex.decode(blockRawdata), 5);
      *         System.out.println(
      *         "=====================================new block message1========================================");
      *

@@ -31,7 +31,6 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.config.RandomXConstants;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
@@ -40,8 +39,8 @@ import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +62,7 @@ public class RandomXSyncTest {
     public static FastDateFormat fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     private final String privString = "10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046";
     private final BigInteger privateKeyBigint = new BigInteger(privString, 16);
-    private final SECPPrivateKey privateKey =  SECPPrivateKey.create(privateKeyBigint, Sign.CURVE_NAME);
+    private final PrivateKey privateKey =  PrivateKey.fromBigInteger(privateKeyBigint);
     @Rule
     public TemporaryFolder root1 = new TemporaryFolder();
     @Rule
@@ -107,8 +106,7 @@ public class RandomXSyncTest {
     public void sync(Kernel kernel1, Kernel kernel2, long startTime, long endTime, String syncName) {
         List<Block> blocks = kernel1.getBlockchain().getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
-            ImportResult result = kernel2.getBlockchain()
-                    .tryToConnect(new Block(new XdagBlock(block.getXdagBlock().getData())));
+            ImportResult result = kernel2.getBlockchain().tryToConnect(new Block(new XdagBlock(block.getXdagBlock().getData())));
         }
     }
 
@@ -118,7 +116,7 @@ public class RandomXSyncTest {
 
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        KeyPair key = KeyPair.create(privateKey, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(privateKey);
         List<Address> pending = Lists.newArrayList();
 
         ImportResult result;
@@ -186,7 +184,7 @@ public class RandomXSyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config, key);

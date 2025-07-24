@@ -26,14 +26,14 @@ package io.xdag.utils;
 
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.core.XAmount;
-import io.xdag.crypto.Keys;
+import io.xdag.crypto.exception.AddressFormatException;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.utils.exception.XdagOverFlowException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 
 import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
 import static io.xdag.utils.WalletUtils.toBase58;
@@ -136,7 +137,7 @@ public class BasicUtils {
      * @param address Base58 encoded public address
      * @return Hash as Bytes32
      */
-    public static Bytes32 pubAddress2Hash(String address) {
+    public static Bytes32 pubAddress2Hash(String address) throws AddressFormatException {
         Bytes ret = Bytes.wrap(WalletUtils.fromBase58(address));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
@@ -148,8 +149,8 @@ public class BasicUtils {
      * @param keyPair Input key pair
      * @return Hash as Bytes32
      */
-    public static Bytes32 keyPair2Hash(KeyPair keyPair) {
-        Bytes ret = Bytes.wrap(Keys.toBytesAddress(keyPair));
+    public static Bytes32 keyPair2Hash(ECKeyPair keyPair) {
+        Bytes ret = Bytes.wrap(toBytesAddress(keyPair));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
         return res;
@@ -160,9 +161,8 @@ public class BasicUtils {
      * @param hash Input hash as MutableBytes32
      * @return Byte array
      */
-    public static byte[] hash2byte(MutableBytes32 hash){
-        Bytes bytes = hash.slice(8,20);
-        return bytes.toArray();
+    public static Bytes hash2byte(MutableBytes32 hash){
+        return hash.slice(8,20);
     }
 
     /**

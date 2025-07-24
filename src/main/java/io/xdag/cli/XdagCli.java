@@ -30,14 +30,15 @@ import io.xdag.Launcher;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.bip.Bip39Mnemonic;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.keys.AddressUtils;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.db.SnapshotStore;
 import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.MnemonicUtils;
 import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import org.apache.commons.cli.CommandLine;
@@ -45,10 +46,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -58,6 +55,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
 
 public class XdagCli extends Launcher {
@@ -239,12 +237,12 @@ public class XdagCli extends Launcher {
         }
 
         // create a new account if the wallet is empty
-        List<KeyPair> accounts = wallet.getAccounts();
+        List<ECKeyPair> accounts = wallet.getAccounts();
         if (accounts.isEmpty()) {
-            KeyPair key = wallet.addAccountWithNextHdKey();
+            ECKeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
-            System.out.println("New Address (Hex):" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            System.out.println("New Address (Base58):" + WalletUtils.toBase58(Keys.toBytesAddress(key)));
+            System.out.println("New Address (Hex):" + BytesUtils.toHexString(toBytesAddress(key).toArray()));
+            System.out.println("New Address (Base58):" + WalletUtils.toBase58(toBytesAddress(key)));
         }
 
         // start kernel
@@ -291,22 +289,22 @@ public class XdagCli extends Launcher {
             System.out.println("Please init HD Wallet account first!");
             return;
         }
-        KeyPair key = wallet.addAccountWithNextHdKey();
+        ECKeyPair key = wallet.addAccountWithNextHdKey();
         if (wallet.flush()) {
-            System.out.println("New Address:" + BytesUtils.toHexString(Keys.toBytesAddress(key)));
-            System.out.println("PublicKey:" + key.getPublicKey().getEncodedBytes().toHexString());
+            System.out.println("New Address:" + AddressUtils.toBase58Address(key));
+            System.out.println("PublicKey:" + key.getPublicKey().toUnprefixedHex());
         }
     }
 
     protected void listAccounts() {
         Wallet wallet = loadAndUnlockWallet();
-        List<KeyPair> accounts = wallet.getAccounts();
+        List<ECKeyPair> accounts = wallet.getAccounts();
 
         if (accounts.isEmpty()) {
             System.out.println("Account Missing");
         } else {
             for (int i = 0; i < accounts.size(); i++) {
-                System.out.println("Address:" + i + " " + BytesUtils.toHexString(Keys.toBytesAddress(accounts.get(i))));
+                System.out.println("Address:" + i + " " + AddressUtils.toBase58Address(accounts.get(i)));
             }
         }
     }
@@ -335,18 +333,18 @@ public class XdagCli extends Launcher {
     protected void dumpPrivateKey(String address) {
         Wallet wallet = loadAndUnlockWallet();
         byte[] addressBytes = BytesUtils.hexStringToBytes(address);
-        KeyPair account = wallet.getAccount(addressBytes);
+        ECKeyPair account = wallet.getAccount(addressBytes);
         if (account == null) {
             System.out.println("Address Not In Wallet");
         } else {
-            System.out.println("Private:" + BytesUtils.toHexString(account.getPrivateKey().getEncoded()));
+            System.out.println("Private:" + account.getPrivateKey().toUnprefixedHex());
         }
         System.out.println("Private Dump Successfully!");
     }
 
     protected boolean importPrivateKey(String key) {
         Wallet wallet = loadWallet().exists() ? loadAndUnlockWallet() : createNewWallet();
-        KeyPair account = KeyPair.create(SECPPrivateKey.create(Bytes32.fromHexString(key), Sign.CURVE_NAME), Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair account = ECKeyPair.fromHex(key);
 
         boolean accountAdded = wallet.addAccount(account);
         if (!accountAdded) {
@@ -360,8 +358,8 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        System.out.println("Address:" + BytesUtils.toHexString(Keys.toBytesAddress(account)));
-        System.out.println("PublicKey:" + BytesUtils.toHexString(account.getPublicKey().getEncoded()));
+        System.out.println("Address:" + AddressUtils.toBase58Address(account));
+        System.out.println("PublicKey:" + account.getPublicKey().toUnprefixedHex());
         System.out.println("Private Key Imported Successfully!");
         return true;
     }
@@ -374,7 +372,7 @@ public class XdagCli extends Launcher {
             return false;
         }
 
-        if (!MnemonicUtils.validateMnemonic(mnemonic)) {
+        if (!Bip39Mnemonic.isValid(mnemonic)) {
             System.out.println("Wrong Mnemonic");
             return false;
         }
@@ -467,9 +465,8 @@ public class XdagCli extends Launcher {
         if (wallet.isUnlocked() && !wallet.isHdWalletInitialized()) {
             // HD Mnemonic
             printer.println("HdWallet Initializing...");
-            byte[] initialEntropy = new byte[16];
-            SecureRandomProvider.publicSecureRandom().nextBytes(initialEntropy);
-            String phrase = MnemonicUtils.generateMnemonic(initialEntropy);
+            try {
+                String phrase = Bip39Mnemonic.generateString();
             printer.println("HdWallet Mnemonic:" + phrase);
 
             String repeat = readLine("HdWallet Mnemonic Repeat:");
@@ -484,6 +481,10 @@ public class XdagCli extends Launcher {
             wallet.flush();
             printer.println("HdWallet Initialized Successfully!");
             return true;
+            } catch (Exception e) {
+                printer.println("HdWallet Initialization Failed: " + e.getMessage());
+                return false;
+            }
         }
         return false;
     }

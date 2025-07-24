@@ -28,6 +28,7 @@ import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.*;
 import io.xdag.core.*;
+import io.xdag.crypto.core.CryptoProvider;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
@@ -41,7 +42,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -229,7 +229,8 @@ public class SyncManager extends AbstractXdagLifecycle {
         if (syncMap.size() >= MAX_SIZE) {
             for (int j = 0; j < DELETE_NUM; j++) {
                 List<Bytes32> keyList = new ArrayList<>(syncMap.keySet());
-                Bytes32 key = keyList.get(SecureRandomProvider.publicSecureRandom().nextInt(keyList.size()));
+
+                Bytes32 key = keyList.get(CryptoProvider.nextInt(0, keyList.size()));
                 assert key != null;
                 if (syncMap.remove(key) != null) blockchain.getXdagStats().nwaitsync--;
             }

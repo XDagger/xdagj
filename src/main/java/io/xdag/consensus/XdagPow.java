@@ -30,9 +30,9 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.core.XdagLifecycle;
 import io.xdag.core.*;
-import io.xdag.crypto.Hash;
 import io.xdag.crypto.RandomX;
 import io.xdag.crypto.RandomXMemory;
+import io.xdag.crypto.hash.HashUtils;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
@@ -323,7 +323,7 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
 
         RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
 
-        Bytes32 preHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 480));
+        Bytes32 preHash = HashUtils.sha256(block.getXdagBlock().getData().slice(0, 480));
         // task[0]=preHash
         task[0] = new XdagField(preHash.mutableCopy());
         // task[1]=taskSeed

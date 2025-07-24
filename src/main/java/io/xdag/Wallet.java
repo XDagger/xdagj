@@ -25,6 +25,7 @@
 package io.xdag;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_OUTPUT;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
@@ -32,24 +33,23 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import com.google.common.collect.Lists;
 import io.xdag.config.Config;
 import io.xdag.core.*;
+import io.xdag.crypto.bip.Bip32Key;
+import io.xdag.crypto.bip.Bip39Mnemonic;
+import io.xdag.crypto.bip.Bip44Wallet;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encryption.Aes;
+import io.xdag.crypto.exception.CryptoException;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import io.xdag.utils.SimpleEncoder;
-import io.xdag.crypto.Aes;
-import io.xdag.crypto.Bip32ECKeyPair;
-import io.xdag.crypto.Keys;
-import io.xdag.utils.MnemonicUtils;
-import io.xdag.crypto.Sign;
 import io.xdag.utils.Numeric;
 import io.xdag.utils.SimpleDecoder;
-import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,9 +72,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.crypto.generators.BCrypt;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 @Slf4j
 @Getter
@@ -92,7 +89,7 @@ public class Wallet {
     private final File file;
     private final Config config;
 
-    private final Map<Bytes, KeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<Bytes, ECKeyPair> accounts = Collections.synchronizedMap(new LinkedHashMap<>());
     private String password;
 
     // HD wallet key
@@ -135,8 +132,8 @@ public class Wallet {
         accounts.clear();
     }
 
-    public KeyPair getDefKey() {
-        List<KeyPair> accountList = getAccounts();
+    public ECKeyPair getDefKey() {
+        List<ECKeyPair> accountList = getAccounts();
         if (CollectionUtils.isNotEmpty(accountList)) {
             return accountList.get(0);
         }
@@ -160,7 +157,7 @@ public class Wallet {
                 SimpleDecoder dec = new SimpleDecoder(FileUtils.readFileToByteArray(file));
                 int version = dec.readInt(); // version
 
-                Set<KeyPair> newAccounts;
+                Set<ECKeyPair> newAccounts;
                 switch (version) {
                     // only version 4
                     case 4 -> {
@@ -179,8 +176,8 @@ public class Wallet {
 
                 synchronized (accounts) {
                     accounts.clear();
-                    for (KeyPair account : newAccounts) {
-                        Bytes b = Bytes.wrap(Keys.toBytesAddress(account));
+                    for (ECKeyPair account : newAccounts) {
+                        Bytes b = Bytes.wrap(toBytesAddress(account));
                         accounts.put(b, account);
                     }
                 }
@@ -196,14 +193,15 @@ public class Wallet {
     /**
      * Reads the account keys.
      */
-    protected LinkedHashSet<KeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version) {
-        LinkedHashSet<KeyPair> keys = new LinkedHashSet<>();
+    protected LinkedHashSet<ECKeyPair> readAccounts(byte[] key, SimpleDecoder dec, boolean vlq, int version)
+        throws CryptoException {
+        LinkedHashSet<ECKeyPair> keys = new LinkedHashSet<>();
         int total = dec.readInt(); // size
 
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
-            byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
-            KeyPair keyPair = KeyPair.create(SECPPrivateKey.create(Numeric.toBigInt(privateKey), Sign.CURVE_NAME), Sign.CURVE, Sign.CURVE_NAME);
+            byte[] privateKey = Aes.decrypt(Bytes.wrap(dec.readBytes(vlq)), Bytes.wrap(key), Bytes.wrap(iv)).toArray();
+            ECKeyPair keyPair = ECKeyPair.fromPrivateKey(PrivateKey.fromBigInteger(Numeric.toBigInt(privateKey)));
             keys.add(keyPair);
         }
         return keys;
@@ -212,14 +210,14 @@ public class Wallet {
     /**
      * Writes the account keys.
      */
-    protected void writeAccounts(byte[] key, SimpleEncoder enc) {
+    protected void writeAccounts(byte[] key, SimpleEncoder enc) throws CryptoException {
         synchronized (accounts) {
             enc.writeInt(accounts.size());
-            for (KeyPair keyPair : accounts.values()) {
-                byte[] iv = SecureRandomProvider.publicSecureRandom().generateSeed(16);
+            for (ECKeyPair keyPair : accounts.values()) {
+                byte[] iv = CryptoProvider.nextBytes(16);
 
                 enc.writeBytes(iv);
-                enc.writeBytes(Aes.encrypt(keyPair.getPrivateKey().getEncoded(), key, iv));
+                enc.writeBytes(Aes.encrypt(Bytes.wrap(keyPair.getPrivateKey().toBytes().toArray()), Bytes.wrap(key), Bytes.wrap(iv)).toArray());
             }
         }
     }
@@ -227,10 +225,10 @@ public class Wallet {
     /**
      * Reads the mnemonic phase and next account index.
      */
-    protected void readHdSeed(byte[] key, SimpleDecoder dec) {
+    protected void readHdSeed(byte[] key, SimpleDecoder dec) throws CryptoException {
         byte[] iv = dec.readBytes();
         byte[] hdSeedEncrypted = dec.readBytes();
-        byte[] hdSeedRaw = Aes.decrypt(hdSeedEncrypted, key, iv);
+        byte[] hdSeedRaw = Aes.decrypt(Bytes.wrap(hdSeedEncrypted), Bytes.wrap(key), Bytes.wrap(iv)).toArray();
 
         SimpleDecoder d = new SimpleDecoder(hdSeedRaw);
         mnemonicPhrase = d.readString();
@@ -240,14 +238,14 @@ public class Wallet {
     /**
      * Writes the mnemonic phase and next account index.
      */
-    protected void writeHdSeed(byte[] key, SimpleEncoder enc) {
+    protected void writeHdSeed(byte[] key, SimpleEncoder enc) throws CryptoException {
         SimpleEncoder e = new SimpleEncoder();
         e.writeString(mnemonicPhrase);
         e.writeInt(nextAccountIndex);
 
-        byte[] iv = SecureRandomProvider.publicSecureRandom().generateSeed(16);
+        byte[] iv = CryptoProvider.nextBytes(16);
         byte[] hdSeedRaw = e.toBytes();
-        byte[] hdSeedEncrypted = Aes.encrypt(hdSeedRaw, key, iv);
+        byte[] hdSeedEncrypted = Aes.encrypt(Bytes.wrap(hdSeedRaw), Bytes.wrap(key), Bytes.wrap(iv)).toArray();
 
         enc.writeBytes(iv);
         enc.writeBytes(hdSeedEncrypted);
@@ -270,7 +268,7 @@ public class Wallet {
     /**
      * Returns a copy of the accounts inside this wallet.
      */
-    public List<KeyPair> getAccounts() {
+    public List<ECKeyPair> getAccounts() {
         requireUnlocked();
         synchronized (accounts) {
             return Lists.newArrayList(accounts.values());
@@ -280,10 +278,10 @@ public class Wallet {
     /**
      * Sets the accounts inside this wallet.
      */
-    public void setAccounts(List<KeyPair> list) {
+    public void setAccounts(List<ECKeyPair> list) {
         requireUnlocked();
         accounts.clear();
-        for (KeyPair key : list) {
+        for (ECKeyPair key : list) {
             addAccount(key);
         }
     }
@@ -291,7 +289,7 @@ public class Wallet {
     /**
      * Returns account by index.
      */
-    public KeyPair getAccount(int idx) {
+    public ECKeyPair getAccount(int idx) {
         requireUnlocked();
         synchronized (accounts) {
             return getAccounts().get(idx);
@@ -301,7 +299,7 @@ public class Wallet {
     /**
      * Returns account by address.
      */
-    public KeyPair getAccount(byte[] address) {
+    public ECKeyPair getAccount(byte[] address) {
         requireUnlocked();
 
         synchronized (accounts) {
@@ -319,7 +317,7 @@ public class Wallet {
             SimpleEncoder enc = new SimpleEncoder();
             enc.writeInt(VERSION);
 
-            byte[] salt = SecureRandomProvider.publicSecureRandom().generateSeed(SALT_LENGTH);
+            byte[] salt = CryptoProvider.nextBytes(SALT_LENGTH);
             enc.writeBytes(salt);
 
             byte[] key = BCrypt.generate(password.getBytes(UTF_8), salt, BCRYPT_COST);
@@ -342,8 +340,10 @@ public class Wallet {
             return true;
         } catch (IOException e) {
             log.error("Failed to write wallet to disk", e);
+        } catch (CryptoException e) {
+          throw new RuntimeException(e);
         }
-        return false;
+      return false;
     }
 
 
@@ -356,11 +356,11 @@ public class Wallet {
     /**
      * Adds a new account to the wallet.
      */
-    public boolean addAccount(KeyPair newKey) {
+    public boolean addAccount(ECKeyPair newKey) {
         requireUnlocked();
 
         synchronized (accounts) {
-            Bytes b = Bytes.wrap(Keys.toBytesAddress(newKey));
+            Bytes b = toBytesAddress(newKey);
             if (accounts.containsKey(b)) {
                 return false;
             }
@@ -373,9 +373,8 @@ public class Wallet {
     /**
      * Add an account with randomly generated key.
      */
-    public KeyPair addAccountRandom()
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        KeyPair key = Keys.createEcKeyPair();
+    public ECKeyPair addAccountRandom() {
+        ECKeyPair key = ECKeyPair.generate();
         addAccount(key);
         return key;
     }
@@ -383,11 +382,11 @@ public class Wallet {
     /**
      * Adds a list of accounts to the wallet.
      */
-    public int addAccounts(List<KeyPair> accounts) {
+    public int addAccounts(List<ECKeyPair> accounts) {
         requireUnlocked();
 
         int n = 0;
-        for (KeyPair acc : accounts) {
+        for (ECKeyPair acc : accounts) {
             n += addAccount(acc) ? 1 : 0;
         }
         return n;
@@ -396,8 +395,8 @@ public class Wallet {
     /**
      * Deletes an account in the wallet.
      */
-    public boolean removeAccount(KeyPair key) {
-        return removeAccount(Keys.toBytesAddress(key));
+    public boolean removeAccount(ECKeyPair key) {
+        return removeAccount(toBytesAddress(key).toArrayUnsafe());
     }
 
     /**
@@ -451,24 +450,30 @@ public class Wallet {
      * Returns the HD seed.
      */
     public byte[] getSeed() {
-        return MnemonicUtils.generateSeed(this.mnemonicPhrase, MNEMONIC_PASS_PHRASE);
+        try {
+            return Bip39Mnemonic.toSeed(this.mnemonicPhrase, MNEMONIC_PASS_PHRASE).toArrayUnsafe();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate seed from mnemonic", e);
+        }
     }
 
     /**
      * Derives a key based on the current HD account index, and put it into the
      * wallet.
      */
-    public KeyPair addAccountWithNextHdKey() {
+    public ECKeyPair addAccountWithNextHdKey() {
         requireUnlocked();
         requireHdWalletInitialized();
 
         synchronized (accounts) {
             byte[] seed = getSeed();
-            Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
-            Bip32ECKeyPair bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeypair, nextAccountIndex++);
-            Bytes b = Bytes.wrap(Keys.toBytesAddress(bip44Keypair.getKeyPair()));
-            accounts.put(b, bip44Keypair.getKeyPair());
-            return bip44Keypair.getKeyPair();
+            Bip32Key masterKeyPair = Bip44Wallet.createMasterKey(seed);
+//            Bip32Key masterKeypair = Bip32Key.generateKeyPair(seed);
+            Bip32Key bip44Keypair = Bip44Wallet.deriveXdagKey(masterKeyPair,0, nextAccountIndex++);
+//            Bip32Key bip44Keypair = WalletUtils.generateBip44KeyPair(masterKeyPair, nextAccountIndex++);
+            Bytes b = Bytes.wrap(toBytesAddress(bip44Keypair.keyPair()));
+            accounts.put(b, bip44Keypair.keyPair());
+            return bip44Keypair.keyPair();
         }
     }
 
@@ -486,19 +491,19 @@ public class Wallet {
      * @param remark Optional remark to include in transaction
      * @return List of transaction block wrappers
      */
-    public List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce) {
+    public List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce) {
         // Check if remark exists
         int hasRemark = remark == null ? 0 : 1;
 
         List<BlockWrapper> res = Lists.newArrayList();
 
         // Process ourKeys to calculate max entries per block
-        LinkedList<Entry<Address, KeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
+        LinkedList<Entry<Address, ECKeyPair>> stack = new LinkedList<>(ourKeys.entrySet());
 
         // Keys used for current block
-        Map<Address, KeyPair> keys = new HashMap<>();
+        Map<Address, ECKeyPair> keys = new HashMap<>();
         // Ensure key uniqueness
-        Set<KeyPair> keysPerBlock = new HashSet<>();
+        Set<ECKeyPair> keysPerBlock = new HashSet<>();
         // Add default key
         keysPerBlock.add(getDefKey());
 
@@ -513,7 +518,7 @@ public class Wallet {
         XAmount amount = XAmount.ZERO;
 
         while (!stack.isEmpty()) {
-            Map.Entry<Address, KeyPair> key = stack.peek();
+            Map.Entry<Address, ECKeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
@@ -558,7 +563,7 @@ public class Wallet {
      * @param remark Optional remark
      * @return Transaction block wrapper
      */
-    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, ECKeyPair> keys, String remark, UInt64 txNonce) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 
@@ -568,11 +573,11 @@ public class Wallet {
             return null;
         }
 
-        KeyPair defaultKey = getDefKey();
+        ECKeyPair defaultKey = getDefKey();
 
         boolean isdefaultKey = false;
         // Sign with all keys
-        for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+        for (ECKeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
                 isdefaultKey = true;
                 block.signOut(ecKey);
@@ -596,7 +601,7 @@ public class Wallet {
      * @param remark Optional remark
      * @return New transaction block
      */
-    private Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to,
+    private Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to,
             String remark, UInt64 txNonce) {
         int hasRemark = remark == null ? 0 : 1;
 
@@ -613,7 +618,7 @@ public class Wallet {
         }
 
         // Find default key index
-        List<KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
+        List<ECKeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(getDefKey())) {
                 defKeyIndex = i;

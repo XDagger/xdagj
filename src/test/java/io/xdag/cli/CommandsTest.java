@@ -22,11 +22,12 @@
  * THE SOFTWARE.
  */
 package io.xdag.cli;
-
+import io.xdag.crypto.keys.AddressUtils;
 
 import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_SNAPSHOT;
 import static junit.framework.TestCase.assertEquals;
 
+import io.xdag.crypto.exception.AddressFormatException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -38,8 +39,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -62,8 +63,6 @@ import io.xdag.core.XdagExtStats;
 import io.xdag.core.XdagState;
 import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.net.NetDBManager;
@@ -81,12 +80,12 @@ public class CommandsTest {
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("10a55f0c18c46873ddbf9f15eddfc06f10953c601fd144474131199e04148046", 16);
 
-    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
+    PrivateKey secretkey_1 = PrivateKey.fromBigInteger(private_1);
 
-    SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
+    PrivateKey secretkey_2 = PrivateKey.fromBigInteger(private_2);
 
-    KeyPair keyPair_1 = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
-    KeyPair keyPair_2 = KeyPair.create(secretkey_2, Sign.CURVE, Sign.CURVE_NAME);
+    ECKeyPair keyPair_1 = ECKeyPair.fromPrivateKey(secretkey_1);
+    ECKeyPair keyPair_2 = ECKeyPair.fromPrivateKey(secretkey_2);
 
     Kernel kernel;
 
@@ -109,7 +108,7 @@ public class CommandsTest {
     public void setUp() throws Exception {
         List<Address> pending = Lists.newArrayList();
         mainblock = BlockBuilder.generateExtraBlock(config, keyPair_1, xdagTime, "xdagj_test", pending);
-        List<KeyPair> accounts = Lists.newArrayList();
+        List<ECKeyPair> accounts = Lists.newArrayList();
         accounts.add(keyPair_1);
         accounts.add(keyPair_2);
 
@@ -127,12 +126,12 @@ public class CommandsTest {
         Mockito.when(kernel.getBlockStore()).thenReturn(blockStore);
 
         Mockito.when(wallet.getAccounts()).thenReturn(accounts);
-        Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_1))).thenReturn(XAmount.of(9999, XUnit.XDAG));
-        Mockito.when(addressStore.getBalanceByAddress(Keys.toBytesAddress(keyPair_2))).thenReturn(XAmount.of(8888, XUnit.XDAG));
-        Mockito.when(addressStore.getTxQuantity(Keys.toBytesAddress(keyPair_1))).thenReturn(UInt64.ZERO);
-        Mockito.when(addressStore.getTxQuantity(Keys.toBytesAddress(keyPair_2))).thenReturn(UInt64.ZERO);
-        Mockito.when(addressStore.getExecutedNonceNum(Keys.toBytesAddress(keyPair_1))).thenReturn(UInt64.ZERO);
-        Mockito.when(addressStore.getExecutedNonceNum(Keys.toBytesAddress(keyPair_2))).thenReturn(UInt64.ZERO);
+        Mockito.when(addressStore.getBalanceByAddress(AddressUtils.toBytesAddress(keyPair_1).toArrayUnsafe())).thenReturn(XAmount.of(9999, XUnit.XDAG));
+        Mockito.when(addressStore.getBalanceByAddress(AddressUtils.toBytesAddress(keyPair_2).toArrayUnsafe())).thenReturn(XAmount.of(8888, XUnit.XDAG));
+        Mockito.when(addressStore.getTxQuantity(AddressUtils.toBytesAddress(keyPair_1).toArrayUnsafe())).thenReturn(UInt64.ZERO);
+        Mockito.when(addressStore.getTxQuantity(AddressUtils.toBytesAddress(keyPair_2).toArrayUnsafe())).thenReturn(UInt64.ZERO);
+        Mockito.when(addressStore.getExecutedNonceNum(AddressUtils.toBytesAddress(keyPair_1).toArrayUnsafe())).thenReturn(UInt64.ZERO);
+        Mockito.when(addressStore.getExecutedNonceNum(AddressUtils.toBytesAddress(keyPair_2).toArrayUnsafe())).thenReturn(UInt64.ZERO);
 
         commands = new Commands(kernel);
     }
@@ -158,7 +157,7 @@ public class CommandsTest {
     }
 
     @Test
-    public void testBalance() {
+    public void testBalance() throws AddressFormatException {
         String str = commands.balance("PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas");
         assertEquals("Account balance: 9999.000000000 XDAG", str);
 
@@ -171,7 +170,7 @@ public class CommandsTest {
     }
 
     @Test
-    public void testXfer() {
+    public void testXfer() throws AddressFormatException {
         XAmount xAmount = XAmount.of(100, XUnit.XDAG);
         String str = commands.xfer(xAmount.toDecimal(2, XUnit.XDAG).doubleValue(), BasicUtils.pubAddress2Hash("PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas"), null);
         assertEquals("""
@@ -316,7 +315,7 @@ public class CommandsTest {
 
     @Test
     public void testAddress() {
-        Bytes32 addrByte32 = BytesUtils.arrayToByte32(Keys.toBytesAddress(keyPair_1.getPublicKey()));
+        Bytes32 addrByte32 = BytesUtils.arrayToByte32(AddressUtils.toBytesAddress(keyPair_1.getPublicKey()).toArrayUnsafe());
         List<TxHistory> txHistoryList = Lists.newArrayList();
         Address addr = new Address(BasicUtils.keyPair2Hash(keyPair_1), XDAG_FIELD_SNAPSHOT, XAmount.of(9999, XUnit.XDAG),true);
         txHistoryList.add(new TxHistory(addr, Bytes32.random().toHexString(), generateTime, "xdagj_test"));

@@ -172,7 +172,7 @@ public class Address {
     @Override
     public String toString() {
         if(isAddress){
-            return "Address [" + WalletUtils.toBase58(addressHash.slice(8,20).toArray()) + "]";
+            return "Address [" + WalletUtils.toBase58(addressHash.slice(8,20)) + "]";
         }else {
             return "Block Hash[" + addressHash.toHexString() + "]";
         }

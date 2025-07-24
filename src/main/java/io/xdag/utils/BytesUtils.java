@@ -436,8 +436,8 @@ public class BytesUtils {
      * @param value Source MutableBytes32
      * @return Extracted byte array
      */
-    public static byte[] byte32ToArray(MutableBytes32 value){
-        return value.mutableCopy().slice(8,20).toArray();
+    public static Bytes byte32ToArray(MutableBytes32 value){
+        return value.mutableCopy().slice(8,20);
     }
 
     /**
