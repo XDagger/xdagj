@@ -50,7 +50,7 @@ public class XdagStats {
     public long maintime;         // Timestamp of the main block
     public XAmount balance = XAmount.ZERO;
 
-    private Bytes globalMiner;       // Global miner address
+    private byte[] globalMiner;       // Global miner address
     private byte[] ourLastBlockHash;  // Hash of our last block
 
     /**

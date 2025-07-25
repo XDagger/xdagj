@@ -200,7 +200,7 @@ public class Wallet {
 
         for (int i = 0; i < total; i++) {
             byte[] iv = dec.readBytes(vlq);
-            byte[] privateKey = Aes.decrypt(Bytes.wrap(dec.readBytes(vlq)), Bytes.wrap(key), Bytes.wrap(iv)).toArray();
+            byte[] privateKey = Aes.decrypt(dec.readBytes(vlq), key, iv);
             ECKeyPair keyPair = ECKeyPair.fromPrivateKey(PrivateKey.fromBigInteger(Numeric.toBigInt(privateKey)));
             keys.add(keyPair);
         }
@@ -217,7 +217,7 @@ public class Wallet {
                 byte[] iv = CryptoProvider.nextBytes(16);
 
                 enc.writeBytes(iv);
-                enc.writeBytes(Aes.encrypt(Bytes.wrap(keyPair.getPrivateKey().toBytes().toArray()), Bytes.wrap(key), Bytes.wrap(iv)).toArray());
+                enc.writeBytes(Aes.encrypt(keyPair.getPrivateKey().toBytes().toArray(), key, iv));
             }
         }
     }
@@ -228,7 +228,7 @@ public class Wallet {
     protected void readHdSeed(byte[] key, SimpleDecoder dec) throws CryptoException {
         byte[] iv = dec.readBytes();
         byte[] hdSeedEncrypted = dec.readBytes();
-        byte[] hdSeedRaw = Aes.decrypt(Bytes.wrap(hdSeedEncrypted), Bytes.wrap(key), Bytes.wrap(iv)).toArray();
+        byte[] hdSeedRaw = Aes.decrypt(hdSeedEncrypted, key, iv);
 
         SimpleDecoder d = new SimpleDecoder(hdSeedRaw);
         mnemonicPhrase = d.readString();
@@ -245,7 +245,7 @@ public class Wallet {
 
         byte[] iv = CryptoProvider.nextBytes(16);
         byte[] hdSeedRaw = e.toBytes();
-        byte[] hdSeedEncrypted = Aes.encrypt(Bytes.wrap(hdSeedRaw), Bytes.wrap(key), Bytes.wrap(iv)).toArray();
+        byte[] hdSeedEncrypted = Aes.encrypt(hdSeedRaw, key, iv);
 
         enc.writeBytes(iv);
         enc.writeBytes(hdSeedEncrypted);

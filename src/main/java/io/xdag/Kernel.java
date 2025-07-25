@@ -177,7 +177,7 @@ public class Kernel {
             firstBlock.signOut(wallet.getDefKey());
             xdagStats.setOurLastBlockHash(firstBlock.getHashLow().toArray());
             if (xdagStats.getGlobalMiner() == null) {
-                xdagStats.setGlobalMiner(firstAccount);
+                xdagStats.setGlobalMiner(firstAccount.toArray());
             }
             blockchain.tryToConnect(firstBlock);
         } else {
