@@ -34,7 +34,7 @@ import io.xdag.crypto.SampleKeys;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
-import io.xdag.crypto.RandomX;
+import io.xdag.consensus.RandomX;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
 import io.xdag.crypto.keys.ECKeyPair;

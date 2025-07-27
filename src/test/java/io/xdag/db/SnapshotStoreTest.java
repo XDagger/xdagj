@@ -34,7 +34,7 @@ import io.xdag.crypto.SampleKeys;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.crypto.keys.PrivateKey;
 import io.xdag.db.rocksdb.*;
-import io.xdag.crypto.RandomX;
+import io.xdag.consensus.RandomX;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;

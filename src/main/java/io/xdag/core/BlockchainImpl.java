@@ -30,7 +30,7 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
-import io.xdag.crypto.RandomX;
+import io.xdag.consensus.RandomX;
 import io.xdag.crypto.core.CryptoProvider;
 import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.hash.HashUtils;
