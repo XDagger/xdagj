@@ -25,7 +25,7 @@
 package io.xdag.consensus;
 
 import io.xdag.core.XdagField;
-import io.xdag.utils.XdagSha256Digest;
+import io.xdag.crypto.hash.XdagSha256Digest;
 import lombok.Getter;
 import lombok.Setter;
 

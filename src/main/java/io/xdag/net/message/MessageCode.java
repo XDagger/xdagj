@@ -38,10 +38,6 @@ public enum MessageCode {
     DISCONNECT(0x00),
 
     /**
-     * [0x01] First message over connection. No messages should be sent until
-     * receiving a response.
-     */
-    /**
      * [0x01] A message containing a random bytes
      */
     HANDSHAKE_INIT(0x01),

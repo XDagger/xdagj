@@ -51,7 +51,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 @Slf4j
 public class NodeManager extends AbstractXdagLifecycle {
 
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("NodeManager-thread-%d")
             .daemon(true)
             .build();

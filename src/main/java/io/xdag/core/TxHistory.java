@@ -23,12 +23,12 @@
  */
 package io.xdag.core;
 
+import io.xdag.crypto.encoding.Base58;
 import lombok.Getter;
 import lombok.Setter;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 /**
  * Class representing transaction history records
@@ -68,7 +68,7 @@ public class TxHistory {
     @Override
     public String toString() {
         String addr = address.getIsAddress() ?
-                toBase58(hash2byte(address.getAddress())) :
+                Base58.encodeCheck(hash2byte(address.getAddress())) :
                 hash2Address(address.getAddress());
 
         return String.format("[addr:%s, hash:%s, type:%s, amount:%s, remark:%s, time:%s]",

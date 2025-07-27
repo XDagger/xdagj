@@ -49,7 +49,7 @@ public final class NettyUtils {
 
         // Select the appropriate channel type based on OS:
         // - Epoll for Linux (better performance)
-        // - KQueue for MacOS (better performance)
+        // - KQueue for macOS (better performance)
         // - NIO as fallback for other operating systems
         if(SystemUtils.IS_OS_LINUX) {
             bootstrap.channel(EpollServerSocketChannel.class);

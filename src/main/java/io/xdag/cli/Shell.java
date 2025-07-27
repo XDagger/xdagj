@@ -31,6 +31,7 @@ import io.xdag.utils.WalletUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.jline.builtins.Options;
@@ -184,8 +185,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.getFirst())) {
+                num = NumberUtils.toInt(argv.getFirst());
             }
             println(commands.account(num));
         } catch (Exception e) {
@@ -205,7 +206,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             List<String> argv = opt.args();
-            println(commands.balance(!argv.isEmpty() ? argv.get(0) : null));
+            println(commands.balance(!argv.isEmpty() ? argv.getFirst() : null));
         } catch (Exception e) {
             saveException(e);
         }
@@ -223,7 +224,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             List<String> argv = opt.args();
-            println(commands.txQuantity(!argv.isEmpty() ? argv.get(0) : null));
+            println(commands.txQuantity(!argv.isEmpty() ? argv.getFirst() : null));
         } catch (Exception error) {
             saveException(error);
         }
@@ -247,7 +248,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            String address = argv.get(0);
+            String address = argv.getFirst();
             try {
                 Bytes32 hash;
                 if (address.length() == 32) {
@@ -299,8 +300,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.getFirst())) {
+                num = NumberUtils.toInt(argv.getFirst());
             }
             println(commands.mainblocks(num));
         } catch (Exception e) {
@@ -321,8 +322,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.getFirst())) {
+                num = NumberUtils.toInt(argv.getFirst());
             }
             println(commands.minedBlocks(num));
         } catch (Exception e) {
@@ -560,7 +561,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             try {
                 systemRegistry.cleanUp();
                 String line = reader.readLine(prompt);
-                if (StringUtils.startsWith(line, "exit")) {
+                if (Strings.CS.startsWith(line, "exit")) {
                     break;
                 }
                 systemRegistry.execute(line);

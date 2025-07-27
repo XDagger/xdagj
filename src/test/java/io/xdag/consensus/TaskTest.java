@@ -33,10 +33,10 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.SampleKeys;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.hash.XdagSha256Digest;
 import io.xdag.pool.PoolAwardManagerImpl;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagRandomUtils;
-import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -117,8 +117,8 @@ public class TaskTest {
         // send to pool
         Task newTask = new Task();
         XdagField[] task = new XdagField[2];
-        MutableBytes preHash = MutableBytes.wrap(XdagRandomUtils.nextNewBytes(32));
-        MutableBytes taskSeed = MutableBytes.wrap(XdagRandomUtils.nextNewBytes(32));
+        MutableBytes preHash = MutableBytes.wrap(CryptoProvider.nextBytes(32));
+        MutableBytes taskSeed = MutableBytes.wrap(CryptoProvider.nextBytes(32));
         task[0] = new XdagField(preHash);
         task[0].setSum(1);
         task[0].setType(XdagField.FieldType.XDAG_FIELD_HEAD);
@@ -212,9 +212,9 @@ public class TaskTest {
         transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9, XDAG).toPlainString());
         transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());
         for (int i = 0; i < 16; i++) {
-            Bytes32 preHash = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
-            Bytes32 txBlock = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
-            Bytes32 share = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
+            Bytes32 preHash = Bytes32.wrap(CryptoProvider.nextBytes(32));
+            Bytes32 txBlock = Bytes32.wrap(CryptoProvider.nextBytes(32));
+            Bytes32 share = Bytes32.wrap(CryptoProvider.nextBytes(32));
             transactionInfoSender.setShare(share);
             transactionInfoSender.setTxBlock(txBlock);
             transactionInfoSender.setPreHash(preHash);

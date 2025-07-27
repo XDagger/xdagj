@@ -121,7 +121,7 @@ public class Kernel {
     /**
      * Start the kernel.
      */
-    public synchronized void testStart() throws Exception {
+    public synchronized void testStart() {
         if (isRunning.get()) {
             return;
         }

@@ -31,7 +31,7 @@ import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.Constants;
 import io.xdag.crypto.bip.Bip39Mnemonic;
-import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.keys.AddressUtils;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.db.SnapshotStore;
@@ -39,13 +39,11 @@ import io.xdag.db.rocksdb.DatabaseName;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +52,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+import org.apache.commons.lang3.Strings;
 
 import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.WalletUtils.WALLET_PASSWORD_PROMPT;
@@ -152,7 +151,7 @@ public class XdagCli extends Launcher {
         // move old args
         List<String> argsList = Lists.newArrayList();
         for (String arg : args) {
-            if (StringUtils.equalsAny(arg, "-d", "-t")) {
+            if (Strings.CS.equalsAny(arg, "-d", "-t")) {
                 // only devnet or testnet
             } else {
                 argsList.add(arg);
@@ -242,7 +241,7 @@ public class XdagCli extends Launcher {
             ECKeyPair key = wallet.addAccountWithNextHdKey();
             wallet.flush();
             System.out.println("New Address (Hex):" + BytesUtils.toHexString(toBytesAddress(key).toArray()));
-            System.out.println("New Address (Base58):" + WalletUtils.toBase58(toBytesAddress(key)));
+            System.out.println("New Address (Base58):" + Base58.encodeCheck(toBytesAddress(key)));
         }
 
         // start kernel
@@ -258,7 +257,7 @@ public class XdagCli extends Launcher {
     /**
      * Starts the kernel.
      */
-    protected Kernel startKernel(Config config, Wallet wallet) throws Exception {
+    protected Kernel startKernel(Config config, Wallet wallet) {
         Kernel kernel = new Kernel(config, wallet);
         kernel.testStart();
         return kernel;
@@ -559,15 +558,13 @@ public class XdagCli extends Launcher {
         File end = new File(newPath);
         try(BufferedInputStream bis=new BufferedInputStream(new FileInputStream(start));
             BufferedOutputStream bos=new BufferedOutputStream(new FileOutputStream(end))) {
-            int len = 0;
+            int len;
             byte[] flush = new byte[1024];
             while((len=bis.read(flush)) != -1) {
                 bos.write(flush, 0, len);
             }
             bos.flush();
-        }catch(FileNotFoundException e) {
-            e.printStackTrace();
-        }catch(IOException e) {
+        } catch(IOException e) {
             e.printStackTrace();
         }
     }

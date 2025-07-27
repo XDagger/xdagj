@@ -31,6 +31,8 @@ import io.xdag.Wallet;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
 import io.xdag.crypto.RandomX;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.hash.HashUtils;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.crypto.keys.PublicKey;
@@ -44,8 +46,6 @@ import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.WalletUtils;
-import io.xdag.utils.XdagRandomUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -75,7 +74,6 @@ import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.*;
 import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
 @Getter
@@ -85,7 +83,7 @@ public class BlockchainImpl implements Blockchain {
     private static XAmount sumGas = XAmount.ZERO;
     
     // Thread factory for main chain checking
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("check-main-%d")
             .daemon(true)
             .build();
@@ -347,9 +345,10 @@ public class BlockchainImpl implements Blockchain {
                     }
                     if (ref != null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()).toArray())) {
                         result = ImportResult.INVALID_BLOCK;
-                        result.setErrorInfo("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                        result.setErrorInfo("Address isn't exist " + Base58.encodeCheck(
+                            BytesUtils.byte32ToArray(ref.getAddress())));
                         log.debug("Address isn't exist {}",
-                                WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                            Base58.encodeCheck(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                     // Ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1
@@ -900,7 +899,7 @@ public class BlockchainImpl implements Blockchain {
                 compareAmountTo(block.getInfo().getAmount().add(sumIn), sumIn) < 0
         ) {
             log.debug("block:{} exec fail!", blockHashLow.toHexString());
-            if (block.getInputs() != null) processNonceAfterTransactionExecution(block.getInputs().get(0));
+            if (block.getInputs() != null) processNonceAfterTransactionExecution(block.getInputs().getFirst());
             return XAmount.ZERO;
         }
 
@@ -990,7 +989,7 @@ public class BlockchainImpl implements Blockchain {
                         addressStore.updateExcutedNonceNum(address.toArray(), false);
                         addressStore.updateTxQuantity(address.toArray(), exeNonce.subtract(UInt64.ONE));
                         log.debug("The transaction processed quantity of account {} is reduced by one, and the number of transactions processed now is nonce = {}",
-                                toBase58(BytesUtils.byte32ToArray(link.getAddress())), addressStore.getExecutedNonceNum(address.toArray()).intValue()
+                            Base58.encodeCheck(BytesUtils.byte32ToArray(link.getAddress())), addressStore.getExecutedNonceNum(address.toArray()).intValue()
                         );
                     }
 
@@ -1717,7 +1716,7 @@ public class BlockchainImpl implements Blockchain {
     public void checkOrphan() {
         long nblk = xdagStats.nnoref / 11;
         if (nblk > 0) {
-            boolean b = (nblk % 61) > XdagRandomUtils.nextLong(61);
+            boolean b = (nblk % 61) > CryptoProvider.nextLong(0, 61);
             nblk = nblk / 61 + (b ? 1 : 0);
         }
         while (nblk-- > 0) {
@@ -1822,11 +1821,11 @@ public class BlockchainImpl implements Blockchain {
             addressStore.updateBalance(addressHash.toArray(), balance.subtract(amount));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
+            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, Base58.encodeCheck(addressHash), block.getHashLow());
         }
         XAmount finalAmount = addressStore.getBalanceByAddress(addressHash.toArray());
         log.debug("Balance checker —— Address:{} [old:{} sub:{} fin:{}]",
-                WalletUtils.toBase58(addressHash),
+                Base58.encodeCheck(addressHash),
                 balance.toDecimal(9, XUnit.XDAG).toPlainString(),
                 amount.toDecimal(9, XUnit.XDAG).toPlainString(),
                 finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
@@ -1841,11 +1840,11 @@ public class BlockchainImpl implements Blockchain {
             addressStore.updateBalance(addressHash.toArray(), balance.add(amount));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
+            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, Base58.encodeCheck(addressHash), block.getHashLow());
         }
         XAmount finalAmount = addressStore.getBalanceByAddress(addressHash.toArray());
         log.warn("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
-                WalletUtils.toBase58(addressHash),
+                Base58.encodeCheck(addressHash),
                 balance.toDecimal(9, XUnit.XDAG).toPlainString(),
                 amount.toDecimal(9, XUnit.XDAG).toPlainString(),
                 finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());

@@ -22,13 +22,12 @@
  * THE SOFTWARE.
  */
 package io.xdag.net.message.p2p;
-import io.xdag.crypto.keys.AddressUtils;
 import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.Test;
 
@@ -45,7 +44,7 @@ public class HelloMessageTest {
         Config config = new DevnetConfig();
 
         ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
-        String peerId = toBase58(toBytesAddress(key));
+        String peerId = Base58.encodeCheck(toBytesAddress(key));
         HelloMessage msg = new HelloMessage(config.getNodeSpec().getNetwork(), config.getNodeSpec().getNetworkVersion(),
                 peerId, 8001, config.getClientId(), config.getClientCapabilities().toArray(), 2,
                 CryptoProvider.nextBytes(InitMessage.SECRET_LENGTH), key,
@@ -59,7 +58,7 @@ public class HelloMessageTest {
         Peer peer = msg.getPeer(ip);
         assertEquals(config.getNodeSpec().getNetwork(), peer.getNetwork());
         assertEquals(config.getNodeSpec().getNetworkVersion(), peer.getNetworkVersion());
-        assertEquals(toBase58(toBytesAddress(key)), peer.getPeerId());
+        assertEquals(Base58.encodeCheck(toBytesAddress(key)), peer.getPeerId());
         assertEquals(ip, peer.getIp());
         assertEquals(config.getNodeSpec().getNodePort(), peer.getPort());
         assertEquals(config.getClientId(), peer.getClientId());

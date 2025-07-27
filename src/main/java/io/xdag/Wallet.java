@@ -135,7 +135,7 @@ public class Wallet {
     public ECKeyPair getDefKey() {
         List<ECKeyPair> accountList = getAccounts();
         if (CollectionUtils.isNotEmpty(accountList)) {
-            return accountList.get(0);
+            return accountList.getFirst();
         }
         return null;
     }

@@ -29,7 +29,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.xdag.Kernel;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.exception.AddressFormatException;
+import io.xdag.crypto.keys.AddressUtils;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.Channel;
 import io.xdag.pool.ChannelSupervise;
@@ -50,9 +52,6 @@ import org.bouncycastle.util.encoders.Hex;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -165,7 +164,7 @@ public class Commands {
             UInt64 txQuantity = kernel.getAddressStore().getTxQuantity(toBytesAddress(keyPair).toArray());
             UInt64 exeTxNonceNum = kernel.getAddressStore().getExecutedNonceNum(toBytesAddress(keyPair).toArray());
 
-            str.append(toBase58(toBytesAddress(keyPair)))
+            str.append(AddressUtils.toBase58Address(keyPair))
                     .append(" ")
                     .append(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(keyPair).toArray()).toDecimal(9, XUnit.XDAG).toPlainString())
                     .append(" XDAG")
@@ -508,7 +507,7 @@ public class Commands {
                 inputs = new StringBuilder();
                 for (Address input : block.getInputs()) {
                     inputs.append(String.format("     input: %s           %s%n",
-                            input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
+                            input.getIsAddress() ? Base58.encodeCheck(hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
                             input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
@@ -518,7 +517,8 @@ public class Commands {
                 for (Address output : block.getOutputs()) {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %s%n",
-                            output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
+                            output.getIsAddress() ? Base58.encodeCheck(
+                                hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
                             getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
                                     block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
                                             output.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG).toPlainString()
@@ -660,8 +660,7 @@ public class Commands {
     /**
      * Generate new key pair
      */
-    public String keygen()
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+    public String keygen() {
         kernel.getXdagState().tempSet(XdagState.KEYS);
         kernel.getWallet().addAccountRandom();
 
@@ -711,7 +710,7 @@ public class Commands {
      */
     public String address(Bytes32 wrap, int page) {
         String ov = " OverView" + "\n"
-                + String.format(" address: %s", toBase58(hash2byte(wrap.mutableCopy()))) + "\n"
+                + String.format(" address: %s", Base58.encodeCheck(hash2byte(wrap.mutableCopy()))) + "\n"
                 + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(hash2byte(wrap.mutableCopy()).toArray()).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
 
         String txHisFormat = """
@@ -751,7 +750,7 @@ public class Commands {
                                     .format(txHistory.getTimestamp())));
                 }
             } else {
-                tx.append(String.format(" snapshot: %s           %s   %s%n", (toBase58(BytesUtils.byte32ToArray(address.getAddress()))),
+                tx.append(String.format(" snapshot: %s           %s   %s%n", (Base58.encodeCheck(BytesUtils.byte32ToArray(address.getAddress()))),
                         address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(txHistory.getTimestamp())));

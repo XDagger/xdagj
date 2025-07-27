@@ -25,7 +25,6 @@
 package io.xdag.net;
 
 import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -36,6 +35,7 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
@@ -57,7 +57,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 public class PeerClient {
 
     // Thread factory for client worker threads
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("XdagClient-thread-%d")
             .daemon(true)
             .build();
@@ -89,7 +89,7 @@ public class PeerClient {
      * Get peer ID derived from coinbase key
      */
     public String getPeerId() {
-        return toBase58(toBytesAddress(coinbase));
+        return Base58.encodeCheck(toBytesAddress(coinbase));
     }
 
     /**

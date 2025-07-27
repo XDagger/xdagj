@@ -29,7 +29,7 @@ import lombok.Setter;
 
 /**
  * Represents a network packet frame in the XDAG network protocol. Numbers are signed and in big-endian format.
- *
+ * <p>
  * Frame structure:
  * <ul>
  * <li><code>FRAME := HEADER (16 bytes) + BODY (variable length)</code></li>
