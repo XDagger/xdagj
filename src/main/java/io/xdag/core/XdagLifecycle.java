@@ -36,7 +36,7 @@ public interface XdagLifecycle {
 
     /**
      * Stops the component.
-     * Should cleanup resources and halt processing.
+     * Should clean up resources and halt processing.
      */
     void stop();
 

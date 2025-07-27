@@ -27,6 +27,7 @@ import io.xdag.core.Address;
 import io.xdag.core.TxHistory;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.DruidUtils;
@@ -46,7 +47,6 @@ import java.util.List;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.WalletUtils.toBase58;
 import static org.junit.Assert.*;
 
 public class TransactionHistoryStoreImplTest {
@@ -104,12 +104,12 @@ public class TransactionHistoryStoreImplTest {
         txHistory.setTimestamp(XdagTime.msToXdagtimestamp(timestamp));
         assertTrue(txHistoryStore.saveTxHistory(txHistory));
 
-        String addr = input.getIsAddress()?toBase58(hash2byte(input.getAddress())):hash2Address(input.getAddress());
+        String addr = input.getIsAddress()? Base58.encodeCheck(hash2byte(input.getAddress())):hash2Address(input.getAddress());
         List<TxHistory> txHistoryList = txHistoryStore.listTxHistoryByAddress(addr, 1);
         assertNotNull(txHistoryList);
         assertEquals(1, txHistoryList.size());
 
-        TxHistory resTxHistory = txHistoryList.get(0);
+        TxHistory resTxHistory = txHistoryList.getFirst();
         int count = txHistoryStore.getTxHistoryCount(addr);
         assertEquals(1, count);
         assertEquals(remark, resTxHistory.getRemark());
@@ -126,9 +126,9 @@ public class TransactionHistoryStoreImplTest {
         txHistory1.setTimestamp(XdagTime.msToXdagtimestamp(timestamp1));
         assertTrue(txHistoryStore.saveTxHistory(txHistory1));
 
-        String addr1 = input.getIsAddress()?toBase58(hash2byte(input.getAddress())):hash2Address(input.getAddress());
+        String addr1 = input.getIsAddress()?Base58.encodeCheck(hash2byte(input.getAddress())):hash2Address(input.getAddress());
         List<TxHistory> txHistoryList1 = txHistoryStore.listTxHistoryByAddress(addr1, 1);
-        TxHistory resTxHistory1 = txHistoryList1.get(0);
+        TxHistory resTxHistory1 = txHistoryList1.getFirst();
 //        assertEquals("", resTxHistory1.getRemark();
 
     }

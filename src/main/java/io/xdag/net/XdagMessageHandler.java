@@ -154,7 +154,7 @@ public class XdagMessageHandler extends MessageToMessageCodec<Frame, Message>  {
         if (frames == null || frames.isEmpty()) {
             throw new MessageException("Frames can't be null or empty");
         }
-        Frame head = frames.get(0);
+        Frame head = frames.getFirst();
 
         byte packetType = head.getPacketType();
         int packetSize = head.getPacketSize();

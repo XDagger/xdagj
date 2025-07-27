@@ -24,8 +24,8 @@
 package io.xdag.net.message.p2p;
 
 import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.hash.HashUtils;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.crypto.keys.PublicKey;
@@ -168,7 +168,7 @@ public abstract class HandshakeMessage extends Message {
                 && secret != null && secret.length == InitMessage.SECRET_LENGTH
                 && Math.abs(System.currentTimeMillis() - timestamp) <= config.getNodeSpec().getNetHandshakeExpiry()
                 && signature != null
-                && peerId.equals(toBase58(toBytesAddress(publicKey)))) {
+                && peerId.equals(Base58.encodeCheck(toBytesAddress(publicKey)))) {
 
             return Signer.verify(hash, signature, publicKey);
         } else {

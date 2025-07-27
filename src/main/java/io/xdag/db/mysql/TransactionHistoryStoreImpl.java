@@ -25,6 +25,7 @@ package io.xdag.db.mysql;
 
 import com.google.common.collect.Lists;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.DruidUtils;
@@ -45,7 +46,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
 public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
@@ -85,7 +85,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt = conn.prepareStatement(SQL_INSERT);
 
                 Address address = txHistory.getAddress();
-                String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
+                String addr = address.getIsAddress() ? Base58.encodeCheck(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
                 pstmt.setString(1, addr);
                 pstmt.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmt.setString(3, txHistory.getHash());
@@ -122,7 +122,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             }
             if (txHistory != null) {
                 Address address = txHistory.getAddress();
-                String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
+                String addr = address.getIsAddress() ? Base58.encodeCheck(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
                 pstmtBatch.setString(1, addr);
                 pstmtBatch.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmtBatch.setString(3, txHistory.getHash());

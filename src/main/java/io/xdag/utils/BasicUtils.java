@@ -26,6 +26,7 @@ package io.xdag.utils;
 
 import com.google.common.primitives.UnsignedLong;
 import io.xdag.core.XAmount;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.exception.AddressFormatException;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.utils.exception.XdagOverFlowException;
@@ -46,7 +47,6 @@ import static io.xdag.config.Constants.HASH_RATE_LAST_MAX_TIME;
 import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.BytesUtils.long2UnsignedLong;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 /**
  * Utility class containing basic operations for XDAG
@@ -105,7 +105,7 @@ public class BasicUtils {
      * @return Base58 encoded public address
      */
     public static String hash2PubAddress(Bytes32 hash) {
-       return toBase58(hash2byte(hash.mutableCopy()));
+       return Base58.encodeCheck(hash2byte(hash.mutableCopy()));
     }
 
     /**

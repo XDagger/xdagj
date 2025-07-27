@@ -35,6 +35,7 @@ import io.xdag.config.TestnetConfig;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.RPCSpec;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.exception.AddressFormatException;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.Channel;
@@ -224,7 +225,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
     @Override
     public String xdag_coinbase() {
-        return toBase58(toBytesAddress(kernel.getCoinbase()));
+        return Base58.encodeCheck(toBytesAddress(kernel.getCoinbase()));
     }
 
     @Override
@@ -307,7 +308,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             return result;
         }
 
-      Bytes32 toHash = null;
+      Bytes32 toHash;
       try {
         toHash = checkTo(to, result);
       } catch (AddressFormatException e) {
@@ -317,7 +318,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             return result;
         }
 
-      Bytes32 fromHash = null;
+      Bytes32 fromHash;
       try {
         fromHash = checkFrom(from, result);
       } catch (AddressFormatException e) {
@@ -356,7 +357,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             return result;
         }
 
-      Bytes32 toHash = null;
+      Bytes32 toHash;
       try {
         toHash = checkTo(to, result);
       } catch (AddressFormatException e) {
@@ -366,7 +367,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             return result;
         }
 
-      Bytes32 fromHash = null;
+      Bytes32 fromHash;
       try {
         fromHash = checkFrom(from, result);
       } catch (AddressFormatException e) {
@@ -545,7 +546,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                         .time(txHistory.getTimestamp())
                         .remark(txHistory.getRemark());
             } else {
-                txLinkBuilder.address(toBase58(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
+                txLinkBuilder.address(Base58.encodeCheck(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
                         .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
                         .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
@@ -657,7 +658,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         for (Address input : inputs) {
             BlockResponse.Link.LinkBuilder linkBuilder = BlockResponse.Link.builder();
-            linkBuilder.address(input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
+            linkBuilder.address(input.getIsAddress() ? Base58.encodeCheck(hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
                     .hashlow(input.getAddress().toUnprefixedHexString())
                     .amount(String.format("%s", input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(0);
@@ -671,7 +672,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             if (!block.getInputs().isEmpty()) {
                 Amount = Amount.subtract(MIN_GAS);
             }
-            linkBuilder.address(output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
+            linkBuilder.address(output.getIsAddress() ? Base58.encodeCheck(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
                     .hashlow(output.getAddress().toUnprefixedHexString())
                     .amount(String.format("%s", Amount.toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(1);
@@ -921,7 +922,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         //check from address if reject Address.
         for (Address link : block.getInputs()) {
-            if (WalletUtils.toBase58(link.getAddress().slice(8, 20)).equals(kernel.getConfig().getNodeSpec().getRejectAddress())) {
+            if (Base58.encodeCheck(link.getAddress().slice(8, 20)).equals(kernel.getConfig().getNodeSpec().getRejectAddress())) {
                 return false;
             }
         }

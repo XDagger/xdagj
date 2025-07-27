@@ -24,12 +24,7 @@
 
 package io.xdag.utils;
 
-import io.xdag.Wallet;
-import io.xdag.crypto.bip.Bip32Key;
-import io.xdag.crypto.bip.Bip39Mnemonic;
-import io.xdag.crypto.bip.Bip44Wallet;
 import io.xdag.crypto.exception.AddressFormatException;
-import io.xdag.crypto.exception.CryptoException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -42,56 +37,9 @@ import io.xdag.crypto.encoding.Base58;
 public class WalletUtils {
 
     /**
-     * XDAG coin type according to SLIP-0044
-     * @see <a href="https://github.com/satoshilabs/slips/blob/master/slip-0044.md">SLIP-0044</a>
-     */
-    public static final int XDAG_BIP44_CION_TYPE = 586;
-
-    /**
      * Prompt message for wallet password input
      */
     public static final String WALLET_PASSWORD_PROMPT = "Please Enter Wallet Password: ";
-
-//    /**
-//     * Generates a BIP44 compliant key pair for XDAG
-//     * Path: m/44'/586'/0'/0/index
-//     *
-//     * @param master Master key pair
-//     * @param index Account index
-//     * @return Derived key pair
-//     */
-//    public static Bip32Key generateBip44KeyPair(Bip32Key master, int index) {
-//        final int[] path = {44 | HARDENED_BIT, XDAG_BIP44_CION_TYPE | HARDENED_BIT, 0 | HARDENED_BIT, 0, index};
-//        return Bip32ECKeyPair.deriveKeyPair(master, path);
-//    }
-
-    /**
-     * Imports a wallet from mnemonic phrase
-     *
-     * @param wallet Wallet instance
-     * @param password Wallet password
-     * @param mnemonic Mnemonic phrase
-     * @param index Account index
-     * @return Generated key pair
-     */
-    public static Bip32Key importMnemonic(Wallet wallet, String password, String mnemonic, int index)
-        throws CryptoException {
-        wallet.unlock(password);
-//        byte[] seed = MnemonicUtils.generateSeed(mnemonic, password);
-        Bytes seed = Bip39Mnemonic.toSeed(mnemonic);
-        Bip32Key masterKeypair = Bip44Wallet.createMasterKey(seed.toArray());
-        return Bip44Wallet.deriveXdagKey(masterKeypair, 0, index);
-    }
-
-    /**
-     * Encodes a hash160 byte array to Base58 format
-     *
-     * @param hash160 Hash160 byte array
-     * @return Base58 encoded string
-     */
-    public static String toBase58(Bytes hash160) {
-        return Base58.encodeCheck(hash160);
-    }
 
     /**
      * Decodes a Base58 string to byte array

@@ -24,7 +24,7 @@
 
 package io.xdag.consensus;
 
-import io.xdag.utils.XdagSha256Digest;
+import io.xdag.crypto.hash.XdagSha256Digest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 

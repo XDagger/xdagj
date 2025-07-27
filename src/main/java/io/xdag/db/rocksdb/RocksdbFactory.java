@@ -26,7 +26,7 @@ package io.xdag.db.rocksdb;
 
 import io.xdag.config.Config;
 import java.util.EnumMap;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 public class RocksdbFactory implements DatabaseFactory {
 
@@ -44,7 +44,7 @@ public class RocksdbFactory implements DatabaseFactory {
                 name, k -> {
                     RocksdbKVSource dataSource;
                     // time data source must set fixed prefix length
-                    if (StringUtils.equals(DatabaseName.TIME.toString(), name.toString())) {
+                    if (Strings.CS.equals(DatabaseName.TIME.toString(), name.toString())) {
                         dataSource = new RocksdbKVSource(name.toString(), 9);
                     } else {
                         dataSource = new RocksdbKVSource(name.toString());

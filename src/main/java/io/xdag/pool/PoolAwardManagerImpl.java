@@ -28,6 +28,7 @@ import io.xdag.Wallet;
 import io.xdag.cli.Commands;
 import io.xdag.config.Config;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.exception.AddressFormatException;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.utils.BasicUtils;
@@ -50,7 +51,6 @@ import static io.xdag.pool.PoolAwardManagerImpl.BlockRewardHistorySender.awardMe
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.compareTo;
 import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
 public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolAwardManager, Runnable {
@@ -72,7 +72,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
     private final Map<Address, ECKeyPair> paymentsToNodesMap = new HashMap<>(10);
     private static final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
 
-    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+    private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(BasicThreadFactory.builder()
             .namingPattern("PoolAwardManager-work-thread")
             .daemon(true)
             .build());
@@ -196,7 +196,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         }
 
         Bytes32 poolWalletAddress = BasicUtils.hexPubAddress2Hashlow(String.valueOf(block.getNonce().slice(12, 20)));
-        if (!checkAddress(toBase58(block.getNonce().slice(12, 20)))) {
+        if (!checkAddress(Base58.encodeCheck(block.getNonce().slice(12, 20)))) {
             log.error("mining pool wallet address format error");
             return -6;
         }
@@ -295,7 +295,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
             log.error("Failed to add transaction history");
         }
         log.debug("The reward for block {} has been distributed to pool address {}", hashLow,
-                toBase58(receipt.get(1).getAddress().slice(8, 20)));
+                Base58.encodeCheck(receipt.get(1).getAddress().slice(8, 20)));
     }
 
 

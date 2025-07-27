@@ -44,11 +44,19 @@ import lombok.Setter;
 public class Channel {
 
     private SocketChannel socket;
-    private boolean isInbound;
+  /**
+   * -- GETTER --
+   *  Checks if this is an inbound connection
+   */
+  private boolean isInbound;
     private InetSocketAddress remoteAddress;
     private Peer remotePeer;
     private MessageQueue msgQueue;
-    private boolean isActive;
+  /**
+   * -- GETTER --
+   *  Checks if the channel is active
+   */
+  private boolean isActive;
     private XdagP2pHandler p2pHandler;
 
     /**
@@ -101,28 +109,14 @@ public class Channel {
         return msgQueue;
     }
 
-    /**
-     * Checks if this is an inbound connection
-     */
-    public boolean isInbound() {
-        return isInbound;
-    }
-
-    /**
+  /**
      * Checks if this is an outbound connection
      */
     public boolean isOutbound() {
         return !isInbound();
     }
 
-    /**
-     * Checks if the channel is active
-     */
-    public boolean isActive() {
-        return isActive;
-    }
-
-    /**
+  /**
      * Activates the channel with the given remote peer
      * 
      * @param remotePeer The remote peer to activate with

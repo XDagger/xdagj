@@ -22,11 +22,9 @@
  * THE SOFTWARE.
  */
 package io.xdag.utils;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.keys.AddressUtils;
 import io.xdag.crypto.exception.AddressFormatException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import io.xdag.crypto.keys.ECKeyPair;
@@ -42,7 +40,7 @@ public class PubkeyAddressUtilsTest {
         throws AddressFormatException {
         ECKeyPair key = ECKeyPair.generate();
         Bytes hash160 = AddressUtils.toBytesAddress(key);
-        String base58 = WalletUtils.toBase58(hash160);
+        String base58 = Base58.encodeCheck(hash160);
         assertEquals(WalletUtils.fromBase58(base58), hash160);
     }
 
@@ -64,7 +62,7 @@ public class PubkeyAddressUtilsTest {
         String addressStr = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C";
         byte[] addressbyte = WalletUtils.fromBase58(addressStr).toArray();
         MutableBytes32 address= BytesUtils.arrayToByte32(addressbyte);
-        String res = WalletUtils.toBase58(BytesUtils.byte32ToArray(address));
+        String res = Base58.encodeCheck(BytesUtils.byte32ToArray(address));
         Assert.assertEquals(addressStr, res);
     }
 }

@@ -23,6 +23,7 @@
  */
 
 package io.xdag.core;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.keys.Signer;import io.xdag.crypto.hash.HashUtils;import io.xdag.crypto.keys.AddressUtils;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
@@ -36,7 +37,6 @@ import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.rocksdb.*;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tuweni.bytes.Bytes;
@@ -157,10 +157,10 @@ public class BlockchainTest {
         for (Address link : block.getLinks()) {
             //测试地址
             if (link.getType() == XDAG_FIELD_INPUT){
-                assertEquals("AavSCZUxXbySZXjXcb3mwr5CzwabQXP2A", WalletUtils.toBase58(link.getAddress().slice(8, 20)));
+                assertEquals("AavSCZUxXbySZXjXcb3mwr5CzwabQXP2A", Base58.encodeCheck(link.getAddress().slice(8, 20)));
             }
             if (link.getType() == XDAG_FIELD_OUTPUT){
-                assertEquals("8FfenZ1xewHGa3Ydx9zhppgou1hgesX97", WalletUtils.toBase58(link.getAddress().slice(8, 20)));
+                assertEquals("8FfenZ1xewHGa3Ydx9zhppgou1hgesX97", Base58.encodeCheck(link.getAddress().slice(8, 20)));
             }
         }
         assertEquals("", kernel.getConfig().getNodeSpec().getRejectAddress()); //默认为空
@@ -272,7 +272,7 @@ public class BlockchainTest {
         pending.clear();
         Address txAddress =  new Address(txBlock.getHashLow(), false);
         pending.add(txAddress);
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         // 4. confirm transaction block with 16 mainblocks
         for (int i = 1; i <= 16; i++) {
             generateTime += 64000L;
@@ -336,7 +336,7 @@ public class BlockchainTest {
         for (Block tx : txList) {
             pending.add(new Address(tx.getHashLow(), false));
         }
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         // 4. confirm transaction block with 16 mainblocks
         assertEquals(10, pending.size());
         for (int i = 1; i <= 16; i++) {
@@ -443,7 +443,7 @@ public class BlockchainTest {
         pending.clear();
         Address TxblockAddress = new Address(txBlock.getHashLow(),false);
         pending.add(TxblockAddress);
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         //高度 11 主块链接交易块，第一次
         generateTime += 64000L;
         pending.add(new Address(ref, XDAG_FIELD_OUT,false));
@@ -461,10 +461,10 @@ public class BlockchainTest {
         List<Address> links = extraBlockList.get(10).getLinks();
         Set<String> linkset = new HashSet<>();
         for (Address link : links){  //将主块的链接块都放进Hashset里面，用于确认链接了交易块
-            linkset.add(WalletUtils.toBase58(link.getAddress().slice(8, 20)));
+            linkset.add(Base58.encodeCheck(link.getAddress().slice(8, 20)));
         }
         //确认高度 11 主块链接了 交易块
-        assertTrue(linkset.contains(WalletUtils.toBase58(TxblockAddress.getAddress().slice(8, 20))));
+        assertTrue(linkset.contains(Base58.encodeCheck(TxblockAddress.getAddress().slice(8, 20))));
 
         //为高度12的去看构造一笔属于它的交易：
         from = new Address(BytesUtils.arrayToByte32(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe()), XDAG_FIELD_INPUT,true);
@@ -482,7 +482,7 @@ public class BlockchainTest {
         //高度 12 主块再次链接交易块，第二次
         pending.add(TxblockAddress);
         pending.add(new Address(txBlock1.getHashLow(),false));
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         for (int i = 1; i <= 16; i++) {
             generateTime += 64000L;
             pending.add(new Address(ref, XDAG_FIELD_OUT,false));
@@ -500,11 +500,11 @@ public class BlockchainTest {
         links = extraBlockList.get(11).getLinks();
         linkset = new HashSet<>();
         for (Address link : links){  //将主块的链接块都放进Hashset里面，用于确认链接了两个交易块
-            linkset.add(WalletUtils.toBase58(link.getAddress().slice(8, 20)));
+            linkset.add(Base58.encodeCheck(link.getAddress().slice(8, 20)));
         }
         //确认高度 12 主块链接了 两个交易块
-        assertTrue(linkset.contains(WalletUtils.toBase58(TxblockAddress.getAddress().slice(8, 20))));
-        assertTrue(linkset.contains(WalletUtils.toBase58(new Address(txBlock1.getHashLow(),false).getAddress().slice(8, 20))));
+        assertTrue(linkset.contains(Base58.encodeCheck(TxblockAddress.getAddress().slice(8, 20))));
+        assertTrue(linkset.contains(Base58.encodeCheck(new Address(txBlock1.getHashLow(),false).getAddress().slice(8, 20))));
         //16个块确认后，目前高度 11+16 = 27
 
         //测试重复链接是否影响手续费收取
@@ -593,7 +593,7 @@ public class BlockchainTest {
         pending.clear();
         Address txAddress =  new Address(txBlock.getHashLow(), false);
         pending.add(txAddress);
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         // 4. confirm transaction block with 16 mainblocks
         for (int i = 1; i <= 16; i++) {
             generateTime += 64000L;
@@ -707,7 +707,7 @@ public class BlockchainTest {
 
         pending.clear();
         pending.add(new Address(txBlock.getHashLow(), false));
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
 // 4. confirm transaction block with 3 mainblocks
         for (int i = 1; i <= 4; i++) {
             generateTime += 64000L;
@@ -801,7 +801,7 @@ public class BlockchainTest {
         long generateTime = 1600616700000L;
         // 1. first block get 1024 reward
         Block addressBlock = generateAddressBlock(config, poolKey, generateTime);//get another 1000 amount
-//        System.out.println(PubkeyAddressUtils.toBase58(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
+//        System.out.println(PubkeyAddressUtils.Base58.encodeCheck(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         MockBlockchain blockchain = new MockBlockchain(kernel);
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
@@ -855,7 +855,7 @@ public class BlockchainTest {
 
         pending.clear();
         pending.add(new Address(txBlock.getHashLow(),false));
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         // 4. confirm transaction block with 3 mainblocks
         for (int i = 1; i <= 4; i++) {
             generateTime += 64000L;

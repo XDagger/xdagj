@@ -24,8 +24,8 @@
 
 package io.xdag.core;
 
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.WalletUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
@@ -96,7 +96,6 @@ public class Address {
     public Address(Block block) {
         this.isAddress = false;
         this.addressHash = block.getHashLow().mutableCopy();
-        this.amount = XAmount.ZERO;
         parsed = true;
     }
 
@@ -172,7 +171,7 @@ public class Address {
     @Override
     public String toString() {
         if(isAddress){
-            return "Address [" + WalletUtils.toBase58(addressHash.slice(8,20)) + "]";
+            return "Address [" + Base58.encodeCheck(addressHash.slice(8,20)) + "]";
         }else {
             return "Block Hash[" + addressHash.toHexString() + "]";
         }

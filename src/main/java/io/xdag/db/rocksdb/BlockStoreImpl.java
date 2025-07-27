@@ -426,7 +426,7 @@ public class BlockStoreImpl implements BlockStore {
         } else if (level < 6) {
             key = files.get(1);
         } else {
-            key = files.get(0);
+            key = files.getFirst();
         }
 
         Bytes buf = getSums(key);

@@ -30,10 +30,10 @@ import io.xdag.config.*;
 import io.xdag.core.AbstractXdagLifecycle;
 import io.xdag.core.Block;
 import io.xdag.core.XdagState;
+import io.xdag.crypto.core.CryptoProvider;
 import io.xdag.db.BlockStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
-import io.xdag.utils.XdagRandomUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ import static io.xdag.config.Constants.REQUEST_WAIT;
 @Slf4j
 public class XdagSync extends AbstractXdagLifecycle {
 
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("XdagSync-thread-%d")
             .daemon(true)
             .build();
@@ -131,12 +131,12 @@ public class XdagSync extends AbstractXdagLifecycle {
             return;
         }
         SettableFuture<Bytes> sf = SettableFuture.create();
-        int index = XdagRandomUtils.nextInt(any.size());
+        int index = CryptoProvider.nextInt(0, any.size());
         Channel xc = any.get(index);
         long lastTime = getLastTime();
 
         // Remove synchronized time periods
-        while (!syncWindow.isEmpty() && syncWindow.get(0) < lastTime) {
+        while (!syncWindow.isEmpty() && syncWindow.getFirst() < lastTime) {
             syncWindow.pollFirst();
         }
 
@@ -178,7 +178,7 @@ public class XdagSync extends AbstractXdagLifecycle {
         }
 
         SettableFuture<Bytes> sf = SettableFuture.create();
-        int index = XdagRandomUtils.nextInt(any.size());
+        int index = CryptoProvider.nextInt(0, any.size());
         Channel xc = any.get(index);
         if (dt > REQUEST_BLOCKS_MAX_TIME) {
             findGetBlocks(xc, t, dt, sf);
