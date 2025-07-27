@@ -35,7 +35,7 @@ import io.xdag.consensus.SyncManager;
 import io.xdag.consensus.XdagPow;
 import io.xdag.consensus.XdagSync;
 import io.xdag.core.*;
-import io.xdag.crypto.RandomX;
+import io.xdag.consensus.RandomX;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.db.*;
 import io.xdag.db.mysql.TransactionHistoryStoreImpl;
