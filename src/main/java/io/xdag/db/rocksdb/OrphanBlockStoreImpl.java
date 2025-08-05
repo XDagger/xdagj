@@ -229,7 +229,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             OrphanMeta m = linkQueue.peek();
             if (m.time > cutoffTime) break;
 
-            orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(m)));
             result.add(linkQueue.poll());
         }
 
