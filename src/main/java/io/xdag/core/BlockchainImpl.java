@@ -584,6 +584,32 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    /**
+     * Get the number of transactions executed in the main block package
+     * @param refHashLow The hash of the transaction packaged in the main block
+     * @param mHashLow The hash of the main block
+     * @return Number of transactions executed
+     */
+    public int txNumber(Bytes32 refHashLow, Bytes32 mHashLow) {
+        int sum = 0;
+        if (getBlockByHash(refHashLow, true) != null) {
+            Block block = getBlockByHash(refHashLow, true);
+            if (!isTxBlock(block) && (block.getInfo().flags & BI_MAIN_CHAIN) == 0) {
+                for (Address link : block.getLinks()) {
+                    if (equalBytes(block.getInfo().getRef(), mHashLow.toArray())) {
+                        sum += txNumber(link.getAddress(), block.getHashLow());
+                    }
+                }
+                return sum;
+            }
+            if ((block.getInfo().flags & BI_APPLIED) != 0 && equalBytes(block.getInfo().getRef(), mHashLow.toArray())) {
+                return outPutNum(block) == -1 ? 0 : outPutNum(block);
+            }
+
+        }
+        return 0;
+    }
+
     public boolean isTxBlock(Block block) {
         return isAccountTx(block) || isMainTxBlock(block);
     }

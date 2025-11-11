@@ -245,6 +245,34 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
     }
 
     @Override
+    public String xdag_getAverageFee(){
+        List<Block> mBlocks = blockchain.listMainBlocks(64);
+        XAmount averageFee = XAmount.ZERO;
+        int count = 0;
+        int sum = 0;
+        XAmount totalFee = XAmount.ZERO;
+        XAmount fee;
+        for (Block block : mBlocks) {
+            block = blockchain.getBlockByHash(block.getHash(), false);
+            fee = block.getFee();
+            if(blockchain.getBlockByHash(block.getHashLow(), true) != null && (block.getInfo().flags & BI_EXTRA) == 0){
+                block = blockchain.getBlockByHash(block.getHashLow(), true);
+            }
+            for(Address link : block.getLinks()){
+                sum += blockchain.txNumber(link.getAddress() , block.getHashLow());
+            }
+            log.debug("current block: {} , fee :{} , txSum :{}", block.getHashLow() , fee.toDecimal(9, XUnit.XDAG).toPlainString() , sum);
+            totalFee = totalFee.add(fee);
+            count += sum;
+            sum = 0;
+        }
+        if (count != 0 && totalFee != XAmount.ZERO) {
+            averageFee = totalFee.divide(count);
+        }
+        return String.format("%s", averageFee.toDecimal(2, XUnit.XDAG).toPlainString());
+    }
+
+    @Override
     public String xdag_getTotalBalance() {
         return String.format("%s", kernel.getBlockchain().getXdagStats().getBalance().toDecimal(9, XUnit.XDAG).toPlainString());
     }

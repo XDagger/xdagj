@@ -139,6 +139,13 @@ public interface XdagApi extends XdagLifecycle {
     String xdag_getTransactionNonce(String address);
 
     /**
+     * Get the average fee of transactions packaged in the latest 64 main blocks.
+     *
+     * @return Average fee as string
+     */
+    String xdag_getAverageFee();
+
+    /**
      * Get the total balance of the node.
      *
      * @return Total balance as string
