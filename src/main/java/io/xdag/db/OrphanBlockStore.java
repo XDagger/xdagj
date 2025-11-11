@@ -46,6 +46,8 @@ public interface OrphanBlockStore extends XdagLifecycle {
 
     void deleteByKey(byte[] hashlow, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address);
 
+    void deleteFromQueue(Block block, boolean isTxBlock , UInt64 nonce, XAmount fee, byte[] address);
+
     void addOrphan(Block block, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address);
 
     long getOrphanSize();

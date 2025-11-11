@@ -85,6 +85,7 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
     protected AtomicReference<Task> currentTask = new AtomicReference<>();
     protected AtomicLong taskIndex = new AtomicLong(0L);
     private boolean isWorking = false;
+    public static AtomicBoolean isChange = new AtomicBoolean( false);
 
     private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
             .namingPattern("XdagPow-timer-thread")
@@ -305,12 +306,14 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
             broadcaster.broadcast(bw);
         }
         isWorking = true;
+        isChange.set(false);
         // start generate main block
         newBlock();
     }
 
     protected void onNewPreTop() {
         log.debug("Receive New PreTop");
+        isChange.set(true);
         newBlock();
     }
 
