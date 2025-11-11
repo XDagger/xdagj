@@ -480,13 +480,13 @@ public class Wallet {
 
     /**
      * Creates transaction blocks from a map of our keys and addresses to a destination address
-     * 
+     *
      * @param ourKeys Map of addresses and their corresponding keypairs that we own
      * @param to Destination address
      * @param remark Optional remark to include in transaction
      * @return List of transaction block wrappers
      */
-    public List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce) {
+    public List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
         // Check if remark exists
         int hasRemark = remark == null ? 0 : 1;
 
@@ -529,7 +529,7 @@ public class Wallet {
                 stack.poll();
             } else {
                 // Create block with current keys
-                res.add(createTransaction(to, amount, keys, remark, txNonce));
+                res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
                 // Reset for next block
                 keys = new HashMap<>();
                 keysPerBlock = new HashSet<>();
@@ -543,7 +543,7 @@ public class Wallet {
             }
         }
         if (!keys.isEmpty()) {
-            res.add(createTransaction(to, amount, keys, remark, txNonce));
+            res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
         }
 
         return res;
@@ -551,18 +551,18 @@ public class Wallet {
 
     /**
      * Creates a single transaction block
-     * 
+     *
      * @param to Destination address
      * @param amount Transaction amount
      * @param keys Map of addresses and keypairs to use as inputs
      * @param remark Optional remark
      * @return Transaction block wrapper
      */
-    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 
-        Block block = createNewBlock(new HashMap<>(keys), tos, remark, txNonce);
+        Block block = createNewBlock(new HashMap<>(keys), tos, remark, txNonce, txFee);
 
         if (block == null) {
             return null;
@@ -590,14 +590,14 @@ public class Wallet {
 
     /**
      * Creates a new transaction block
-     * 
+     *
      * @param pairs Map of input addresses and keypairs
      * @param to List of output addresses
      * @param remark Optional remark
      * @return New transaction block
      */
     private Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to,
-            String remark, UInt64 txNonce) {
+                                 String remark, UInt64 txNonce, XAmount fee) {
         int hasRemark = remark == null ? 0 : 1;
 
         int defKeyIndex = -1;
@@ -640,7 +640,7 @@ public class Wallet {
         long sendTime = XdagTime.getCurrentTimestamp();
 
         return new Block(getConfig(), sendTime, all, null, false, keys, remark,
-                defKeyIndex, XAmount.of(100, XUnit.MILLI_XDAG), txNonce);
+                defKeyIndex, fee, txNonce);
     }
 
 }
