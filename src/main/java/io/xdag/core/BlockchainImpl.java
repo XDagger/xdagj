@@ -854,7 +854,6 @@ public class BlockchainImpl implements Blockchain {
             ) {
                 updateBlockFlag(blockRef, BI_MAIN_CHAIN, true);
                 blockRef0 = blockRef;
-            }
                 blocks.add(blockRef);
             }
         }

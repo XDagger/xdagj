@@ -148,7 +148,7 @@ public class Kernel {
         addressStore.start();
 
 
-        orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND) , this);
         orphanBlockStore.start();
 
         if (config.getEnableTxHistory()) {
