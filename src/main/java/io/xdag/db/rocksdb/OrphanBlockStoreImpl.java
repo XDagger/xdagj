@@ -223,7 +223,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
         OrphanMeta meta = OrphanMeta.parse(key, value);
 
-        orphanSource.put(key, value);
         addOrphanToMemory(meta, key);
 
         if (orphanSource.get(key) == null) {
@@ -288,7 +287,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         long remain = totalRequired - result.size();
         if (remain <= 0) return result;
 
-        // Step 2: 调用递进式交易选择逻辑（含多轮补位）
         List<OrphanMeta> selectedTxs = selectTxBlocksRecursively(remain, cutoffTime);
         if (selectedTxs == null) return result;
         result.addAll(selectedTxs);
@@ -340,17 +338,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                     }
                 }
             }
-        }
-
-        // 将本轮未使用的候选重新放回池中
-        for (int i = (int) canTake; i < thisRound.size(); i++) {
-            candidateQueue.offer(thisRound.get(i));
-        }
-
-        // 如果没满足要求，再递归下一轮
-        long remaining = remain - result.size();
-        if (remaining > 0) {
-            result.addAll(selectTxBlocksRecursively(remaining, cutoffTime));
         }
 
         return result;
