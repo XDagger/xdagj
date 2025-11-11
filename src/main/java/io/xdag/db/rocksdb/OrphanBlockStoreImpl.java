@@ -156,12 +156,12 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
     public void addOrphan(Block block, boolean isTxBlock , UInt64 nonce, XAmount fee, byte[] address) {
         // key: 0x00 + hashlow(24B) + nonce(8B) + isTx(1B)
-        byte[] hashlow = Arrays.copyOfRange(block.getHashLow().toArray(), 8, 32); // 提取有效 24B
-        byte[] nonceBytes = BytesUtils.bigIntegerToBytes(nonce, 8); // 使用 UInt64 overload 方法
+        byte[] hashlow = Arrays.copyOfRange(block.getHashLow().toArray(), 8, 32); // Extract effective 24B
+        byte[] nonceBytes = BytesUtils.bigIntegerToBytes(nonce, 8);
         byte[] isTx = BytesUtils.byteToBytes((byte) (isTxBlock ? 1 : 0), false); // 1B
         byte[] key = BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(hashlow, nonceBytes, isTx));
 //        System.out.println("OrphanKey: " + Arrays.toString(key));
-        // value: time(8B) + fee(8B) + address(20B)，若非账户交易块则 address 全 0
+        // value: time(8B) + fee(8B) + address(20B)，Non-account transaction blocks address 全 0
         byte[] timeBytes = BytesUtils.longToBytes(block.getTimestamp(), true);
 //        byte[] feeBytes = fee.toXAmount().toBytes().toArray(); // XAmount -> long -> 8B
         byte[] feeBytes = Bytes.wrap(BytesUtils.bigIntegerToBytes(fee.toXAmount(),8)).toArray();
@@ -209,7 +209,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         long addNum = Math.min(getOrphanSize(), num);
         List<OrphanMeta> getMeta = selectBlocks(addNum, sendtime[0]);
 
-        // 取前 num 个，构造 Address 列表并更新 sendtime[1]
         for (int i = 0; i < getMeta.size(); i++) {
             OrphanMeta m = getMeta.get(i);
             result.add(new Address(m.hashlow, XdagField.FieldType.XDAG_FIELD_OUT, false));
@@ -254,6 +253,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         // 收集 fee == topFee 的候选块
         while (!candidateQueue.isEmpty() && candidateQueue.peek().meta.fee == topFee) {
             thisRound.add(candidateQueue.poll());
+        // Clearing the queue every time
         }
 
         // 按时间+hash 排序（稳定顺序）
@@ -268,10 +268,10 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             CandidateEntry chosen = thisRound.get(i);
             result.add(chosen.meta);
 
-            //todo:此处应该将该数据从addOrphanToMemory中移除
+            //todo:This data should be removed from addOrphanToMemory here.
             orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(chosen.meta)));
 
-            // 标记为“下一轮从该队列取下一个块”并补充候选池
+            // Mark as "Take the next block from this queue in the next round" and replenish the candidate pool.
             if (chosen.type == CandidateEntry.EntryType.MTX) {
                 mtxQueue.poll();
                 OrphanMeta next = mtxQueue.peek();

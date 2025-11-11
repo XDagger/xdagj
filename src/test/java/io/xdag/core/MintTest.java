@@ -38,7 +38,7 @@ public class MintTest {
 
     @Test
     public void testMint() {
-        // 每四年减半 大致就是增加了 2097152个块
+        // Halving every four years roughly translates to an increase of 2,097,152 blocks.
         int num = 1017323 + 2097152;
         long reward = getCurrentReward();
         XAmount reward1 = getReward(0, num);
@@ -48,7 +48,7 @@ public class MintTest {
     }
 
     /**
-     * 根据当前区块数量计算奖励金额 cheato *
+     * Calculate the reward amount based on the current number of blocks. cheato *
      */
     public long getCurrentReward() {
         return xdag2amount(1024).toLong();

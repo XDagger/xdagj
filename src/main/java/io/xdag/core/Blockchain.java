@@ -101,11 +101,15 @@ public interface Blockchain {
     // Get extended XDAG network statistics
     XdagExtStats getXdagExtStats();
 
+    // Calculate the average fee for each output
     XAmount outPutLimit(Block block);
 
+    // Calculate the number of transactions output
     int outPutNum(Block block);
 
+    // Calculate the fee for the transaction block
     XAmount getTxFee(Block block);
 
+    // Determine if it is a transaction block
     boolean isTxBlock(Block block);
 }

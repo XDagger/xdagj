@@ -578,10 +578,8 @@ public class BlockchainImpl implements Blockchain {
                 return MIN_GAS.multiply(outPutNum(block));
             } else if (fee.isNegative()) {
                 return XAmount.ZERO;
-            } else if (fee.compareTo(MIN_GAS.multiply(outPutNum(block))) < 0) {
-                return MIN_GAS.multiply(outPutNum(block));
             } else {
-                return fee;
+                return fee.add(MIN_GAS.multiply(outPutNum(block)));
             }
         }
     }
@@ -615,7 +613,7 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        // 至少包含一个 XDAG_FIELD_IN
+        // At least one XDAG_FIELD_IN
         return inputs.stream().anyMatch(ref -> ref.getType() == XDAG_FIELD_IN);
     }
 
@@ -887,7 +885,7 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        // 输入输出处理
+        // Input/output processing
         XAmount sumIn = XAmount.ZERO;
         XAmount sumOut = XAmount.ZERO;
         for (Address link : links) {
@@ -930,7 +928,7 @@ public class BlockchainImpl implements Blockchain {
             return XAmount.ZERO;
         }
 
-        // 实际金额处理
+        // Actual amount processing
         XAmount blockGas = XAmount.ZERO;
         for (Address link : links) {
             MutableBytes32 linkAddress = link.addressHash;
@@ -966,7 +964,7 @@ public class BlockchainImpl implements Blockchain {
             blockStore.saveBlockInfo(block.getInfo());
             return gasCollected;
         } else {
-            //若是交易块做了主块，则拿blockGas,否则都返回gasCollected
+            // If the transaction block has become the main block, then get blockGas; otherwise, return gasCollected.
             return ((gasCollected.compareTo(XAmount.ZERO) == 0) && (blockGas.compareTo(XAmount.ZERO) > 0)) ? blockGas : gasCollected;
         }
     }
@@ -987,7 +985,7 @@ public class BlockchainImpl implements Blockchain {
                 if (!link.isAddress) {
                     Block ref = getBlockByHash(link.getAddress(), false);
                     if (link.getType() == XDAG_FIELD_IN) {
-                        //仅主块交易块的输入引用会走这
+                        // Only input references to the main block transaction block will go through this.
                         addAndAccept(ref, link.getAmount());
                         XAmount allBalance = addressStore.getAllBalance();
                         // allBalance = allBalance.subtract(link.getAmount()); //fix subtract twice.
@@ -1053,7 +1051,7 @@ public class BlockchainImpl implements Blockchain {
                     ref.getInfo().setFee(fee);
                     unApplyBlock(ref, false);
                 }
-                //取消nonce错误的交易块被置位的标志位，将其恢复为Pending状态
+                // Remove the flag that was set for the transaction block with the nonce error, and restore it to the Pending state.
                 fee = ref.getFee();
                 ref = getBlockByHash(ref.getHashLow(), true);
                 ref.getInfo().setFee(fee);

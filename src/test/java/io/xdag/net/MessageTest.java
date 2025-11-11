@@ -39,15 +39,15 @@ public class MessageTest {
 
     // blocksrequest
     // 8b010002f91eb6eb 0000000000000000 0000000000000000 0000000000100000
-    // 修改starttime
+    // Modify starttime
     // 257b369b5a89d009 0000000000000000 0000000000000000 0000000000000000" +
-    // 生成随机八个字节
+    // Generate eight random bytes
     // difficulty max_difficulty
     // 511e9e9274800c75 0200000000000000 511e9e9274800c75 0200000000000000" + 2
     // status
     // nblocks total_nblocks nmain total_nmain
     // ee00000000000000 ee00000000000000 d400000000000000 d400000000000000" +
-    // nhosts/total_nhosts maintime 后续的368个字节通过netdbsend生成 发送给对方我连接的ip跟host
+    // nhosts/total_nhosts maintime The following 368 bytes are generated via netdbsend and sent to the other party along with my connected IP address and host.
     // 0400000004000000 3ef4780100000000 7f000001 611e 7f000001 b822 7f000001"
     // 7f000001 611e7f00
     // 0001b822 7f000001 net dbsend修改
@@ -142,9 +142,9 @@ public class MessageTest {
      *         byte[] uncryptData = Hex.decode(sumsRequest);
      *         System.arraycopy(BytesUtils.longToBytes(0, true), 0, uncryptData, 0, 8);
      *
-     *         // 全部都有的是
-     *         // status netdb一获取到新message 就更新status,netdb starttime endtime
-     *         // sumreply 只更新6个 因为后面8个字段是sum 其余更新14个字段
+     *         // All of them are available.
+     *         // NetDB updates the status, netdb starttime, and endtime as soon as it receives a new message.
+     *         // The `sumreply` function only updates 6 fields because the last 8 fields are sums; the remaining 14 fields are updated.
      *
      *         // System.out.println(Hex.toHexString(uncryptData));
      *         SumRequestMessage sumRequestMessage = new SumRequestMessage(Hex.decode(sumsRequest));
