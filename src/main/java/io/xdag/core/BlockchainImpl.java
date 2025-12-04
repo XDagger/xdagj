@@ -1388,7 +1388,6 @@ public class BlockchainImpl implements Blockchain {
             sendTime[1] = Math.min(sendTime[1] + 1, sendTime[0]);
             log.debug("rollTxList.size:{}", rollTxList.size());
         } else {
-            List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
             List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime, false);
             if (CollectionUtils.isNotEmpty(orphans)) {
                 refs.addAll(orphans);

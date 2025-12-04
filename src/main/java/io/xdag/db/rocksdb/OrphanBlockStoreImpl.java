@@ -443,11 +443,9 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
     @Getter
     public static class CandidateEntry {
-        public enum EntryType { ACCOUNT_TX, MTX }
 
         public final OrphanMeta meta;
         public final String accountKey;
-        public final EntryType type;
 
         public CandidateEntry(OrphanMeta meta, String accountKey) {
             this.meta = meta;
