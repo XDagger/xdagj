@@ -330,7 +330,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
-        doXfer(amount, fromHash, toHash, remark, null, result);
+        doXfer(amount, fromHash, toHash, remark, null, 0, result);
 
         return result;
     }
@@ -371,7 +371,50 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
-        doXfer(amount, fromHash, toHash, remark, txNonce, result);
+        doXfer(amount, fromHash, toHash, remark, null, 0, result);
+
+        return result;
+    }
+
+    @Override
+    public ProcessResponse xdag_personal_sendSafeTransactionWithVariableFee(TransactionRequest request, String passphrase) {
+        log.debug("personalSendTransaction request:{}", request);
+
+        String from = request.getFrom();
+        String to = request.getTo();
+        String value = request.getValue();
+        String remark = request.getRemark();
+        String nonce = request.getNonce();
+        String fee = request.getFee();
+
+        ProcessResponse result = ProcessResponse.builder().code(SUCCESS).build();
+
+        checkParam(value, remark, result);
+        if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+        Bytes32 toHash = checkTo(to, result);
+        if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+        Bytes32 fromHash = checkFrom(from, result);
+        if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+        UInt64 txNonce = UInt64.valueOf(new BigInteger(nonce));
+
+        checkPassword(passphrase, result);
+        if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+        // do xfer
+        double amount = getDouble(value);
+        double txFee = getDouble(fee);
+        doXfer(amount, fromHash, toHash, remark, txNonce,txFee, result);
 
         return result;
     }
@@ -762,6 +805,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             Bytes32 toAddress,
             String remark,
             UInt64 txNonce,
+            double fee,
             ProcessResponse processResponse
     ) {
         XAmount amount;
@@ -833,6 +877,10 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             }
         }
 
+        XAmount txFee = (fee < 0)
+                ? XAmount.of(BigDecimal.valueOf(0), XUnit.XDAG)
+                : XAmount.of(BigDecimal.valueOf(fee), XUnit.XDAG);
+
         // Insufficient balance
         if (compareAmountTo(remain.get(), XAmount.ZERO) > 0) {
             processResponse.setCode(ERR_XDAG_BALANCE);
@@ -841,7 +889,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         }
         List<String> resInfo = Lists.newArrayList();
         // create transaction
-        List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark, txNonce);
+        List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark, txNonce, txFee);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -855,7 +903,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                         kernel.getAddressStore().updateTxQuantity(addr, blockNonce);
                     }
                 }
-                resInfo.add(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
+                resInfo.add(hash2Address(blockWrapper.getBlock().getHashLow()));
             } else if (result == ImportResult.INVALID_BLOCK) {
                 resInfo.add(result.getErrorInfo());
             }
