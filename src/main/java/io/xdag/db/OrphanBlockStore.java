@@ -42,7 +42,7 @@ public interface OrphanBlockStore extends XdagLifecycle {
 
     void reset();
 
-    List<Address> getOrphan(long num, long[] sendTime);
+    List<Address> getOrphan(long num, long[] sendTime, boolean isMain);
 
     void deleteByKey(byte[] hashlow, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address);
 

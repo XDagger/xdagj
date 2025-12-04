@@ -246,7 +246,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
     @Override
     public String xdag_getAverageFee(){
-        List<Block> mBlocks = blockchain.listMainBlocks(64);
+        List<Block> mBlocks = blockchain.listMainBlocks(32);
         XAmount averageFee = XAmount.ZERO;
         int count = 0;
         int sum = 0;
@@ -269,6 +269,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         if (count != 0 && totalFee != XAmount.ZERO) {
             averageFee = totalFee.divide(count);
         }
+        if (averageFee.lessThan(XAmount.of(100, XUnit.MILLI_XDAG))) averageFee = XAmount.of(100, XUnit.MILLI_XDAG);
         return String.format("%s", averageFee.toDecimal(2, XUnit.XDAG).toPlainString());
     }
 

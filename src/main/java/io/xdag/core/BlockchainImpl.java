@@ -400,11 +400,13 @@ public class BlockchainImpl implements Blockchain {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(ref.getAddress());
                                 result.setErrorInfo("Ref output amount < Gas");
+                                log.debug("Ref output amount < Gas");
                                 return result;
                             } else if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(addressStore.getBalanceByAddress(BytesUtils.byte32ToArray(ref.getAddress()))).isPositive()) {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(ref.getAddress());
                                 result.setErrorInfo("Ref input amount < account balance");
+                                log.debug("Ref input amount < account balance");
                                 return result;
                             }
                         } else {
@@ -1387,6 +1389,7 @@ public class BlockchainImpl implements Blockchain {
             log.debug("rollTxList.size:{}", rollTxList.size());
         } else {
             List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
+            List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime, false);
             if (CollectionUtils.isNotEmpty(orphans)) {
                 refs.addAll(orphans);
             }
@@ -1399,8 +1402,8 @@ public class BlockchainImpl implements Blockchain {
     /**
      * Get a certain number of orphan blocks from orphan pool for linking
      */
-    public List<Address> getBlockFromOrphanPool(int num, long[] sendtime) {
-        return orphanBlockStore.getOrphan(num, sendtime);
+    public List<Address> getBlockFromOrphanPool(int num, long[] sendtime, boolean isMain) {
+        return orphanBlockStore.getOrphan(num, sendtime, isMain);
     }
 
     public Bytes32 getPreTopMainBlockForLink(long sendTime) {

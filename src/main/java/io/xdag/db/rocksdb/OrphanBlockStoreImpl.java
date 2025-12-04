@@ -26,10 +26,7 @@ package io.xdag.db.rocksdb;
 
 import com.google.common.primitives.UnsignedBytes;
 import io.xdag.Kernel;
-import io.xdag.core.Address;
-import io.xdag.core.Block;
-import io.xdag.core.XAmount;
-import io.xdag.core.XdagField;
+import io.xdag.core.*;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.utils.BytesUtils;
 
@@ -56,23 +53,34 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
     // <hash,nexthash>
     private final KVSource<byte[], byte[]> orphanSource;
 
-    private final Queue<OrphanMeta> linkQueue = new PriorityBlockingQueue<>(10, Comparator
+    private final Queue<OrphanMeta> linkQueue = new PriorityBlockingQueue<>(50, Comparator
             .comparingLong((OrphanMeta m) -> m.time)
             .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator()));
 
-    private final Queue<OrphanMeta> mtxQueue = new PriorityBlockingQueue<>(10, Comparator
+    private final Queue<OrphanMeta> mtxQueue = new PriorityBlockingQueue<>(100, Comparator
             .comparingLong((OrphanMeta m) -> -m.fee)
             .thenComparingLong(m -> m.time)
             .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator()));
 
-    private final Map<String, Queue<OrphanMeta>> accountTxMap = new ConcurrentHashMap<>();
+    private final Queue<OrphanMeta> accountTxQueue = new PriorityBlockingQueue<>(150, Comparator
+            .comparingLong((OrphanMeta m) -> m.time)
+            .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator()));
 
-    private final Queue<CandidateEntry> candidateQueue = new PriorityBlockingQueue<>(10, Comparator
+    private final Queue<CandidateEntry> candidateQueue = new PriorityBlockingQueue<>(20, Comparator
             .comparingLong((CandidateEntry e) -> -e.meta.fee)
             .thenComparingLong(e -> e.meta.time)
             .thenComparing(e -> e.meta.hashlow.toArray(), UnsignedBytes.lexicographicalComparator()));
 
     private final Map<Bytes, Long> orphanInsertTimeMap = new ConcurrentHashMap<>();
+
+    private final Map<String, Queue<OrphanMeta>> vipTxMap = new ConcurrentHashMap<>();
+
+    @Getter
+    private final Deque<OrphanMeta> mainRef = new ConcurrentLinkedDeque<>();
+
+    private final Map<String, UInt64> accountNonce = new ConcurrentHashMap<>();
+
+    private static final XAmount averageFee = XAmount.of(100, XUnit.MILLI_XDAG);
 
     private final ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor();
 
@@ -95,18 +103,21 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
     public void rebuildMemoryFromDb() {
         linkQueue.clear();
         mtxQueue.clear();
-        accountTxMap.clear();
+        accountTxQueue.clear();
         candidateQueue.clear();
         orphanInsertTimeMap.clear();
+        vipTxMap.clear();
+        mainRef.clear();
 
         List<Pair<byte[], byte[]>> raw = orphanSource.prefixKeyAndValueLookup(BytesUtils.of(ORPHAN_PREFEX));
         for (Pair<byte[], byte[]> pair : raw) {
             OrphanMeta meta = OrphanMeta.parse(pair);
             addOrphanToMemory(meta, pair.getKey());
         }
+        long vipSize = vipTxMap.values().stream().mapToLong(Queue::size).sum();
 
-        log.info("OrphanBlockStore memory queues rebuilt from DB: {} link, {} mtx, {} accounts, {} candidates",
-                linkQueue.size(), mtxQueue.size(), accountTxMap.size(), candidateQueue.size());
+        log.info("OrphanBlockStore memory queues rebuilt from DB: {} link, {} mtx, {} accounts, {} vipTxMap",
+                linkQueue.size(), mtxQueue.size(), accountTxQueue.size(),  vipSize);
     }
 
     private void startCleaner() {
@@ -145,16 +156,17 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                     mtxQueue.remove(meta);
                 } else {
                     String addrKey = Hex.toHexString(meta.address);
-                    Queue<OrphanMeta> accountQueue = accountTxMap.get(addrKey);
-                    if(accountQueue != null){
+                    Queue<OrphanMeta> accountQueue = vipTxMap.get(addrKey);
+                    if (accountQueue != null && accountQueue.contains(meta)) {
                         accountQueue.remove(meta);
-                        if(accountQueue.isEmpty()) accountTxMap.remove(addrKey);
+                        if (accountQueue.isEmpty()) vipTxMap.remove(addrKey);
+                    }else {
+                        accountTxQueue.remove(meta);
                     }
                 }
                 it.remove();
-                synchronized (kernel.getBlockchain().getXdagStats()) {
-                    kernel.getBlockchain().getXdagStats().nnoref--;
-                }
+                kernel.getBlockchain().getXdagStats().nnoref--;
+                kernel.getBlockStore().saveXdagStatus(kernel.getBlockchain().getXdagStats());
                 log.debug("Cleaned expired orphan: {}", Hex.toHexString(entry.getKey().toArray()));
             }
         }
@@ -179,7 +191,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
     public void deleteFromQueue(Block block, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address) {
 
-        boolean isRemove = false;
         byte[] hashlow = Arrays.copyOfRange(block.getHashLow().toArray(), 8, 32); // Extract effective 24B
         byte[] nonceBytes = BytesUtils.bigIntegerToBytes(nonce, 8);
         byte[] isTx = BytesUtils.byteToBytes((byte) (isTxBlock ? 1 : 0), false); // 1B
@@ -191,6 +202,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         byte[] value = BytesUtils.merge(timeBytes, feeBytes, addrBytes);
 
         OrphanMeta meta = OrphanMeta.parse(key, value);
+        mainRef.remove(meta);
 
         if (!meta.isTx) {
             linkQueue.remove(meta);
@@ -198,12 +210,17 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             mtxQueue.remove(meta);
         } else {
             String addrKey = Hex.toHexString(meta.address);
-            Queue<OrphanMeta> accountQueue = accountTxMap.get(addrKey);
-            if(accountQueue != null){
+            Queue<OrphanMeta> accountQueue = vipTxMap.get(addrKey);
+            if (accountQueue != null) {
                 accountQueue.remove(meta);
-                if(accountQueue.isEmpty()) accountTxMap.remove(addrKey);
+                if (accountQueue.isEmpty()) vipTxMap.remove(addrKey);
+                return;
             }
+            accountTxQueue.remove(meta);
         }
+        long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}",
+                vipTxCount, accountTxQueue.size(), mtxQueue.size(), linkQueue.size(), mainRef.size());
     }
 
     public void addOrphan(Block block, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address) {
@@ -232,6 +249,9 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentSize + 1, false));
             log.debug("orphan current size:{}", currentSize);
         }
+        long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}",
+                vipTxCount, accountTxQueue.size(), mtxQueue.size(), linkQueue.size(), mainRef.size());
     }
 
     public void addOrphanToMemory(OrphanMeta meta, byte[] dbKey) {
@@ -246,97 +266,117 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             }
         } else {
             String addrKey = Hex.toHexString(meta.address);
-            accountTxMap.computeIfAbsent(addrKey, k -> new PriorityBlockingQueue<>(10, Comparator
-                    .comparingLong((OrphanMeta m) -> m.nonce)
-                    .thenComparingLong(m -> m.time)
-                    .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator())));
-            if (!accountTxMap.get(addrKey).contains(meta)) {
-                accountTxMap.get(addrKey).offer(meta);
+            UInt64 executedNonceNum = kernel.getAddressStore().getExecutedNonceNum(meta.address);
+            if (accountNonce.get(addrKey) != null && executedNonceNum.compareTo(accountNonce.get(addrKey)) < 0) {
+                executedNonceNum = accountNonce.get(addrKey);
+            }
+            UInt64 blockNonce = UInt64.valueOf(meta.nonce);
+            if(blockNonce.compareTo(executedNonceNum.add(UInt64.ONE)) == 0 && averageFee.lessThan(XAmount.ofXAmount(meta.fee))){
+                log.info("averageFee:{}, meta.fee: {}", averageFee.toDecimal(2, XUnit.XDAG).toPlainString(), XAmount.ofXAmount(meta.fee).toDecimal(2, XUnit.XDAG).toPlainString());
+                accountNonce.put(addrKey, blockNonce);
+                vipTxMap.computeIfAbsent(addrKey, k -> new PriorityBlockingQueue<>(10, Comparator
+                        .comparingLong((OrphanMeta m) -> m.nonce)
+                        .thenComparing(m -> m.time)
+                        .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator())));
+                if (!vipTxMap.get(addrKey).contains(meta)) {
+                    vipTxMap.get(addrKey).offer(meta);
+                }
+            } else {
+                if(!accountTxQueue.contains(meta)) accountTxQueue.add(meta);
             }
         }
     }
 
-    public List<Address> getOrphan(long num, long[] sendtime) {
+    public List<Address> getOrphan(long num, long[] sendtime, boolean isMain) {
         List<Address> result = Lists.newArrayList();
 
-        long addNum = Math.min(getOrphanSize(), num);
-        List<OrphanMeta> getMeta = selectBlocks(addNum, sendtime[0]);
+        long addNum;
+        if (!isMain) {
+            addNum = Math.min(getOrphanSize(), num);
+        } else {
+            addNum = Math.min(getOrphanSize() + mainRef.size(), num);
+        }
+        List<OrphanMeta> getMeta = selectBlocks(addNum, sendtime[0], isMain);
 
         for (int i = 0; i < getMeta.size(); i++) {
             OrphanMeta m = getMeta.get(i);
+            if (isMain && !mainRef.contains(m)) mainRef.add(m);
             result.add(new Address(m.hashlow, XdagField.FieldType.XDAG_FIELD_OUT, false));
             sendtime[1] = Math.max(sendtime[1], m.time);
         }
 
-        sendtime[1] = Math.min(sendtime[1]+1,sendtime[0]);
+        sendtime[1] = Math.min(sendtime[1] + 1, sendtime[0]);
+        long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}", vipTxCount, accountTxQueue.size(), mtxQueue.size(), linkQueue.size(), mainRef.size());
         return result;
 
     }
 
-    public List<OrphanMeta> selectBlocks(long totalRequired, long cutoffTime) {
+    public List<OrphanMeta> selectBlocks(long totalRequired, long cutoffTime, boolean isMain) {
         List<OrphanMeta> result = new ArrayList<>();
 
-        // Step 1: 优先取链接块
-        while (!linkQueue.isEmpty() && result.size() < totalRequired) {
-            OrphanMeta m = linkQueue.peek();
-            if (m.time > cutoffTime) break;
-
-            result.add(linkQueue.poll());
-        }
-
-        long remain = totalRequired - result.size();
-        if (remain <= 0) return result;
-
-        List<OrphanMeta> selectedTxs = selectTxBlocksRecursively(remain, cutoffTime);
-        if (selectedTxs == null) return result;
-        result.addAll(selectedTxs);
-
-        return result;
-    }
-
-    private List<OrphanMeta> selectTxBlocksRecursively(long remain, long cutoffTime) {
-        List<OrphanMeta> result = new ArrayList<>();
-
-        // Clearing the queue every time
-        candidateQueue.clear();
-        if (!mtxQueue.isEmpty()) {
-            candidateQueue.offer(new CandidateEntry(mtxQueue.peek(), null, CandidateEntry.EntryType.MTX));
-        }
-        if (!accountTxMap.isEmpty()) {
-            for (Map.Entry<String, Queue<OrphanMeta>> entry : accountTxMap.entrySet()) {
-                candidateQueue.offer(new CandidateEntry(entry.getValue().peek(), entry.getKey(), CandidateEntry.EntryType.ACCOUNT_TX));
+        if (!mainRef.isEmpty() && (isMain || mainRef.size() > 18)) {
+            Iterator<OrphanMeta> it = mainRef.iterator();
+            while (it.hasNext() && result.size() < totalRequired) {
+                result.add(it.next());
+                if (!isMain) it.remove();
             }
         }
-        if (candidateQueue.isEmpty()) return null;
-
-        for (int i = 0; i < remain; i++) {
-
-            CandidateEntry chosen = candidateQueue.poll();
-            result.add(chosen.meta);
-
-            //todo:This data should be removed from addOrphanToMemory here.
-            orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(chosen.meta)));
-
-            // Mark as "Take the next block from this queue in the next round" and replenish the candidate pool.
-            if (chosen.type == CandidateEntry.EntryType.MTX) {
-                mtxQueue.poll();
-                OrphanMeta next = mtxQueue.peek();
-                if (next != null && next.time <= cutoffTime) {
-                    candidateQueue.offer(new CandidateEntry(next, null, CandidateEntry.EntryType.MTX));
-                }
-            } else {
-                Queue<OrphanMeta> q = accountTxMap.get(chosen.accountKey);
-                if (q != null) {
-                    q.poll();
-                    if (!q.isEmpty()) {
-                        OrphanMeta next = q.peek();
-                        if (next.time <= cutoffTime) {
-                            candidateQueue.offer(new CandidateEntry(next, chosen.accountKey, CandidateEntry.EntryType.ACCOUNT_TX));
-                        }
+        if (isMain && !vipTxMap.isEmpty()) {
+            long remain = 0;
+            for (Map.Entry<String, Queue<OrphanMeta>> entry : vipTxMap.entrySet()) {
+                if (entry.getValue().peek() != null) candidateQueue.offer(new CandidateEntry(entry.getValue().peek(), entry.getKey()));
+            }
+            while (!candidateQueue.isEmpty() && result.size() < totalRequired && remain < 6) {
+                CandidateEntry chosen = candidateQueue.poll();
+                if (chosen == null) continue;
+                result.add(chosen.meta);
+                remain++;
+                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(chosen.meta)));
+                Queue<OrphanMeta> vipQueue = vipTxMap.get(chosen.accountKey);
+                if (vipQueue != null) {
+                    vipQueue.poll();
+                    if (!vipQueue.isEmpty()) {
+                        OrphanMeta next = vipQueue.peek();
+                        if (next.getTime() <= cutoffTime) candidateQueue.offer(new CandidateEntry(next, chosen.accountKey));
                     } else {
-                        accountTxMap.remove(chosen.accountKey);
+                        vipTxMap.remove(chosen.accountKey);
                     }
                 }
+            }
+            candidateQueue.clear();
+        }
+
+        if ((isMain || (accountTxQueue.size() + mtxQueue.size()) == 0 || linkQueue.size() >= totalRequired) && !linkQueue.isEmpty()) {
+            while (!linkQueue.isEmpty() && result.size() < totalRequired) {
+                OrphanMeta m = linkQueue.peek();
+                if (m.time > cutoffTime) break;
+                result.add(m);
+                linkQueue.remove(m);
+                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(m)));
+            }
+            return result;
+        }
+
+        while ((!mtxQueue.isEmpty() || !accountTxQueue.isEmpty()) && result.size() < totalRequired) {
+            OrphanMeta mTXnext = mtxQueue.peek();
+            if (mTXnext != null && mTXnext.time <= cutoffTime) {
+                result.add(mTXnext);
+                mtxQueue.remove(mTXnext);
+                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(mTXnext)));
+                continue;
+            }
+            OrphanMeta accountTxNext = accountTxQueue.peek();
+            if (accountTxNext != null && accountTxNext.time <= cutoffTime ){
+                result.add(accountTxNext);
+                accountTxQueue.remove(accountTxNext);
+                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(accountTxNext)));
+                continue;
+            }
+            boolean mtxOver = (mTXnext != null && mTXnext.getTime() > cutoffTime);
+            boolean accountOver = (accountTxNext != null && accountTxNext.getTime() > cutoffTime);
+            if (mtxOver && accountOver) {
+                break;
             }
         }
 
@@ -351,8 +391,8 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
     }
 
     public long getOrphanSize() {
-        long accountTxCount = accountTxMap.values().stream().mapToLong(Queue::size).sum();
-        return linkQueue.size() + mtxQueue.size() + accountTxCount;
+        long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        return linkQueue.size() + mtxQueue.size() + vipTxCount + accountTxQueue.size();
     }
 
     @Getter
@@ -409,10 +449,9 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         public final String accountKey;
         public final EntryType type;
 
-        public CandidateEntry(OrphanMeta meta, String accountKey, EntryType type) {
+        public CandidateEntry(OrphanMeta meta, String accountKey) {
             this.meta = meta;
             this.accountKey = accountKey;
-            this.type = type;
         }
     }
 
