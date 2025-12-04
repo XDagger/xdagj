@@ -78,7 +78,6 @@ import static io.xdag.utils.BytesUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.WalletUtils.checkAddress;
 import static io.xdag.utils.WalletUtils.toBase58;
-import static io.xdag.consensus.XdagPow.isChange;
 
 @Slf4j
 @Getter
@@ -86,7 +85,8 @@ public class BlockchainImpl implements Blockchain {
 
     // Static gas fee accumulator
     private static XAmount sumGas = XAmount.ZERO;
-    
+    private static final long MAX_ORPHAN_SIZE = 3750;
+
     // Thread factory for main chain checking
     private static final ThreadFactory factory = new BasicThreadFactory.Builder()
             .namingPattern("check-main-%d")
@@ -132,7 +132,6 @@ public class BlockchainImpl implements Blockchain {
     private final Map<Bytes32, Long> mBlockTimedOut = new ConcurrentHashMap<>();
     private final ScheduledExecutorService rollBackLoop = Executors.newSingleThreadScheduledExecutor();
 
-    private final List<Address> txList = new CopyOnWriteArrayList<>();
     private List<Block> rollTxList = new LinkedList<>();
 
     @Getter
@@ -305,6 +304,13 @@ public class BlockchainImpl implements Blockchain {
                 return result;
             }
 
+            if (isAccountTx(block) && orphanBlockStore.getOrphanSize() >= MAX_ORPHAN_SIZE) {
+                result = ImportResult.INVALID_BLOCK;
+                result.setErrorInfo("Orphan block pool is full");
+                log.debug("Orphan block pool is full");
+                return result;
+            }
+
             // Check if block already exists
             if (isExist(block.getHashLow())) {
                 return ImportResult.EXIST;
@@ -394,6 +400,11 @@ public class BlockchainImpl implements Blockchain {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(ref.getAddress());
                                 result.setErrorInfo("Ref output amount < Gas");
+                                return result;
+                            } else if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(addressStore.getBalanceByAddress(BytesUtils.byte32ToArray(ref.getAddress()))).isPositive()) {
+                                result = ImportResult.INVALID_BLOCK;
+                                result.setHashlow(ref.getAddress());
+                                result.setErrorInfo("Ref input amount < account balance");
                                 return result;
                             }
                         } else {
@@ -537,9 +548,7 @@ public class BlockchainImpl implements Blockchain {
             } else {
                 saveBlock(block);
                 dealOrphan(block);
-                synchronized (xdagStats) {
-                    xdagStats.nnoref++;
-                }
+                xdagStats.nnoref++;
             }
             blockStore.saveXdagStatus(xdagStats);
 
@@ -588,9 +597,7 @@ public class BlockchainImpl implements Blockchain {
                         rollTxList.add(txBlock);
                         if ((txBlock.getInfo().flags & BI_REF) != 0) {
                             updateBlockFlag(txBlock, BI_REF, false);
-                            synchronized (xdagStats) {
-                                xdagStats.nnoref++;
-                            }
+                            xdagStats.nnoref++;
                             blockStore.saveXdagStatus(xdagStats);
                         }
                         mBlockTx.remove(link.addressHash);
@@ -606,9 +613,7 @@ public class BlockchainImpl implements Blockchain {
                             rollTxList.add(txBlock);
                             if ((txBlock.getInfo().flags & BI_REF) == 0) continue;
                             updateBlockFlag(txBlock, BI_REF, false);
-                            synchronized (xdagStats) {
-                                xdagStats.nnoref++;
-                            }
+                            xdagStats.nnoref++;
                             blockStore.saveXdagStatus(xdagStats);
                             log.debug("roll main txBlock :{} , txBlock :{} , mBlockTx size :{}", block.getHashLow(), link.addressHash, mBlockTx.size());
                             break;
@@ -676,7 +681,7 @@ public class BlockchainImpl implements Blockchain {
                 }
                 return sum;
             }
-            if ((block.getInfo().flags & BI_APPLIED) != 0 && equalBytes(block.getInfo().getRef(), mHashLow.toArray())) {
+            if ((block.getInfo().flags & BI_APPLIED) != 0 && (block.getInfo().getRef() != null && equalBytes(block.getInfo().getRef(), mHashLow.toArray()))) {
                 return outPutNum(block) == -1 ? 0 : outPutNum(block);
             }
 
@@ -995,7 +1000,7 @@ public class BlockchainImpl implements Blockchain {
      */
     private XAmount applyBlock(boolean flag, Block block) {
         // Block already processed
-        if ((block.getInfo().flags & BI_MAIN_REF) != 0) {
+        if ((block.getInfo().flags & BI_APPLIED) != 0) {
             return XAmount.ZERO.subtract(XAmount.ONE);
         }
 
@@ -1011,7 +1016,7 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
-                if ((ref.getInfo().flags & BI_MAIN_REF) != 0) continue;
+                if ((ref.getInfo().flags & BI_APPLIED) != 0) continue;
                 ref = getBlockByHash(link.getAddress(), true);
                 ref.getInfo().setFee(XAmount.ZERO);
 
@@ -1356,23 +1361,9 @@ public class BlockchainImpl implements Blockchain {
         refs.add(coinbase);
         res++;
 
-        if (isChange.get()) {
-            if (CollectionUtils.isNotEmpty(txList)) {
-                for (int i = 16 - res, j = 0; i > 0 && j < txList.size(); i--, j++) {
-                    refs.add(txList.get(j));
-                    res++;
-                    log.debug("isChange:{}, txHash:{}", isChange.get(), txList.get(j).getAddress());
-                }
-            }
-        } else {
-            log.debug("isChange:{},txList.size <= (16 - res):{}", isChange.get(), (16 - res) >= txList.size());
-            txList.clear();
-        }
-
-        List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime);
+        List<Address> orphans = getBlockFromOrphanPool(16 - res, sendTime, true);
         if (CollectionUtils.isNotEmpty(orphans)) {
             refs.addAll(orphans);
-            txList.addAll(orphans);
         }
         return new Block(kernel.getConfig(), sendTime[0], null, refs, true, null,
                 kernel.getConfig().getNodeSpec().getNodeTag(), -1, XAmount.ZERO, null);
@@ -1690,9 +1681,7 @@ public class BlockchainImpl implements Blockchain {
 
                 orphanBlockStore.deleteFromQueue(b, isTxBlock(b), nonce, fee, address);
                 orphanBlockStore.deleteByKey(b.getHashLow().toArray(), isTxBlock(b), nonce, fee, address);
-                synchronized (xdagStats) {
-                    xdagStats.nnoref--;
-                }
+                xdagStats.nnoref--;
             }
             // Update this block's flag
             updateBlockFlag(b, BI_REF, true);
