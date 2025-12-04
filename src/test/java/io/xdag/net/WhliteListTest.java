@@ -29,8 +29,8 @@ import static org.junit.Assert.assertTrue;
 
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import java.net.InetSocketAddress;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;

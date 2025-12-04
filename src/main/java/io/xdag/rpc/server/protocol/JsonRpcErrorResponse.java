@@ -26,7 +26,6 @@ package io.xdag.rpc.server.protocol;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.xdag.rpc.error.JsonRpcError;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  *

@@ -30,10 +30,14 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.MainnetConfig;
 import io.xdag.core.XdagField.FieldType;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.RandomX;
-import io.xdag.crypto.Sign;
+import io.xdag.consensus.RandomX;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.hash.HashUtils;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PublicKey;
+import io.xdag.crypto.keys.Signature;
+import io.xdag.crypto.keys.Signer;
 import io.xdag.db.*;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import io.xdag.db.rocksdb.SnapshotStoreImpl;
@@ -42,8 +46,6 @@ import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.WalletUtils;
-import io.xdag.utils.XdagRandomUtils;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -54,12 +56,8 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SECPSignature;
 
 import java.math.BigInteger;
 import java.nio.ByteOrder;
@@ -73,11 +71,11 @@ import static io.xdag.config.Constants.MessageType.PRE_TOP;
 import static io.xdag.core.ImportResult.IMPORTED_BEST;
 import static io.xdag.core.ImportResult.IMPORTED_NOT_BEST;
 import static io.xdag.core.XdagField.FieldType.*;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.BytesUtils.*;
 import static io.xdag.utils.BytesUtils.equalBytes;
 import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
 @Getter
@@ -88,7 +86,7 @@ public class BlockchainImpl implements Blockchain {
     private static final long MAX_ORPHAN_SIZE = 3750;
 
     // Thread factory for main chain checking
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("check-main-%d")
             .daemon(true)
             .build();
@@ -381,11 +379,12 @@ public class BlockchainImpl implements Blockchain {
                             return result;
                         }
                     }
-                    if (ref != null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()))) {
+                    if (ref != null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()).toArray())) {
                         result = ImportResult.INVALID_BLOCK;
-                        result.setErrorInfo("Address isn't exist " + WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                        result.setErrorInfo("Address isn't exist " + Base58.encodeCheck(
+                            BytesUtils.byte32ToArray(ref.getAddress())));
                         log.debug("Address isn't exist {}",
-                                WalletUtils.toBase58(BytesUtils.byte32ToArray(ref.getAddress())));
+                            Base58.encodeCheck(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                     // Ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1
@@ -1161,14 +1160,14 @@ public class BlockchainImpl implements Blockchain {
             //When rolling back, the unaccepted transactions in the main block need to be processed, which is the number of confirmed transactions sent corresponding to their account addresses, nonce, needs to be reduced by one
             for(Address link : links) {
                 if (link.isAddress && link.getType() == XDAG_FIELD_INPUT){
-                    byte[] address = byte32ToArray(link.getAddress());
+                    Bytes address = byte32ToArray(link.getAddress());
                     UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
-                    UInt64 exeNonce = addressStore.getExecutedNonceNum(address);
+                    UInt64 exeNonce = addressStore.getExecutedNonceNum(address.toArray());
                     if (blockNonce.compareTo(exeNonce) == 0) {
-                        addressStore.updateExcutedNonceNum(address, false);
-                        addressStore.updateTxQuantity(address, exeNonce.subtract(UInt64.ONE));
+                        addressStore.updateExcutedNonceNum(address.toArray(), false);
+                        addressStore.updateTxQuantity(address.toArray(), exeNonce.subtract(UInt64.ONE));
                         log.debug("The transaction processed quantity of account {} is reduced by one, and the number of transactions processed now is nonce = {}",
-                                toBase58(BytesUtils.byte32ToArray(link.getAddress())), addressStore.getExecutedNonceNum(address).intValue()
+                            Base58.encodeCheck(BytesUtils.byte32ToArray(link.getAddress())), addressStore.getExecutedNonceNum(address.toArray()).intValue()
                         );
                     }
 
@@ -1277,16 +1276,16 @@ public class BlockchainImpl implements Blockchain {
         if (link.getType() != XDAG_FIELD_INPUT) {
             return;
         }
-        byte[] address = BytesUtils.byte32ToArray(link.getAddress());
-        addressStore.updateExcutedNonceNum(address, true);
-        UInt64 currentTxNonce = addressStore.getTxQuantity(address);
-        UInt64 currentExeNonce = addressStore.getExecutedNonceNum(address);
-        addressStore.updateTxQuantity(address, currentTxNonce, currentExeNonce);
+        Bytes address = BytesUtils.byte32ToArray(link.getAddress());
+        addressStore.updateExcutedNonceNum(address.toArray(), true);
+        UInt64 currentTxNonce = addressStore.getTxQuantity(address.toArray());
+        UInt64 currentExeNonce = addressStore.getExecutedNonceNum(address.toArray());
+        addressStore.updateTxQuantity(address.toArray(), currentTxNonce, currentExeNonce);
     }
 
     @Override
     public Block createNewBlock(
-            Map<Address, KeyPair> pairs,
+            Map<Address, ECKeyPair> pairs,
             List<Address> to,
             boolean mining,
             String remark,
@@ -1307,7 +1306,7 @@ public class BlockchainImpl implements Blockchain {
 
         // Check all keys to see if there is a default key
         assert pairs != null;
-        List<KeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
+        List<ECKeyPair> keys = new ArrayList<>(Set.copyOf(pairs.values()));
         for (int i = 0; i < keys.size(); i++) {
             if (keys.get(i).equals(wallet.getDefKey())) {
                 defKeyIndex = i;
@@ -1574,7 +1573,7 @@ public class BlockchainImpl implements Blockchain {
     public BigInteger getDiffByRandomXHash(Block block) {
         long epoch = XdagTime.getEpoch(block.getTimestamp());
         MutableBytes data = MutableBytes.create(64);
-        Bytes32 rxHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 512 - 32));
+        Bytes32 rxHash = HashUtils.sha256(block.getXdagBlock().getData().slice(0, 512 - 32));
         data.set(0, rxHash);
         data.set(32, block.getXdagBlock().getField(15).getData());
         byte[] blockHash = randomx.randomXBlockHash(data.toArray(), epoch);
@@ -1753,7 +1752,7 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean canUseInput(Block block) {
-        List<SECPPublicKey> keys = block.verifiedKeys();
+        List<PublicKey> keys = block.verifiedKeys();
         List<Address> inputs = block.getInputs();
         if (inputs == null || inputs.isEmpty()) {
             return true;
@@ -1776,15 +1775,15 @@ public class BlockchainImpl implements Blockchain {
         return true;
     }
 
-    private boolean verifyBlockSignature(Address in, List<SECPPublicKey> keys) {
+    private boolean verifyBlockSignature(Address in, List<PublicKey> keys) {
         Bytes pubHash = in.getAddress().mutableCopy().slice(8, 20);
-        for (SECPPublicKey key : keys) {
-            if (Arrays.areEqual(pubHash.toArray(), Keys.toBytesAddress(key))) return true;
+        for (PublicKey key : keys) {
+            if (pubHash.equals(toBytesAddress(key))) return true;
         }
         return false;
     }
 
-    private boolean verifySignature(Address in, List<SECPPublicKey> publicKeys) {
+    private boolean verifySignature(Address in, List<PublicKey> publicKeys) {
         // TODO: Check if block is in snapshot, get blockinfo with isRaw=false
         Block block = getBlockByHash(in.getAddress(), false);
         boolean isSnapshotBlock = block.getInfo().isSnapshot();
@@ -1794,50 +1793,55 @@ public class BlockchainImpl implements Blockchain {
             Block inBlock = getBlockByHash(in.getAddress(), true);
             MutableBytes subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
 //            log.debug("verify encoded:{}", Hex.toHexString(subdata));
-            SECPSignature sig = inBlock.getOutsig();
+            Signature sig = inBlock.getOutsig();
             return verifySignature(subdata, sig, publicKeys, block.getInfo());
         }
     }
 
     // TODO: When input is a block in snapshot, need to verify snapshot's public key or signature data
-    private boolean verifySignatureFromSnapshot(Address in, List<SECPPublicKey> publicKeys) {
+    private boolean verifySignatureFromSnapshot(Address in, List<PublicKey> publicKeys) {
         BlockInfo blockInfo = blockStore.getBlockInfoByHash(in.getAddress()).getInfo();
         SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
         if (snapshotInfo.getType()) {
-            BigInteger xBn = Bytes.wrap(snapshotInfo.getData()).slice(1, 32).toUnsignedBigInteger();
-            boolean yBit = snapshotInfo.getData()[0] == 0x03;
-            ECPoint point = Sign.decompressKey(xBn, yBit);
-            // Parse uncompressed public key without prefix
-            byte[] encodePub = point.getEncoded(false);
-            SECPPublicKey targetPublicKey = SECPPublicKey.create(new BigInteger(1, java.util.Arrays.copyOfRange(encodePub, 1, encodePub.length)), Sign.CURVE_NAME);
-            for (SECPPublicKey publicKey : publicKeys) {
+            // snapshotInfo.getData() contains 33-byte compressed public key format
+            try {
+                PublicKey targetPublicKey = PublicKey.fromBytes(snapshotInfo.getData());
+            for (PublicKey publicKey : publicKeys) {
                 if (publicKey.equals(targetPublicKey)) {
                     return true;
                 }
             }
             return false;
+            } catch (Exception e) {
+                // If public key parsing fails, verification fails
+                return false;
+            }
         } else {
             Block block = getBlockByHash(in.getAddress(), false);
             block.setXdagBlock(new XdagBlock(snapshotInfo.getData()));
             block.setParsed(false);
             block.parse();
             MutableBytes subdata = block.getSubRawData(block.getOutsigIndex() - 2);
-            SECPSignature sig = block.getOutsig();
-            return verifySignature(subdata, Sign.toCanonical(sig), publicKeys, blockInfo);
+            Signature sig = block.getOutsig();
+            // Check if signature is canonical to prevent signature malleability attacks
+            if (!sig.isCanonical()) {
+                return false; // Reject non-canonical signatures
+            }
+            return verifySignature(subdata, sig, publicKeys, blockInfo);
         }
 
 
     }
 
-    private boolean verifySignature(MutableBytes subdata, SECPSignature sig, List<SECPPublicKey> publicKeys, BlockInfo blockInfo) {
-        for (SECPPublicKey publicKey : publicKeys) {
-            byte[] publicKeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
+    private boolean verifySignature(MutableBytes subdata, Signature sig, List<PublicKey> publicKeys, BlockInfo blockInfo) {
+        for (PublicKey publicKey : publicKeys) {
+            byte[] publicKeyBytes = publicKey.toBytes().toArray();
             Bytes digest = Bytes.wrap(subdata, Bytes.wrap(publicKeyBytes));
 //            log.debug("verify encoded:{}", Hex.toHexString(digest));
-            Bytes32 hash = Hash.hashTwice(digest);
-            if (Sign.SECP256K1.verify(hash, sig, publicKey)) {
+            Bytes32 hash = HashUtils.doubleSha256(digest);
+            if (Signer.verify(hash, sig, publicKey)) {
                 SnapshotInfo snapshotInfo = blockInfo.getSnapshotInfo();
-                byte[] pubkeyBytes = publicKey.asEcPoint(Sign.CURVE).getEncoded(true);
+                byte[] pubkeyBytes = publicKey.toBytes().toArray();
                 if (snapshotInfo != null) {
                     snapshotInfo.setData(pubkeyBytes);
                     snapshotInfo.setType(true);
@@ -1852,18 +1856,18 @@ public class BlockchainImpl implements Blockchain {
     }
 
     public boolean checkMineAndAdd(Block block) {
-        List<KeyPair> ourkeys = wallet.getAccounts();
+        List<ECKeyPair> ourkeys = wallet.getAccounts();
         // Only one output signature
-        SECPSignature signature = block.getOutsig();
+        Signature signature = block.getOutsig();
         // Iterate through all keys
         for (int i = 0; i < ourkeys.size(); i++) {
-            KeyPair ecKey = ourkeys.get(i);
+            ECKeyPair ecKey = ourkeys.get(i);
             // TODO: Optimize
-            byte[] publicKeyBytes = ecKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
+            byte[] publicKeyBytes = ecKey.getPublicKey().toBytes().toArray();
             Bytes digest = Bytes.wrap(block.getSubRawData(block.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
-            Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
+            Bytes32 hash = HashUtils.doubleSha256(Bytes.wrap(digest));
             // Use hyperledger besu crypto native secp256k1
-            if (Sign.SECP256K1.verify(hash, signature, ecKey.getPublicKey())) {
+            if (Signer.verify(hash, signature, ecKey.getPublicKey())) {
                 log.debug("verify block success hash={}.", hash.toHexString());
                 addOurBlock(i, block);
                 return true;
@@ -1942,7 +1946,7 @@ public class BlockchainImpl implements Blockchain {
     public void checkOrphan() {
         long nblk = xdagStats.nnoref / 11;
         if (nblk > 0) {
-            boolean b = (nblk % 61) > XdagRandomUtils.nextLong(61);
+            boolean b = (nblk % 61) > CryptoProvider.nextLong(0, 61);
             nblk = nblk / 61 + (b ? 1 : 0);
         }
         while (nblk-- > 0) {
@@ -2041,17 +2045,17 @@ public class BlockchainImpl implements Blockchain {
                 finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
     }
 
-    private void subtractAmount(byte[] addressHash, XAmount amount, Block block) {
-        XAmount balance = addressStore.getBalanceByAddress(addressHash);
+    private void subtractAmount(Bytes addressHash, XAmount amount, Block block) {
+        XAmount balance = addressStore.getBalanceByAddress(addressHash.toArray());
         try {
-            addressStore.updateBalance(addressHash, balance.subtract(amount));
+            addressStore.updateBalance(addressHash.toArray(), balance.subtract(amount));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
+            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, Base58.encodeCheck(addressHash), block.getHashLow());
         }
-        XAmount finalAmount = addressStore.getBalanceByAddress(addressHash);
+        XAmount finalAmount = addressStore.getBalanceByAddress(addressHash.toArray());
         log.debug("Balance checker —— Address:{} [old:{} sub:{} fin:{}]",
-                WalletUtils.toBase58(addressHash),
+                Base58.encodeCheck(addressHash),
                 balance.toDecimal(9, XUnit.XDAG).toPlainString(),
                 amount.toDecimal(9, XUnit.XDAG).toPlainString(),
                 finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
@@ -2060,17 +2064,17 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
-    private void addAmount(byte[] addressHash, XAmount amount, Block block) {
-        XAmount balance = addressStore.getBalanceByAddress(addressHash);
+    private void addAmount(Bytes addressHash, XAmount amount, Block block) {
+        XAmount balance = addressStore.getBalanceByAddress(addressHash.toArray());
         try {
-            addressStore.updateBalance(addressHash, balance.add(amount));
+            addressStore.updateBalance(addressHash.toArray(), balance.add(amount));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, toBase58(addressHash), block.getHashLow());
+            log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, Base58.encodeCheck(addressHash), block.getHashLow());
         }
-        XAmount finalAmount = addressStore.getBalanceByAddress(addressHash);
+        XAmount finalAmount = addressStore.getBalanceByAddress(addressHash.toArray());
         log.warn("Balance checker —— Address:{} [old:{} add:{} fin:{}]",
-                WalletUtils.toBase58(addressHash),
+                Base58.encodeCheck(addressHash),
                 balance.toDecimal(9, XUnit.XDAG).toPlainString(),
                 amount.toDecimal(9, XUnit.XDAG).toPlainString(),
                 finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());

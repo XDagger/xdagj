@@ -58,10 +58,10 @@ public class JsonRpcResponseTest {
 //        String result = "success";
 //        JsonRpcResponse response = JsonRpcResponse.success(1, result);
 //
-//        assertEquals("2.0", response.getJsonrpc());
-//        assertNull(response.getId());
-//        assertEquals(result, response.getResult());
-//        assertNull(response.getError());
+//        assertEquals("2.0", response.getJsonrpc();
+//        assertNull(response.getId();
+//        assertEquals(result, response.getResult();
+//        assertNull(response.getError();
 //    }
 
 //    @Test
@@ -69,10 +69,10 @@ public class JsonRpcResponseTest {
 //        int id = 1;
 //        JsonRpcResponse response = JsonRpcResponse.success(id, null);
 //
-//        assertEquals("2.0", response.getJsonrpc());
-//        assertEquals(id, response.getId());
-//        assertNull(response.getResult());
-//        assertNull(response.getError());
+//        assertEquals("2.0", response.getJsonrpc();
+//        assertEquals(id, response.getId();
+//        assertNull(response.getResult();
+//        assertNull(response.getError();
 //    }
 
     @Test
@@ -130,10 +130,10 @@ public class JsonRpcResponseTest {
 //    public void testNotificationResponseWithNullResult() {
 //        JsonRpcResponse response = JsonRpcResponse.notification(null);
 //
-//        assertEquals("2.0", response.getJsonrpc());
-//        assertNull(response.getId());
-//        assertNull(response.getResult());
-//        assertNull(response.getError());
+//        assertEquals("2.0", response.getJsonrpc();
+//        assertNull(response.getId();
+//        assertNull(response.getResult();
+//        assertNull(response.getError();
 //    }
 
 //    @Test
@@ -148,11 +148,11 @@ public class JsonRpcResponseTest {
 //        JsonRpcError error = new JsonRpcError(JsonRpcError.ERR_INTERNAL, "Internal error", data);
 //        JsonRpcResponse response = JsonRpcResponse.error(id, error);
 //
-//        assertEquals("2.0", response.getJsonrpc());
-//        assertEquals(id, response.getId());
-//        assertNull(response.getResult());
-//        assertEquals(error, response.getError());
-//        assertArrayEquals((Object[]) data, (Object[]) response.getError().getData());
+//        assertEquals("2.0", response.getJsonrpc();
+//        assertEquals(id, response.getId();
+//        assertNull(response.getResult();
+//        assertEquals(error, response.getError();
+//        assertArrayEquals((Object[]) data, (Object[]) response.getError().getData();
 //    }
 
     @Test

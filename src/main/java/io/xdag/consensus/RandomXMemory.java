@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.crypto;
+package io.xdag.consensus;
 
 import io.xdag.crypto.randomx.RandomXTemplate;
 import lombok.Getter;

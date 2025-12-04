@@ -23,7 +23,8 @@
  */
 
 package io.xdag.core;
-
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.keys.Signer;import io.xdag.crypto.hash.HashUtils;import io.xdag.crypto.keys.AddressUtils;
 import com.google.common.collect.Lists;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
@@ -33,14 +34,12 @@ import io.xdag.consensus.XdagPow;
 import io.xdag.crypto.Hash;
 import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.db.rocksdb.*;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.WalletUtils;
 import io.xdag.utils.XdagTime;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,10 +47,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.SECPSignature;
+import io.xdag.crypto.keys.Signature;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -142,7 +141,7 @@ public class BlockchainTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -271,7 +270,7 @@ public class BlockchainTest {
     public void testExtraBlock() {
         //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        KeyPair key = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(secretary_1);
         MockBlockchain blockchain = new MockBlockchain(kernel);
         XdagTopStatus stats = blockchain.getXdagTopStatus();
         assertNotNull(stats);
@@ -409,7 +408,7 @@ public class BlockchainTest {
         pending.clear();
         Address txAddress = new Address(txBlock.getHashLow(), false);
         pending.add(txAddress);
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         // 4. confirm transaction block with 16 mainblocks
         for (int i = 1; i <= 16; i++) {
             generateTime += 64000L;
@@ -478,8 +477,8 @@ public class BlockchainTest {
         assertChainStatus(28, 25, 1, 0, blockchain);
         assertArrayEquals(extraBlockList.get(10).getHashLow().toArray(), blockchain.getBlockByHeight(12).getHashLow().toArray());
 
-        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
         assertEquals("99.80", addressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
@@ -508,8 +507,8 @@ public class BlockchainTest {
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertNotEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_REF);//After the rollback, the flags of the transaction blocks were not processed.
 
-        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         XAmount mainFee = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getFee();
         assertEquals("1000.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//rollback 900 + 100 = 1000
@@ -520,7 +519,7 @@ public class BlockchainTest {
 
         //TODO:test wallet create txBlock with fee = 0,
         List<Block> txList = Lists.newLinkedList();
-        assertEquals(UInt64.ZERO, blockchain.getAddressStore().getExecutedNonceNum(Keys.toBytesAddress(poolKey)));
+        assertEquals(UInt64.ZERO, blockchain.getAddressStore().getExecutedNonceNum(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe()));
         for (int i = 1; i <= 10; i++) {
             Block txBlock_0;
             if (i == 1) {//TODO:test give miners reward with a TX block :one input several output
@@ -560,7 +559,7 @@ public class BlockchainTest {
         for (Block tx : txList) {
             pending.add(new Address(tx.getHashLow(), false));
         }
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
         // 4. confirm transaction block with 16 mainblocks
         assertEquals(10, pending.size());
         for (int i = 1; i <= 16; i++) {
@@ -675,9 +674,9 @@ public class BlockchainTest {
         assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(26).getHashLow(), false).getInfo().getMaxDiffLink(), blockchain.getBlockByHeight(27).getHashLow().toArray());
         assertArrayEquals(extraBlockList.get(25).getHashLow().toArray(), blockchain.getBlockByHeight(27).getHashLow().toArray());
 
-        XAmount RollBackPoolBalance_1 = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount RollBackAddressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        XAmount RollBackAddressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount RollBackPoolBalance_1 = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance_0 = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance_1 = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey1).toArrayUnsafe());
         XAmount RollBackMainBlockLinkTxBalance_1 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
         assertEquals("1000.00", RollBackPoolBalance_1.toDecimal(2, XUnit.XDAG).toString());//1000
         assertEquals("0.00", RollBackAddressBalance_0.toDecimal(2, XUnit.XDAG).toString());//rollback is zero
@@ -695,7 +694,7 @@ public class BlockchainTest {
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe(), XAmount.of(1000, XUnit.XDAG));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
@@ -1213,15 +1212,15 @@ public class BlockchainTest {
 
     @Test
     public void testTransaction_WithVariableFee() {
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe(), XAmount.of(1000, XUnit.XDAG));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
@@ -1349,8 +1348,8 @@ public class BlockchainTest {
         //todo:If a transaction block is rolled back, should we also reset this flag?
         assertNotEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_REF);
 
-        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         XAmount RollBackMainBlockFee = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getFee();
         XAmount RollBackTxBlockAmount = blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().getAmount();
@@ -1366,9 +1365,9 @@ public class BlockchainTest {
 
     @Test
     public void testIfTxBlockTobeMain() {
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
@@ -1601,7 +1600,7 @@ public class BlockchainTest {
 
         pending.clear();
         pending.add(new Address(txBlock.getHashLow(), false));
-        ref = extraBlockList.get(extraBlockList.size() - 1).getHashLow();
+        ref = extraBlockList.getLast().getHashLow();
 // 4. confirm transaction block with 3 mainblocks
         for (int i = 1; i <= 4; i++) {
             generateTime += 64000L;
@@ -1627,16 +1626,16 @@ public class BlockchainTest {
         SECPSignature signature = TxBlockTobeMain.getOutsig();
         byte[] publicKeyBytes = poolKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
         Bytes digest = Bytes.wrap(TxBlockTobeMain.getSubRawData(TxBlockTobeMain.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
-        Bytes32 hash = Hash.hashTwice(Bytes.wrap(digest));
+        Bytes32 hash = HashUtils.doubleSha256(Bytes.wrap(digest));
         // use hyperledger besu crypto native secp256k1
-        assertTrue(Sign.SECP256K1.verify(hash, signature, poolKey.getPublicKey()));
+        assertTrue(Signer.verify(hash, signature, poolKey.getPublicKey()));
 
     }
 
     @Test
     public void testNew2NewTxAboutRejected() {
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
@@ -1702,7 +1701,7 @@ public class BlockchainTest {
         long generateTime = 1600616700000L;
         // 1. first block get 1024 reward
         Block addressBlock = generateAddressBlock(config, poolKey, generateTime);//get another 1000 amount
-//        System.out.println(PubkeyAddressUtils.toBase58(Keys.toBytesAddress(addrKey)));
+//        System.out.println(PubkeyAddressUtils.Base58.encodeCheck(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         MockBlockchain blockchain = new MockBlockchain(kernel);
         addressBlock = new Block(addressBlock.getXdagBlock());
         ImportResult result = blockchain.tryToConnect(addressBlock);
@@ -1803,8 +1802,8 @@ public class BlockchainTest {
     public void testCanUseInput() {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        KeyPair fromKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair toKey = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair fromKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair toKey = ECKeyPair.fromPrivateKey(secretary_2);
         Block fromAddrBlock = generateAddressBlock(config, fromKey, generateTime);
         Block toAddrBlock = generateAddressBlock(config, toKey, generateTime);
 
@@ -1860,8 +1859,8 @@ public class BlockchainTest {
         String firstDiff = "3f4a35eaa6";
         String secondDiff = "1a24b50c9f2";
 
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(secretary_2);
         long generateTime = 1600616700000L;
         // 1. add one address block
         Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
@@ -1920,7 +1919,7 @@ public class BlockchainTest {
 
     @Test
     public void testForkAllChain() {
-        KeyPair poolKey = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(secretary_2);
         long generateTime = 1600616700000L;
 
         // 1. add one address block

@@ -30,12 +30,11 @@ import io.xdag.core.Block;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagBlock;
 import io.xdag.core.XdagStats;
-import io.xdag.crypto.Keys;
 import io.xdag.db.BlockStore;
 import io.xdag.db.rocksdb.*;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,7 +107,7 @@ public class BlockStoreImplTest {
         BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,TxHistorySource);
         bs.start();
         long time = System.currentTimeMillis();
-        KeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.generate();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         Block storedBlock = bs.getBlockByHash(block.getHashLow(), true);
@@ -122,7 +121,7 @@ public class BlockStoreImplTest {
         BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,TxHistorySource);
         bs.start();
         long time = System.currentTimeMillis();
-        KeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.generate();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         Block storedBlock = bs.getBlockByHash(block.getHashLow(), true);
@@ -137,7 +136,7 @@ public class BlockStoreImplTest {
         BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,TxHistorySource);
         bs.start();
         long time = System.currentTimeMillis();
-        KeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.generate();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow().toArray());
@@ -150,7 +149,7 @@ public class BlockStoreImplTest {
         BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,TxHistorySource);
         bs.start();
         long time = System.currentTimeMillis();
-        KeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.generate();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
         bs.saveOurBlock(1, block.getHashLow().toArray());
@@ -165,7 +164,7 @@ public class BlockStoreImplTest {
         BlockStore bs = new BlockStoreImpl(indexSource, timeSource, blockSource,TxHistorySource);
         bs.start();
         long time = 1602951025307L;
-        KeyPair key = Keys.createEcKeyPair();
+        ECKeyPair key = ECKeyPair.generate();
         Block block = generateAddressBlock(config, key, time);
         bs.saveBlock(block);
 //        byte[] sums = new byte[256];

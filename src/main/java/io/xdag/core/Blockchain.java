@@ -24,12 +24,11 @@
 
 package io.xdag.core;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.listener.Listener;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +42,7 @@ public interface Blockchain {
 
     // Create a new block with given parameters
     Block createNewBlock(
-            Map<Address, KeyPair> pairs,
+            Map<Address, ECKeyPair> pairs,
             List<Address> to,
             boolean mining,
             String remark,

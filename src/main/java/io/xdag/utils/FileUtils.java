@@ -36,7 +36,7 @@ public class FileUtils {
 
     /**
      * Generates a list of hierarchical file paths based on a timestamp
-     * 
+     * <p>
      * The method creates a directory structure by extracting bytes from the timestamp
      * and converting them to hex strings. Each level represents 8 bits of the timestamp.
      *

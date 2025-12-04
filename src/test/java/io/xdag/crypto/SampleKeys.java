@@ -24,11 +24,11 @@
 
 package io.xdag.crypto;
 
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
+import io.xdag.crypto.keys.PublicKey;
 import io.xdag.utils.Numeric;
 import java.math.BigInteger;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 
 /**
  * Keys generated for unit testing purposes.
@@ -56,8 +56,7 @@ public class SampleKeys {
 
     public static final String PASSWORD = "Insecure Pa55w0rd";
     public static final String MNEMONIC =
-            "scatter major grant return flee easy female jungle"
-                    + " vivid movie bicycle absent weather inspire carry";
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
     public static final String MNEMONIC2 =
             "flush still bind explain behave collect"
