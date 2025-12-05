@@ -53,7 +53,7 @@ public class ChannelManagerTest {
             addressList.add(new InetSocketAddress(address.split(":")[0],Integer.parseInt(address.split(":")[1])));
         }
         config.getNodeSpec().setWhiteIPList(addressList);
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         kernel = new Kernel(config, key);
     }
 

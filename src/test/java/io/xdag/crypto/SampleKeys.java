@@ -68,14 +68,16 @@ public class SampleKeys {
     public static final BigInteger PRIVATE_KEY2 = Numeric.toBigInt(PRIVATE_KEY2_STRING);
     public static final BigInteger PUBLIC_KEY2 = Numeric.toBigInt(PUBLIC_KEY2_STRING);
 
-    public static final SECPPrivateKey SRIVATE_KEY = SECPPrivateKey.create(PRIVATE_KEY, Sign.CURVE_NAME);
-    public static final SECPPublicKey SPUBLIC_KEY = SECPPublicKey.create(PUBLIC_KEY, Sign.CURVE_NAME);
+//    public static final PrivateKey  PRIVATE_KEY_OBJ = PrivateKey.fromBigInteger(PRIVATE_KEY);
+//    public static final PublicKey   PUBLIC_KEY_OBJ = PublicKey.fromBigInteger(PUBLIC_KEY);
+    public static final PrivateKey  SRIVATE_KEY = PrivateKey.fromBigInteger(PRIVATE_KEY);
+    public static final PublicKey   SPUBLIC_KEY = PublicKey.fromBigInteger(PUBLIC_KEY);
 
-    public static final SECPPrivateKey SRIVATE_KEY2 = SECPPrivateKey.create(PRIVATE_KEY2, Sign.CURVE_NAME);
-    public static final SECPPublicKey SPUBLIC_KEY2 = SECPPublicKey.create(PUBLIC_KEY2, Sign.CURVE_NAME);
+    public static final PrivateKey  SRIVATE_KEY2 = PrivateKey.fromBigInteger(PRIVATE_KEY2);
+    public static final PublicKey  SPUBLIC_KEY2 = PublicKey.fromBigInteger(PUBLIC_KEY2);
 
-    public static final KeyPair KEY_PAIR = new KeyPair(SRIVATE_KEY, SPUBLIC_KEY);
-    public static final KeyPair KEY_PAIR2 = new KeyPair(SRIVATE_KEY2, SPUBLIC_KEY2);
+    public static final ECKeyPair  KEY_PAIR = ECKeyPair.fromPrivateKey (SRIVATE_KEY);
+    public static final ECKeyPair  KEY_PAIR2 = ECKeyPair.fromPrivateKey (SRIVATE_KEY2);
 
     private SampleKeys() {
     }

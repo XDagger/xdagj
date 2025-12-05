@@ -23,6 +23,7 @@
  */
 
 package io.xdag.core;
+import io.xdag.consensus.XdagPow;
 import io.xdag.crypto.encoding.Base58;
 import io.xdag.crypto.keys.Signer;import io.xdag.crypto.hash.HashUtils;import io.xdag.crypto.keys.AddressUtils;
 import com.google.common.collect.Lists;
@@ -30,9 +31,6 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.consensus.XdagPow;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Keys;
 import io.xdag.crypto.SampleKeys;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
@@ -67,7 +65,7 @@ import static io.xdag.BlockBuilder.*;
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.crypto.Keys.toBytesAddress;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.db.OrphanBlockStore.ORPHAN_PREFEX;
 import static io.xdag.utils.BasicUtils.*;
 import static org.junit.Assert.*;
@@ -101,10 +99,10 @@ public class BlockchainTest {
     BigInteger private_4 = new BigInteger("ec5bd494e66520466523aa3171c54c5db959f966470baa537012ccdc1fe05119", 16);
 
 
-    SECPPrivateKey secretary_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
-    SECPPrivateKey secretary_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
-    SECPPrivateKey secretary_3 = SECPPrivateKey.create(private_3, Sign.CURVE_NAME);
-    SECPPrivateKey secretary_4 = SECPPrivateKey.create(private_4, Sign.CURVE_NAME);
+    PrivateKey secretary_1 = PrivateKey.fromBigInteger(private_1);
+    PrivateKey secretary_2 = PrivateKey.fromBigInteger(private_2);
+    PrivateKey secretary_3 = PrivateKey.fromBigInteger(private_3);
+    PrivateKey secretary_4 = PrivateKey.fromBigInteger(private_4);
 
     private static void assertChainStatus(long nblocks, long nmain, long nextra, long norphan, BlockchainImpl bci) {
         assertEquals("blocks:", nblocks, bci.getXdagStats().nblocks);
@@ -123,7 +121,7 @@ public class BlockchainTest {
             if (blockchain.isAccountTx(b)) {
                 for (Address r : in) {
                     if (r.getType().equals(XDAG_FIELD_INPUT)) {
-                        address = BytesUtils.byte32ToArray(r.getAddress());
+                        address = BytesUtils.byte32ToArray(r.getAddress()).toArray();
                         nonce = b.getTxNonceField().getTransactionNonce();
                         break;
                     }
@@ -141,7 +139,7 @@ public class BlockchainTest {
         pwd = "password";
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -177,7 +175,7 @@ public class BlockchainTest {
         pwd2 = "password";
         wallet2 = new Wallet(config2);
         wallet2.unlock(pwd2);
-        KeyPair key2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key2 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY2);
         wallet2.setAccounts(Collections.singletonList(key2));
         wallet2.flush();
 
@@ -255,12 +253,12 @@ public class BlockchainTest {
             if (link.getType() == XDAG_FIELD_INPUT) {
                 assertEquals(
                         "AavSCZUxXbySZXjXcb3mwr5CzwabQXP2A",
-                        WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()));
+                        Base58.encodeCheck(link.getAddress().slice(8, 20).toArray()));
             }
             if (link.getType() == XDAG_FIELD_OUTPUT) {
                 assertEquals(
                         "8FfenZ1xewHGa3Ydx9zhppgou1hgesX97",
-                        WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()));
+                        Base58.encodeCheck(link.getAddress().slice(8, 20).toArray()));
             }
         }
         assertEquals("", kernel.getConfig().getNodeSpec().getRejectAddress()); //The default value is empty.
@@ -315,15 +313,15 @@ public class BlockchainTest {
 
     @Test
     public void testNew2NewTransactionBlock() {
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(poolKey.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
         //        ImportResult result = blockchain.tryToConnect(addressBlock);
         ImportResult result = blockchain.tryToConnect(new Block(new XdagBlock(addressBlock.toBytes())));
         // import address block, result must be IMPORTED_BEST
@@ -381,9 +379,9 @@ public class BlockchainTest {
         assertChainStatus(11, 10, 1, 0, blockchain);
         //TODO Testing two different trading models
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(poolKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(addrKey1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         // When this transaction block was constructed, a transaction fee of 0.1 x dag was entered.
         Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG), UInt64.ONE);
@@ -477,8 +475,8 @@ public class BlockchainTest {
         assertChainStatus(28, 25, 1, 0, blockchain);
         assertArrayEquals(extraBlockList.get(10).getHashLow().toArray(), blockchain.getBlockByHeight(12).getHashLow().toArray());
 
-        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
-        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(toBytesAddress(addrKey).toArrayUnsafe());
         XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100  = 900.00
         assertEquals("99.80", addressBalance.toDecimal(2, XUnit.XDAG).toString());//100 - 0.1 = 99.90
@@ -507,8 +505,8 @@ public class BlockchainTest {
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertNotEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_REF);//After the rollback, the flags of the transaction blocks were not processed.
 
-        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
-        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
+        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(toBytesAddress(addrKey).toArrayUnsafe());
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         XAmount mainFee = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getFee();
         assertEquals("1000.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//rollback 900 + 100 = 1000
@@ -519,7 +517,7 @@ public class BlockchainTest {
 
         //TODO:test wallet create txBlock with fee = 0,
         List<Block> txList = Lists.newLinkedList();
-        assertEquals(UInt64.ZERO, blockchain.getAddressStore().getExecutedNonceNum(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe()));
+        assertEquals(UInt64.ZERO, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(poolKey).toArrayUnsafe()));
         for (int i = 1; i <= 10; i++) {
             Block txBlock_0;
             if (i == 1) {//TODO:test give miners reward with a TX block :one input several output
@@ -629,10 +627,10 @@ public class BlockchainTest {
             }
         }
         assertChainStatus(54, 41, 1, 0, blockchain);
-        assertEquals(UInt64.valueOf(10), blockchain.getAddressStore().getExecutedNonceNum(Keys.toBytesAddress(poolKey)));
-        XAmount poolBalance_0 = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount addressBalance_0 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        XAmount addressBalance_1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        assertEquals(UInt64.valueOf(10), blockchain.getAddressStore().getExecutedNonceNum(poolKey.toAddress().toArray()));
+        XAmount poolBalance_0 = blockchain.getAddressStore().getBalanceByAddress(poolKey.toAddress().toArray());
+        XAmount addressBalance_0 = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
+        XAmount addressBalance_1 = kernel.getAddressStore().getBalanceByAddress(addrKey1.toAddress().toArray());
         XAmount mainBlockFee_1 = kernel.getBlockStore().getBlockInfoByHash(extraBlockList.get(26).getHashLow()).getFee();
         XAmount mainBlockLinkTxBalance_0 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
         assertEquals("971.00", poolBalance_0.toDecimal(2, XUnit.XDAG).toString());//1000 - 20 - 1*9  = 971.00
@@ -674,9 +672,9 @@ public class BlockchainTest {
         assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(26).getHashLow(), false).getInfo().getMaxDiffLink(), blockchain.getBlockByHeight(27).getHashLow().toArray());
         assertArrayEquals(extraBlockList.get(25).getHashLow().toArray(), blockchain.getBlockByHeight(27).getHashLow().toArray());
 
-        XAmount RollBackPoolBalance_1 = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
-        XAmount RollBackAddressBalance_0 = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
-        XAmount RollBackAddressBalance_1 = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey1).toArrayUnsafe());
+        XAmount RollBackPoolBalance_1 = blockchain.getAddressStore().getBalanceByAddress(toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance_0 = kernel.getAddressStore().getBalanceByAddress(toBytesAddress(addrKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance_1 = kernel.getAddressStore().getBalanceByAddress(toBytesAddress(addrKey1).toArrayUnsafe());
         XAmount RollBackMainBlockLinkTxBalance_1 = blockchain.getBlockByHash(extraBlockList.get(26).getHash(), false).getInfo().getAmount();
         assertEquals("1000.00", RollBackPoolBalance_1.toDecimal(2, XUnit.XDAG).toString());//1000
         assertEquals("0.00", RollBackAddressBalance_0.toDecimal(2, XUnit.XDAG).toString());//rollback is zero
@@ -686,15 +684,15 @@ public class BlockchainTest {
 
     @Test
     public void DuplicateLink_Rollback() {
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);;
         //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(toBytesAddress(poolKey).toArrayUnsafe(), XAmount.of(1000, XUnit.XDAG));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
@@ -845,8 +843,8 @@ public class BlockchainTest {
         assertChainStatus(11, 9, 1, 0, blockchain);
 
         //Construct a transaction to be linked consecutively between two blocks.
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(poolKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG), UInt64.ONE);
 
@@ -956,8 +954,8 @@ public class BlockchainTest {
         assertNotNull(txHash);
 
         //Construct a transaction for block height 12:
-        from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT, true);
+        from = new Address(BytesUtils.arrayToByte32(poolKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(addrKey1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         Block txBlock1 = generateNewTransactionBlock(config, poolKey, xdagTime - 2, from, to1, XAmount.of(10, XUnit.XDAG), UInt64.valueOf(2));
         assertTrue(blockchain.canUseInput(txBlock1));
         assertTrue(blockchain.checkMineAndAdd(txBlock1));
@@ -1164,9 +1162,9 @@ public class BlockchainTest {
         assertArrayEquals(extraBlockList.get(11).getHashLow().toArray(), blockchain.getBlockByHeight(13).getHashLow().toArray());
 
         //Testing whether duplicate links affect transaction fee collection
-        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(poolKey.toAddress().toArray());
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
+        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(addrKey1.toAddress().toArray());
         XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
 
         assertEquals("890.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//1000 - 100 - 10 = 890.00
@@ -1204,8 +1202,8 @@ public class BlockchainTest {
         assertEquals("0.0", blockchain.getBlockByHash(extraBlockList.get(11).getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
         assertEquals(0, blockchain.getBlockByHash(extraBlockList.get(11).getHashLow(), false).getInfo().getHeight());
 
-        poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        poolBalance = blockchain.getAddressStore().getBalanceByAddress(poolKey.toAddress().toArray());
+        addressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
         assertEquals("900.00", poolBalance.toDecimal(2, XUnit.XDAG).toString());//890 + 10 = 900, Only roll back your own transactions, not transactions in other main blocks.
         assertEquals("99.80", addressBalance.toDecimal(2, XUnit.XDAG).toString());//99.90 -99.90 = 0 Only roll back your own transactions, not transactions in other main blocks.
     }
@@ -1214,13 +1212,13 @@ public class BlockchainTest {
     public void testTransaction_WithVariableFee() {
         ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
         ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
-        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(toBytesAddress(poolKey).toArrayUnsafe(), XAmount.of(1000, XUnit.XDAG));
         ImportResult result = blockchain.tryToConnect(addressBlock);
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
@@ -1247,9 +1245,9 @@ public class BlockchainTest {
         assertChainStatus(11, 9, 1, 0, blockchain);
 
         // make one transaction(100 XDAG) block(from No.1 mainblock to address block)
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(poolKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(addrKey1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
         Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG), XAmount.of(10, XUnit.XDAG), UInt64.ONE); //收10 Xdag 手续费
 
@@ -1304,8 +1302,8 @@ public class BlockchainTest {
             pending.clear();
         }
 
-        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey));
-        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount poolBalance = blockchain.getAddressStore().getBalanceByAddress(poolKey.toAddress().toArray());
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
         //main amount
         XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         //main fee
@@ -1348,8 +1346,8 @@ public class BlockchainTest {
         //todo:If a transaction block is rolled back, should we also reset this flag?
         assertNotEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_REF);
 
-        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(poolKey).toArrayUnsafe());
-        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
+        XAmount RollBackPoolBalance = blockchain.getAddressStore().getBalanceByAddress(toBytesAddress(poolKey).toArrayUnsafe());
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(toBytesAddress(addrKey).toArrayUnsafe());
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         XAmount RollBackMainBlockFee = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getFee();
         XAmount RollBackTxBlockAmount = blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().getAmount();
@@ -1367,13 +1365,13 @@ public class BlockchainTest {
     public void testIfTxBlockTobeMain() {
         ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
         ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
-        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, poolKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(poolKey.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
         ImportResult result = blockchain.tryToConnect(new Block(addressBlock.getXdagBlock()));
         // import address block, result must be IMPORTED_BEST
         assertSame(IMPORTED_BEST, result);
@@ -1388,8 +1386,8 @@ public class BlockchainTest {
         List<Block> extraBlockList = Lists.newLinkedList();
 
         Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN, false);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(addrKey1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         generateTime += 64000L;
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) - 1;
 
@@ -1416,8 +1414,8 @@ public class BlockchainTest {
 //        blockchain.setMain(TxBlockTobeMain);// set the tx block as mainBlock.
 
         XAmount poolBalance = blockchain.getBlockByHash(addressBlock.getHash(), false).getInfo().getAmount();
-        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
-        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1));
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
+        XAmount addressBalance1 = kernel.getAddressStore().getBalanceByAddress(addrKey1.toAddress().toArray());
         XAmount addressBlockAward = blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getAmount();
         XAmount TxBlockAward = blockchain.getBlockByHash(TxBlockTobeMain.getHashLow(), false).getInfo().getAmount();
         XAmount addressBlockFee = blockchain.getBlockByHash(addressBlock.getHashLow(), false).getFee();
@@ -1533,12 +1531,12 @@ public class BlockchainTest {
                 assertChainStatus(4, 2, 1, 0, blockchain);
                 //Since the main block being executed here is the transaction block, the amounts for each recipient involved in the transaction block need to be reconfirmed.
                 assertEquals("924.00", blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getAmount().toDecimal(2, XUnit.XDAG).toString());//The balance of the payer
-                assertEquals("29.85", kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey)).toDecimal(2, XUnit.XDAG).toString());//Recipient:addrKey
-                assertEquals("69.85", kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey1)).toDecimal(2, XUnit.XDAG).toString());//Recipient:addrKey1
+                assertEquals("29.85", kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray()).toDecimal(2, XUnit.XDAG).toString());//Recipient:addrKey
+                assertEquals("69.85", kernel.getAddressStore().getBalanceByAddress(addrKey1.toAddress().toArray()).toDecimal(2, XUnit.XDAG).toString());//Recipient:addrKey1
                 //After a block is designated as the funding provider, the SnapshotInfo field within the block's info section will be assigned a value,type=true，data=public key
                 assertNotNull(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getSnapshotInfo());
                 assertTrue(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getSnapshotInfo().getType());
-                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getSnapshotInfo().getData(), poolKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true));
+                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getSnapshotInfo().getData(), poolKey.getPublicKey().toBytes().toArray());
             } else {
                 //The status of the two blocks before the current block
                 assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.get(i - 3).getHashLow(), false).getInfo().flags & BI_APPLIED);
@@ -1618,13 +1616,13 @@ public class BlockchainTest {
         }
         XAmount TXBalance = blockchain.getBlockByHash(TxBlockTobeMain.getHash(), false).getInfo().getAmount();
         assertEquals("24.3", TXBalance.toDecimal(1, XUnit.XDAG).toString());// 1024 - 1000 + 0.2
-        addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        addressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
         assertEquals("1029.65", addressBalance.toDecimal(2, XUnit.XDAG).toString());//999.8 + 29.85
 
 
         // There is only one output signature.
-        SECPSignature signature = TxBlockTobeMain.getOutsig();
-        byte[] publicKeyBytes = poolKey.getPublicKey().asEcPoint(Sign.CURVE).getEncoded(true);
+        Signature signature = TxBlockTobeMain.getOutsig();
+        byte[] publicKeyBytes = poolKey.getPublicKey().toBytes().toArray();
         Bytes digest = Bytes.wrap(TxBlockTobeMain.getSubRawData(TxBlockTobeMain.getOutsigIndex() - 2), Bytes.wrap(publicKeyBytes));
         Bytes32 hash = HashUtils.doubleSha256(Bytes.wrap(digest));
         // use hyperledger besu crypto native secp256k1
@@ -1635,14 +1633,14 @@ public class BlockchainTest {
     @Test
     public void testNew2NewTxAboutRejected() {
         ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
-        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block
         Block addressBlock = generateAddressBlock(config, addrKey, generateTime);
         MockBlockchain blockchain = new MockBlockchain(kernel);
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(poolKey), XAmount.of(1000, XUnit.XDAG));
-        assertEquals("1000.0", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(poolKey)).toDecimal(1, XUnit.XDAG).toString());
+        blockchain.getAddressStore().updateBalance(poolKey.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        assertEquals("1000.0", blockchain.getAddressStore().getBalanceByAddress(poolKey.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());
 
         assertEquals("1000.0", addressBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
         addressBlock = new Block(addressBlock.getXdagBlock());
@@ -1675,8 +1673,8 @@ public class BlockchainTest {
             extraBlockList.add(extraBlock);
         }
 
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(poolKey)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(poolKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
 
         //0.09 is not enough,expect to  be rejected!
@@ -1684,8 +1682,8 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(InvalidTxBlock);
         assertEquals(INVALID_BLOCK, result);// 0.09 < 0.1, Invalid block!
 
-        KeyPair addrKey1 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey1)), XDAG_FIELD_OUTPUT, true);
+        ECKeyPair addrKey1 = ECKeyPair.fromPrivateKey(secretary_2);
+        Address to1 = new Address(BytesUtils.arrayToByte32(addrKey1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         Block txBlock = generateMinerRewardTxBlock(config, poolKey, xdagTime - 1, from, to, to1, XAmount.of(2, XUnit.XDAG), XAmount.of(1901, XUnit.MILLI_XDAG), XAmount.of(99, XUnit.MILLI_XDAG), UInt64.ONE);
         // import transaction block, result may be IMPORTED_NOT_BEST or IMPORTED_BEST
         result = blockchain.tryToConnect(txBlock);
@@ -1695,8 +1693,8 @@ public class BlockchainTest {
 
     @Test
     public void testOld2NewTransaction() {
-        KeyPair addrKey = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair poolKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
         // 1. first block get 1024 reward
@@ -1730,7 +1728,7 @@ public class BlockchainTest {
         //TODO Testing two different trading models
         // 3. make one transaction(100 XDAG) block(from No.1 mainblock to address block)
         Address from = new Address(addressBlock.getHashLow(), XDAG_FIELD_IN, false);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(addrKey)), XDAG_FIELD_OUTPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
 
         //TODO: 0.05 is not enough to pay fee.
@@ -1775,7 +1773,7 @@ public class BlockchainTest {
 
         XAmount poolBalance = blockchain.getBlockByHash(addressBlock.getHash(), false).getInfo().getAmount();
         XAmount mainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
-        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount addressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
         assertEquals("24.0", poolBalance.toDecimal(1, XUnit.XDAG).toString());//1024 - 1000 = 24,
         assertEquals("1024.2", mainBlockLinkTxBalance.toDecimal(1, XUnit.XDAG).toString());//A mainBlock link a TX get 1024 + 0.1 reward.
         assertEquals("999.8", addressBalance.toDecimal(1, XUnit.XDAG).toString());//1000 - 0.1 = 999.9, A TX subtract 0.1 XDAG fee.
@@ -1791,7 +1789,7 @@ public class BlockchainTest {
         blockchain.unSetMain(height12);
 
         XAmount RollBackPoolBalance = blockchain.getBlockByHash(addressBlock.getHash(), false).getInfo().getAmount();
-        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(addrKey));
+        XAmount RollBackAddressBalance = kernel.getAddressStore().getBalanceByAddress(addrKey.toAddress().toArray());
         XAmount RollBackMainBlockLinkTxBalance = blockchain.getBlockByHash(extraBlockList.get(10).getHash(), false).getInfo().getAmount();
         assertEquals("1024.00", RollBackPoolBalance.toDecimal(2, XUnit.XDAG).toString());//24 + 1000  = 1024
         assertEquals("0.00", RollBackAddressBalance.toDecimal(2, XUnit.XDAG).toString());//rollback is zero.
@@ -1996,13 +1994,13 @@ public class BlockchainTest {
         // The second chain requires some necessary conditions.The condition annotations for the first chain have already helped with the import;
         // here, we manually import the conditions for the second chain.
         setUp2();
-        KeyPair nodeKey1 = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair nodeKey1 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
+        ECKeyPair nodeKey2 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY2);
 
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair account3 = ECKeyPair.fromPrivateKey(secretary_3);
+        ECKeyPair account4 = ECKeyPair.fromPrivateKey(secretary_4);
 
         MockBlockchain blockchain1 = new MockBlockchain(kernel);
         MockBlockchain blockchain2 = new MockBlockchain(kernel2);
@@ -2017,11 +2015,11 @@ public class BlockchainTest {
          */
 
         //First, set an initial amount of 100xdag for nodeKey1.
-        blockchain1.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        blockchain1.getAddressStore().updateBalance(nodeKey1.toAddress().toArray(), XAmount.of(100, XUnit.XDAG));
         //Create transaction block a
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey1)), XDAG_FIELD_INPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(nodeKey1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
         long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
         Block txA = generateMultiOutputsTxBlock(config, nodeKey1, xdagTime, from, to1, to2, XAmount.of(10, XUnit.XDAG), XAmount.of(6, XUnit.XDAG), XAmount.of(4, XUnit.XDAG), UInt64.ONE);
         txA = new Block(txA.getXdagBlock());
@@ -2053,16 +2051,16 @@ public class BlockchainTest {
         assertNotEquals(0, blockchain1.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN);
         XAmount firstMainAmount = blockchain1.getBlockByHash(extraBlockList.getFirst().getHash(), false).getInfo().getAmount();
         XAmount firstMainFee = blockchain1.getBlockByHash(extraBlockList.getFirst().getHash(), false).getFee();
-        assertEquals("90.0", blockchain1.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey1)).toDecimal(1, XUnit.XDAG).toString());//100 - 10
-        assertEquals("5.9", blockchain1.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(1, XUnit.XDAG).toString());
-        assertEquals("3.9", blockchain1.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("90.0", blockchain1.getAddressStore().getBalanceByAddress(nodeKey1.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());//100 - 10
+        assertEquals("5.9", blockchain1.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("3.9", blockchain1.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());
         assertEquals("1024.20", firstMainAmount.toDecimal(2, XUnit.XDAG).toString());
         assertEquals("0.20", firstMainFee.toDecimal(2, XUnit.XDAG).toString());
 
         //Create transaction block b that uses the reward from the main block at height 1, and assign it to account2 and account4.
         from = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN, false);
-        to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
-        to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_OUTPUT, true);
+        to1 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        to2 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) + 1;
         Block rewardDistriTx = generateOldTransactionBlock(config, nodeKey1, xdagTime, from, XAmount.of(500, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(200, XUnit.XDAG));
         result = blockchain1.tryToConnect(new Block(rewardDistriTx.getXdagBlock()));
@@ -2124,7 +2122,7 @@ public class BlockchainTest {
                 blockList.add(extraBlockList.get(i - 3));
             }
         }
-        blockchain2.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        blockchain2.getAddressStore().updateBalance(nodeKey1.toAddress().toArray(), XAmount.of(100, XUnit.XDAG));
         for (Block block : blockList) {
             Block from1 = blockchain1.getBlockByHash(block.getHashLow(), true);
             result = blockchain2.tryToConnect(new Block(from1.getXdagBlock()));
@@ -2137,9 +2135,9 @@ public class BlockchainTest {
         assertNotEquals(0, blockchain2.getBlockByHash(extraBlockList.getFirst().getHashLow(), false).getInfo().flags & BI_MAIN);
         XAmount firstMainAmount2 = blockchain2.getBlockByHash(extraBlockList.getFirst().getHash(), false).getInfo().getAmount();
         XAmount firstMainFee2 = blockchain2.getBlockByHash(extraBlockList.getFirst().getHash(), false).getFee();
-        assertEquals("90.0", blockchain2.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey1)).toDecimal(1, XUnit.XDAG).toString());//100 - 10
-        assertEquals("5.9", blockchain2.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(1, XUnit.XDAG).toString());
-        assertEquals("3.9", blockchain2.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("90.0", blockchain2.getAddressStore().getBalanceByAddress(nodeKey1.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());//100 - 10
+        assertEquals("5.9", blockchain2.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());
+        assertEquals("3.9", blockchain2.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(1, XUnit.XDAG).toString());
         assertEquals("524.20", firstMainAmount2.toDecimal(2, XUnit.XDAG).toString());
         assertEquals("0.20", firstMainFee2.toDecimal(2, XUnit.XDAG).toString());
 
@@ -2167,18 +2165,18 @@ public class BlockchainTest {
           Create regular transaction blocks, main transaction blocks, and linking blocks for testing.
          */
         long generateTime = 1600616700000L;
-        KeyPair nodeKey1 = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair nodeKey1 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
         kernel.setPow(new XdagPow(kernel));
         MockBlockchain blockchain = new MockBlockchain(kernel);
 
         //First, set an initial amount of 100xdag for nodeKey1.
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(nodeKey1.toAddress().toArray(), XAmount.of(100, XUnit.XDAG));
         //Create a transaction block
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey1)), XDAG_FIELD_INPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(nodeKey1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
         long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
         Block txAccount = generateMultiOutputsTxBlock(config, nodeKey1, xdagTime, from, to1, to2, XAmount.of(10, XUnit.XDAG), XAmount.of(6, XUnit.XDAG), XAmount.of(4, XUnit.XDAG), UInt64.ONE);
         txAccount = new Block(txAccount.getXdagBlock());
@@ -2191,7 +2189,7 @@ public class BlockchainTest {
         byte[] address = null;
         for (Address ref : output) {
             if (ref.getType().equals(XDAG_FIELD_INPUT)) {
-                address = BytesUtils.byte32ToArray(ref.getAddress());
+                address = BytesUtils.byte32ToArray(ref.getAddress()).toArray();
                 break;
             }
         }
@@ -2242,8 +2240,8 @@ public class BlockchainTest {
 
         //Create transaction block b that uses the reward from the main block at height 1, and assign it to account1 and account2.
         from = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN, false);
-        to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
+        to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) + 1;
         Block rewardDistriTx = generateOldTransactionBlock(config, nodeKey1, xdagTime, from, XAmount.of(500, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(200, XUnit.XDAG));
         rewardDistriTx = new Block(rewardDistriTx.getXdagBlock());
@@ -2355,18 +2353,18 @@ public class BlockchainTest {
             main transaction blocks, and linking blocks to the orphan pool.
          */
         long generateTime = 1600616700000L;
-        KeyPair nodeKey1 = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair nodeKey1 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
         kernel.setPow(new XdagPow(kernel));
         MockBlockchain blockchain = new MockBlockchain(kernel);
 
         //First, set an initial amount of 100xdag for nodeKey1.
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(nodeKey1), XAmount.of(100, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(nodeKey1.toAddress().toArray(), XAmount.of(100, XUnit.XDAG));
         //Create a transaction block
-        Address from = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey1)), XDAG_FIELD_INPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
+        Address from = new Address(BytesUtils.arrayToByte32(nodeKey1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.msToXdagtimestamp(generateTime);
         Block txAccount = generateMultiOutputsTxBlock(config, nodeKey1, xdagTime, from, to1, to2, XAmount.of(10, XUnit.XDAG), XAmount.of(6, XUnit.XDAG), XAmount.of(4, XUnit.XDAG), UInt64.ONE);
         txAccount = new Block(txAccount.getXdagBlock());
@@ -2378,7 +2376,7 @@ public class BlockchainTest {
         byte[] address = null;
         for (Address ref : output) {
             if (ref.getType().equals(XDAG_FIELD_INPUT)) {
-                address = BytesUtils.byte32ToArray(ref.getAddress());
+                address = BytesUtils.byte32ToArray(ref.getAddress()).toArray();
                 break;
             }
         }
@@ -2420,8 +2418,8 @@ public class BlockchainTest {
 
         //Create transaction block b that uses the reward from the main block at height 1, and assign it to account1 and account2.
         from = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN, false);
-        to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
+        to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime)) + 1;
         Block rewardDistriTx = generateOldTransactionBlock(config, nodeKey1, xdagTime, from, XAmount.of(500, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(200, XUnit.XDAG));
         rewardDistriTx = new Block(rewardDistriTx.getXdagBlock());
@@ -2502,18 +2500,18 @@ public class BlockchainTest {
            1.(t1,fee2,b)、(t2,fee4,c)、(t3,fee1,d)、(t4,fee3,a)
              The expected order：(t2,fee4,c)、(t4,fee3,a)、(t1,fee2,b)、(t3,fee1,d)
          */
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair account3 = ECKeyPair.fromPrivateKey(secretary_3);
+        ECKeyPair account4 = ECKeyPair.fromPrivateKey(secretary_4);
+        ECKeyPair nodeKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setPow(new XdagPow(kernel));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account1), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account2), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account3), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account4), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account1.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account2.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account3.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account4.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
 
         long generateTime = 1600616700000L;
         long t1 = XdagTime.msToXdagtimestamp(generateTime + 10);
@@ -2521,11 +2519,11 @@ public class BlockchainTest {
         long t3 = XdagTime.msToXdagtimestamp(generateTime + 30);
         long t4 = XdagTime.msToXdagtimestamp(generateTime + 40);
 
-        Address from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        Address from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        Address from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
-        Address from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_INPUT, true);
+        Address from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(nodeKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
 
         Block tx1 = generateNewTransactionBlock(config, account2, t1, from2, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);
         Block tx2 = generateNewTransactionBlock(config, account3, t2, from3, to, XAmount.of(100, XUnit.XDAG), XAmount.of(8, XUnit.XDAG), UInt64.ONE);
@@ -2600,10 +2598,10 @@ public class BlockchainTest {
         t3 = XdagTime.msToXdagtimestamp(generateTime + 30);
         t4 = XdagTime.msToXdagtimestamp(generateTime + 40);
 
-        from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
-        to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_INPUT, true);
+        from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        to = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_INPUT, true);
 
         Block a2 = generateNewTransactionBlock(config, account1, t1, from1, to, XAmount.of(10, XUnit.XDAG), XAmount.of(1, XUnit.XDAG), UInt64.valueOf(2));
         Block b2 = generateNewTransactionBlock(config, account2, t2, from2, to, XAmount.of(10, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.valueOf(2));
@@ -2676,13 +2674,13 @@ public class BlockchainTest {
         t4 = XdagTime.msToXdagtimestamp(generateTime + 40);
         long t5 = XdagTime.msToXdagtimestamp(generateTime + 50);
 
-        from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
+        from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
         Address fromMTX = new Address(extraBlockList.get(16).getHashLow(), XDAG_FIELD_IN, false);
-        to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_OUTPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
+        to = new Address(BytesUtils.arrayToByte32(nodeKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
 
 
         Block a3 = generateNewTransactionBlock(config, account1, t1, from1, to, XAmount.of(10, XUnit.XDAG), XAmount.of(400, XUnit.MILLI_XDAG), UInt64.valueOf(3));
@@ -2781,15 +2779,15 @@ public class BlockchainTest {
         long t11 = XdagTime.msToXdagtimestamp(generateTime + 110);
         long t12 = XdagTime.msToXdagtimestamp(generateTime + 120);
 
-        from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
-        from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT, true);
+        from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        from4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_INPUT, true);
         Address fromMTX1 = new Address(extraBlockList.get(32).getHashLow(), XDAG_FIELD_IN, false);
         Address fromMTX2 = new Address(extraBlockList.get(33).getHashLow(), XDAG_FIELD_IN, false);
         Address fromMTX3 = new Address(extraBlockList.get(34).getHashLow(), XDAG_FIELD_IN, false);
-        Address to3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        Address to4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
+        Address to3 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to4 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
 
         Block mTX1 = generateMTxWithFee(config, nodeKey, t2, fromMTX1, XAmount.of(1000, XUnit.XDAG), to3, XAmount.of(300, XUnit.XDAG), to4, XAmount.of(700, XUnit.XDAG), XAmount.of(500, XUnit.MILLI_XDAG));
         Block mTX2 = generateMTxWithFee(config, nodeKey, t7, fromMTX2, XAmount.of(1000, XUnit.XDAG), to1, XAmount.of(300, XUnit.XDAG), to2, XAmount.of(700, XUnit.XDAG), XAmount.of(800, XUnit.MILLI_XDAG));
@@ -3033,19 +3031,19 @@ public class BlockchainTest {
      */
     @Test
     public void testLinkAndNonceImpactOnSorting() {
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair account3 = ECKeyPair.fromPrivateKey(secretary_3);
+        ECKeyPair account4 = ECKeyPair.fromPrivateKey(secretary_4);
+        ECKeyPair nodeKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
+        ECKeyPair nodeKey2 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY2);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setPow(new XdagPow(kernel));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account1), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account2), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account3), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account4), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account1.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account2.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account3.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account4.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
 
         long generateTime = 1600616700000L;
         long t1 = XdagTime.msToXdagtimestamp(generateTime + 10);
@@ -3053,13 +3051,13 @@ public class BlockchainTest {
         long t3 = XdagTime.msToXdagtimestamp(generateTime + 30);
         long t4 = XdagTime.msToXdagtimestamp(generateTime + 40);
 
-        Address from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        Address from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        Address from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
-        Address from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_OUTPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey2)), XDAG_FIELD_OUTPUT, true);
-        Address to3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
+        Address from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(nodeKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to3 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
 
         Block tx1 = generateNewTransactionBlock(config, account2, t1, from2, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);//account2 -> nodeKey  :   100(2)
         Block tx2 = generateNewTransactionBlock(config, account3, t2, from3, to, XAmount.of(100, XUnit.XDAG), XAmount.of(8, XUnit.XDAG), UInt64.ONE);//account3 -> nodeKey  :   100(8)
@@ -3130,8 +3128,8 @@ public class BlockchainTest {
         link2 = new Block(link2.getXdagBlock());
         link3 = new Block(link3.getXdagBlock());
 
-        System.out.println(link2.getHashLow().toHexString());
-        System.out.println(link3.getHashLow().toHexString());
+//        System.out.println(link2.getHashLow().toHexString());
+//        System.out.println(link3.getHashLow().toHexString());
 
         assertNotEquals(link2.getHashLow(), link3.getHashLow());
 
@@ -3400,19 +3398,19 @@ public class BlockchainTest {
      */
     @Test
     public void testComprehensiveCase() {
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair account3 = ECKeyPair.fromPrivateKey(secretary_3);
+        ECKeyPair account4 = ECKeyPair.fromPrivateKey(secretary_4);
+        ECKeyPair nodeKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
+        ECKeyPair nodeKey2 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY2);
 
         MockBlockchain blockchain = new MockBlockchain(kernel);
         kernel.setPow(new XdagPow(kernel));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account1), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account2), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account3), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account4), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account1.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account2.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account3.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account4.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
 
         long generateTime = 1600616700000L;
 
@@ -3444,16 +3442,16 @@ public class BlockchainTest {
         long t5 = XdagTime.msToXdagtimestamp(generateTime + 50);
         long linkTime = XdagTime.msToXdagtimestamp(generateTime + 60);
 
-        Address from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        Address from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        Address from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
-        Address from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT, true);
+        Address from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_INPUT, true);
         Address fromMTX = new Address(extraBlockList.getFirst().getHashLow(), XDAG_FIELD_IN, false);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_INPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
-        Address to3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_OUTPUT, true);
-        Address to4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_OUTPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(nodeKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
 
         Block tx1 = generateNewTransactionBlock(config, account2, t1, from2, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);
         Block tx2 = generateNewTransactionBlock(config, account3, t2, from3, to, XAmount.of(100, XUnit.XDAG), XAmount.of(8, XUnit.XDAG), UInt64.ONE);
@@ -3646,15 +3644,15 @@ public class BlockchainTest {
         assertChainStatus(66, 47, 1, 0, blockchain);
 
         //account1
-        assertEquals("1449.625", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());//1000-100+299.825-10+260
+        assertEquals("1449.625", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());//1000-100+299.825-10+260
         //account2
-        assertEquals("1829.625", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());//1000-100+699.825-10-10-10+260
+        assertEquals("1829.625", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());//1000-100+699.825-10-10-10+260
         //account3
-        assertEquals("1429.625", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());//1000-100+299.825-10-10-10+260
+        assertEquals("1429.625", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());//1000-100+299.825-10-10-10+260
         //account4
-        assertEquals("1839.625", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());//1000-100+699.825-10-10+260
+        assertEquals("1839.625", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());//1000-100+699.825-10-10+260
         //nodeKey
-        assertEquals("470.200", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());//98+92+99+96+9.8+9.9+9.6+9.4+9.9+9.8+9.5+9.8+8.8
+        assertEquals("470.200", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());//98+92+99+96+9.8+9.9+9.6+9.4+9.9+9.8+9.5+9.8+8.8
         //mTX
         assertEquals("0.000", blockchain.getBlockByHash(mTX.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.550", blockchain.getBlockByHash(mTX.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
@@ -3782,15 +3780,15 @@ public class BlockchainTest {
         //After the main block with original heights of 32 and 33 was rolled back, check its own state and the state of the references it contains.
 
         //account1
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //account2
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //account3
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //account4
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //nodeKey
-        assertEquals("0.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("0.000", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //mTX
         assertEquals(0, blockchain.getBlockByHash(mTX.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertEquals("0.000", blockchain.getBlockByHash(mTX.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
@@ -3873,14 +3871,14 @@ public class BlockchainTest {
         assertEquals("0.000", blockchain.getBlockByHash(mTX3.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         assertNull(blockchain.getBlockByHash(mTX3.getHashLow(), false).getInfo().getRef());
 
-        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account1)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account1)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account2)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account2)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account3)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account3)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account4)).toLong());
-        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account4)).toLong());
+        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account1).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account1).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account2).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account2).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account3).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account3).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getTxQuantity(toBytesAddress(account4).toArray()).toLong());
+        assertEquals(0, blockchain.getAddressStore().getExecutedNonceNum(toBytesAddress(account4).toArray()).toLong());
 
         tx1 = generateNewTransactionBlock(config, account1, XdagTime.msToXdagtimestamp(generateTime + 10), from1, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);
         tx2 = generateNewTransactionBlock(config, account1, XdagTime.msToXdagtimestamp(generateTime + 20), from1, to, XAmount.of(100, XUnit.XDAG), XAmount.of(1, XUnit.XDAG), UInt64.valueOf(2));
@@ -4346,15 +4344,15 @@ public class BlockchainTest {
         assertChainStatus(115, 42, 2, 0, blockchain);
 
         //account1      1000-100-100+255*11-10*6
-        assertEquals("3543.900", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("3543.900", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //account2      1000+255*11-50-50-10*3
-        assertEquals("3673.900", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("3673.900", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //account3      1000+255*11-10*4
-        assertEquals("3763.900", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("3763.900", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //account4      1000+255*11-10*3
-        assertEquals("3773.900", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("3773.900", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //nodeKey       0+98+99+48+49+9.9+9.6+9.3+9.5+8.8+9.9+9.9+8.5+9.8+9.9+9.9+9.6+9.8+9.9+9.2+9.8
-        assertEquals("445.300", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("445.300", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
         //tx1
         assertEquals("0.000", blockchain.getBlockByHash(tx1.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("2.100", blockchain.getBlockByHash(tx1.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
@@ -4642,18 +4640,18 @@ public class BlockchainTest {
     public void TestForRollBackTX() {
         // todo:It needs to be confirmed whether transactions already referenced by the main block can be restored and added back to the orphanSource.
         BlockchainImpl blockchain = new MockBlockchain(kernel);
-        KeyPair account1 = KeyPair.create(secretary_1, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account2 = KeyPair.create(secretary_2, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account3 = KeyPair.create(secretary_3, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair account4 = KeyPair.create(secretary_4, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
-        KeyPair nodeKey2 = KeyPair.create(SampleKeys.SRIVATE_KEY2, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair account1 = ECKeyPair.fromPrivateKey(secretary_1);
+        ECKeyPair account2 = ECKeyPair.fromPrivateKey(secretary_2);
+        ECKeyPair account3 = ECKeyPair.fromPrivateKey(secretary_3);
+        ECKeyPair account4 = ECKeyPair.fromPrivateKey(secretary_4);
+        ECKeyPair nodeKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
+        ECKeyPair nodeKey2 = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY2);
 
         kernel.setPow(new XdagPow(kernel));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account1), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account2), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account3), XAmount.of(1000, XUnit.XDAG));
-        blockchain.getAddressStore().updateBalance(Keys.toBytesAddress(account4), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account1.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account2.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account3.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
+        blockchain.getAddressStore().updateBalance(account4.toAddress().toArray(), XAmount.of(1000, XUnit.XDAG));
 
         long generateTime = 1600616700000L;
         byte[] prefix = new byte[]{ORPHAN_PREFEX};
@@ -4682,8 +4680,8 @@ public class BlockchainTest {
         assertChainStatus(10, 8, 1, 0, blockchain);
 
         long t1 = XdagTime.msToXdagtimestamp(generateTime + 10);
-        Address from1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_INPUT, true);
-        Address to = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(nodeKey)), XDAG_FIELD_INPUT, true);
+        Address from1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to = new Address(BytesUtils.arrayToByte32(nodeKey.toAddress().toArray()), XDAG_FIELD_INPUT, true);
         Block a1 = generateNewTransactionBlock(config, account1, t1, from1, to, XAmount.of(100, XUnit.XDAG), XAmount.of(2, XUnit.XDAG), UInt64.ONE);
         a1 = new Block(a1.getXdagBlock());
         ImportResult result = blockchain.tryToConnect(a1);
@@ -4693,13 +4691,13 @@ public class BlockchainTest {
         long time = XdagTime.msToXdagtimestamp(generateTime + 64000L);
         long xdagTime = XdagTime.getEndOfEpoch(time);
 
-        Address from2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_INPUT, true);
-        Address from3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_INPUT, true);
-        Address from4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_INPUT, true);
-        Address to1 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account1)), XDAG_FIELD_OUTPUT, true);
-        Address to2 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account2)), XDAG_FIELD_OUTPUT, true);
-        Address to3 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account3)), XDAG_FIELD_OUTPUT, true);
-        Address to4 = new Address(BytesUtils.arrayToByte32(Keys.toBytesAddress(account4)), XDAG_FIELD_OUTPUT, true);
+        Address from2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address from4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_INPUT, true);
+        Address to1 = new Address(BytesUtils.arrayToByte32(account1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to2 = new Address(BytesUtils.arrayToByte32(account2.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to3 = new Address(BytesUtils.arrayToByte32(account3.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
+        Address to4 = new Address(BytesUtils.arrayToByte32(account4.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
 
         Block a2 = generateNewTransactionBlock(config, account1, xdagTime + 25, from1, to, XAmount.of(10, XUnit.XDAG), XAmount.of(100, XUnit.MILLI_XDAG), UInt64.valueOf(2));
         Block a3 = generateNewTransactionBlock(config, account1, xdagTime + 29, from1, to, XAmount.of(10, XUnit.XDAG), XAmount.of(400, XUnit.MILLI_XDAG), UInt64.valueOf(3));
@@ -4917,11 +4915,11 @@ public class BlockchainTest {
         assertEquals("0.000", blockchain.getBlockByHash(c4.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d4.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d4.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("880.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("970.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("970.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("970.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("202.300", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("880.000", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("970.000", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("970.000", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("970.000", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("202.300", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
 
         // todo:After testing, it was found that the transactions packaged in the previous chain were successfully rolled back.
         for (int i = 1; i <= 20; i++) {
@@ -4975,11 +4973,11 @@ public class BlockchainTest {
         assertEquals("0.000", blockchain.getBlockByHash(c4.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d4.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d4.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("0.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("0.000", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
 
         // todo:Retrieve the rolled-back transactions, ensuring the order of the rolled-back transaction blocks matches the packing order.
         //  Transactions from the last main block have not yet been retrieved from the queue.
@@ -5087,7 +5085,7 @@ public class BlockchainTest {
                 List<Address> refs = blocks.get(i).getLinks();
                 for (Address txRef : refs) {
                     if (txRef.getType().equals(XDAG_FIELD_INPUT)) {
-                        address = BytesUtils.byte32ToArray(txRef.getAddress());
+                        address = BytesUtils.byte32ToArray(txRef.getAddress()).toArray();
                         nonce = blocks.get(i).getTxNonceField().getTransactionNonce();
                         break;
                     }
@@ -5180,7 +5178,7 @@ public class BlockchainTest {
                 List<Address> refs = blocks.get(i).getLinks();
                 for (Address txRef : refs) {
                     if (txRef.getType().equals(XDAG_FIELD_INPUT)) {
-                        address = BytesUtils.byte32ToArray(txRef.getAddress());
+                        address = BytesUtils.byte32ToArray(txRef.getAddress()).toArray();
                         nonce = blocks.get(i).getTxNonceField().getTransactionNonce();
                         break;
                     }
@@ -5288,11 +5286,11 @@ public class BlockchainTest {
         assertEquals("0.000", blockchain.getBlockByHash(d6.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d7.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d7.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("36.900", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("36.900", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
 
         assertNotEquals(0, blockchain.getBlockByHash(b6.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertNotEquals(0, blockchain.getBlockByHash(b6.getHashLow(), false).getInfo().flags & BI_REF);
@@ -5384,11 +5382,11 @@ public class BlockchainTest {
         assertEquals("1.300", blockchain.getBlockByHash(d6.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.000", blockchain.getBlockByHash(d7.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.200", blockchain.getBlockByHash(d7.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account1)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account2)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account3)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(account4)).toDecimal(3, XUnit.XDAG).toString());
-        assertEquals("55.400", blockchain.getAddressStore().getBalanceByAddress(Keys.toBytesAddress(nodeKey)).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1000.000", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(account2.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(account3.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("980.000", blockchain.getAddressStore().getBalanceByAddress(account4.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("55.400", blockchain.getAddressStore().getBalanceByAddress(nodeKey.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
 
         assertNotEquals(0, blockchain.getBlockByHash(b6.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertNotEquals(0, blockchain.getBlockByHash(b6.getHashLow(), false).getInfo().flags & BI_REF);
@@ -5434,7 +5432,7 @@ public class BlockchainTest {
                 List<Address> refs = blocks.get(i).getLinks();
                 for (Address txRef : refs) {
                     if (txRef.getType().equals(XDAG_FIELD_INPUT)) {
-                        address = BytesUtils.byte32ToArray(txRef.getAddress());
+                        address = BytesUtils.byte32ToArray(txRef.getAddress()).toArray();
                         nonce = blocks.get(i).getTxNonceField().getTransactionNonce();
                         break;
                     }

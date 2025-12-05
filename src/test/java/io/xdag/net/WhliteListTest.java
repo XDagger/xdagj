@@ -60,7 +60,7 @@ public class WhliteListTest {
     @Test
     public void whileList()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        PeerClient client = new PeerClient(config, Keys.createEcKeyPair());
+        PeerClient client = new PeerClient(config, ECKeyPair.generate());
         // Add whitelist nodes
         client.addWhilteIP("127.0.0.1", 8882);
         // Some nodes are on the whitelist
