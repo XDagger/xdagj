@@ -114,4 +114,7 @@ public interface Blockchain {
 
     // Get the number of transactions executed in the main block package
     int txNumber(Bytes32 refHashLow, Bytes32 mHashLow);
+
+    // Determine if it is an account transaction block
+    boolean isAccountTx(Block block);
 }

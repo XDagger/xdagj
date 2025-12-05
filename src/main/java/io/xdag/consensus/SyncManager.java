@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.config.*;
 import io.xdag.core.*;
 import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
@@ -43,6 +44,11 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -54,6 +60,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagState.*;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.XdagTime.msToXdagtimestamp;
 
 @Slf4j
@@ -196,6 +203,40 @@ public class SyncManager extends AbstractXdagLifecycle {
         blockWrapper.getBlock().parse();
         ImportResult result = importBlock(blockWrapper);
         log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow(), result);
+        if (blockchain.isAccountTx(blockWrapper.getBlock()) && result != EXIST) {
+            String logContent;
+            if (blockWrapper.getRemotePeer() == null) {
+                logContent = String.format("Account tx block of local node，remotePeer is: %s，HashLow is: %s, input is: %s, output is: %s，amount is:%s，fee is: %s%n",
+                        blockWrapper.getRemotePeer(),
+                        blockWrapper.getBlock().getHashLow(),
+                        Base58.encodeCheck(hash2byte(Bytes32.fromHexString(blockWrapper.getBlock().getInputs().getFirst().getAddress().toHexString()).mutableCopy())),
+                        Base58.encodeCheck(hash2byte(Bytes32.fromHexString(blockWrapper.getBlock().getOutputs().getFirst().getAddress().toHexString()).mutableCopy())),
+                        blockWrapper.getBlock().getInputs().getFirst().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
+                        kernel.getBlockchain().outPutLimit(blockWrapper.getBlock()).toDecimal(9, XUnit.XDAG).toPlainString());
+            } else {
+                logContent = String.format("Received account tx block from other node，remotePeer is: %s，HashLow is:%s, input is: %s, output is: %s，amount is:%s，fee is: %s%n",
+                        blockWrapper.getRemotePeer(),
+                        blockWrapper.getBlock().getHashLow(),
+                        Base58.encodeCheck(hash2byte(Bytes32.fromHexString(blockWrapper.getBlock().getInputs().getFirst().getAddress().toHexString()).mutableCopy())),
+                        Base58.encodeCheck(hash2byte(Bytes32.fromHexString(blockWrapper.getBlock().getOutputs().getFirst().getAddress().toHexString()).mutableCopy())),
+                        blockWrapper.getBlock().getInputs().getFirst().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
+                        kernel.getBlockchain().outPutLimit(blockWrapper.getBlock()).toDecimal(9, XUnit.XDAG).toPlainString());
+            }
+            try {
+                String logDir = "allTx-logs";
+                File dir = new File(logDir);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                String fileName = logDir + File.separator + LocalDate.now() + ".log";
+                File logFile = new File(fileName);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true))) {
+                    writer.write(logContent);
+                }
+            } catch (IOException e) {
+                log.error("Writing account transaction log failed：", e);
+            }
+        }
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {

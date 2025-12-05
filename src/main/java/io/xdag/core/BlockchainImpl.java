@@ -59,9 +59,14 @@ import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -1101,6 +1106,25 @@ public class BlockchainImpl implements Blockchain {
         }
 
         updateBlockFlag(block, BI_APPLIED, true);
+        if(isAccountTx(block)){
+            String logContent;
+            logContent = String.format("Executed account tx block，input is: %s，output is: %s，HashLow: %s，amount is:%s，fee is:%s%n",
+                    Base58.encodeCheck(hash2byte(Bytes32.fromHexString(block.getInputs().getFirst().getAddress().toHexString()).mutableCopy())), Base58.encodeCheck(hash2byte(Bytes32.fromHexString(block.getOutputs().getFirst().getAddress().toHexString()).mutableCopy())), block.getHashLow(), block.getInputs().getFirst().amount.toDecimal(9, XUnit.XDAG).toPlainString(), kernel.getBlockchain().outPutLimit(block).toDecimal(9, XUnit.XDAG).toPlainString());
+            try {
+                String logDir = "acceptTx-logs";
+                File dir = new File(logDir);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                String fileName = logDir + File.separator + LocalDate.now() + ".log";
+                File logFile = new File(fileName);
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true))) {
+                    writer.write(logContent);
+                }
+            } catch (IOException e) {
+                log.error("Writing account transaction log failed：", e);
+            }
+        }
 
 //        XAmount totalFee = gasCollected.add(blockGas);
 //        block.getInfo().setFee(totalFee);
