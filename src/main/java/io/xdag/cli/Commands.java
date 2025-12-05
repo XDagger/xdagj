@@ -309,7 +309,7 @@ public class Commands {
     /**
      * Create transaction blocks from inputs to recipient
      */
-    private List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
         // Check if remark exists
         int hasRemark = remark == null ? 0 : 1;
 
@@ -338,12 +338,12 @@ public class Commands {
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
-            
+
             // New unique key added
             if (keysPerBlock.size() > originSize) {
                 base += 3; // Public key + 2 signatures
             }
-            
+
             // Can fit in current block
             if (base < 16) {
                 amount = amount.add(key.getKey().getAmount());
@@ -363,7 +363,7 @@ public class Commands {
                 amount = XAmount.ZERO;
             }
         }
-        
+
         // Create final block if needed
         if (!keys.isEmpty()) {
             res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
@@ -374,7 +374,7 @@ public class Commands {
     /**
      * Create single transaction block
      */
-    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, ECKeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount, true));
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark,
                 txFee, txNonce);
@@ -518,7 +518,7 @@ public class Commands {
                 for (Address output : block.getOutputs()) {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %s%n",
-                            output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
+                            output.getIsAddress() ? Base58.encodeCheck(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
 //                            getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
 //                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
                                             output.getAmount().subtract(kernel.getBlockchain().outPutLimit(block)).toDecimal(9, XUnit.XDAG).toPlainString()
@@ -818,7 +818,7 @@ public class Commands {
         Bytes32 accountHash = keyPair2Hash(kernel.getWallet().getDefKey());
         to.set(8, accountHash.slice(8, 20));
         String remark = "Pay to " + kernel.getConfig().getNodeSpec().getNodeTag();
-        
+
         // Generate transaction blocks to reward node
         List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark, null, XAmount.ZERO);
         for (BlockWrapper blockWrapper : txs) {
