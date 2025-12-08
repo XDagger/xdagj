@@ -98,14 +98,14 @@ public class BlockchainImpl implements Blockchain {
     private final AddressStore addressStore;
     private final BlockStore blockStore;
     private final TransactionHistoryStore txHistoryStore;
-    
+
     // Store for non-Extra orphan blocks
     private final OrphanBlockStore orphanBlockStore;
 
     // In-memory pools and maps
     private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
     private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
-    
+
     // Stats and status tracking
     private final XdagStats xdagStats;
     private final Kernel kernel;
@@ -116,7 +116,7 @@ public class BlockchainImpl implements Blockchain {
     private final RandomX randomx;
     private final List<Listener> listeners = Lists.newArrayList();
     private ScheduledFuture<?> checkLoopFuture;
-    
+
     // Snapshot related fields
     private final long snapshotHeight;
     private SnapshotStore snapshotStore;
@@ -141,7 +141,7 @@ public class BlockchainImpl implements Blockchain {
         this.kernel = kernel;
         this.wallet = kernel.getWallet();
         this.xdagExtStats = new XdagExtStats();
-        
+
         // Initialize storage components
         this.addressStore = kernel.getAddressStore();
         this.blockStore = kernel.getBlockStore();
@@ -153,7 +153,7 @@ public class BlockchainImpl implements Blockchain {
         if (kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()
                 && kernel.getConfig().getSnapshotSpec().getSnapshotHeight() > 0
                 && !blockStore.isSnapshotBoot()) {
-            
+
             this.xdagStats = new XdagStats();
             this.xdagTopStatus = new XdagTopStatus();
 
@@ -164,12 +164,12 @@ public class BlockchainImpl implements Blockchain {
             // Save latest snapshot state
             blockStore.saveXdagTopStatus(xdagTopStatus);
             blockStore.saveXdagStatus(xdagStats);
-            
+
         } else {
             // Load existing state
             XdagStats storedStats = blockStore.getXdagStatus();
             XdagTopStatus storedTopStatus = blockStore.getXdagTopStatus();
-            
+
             if (storedStats != null) {
                 storedStats.setNwaitsync(0);
                 this.xdagStats = storedStats;
@@ -177,9 +177,9 @@ public class BlockchainImpl implements Blockchain {
             } else {
                 this.xdagStats = new XdagStats();
             }
-            
+
             this.xdagTopStatus = Objects.requireNonNullElseGet(storedTopStatus, XdagTopStatus::new);
-            
+
             Block lastBlock = getBlockByHeight(xdagStats.nmain);
             if (lastBlock != null) {
                 xdagStats.setMaxdifficulty(lastBlock.getInfo().getDifficulty());
@@ -382,9 +382,9 @@ public class BlockchainImpl implements Blockchain {
                     if (ref != null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()).toArray())) {
                         result = ImportResult.INVALID_BLOCK;
                         result.setErrorInfo("Address isn't exist " + Base58.encodeCheck(
-                            BytesUtils.byte32ToArray(ref.getAddress())));
+                                BytesUtils.byte32ToArray(ref.getAddress())));
                         log.debug("Address isn't exist {}",
-                            Base58.encodeCheck(BytesUtils.byte32ToArray(ref.getAddress())));
+                                Base58.encodeCheck(BytesUtils.byte32ToArray(ref.getAddress())));
                         return result;
                     }
                     // Ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1
@@ -401,11 +401,11 @@ public class BlockchainImpl implements Blockchain {
                                 result.setErrorInfo("Ref output amount < Gas");
                                 log.debug("Ref output amount < Gas");
                                 return result;
-                            } else if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(addressStore.getBalanceByAddress(BytesUtils.byte32ToArray(ref.getAddress()))).isPositive()) {
+                            } else if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(addressStore.getBalanceByAddress(BasicUtils.hash2byte(ref.getAddress()).toArray())).isPositive()) {
                                 result = ImportResult.INVALID_BLOCK;
                                 result.setHashlow(ref.getAddress());
-                                result.setErrorInfo("Ref input amount < account balance");
-                                log.debug("Ref input amount < account balance");
+                                result.setErrorInfo("Ref input amount > account balance");
+                                log.info("Ref input amount > account balance");
                                 return result;
                             }
                         } else {
@@ -415,7 +415,7 @@ public class BlockchainImpl implements Blockchain {
                         }
                     }
                 }
-                
+
                 // Determine if ref is a block
                 if (ref != null && compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
                     log.debug("Try to connect a tx Block:{}", block.getHash().toHexString());
@@ -442,7 +442,7 @@ public class BlockchainImpl implements Blockchain {
                     return result;
                 }
             }
-            
+
             // Validate block inputs
             if (!canUseInput(block)) {
                 result = ImportResult.INVALID_BLOCK;
@@ -451,7 +451,7 @@ public class BlockchainImpl implements Blockchain {
                 log.debug("Block's input can't be used");
                 return ImportResult.INVALID_BLOCK;
             }
-            
+
             int id = 0;
             // Remove links
             for (Address ref : all) {
@@ -500,16 +500,16 @@ public class BlockchainImpl implements Blockchain {
             if (block.getInfo().getDifficulty().compareTo(xdagTopStatus.getTopDiff()) > 0) {
                 // Fork chain
                 long currentHeight = xdagStats.nmain;
-                
+
                 // Find common ancestor
                 Block blockRef = findAncestor(block, isSyncFixFork(xdagStats.nmain));
-                
+
                 // Unwind main chain to ancestor
                 unWindMain(blockRef);
-                
+
                 // Update new chain
                 updateNewChain(block, isSyncFixFork(xdagStats.nmain));
-                
+
                 // Log unwind info
                 if (currentHeight - xdagStats.nmain > 1) {
                     log.info("XDAG:Before unwind, height = {}, After unwind, height = {}, unwind number = {}",
@@ -520,19 +520,19 @@ public class BlockchainImpl implements Blockchain {
                         Bytes32.wrap(xdagTopStatus.getTop()), false);
                 BigInteger currentTopDiff = xdagTopStatus.getTopDiff();
                 log.debug("update top: {}", block.getHashLow());
-                
+
                 // Update top status
                 xdagTopStatus.setTopDiff(block.getInfo().getDifficulty());
                 xdagTopStatus.setTop(block.getHashLow().toArray());
-                
+
                 // Update pre-top
                 setPreTop(currentTop, currentTopDiff);
-                
+
                 // Notify PoW thread if needed
                 if (XdagTime.getEpoch(block.getTimestamp()) < XdagTime.getCurrentEpoch()) {
                     onNewPretop();
                 }
-                
+
                 result = ImportResult.IMPORTED_BEST;
                 xdagStats.updateMaxDiff(xdagTopStatus.getTopDiff());
                 xdagStats.updateDiff(xdagTopStatus.getTopDiff());
@@ -634,7 +634,7 @@ public class BlockchainImpl implements Blockchain {
                 List<Address> refs = block.getLinks();
                 for (Address txRef : refs) {
                     if (txRef.getType().equals(XDAG_FIELD_INPUT)) {
-                        address = BytesUtils.byte32ToArray(txRef.getAddress());
+                        address = BytesUtils.byte32ToArray(txRef.getAddress()).toArray();
                         nonce = block.getTxNonceField().getTransactionNonce();
                         break;
                     }
@@ -809,7 +809,7 @@ public class BlockchainImpl implements Blockchain {
     public Block findAncestor(Block block, boolean isFork) {
         Block blockRef;
         Block blockRef0 = null;
-        
+
         // Find highest difficulty non-main chain block
         for (blockRef = block;
              blockRef != null && ((blockRef.getInfo().flags & BI_MAIN_CHAIN) == 0);
@@ -827,7 +827,7 @@ public class BlockchainImpl implements Blockchain {
                 blockRef0 = blockRef;
             }
         }
-        
+
         // Handle fork point
         if (blockRef != null
                 && blockRef0 != null
@@ -924,7 +924,7 @@ public class BlockchainImpl implements Blockchain {
     public synchronized void checkNewMain() {
         Block p = null;
         int i = 0;
-        
+
         // If it's a snapshot point main block, return directly since data before snapshot is already determined
         if (xdagTopStatus.getTop() != null) {
             for (Block block = getBlockByHash(Bytes32.wrap(xdagTopStatus.getTop()), false); block != null
@@ -1036,18 +1036,21 @@ public class BlockchainImpl implements Blockchain {
             MutableBytes32 linkAddress = link.getAddress();
 
             if (link.getType() == XDAG_FIELD_INPUT) {
-                XAmount balance = addressStore.getBalanceByAddress(hash2byte(linkAddress));
-                UInt64 executedNonce = addressStore.getExecutedNonceNum(BytesUtils.byte32ToArray(linkAddress));
+                XAmount balance = addressStore.getBalanceByAddress(BasicUtils.hash2byte(linkAddress).toArray());
+                UInt64 executedNonce = addressStore.getExecutedNonceNum(BasicUtils.hash2byte(linkAddress).toArray());
                 UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
 
                 if (blockNonce.compareTo(executedNonce.add(UInt64.ONE)) > 0) {
-                    addressStore.updateTxQuantity(BytesUtils.byte32ToArray(linkAddress), executedNonce);
+                    log.info("tx nonce error, tx nonce: {}, executed nonce: {}", blockNonce, executedNonce);
+                    addressStore.updateTxQuantity(BasicUtils.hash2byte(linkAddress).toArray(), executedNonce);
                     return XAmount.ZERO.subtract(XAmount.ONE);
                 }
                 if (blockNonce.compareTo(executedNonce) <= 0) {
+                    log.info("tx nonce is less than executed nonce");
                     return XAmount.ZERO.subtract(XAmount.ONE);
                 }
                 if (compareAmountTo(balance, link.amount) < 0) {
+                    log.info("balance is less than amount");
                     processNonceAfterTransactionExecution(link);
                     return XAmount.ZERO;
                 }
@@ -1056,6 +1059,7 @@ public class BlockchainImpl implements Blockchain {
             } else if (link.getType() == XDAG_FIELD_IN) {
                 Block ref = getBlockByHash(linkAddress, false);
                 if (compareAmountTo(ref.getInfo().getAmount(), link.getAmount()) < 0) {
+                    log.info("ref balance is less than amount");
                     return XAmount.ZERO;
                 }
                 sumIn = sumIn.add(link.getAmount());
@@ -1069,6 +1073,7 @@ public class BlockchainImpl implements Blockchain {
                 compareAmountTo(block.getInfo().getAmount(), XAmount.ZERO) < 0 ||
                 compareAmountTo(sumIn, sumOut) != 0) {
             if (block.getInputs() != null) processNonceAfterTransactionExecution(block.getInputs().get(0));
+            log.info("block amount is not equal to sumIn - sumOut");
             return XAmount.ZERO;
         }
 
@@ -1143,10 +1148,11 @@ public class BlockchainImpl implements Blockchain {
                 } else {
                     if (link.getType() == XDAG_FIELD_INPUT) {
                         addAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount(), block);
-                        byte[] address = byte32ToArray(link.getAddress());
+                        byte[] address = BytesUtils.byte32ToArray(link.getAddress()).toArray();
                         UInt64 exeNonce = addressStore.getExecutedNonceNum(address);
                         addressStore.updateExcutedNonceNum(address, false);
                         addressStore.updateTxQuantity(address, exeNonce.subtract(UInt64.ONE));
+                        log.info("current nonce subtract one");
                     } else if (link.getType() == XDAG_FIELD_OUTPUT) {
                         // When add amount in 'Apply' subtract fee, so unApply also subtract fee
                         subtractAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount().subtract(block.getFee().divide(outPutNum(block))), block);
@@ -1167,7 +1173,7 @@ public class BlockchainImpl implements Blockchain {
                         addressStore.updateExcutedNonceNum(address.toArray(), false);
                         addressStore.updateTxQuantity(address.toArray(), exeNonce.subtract(UInt64.ONE));
                         log.debug("The transaction processed quantity of account {} is reduced by one, and the number of transactions processed now is nonce = {}",
-                            Base58.encodeCheck(BytesUtils.byte32ToArray(link.getAddress())), addressStore.getExecutedNonceNum(address.toArray()).intValue()
+                                Base58.encodeCheck(BytesUtils.byte32ToArray(link.getAddress())), addressStore.getExecutedNonceNum(address.toArray()).intValue()
                         );
                     }
 
@@ -1673,7 +1679,7 @@ public class BlockchainImpl implements Blockchain {
                 if (isAccountTx(b)) {
                     for(Address ref : in) {
                         if (ref.getType().equals(XDAG_FIELD_INPUT)) {
-                            address = BytesUtils.byte32ToArray(ref.getAddress());
+                            address = BytesUtils.byte32ToArray(ref.getAddress()).toArray();
                             nonce = b.getTxNonceField().getTransactionNonce();
                             break;
                         }
@@ -1806,12 +1812,12 @@ public class BlockchainImpl implements Blockchain {
             // snapshotInfo.getData() contains 33-byte compressed public key format
             try {
                 PublicKey targetPublicKey = PublicKey.fromBytes(snapshotInfo.getData());
-            for (PublicKey publicKey : publicKeys) {
-                if (publicKey.equals(targetPublicKey)) {
-                    return true;
+                for (PublicKey publicKey : publicKeys) {
+                    if (publicKey.equals(targetPublicKey)) {
+                        return true;
+                    }
                 }
-            }
-            return false;
+                return false;
             } catch (Exception e) {
                 // If public key parsing fails, verification fails
                 return false;
@@ -2191,7 +2197,7 @@ public class BlockchainImpl implements Blockchain {
         return listMainBlocksByHeight(count);
     }
 
-    // TODO: List main blocks generated by this pool. If pool only generated blocks early or never generated blocks, 
+    // TODO: List main blocks generated by this pool. If pool only generated blocks early or never generated blocks,
     // need to traverse all block data which needs optimization
     @Override
     public List<Block> listMinedBlocks(int count) {

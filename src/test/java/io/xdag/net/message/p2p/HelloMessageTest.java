@@ -43,7 +43,7 @@ public class HelloMessageTest {
     public void testCodec() {
         Config config = new DevnetConfig();
 
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         String peerId = Base58.encodeCheck(toBytesAddress(key));
         HelloMessage msg = new HelloMessage(config.getNodeSpec().getNetwork(), config.getNodeSpec().getNetworkVersion(),
                 peerId, 8001, config.getClientId(), config.getClientCapabilities().toArray(), 2,

@@ -491,7 +491,7 @@ public class Wallet {
      * @param remark Optional remark to include in transaction
      * @return List of transaction block wrappers
      */
-    public List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
+    public List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
         // Check if remark exists
         int hasRemark = remark == null ? 0 : 1;
 
@@ -563,7 +563,7 @@ public class Wallet {
      * @param remark Optional remark
      * @return Transaction block wrapper
      */
-    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, ECKeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
 
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount,true));
 
@@ -601,7 +601,7 @@ public class Wallet {
      * @param remark Optional remark
      * @return New transaction block
      */
-    private Block createNewBlock(Map<Address, KeyPair> pairs, List<Address> to,
+    private Block createNewBlock(Map<Address, ECKeyPair> pairs, List<Address> to,
                                  String remark, UInt64 txNonce, XAmount fee) {
         int hasRemark = remark == null ? 0 : 1;
 

@@ -115,7 +115,7 @@ public class SnapshotStoreTest {
         wallet = new Wallet(config);
         wallet.unlock(pwd);
 
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -241,7 +241,7 @@ public class SnapshotStoreTest {
 
     public void createBlockchain() {
         ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretkey_1);
-        poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 
         //Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;

@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.config.*;
 import io.xdag.core.*;
 import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
@@ -54,6 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagState.*;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.XdagTime.msToXdagtimestamp;
 
 @Slf4j

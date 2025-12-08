@@ -321,7 +321,7 @@ public class SyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config, key);
