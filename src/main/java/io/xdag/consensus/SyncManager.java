@@ -201,7 +201,7 @@ public class SyncManager extends AbstractXdagLifecycle {
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
-                if (syncPushBlock(blockWrapper, result.getHashlow())) {//返回true表示距离上一次因为缺少父引用而放到这里的时间超过了60s，请求再次向其他节点询问付父区块
+                if (syncPushBlock(blockWrapper, result.getHashlow())) {//Return true to indicate that it has been more than 60 seconds since the last time it was placed here due to the lack of a parent reference, and request to inquire about the parent block from other nodes again
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
