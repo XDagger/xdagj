@@ -415,7 +415,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
-        doXfer(amount, fromHash, toHash, remark, null, 0, result);
+        doXfer(amount, fromHash, toHash, remark, txNonce, 0, result);
 
         return result;
     }
@@ -458,7 +458,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         // do xfer
         double amount = getDouble(value);
         double txFee = getDouble(fee);
-        doXfer(amount, fromHash, toHash, remark, txNonce,txFee, result);
+        doXfer(amount, fromHash, toHash, remark, txNonce, txFee, result);
 
         return result;
     }

@@ -359,7 +359,7 @@ public class BlockchainTest {
                 assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_MAIN_REF);
                 assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_REF);
                 //                assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_OURS);
-                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getRef(), blockchain.getBlockByHeight(1).getHashLow().toArray());//主块的ref为自己
+                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getRef(), blockchain.getBlockByHeight(1).getHashLow().toArray());//The ref of the main block is oneself
                 // A main block with a height of 1, if it has no reference to itself, will have its maximum difficulty value pointed to null.
                 assertNull(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getMaxDiffLink());
             } else if (i > 2) {//3、4、5、6、7、8、9、10
@@ -1075,7 +1075,7 @@ public class BlockchainTest {
                 //ref
                 assertNull(blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().getRef());
                 assertNull(blockchain.getBlockByHash(extraBlockList.get(11).getHashLow(), false).getInfo().getRef());
-                assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().getRef(), extraBlockList.get(10).getHashLow().toArray());//主块ref指向自己，这里有别于链接块和交易块
+                assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().getRef(), extraBlockList.get(10).getHashLow().toArray());//The main block ref points to itself, which is different from link blocks and transaction blocks
 
                 assertChainStatus(16, 12, 1, 0, blockchain);
             } else {
@@ -1338,7 +1338,7 @@ public class BlockchainTest {
         //todo:I feel that since we've rolled back, shouldn't that flag also need to be reset?
         assertNotEquals(0, blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().flags & BI_REF);
 
-        //回退后，该区块中的交易块的状态
+        //After rollback, the status of the transaction blocks in the block
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_MAIN_REF);
         assertEquals(0, blockchain.getBlockByHash(txBlock.getHashLow(), false).getInfo().flags & BI_MAIN);
@@ -3711,7 +3711,7 @@ public class BlockchainTest {
         //height33
         assertArrayEquals(extraBlockList.get(32).getHashLow().toArray(), blockchain.getBlockByHeight(33).getHashLow().toArray());
         //amount=1024+19.2-1043.2
-        assertEquals("1.700", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());// 因为之前测试案例并没有修改fee逻辑，导致新加的0.1没转走
+        assertEquals("1.700", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("20.900", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         //mTX3
         assertEquals("0.000", blockchain.getBlockByHash(mTX3.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
