@@ -6,11 +6,11 @@
         <Property name="error_level">error</Property>
     </Properties>
     <Appenders>
-        <!-- 输出到控制台 -->
+        <!-- Output to console -->
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyyy-MM-dd' | 'HH:mm:ss.SSS} [%t] %p - %c - %m%n"/>
         </Console>
-        <!-- 与properties文件中位置存在冲突，如有问题，请注意调整 -->
+        <!-- There is a conflict with the location in the properties file. Please adjust accordingly if you encounter any problems. -->
         <RollingFile name="logFile" fileName="${Logs_Dir}/xdag-${log_level}.log"
                 filePattern="${Logs_Dir}/history/xdag-%d{MM-dd-yyyy}-%i-${log_level}.log">
             <Filters>
@@ -19,13 +19,14 @@
             </Filters>
             <PatternLayout pattern="%d{yyyy-MM-dd' | 'HH:mm:ss.SSS} [%t] [%p] [%c:%L] -- %m%n"/>
             <Policies>
-                <!-- 按天递计算频率 -->
+                <!-- Frequency calculated by day -->
                 <TimeBasedTriggeringPolicy interval="1"/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
                 <!--                <OnStartupTriggeringPolicy/>-->
             </Policies>
             <!-- 删除策略配置 -->
             <DefaultRolloverStrategy max="5">
+            <!-- Deleting policy configuration -->
                 <Delete basePath="${Logs_Dir}/history" maxDepth="1">
                     <IfFileName glob="*-${log_level}.log"/>
                     <IfLastModified age="7d"/>
@@ -34,18 +35,18 @@
         </RollingFile>
 
 
-        <!-- 与properties文件中位置存在冲突，如有问题，请注意调整 -->
+        <!-- There is a conflict with the location in the properties file. Please adjust accordingly if you encounter any problems. -->
         <RollingFile name="errorFile" fileName="${Logs_Dir}/xdag-${error_level}.log"
                 filePattern="${Logs_Dir}/history/xdag-%d{MM-dd-yyyy}-%i-${error_level}.log">
             <ThresholdFilter level="${error_level}" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout pattern="%d{yyyy-MM-dd' | 'HH:mm:ss.SSS} [%t] [%p] [%c:%L] -- %m%n"/>
             <Policies>
-                <!-- 按天递计算频率 -->
+                <!-- Frequency calculated by day -->
                 <TimeBasedTriggeringPolicy interval="1"/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
                 <!--                <OnStartupTriggeringPolicy/>-->
             </Policies>
-            <!-- 删除策略配置 -->
+            <!-- Deleting policy configuration -->
             <DefaultRolloverStrategy max="5">
                 <Delete basePath="${Logs_Dir}/history" maxDepth="1">
                     <IfFileName glob="*-${error_level}.log"/>
@@ -63,7 +64,7 @@
             <AppenderRef ref="logFile"/>
             <AppenderRef ref="errorFile"/>
         </Root>
-        <!-- 配置个例 -->
+        <!-- Configuration Example -->
         <!--        <Logger name="com.xx.filter" level="info"/>-->
     </Loggers>
 </Configuration>

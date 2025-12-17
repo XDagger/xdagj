@@ -172,7 +172,7 @@ public class CommandsTest {
     @Test
     public void testXfer() throws AddressFormatException {
         XAmount xAmount = XAmount.of(100, XUnit.XDAG);
-        String str = commands.xfer(xAmount.toDecimal(2, XUnit.XDAG).doubleValue(), BasicUtils.pubAddress2Hash("PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas"), null);
+        String str = commands.xfer(xAmount.toDecimal(2, XUnit.XDAG).doubleValue(), BasicUtils.pubAddress2Hash("PbwjuQP3y9F3ZnbbWUvue4zpgkQv3DHas"), null, 0.0);
         assertEquals("""
                 Transaction :{\s
                 }, it will take several minutes to complete the transaction.\s

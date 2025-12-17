@@ -29,6 +29,7 @@ import io.xdag.Kernel;
 import io.xdag.config.*;
 import io.xdag.core.*;
 import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
@@ -54,6 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagState.*;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.XdagTime.msToXdagtimestamp;
 
 @Slf4j
@@ -199,7 +201,7 @@ public class SyncManager extends AbstractXdagLifecycle {
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
-                if (syncPushBlock(blockWrapper, result.getHashlow())) {
+                if (syncPushBlock(blockWrapper, result.getHashlow())) {//Return true to indicate that it has been more than 60 seconds since the last time it was placed here due to the lack of a parent reference, and request to inquire about the parent block from other nodes again
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {

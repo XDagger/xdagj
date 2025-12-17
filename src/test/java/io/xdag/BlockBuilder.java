@@ -103,6 +103,35 @@ public class BlockBuilder {
         return b;
     }
 
+    public static Block generateMTxWithFee(Config config, ECKeyPair key, long xdagTime, Address from, XAmount amount,Address to,
+                                                    XAmount amount1, Address to1, XAmount amount2, XAmount fee) {
+        List<Address> refs = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
+        refs.add(new Address(to.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
+        refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, fee, null); // orphan
+        b.signOut(key);
+        return b;
+    }
+
+    public static Block generateMTx(Config config, ECKeyPair key, long xdagTime, Address from, XAmount amount,Address to1,
+                                           XAmount amount1, Address to2, XAmount amount2, Address to3,
+                                    XAmount amount3, Address to4, XAmount amount4,XAmount fee) {
+        List<Address> refs = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_IN, amount,false)); // key1
+        refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
+        refs.add(new Address(to2.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
+        refs.add(new Address(to3.getAddress(), XDAG_FIELD_OUTPUT, amount3,true));
+        refs.add(new Address(to4.getAddress(), XDAG_FIELD_OUTPUT, amount4,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, fee, null); // orphan
+        b.signOut(key);
+        return b;
+    }
+
     public static Block generateNewTransactionBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to,
                                                     XAmount amount, UInt64 nonce) {
         List<Address> refs = Lists.newArrayList();
@@ -148,6 +177,25 @@ public class BlockBuilder {
         refs.add(new Address(to2.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
         keys.add(key);
         Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, XAmount.ZERO, nonce); // orphan
+        b.signOut(key);
+        return b;
+    }
+
+    public static Block generateMultiOutputsTxBlock(Config config, ECKeyPair key, long xdagTime, Address from, Address to1,Address to2,
+                                                   XAmount amount, XAmount amount1, XAmount amount2, UInt64 nonce) {
+        List<Address> refs = Lists.newArrayList();
+        List<ECKeyPair> keys = Lists.newArrayList();
+        refs.add(new Address(from.getAddress(), XDAG_FIELD_INPUT, amount,true)); // key1
+        refs.add(new Address(to1.getAddress(), XDAG_FIELD_OUTPUT, amount1,true));
+        refs.add(new Address(to2.getAddress(), XDAG_FIELD_OUTPUT, amount2,true));
+        keys.add(key);
+        Block b = new Block(config, xdagTime, refs, null, false, keys, null, 0, XAmount.ZERO, nonce); // orphan
+        b.signOut(key);
+        return b;
+    }
+
+    public static Block generateLinkBlock(Config config, ECKeyPair key, long xdagTime, String remark, List<Address> pendings) {
+        Block b = new Block(config, xdagTime, null, pendings, false, null, remark, -1,XAmount.ZERO, null);
         b.signOut(key);
         return b;
     }

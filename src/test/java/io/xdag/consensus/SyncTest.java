@@ -183,7 +183,7 @@ public class SyncTest {
 
         Block addressBlock = generateAddressBlock(config, key, generateTime);
 
-        // 1. 加入地址块
+        // 1. Add to address block
         result = blockchain.tryToConnect(addressBlock);
         assertSame(IMPORTED_BEST, result);
         List<Block> extraBlockList = Lists.newLinkedList();
@@ -234,10 +234,10 @@ public class SyncTest {
         result = blockchain.tryToConnect(B);
         assertEquals(IMPORTED_BEST, result);
 
-        if (direction) { //正向
+        if (direction) {
             result = blockchain.tryToConnect(C);
             result = blockchain.tryToConnect(D);
-        } else { //反向
+        } else {
             result = blockchain.tryToConnect(D);
             result = blockchain.tryToConnect(C);
         }
@@ -286,10 +286,10 @@ public class SyncTest {
         result = blockchain.tryToConnect(B2);
         assertEquals(IMPORTED_BEST, result);
 
-        if (direction) { //正向
+        if (direction) {
             result = blockchain.tryToConnect(C2);
             result = blockchain.tryToConnect(D2);
-        } else { //反向
+        } else {
             result = blockchain.tryToConnect(D2);
             result = blockchain.tryToConnect(C2);
         }
@@ -321,7 +321,7 @@ public class SyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config, key);
@@ -334,7 +334,7 @@ public class SyncTest {
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND) , kernel);
         orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);

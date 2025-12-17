@@ -115,7 +115,7 @@ public class SnapshotStoreTest {
         wallet = new Wallet(config);
         wallet.unlock(pwd);
 
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
 
@@ -132,7 +132,7 @@ public class SnapshotStoreTest {
         AddressStore addressStore = new AddressStoreImpl(dbFactory.getDB(DatabaseName.ADDRESS));
         addressStore.reset();
 
-        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND) ,  kernel);
         orphanBlockStore.reset();
 
         TransactionHistoryStore txHistoryStore = Mockito.mock(TransactionHistoryStore.class);
@@ -155,7 +155,11 @@ public class SnapshotStoreTest {
 
         backup = root2.newFolder();
         createBlockchain();
-        FileUtils.copyDirectory(new File(config.getNodeSpec().getStoreDir()),backup);//这里 windows环境下调试会报错，Linux可过
+        String os = System.getProperty("os.name", "").toLowerCase();
+        if (os.contains("win")) {
+            dbFactory.close();
+        }
+        FileUtils.copyDirectory(new File(config.getNodeSpec().getStoreDir()),backup);
     }
 
 //    @Test
@@ -237,7 +241,7 @@ public class SnapshotStoreTest {
 
     public void createBlockchain() {
         ECKeyPair addrKey = ECKeyPair.fromPrivateKey(secretkey_1);
-        poolKey = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        poolKey = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
 
         //Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
@@ -300,7 +304,7 @@ public class SnapshotStoreTest {
         XAmount toBalance = blockchain.getAddressStore().getBalanceByAddress(AddressUtils.toBytesAddress(addrKey).toArrayUnsafe());
         Block fromBlock = blockchain.getBlockStore().getBlockInfoByHash(from.getAddress());
 
-        assertEquals("99.9", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));
+        assertEquals("99.8", String.valueOf(toBalance.toDecimal(1, XUnit.XDAG)));
         // block reword 1024 - 100 = 924.0
         assertEquals("924.0", String.valueOf(fromBlock.getInfo().getAmount().toDecimal(1, XUnit.XDAG)));
 

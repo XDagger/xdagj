@@ -417,7 +417,7 @@ public class BlockTest {
      keys = new ArrayList<>();
      keys.add(ecKey1);
      Block transaction2 = new Block(time, first.getFirstOutput(), links, null, false, keys, -1);
-     // 跟输入用的不是同一把密钥
+     // It's not the same key used for input.
      ECKey ecKey3 = new ECKey();
      transaction2.signIn(ecKey1);
      transaction2.signOut(ecKey3);
@@ -434,7 +434,7 @@ public class BlockTest {
      keys.add(ecKey2);
      time = XdagTime.getCurrentTimestamp();
      Block transaction3 = new Block(time, first.getFirstOutput(), links, null, false, keys, -1);
-     // 跟输入用的不是同一把密钥
+     // It's not the same key used for input.
      transaction3.signIn(ecKey1);
      transaction3.signIn(ecKey2);
      transaction3.signOut(ecKey3);
@@ -513,7 +513,7 @@ public class BlockTest {
 
      Block firstAccount = new Block(time, null, null, null, false, null, -1);
      Block secondAccount = new Block(time + 100, null, null, null, false, null, -1);
-     // 第一把密钥
+     // First key
      ECKey ecKey = xdagWallet.getKeyByIndex(0);
      System.out.println(
      "=====================================Sign Key========================================");
@@ -551,7 +551,7 @@ public class BlockTest {
      System.out.println(
      "=====================================Test Account========================================");
 
-     // 更新金额
+     // Update amount
      secondAccount.getInfo().setAmount(1024);
      //        blockStore.updateBlockInfo(BLOCK_AMOUNT, secondAccount);
      blockStore.saveBlock(secondAccount);

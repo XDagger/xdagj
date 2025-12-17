@@ -81,6 +81,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("state", new CommandMethods(this::processState, this::defaultCompleter));
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
+        commandExecute.put("xferWithFee", new CommandMethods(this::processXferWithFee, this::defaultCompleter));
         commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
         commandExecute.put("pool", new CommandMethods(this::processPool, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
@@ -406,7 +407,61 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 println("The password is incorrect");
                 return;
             }
-            println(commands.xfer(amount, hash, remark));
+            double fee = 0.0;
+            println(commands.xfer(amount, hash, remark, fee));
+
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processXferWithFee(CommandInput input) {
+        final String[] usage = {
+                "xfer -  transfer ([AMOUNT] - [Fee]) XDAG to the address [ADDRESS]",
+                "Usage: transfer [AMOUNT] [Fee] [ADDRESS]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+
+            if (argv.size() < 3) {
+                println("Lost some param");
+                return;
+            }
+
+            Bytes32 hash;
+            double amount = BasicUtils.getDouble(argv.get(0));
+            double fee = BasicUtils.getDouble(argv.get(1));
+
+            String remark = argv.size() == 4 ? argv.get(3) : null;
+
+            if (amount < 0) {
+                println("The transfer amount must be greater than 0");
+                return;
+            }
+
+            if (fee < 0) {
+                println("The transfer fee must be greater than 0");
+                return;
+            }
+
+            if (WalletUtils.checkAddress(argv.get(2))) {
+                hash = pubAddress2Hash(argv.get(2));
+            } else {
+                println("Incorrect address");
+                return;
+            }
+
+            Wallet wallet = new Wallet(kernel.getConfig());
+            if (!wallet.unlock(readPassword())) {
+                println("The password is incorrect");
+                return;
+            }
+            println(commands.xfer(amount, hash, remark, fee));
 
         } catch (Exception e) {
             saveException(e);

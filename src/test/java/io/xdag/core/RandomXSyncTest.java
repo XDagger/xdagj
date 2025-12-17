@@ -82,17 +82,17 @@ public class RandomXSyncTest {
     public void syncTest() throws Exception {
 //        Date date = fastDateFormat.parse("2020-09-20 23:45:00");
         long generateTime = 1600616700000L;
-        // 构建三个mockKernel
+        // Build three mockKernels
         Kernel kernel1 = createKernel(root1);
         Kernel kernel2 = createKernel(root2);
 
-        // 第一个kernel新增区块数据
+        // The first kernel adds block data
         long end = addBlocks(kernel1, 130);
         log.debug("Add block done");
         long nmain = kernel1.getBlockchain().getXdagStats().nmain;
         String expected = kernel1.getBlockchain().getBlockByHeight(nmain - 1).getInfo().getDifficulty().toString(16);
 
-        // 第二个跟第三个同步第一个的数据
+        // The second and third synchronize the data of the first.
         CountDownLatch latch = new CountDownLatch(1);
         Thread thread1 = new SyncThread(latch, kernel1, kernel2, generateTime, end, "1");
         thread1.start();
@@ -184,7 +184,7 @@ public class RandomXSyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.PRIVATE_KEY_OBJ);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config, key);
@@ -197,7 +197,7 @@ public class RandomXSyncTest {
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND) , kernel);
         orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);

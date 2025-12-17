@@ -168,6 +168,10 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         MutableBytes32 hashlow = MutableBytes32.create();
         hashlow.set(8, Bytes.wrap(hash).slice(8, 24));
         Block block = blockchain.getBlockByHash(hashlow, true);
+        BlockInfo blockInfo = kernel.getBlockStore().getBlockInfo(hashlow);
+        if (blockInfo != null) {
+            block.getInfo().setFee(blockInfo.getFee());
+        }
         log.debug("Hash low [{}]", hashlow.toHexString());
         if (block == null) {
             log.debug("Can't find the block");

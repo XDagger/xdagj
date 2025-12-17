@@ -149,7 +149,7 @@ public class Kernel {
         addressStore.start();
 
 
-        orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND) , this);
         orphanBlockStore.start();
 
         if (config.getEnableTxHistory()) {
@@ -179,7 +179,7 @@ public class Kernel {
             if (xdagStats.getGlobalMiner() == null) {
                 xdagStats.setGlobalMiner(firstAccount.toArray());
             }
-            blockchain.tryToConnect(firstBlock);
+            blockchain.tryToConnect(new Block(firstBlock.getXdagBlock()));
         } else {
             firstAccount = toBytesAddress(wallet.getDefKey().getPublicKey());
         }

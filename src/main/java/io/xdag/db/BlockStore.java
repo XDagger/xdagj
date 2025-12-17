@@ -81,6 +81,8 @@ public interface BlockStore extends XdagLifecycle {
 
     Block getBlockInfoByHash(Bytes32 hashlow);
 
+    BlockInfo getBlockInfo(Bytes32 hashlow);
+
     Block getRawBlockByHash(Bytes32 hashlow);
 
     Bytes getOurBlock(int index);

@@ -41,21 +41,43 @@ public class SampleKeys {
             "0x506bc1dc099358e5137292f4efdd57e400f29ba5132aa5d12b18dac1c1f6aab"
                     + "a645c0b7b58158babbfa6c6cd5a48aa7340a8749176b120e8516216787a13dc76";
 
+    public static final String PRIVATE_KEY2_STRING =
+            "1617c00039fe599ac7e39f99e2ddcb57dd6d56d643573f5fbe84f21eeb4e47b0";
+    public static final String PUBLIC_KEY2_STRING =
+            "0x878ed4e8adf970333ae031231f8fe99074d7be8fbf4dba092721ca3a054dc3e"
+                    + "0c2a367d87de9ed70c907c9238f397872ad879b50ac7125dfb4e4c26bb0e90a91";
+
     public static final String PUBLIC_KEY_COMPRESS_STRING = "02506bc1dc099358e5137292f4efdd57e400f29ba5132aa5d12b18dac1c1f6aaba";
     public static final String ADDRESS = "0xb731bf10ed204f4ebc3d32ac88b7aa61b993fd59";
     public static final String ADDRESS_NO_PREFIX = Numeric.cleanHexPrefix(ADDRESS);
+
+    public static final String ADDRESS2 = "0x15a4f5e3d912d38d31fce7c790d6054b9e4d10c1";
+    public static final String ADDRESS2_NO_PREFIX = Numeric.cleanHexPrefix(ADDRESS2);
 
     public static final String PASSWORD = "Insecure Pa55w0rd";
     public static final String MNEMONIC =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
+    public static final String MNEMONIC2 =
+            "flush still bind explain behave collect"
+                    + "stamp wealth just industry dose wrestle";
+
     public static final BigInteger PRIVATE_KEY = Numeric.toBigInt(PRIVATE_KEY_STRING);
     public static final BigInteger PUBLIC_KEY = Numeric.toBigInt(PUBLIC_KEY_STRING);
 
-    public static final PrivateKey PRIVATE_KEY_OBJ = PrivateKey.fromBigInteger(PRIVATE_KEY);
-    public static final PublicKey PUBLIC_KEY_OBJ = PublicKey.fromBigInteger(PUBLIC_KEY);
+    public static final BigInteger PRIVATE_KEY2 = Numeric.toBigInt(PRIVATE_KEY2_STRING);
+    public static final BigInteger PUBLIC_KEY2 = Numeric.toBigInt(PUBLIC_KEY2_STRING);
 
-    public static final ECKeyPair KEY_PAIR = ECKeyPair.fromPrivateKey(PRIVATE_KEY_OBJ);
+//    public static final PrivateKey  PRIVATE_KEY_OBJ = PrivateKey.fromBigInteger(PRIVATE_KEY);
+//    public static final PublicKey   PUBLIC_KEY_OBJ = PublicKey.fromBigInteger(PUBLIC_KEY);
+    public static final PrivateKey  SRIVATE_KEY = PrivateKey.fromBigInteger(PRIVATE_KEY);
+    public static final PublicKey   SPUBLIC_KEY = PublicKey.fromBigInteger(PUBLIC_KEY);
+
+    public static final PrivateKey  SRIVATE_KEY2 = PrivateKey.fromBigInteger(PRIVATE_KEY2);
+    public static final PublicKey  SPUBLIC_KEY2 = PublicKey.fromBigInteger(PUBLIC_KEY2);
+
+    public static final ECKeyPair  KEY_PAIR = ECKeyPair.fromPrivateKey (SRIVATE_KEY);
+    public static final ECKeyPair  KEY_PAIR2 = ECKeyPair.fromPrivateKey (SRIVATE_KEY2);
 
     private SampleKeys() {
     }

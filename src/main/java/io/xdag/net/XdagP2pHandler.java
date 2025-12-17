@@ -369,19 +369,19 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     /**
-     * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
+     * A block request responds to a block and starts a thread to continuously send blocks over a period of time. *
      */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-        // 更新全网状态
+        // Update the status of the entire network
         updateXdagStats(msg);
         long startTime = msg.getStarttime();
         long endTime = msg.getEndtime();
         long random = msg.getRandom();
 
-        // TODO: paulochen 处理多区块请求
-        //        // 如果大于快照点的话 我可以发送
+        // TODO: paulochen Processing multi-block requests
+        //        // If it's greater than the snapshot point, I can send it.
         //        if (startTime > 1658318225407L) {
-        //            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
+        //            // TODO: If the request interval is too long, a new thread will be started to send the request; this is to prevent attacks.
         log.debug("Send blocks between {} and {} to node {}",
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
@@ -404,12 +404,12 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     /**
-     * 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送
+     * Fill the last 8 fields of the sumRequest with your own sum, change the type to reply, and send.
      */
     protected void processSumsRequest(SumRequestMessage msg) {
         updateXdagStats(msg);
         MutableBytes sums = MutableBytes.create(256);
-        // TODO: paulochen 处理sum请求
+        // TODO: paulochen Handling SUM requests
         kernel.getBlockStore().loadSum(msg.getStarttime(),msg.getEndtime(),sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
                 chain.getXdagStats(), sums);
