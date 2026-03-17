@@ -127,7 +127,7 @@ public class BlockchainTest {
                     }
                 }
             }
-            (kernel.getOrphanBlockStore()).deleteFromQueue(b, blockchain.isTxBlock(b), nonce, fee, address);
+            kernel.getOrphanBlockStore().deleteFromQueue(b, blockchain.isTxBlock(b), nonce, fee, address);
         }
     }
 
@@ -359,7 +359,7 @@ public class BlockchainTest {
                 assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_MAIN_REF);
                 assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_REF);
                 //                assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_OURS);
-                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getRef(), blockchain.getBlockByHeight(1).getHashLow().toArray());//The ref of the main block is oneself
+                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getRef(), blockchain.getBlockByHeight(1).getHashLow().toArray());//主块的ref为自己
                 // A main block with a height of 1, if it has no reference to itself, will have its maximum difficulty value pointed to null.
                 assertNull(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getMaxDiffLink());
             } else if (i > 2) {//3、4、5、6、7、8、9、10
@@ -1075,7 +1075,7 @@ public class BlockchainTest {
                 //ref
                 assertNull(blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().getRef());
                 assertNull(blockchain.getBlockByHash(extraBlockList.get(11).getHashLow(), false).getInfo().getRef());
-                assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().getRef(), extraBlockList.get(10).getHashLow().toArray());//The main block ref points to itself, which is different from link blocks and transaction blocks
+                assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().getRef(), extraBlockList.get(10).getHashLow().toArray());//主块ref指向自己，这里有别于链接块和交易块
 
                 assertChainStatus(16, 12, 1, 0, blockchain);
             } else {
@@ -3348,27 +3348,27 @@ public class BlockchainTest {
                 assertNotEquals(0, blockchain.getBlockByHash(link3.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.0", blockchain.getBlockByHash(link3.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
             } else if (i == 8) {
+                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
+                assertEquals(0, blockchain.getBlockByHash(c4.getHashLow(), false).getInfo().flags & BI_APPLIED);
+            } else if (i == 9) {
+                assertArrayEquals(orp.addressHash.toArray(), c5.getHashLow().toArray());
+                assertEquals(0, blockchain.getBlockByHash(c5.getHashLow(), false).getInfo().flags & BI_APPLIED);
+            } else if (i == 10) {
                 assertArrayEquals(orp.addressHash.toArray(), mTX.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(mTX.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.4", blockchain.getBlockByHash(mTX.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 9) {
+            } else if (i == 11) {
                 assertArrayEquals(orp.addressHash.toArray(), a24.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(a24.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.3", blockchain.getBlockByHash(a24.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
                 assertEquals("0.2", blockchain.getBlockByHash(a24.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
                 assertEquals("0.3", blockchain.getTxFee(a24).toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 10) {
+            } else {
                 assertArrayEquals(orp.addressHash.toArray(), b26y.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(b26y.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.3", blockchain.getBlockByHash(b26y.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
                 assertEquals("0.2", blockchain.getBlockByHash(b26y.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
                 assertEquals("0.3", blockchain.getTxFee(b26y).toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 11) {
-                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(c4.getHashLow(), false).getInfo().flags & BI_APPLIED);
-            } else {
-                assertArrayEquals(orp.addressHash.toArray(), c5.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(c5.getHashLow(), false).getInfo().flags & BI_APPLIED);
             }
         }
     }
@@ -3711,7 +3711,7 @@ public class BlockchainTest {
         //height33
         assertArrayEquals(extraBlockList.get(32).getHashLow().toArray(), blockchain.getBlockByHeight(33).getHashLow().toArray());
         //amount=1024+19.2-1043.2
-        assertEquals("1.700", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
+        assertEquals("1.700", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());// 因为之前测试案例并没有修改fee逻辑，导致新加的0.1没转走
         assertEquals("20.900", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         //mTX3
         assertEquals("0.000", blockchain.getBlockByHash(mTX3.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
@@ -3749,17 +3749,7 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(rebuildHeight33);
         assertSame(IMPORTED_BEST, result);
 
-        // The original block number 49 had no links, so it remained marked as "extra". Because of the added rollback mechanism,
-        // previously applied transactions are now returned to the orphan pool; manual deletion does not affect subsequent transactions.
-        assertChainStatus(69, 31, 2, 1, blockchain);
-        sendTime[0] = xdagTime + 1;
-        orphan = blockchain.getOrphanBlockStore().getOrphan(15, sendTime, false);
-        assertEquals(1, orphan.size());
-        assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
-        for (Address orp : orphan) {
-            blockchain.removeOrphan(orp.getAddress(), BlockchainImpl.OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
-        }
-        assertChainStatus(69, 31, 2, 0, blockchain);
+        assertChainStatus(68, 31, 2, 12, blockchain);
 
         pending.clear();
         pending.add(new Address(rebuildHeight33.getHashLow(), XDAG_FIELD_OUT, false));
@@ -3775,7 +3765,15 @@ public class BlockchainTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT, false));
         }
 
-        assertChainStatus(71, 33, 2, 0, blockchain);
+        assertChainStatus(70, 33, 2, 12, blockchain);
+
+        orphan.clear();
+        orphan = blockchain.getBlockFromOrphanPool(12, sendTime, true);
+        deleteMainRef(orphan, blockchain, kernel);
+        orphan.addAll(blockchain.getBlockFromOrphanPool(12, sendTime, true));
+        assertEquals(12, orphan.size());
+        deleteMainRef(orphan, blockchain, kernel);
+        assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
 
         //After the main block with original heights of 32 and 33 was rolled back, check its own state and the state of the references it contains.
 
@@ -3921,7 +3919,7 @@ public class BlockchainTest {
             pending.add(new Address(ref, XDAG_FIELD_OUT, false));
         }
 
-        assertChainStatus(76, 36, 2, 0, blockchain);
+        assertChainStatus(75, 36, 2, 12, blockchain);
 
         assertNotEquals(0, blockchain.getBlockByHash(tx1.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertNotEquals(0, blockchain.getBlockByHash(tx2.getHashLow(), false).getInfo().flags & BI_APPLIED);
@@ -3945,7 +3943,7 @@ public class BlockchainTest {
         assertEquals(2, orphan.size());
         // The discrepancy between the numbers in `norphan` and `getOrphanBlockStore().getOrphanSize()` is because they haven't been linked yet.
         assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
-        assertChainStatus(78, 37, 2, 2, blockchain);
+        assertChainStatus(77, 37, 2, 14, blockchain);
 
         for (int i = 0; i < orphan.size(); i++) {
             Address orp = orphan.get(i);
@@ -4015,7 +4013,7 @@ public class BlockchainTest {
         assertSame(IMPORTED_NOT_BEST, result);
         result = blockchain.tryToConnect(mTX13);
         assertSame(IMPORTED_NOT_BEST, result);
-        assertChainStatus(89, 37, 2, 13, blockchain);
+        assertChainStatus(88, 37, 2, 25, blockchain);
 
         sendTime = new long[2];
         sendTime[0] = xdagTime + 35;
@@ -4073,7 +4071,7 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(link);
         assertSame(IMPORTED_NOT_BEST, result);
 
-        assertChainStatus(90, 37, 2, 3, blockchain);
+        assertChainStatus(89, 37, 2, 15, blockchain);
 
         blockchain.dealOrphan(tx3);
         blockchain.dealOrphan(tx4);
@@ -4131,7 +4129,7 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(new Block(linkDeep.getXdagBlock()));
         assertSame(IMPORTED_NOT_BEST, result);
 
-        assertChainStatus(93, 37, 2, 3, blockchain);
+        assertChainStatus(92, 37, 2, 15, blockchain);
 
         // TX3 and TX4 were retrieved using getBlockFromOrphanPool, so they can't be found now; they've been manually added.
         blockchain.dealOrphan(tx3);
@@ -4211,7 +4209,7 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(new Block(d3.getXdagBlock()));
         assertSame(IMPORTED_NOT_BEST, result);
 
-        assertChainStatus(109, 37, 2, 19, blockchain);
+        assertChainStatus(108, 37, 2, 31, blockchain);
 
         sendTime = new long[2];
         sendTime[0] = xdagTime + 40;
@@ -4264,7 +4262,7 @@ public class BlockchainTest {
             }
         }
 
-        assertChainStatus(109, 37, 2, 19, blockchain);
+        assertChainStatus(108, 37, 2, 31, blockchain);
 
         pending.clear();
         pending.add(new Address(link.getHashLow(), XDAG_FIELD_OUT, false));
@@ -4341,7 +4339,7 @@ public class BlockchainTest {
             }
         }
 
-        assertChainStatus(115, 42, 2, 0, blockchain);
+        assertChainStatus(114, 42, 2, 12, blockchain);
 
         //account1      1000-100-100+255*11-10*6
         assertEquals("3543.900", blockchain.getAddressStore().getBalanceByAddress(account1.toAddress().toArray()).toDecimal(3, XUnit.XDAG).toString());
@@ -4939,16 +4937,15 @@ public class BlockchainTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        // The newly added orphan block is a linked block generated during rollback.
-        assertChainStatus(61, 27, 2, 9, blockchain);
-        assertEquals(9, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertChainStatus(60, 27, 2, 16, blockchain);
+        assertEquals(16, blockchain.getOrphanBlockStore().getOrphanSize());
 
         blockchain.checkMain();
-        assertChainStatus(61, 28, 2, 9, blockchain);
+        assertChainStatus(60, 28, 2, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(61, 29, 2, 9, blockchain);
+        assertChainStatus(60, 29, 2, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(61, 29, 2, 9, blockchain);
+        assertChainStatus(60, 29, 2, 16, blockchain);
         assertEquals(0, blockchain.getMBlockTx().size());
 
         assertEquals("0.000", blockchain.getBlockByHash(linkBlock.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
@@ -4987,31 +4984,44 @@ public class BlockchainTest {
         deleteMainRef(orphan, blockchain, kernel);
         orphan.addAll(blockchain.getBlockFromOrphanPool(20, sendTime, true));
         deleteMainRef(orphan, blockchain, kernel);
-        assertEquals(9, orphan.size());
+        assertEquals(16, orphan.size());
         // i=0 is the link block generated during rollback.
         for (int i = 0; i < orphan.size(); i++) {
-            if (i == 1) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), d4.getHashLow().toArray());
+            if (i == 0) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), linkDeep.getHashLow().toArray());
+            } else if (i == 1) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), link2.getHashLow().toArray());
             } else if (i == 2) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), d5.getHashLow().toArray());
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), b3.getHashLow().toArray());
             } else if (i == 3) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), c4.getHashLow().toArray());
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), b4.getHashLow().toArray());
             } else if (i == 4) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), c5.getHashLow().toArray());
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), c3.getHashLow().toArray());
             } else if (i == 5) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), a5.getHashLow().toArray());
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), a3.getHashLow().toArray());
             } else if (i == 6) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), a6.getHashLow().toArray());
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), a4.getHashLow().toArray());
             } else if (i == 7) {
-                assertArrayEquals(orphan.get(i).addressHash.toArray(), a7.getHashLow().toArray());
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), a5.getHashLow().toArray());
             } else if (i == 8) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), a6.getHashLow().toArray());
+            } else if (i == 9) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), d3.getHashLow().toArray());
+            } else if (i == 10) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), d4.getHashLow().toArray());
+            } else if (i == 11) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), d5.getHashLow().toArray());
+            } else if (i == 12) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), c4.getHashLow().toArray());
+            } else if (i == 13) {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), c5.getHashLow().toArray());
+            } else if (i == 14) {
                 assertArrayEquals(orphan.get(i).addressHash.toArray(), b5.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orphan.get(i).addressHash.toArray(), a7.getHashLow().toArray());
             }
         }
-        // Remove the link blocks generated by the rollback
-        orphan.removeFirst();
-        blockchain.getXdagStats().nnoref--;
-        assertChainStatus(61, 29, 2, 8, blockchain);
+        assertChainStatus(60, 29, 2, 16, blockchain);
         assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
 
         for (Address address : orphan) {
@@ -5019,8 +5029,8 @@ public class BlockchainTest {
             blockchain.dealOrphan(block);
         }
 
-        assertEquals(8, blockchain.getOrphanBlockStore().getOrphanSize());
-        assertChainStatus(61, 29, 2, 8, blockchain);
+        assertEquals(16, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertChainStatus(60, 29, 2, 16, blockchain);
 
         List<Bytes32> mHashlow = new ArrayList<>();
 
@@ -5033,16 +5043,16 @@ public class BlockchainTest {
                 pending.add(new Address(a5.getHashLow(), XDAG_FIELD_OUT, false));
                 pending.add(new Address(a6.getHashLow(), XDAG_FIELD_OUT, false));
                 pending.add(new Address(d4.getHashLow(), XDAG_FIELD_OUT, false));
-                assertEquals(8, blockchain.getOrphanBlockStore().getOrphanSize());
+                assertEquals(16, blockchain.getOrphanBlockStore().getOrphanSize());
             } else if (i == 2) {
                 pending.add(new Address(d4.getHashLow(), XDAG_FIELD_OUT, false));
                 pending.add(new Address(c4.getHashLow(), XDAG_FIELD_OUT, false));
-                assertEquals(8, blockchain.getOrphanBlockStore().getOrphanSize());
+                assertEquals(16, blockchain.getOrphanBlockStore().getOrphanSize());
             } else {
                 pending.add(new Address(a5.getHashLow(), XDAG_FIELD_OUT, false));
                 pending.add(new Address(d5.getHashLow(), XDAG_FIELD_OUT, false));
                 pending.add(new Address(c5.getHashLow(), XDAG_FIELD_OUT, false));
-                assertEquals(5, blockchain.getOrphanBlockStore().getOrphanSize());
+                assertEquals(13, blockchain.getOrphanBlockStore().getOrphanSize());
             }
             if (i > 1) {
                 pending.add(new Address(ref, XDAG_FIELD_OUT, false));
@@ -5053,16 +5063,18 @@ public class BlockchainTest {
             result = blockchain.tryToConnect(extraBlock);
             assertSame(IMPORTED_BEST, result);
             ref = extraBlock.getHashLow();
-            assertChainStatus(61 + i, i == 1 ? 29 : 29 + i - 1, 2, i == 1 ? 8 : i == 2 ? 5 : 4, blockchain);
+            assertChainStatus(60 + i, i == 1 ? 29 : 29 + i - 1, 2, i == 1 ? 16 : i == 2 ? 13 : 12, blockchain);
             assertEquals(i == 1 ? 0 : i == 2 ? 3 : 4, blockchain.getMBlockTx().size());
             mHashlow.add(extraBlock.getHashLow());
         }
-        assertEquals(4, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertEquals(12, blockchain.getOrphanBlockStore().getOrphanSize());
         List<Block> blocks = new ArrayList<>();
         orphan.clear();
         orphan = blockchain.getBlockFromOrphanPool(20, sendTime, true);
         deleteMainRef(orphan, blockchain, kernel);
-        assertEquals(4, orphan.size());
+        orphan.addAll(blockchain.getBlockFromOrphanPool(20, sendTime, true));
+        deleteMainRef(orphan, blockchain, kernel);
+        assertEquals(12, orphan.size());
         for (Address addr : orphan) {
             Block block = blockchain.getBlockByHash(addr.addressHash, true);
             blocks.add(block);
@@ -5076,7 +5088,7 @@ public class BlockchainTest {
         assertNotNull(kernel.getPow());
 
         List<byte[]> lists = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyLookup(BytesUtils.merge(prefix));
-        assertEquals(5, lists.size());// The link blocks generated during rollback were not deleted from here.
+        assertEquals(12, lists.size());// The link blocks generated during rollback were not deleted from here.
         for (int i = 0; i < blocks.size(); i++) {
             UInt64 nonce = UInt64.ZERO;
             XAmount fee = blockchain.getTxFee(blocks.get(i));
@@ -5103,7 +5115,7 @@ public class BlockchainTest {
             byte[] value = BytesUtils.merge(timeBytes, feeBytes, addrBytes);
 
             byte[] vInDB = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(key);
-            if (i < 4) {
+            if (i < 12) {
                 assertNotNull(vInDB);
                 assertArrayEquals(value, vInDB);
                 assertEquals(0, blocks.get(i).getInfo().flags & BI_REF);
@@ -5119,9 +5131,9 @@ public class BlockchainTest {
             blockchain.dealOrphan(block);
         }
 
-        assertEquals(4, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertEquals(12, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(4, blockchain.getMBlockTx().size());
-        assertChainStatus(64, 31, 2, 4, blockchain);// The transaction referenced by the last main block has not yet been removed from the orphanage pool.
+        assertChainStatus(63, 31, 2, 12, blockchain);// The transaction referenced by the last main block has not yet been removed from the orphanage pool.
         MutableBytes32 addressHash = MutableBytes32.create();
         addressHash.set(8, a5.getHashLow().slice(8, 24));
         assertEquals(blockchain.getMBlockTx().get(addressHash), mHashlow.getFirst());
@@ -5155,9 +5167,7 @@ public class BlockchainTest {
         orphan = blockchain.getBlockFromOrphanPool(20, sendTime, true);
         deleteMainRef(orphan, blockchain, kernel);
         orphan.addAll(blockchain.getBlockFromOrphanPool(20, sendTime, true));
-        assertEquals(5, orphan.size());
-        orphan.removeFirst();// Remove the link blocks generated by the rollback
-        blockchain.getXdagStats().nnoref--;
+        assertEquals(16, orphan.size());
         deleteMainRef(orphan, blockchain, kernel);
         for (Address addr : orphan) {
             Block block = blockchain.getBlockByHash(addr.addressHash, true);
@@ -5168,7 +5178,7 @@ public class BlockchainTest {
         assertNotNull(kernel.getPow());
 
         lists = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyLookup(BytesUtils.merge(prefix));
-        assertEquals(6, lists.size());// Two rollback-generated linked blocks + four unpacked transaction blocks
+        assertEquals(16, lists.size());
 
         for (int i = 0; i < blocks.size(); i++) {
             UInt64 nonce = UInt64.ZERO;
@@ -5204,11 +5214,11 @@ public class BlockchainTest {
 
         assertEquals(0, blockchain.getMBlockTx().size());
         assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
-        assertChainStatus(75, 38, 3, 4, blockchain);// Four were not linked
+        assertChainStatus(73, 38, 3, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(75, 39, 3, 4, blockchain);
+        assertChainStatus(73, 39, 3, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(75, 39, 3, 4, blockchain);
+        assertChainStatus(73, 39, 3, 16, blockchain);
 
         Block b6 = generateNewTransactionBlock(config, account2, xdagTime + 50, from2, to, XAmount.of(10, XUnit.XDAG), XAmount.of(700, XUnit.MILLI_XDAG), UInt64.valueOf(1));
         Block b7 = generateNewTransactionBlock(config, account2, xdagTime + 51, from2, to, XAmount.of(10, XUnit.XDAG), XAmount.of(400, XUnit.MILLI_XDAG), UInt64.valueOf(2));
@@ -5269,7 +5279,7 @@ public class BlockchainTest {
             result = blockchain.tryToConnect(extraBlock);
             assertSame(IMPORTED_BEST, result);
             ref = extraBlock.getHashLow();
-            assertChainStatus(81 + i, i == 1 ? 39 : 39 + i - 1, 3, i == 1 ? 10 : 10 - i, blockchain);
+            assertChainStatus(79 + i, i == 1 ? 39 : 39 + i - 1, 3, i == 1 ? 22 : 22 - i, blockchain);
             assertEquals(i == 1 ? 0 : i, blockchain.getMBlockTx().size());
             mHashlow.add(ref);
         }
@@ -5347,28 +5357,25 @@ public class BlockchainTest {
             extraBlockList.add(extraBlock);
             if (i < 6) mHashlow.add(ref);
         }
-        assertChainStatus(107, 54, 4, 5, blockchain);
+        assertChainStatus(104, 54, 4, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(107, 55, 4, 5, blockchain);
+        assertChainStatus(104, 55, 4, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(107, 56, 4, 5, blockchain);
+        assertChainStatus(104, 56, 4, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(107, 57, 4, 5, blockchain);
+        assertChainStatus(104, 57, 4, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(107, 58, 4, 5, blockchain);
+        assertChainStatus(104, 58, 4, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(107, 59, 4, 5, blockchain);
+        assertChainStatus(104, 59, 4, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(107, 59, 4, 5, blockchain);
+        assertChainStatus(104, 59, 4, 16, blockchain);
         assertEquals(6, blockchain.getMBlockTx().size());
-        assertEquals(1, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
         orphan.clear();
         sendTime[0] = xdagTime + 10L;
         orphan = blockchain.getBlockFromOrphanPool(20, sendTime, true);
-        assertEquals(1, orphan.size());
-        deleteMainRef(orphan, blockchain, kernel);
-        orphan.removeFirst();// Remove the link blocks generated by the rollback
-        blockchain.getXdagStats().nnoref--;
+        assertEquals(0, orphan.size());
 
         assertEquals("0.000", blockchain.getBlockByHash(b6.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("0.800", blockchain.getBlockByHash(b6.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
@@ -5415,7 +5422,7 @@ public class BlockchainTest {
 
         // todo:Test whether the transactions packaged on the new chain are correctly retrieved from the orphanSource.
         lists = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyLookup(BytesUtils.merge(prefix));
-        assertEquals(7, lists.size());// Three chained blocks resulting from rollbacks + four unpacked transaction blocks
+        assertEquals(16, lists.size());
         blocks.clear();
         blocks.add(blockchain.getBlockByHash(b6.getHashLow(), true));
         blocks.add(blockchain.getBlockByHash(b7.getHashLow(), true));
@@ -5482,16 +5489,16 @@ public class BlockchainTest {
 
         // todo:Simulate the link blocks generated by your own node
         lists = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyLookup(BytesUtils.merge(prefix));
-        assertEquals(15, lists.size());
+        assertEquals(24, lists.size());
         pending.clear();
         pending.add(new Address(b8.getHashLow(), false));
         pending.add(new Address(c8.getHashLow(), false));
         Block link3 = generateLinkBlock(config, nodeKey, xdagTime + 100, null, pending);
         result = blockchain.tryToConnect(new Block(link3.getXdagBlock()));
         assertSame(IMPORTED_NOT_BEST, result);
-        assertChainStatus(116, 59, 4, 11, blockchain);
+        assertChainStatus(113, 59, 4, 23, blockchain);
         lists = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyLookup(BytesUtils.merge(prefix));
-        assertEquals(14, lists.size());
+        assertEquals(23, lists.size());
 
         assertEquals(7, blockchain.getOrphanBlockStore().getOrphanSize());
         // todo:Link blocks generated by other nodes
@@ -5502,9 +5509,9 @@ public class BlockchainTest {
         result = blockchain.tryToConnect(link4);
         assertEquals(IMPORTED_NOT_BEST, result);
         assertEquals(8, blockchain.getOrphanBlockStore().getOrphanSize());
-        assertChainStatus(117, 59, 4, 12, blockchain);
+        assertChainStatus(114, 59, 4, 24, blockchain);
         lists = ((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().prefixKeyLookup(BytesUtils.merge(prefix));
-        assertEquals(15, lists.size());
+        assertEquals(24, lists.size());
 
         // todo:Test whether transactions can be correctly deleted when your node generates a main block and other nodes generate main blocks that duplicate them.
         //  Also test whether transactions can be correctly deleted after multiple nodes generate and rollback.
@@ -5547,12 +5554,12 @@ public class BlockchainTest {
             result = blockchain.tryToConnect(extraBlock);
             assertSame(IMPORTED_BEST, result);
             ref = extraBlock.getHashLow();
-            assertChainStatus(117 + i, i == 1 ? 59 : 59 - 1 + i, 4, i == 1 ? 12 : i == 2 ? 10 : i < 9 ? 10 - i + 2 : 4, blockchain);
+            assertChainStatus(114 + i, i == 1 ? 59 : 59 - 1 + i, 4, i == 1 ? 24 : i == 2 ? 22 : i < 9 ? 22 - i + 2 : 16, blockchain);
             assertEquals(i == 1 ? 8 : i == 2 ? 6 : i < 8 ? 6 - i + 2 : 0, blockchain.getOrphanBlockStore().getOrphanSize());
             assertEquals(i == 1 ? 6 : i == 2 ? 8 : i < 8 ? 8 + i - 2 : 14, blockchain.getMBlockTx().size());// 6 were saved previously
             mHashlow.add(ref);
         }
-        assertChainStatus(127, 68, 4, 4, blockchain);
+        assertChainStatus(124, 68, 4, 16, blockchain);
         assertEquals("1025.500", blockchain.getBlockByHash(mHashlow.getFirst(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("1.500", blockchain.getBlockByHash(mHashlow.getFirst(), false).getInfo().getFee().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("1024.000", blockchain.getBlockByHash(mHashlow.get(1), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
@@ -5610,36 +5617,29 @@ public class BlockchainTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertChainStatus(158, 80, 5, 5, blockchain);
+        assertChainStatus(154, 80, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 81, 5, 5, blockchain);
+        assertChainStatus(154, 81, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 82, 5, 5, blockchain);
+        assertChainStatus(154, 82, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 83, 5, 5, blockchain);
+        assertChainStatus(154, 83, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 84, 5, 5, blockchain);
+        assertChainStatus(154, 84, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 85, 5, 5, blockchain);
+        assertChainStatus(154, 85, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 86, 5, 5, blockchain);
+        assertChainStatus(154, 86, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 87, 5, 5, blockchain);
+        assertChainStatus(154, 87, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 88, 5, 5, blockchain);
+        assertChainStatus(154, 88, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 89, 5, 5, blockchain);
+        assertChainStatus(154, 89, 5, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(158, 89, 5, 5, blockchain);
-        assertEquals(1, blockchain.getOrphanBlockStore().getOrphanSize());// Link blocks generated by rollback
-        orphan.clear();
-        sendTime[0] = xdagTime + 10L;
-        orphan = blockchain.getBlockFromOrphanPool(20, sendTime, true);
-        assertEquals(1, orphan.size());
-        deleteMainRef(orphan, blockchain, kernel);
-        orphan.removeFirst();// Remove the link blocks generated by the rollback
-        blockchain.getXdagStats().nnoref--;
-        assertEquals(14, blockchain.getMBlockTx().size());//
+        assertChainStatus(154, 89, 5, 16, blockchain);
+        assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertEquals(14, blockchain.getMBlockTx().size());
 
         assertEquals("1025.500", blockchain.getBlockByHash(extraBlockList.get(60).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("1.500", blockchain.getBlockByHash(extraBlockList.get(60).getHashLow(), false).getInfo().getFee().toDecimal(3, XUnit.XDAG).toString());
@@ -5725,7 +5725,7 @@ public class BlockchainTest {
         Block mTxBlock7 = generateMTxWithFee(config, nodeKey, xdagTime, txFrom7, XAmount.of(1000, XUnit.XDAG), to1, XAmount.of(250, XUnit.XDAG), to2, XAmount.of(750, XUnit.XDAG), XAmount.of(9, XUnit.XDAG));
         result = blockchain.tryToConnect(mTxBlock7);
         assertSame(result, IMPORTED_NOT_BEST);
-        assertChainStatus(166, 89, 5, 12, blockchain);
+        assertChainStatus(162, 89, 5, 24, blockchain);
 
         mHashlow.clear();
         for (int i = 1; i <= 4; i++) {
@@ -5754,13 +5754,13 @@ public class BlockchainTest {
             result = blockchain.tryToConnect(extraBlock);
             assertSame(IMPORTED_BEST, result);
             ref = extraBlock.getHashLow();
-            assertChainStatus(166 + i, i == 1 ? 89 : 89 - 1 + i, 5, i == 1 ? 12 : i == 4 ? 6 : 12 - 2 * (i - 1), blockchain);
+            assertChainStatus(162 + i, i == 1 ? 89 : 89 - 1 + i, 5, i == 1 ? 24 : i == 4 ? 18 : 24 - 2 * (i - 1), blockchain);
             assertEquals(8 - 2 * (i - 1), blockchain.getOrphanBlockStore().getOrphanSize());
             assertEquals(14 + 2 * (i - 1), blockchain.getMBlockTx().size());
             mHashlow.add(ref);
         }
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(10, orphanSourceLength);// Four linked blocks resulting from rollbacks + four unlinked transaction blocks from the beginning + now two remaining.
+        assertEquals(18, orphanSourceLength);
 
         assertEquals("0.000", blockchain.getBlockByHash(mTxBlock1.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("1.200", blockchain.getBlockByHash(mTxBlock1.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
@@ -5811,25 +5811,19 @@ public class BlockchainTest {
             ref = extraBlock.getHashLow();
             extraBlockList.add(extraBlock);
         }
-        assertChainStatus(191, 106, 6, 5, blockchain);
+        assertChainStatus(186, 106, 6, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(191, 107, 6, 5, blockchain);
+        assertChainStatus(186, 107, 6, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(191, 108, 6, 5, blockchain);
+        assertChainStatus(186, 108, 6, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(191, 109, 6, 5, blockchain);
+        assertChainStatus(186, 109, 6, 16, blockchain);
         blockchain.checkMain();
-        assertChainStatus(191, 109, 6, 5, blockchain);
-        assertEquals(1, blockchain.getOrphanBlockStore().getOrphanSize());
+        assertChainStatus(186, 109, 6, 16, blockchain);
+        assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(22, blockchain.getMBlockTx().size());
-        orphan.clear();
-        sendTime[0] = xdagTime + 10L;
-        orphan = blockchain.getBlockFromOrphanPool(20, sendTime, true);
-        assertEquals(1, orphan.size());
-        orphan.removeFirst();// Remove the link blocks generated by the rollback
-        blockchain.getXdagStats().nnoref--;
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(9, orphanSourceLength);// Five linked blocks generated by rollbacks + the previous four unlinked transaction blocks
+        assertEquals(16, orphanSourceLength);
 
         assertEquals("0.000", blockchain.getBlockByHash(mTxBlock1.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());
         assertEquals("1.200", blockchain.getBlockByHash(mTxBlock1.getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
@@ -5863,11 +5857,11 @@ public class BlockchainTest {
         assertSame(result, IMPORTED_NOT_BEST);
         mHashlow.add(txBlockTobeMain1.getHashLow());
 
-        assertChainStatus(192, 109, 6, 5, blockchain);
+        assertChainStatus(187, 109, 6, 17, blockchain);
         assertEquals(1, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(22, blockchain.getMBlockTx().size());
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(10, orphanSourceLength);
+        assertEquals(17, orphanSourceLength);
 
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_MAIN_CHAIN);
@@ -5885,11 +5879,11 @@ public class BlockchainTest {
         assertSame(result, IMPORTED_BEST);
         mHashlow.add(extraBlock.getHashLow());
 
-        assertChainStatus(193, 109, 7, 5, blockchain);
+        assertChainStatus(188, 109, 7, 17, blockchain);
         assertEquals(1, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(22, blockchain.getMBlockTx().size());
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(10, orphanSourceLength);
+        assertEquals(17, orphanSourceLength);
 
         // todo:The new chain replaces the old chain, and transaction blocks become the main blocks.
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_APPLIED);
@@ -5908,11 +5902,11 @@ public class BlockchainTest {
         assertSame(result, IMPORTED_BEST);
         mHashlow.add(extraBlock.getHashLow());
 
-        assertChainStatus(194, 110, 7, 4, blockchain);
+        assertChainStatus(189, 110, 7, 16, blockchain);
         assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(23, blockchain.getMBlockTx().size());
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(9, orphanSourceLength);
+        assertEquals(16, orphanSourceLength);
 
         // todo:Execute transaction blocks
         assertNotEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_APPLIED);
@@ -5934,11 +5928,11 @@ public class BlockchainTest {
         assertSame(result, IMPORTED_BEST);
         mHashlow.add(extraBlock.getHashLow());
 
-        assertChainStatus(195, 111, 7, 4, blockchain);
+        assertChainStatus(190, 111, 7, 16, blockchain);
         assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(23, blockchain.getMBlockTx().size());
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(9, orphanSourceLength);
+        assertEquals(16, orphanSourceLength);
 
         // todo:A new transaction block is generated and becomes the main block; the transaction is rolled back before it becomes the main block.
         blockchain.checkMain();
@@ -5952,11 +5946,11 @@ public class BlockchainTest {
         assertSame(result, IMPORTED_BEST);
         mHashlow.add(txBlockTobeMain2.getHashLow());
 
-        assertChainStatus(196, 112, 6, 5, blockchain);// A transaction block becoming a main block is not an extra block, but the extra block of the main block it references will be set to false.
+        assertChainStatus(191, 112, 6, 17, blockchain);// A transaction block becoming a main block is not an extra block, but the extra block of the main block it references will be set to false.
         assertEquals(1, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(23, blockchain.getMBlockTx().size());
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(10, orphanSourceLength);
+        assertEquals(17, orphanSourceLength);
 
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain2.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertNotEquals(0, blockchain.getBlockByHash(txBlockTobeMain2.getHashLow(), false).getInfo().flags & BI_MAIN_CHAIN);
@@ -5983,17 +5977,17 @@ public class BlockchainTest {
             extraBlockList.add(extraBlock);
         }
 
-        assertChainStatus(217, 125, 7, 6, blockchain);
+        assertChainStatus(211, 125, 7, 18, blockchain);
         assertEquals(2, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(22, blockchain.getMBlockTx().size());
         orphanSourceLength = BytesUtils.bytesToLong(((OrphanBlockStoreImpl) (kernel.getOrphanBlockStore())).getOrphanSource().get(prefixLength), 0, false);
-        assertEquals(11, orphanSourceLength);
+        assertEquals(18, orphanSourceLength);
 
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_MAIN_CHAIN);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_MAIN);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_MAIN_REF);
-        assertNotEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_REF);// The link block referenced by the rollback
+        assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain1.getHashLow(), false).getInfo().flags & BI_REF);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain2.getHashLow(), false).getInfo().flags & BI_APPLIED);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain2.getHashLow(), false).getInfo().flags & BI_MAIN_CHAIN);
         assertEquals(0, blockchain.getBlockByHash(txBlockTobeMain2.getHashLow(), false).getInfo().flags & BI_MAIN);
