@@ -39,6 +39,7 @@ public class SyncBlockMessage extends Message {
     private XdagBlock xdagBlock;
     private Block block;
     private int ttl;
+    private byte executionState;
 
     public SyncBlockMessage(byte[] body) {
         super(MessageCode.SYNC_BLOCK, null);
@@ -49,13 +50,24 @@ public class SyncBlockMessage extends Message {
         this.xdagBlock = new XdagBlock(this.body);
         this.block = new Block(this.xdagBlock);
         this.ttl = dec.readInt();
+
+        try{
+            this.executionState = dec.readByte();
+        }catch(IndexOutOfBoundsException e){
+            this.executionState = 0;
+        }
     }
 
     public SyncBlockMessage(Block block, int ttl) {
+        this(block, ttl, (byte)0);
+    }
+
+    public SyncBlockMessage(Block block, int ttl, byte executionState) {
         super(MessageCode.SYNC_BLOCK, null);
 
         this.block = block;
         this.ttl = ttl;
+        this.executionState = executionState;
 
         SimpleEncoder enc = encode();
         this.body = enc.toBytes();
@@ -65,6 +77,7 @@ public class SyncBlockMessage extends Message {
         SimpleEncoder enc = new SimpleEncoder();
         enc.writeBytes(this.block.toBytes());
         enc.writeInt(ttl);
+        enc.writeByte(executionState);
         return enc;
     }
 

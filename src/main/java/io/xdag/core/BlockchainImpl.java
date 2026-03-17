@@ -26,6 +26,8 @@ package io.xdag.core;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedLong;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.config.MainnetConfig;
@@ -131,6 +133,12 @@ public class BlockchainImpl implements Blockchain {
     private final ScheduledExecutorService rollBackLoop = Executors.newSingleThreadScheduledExecutor();
 
     private List<Block> rollTxList = new LinkedList<>();
+
+    private final Cache<Bytes32, Byte> syncTxStatusCache = CacheBuilder.newBuilder()
+            .maximumSize(100000)
+            .expireAfterWrite(60, TimeUnit.MINUTES)
+            .concurrencyLevel(Runtime.getRuntime().availableProcessors())
+            .build();
 
     @Getter
     private byte[] preSeed;
@@ -400,12 +408,6 @@ public class BlockchainImpl implements Blockchain {
                                 result.setHashlow(ref.getAddress());
                                 result.setErrorInfo("Ref output amount < Gas");
                                 log.debug("Ref output amount < Gas");
-                                return result;
-                            } else if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(addressStore.getBalanceByAddress(BasicUtils.hash2byte(ref.getAddress()).toArray())).isPositive()) {
-                                result = ImportResult.INVALID_BLOCK;
-                                result.setHashlow(ref.getAddress());
-                                result.setErrorInfo("Ref input amount > account balance");
-                                log.info("Ref input amount > account balance");
                                 return result;
                             }
                         } else {
@@ -688,6 +690,25 @@ public class BlockchainImpl implements Blockchain {
 
         }
         return 0;
+    }
+
+    public void putSyncTxStatus(Bytes32 txHash, byte executionStatus){
+        if(executionStatus != 0){
+            syncTxStatusCache.put(txHash, executionStatus);
+        }
+    }
+
+    public Byte getSyncTxStatus(Bytes32 txHash){
+        Byte status = syncTxStatusCache.getIfPresent(txHash);
+        if (status != null) {
+            syncTxStatusCache.invalidate(txHash);
+        }
+        return status;
+    }
+
+    public void clearAllSyncTxStatus() {
+        syncTxStatusCache.invalidateAll();
+        syncTxStatusCache.cleanUp();
     }
 
     public boolean isTxBlock(Block block) {
@@ -976,15 +997,11 @@ public class BlockchainImpl implements Blockchain {
                 }
             }
             rollTxList = rollTxList.reversed();
-            while (CollectionUtils.isNotEmpty(rollTxList)) {
-                Block linkBlock = createLinkBlock(null, true);
-                linkBlock.signOut(kernel.getWallet().getDefKey());
-                ImportResult result = this.tryToConnect(new Block(linkBlock.getXdagBlock()));
-                if (result == IMPORTED_NOT_BEST || result == IMPORTED_BEST) {
-                    onNewBlock(linkBlock);
-                    log.debug("create roll linkBlock: {}", linkBlock.getHashLow());
-                }
+            for (Block txBlock : rollTxList) {
+                dealOrphan(txBlock);
+                log.debug("roll txBlock:{}", txBlock.getHashLow());
             }
+            rollTxList.clear();
         }
     }
 
@@ -1001,7 +1018,7 @@ public class BlockchainImpl implements Blockchain {
      */
     private XAmount applyBlock(boolean flag, Block block) {
         // Block already processed
-        if ((block.getInfo().flags & BI_APPLIED) != 0) {
+        if ((block.getInfo().flags & BI_MAIN_REF) != 0) {
             return XAmount.ZERO.subtract(XAmount.ONE);
         }
 
@@ -1017,7 +1034,7 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
-                if ((ref.getInfo().flags & BI_APPLIED) != 0) continue;
+                if ((ref.getInfo().flags & BI_MAIN_REF) != 0) continue;
                 ref = getBlockByHash(link.getAddress(), true);
                 ref.getInfo().setFee(XAmount.ZERO);
 
@@ -1041,16 +1058,16 @@ public class BlockchainImpl implements Blockchain {
                 UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
 
                 if (blockNonce.compareTo(executedNonce.add(UInt64.ONE)) > 0) {
-                    log.info("tx nonce error, tx nonce: {}, executed nonce: {}", blockNonce, executedNonce);
+                    log.info("tx nonce error, tx nonce: {}, executed nonce: {},hash:{}", blockNonce, executedNonce,block.getHashLow().toHexString());
                     addressStore.updateTxQuantity(BasicUtils.hash2byte(linkAddress).toArray(), executedNonce);
                     return XAmount.ZERO.subtract(XAmount.ONE);
                 }
                 if (blockNonce.compareTo(executedNonce) <= 0) {
-                    log.info("tx nonce is less than executed nonce");
+                    log.info("tx nonce is less than executed nonce,hash:{}",block.getHashLow().toHexString());
                     return XAmount.ZERO.subtract(XAmount.ONE);
                 }
                 if (compareAmountTo(balance, link.amount) < 0) {
-                    log.info("balance is less than amount");
+                    log.info("balance is less than amount,hash:{}",block.getHashLow().toHexString());
                     processNonceAfterTransactionExecution(link);
                     return XAmount.ZERO;
                 }
@@ -1098,6 +1115,16 @@ public class BlockchainImpl implements Blockchain {
                     blockGas = blockGas.add(outPutLimit(block));
                 }
             }
+        }
+
+        if(kernel.getSyncMgr() != null && (kernel.getSyncMgr().isSyncOld() || kernel.getSyncMgr().isSync()) && isTxBlock(block)){
+            Byte executionStatus = getSyncTxStatus(block.getHashLow());
+            if (executionStatus != null && executionStatus == 2){
+                log.debug("执行同步节点交易状态：{}",block.getHashLow().toHexString());
+                return XAmount.ZERO.subtract(XAmount.ONE);
+            }
+        }else if(kernel.getSyncMgr() != null && !kernel.getSyncMgr().isSyncOld() && syncTxStatusCache.size() >0){
+            clearAllSyncTxStatus();
         }
 
         updateBlockFlag(block, BI_APPLIED, true);

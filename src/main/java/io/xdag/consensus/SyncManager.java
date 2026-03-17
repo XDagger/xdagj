@@ -386,6 +386,12 @@ public class SyncManager extends AbstractXdagLifecycle {
         @Override
         public void run() {
             this.isRunning = true;
+            try {
+                Thread.sleep(100000);
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             while (this.isRunning) {
                 if (isTimeToStart()) {
                     makeSyncDone();

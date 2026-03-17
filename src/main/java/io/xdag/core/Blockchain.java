@@ -117,4 +117,7 @@ public interface Blockchain {
 
     // Determine if it is an account transaction block
     boolean isAccountTx(Block block);
+
+    // Get the transaction block status
+    void putSyncTxStatus(Bytes32 hash, byte status);
 }

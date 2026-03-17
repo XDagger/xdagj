@@ -23,6 +23,7 @@
  */
 package io.xdag.net;
 
+import io.xdag.core.*;
 import io.xdag.crypto.core.CryptoProvider;
 import java.util.Arrays;
 import java.util.List;
@@ -48,10 +49,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.consensus.SyncManager;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagStats;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.ReasonCode;
@@ -75,6 +72,9 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.utils.exception.UnreachableException;
 import lombok.extern.slf4j.Slf4j;
+
+import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.BI_MAIN_REF;
 
 /**
  * Xdag P2P message handler
@@ -183,18 +183,18 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         log.trace("Received message: {}", msg);
 
         switch (msg.getCode()) {
-        /* p2p */
-        case DISCONNECT -> onDisconnect(ctx, (DisconnectMessage) msg);
-        case PING -> onPing();
-        case PONG -> onPong();
-        case HANDSHAKE_INIT -> onHandshakeInit((InitMessage) msg);
-        case HANDSHAKE_HELLO -> onHandshakeHello((HelloMessage) msg);
-        case HANDSHAKE_WORLD -> onHandshakeWorld((WorldMessage) msg);
+            /* p2p */
+            case DISCONNECT -> onDisconnect(ctx, (DisconnectMessage) msg);
+            case PING -> onPing();
+            case PONG -> onPong();
+            case HANDSHAKE_INIT -> onHandshakeInit((InitMessage) msg);
+            case HANDSHAKE_HELLO -> onHandshakeHello((HelloMessage) msg);
+            case HANDSHAKE_WORLD -> onHandshakeWorld((WorldMessage) msg);
 
-        /* sync */
-        case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
-                onXdag(msg);
-        default -> ctx.fireChannelRead(msg);
+            /* sync */
+            case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
+                    onXdag(msg);
+            default -> ctx.fireChannelRead(msg);
         }
     }
 
@@ -362,7 +362,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
 
     protected void processSyncBlock(SyncBlockMessage msg) {
         Block block = msg.getBlock();
-
+        chain.putSyncTxStatus(block.getHashLow(), msg.getExecutionState());
         log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getRemoteAddress());
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), true);
         syncMgr.validateAndAddNewBlock(bw);
@@ -388,7 +388,17 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
                 channel.getRemoteAddress());
         List<Block> blocks = chain.getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
-            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1);
+            byte executionState = 0;
+            if (chain.isTxBlock(block)) {
+                int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+                // 1C
+                if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                    executionState = 1;
+                } else if (flag == (BI_REF | BI_MAIN_REF)) {// 18
+                    executionState = 2;
+                }
+            }
+            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1, executionState);
             msgQueue.sendMessage(blockMsg);
         }
         msgQueue.sendMessage(new BlocksReplyMessage(startTime, endTime, random, chain.getXdagStats()));
@@ -444,7 +454,17 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
         if (block != null) {
             log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", Bytes32.wrap(hash).toHexString(), channel.getRemoteAddress());
-            SyncBlockMessage message = new SyncBlockMessage(block, 1);
+            byte executionState = 0;
+            if (chain.isTxBlock(block)) {
+                int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+                // 1C,applied
+                if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                    executionState = 1;
+                } else if (flag == (BI_REF | BI_MAIN_REF)) {// 18 rejected
+                    executionState = 2;
+                }
+            }
+            SyncBlockMessage message = new SyncBlockMessage(block, 1, executionState);
             msgQueue.sendMessage(message);
         }
     }
@@ -481,6 +501,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     public long sendGetSums(long startTime, long endTime) {
         SumRequestMessage msg = new SumRequestMessage(startTime, endTime, chain.getXdagStats());
         sendMessage(msg);
+        log.debug("Request blocks time from startTime:{} ,endEime:{}" , startTime, endTime);
         return msg.getRandom();
     }
 

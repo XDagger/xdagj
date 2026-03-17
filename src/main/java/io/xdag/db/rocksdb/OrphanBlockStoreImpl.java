@@ -62,9 +62,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             .thenComparingLong(m -> m.time)
             .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator()));
 
-    private final Queue<OrphanMeta> accountTxQueue = new PriorityBlockingQueue<>(150, Comparator
-            .comparingLong((OrphanMeta m) -> m.time)
-            .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator()));
+    private final Map<String, Queue<OrphanMeta>> accountTxMap = new ConcurrentHashMap<>();
 
     private final Queue<CandidateEntry> candidateQueue = new PriorityBlockingQueue<>(20, Comparator
             .comparingLong((CandidateEntry e) -> -e.meta.fee)
@@ -103,7 +101,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
     public void rebuildMemoryFromDb() {
         linkQueue.clear();
         mtxQueue.clear();
-        accountTxQueue.clear();
+        accountTxMap.clear();
         candidateQueue.clear();
         orphanInsertTimeMap.clear();
         vipTxMap.clear();
@@ -115,9 +113,11 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             addOrphanToMemory(meta, pair.getKey());
         }
         long vipSize = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        long accountSize = accountTxMap.values().stream().mapToLong(Queue::size).sum();
+        log.debug("init orphan size:{}", BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false));
 
         log.info("OrphanBlockStore memory queues rebuilt from DB: {} link, {} mtx, {} accounts, {} vipTxMap",
-                linkQueue.size(), mtxQueue.size(), accountTxQueue.size(),  vipSize);
+                linkQueue.size(), mtxQueue.size(), accountSize,  vipSize);
     }
 
     private void startCleaner() {
@@ -145,6 +145,10 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             Map.Entry<Bytes, Long> entry = it.next();
             if (now - entry.getValue() > maxAgeMillis) {
                 byte[] value = orphanSource.get(entry.getKey().toArrayUnsafe());
+                if (value == null) {
+                    it.remove();
+                    continue;
+                }
                 orphanSource.delete(entry.getKey().toArrayUnsafe());
                 long currentSize = BytesUtils.bytesToLong(orphanSource.get(ORPHAN_SIZE), 0, false);
                 orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentSize - 1, false));
@@ -156,12 +160,21 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                     mtxQueue.remove(meta);
                 } else {
                     String addrKey = Hex.toHexString(meta.address);
-                    Queue<OrphanMeta> accountQueue = vipTxMap.get(addrKey);
-                    if (accountQueue != null && accountQueue.contains(meta)) {
-                        accountQueue.remove(meta);
-                        if (accountQueue.isEmpty()) vipTxMap.remove(addrKey);
+                    Queue<OrphanMeta> vipQueue = vipTxMap.get(addrKey);
+                    if (vipQueue != null && vipQueue.contains(meta)) {
+                        vipQueue.remove(meta);
+                        if (vipQueue.isEmpty()) {
+                            vipTxMap.remove(addrKey);
+                            accountNonce.remove(addrKey);
+                        }
                     }else {
-                        accountTxQueue.remove(meta);
+                        Queue<OrphanMeta> accountQueue = accountTxMap.get(addrKey);
+                        if (accountQueue != null && accountQueue.contains(meta)) {
+                            accountQueue.remove(meta);
+                            if (accountQueue.isEmpty()) {
+                                accountTxMap.remove(addrKey);
+                            }
+                        }
                     }
                 }
                 it.remove();
@@ -210,17 +223,27 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             mtxQueue.remove(meta);
         } else {
             String addrKey = Hex.toHexString(meta.address);
-            Queue<OrphanMeta> accountQueue = vipTxMap.get(addrKey);
-            if (accountQueue != null) {
-                accountQueue.remove(meta);
-                if (accountQueue.isEmpty()) vipTxMap.remove(addrKey);
-                return;
+            Queue<OrphanMeta> vipQueue = vipTxMap.get(addrKey);
+            if (vipQueue != null && vipQueue.contains(meta)) {
+                vipQueue.remove(meta);
+                if (vipQueue.isEmpty()) {
+                    vipTxMap.remove(addrKey);
+                    accountNonce.remove(addrKey);
+                }
+            }else{
+                Queue<OrphanMeta> accountQueue = accountTxMap.get(addrKey);
+                if (accountQueue != null && accountQueue.contains(meta)) {
+                    accountQueue.remove(meta);
+                    if (accountQueue.isEmpty()) {
+                        accountTxMap.remove(addrKey);
+                    }
+                }
             }
-            accountTxQueue.remove(meta);
         }
         long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        long accountTxCount = accountTxMap.values().stream().mapToLong(Queue::size).sum();
         log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}",
-                vipTxCount, accountTxQueue.size(), mtxQueue.size(), linkQueue.size(), mainRef.size());
+                vipTxCount, accountTxCount, mtxQueue.size(), linkQueue.size(), mainRef.size());
     }
 
     public void addOrphan(Block block, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address) {
@@ -250,8 +273,9 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             log.debug("orphan current size:{}", currentSize);
         }
         long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
+        long accountTxCount = accountTxMap.values().stream().mapToLong(Queue::size).sum();
         log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}",
-                vipTxCount, accountTxQueue.size(), mtxQueue.size(), linkQueue.size(), mainRef.size());
+                vipTxCount, accountTxCount, mtxQueue.size(), linkQueue.size(), mainRef.size());
     }
 
     public void addOrphanToMemory(OrphanMeta meta, byte[] dbKey) {
@@ -282,7 +306,13 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                     vipTxMap.get(addrKey).offer(meta);
                 }
             } else {
-                if(!accountTxQueue.contains(meta)) accountTxQueue.add(meta);
+                accountTxMap.computeIfAbsent(addrKey, k -> new PriorityBlockingQueue<>(10, Comparator
+                        .comparingLong((OrphanMeta m) -> m.nonce)
+                        .thenComparingLong(m -> m.time)
+                        .thenComparing(m -> m.hashlow.toArray(), UnsignedBytes.lexicographicalComparator())));
+                if (!accountTxMap.get(addrKey).contains(meta)) {
+                    accountTxMap.get(addrKey).offer(meta);
+                }
             }
         }
     }
@@ -307,7 +337,8 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
         sendtime[1] = Math.min(sendtime[1] + 1, sendtime[0]);
         long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
-        log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}", vipTxCount, accountTxQueue.size(), mtxQueue.size(), linkQueue.size(), mainRef.size());
+        long accountTxCount = accountTxMap.values().stream().mapToLong(Queue::size).sum();
+        log.info("vipTxCount: {}, accountTxQueue.size(): {}, mtxQueue.size(): {}, linkQueue.size(): {}, mainRef.size() :{}", vipTxCount, accountTxCount, mtxQueue.size(), linkQueue.size(), mainRef.size());
         return result;
 
     }
@@ -324,8 +355,9 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         }
         if (isMain && !vipTxMap.isEmpty()) {
             long remain = 0;
+            candidateQueue.clear();
             for (Map.Entry<String, Queue<OrphanMeta>> entry : vipTxMap.entrySet()) {
-                if (entry.getValue().peek() != null) candidateQueue.offer(new CandidateEntry(entry.getValue().peek(), entry.getKey()));
+                if (entry.getValue().peek() != null) candidateQueue.offer(new CandidateEntry(entry.getValue().peek(), entry.getKey(), CandidateEntry.EntryType.ACCOUNT_TX));
             }
             while (!candidateQueue.isEmpty() && result.size() < totalRequired && remain < 6) {
                 CandidateEntry chosen = candidateQueue.poll();
@@ -338,16 +370,16 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                     vipQueue.poll();
                     if (!vipQueue.isEmpty()) {
                         OrphanMeta next = vipQueue.peek();
-                        if (next.getTime() <= cutoffTime) candidateQueue.offer(new CandidateEntry(next, chosen.accountKey));
+                        if (next.getTime() <= cutoffTime) candidateQueue.offer(new CandidateEntry(next, chosen.accountKey, CandidateEntry.EntryType.ACCOUNT_TX));
                     } else {
                         vipTxMap.remove(chosen.accountKey);
                     }
                 }
             }
-            candidateQueue.clear();
         }
 
-        if ((isMain || (accountTxQueue.size() + mtxQueue.size()) == 0 || linkQueue.size() >= totalRequired) && !linkQueue.isEmpty()) {
+        long accountTxCount = accountTxMap.values().stream().mapToLong(Queue::size).sum();
+        if ((isMain || (accountTxCount + mtxQueue.size()) == 0 || linkQueue.size() >= totalRequired) && !linkQueue.isEmpty()) {
             while (!linkQueue.isEmpty() && result.size() < totalRequired) {
                 OrphanMeta m = linkQueue.peek();
                 if (m.time > cutoffTime) break;
@@ -358,25 +390,42 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
             return result;
         }
 
-        while ((!mtxQueue.isEmpty() || !accountTxQueue.isEmpty()) && result.size() < totalRequired) {
-            OrphanMeta mTXnext = mtxQueue.peek();
-            if (mTXnext != null && mTXnext.time <= cutoffTime) {
-                result.add(mTXnext);
-                mtxQueue.remove(mTXnext);
-                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(mTXnext)));
-                continue;
+        if ((!mtxQueue.isEmpty() || accountTxCount != 0) && result.size() < totalRequired) {
+            candidateQueue.clear();
+            if (!mtxQueue.isEmpty()) {
+                candidateQueue.offer(new CandidateEntry(mtxQueue.peek(), null, CandidateEntry.EntryType.MTX));
             }
-            OrphanMeta accountTxNext = accountTxQueue.peek();
-            if (accountTxNext != null && accountTxNext.time <= cutoffTime ){
-                result.add(accountTxNext);
-                accountTxQueue.remove(accountTxNext);
-                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(accountTxNext)));
-                continue;
+            if (!accountTxMap.isEmpty()) {
+                for (Map.Entry<String, Queue<OrphanMeta>> entry : accountTxMap.entrySet()) {
+                    candidateQueue.offer(new CandidateEntry(entry.getValue().peek(), entry.getKey(), CandidateEntry.EntryType.ACCOUNT_TX));
+                }
             }
-            boolean mtxOver = (mTXnext != null && mTXnext.getTime() > cutoffTime);
-            boolean accountOver = (accountTxNext != null && accountTxNext.getTime() > cutoffTime);
-            if (mtxOver && accountOver) {
-                break;
+
+            while(!candidateQueue.isEmpty() && result.size() < totalRequired){
+                CandidateEntry chosen = candidateQueue.poll();
+                if (chosen == null) continue;
+                result.add(chosen.meta);
+                orphanInsertTimeMap.remove(Bytes.wrap(getKeyFromMeta(chosen.meta)));
+                if (chosen.type == CandidateEntry.EntryType.MTX) {
+                    mtxQueue.poll();
+                    OrphanMeta next = mtxQueue.peek();
+                    if (next != null && next.time <= cutoffTime) {
+                        candidateQueue.offer(new CandidateEntry(next, null, CandidateEntry.EntryType.MTX));
+                    }
+                } else {
+                    Queue<OrphanMeta> q = accountTxMap.get(chosen.accountKey);
+                    if (q != null) {
+                        q.poll();
+                        if (!q.isEmpty()) {
+                            OrphanMeta next = q.peek();
+                            if (next.time <= cutoffTime) {
+                                candidateQueue.offer(new CandidateEntry(next, chosen.accountKey, CandidateEntry.EntryType.ACCOUNT_TX));
+                            }
+                        } else {
+                            accountTxMap.remove(chosen.accountKey);
+                        }
+                    }
+                }
             }
         }
 
@@ -392,7 +441,8 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
     public long getOrphanSize() {
         long vipTxCount = vipTxMap.values().stream().mapToLong(Queue::size).sum();
-        return linkQueue.size() + mtxQueue.size() + vipTxCount + accountTxQueue.size();
+        long accountTxCount = accountTxMap.values().stream().mapToLong(Queue::size).sum();
+        return linkQueue.size() + mtxQueue.size() + vipTxCount + accountTxCount;
     }
 
     @Getter
@@ -443,13 +493,16 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
 
     @Getter
     public static class CandidateEntry {
+        public enum EntryType {ACCOUNT_TX, MTX}
 
         public final OrphanMeta meta;
         public final String accountKey;
+        public final EntryType type;
 
-        public CandidateEntry(OrphanMeta meta, String accountKey) {
+        public CandidateEntry(OrphanMeta meta, String accountKey, EntryType type) {
             this.meta = meta;
             this.accountKey = accountKey;
+            this.type = type;
         }
     }
 
