@@ -347,7 +347,6 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
     public List<OrphanMeta> selectBlocks(long totalRequired, long cutoffTime, boolean isMain) {
         List<OrphanMeta> result = new ArrayList<>();
 
-        if (!mainRef.isEmpty() && (isMain || mainRef.size() > 18)) {
         if (!mainRef.isEmpty() && (isMain || mainRef.size() >= 9)) {
             Iterator<OrphanMeta> it = mainRef.iterator();
             while (it.hasNext() && result.size() < totalRequired) {
