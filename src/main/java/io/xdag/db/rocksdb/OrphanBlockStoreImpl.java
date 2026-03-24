@@ -154,6 +154,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                 orphanSource.put(ORPHAN_SIZE, BytesUtils.longToBytes(currentSize - 1, false));
                 log.debug("cleanExpiredOrphans orphan current size:{}", currentSize);
                 OrphanMeta meta = OrphanMeta.parse(entry.getKey().toArrayUnsafe(), value);
+                mainRef.remove(meta);
                 if (!meta.isTx) {
                     linkQueue.remove(meta);
                 } else if (BytesUtils.isFullZero(meta.address)) {
@@ -347,6 +348,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         List<OrphanMeta> result = new ArrayList<>();
 
         if (!mainRef.isEmpty() && (isMain || mainRef.size() > 18)) {
+        if (!mainRef.isEmpty() && (isMain || mainRef.size() >= 9)) {
             Iterator<OrphanMeta> it = mainRef.iterator();
             while (it.hasNext() && result.size() < totalRequired) {
                 result.add(it.next());
