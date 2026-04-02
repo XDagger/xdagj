@@ -374,6 +374,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
                         if (next.getTime() <= cutoffTime) candidateQueue.offer(new CandidateEntry(next, chosen.accountKey, CandidateEntry.EntryType.ACCOUNT_TX));
                     } else {
                         vipTxMap.remove(chosen.accountKey);
+                        accountNonce.remove(chosen.accountKey);
                     }
                 }
             }

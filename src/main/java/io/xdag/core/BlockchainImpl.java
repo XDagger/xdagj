@@ -53,6 +53,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
@@ -139,6 +141,8 @@ public class BlockchainImpl implements Blockchain {
             .expireAfterWrite(60, TimeUnit.MINUTES)
             .concurrencyLevel(Runtime.getRuntime().availableProcessors())
             .build();
+
+    private static final Logger execLog = LogManager.getLogger("ExecutionStatusLog");
 
     @Getter
     private byte[] preSeed;
@@ -1031,6 +1035,9 @@ public class BlockchainImpl implements Blockchain {
         }
 
         XAmount gasCollected = XAmount.ZERO;
+        if (flag) {
+            execLog.info("========== Main Block: {} ==========", block.getHashLow().toHexString());
+        }
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
@@ -1039,6 +1046,17 @@ public class BlockchainImpl implements Blockchain {
                 ref.getInfo().setFee(XAmount.ZERO);
 
                 XAmount childGas = applyBlock(false, ref);
+
+                int refFlag = ref.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+                int executionState = 0;
+                if (refFlag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                    executionState = 1; // 1C: applied
+                } else if (refFlag == (BI_REF | BI_MAIN_REF)) {
+                    executionState = 2; // 18: rejected
+                }
+                String blockType = isTxBlock(ref) ? "TxBlock  " : "LinkBlock";
+                execLog.info("{} | Hash: {} | State: {}", blockType, ref.getHashLow().toHexString(), executionState);
+
                 if (!childGas.equals(XAmount.ZERO.subtract(XAmount.ONE))) {
                     gasCollected = gasCollected.add(childGas);
                     updateBlockRef(ref, new Address(block));
@@ -1120,7 +1138,7 @@ public class BlockchainImpl implements Blockchain {
         if(kernel.getSyncMgr() != null && (kernel.getSyncMgr().isSyncOld() || kernel.getSyncMgr().isSync()) && isTxBlock(block)){
             Byte executionStatus = getSyncTxStatus(block.getHashLow());
             if (executionStatus != null && executionStatus == 2){
-                log.debug("执行同步节点交易状态：{}",block.getHashLow().toHexString());
+                log.debug("Execute Synchronization of Node Transaction Status：{}",block.getHashLow().toHexString());
                 return XAmount.ZERO.subtract(XAmount.ONE);
             }
         }else if(kernel.getSyncMgr() != null && !kernel.getSyncMgr().isSyncOld() && syncTxStatusCache.size() >0){
