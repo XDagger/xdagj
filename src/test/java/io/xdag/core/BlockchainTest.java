@@ -2989,31 +2989,31 @@ public class BlockchainTest {
         for (int i = 0; i < orphan.size(); i++) {
             Address orp = orphan.get(i);
             if (i == 0) {
-                assertArrayEquals(orp.addressHash.toArray(), d4.getHashLow().toArray());
-            } else if (i == 1) {
-                assertArrayEquals(orp.addressHash.toArray(), a6.getHashLow().toArray());
-            } else if (i == 2) {
-                assertArrayEquals(orp.addressHash.toArray(), d5.getHashLow().toArray());
-            } else if (i == 3) {
-                assertArrayEquals(orp.addressHash.toArray(), b7.getHashLow().toArray());
-            } else if (i == 4) {
-                assertArrayEquals(orp.addressHash.toArray(), c8.getHashLow().toArray());
-            } else if (i == 5) {
-                assertArrayEquals(orp.addressHash.toArray(), c9.getHashLow().toArray());
-            } else if (i == 6) {
                 assertArrayEquals(orp.addressHash.toArray(), link.getHashLow().toArray());
-            } else if (i == 7) {
-                assertArrayEquals(orp.addressHash.toArray(), c10.getHashLow().toArray());
-            } else if (i == 8) {
-                assertArrayEquals(orp.addressHash.toArray(), b8.getHashLow().toArray());
-            } else if (i == 9) {
-                assertArrayEquals(orp.addressHash.toArray(), b9.getHashLow().toArray());
-            } else if (i == 10) {
+            } else if (i == 1) {
                 assertArrayEquals(orp.addressHash.toArray(), mTX3.getHashLow().toArray());
-            } else if (i == 11) {
+            } else if (i == 2) {
+                assertArrayEquals(orp.addressHash.toArray(), d4.getHashLow().toArray());
+            } else if (i == 3) {
                 assertArrayEquals(orp.addressHash.toArray(), mTX2.getHashLow().toArray());
-            } else {
+            } else if (i == 4) {
                 assertArrayEquals(orp.addressHash.toArray(), mTX1.getHashLow().toArray());
+            } else if (i == 5) {
+                assertArrayEquals(orp.addressHash.toArray(), a6.getHashLow().toArray());
+            } else if (i == 6) {
+                assertArrayEquals(orp.addressHash.toArray(), d5.getHashLow().toArray());
+            } else if (i == 7) {
+                assertArrayEquals(orp.addressHash.toArray(), b7.getHashLow().toArray());
+            } else if (i == 8) {
+                assertArrayEquals(orp.addressHash.toArray(), c8.getHashLow().toArray());
+            } else if (i == 9) {
+                assertArrayEquals(orp.addressHash.toArray(), c9.getHashLow().toArray());
+            } else if (i == 10) {
+                assertArrayEquals(orp.addressHash.toArray(), c10.getHashLow().toArray());
+            } else if (i == 11) {
+                assertArrayEquals(orp.addressHash.toArray(), b8.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), b9.getHashLow().toArray());
             }
         }
 
@@ -3314,61 +3314,61 @@ public class BlockchainTest {
         for (int i = 0; i < orphan1.size(); i++) {
             Address orp = orphan1.get(i);
             if (i == 0) {
-                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(d2.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.4", blockchain.getBlockByHash(d2.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 1) {
-//                System.out.println("link2 hashlow = " + Bytes32.wrap(link2.getInfo().getHashlow()).toHexString());0x0000000000000000ccb30b70ac423dd1a959af288d6ee8db2b79e98244f5a298
-//                System.out.println("link3 hashlow = " + Bytes32.wrap(link3.getInfo().getHashlow()).toHexString());0x0000000000000000df5d41f537495990915a09803e7419401d0ca9de91cc1bbc
-                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(d3.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.3", blockchain.getBlockByHash(d3.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 2) {
-                assertArrayEquals(orp.addressHash.toArray(), b26x.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(b26x.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.2", blockchain.getBlockByHash(b26x.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 3) {
-                assertArrayEquals(orp.addressHash.toArray(), a23.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(a23.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.1", blockchain.getBlockByHash(a23.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 4) {
-                assertArrayEquals(orp.addressHash.toArray(), c2.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(c2.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.0", blockchain.getBlockByHash(c2.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 5) {
                 assertArrayEquals(orp.addressHash.toArray(), link1.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(link1.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("14.3", blockchain.getBlockByHash(link1.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 6) {
+            } else if (i == 1) {
                 assertArrayEquals(orp.addressHash.toArray(), link2.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(link2.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("1.1", blockchain.getBlockByHash(link2.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 7) {
+//                System.out.println("link2 hashlow = " + Bytes32.wrap(link2.getInfo().getHashlow()).toHexString());0x0000000000000000ccb30b70ac423dd1a959af288d6ee8db2b79e98244f5a298
+//                System.out.println("link3 hashlow = " + Bytes32.wrap(link3.getInfo().getHashlow()).toHexString());0x0000000000000000df5d41f537495990915a09803e7419401d0ca9de91cc1bbc
+            } else if (i == 2) {
                 assertArrayEquals(orp.addressHash.toArray(), link3.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(link3.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.0", blockchain.getBlockByHash(link3.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 8) {
-                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(c4.getHashLow(), false).getInfo().flags & BI_APPLIED);
-            } else if (i == 9) {
-                assertArrayEquals(orp.addressHash.toArray(), c5.getHashLow().toArray());
-                assertEquals(0, blockchain.getBlockByHash(c5.getHashLow(), false).getInfo().flags & BI_APPLIED);
-            } else if (i == 10) {
+            } else if (i == 3) {
+                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
+                assertNotEquals(0, blockchain.getBlockByHash(d2.getHashLow(), false).getInfo().flags & BI_APPLIED);
+                assertEquals("0.4", blockchain.getBlockByHash(d2.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 4) {
+                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
+                assertNotEquals(0, blockchain.getBlockByHash(d3.getHashLow(), false).getInfo().flags & BI_APPLIED);
+                assertEquals("0.3", blockchain.getBlockByHash(d3.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 5) {
                 assertArrayEquals(orp.addressHash.toArray(), mTX.getHashLow().toArray());
                 assertNotEquals(0, blockchain.getBlockByHash(mTX.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.4", blockchain.getBlockByHash(mTX.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-            } else if (i == 11) {
-                assertArrayEquals(orp.addressHash.toArray(), a24.getHashLow().toArray());
-                assertNotEquals(0, blockchain.getBlockByHash(a24.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.3", blockchain.getBlockByHash(a24.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
-                assertEquals("0.2", blockchain.getBlockByHash(a24.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
-                assertEquals("0.3", blockchain.getTxFee(a24).toDecimal(1, XUnit.XDAG).toString());
-            } else {
+            } else if (i == 6) {
+                assertArrayEquals(orp.addressHash.toArray(), b26x.getHashLow().toArray());
+                assertNotEquals(0, blockchain.getBlockByHash(b26x.getHashLow(), false).getInfo().flags & BI_APPLIED);
+                assertEquals("0.3", blockchain.getBlockByHash(b26x.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals("0.2", blockchain.getBlockByHash(b26x.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals("0.3", blockchain.getTxFee(b26x).toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 7) {
                 assertArrayEquals(orp.addressHash.toArray(), b26y.getHashLow().toArray());
-                assertNotEquals(0, blockchain.getBlockByHash(b26y.getHashLow(), false).getInfo().flags & BI_APPLIED);
-                assertEquals("0.3", blockchain.getBlockByHash(b26y.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals(0, blockchain.getBlockByHash(b26y.getHashLow(), false).getInfo().flags & BI_APPLIED);
                 assertEquals("0.2", blockchain.getBlockByHash(b26y.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
-                assertEquals("0.3", blockchain.getTxFee(b26y).toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 8) {
+                assertArrayEquals(orp.addressHash.toArray(), a23.getHashLow().toArray());
+                assertNotEquals(0, blockchain.getBlockByHash(a23.getHashLow(), false).getInfo().flags & BI_APPLIED);
+                assertEquals("0.2", blockchain.getBlockByHash(a23.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals("0.1", blockchain.getBlockByHash(a23.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
+                assertEquals("0.2", blockchain.getTxFee(a23).toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 9) {
+                assertArrayEquals(orp.addressHash.toArray(), a24.getHashLow().toArray());
+                assertEquals(0, blockchain.getBlockByHash(a24.getHashLow(), false).getInfo().flags & BI_APPLIED);
+                assertEquals("0.2", blockchain.getBlockByHash(a24.getHashLow(), true).getFee().toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 10) {
+                assertArrayEquals(orp.addressHash.toArray(), c2.getHashLow().toArray());
+                assertNotEquals(0, blockchain.getBlockByHash(c2.getHashLow(), false).getInfo().flags & BI_APPLIED);
+                assertEquals("0.2", blockchain.getBlockByHash(c2.getHashLow(), false).getFee().toDecimal(1, XUnit.XDAG).toString());
+            } else if (i == 11) {
+                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
+                assertEquals(0, blockchain.getBlockByHash(c4.getHashLow(), false).getInfo().flags & BI_APPLIED);
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), c5.getHashLow().toArray());
+                assertEquals(0, blockchain.getBlockByHash(c5.getHashLow(), false).getInfo().flags & BI_APPLIED);
             }
         }
     }
@@ -3560,33 +3560,30 @@ public class BlockchainTest {
         for (int i = 0; i < orphan.size(); i++) {
             Address orp = orphan.get(i);
             if (i == 0) {
-                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
-            } else if (i == 1) {
-                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
-            } else if (i == 2) {
-                assertArrayEquals(orp.addressHash.toArray(), a2.getHashLow().toArray());
-            } else if (i == 3) {
-                assertArrayEquals(orp.addressHash.toArray(), b2.getHashLow().toArray());
-            } else if (i == 4) {
-                assertArrayEquals(orp.addressHash.toArray(), b3.getHashLow().toArray());
-            } else if (i == 5) {
-                assertArrayEquals(orp.addressHash.toArray(), b4.getHashLow().toArray());
-            } else if (i == 6) {
                 assertArrayEquals(orp.addressHash.toArray(), link.getHashLow().toArray());
-            } else if (i == 7) {
-                assertArrayEquals(orp.addressHash.toArray(), c2.getHashLow().toArray());
-            } else if (i == 8) {
-                assertArrayEquals(orp.addressHash.toArray(), c3.getHashLow().toArray());
-            } else if (i == 9) {
-                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
-            } else {
+            } else if (i == 1) {
                 assertArrayEquals(orp.addressHash.toArray(), mTX2.getHashLow().toArray());
+            } else if (i == 2) {
+                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
+            } else if (i == 3) {
+                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
+            } else if (i == 4) {
+                assertArrayEquals(orp.addressHash.toArray(), a2.getHashLow().toArray());
+            } else if (i == 5) {
+                assertArrayEquals(orp.addressHash.toArray(), b2.getHashLow().toArray());
+            } else if (i == 6) {
+                assertArrayEquals(orp.addressHash.toArray(), b3.getHashLow().toArray());
+            } else if (i == 7) {
+                assertArrayEquals(orp.addressHash.toArray(), b4.getHashLow().toArray());
+            } else if (i == 8) {
+                assertArrayEquals(orp.addressHash.toArray(), c2.getHashLow().toArray());
+            } else if (i == 9) {
+                assertArrayEquals(orp.addressHash.toArray(), c3.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
             }
         }
         pending.clear();
-        Address a = orphan.get(6);
-        orphan.remove(6);
-        orphan.addFirst(a);
         for (int i = 0; i < 11; i++) {
             pending.add(orphan.get(i));
         }
@@ -4118,11 +4115,11 @@ public class BlockchainTest {
         for (int i = 0; i < orphan.size(); i++) {
             Address orp = orphan.get(i);
             if (i == 0) {
-                assertArrayEquals(orp.addressHash.toArray(), link.getHashLow().toArray());
-            } else if (i == 1) {
                 assertArrayEquals(orp.addressHash.toArray(), b1.getHashLow().toArray());
-            } else {
+            } else if (i == 1) {
                 assertArrayEquals(orp.addressHash.toArray(), b2.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), link.getHashLow().toArray());
             }
         }
 
@@ -4216,49 +4213,51 @@ public class BlockchainTest {
         orphan = blockchain.getBlockFromOrphanPool(19, sendTime, true);
         deleteMainRef(orphan, blockchain, kernel);
         orphan.addAll(blockchain.getBlockFromOrphanPool(19, sendTime, true));
+        deleteMainRef(orphan, blockchain, kernel);
+        orphan.addAll(blockchain.getBlockFromOrphanPool(19, sendTime, true));
         assertEquals(0, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(19, orphan.size());
 
         for (int i = 0; i < orphan.size(); i++) {
             Address orp = orphan.get(i);
             if (i == 0) {
-                assertArrayEquals(orp.addressHash.toArray(), b5.getHashLow().toArray());//TX3 and TX4 are two transactions with nonce errors.
+                assertArrayEquals(orp.addressHash.toArray(), d1.getHashLow().toArray());//TX3 and TX4 are two transactions with nonce errors.
             } else if (i == 1) {
-                assertArrayEquals(orp.addressHash.toArray(), a3.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
             } else if (i == 2) {
-                assertArrayEquals(orp.addressHash.toArray(), a4.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
             } else if (i == 3) {
-                assertArrayEquals(orp.addressHash.toArray(), a5.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), c1.getHashLow().toArray());
             } else if (i == 4) {
-                assertArrayEquals(orp.addressHash.toArray(), a6.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), a3.getHashLow().toArray());
             } else if (i == 5) {
-                assertArrayEquals(orp.addressHash.toArray(), a7.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), a4.getHashLow().toArray());
             } else if (i == 6) {
                 assertArrayEquals(orp.addressHash.toArray(), linkDeep.getHashLow().toArray());
             } else if (i == 7) {
-                assertArrayEquals(orp.addressHash.toArray(), a8.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), a5.getHashLow().toArray());
             } else if (i == 8) {
-                assertArrayEquals(orp.addressHash.toArray(), tx3.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), a6.getHashLow().toArray());
             } else if (i == 9) {
-                assertArrayEquals(orp.addressHash.toArray(), tx4.getHashLow().toArray());
+                assertArrayEquals(orp.addressHash.toArray(), a7.getHashLow().toArray());
             } else if (i == 10) {
-                assertArrayEquals(orp.addressHash.toArray(), d1.getHashLow().toArray());
-            } else if (i == 11) {
-                assertArrayEquals(orp.addressHash.toArray(), d2.getHashLow().toArray());
-            } else if (i == 12) {
-                assertArrayEquals(orp.addressHash.toArray(), d3.getHashLow().toArray());
-            } else if (i == 13) {
-                assertArrayEquals(orp.addressHash.toArray(), c1.getHashLow().toArray());
-            } else if (i == 14) {
                 assertArrayEquals(orp.addressHash.toArray(), c2.getHashLow().toArray());
-            } else if (i == 15) {
+            } else if (i == 11) {
                 assertArrayEquals(orp.addressHash.toArray(), c3.getHashLow().toArray());
-            } else if (i == 16) {
+            } else if (i == 12) {
                 assertArrayEquals(orp.addressHash.toArray(), c4.getHashLow().toArray());
-            } else if (i == 17) {
+            } else if (i == 13) {
+                assertArrayEquals(orp.addressHash.toArray(), tx3.getHashLow().toArray());
+            } else if (i == 14) {
+                assertArrayEquals(orp.addressHash.toArray(), tx4.getHashLow().toArray());
+            } else if (i == 15) {
                 assertArrayEquals(orp.addressHash.toArray(), b3.getHashLow().toArray());
-            } else {
+            } else if (i == 16) {
                 assertArrayEquals(orp.addressHash.toArray(), b4.getHashLow().toArray());
+            } else if (i == 17) {
+                assertArrayEquals(orp.addressHash.toArray(), b5.getHashLow().toArray());
+            } else {
+                assertArrayEquals(orp.addressHash.toArray(), a8.getHashLow().toArray());
             }
         }
 
@@ -4886,7 +4885,6 @@ public class BlockchainTest {
             assertChainStatus(35 + i, i == 1 ? 9 : 9 + i - 1, 1, i == 1 ? 16 : 16 - 2 * (i - 1), blockchain);
             assertEquals(2 * (i - 1), blockchain.getMBlockTx().size());
         }
-        // todo:The discrepancy in the number is because the last main block did not have any new main block references, resulting in transactions whose references were not removed from the orphanSource.
         assertChainStatus(40, 13, 1, 8, blockchain);
         assertEquals(8, blockchain.getOrphanBlockStore().getOrphanSize());
         assertEquals(8, blockchain.getMBlockTx().size());

@@ -143,7 +143,7 @@ public class JsonRpcHandler extends SimpleChannelInboundHandler<FullHttpRequest>
     private void sendError(ChannelHandlerContext ctx, JsonRpcError error, JsonRpcRequest request) {
         try {
             ByteBuf content = Unpooled.copiedBuffer(
-                    MAPPER.writeValueAsString(new JsonRpcErrorResponse(request != null ? request.getId() : 1, error)),
+                    MAPPER.writeValueAsString(new JsonRpcErrorResponse(request != null ? request.getId() : null, error)),
                     StandardCharsets.UTF_8
             );
             sendHttpResponse(ctx, content, HttpResponseStatus.OK);
