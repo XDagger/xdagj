@@ -466,20 +466,20 @@ public class XdagCli extends Launcher {
             printer.println("HdWallet Initializing...");
             try {
                 String phrase = Bip39Mnemonic.generateString();
-            printer.println("HdWallet Mnemonic:" + phrase);
+                printer.println("HdWallet Mnemonic:" + phrase);
 
-            String repeat = readLine("HdWallet Mnemonic Repeat:");
-            repeat = String.join(" ", repeat.trim().split("\\s+"));
+                String repeat = readLine("HdWallet Mnemonic Repeat:");
+                repeat = String.join(" ", repeat.trim().split("\\s+"));
 
-            if (!repeat.equals(phrase)) {
-                printer.println("HdWallet Initialized Failure");
-                return false;
-            }
+                if (!repeat.equals(phrase)) {
+                    printer.println("HdWallet Initialized Failure");
+                    return false;
+                }
 
-            wallet.initializeHdWallet(phrase);
-            wallet.flush();
-            printer.println("HdWallet Initialized Successfully!");
-            return true;
+                wallet.initializeHdWallet(phrase);
+                wallet.flush();
+                printer.println("HdWallet Initialized Successfully!");
+                return true;
             } catch (Exception e) {
                 printer.println("HdWallet Initialization Failed: " + e.getMessage());
                 return false;
