@@ -155,14 +155,6 @@ public class SimpleDecoder {
     }
 
     /**
-     * Gets current read position
-     * @return current read position
-     */
-    public int getReadIndex() {
-        return index;
-    }
-
-    /**
      * Reads a size value using variable length quantity encoding
      * @return decoded size value
      */

@@ -44,10 +44,12 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
             "xdag_coinbase",
             "xdag_getBalance",
             "xdag_getTransactionNonce",
+            "xdag_getAverageFee",
             "xdag_getTotalBalance",
             "xdag_getStatus",
             "xdag_personal_sendTransaction",
             "xdag_personal_sendSafeTransaction",
+            "xdag_personal_sendSafeTransactionWithVariableFee",
             "xdag_sendRawTransaction",
             "xdag_netConnectionList",
             "xdag_netType",
@@ -134,6 +136,7 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
                     validateParams(params, "Missing address parameter");
                     yield xdagApi.xdag_getTransactionNonce(params[0].toString());
                 }
+                case "xdag_getAverageFee" -> xdagApi.xdag_getAverageFee();
                 case "xdag_getTotalBalance" -> xdagApi.xdag_getTotalBalance();
                 case "xdag_getStatus" -> xdagApi.xdag_getStatus();
                 case "xdag_netConnectionList" -> xdagApi.xdag_netConnectionList();
@@ -152,7 +155,7 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
                         throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
                     }
                     TransactionRequest txRequest = MAPPER.convertValue(params[0], TransactionRequest.class);
-                    validateTransactionRequest(txRequest, false);
+                    validateTransactionRequest(txRequest, false,false);
                     yield xdagApi.xdag_personal_sendTransaction(txRequest, params[1].toString());
                 }
                 case "xdag_personal_sendSafeTransaction" -> {
@@ -161,8 +164,17 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
                         throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
                     }
                     TransactionRequest txRequest = MAPPER.convertValue(params[0], TransactionRequest.class);
-                    validateTransactionRequest(txRequest, true);
+                    validateTransactionRequest(txRequest, true,false);
                     yield xdagApi.xdag_personal_sendSafeTransaction(txRequest, params[1].toString());
+                }
+                case "xdag_personal_sendSafeTransactionWithVariableFee" -> {
+                    validateParams(params, "Missing transaction arguments or passphrase");
+                    if (params.length < 2) {
+                        throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
+                    }
+                    TransactionRequest txRequest = MAPPER.convertValue(params[0], TransactionRequest.class);
+                    validateTransactionRequest(txRequest, true,true);
+                    yield xdagApi.xdag_personal_sendSafeTransactionWithVariableFee(txRequest, params[1].toString());
                 }
                 case "xdag_syncing" -> xdagApi.xdag_syncing();
                 case "xdag_protocolVersion" -> xdagApi.xdag_protocolVersion();
@@ -234,7 +246,7 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
         // Time format validation could be added here if needed
     }
 
-    private void validateTransactionRequest(TransactionRequest request, Boolean hasTxNonce) throws JsonRpcException {
+    private void validateTransactionRequest(TransactionRequest request, Boolean hasTxNonce, Boolean hasVariableFee) throws JsonRpcException {
         if (request == null) {
             throw JsonRpcException.invalidParams("Transaction request cannot be null");
         }
@@ -254,6 +266,9 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
         }
         if (hasTxNonce && (request.getNonce() == null || request.getNonce().trim().isEmpty() || !request.getNonce().matches("^[0-9]+$"))) {
             throw JsonRpcException.invalidParams("Transaction nonce cannot be empty and must be positive number");
+        }
+        if (hasVariableFee && (request.getFee() == null || request.getFee().trim().isEmpty() || !request.getFee().matches("^[0-9]+(\\.[0-9]+)?$"))) {
+            throw JsonRpcException.invalidParams("Transaction fee cannot be empty and must be non negative");
         }
     }
 

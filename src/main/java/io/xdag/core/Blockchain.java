@@ -24,12 +24,11 @@
 
 package io.xdag.core;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.listener.Listener;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
-import org.hyperledger.besu.crypto.KeyPair;
-
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +42,7 @@ public interface Blockchain {
 
     // Create a new block with given parameters
     Block createNewBlock(
-            Map<Address, KeyPair> pairs,
+            Map<Address, ECKeyPair> pairs,
             List<Address> to,
             boolean mining,
             String remark,
@@ -100,4 +99,25 @@ public interface Blockchain {
 
     // Get extended XDAG network statistics
     XdagExtStats getXdagExtStats();
+
+    // Calculate the average fee for each output
+    XAmount outPutLimit(Block block);
+
+    // Calculate the number of transactions output
+    int outPutNum(Block block);
+
+    // Calculate the fee for the transaction block
+    XAmount getTxFee(Block block);
+
+    // Determine if it is a transaction block
+    boolean isTxBlock(Block block);
+
+    // Get the number of transactions executed in the main block package
+    int txNumber(Bytes32 refHashLow, Bytes32 mHashLow);
+
+    // Determine if it is an account transaction block
+    boolean isAccountTx(Block block);
+
+    // Get the transaction block status
+    void putSyncTxStatus(Bytes32 hash, byte status);
 }

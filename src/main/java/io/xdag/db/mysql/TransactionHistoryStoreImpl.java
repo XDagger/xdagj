@@ -25,6 +25,7 @@ package io.xdag.db.mysql;
 
 import com.google.common.collect.Lists;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.DruidUtils;
@@ -45,7 +46,6 @@ import static io.xdag.core.XdagField.FieldType.XDAG_FIELD_INPUT;
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.WalletUtils.checkAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
 
 @Slf4j
 public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
@@ -85,12 +85,11 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 pstmt = conn.prepareStatement(SQL_INSERT);
 
                 Address address = txHistory.getAddress();
-                String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
+                String addr = address.getIsAddress() ? Base58.encodeCheck(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
                 pstmt.setString(1, addr);
                 pstmt.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmt.setString(3, txHistory.getHash());
-                pstmt.setBigDecimal(4, address.getType().equals(XDAG_FIELD_INPUT) ? address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG) :
-                        address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmt.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmt.setInt(5, address.getType().asByte());
                 pstmt.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmt.setTimestamp(7,
@@ -122,12 +121,11 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             }
             if (txHistory != null) {
                 Address address = txHistory.getAddress();
-                String addr = address.getIsAddress() ? toBase58(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
+                String addr = address.getIsAddress() ? Base58.encodeCheck(hash2byte(address.getAddress())) : hash2Address(address.getAddress());
                 pstmtBatch.setString(1, addr);
                 pstmtBatch.setInt(2, address.getIsAddress() ? WALLET_ADDRESS_FLAG : BLOCK_ADDRESS_FLAG);
                 pstmtBatch.setString(3, txHistory.getHash());
-                pstmtBatch.setBigDecimal(4, address.getType().equals(XDAG_FIELD_INPUT) ? address.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG) :
-                        address.getAmount().toDecimal(9, XUnit.XDAG));
+                pstmtBatch.setBigDecimal(4, address.getAmount().toDecimal(9, XUnit.XDAG));
                 pstmtBatch.setInt(5, address.getType().asByte());
                 pstmtBatch.setString(6, txHistory.getRemark() != null ? txHistory.getRemark().trim() : "");
                 pstmtBatch.setTimestamp(7,

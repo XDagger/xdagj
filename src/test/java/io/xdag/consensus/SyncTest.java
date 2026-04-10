@@ -31,15 +31,14 @@ import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
 import io.xdag.core.*;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
 import io.xdag.db.BlockStore;
 import io.xdag.db.OrphanBlockStore;
 import io.xdag.db.rocksdb.*;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PrivateKey;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,7 +67,7 @@ public class SyncTest {
 
     Config config = new DevnetConfig();
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
-    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
+    PrivateKey secretkey_1 = PrivateKey.fromBigInteger(private_1);
 
     @Before
     public void setup() {
@@ -120,7 +119,7 @@ public class SyncTest {
 
     public String syncCase(Blockchain blockchain, boolean direction) {
         // 1. create case
-        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(secretkey_1);
         List<Address> pending = Lists.newArrayList();
 
         long generateTime = 1600616700000L;
@@ -175,7 +174,7 @@ public class SyncTest {
 
     public String[] syncCase2(Blockchain blockchain, boolean direction) {
         // 1. create case
-        KeyPair key = KeyPair.create(secretkey_1, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(secretkey_1);
         List<Address> pending = Lists.newArrayList();
 
         long generateTime = 1600616700000L;
@@ -184,7 +183,7 @@ public class SyncTest {
 
         Block addressBlock = generateAddressBlock(config, key, generateTime);
 
-        // 1. 加入地址块
+        // 1. Add to address block
         result = blockchain.tryToConnect(addressBlock);
         assertSame(IMPORTED_BEST, result);
         List<Block> extraBlockList = Lists.newLinkedList();
@@ -235,10 +234,10 @@ public class SyncTest {
         result = blockchain.tryToConnect(B);
         assertEquals(IMPORTED_BEST, result);
 
-        if (direction) { //正向
+        if (direction) {
             result = blockchain.tryToConnect(C);
             result = blockchain.tryToConnect(D);
-        } else { //反向
+        } else {
             result = blockchain.tryToConnect(D);
             result = blockchain.tryToConnect(C);
         }
@@ -287,10 +286,10 @@ public class SyncTest {
         result = blockchain.tryToConnect(B2);
         assertEquals(IMPORTED_BEST, result);
 
-        if (direction) { //正向
+        if (direction) {
             result = blockchain.tryToConnect(C2);
             result = blockchain.tryToConnect(D2);
-        } else { //反向
+        } else {
             result = blockchain.tryToConnect(D2);
             result = blockchain.tryToConnect(C2);
         }
@@ -322,7 +321,7 @@ public class SyncTest {
         String pwd = "password";
         Wallet wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
 
         Kernel kernel = new Kernel(config, key);
@@ -335,7 +334,7 @@ public class SyncTest {
                 dbFactory.getDB(DatabaseName.TXHISTORY));
 
         blockStore.reset();
-        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND));
+        OrphanBlockStore orphanBlockStore = new OrphanBlockStoreImpl(dbFactory.getDB(DatabaseName.ORPHANIND) , kernel);
         orphanBlockStore.reset();
 
         kernel.setBlockStore(blockStore);

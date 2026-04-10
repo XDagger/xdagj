@@ -41,7 +41,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 public class MessageQueue {
     public static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
-            new BasicThreadFactory.Builder()
+            BasicThreadFactory.builder()
                     .namingPattern("MessageQueueTimer-thread-%d")
                     .daemon(true)
                     .build());
@@ -76,10 +76,6 @@ public class MessageQueue {
 
     public synchronized void deactivate() {
         this.timerTask.cancel(false);
-    }
-
-    public boolean isIdle() {
-        return size() == 0;
     }
 
     public void disconnect(ReasonCode code) {

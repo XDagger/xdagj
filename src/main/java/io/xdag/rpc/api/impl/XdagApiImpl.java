@@ -35,6 +35,9 @@ import io.xdag.config.TestnetConfig;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.config.spec.RPCSpec;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.exception.AddressFormatException;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.Channel;
 import io.xdag.rpc.model.request.TransactionRequest;
 import io.xdag.rpc.model.response.*;
@@ -47,11 +50,11 @@ import io.xdag.utils.exception.XdagOverFlowException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -66,7 +69,7 @@ import static io.xdag.config.Constants.*;
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.BlockType.*;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.crypto.Keys.toBytesAddress;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.db.mysql.TransactionHistoryStoreImpl.totalPage;
 import static io.xdag.rpc.error.JsonRpcError.*;
 import static io.xdag.rpc.util.TypeConverter.toQuantityJsonHex;
@@ -130,7 +133,11 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
     @Override
     public BlockResponse xdag_getTransactionByHash(String hash, int page) {
+      try {
         return getBlockDTOByHash(hash, page);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
@@ -158,22 +165,38 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
     @Override
     public BlockResponse xdag_getBlockByHash(String hash, int page) {
+      try {
         return getBlockDTOByHash(hash, page);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
     public BlockResponse xdag_getBlockByHash(String hash, int page, int pageSize) {
+      try {
         return getBlockDTOByHash(hash, page, pageSize);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
     public BlockResponse xdag_getBlockByHash(String hash, int page, String startTime, String endTime) {
+      try {
         return getBlockDTOByHash(hash, page, startTime, endTime);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
     public BlockResponse xdag_getBlockByHash(String hash, int page, String startTime, String endTime, int pageSize) {
+      try {
         return getBlockDTOByHash(hash, page, startTime, endTime, pageSize);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
@@ -202,7 +225,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
     @Override
     public String xdag_coinbase() {
-        return toBase58(toBytesAddress(kernel.getCoinbase()));
+        return Base58.encodeCheck(toBytesAddress(kernel.getCoinbase()));
     }
 
     @Override
@@ -213,14 +236,14 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
     }
 
     @Override
-    public String xdag_getBalance(String address) {
+    public String xdag_getBalance(String address) throws AddressFormatException {
         Bytes32 hash;
         MutableBytes32 key = MutableBytes32.create();
         String balance;
         if (WalletUtils.checkAddress(address)) {
             hash = pubAddress2Hash(address);
             key.set(8, Objects.requireNonNull(hash).slice(8, 20));
-            balance = String.format("%s", kernel.getAddressStore().getBalanceByAddress(fromBase58(address)).toDecimal(9, XUnit.XDAG).toPlainString());
+            balance = String.format("%s", kernel.getAddressStore().getBalanceByAddress(fromBase58(address).toArray()).toDecimal(9, XUnit.XDAG).toPlainString());
         } else {
             if (StringUtils.length(address) == 32) {
                 hash = BasicUtils.address2Hash(address);
@@ -235,13 +258,42 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
     }
 
     @Override
-    public String xdag_getTransactionNonce(String address) {
+    public String xdag_getTransactionNonce(String address) throws AddressFormatException {
         UInt64 txNonce = UInt64.ZERO;
         if (WalletUtils.checkAddress(address)) {
-            UInt64 txQuantity = kernel.getAddressStore().getTxQuantity(fromBase58(address));
+            UInt64 txQuantity = kernel.getAddressStore().getTxQuantity(fromBase58(address).toArray());
             txNonce = txNonce.add(txQuantity.add(UInt64.ONE));
         }
         return String.format("%s", txNonce.toLong());
+    }
+
+    @Override
+    public String xdag_getAverageFee(){
+        List<Block> mBlocks = blockchain.listMainBlocks(32);
+        XAmount averageFee = XAmount.ZERO;
+        int count = 0;
+        int sum = 0;
+        XAmount totalFee = XAmount.ZERO;
+        XAmount fee;
+        for (Block block : mBlocks) {
+            block = blockchain.getBlockByHash(block.getHash(), false);
+            fee = block.getFee();
+            if(blockchain.getBlockByHash(block.getHashLow(), true) != null && (block.getInfo().flags & BI_EXTRA) == 0){
+                block = blockchain.getBlockByHash(block.getHashLow(), true);
+            }
+            for(Address link : block.getLinks()){
+                sum += blockchain.txNumber(link.getAddress() , block.getHashLow());
+            }
+            log.debug("current block: {} , fee :{} , txSum :{}", block.getHashLow() , fee.toDecimal(9, XUnit.XDAG).toPlainString() , sum);
+            totalFee = totalFee.add(fee);
+            count += sum;
+            sum = 0;
+        }
+        if (count != 0 && totalFee != XAmount.ZERO) {
+            averageFee = totalFee.divide(count);
+        }
+        if (averageFee.lessThan(XAmount.of(100, XUnit.MILLI_XDAG))) averageFee = XAmount.of(100, XUnit.MILLI_XDAG);
+        return String.format("%s", averageFee.toDecimal(2, XUnit.XDAG).toPlainString());
     }
 
     @Override
@@ -285,13 +337,23 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             return result;
         }
 
-        Bytes32 toHash = checkTo(to, result);
-        if (result.getCode() != SUCCESS) {
+      Bytes32 toHash;
+      try {
+        toHash = checkTo(to, result);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
+      if (result.getCode() != SUCCESS) {
             return result;
         }
 
-        Bytes32 fromHash = checkFrom(from, result);
-        if (result.getCode() != SUCCESS) {
+      Bytes32 fromHash;
+      try {
+        fromHash = checkFrom(from, result);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
+      if (result.getCode() != SUCCESS) {
             return result;
         }
 
@@ -302,7 +364,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         // do xfer
         double amount = BasicUtils.getDouble(value);
-        doXfer(amount, fromHash, toHash, remark, null, result);
+        doXfer(amount, fromHash, toHash, remark, null, 0, result);
 
         return result;
     }
@@ -316,6 +378,58 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         String value = request.getValue();
         String remark = request.getRemark();
         String nonce = request.getNonce();
+
+        ProcessResponse result = ProcessResponse.builder().code(SUCCESS).build();
+
+        checkParam(value, remark, result);
+        if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+      Bytes32 toHash;
+      try {
+        toHash = checkTo(to, result);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
+      if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+      Bytes32 fromHash;
+      try {
+        fromHash = checkFrom(from, result);
+      } catch (AddressFormatException e) {
+        throw new RuntimeException(e);
+      }
+      if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+        UInt64 txNonce = UInt64.valueOf(new BigInteger(nonce));
+
+        checkPassword(passphrase, result);
+        if (result.getCode() != SUCCESS) {
+            return result;
+        }
+
+        // do xfer
+        double amount = BasicUtils.getDouble(value);
+        doXfer(amount, fromHash, toHash, remark, txNonce, 0, result);
+
+        return result;
+    }
+
+    @Override
+    public ProcessResponse xdag_personal_sendSafeTransactionWithVariableFee(TransactionRequest request, String passphrase) {
+        log.debug("personalSendTransaction request:{}", request);
+
+        String from = request.getFrom();
+        String to = request.getTo();
+        String value = request.getValue();
+        String remark = request.getRemark();
+        String nonce = request.getNonce();
+        String fee = request.getFee();
 
         ProcessResponse result = ProcessResponse.builder().code(SUCCESS).build();
 
@@ -342,8 +456,9 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         }
 
         // do xfer
-        double amount = BasicUtils.getDouble(value);
-        doXfer(amount, fromHash, toHash, remark, txNonce, result);
+        double amount = getDouble(value);
+        double txFee = getDouble(fee);
+        doXfer(amount, fromHash, toHash, remark, txNonce, txFee, result);
 
         return result;
     }
@@ -376,8 +491,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                 result = ImportResult.INVALID_BLOCK;
                 return "NO NONCE IS REQUIRED FOR MAIN BLOCK TRANSFER " + result.getErrorInfo();
             } else if (input.getType() == XDAG_FIELD_INPUT) {
-                byte[] addr = BytesUtils.byte32ToArray(input.getAddress());
-                UInt64 legalNonce = kernel.getAddressStore().getTxQuantity(addr).add(UInt64.ONE);
+                Bytes addr = BytesUtils.byte32ToArray(input.getAddress());
+                UInt64 legalNonce = kernel.getAddressStore().getTxQuantity(addr.toArray()).add(UInt64.ONE);
                 UInt64 blockNonce;
                 if (inputSize != 1) {
                     result = ImportResult.INVALID_BLOCK;
@@ -405,8 +520,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
             for (Address input : in) {
                 if (input.getType() == XDAG_FIELD_INPUT) {
-                    byte[] addr = BytesUtils.byte32ToArray(input.getAddress());
-                    kernel.getAddressStore().updateTxQuantity(addr, blockNonce);
+                    Bytes addr = BytesUtils.byte32ToArray(input.getAddress());
+                    kernel.getAddressStore().updateTxQuantity(addr.toArray(), blockNonce);
                 }
             }
         }
@@ -434,8 +549,9 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         return kernel.getConfig().getNodeSpec().getNetwork().toString().toLowerCase();
     }
 
-    private BlockResponse transferAccountToBlockResultDTO(String address, int page, Object... parameters) {
-        XAmount balance = kernel.getAddressStore().getBalanceByAddress(hash2byte(pubAddress2Hash(address).mutableCopy()));
+    private BlockResponse transferAccountToBlockResultDTO(String address, int page, Object... parameters)
+        throws AddressFormatException {
+        XAmount balance = kernel.getAddressStore().getBalanceByAddress(hash2byte(pubAddress2Hash(address).mutableCopy()).toArray());
 
         BlockResponse.BlockResponseBuilder BlockResultDTOBuilder = BlockResponse.builder();
         BlockResultDTOBuilder.address(address)
@@ -480,7 +596,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         return BlockResultDTOBuilder.build();
     }
 
-    private List<BlockResponse.TxLink> getTxHistory(String address, int page, Object... parameters) {
+    private List<BlockResponse.TxLink> getTxHistory(String address, int page, Object... parameters)
+        throws AddressFormatException {
         List<TxHistory> txHistories = blockchain.getBlockTxHistoryByAddress(pubAddress2Hash(address), page, parameters);
         List<BlockResponse.TxLink> txLinks = Lists.newArrayList();
         for (TxHistory txHistory : txHistories) {
@@ -501,7 +618,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                         .time(txHistory.getTimestamp())
                         .remark(txHistory.getRemark());
             } else {
-                txLinkBuilder.address(toBase58(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
+                txLinkBuilder.address(Base58.encodeCheck(BytesUtils.byte32ToArray(txHistory.getAddress().getAddress())))
                         .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
                         .amount(String.format("%s", txHistory.getAddress().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                         .direction(txHistory.getAddress().getType().equals(XDAG_FIELD_IN) ? 0 :
@@ -526,7 +643,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         return transferBlockToBlockResultDTO(blockTrue, page, parameters);
     }
 
-    public BlockResponse getBlockDTOByHash(String hash, int page, Object... parameters) {
+    public BlockResponse getBlockDTOByHash(String hash, int page, Object... parameters)
+        throws AddressFormatException {
         Bytes32 blockHash;
         if (WalletUtils.checkAddress(hash)) {
             return transferAccountToBlockResultDTO(hash, page, parameters);
@@ -540,6 +658,10 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             if (block == null) {
                 block = blockchain.getBlockByHash(blockHash, false);
                 return transferBlockInfoToBlockResultDTO(block, page, parameters);
+            }
+            BlockInfo blockInfo = kernel.getBlockStore().getBlockInfo(blockHash);
+            if (blockInfo != null) {
+                block.getInfo().setFee(blockInfo.getFee());
             }
             return transferBlockToBlockResultDTO(block, page, parameters);
         }
@@ -575,9 +697,9 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
             XAmount Amount = txHistory.getAddress().getAmount();
             // Check if it's a transaction block, only subtract 0.1 if it has inputs
-            if (!block.getInputs().isEmpty() && txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT)) {
-                Amount = Amount.subtract(MIN_GAS);
-            }
+//            if (!block.getInputs().isEmpty() && txHistory.getAddress().getType().equals(XDAG_FIELD_OUTPUT)) {
+//                Amount = Amount.subtract(MIN_GAS);
+//            }
             BlockResponse.TxLink.TxLinkBuilder txLinkBuilder = BlockResponse.TxLink.builder();
             txLinkBuilder.address(hash2Address(txHistory.getAddress().getAddress()))
                     .hashlow(txHistory.getAddress().getAddress().toUnprefixedHexString())
@@ -602,17 +724,17 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                         : hash2Address(Bytes32.wrap(block.getInfo().getRef())))
                 .hashlow(block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                         : Bytes32.wrap(block.getInfo().getRef()).toUnprefixedHexString())
-                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) :
-                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString())))// calculate the fee
+                .amount(block.getInfo().getRef() == null ? String.format("%.9f", amount2xdag(0)) : kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString())
+//                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString())))// calculate the fee
                 .direction(2);
         links.add(fee.build());
 
 
         for (Address input : inputs) {
             BlockResponse.Link.LinkBuilder linkBuilder = BlockResponse.Link.builder();
-            linkBuilder.address(input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
+            linkBuilder.address(input.getIsAddress() ? Base58.encodeCheck(hash2byte(input.getAddress())) : hash2Address(input.getAddress()))
                     .hashlow(input.getAddress().toUnprefixedHexString())
                     .amount(String.format("%s", input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(0);
@@ -624,9 +746,9 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
             XAmount Amount = output.getAmount();
             if (!block.getInputs().isEmpty()) {
-                Amount = Amount.subtract(MIN_GAS);
+                Amount = Amount.subtract(blockchain.outPutLimit(block));
             }
-            linkBuilder.address(output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
+            linkBuilder.address(output.getIsAddress() ? Base58.encodeCheck(hash2byte(output.getAddress())) : hash2Address(output.getAddress()))
                     .hashlow(output.getAddress().toUnprefixedHexString())
                     .amount(String.format("%s", Amount.toDecimal(9, XUnit.XDAG).toPlainString()))
                     .direction(1);
@@ -730,6 +852,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             Bytes32 toAddress,
             String remark,
             UInt64 txNonce,
+            double fee,
             ProcessResponse processResponse
     ) {
         XAmount amount;
@@ -746,22 +869,22 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         // Remaining balance to transfer
         AtomicReference<XAmount> remain = new AtomicReference<>(amount);
         // Transfer inputs
-        Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
+        Map<Address, ECKeyPair> ourAccounts = Maps.newHashMap();
 
         // If no from address, search from node accounts
         if (fromAddress == null) {
             log.debug("fromAddress is null, search all our blocks");
             // our block select
 
-            List<KeyPair> accounts = kernel.getWallet().getAccounts();
-            for (KeyPair account : accounts) {
-                byte[] addr = toBytesAddress(account);
-                XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
+            List<ECKeyPair> accounts = kernel.getWallet().getAccounts();
+            for (ECKeyPair account : accounts) {
+                Bytes addr = toBytesAddress(account);
+                XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr.toArray());
 
                 if (txNonce == null) {
-                    UInt64 currentTxQuantity = kernel.getAddressStore().getTxQuantity(addr);
+                    UInt64 currentTxQuantity = kernel.getAddressStore().getTxQuantity(addr.toArray());
                     txNonce = currentTxQuantity.add(UInt64.ONE);
-                } else if (txNonce.compareTo(kernel.getAddressStore().getTxQuantity(addr).add(UInt64.ONE)) != 0) {
+                } else if (txNonce.compareTo(kernel.getAddressStore().getTxQuantity(addr.toArray()).add(UInt64.ONE)) != 0) {
                     processResponse.setCode(ERR_XDAG_PARAM);
                     processResponse.setErrMsg("The nonce passed is incorrect. Please fill in the nonce according to the query value");
                     return;
@@ -801,6 +924,10 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
             }
         }
 
+        XAmount txFee = (fee < 0)
+                ? XAmount.of(BigDecimal.valueOf(0), XUnit.XDAG)
+                : XAmount.of(BigDecimal.valueOf(fee), XUnit.XDAG);
+
         // Insufficient balance
         if (compareAmountTo(remain.get(), XAmount.ZERO) > 0) {
             processResponse.setCode(ERR_XDAG_BALANCE);
@@ -809,7 +936,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         }
         List<String> resInfo = Lists.newArrayList();
         // create transaction
-        List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark, txNonce);
+        List<BlockWrapper> txs = kernel.getWallet().createTransactionBlock(ourAccounts, to, remark, txNonce, txFee);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -819,11 +946,11 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                 UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
                 for (Address input : inputs) {
                     if (input.getType() == XDAG_FIELD_INPUT) {
-                        byte[] addr = BytesUtils.byte32ToArray(input.getAddress());
-                        kernel.getAddressStore().updateTxQuantity(addr, blockNonce);
+                        Bytes addr = BytesUtils.byte32ToArray(input.getAddress());
+                        kernel.getAddressStore().updateTxQuantity(addr.toArray(), blockNonce);
                     }
                 }
-                resInfo.add(BasicUtils.hash2Address(blockWrapper.getBlock().getHashLow()));
+                resInfo.add(hash2Address(blockWrapper.getBlock().getHashLow()));
             } else if (result == ImportResult.INVALID_BLOCK) {
                 resInfo.add(result.getErrorInfo());
             }
@@ -833,7 +960,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         processResponse.setResInfo(resInfo);
     }
 
-    private Bytes32 checkFrom(String fromAddress, ProcessResponse processResponse) {
+    private Bytes32 checkFrom(String fromAddress, ProcessResponse processResponse)
+        throws AddressFormatException {
         if (StringUtils.isBlank(fromAddress)) {
             return null;
         } else {
@@ -841,7 +969,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         }
     }
 
-    private Bytes32 checkTo(String toAddress, ProcessResponse processResponse) {
+    private Bytes32 checkTo(String toAddress, ProcessResponse processResponse)
+        throws AddressFormatException {
         if (StringUtils.isBlank(toAddress)) {
             processResponse.setCode(ERR_XDAG_DEST);
             processResponse.setErrMsg("To address is illegal");
@@ -851,7 +980,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         }
     }
 
-    private Bytes32 checkAddress(String address, ProcessResponse processResponse) {
+    private Bytes32 checkAddress(String address, ProcessResponse processResponse)
+        throws AddressFormatException {
         Bytes32 hash = null;
 
         // check whether existed in blockchain
@@ -873,7 +1003,7 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
 
         //check from address if reject Address.
         for (Address link : block.getInputs()) {
-            if (WalletUtils.toBase58(link.getAddress().slice(8, 20).toArray()).equals(kernel.getConfig().getNodeSpec().getRejectAddress())) {
+            if (Base58.encodeCheck(link.getAddress().slice(8, 20)).equals(kernel.getConfig().getNodeSpec().getRejectAddress())) {
                 return false;
             }
         }

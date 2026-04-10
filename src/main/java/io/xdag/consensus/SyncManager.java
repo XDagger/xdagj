@@ -28,6 +28,8 @@ import com.google.common.collect.Queues;
 import io.xdag.Kernel;
 import io.xdag.config.*;
 import io.xdag.core.*;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.net.Channel;
 import io.xdag.net.ChannelManager;
@@ -41,7 +43,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -54,6 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagState.*;
+import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.XdagTime.msToXdagtimestamp;
 
 @Slf4j
@@ -199,7 +201,7 @@ public class SyncManager extends AbstractXdagLifecycle {
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
-                if (syncPushBlock(blockWrapper, result.getHashlow())) {
+                if (syncPushBlock(blockWrapper, result.getHashlow())) {//Return true to indicate that it has been more than 60 seconds since the last time it was placed here due to the lack of a parent reference, and request to inquire about the parent block from other nodes again
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
                     List<Channel> channels = channelMgr.getActiveChannels();
                     for (Channel channel : channels) {
@@ -229,7 +231,8 @@ public class SyncManager extends AbstractXdagLifecycle {
         if (syncMap.size() >= MAX_SIZE) {
             for (int j = 0; j < DELETE_NUM; j++) {
                 List<Bytes32> keyList = new ArrayList<>(syncMap.keySet());
-                Bytes32 key = keyList.get(SecureRandomProvider.publicSecureRandom().nextInt(keyList.size()));
+
+                Bytes32 key = keyList.get(CryptoProvider.nextInt(0, keyList.size()));
                 assert key != null;
                 if (syncMap.remove(key) != null) blockchain.getXdagStats().nwaitsync--;
             }
@@ -383,6 +386,12 @@ public class SyncManager extends AbstractXdagLifecycle {
         @Override
         public void run() {
             this.isRunning = true;
+            try {
+                Thread.sleep(100000);
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             while (this.isRunning) {
                 if (isTimeToStart()) {
                     makeSyncDone();

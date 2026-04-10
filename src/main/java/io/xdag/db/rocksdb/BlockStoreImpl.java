@@ -279,6 +279,8 @@ public class BlockStoreImpl implements BlockStore {
         timeSource.put(BlockUtils.getTimeKey(time, block.getHashLow()), new byte[]{0});
         blockSource.put(block.getHashLow().toArray(), block.getXdagBlock().getData().toArray());
         saveBlockSums(block);
+        //我们读取的fee，确保只能是我们自己节点执行该区块后赋的值才行，此时属于还没执行，统一置为零
+        block.getInfo().setFee(XAmount.ZERO);
         saveBlockInfo(block.getInfo());
     }
 
@@ -426,7 +428,7 @@ public class BlockStoreImpl implements BlockStore {
         } else if (level < 6) {
             key = files.get(1);
         } else {
-            key = files.get(0);
+            key = files.getFirst();
         }
 
         Bytes buf = getSums(key);
@@ -569,6 +571,33 @@ public class BlockStoreImpl implements BlockStore {
             }
         }
         return new Block(blockInfo);
+//        if (blockSource.get(hashlow.toArray()) == null) {
+////            log.error("No block origin data");
+//            return block;
+//        } else {
+//            block.setXdagBlock(new XdagBlock(blockSource.get(hashlow.toArray())));
+//            return block;
+//        }
+    }
+
+    public BlockInfo getBlockInfo(Bytes32 hashlow) {
+        if (!hasBlockInfo(hashlow)) {
+            return null;
+        }
+        BlockInfo blockInfo = null;
+        byte[] value = indexSource.get(BytesUtils.merge(HASH_BLOCK_INFO, hashlow.toArray()));
+        if (value == null) {
+            return null;
+        } else {
+            try {
+                blockInfo = (BlockInfo) deserialize(value, BlockInfo.class);
+            } catch (DeserializationException e) {
+                log.error("hash low:{}", hashlow.toHexString());
+                log.error("can't deserialize data:{}", Hex.toHexString(value));
+                log.error(e.getMessage(), e);
+            }
+            return blockInfo;
+        }
     }
 
     public boolean isSnapshotBoot() {

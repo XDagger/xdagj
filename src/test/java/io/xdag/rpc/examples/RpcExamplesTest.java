@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 /**
  * Test cases from XDAGJ_RPC.md documentation.
  * Each test method corresponds to an example in the documentation.
- * 
+ *
  * @see <a href="https://github.com/XDagger/xdagj/blob/master/docs/XDAGJ_RPC.md">XDAGJ_RPC.md</a>
  */
 public class RpcExamplesTest {
@@ -724,5 +724,61 @@ public class RpcExamplesTest {
         assertNull("Result should be null", response.getResult());
         assertNull("ResInfo should be null", response.getResInfo());
     }
-    
-} 
+
+    @Test
+    public void testPersonalSafeTransactionWithVariableFee_Example() throws Exception {
+        // Given
+        ProcessResponse processResponse = ProcessResponse.builder()
+                .code(-10201)
+                .result(null)
+                .errMsg("balance not enough")
+                .build();
+
+        when(xdagApi.xdag_personal_sendSafeTransactionWithVariableFee(any(), any())).thenReturn(processResponse);
+
+        String requestJson = """
+                {
+                    "jsonrpc": "2.0",
+                    "method": "xdag_personal_sendSafeTransactionWithVariableFee",
+                    "params": [{
+                        "to": "LF82sqRiZuJTDEfQ6GqkE2DpnXrbCu4kK",
+                        "value": "100",
+                        "remark": "test",
+                        "nonce": "1",
+                        "fee":"0.1"
+                    }, "123"],
+                    "id": "1"
+                }""";
+
+        // When
+        Object result = handler.handle(MAPPER.readValue(requestJson, JsonRpcRequest.class));
+
+        // Then
+        assertTrue("Result should be instance of ProcessResponse", result instanceof ProcessResponse);
+        ProcessResponse response = (ProcessResponse) result;
+        assertEquals("Incorrect error code", -10201, response.getCode());
+        assertEquals("Incorrect error message", "balance not enough", response.getErrMsg());
+        assertNull("Result should be null", response.getResult());
+        assertNull("ResInfo should be null", response.getResInfo());
+    }
+
+    @Test
+    public void testGetAverageFee() throws Exception {
+        // Given
+        when(xdagApi.xdag_getAverageFee()).thenReturn("0.000000000");
+        String requestJson = """
+                {
+                    "jsonrpc": "2.0",
+                    "method": "xdag_getAverageFee",
+                    "params": [],
+                    "id": "1"
+                }""";
+
+        // When
+        Object result = handler.handle(MAPPER.readValue(requestJson, JsonRpcRequest.class));
+
+        // Then
+        assertEquals("Incorrect average fee", "0.000000000", result);
+    }
+
+}

@@ -23,6 +23,8 @@
  */
 package io.xdag.net;
 
+import io.xdag.core.*;
+import io.xdag.crypto.core.CryptoProvider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -38,7 +40,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
 
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -48,10 +49,6 @@ import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.spec.NodeSpec;
 import io.xdag.consensus.SyncManager;
-import io.xdag.core.Block;
-import io.xdag.core.BlockWrapper;
-import io.xdag.core.Blockchain;
-import io.xdag.core.XdagStats;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageQueue;
 import io.xdag.net.message.ReasonCode;
@@ -75,6 +72,9 @@ import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
 import io.xdag.utils.exception.UnreachableException;
 import lombok.extern.slf4j.Slf4j;
+
+import static io.xdag.config.Constants.*;
+import static io.xdag.config.Constants.BI_MAIN_REF;
 
 /**
  * Xdag P2P message handler
@@ -111,7 +111,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     private ScheduledFuture<?> getNodes = null;
     private ScheduledFuture<?> pingPong = null;
 
-    private byte[] secret = SecureRandomProvider.publicSecureRandom().generateSeed(InitMessage.SECRET_LENGTH);
+    private byte[] secret = CryptoProvider.nextBytes(InitMessage.SECRET_LENGTH);
     private long timestamp = System.currentTimeMillis();
 
     public XdagP2pHandler(Channel channel, Kernel kernel) {
@@ -183,18 +183,18 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         log.trace("Received message: {}", msg);
 
         switch (msg.getCode()) {
-        /* p2p */
-        case DISCONNECT -> onDisconnect(ctx, (DisconnectMessage) msg);
-        case PING -> onPing();
-        case PONG -> onPong();
-        case HANDSHAKE_INIT -> onHandshakeInit((InitMessage) msg);
-        case HANDSHAKE_HELLO -> onHandshakeHello((HelloMessage) msg);
-        case HANDSHAKE_WORLD -> onHandshakeWorld((WorldMessage) msg);
+            /* p2p */
+            case DISCONNECT -> onDisconnect(ctx, (DisconnectMessage) msg);
+            case PING -> onPing();
+            case PONG -> onPong();
+            case HANDSHAKE_INIT -> onHandshakeInit((InitMessage) msg);
+            case HANDSHAKE_HELLO -> onHandshakeHello((HelloMessage) msg);
+            case HANDSHAKE_WORLD -> onHandshakeWorld((WorldMessage) msg);
 
-        /* sync */
-        case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
-                onXdag(msg);
-        default -> ctx.fireChannelRead(msg);
+            /* sync */
+            case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
+                    onXdag(msg);
+            default -> ctx.fireChannelRead(msg);
         }
     }
 
@@ -362,33 +362,43 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
 
     protected void processSyncBlock(SyncBlockMessage msg) {
         Block block = msg.getBlock();
-
+        chain.putSyncTxStatus(block.getHashLow(), msg.getExecutionState());
         log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getRemoteAddress());
         BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), true);
         syncMgr.validateAndAddNewBlock(bw);
     }
 
     /**
-     * 区块请求响应一个区块 并开启一个线程不断发送一段时间内的区块 *
+     * A block request responds to a block and starts a thread to continuously send blocks over a period of time. *
      */
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-        // 更新全网状态
+        // Update the status of the entire network
         updateXdagStats(msg);
         long startTime = msg.getStarttime();
         long endTime = msg.getEndtime();
         long random = msg.getRandom();
 
-        // TODO: paulochen 处理多区块请求
-        //        // 如果大于快照点的话 我可以发送
+        // TODO: paulochen Processing multi-block requests
+        //        // If it's greater than the snapshot point, I can send it.
         //        if (startTime > 1658318225407L) {
-        //            // TODO: 如果请求时间间隔过大，启动新线程发送，目的是避免攻击
+        //            // TODO: If the request interval is too long, a new thread will be started to send the request; this is to prevent attacks.
         log.debug("Send blocks between {} and {} to node {}",
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
                 channel.getRemoteAddress());
         List<Block> blocks = chain.getBlocksByTime(startTime, endTime);
         for (Block block : blocks) {
-            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1);
+            byte executionState = 0;
+            if (chain.isTxBlock(block)) {
+                int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+                // 1C
+                if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                    executionState = 1;
+                } else if (flag == (BI_REF | BI_MAIN_REF)) {// 18
+                    executionState = 2;
+                }
+            }
+            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1, executionState);
             msgQueue.sendMessage(blockMsg);
         }
         msgQueue.sendMessage(new BlocksReplyMessage(startTime, endTime, random, chain.getXdagStats()));
@@ -404,12 +414,12 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     /**
-     * 将sumRequest的后8个字段填充为自己的sum 修改type类型为reply 发送
+     * Fill the last 8 fields of the sumRequest with your own sum, change the type to reply, and send.
      */
     protected void processSumsRequest(SumRequestMessage msg) {
         updateXdagStats(msg);
         MutableBytes sums = MutableBytes.create(256);
-        // TODO: paulochen 处理sum请求
+        // TODO: paulochen Handling SUM requests
         kernel.getBlockStore().loadSum(msg.getStarttime(),msg.getEndtime(),sums);
         SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
                 chain.getXdagStats(), sums);
@@ -444,7 +454,17 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
         Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
         if (block != null) {
             log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", Bytes32.wrap(hash).toHexString(), channel.getRemoteAddress());
-            SyncBlockMessage message = new SyncBlockMessage(block, 1);
+            byte executionState = 0;
+            if (chain.isTxBlock(block)) {
+                int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+                // 1C,applied
+                if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                    executionState = 1;
+                } else if (flag == (BI_REF | BI_MAIN_REF)) {// 18 rejected
+                    executionState = 2;
+                }
+            }
+            SyncBlockMessage message = new SyncBlockMessage(block, 1, executionState);
             msgQueue.sendMessage(message);
         }
     }
@@ -481,6 +501,7 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     public long sendGetSums(long startTime, long endTime) {
         SumRequestMessage msg = new SumRequestMessage(startTime, endTime, chain.getXdagStats());
         sendMessage(msg);
+        log.debug("Request blocks time from startTime:{} ,endEime:{}" , startTime, endTime);
         return msg.getRandom();
     }
 

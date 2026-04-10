@@ -29,6 +29,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.xdag.Kernel;
 import io.xdag.core.*;
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.exception.AddressFormatException;
+import io.xdag.crypto.keys.AddressUtils;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.Channel;
 import io.xdag.pool.ChannelSupervise;
 import io.xdag.utils.BasicUtils;
@@ -39,18 +43,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.KeyPair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -58,7 +59,7 @@ import java.util.stream.Collectors;
 import static io.xdag.config.Constants.*;
 import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.XdagField.FieldType.*;
-import static io.xdag.crypto.Keys.toBytesAddress;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 import static io.xdag.utils.BasicUtils.*;
 import static io.xdag.utils.WalletUtils.*;
 
@@ -141,12 +142,12 @@ public class Commands {
      */
     public String account(int num) {
         StringBuilder str = new StringBuilder();
-        List<KeyPair> list = kernel.getWallet().getAccounts();
+        List<ECKeyPair> list = kernel.getWallet().getAccounts();
 
         // Sort by balance descending, then by key index descending
         list.sort((o1, o2) -> {
-            int compareResult = compareAmountTo(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o2)),
-                    kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o1)));
+            int compareResult = compareAmountTo(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o2).toArray()),
+                    kernel.getAddressStore().getBalanceByAddress(toBytesAddress(o1).toArray()));
             if (compareResult >= 0) {
                 return 1;
             } else {
@@ -155,17 +156,17 @@ public class Commands {
 
         });
 
-        for (KeyPair keyPair : list) {
+        for (ECKeyPair keyPair : list) {
             if (num == 0) {
                 break;
             }
 
-            UInt64 txQuantity = kernel.getAddressStore().getTxQuantity(toBytesAddress(keyPair));
-            UInt64 exeTxNonceNum = kernel.getAddressStore().getExecutedNonceNum(toBytesAddress(keyPair));
+            UInt64 txQuantity = kernel.getAddressStore().getTxQuantity(toBytesAddress(keyPair).toArray());
+            UInt64 exeTxNonceNum = kernel.getAddressStore().getExecutedNonceNum(toBytesAddress(keyPair).toArray());
 
-            str.append(toBase58(toBytesAddress(keyPair)))
+            str.append(AddressUtils.toBase58Address(keyPair))
                     .append(" ")
-                    .append(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(keyPair)).toDecimal(9, XUnit.XDAG).toPlainString())
+                    .append(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(keyPair).toArray()).toDecimal(9, XUnit.XDAG).toPlainString())
                     .append(" XDAG")
                     .append("  [Current TX Quantity: ")
                     .append(txQuantity.toUInt64())
@@ -183,12 +184,12 @@ public class Commands {
      * Get balance for address
      * @param address Address to check balance for, or null for total balance
      */
-    public String balance(String address) {
+    public String balance(String address) throws AddressFormatException {
         if (StringUtils.isEmpty(address)) {
             XAmount ourBalance = XAmount.ZERO;
-            List<KeyPair> list = kernel.getWallet().getAccounts();
-            for (KeyPair k : list) {
-                ourBalance = ourBalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k)));
+            List<ECKeyPair> list = kernel.getWallet().getAccounts();
+            for (ECKeyPair k : list) {
+                ourBalance = ourBalance.add(kernel.getAddressStore().getBalanceByAddress(toBytesAddress(k).toArray()));
             }
             return String.format("Balance: %s XDAG", ourBalance.toDecimal(9, XUnit.XDAG).toPlainString());
         } else {
@@ -197,7 +198,7 @@ public class Commands {
             if (checkAddress(address)) {
                 hash = pubAddress2Hash(address);
                 key.set(8, Objects.requireNonNull(hash).slice(8, 20));
-                XAmount balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address));
+                XAmount balance = kernel.getAddressStore().getBalanceByAddress(fromBase58(address).toArray());
                 return String.format("Account balance: %s XDAG", balance.toDecimal(9, XUnit.XDAG).toPlainString());
             } else {
                 if (StringUtils.length(address) == 32) {
@@ -212,22 +213,22 @@ public class Commands {
         }
     }
 
-    public String txQuantity(String address) {
+    public String txQuantity(String address) throws AddressFormatException {
         if (StringUtils.isEmpty(address)) {
             UInt64 ourTxQuantity = UInt64.ZERO;
             UInt64 exeTxQuantit = UInt64.ZERO;
-            List<KeyPair> list = kernel.getWallet().getAccounts();
-            for (KeyPair key : list) {
-                ourTxQuantity = ourTxQuantity.add(kernel.getAddressStore().getTxQuantity(toBytesAddress(key)));
-                exeTxQuantit = exeTxQuantit.add(kernel.getAddressStore().getExecutedNonceNum(toBytesAddress(key)));
+            List<ECKeyPair> list = kernel.getWallet().getAccounts();
+            for (ECKeyPair key : list) {
+                ourTxQuantity = ourTxQuantity.add(kernel.getAddressStore().getTxQuantity(toBytesAddress(key).toArray()));
+                exeTxQuantit = exeTxQuantit.add(kernel.getAddressStore().getExecutedNonceNum(toBytesAddress(key).toArray()));
             }
             return String.format("Current Transaction Quantity: %s, executed Transaction Quantity: %s \n", ourTxQuantity.toLong(), exeTxQuantit.toLong());
         } else {
             UInt64 addressTxQuantity = UInt64.ZERO;
             UInt64 addressExeTxQuantity = UInt64.ZERO;
             if (checkAddress(address)) {
-                addressTxQuantity = addressTxQuantity.add(kernel.getAddressStore().getTxQuantity(fromBase58(address)));
-                addressExeTxQuantity = addressExeTxQuantity.add(kernel.getAddressStore().getExecutedNonceNum(fromBase58(address)));
+                addressTxQuantity = addressTxQuantity.add(kernel.getAddressStore().getTxQuantity(fromBase58(address).toArray()));
+                addressExeTxQuantity = addressExeTxQuantity.add(kernel.getAddressStore().getExecutedNonceNum(fromBase58(address).toArray()));
                 return String.format("Current Transaction Quantity: %s, executed Transaction Quantity: %s \n", addressTxQuantity.toLong(), addressExeTxQuantity.toLong());
             } else {
                 return "The account address format is incorrect! \n";
@@ -241,11 +242,12 @@ public class Commands {
      * @param address Recipient address
      * @param remark Optional transaction remark
      */
-    public String xfer(double sendAmount, Bytes32 address, String remark) {
+    public String xfer(double sendAmount, Bytes32 address, String remark, double fee) {
         StringBuilder str = new StringBuilder();
         str.append("Transaction :{ ").append("\n");
 
         XAmount amount = XAmount.of(BigDecimal.valueOf(sendAmount), XUnit.XDAG);
+        XAmount txFee = XAmount.of(BigDecimal.valueOf(fee), XUnit.XDAG);
         MutableBytes32 to = MutableBytes32.create();
         to.set(8, address.slice(8, 20));
 
@@ -253,12 +255,12 @@ public class Commands {
         AtomicReference<XAmount> remain = new AtomicReference<>(amount);
 
         // Collect input accounts
-        Map<Address, KeyPair> ourAccounts = Maps.newHashMap();
-        List<KeyPair> accounts = kernel.getWallet().getAccounts();
+        Map<Address, ECKeyPair> ourAccounts = Maps.newHashMap();
+        List<ECKeyPair> accounts = kernel.getWallet().getAccounts();
         UInt64 txNonce = null;
 
-        for (KeyPair account : accounts) {
-            byte[] addr = toBytesAddress(account);
+        for (ECKeyPair account : accounts) {
+            byte[] addr = toBytesAddress(account).toArray();
             XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
             UInt64 currentTxQuantity = kernel.getAddressStore().getTxQuantity(addr);
             txNonce = currentTxQuantity.add(UInt64.ONE);
@@ -281,7 +283,7 @@ public class Commands {
         }
 
         // Create and broadcast transaction blocks
-        List<BlockWrapper> txs = createTransactionBlock(ourAccounts, to, remark, txNonce);
+        List<BlockWrapper> txs = createTransactionBlock(ourAccounts, to, remark, txNonce, txFee);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -291,8 +293,8 @@ public class Commands {
                 UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
                 for (Address input : inputs) {
                     if (input.getType() == XDAG_FIELD_INPUT) {
-                        byte[] addr = BytesUtils.byte32ToArray(input.getAddress());
-                        kernel.getAddressStore().updateTxQuantity(addr, blockNonce);
+                        Bytes addr = BytesUtils.byte32ToArray(input.getAddress());
+                        kernel.getAddressStore().updateTxQuantity(addr.toArray(), blockNonce);
                     }
                 }
                 str.append(hash2Address(blockWrapper.getBlock().getHashLow())).append("\n");
@@ -307,18 +309,18 @@ public class Commands {
     /**
      * Create transaction blocks from inputs to recipient
      */
-    private List<BlockWrapper> createTransactionBlock(Map<Address, KeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce) {
+    private List<BlockWrapper> createTransactionBlock(Map<Address, ECKeyPair> ourKeys, Bytes32 to, String remark, UInt64 txNonce, XAmount txFee) {
         // Check if remark exists
         int hasRemark = remark == null ? 0 : 1;
 
         List<BlockWrapper> res = Lists.newArrayList();
 
         // Process inputs in stack
-        LinkedList<Map.Entry<Address, KeyPair>> stack = Lists.newLinkedList(ourKeys.entrySet());
+        LinkedList<Map.Entry<Address, ECKeyPair>> stack = Lists.newLinkedList(ourKeys.entrySet());
 
         // Track keys used per block
-        Map<Address, KeyPair> keys = Maps.newHashMap();
-        Set<KeyPair> keysPerBlock = Sets.newHashSet();
+        Map<Address, ECKeyPair> keys = Maps.newHashMap();
+        Set<ECKeyPair> keysPerBlock = Sets.newHashSet();
         keysPerBlock.add(kernel.getWallet().getDefKey());
 
         int base;
@@ -332,16 +334,16 @@ public class Commands {
         XAmount amount = XAmount.ZERO;
 
         while (!stack.isEmpty()) {
-            Map.Entry<Address, KeyPair> key = stack.peek();
+            Map.Entry<Address, ECKeyPair> key = stack.peek();
             base += 1;
             int originSize = keysPerBlock.size();
             keysPerBlock.add(key.getValue());
-            
+
             // New unique key added
             if (keysPerBlock.size() > originSize) {
                 base += 3; // Public key + 2 signatures
             }
-            
+
             // Can fit in current block
             if (base < 16) {
                 amount = amount.add(key.getKey().getAmount());
@@ -349,7 +351,7 @@ public class Commands {
                 stack.poll();
             } else {
                 // Create block and reset for next
-                res.add(createTransaction(to, amount, keys, remark, txNonce));
+                res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
                 keys = new HashMap<>();
                 keysPerBlock = new HashSet<>();
                 keysPerBlock.add(kernel.getWallet().getDefKey());
@@ -361,10 +363,10 @@ public class Commands {
                 amount = XAmount.ZERO;
             }
         }
-        
+
         // Create final block if needed
         if (!keys.isEmpty()) {
-            res.add(createTransaction(to, amount, keys, remark, txNonce));
+            res.add(createTransaction(to, amount, keys, remark, txNonce, txFee));
         }
         return res;
     }
@@ -372,20 +374,20 @@ public class Commands {
     /**
      * Create single transaction block
      */
-    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, KeyPair> keys, String remark, UInt64 txNonce) {
+    private BlockWrapper createTransaction(Bytes32 to, XAmount amount, Map<Address, ECKeyPair> keys, String remark, UInt64 txNonce, XAmount txFee) {
         List<Address> tos = Lists.newArrayList(new Address(to, XDAG_FIELD_OUTPUT, amount, true));
         Block block = kernel.getBlockchain().createNewBlock(new HashMap<>(keys), tos, false, remark,
-                XAmount.of(100, XUnit.MILLI_XDAG), txNonce);
+                txFee, txNonce);
 
         if (block == null) {
             return null;
         }
 
-        KeyPair defaultKey = kernel.getWallet().getDefKey();
+        ECKeyPair defaultKey = kernel.getWallet().getDefKey();
 
         boolean isDefaultKey = false;
         // Sign inputs
-        for (KeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
+        for (ECKeyPair ecKey : Set.copyOf(new HashMap<>(keys).values())) {
             if (ecKey.equals(defaultKey)) {
                 isDefaultKey = true;
             } else {
@@ -506,7 +508,7 @@ public class Commands {
                 inputs = new StringBuilder();
                 for (Address input : block.getInputs()) {
                     inputs.append(String.format("     input: %s           %s%n",
-                            input.getIsAddress() ? toBase58(hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
+                            input.getIsAddress() ? Base58.encodeCheck(hash2byte(input.getAddress())) : hash2Address(input.getAddress()),
                             input.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
@@ -516,10 +518,10 @@ public class Commands {
                 for (Address output : block.getOutputs()) {
                     if (output.getType().equals(XDAG_FIELD_COINBASE)) continue;
                     outputs.append(String.format("    output: %s           %s%n",
-                            output.getIsAddress() ? toBase58(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
-                            getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                                            output.getAmount().subtract(MIN_GAS).toDecimal(9, XUnit.XDAG).toPlainString()
+                            output.getIsAddress() ? Base58.encodeCheck(hash2byte(output.getAddress())) : hash2Address(output.getAddress()),
+//                            getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? output.getAmount().toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                    block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+                                            output.getAmount().subtract(kernel.getBlockchain().outPutLimit(block)).toDecimal(9, XUnit.XDAG).toPlainString()
                     ));
                 }
             }
@@ -576,10 +578,10 @@ public class Commands {
                 block.getInfo().getDifficulty().toString(16),
                 hash2Address(block.getHash()), block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                 block.getInfo().getRef() == null ? "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" : hash2Address(Bytes32.wrap(block.getInfo().getRef())),
-                block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
-                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
-                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString()))
+                block.getInfo().getRef() == null ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :  kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString()
+//                        (getStateByFlags(block.getInfo().getFlags()).equals(MAIN.getDesc()) ? kernel.getBlockStore().getBlockInfoByHash(block.getHashLow()).getFee().toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                (block.getInputs().isEmpty() ? XAmount.ZERO.toDecimal(9, XUnit.XDAG).toPlainString() :
+//                                        MIN_GAS.multiply(block.getOutputs().size()).toDecimal(9, XUnit.XDAG).toPlainString()))
         )
                 + "\n"
                 + (inputs == null ? "" : inputs.toString()) + (outputs == null ? "" : outputs.toString())
@@ -658,8 +660,7 @@ public class Commands {
     /**
      * Generate new key pair
      */
-    public String keygen()
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+    public String keygen() {
         kernel.getXdagState().tempSet(XdagState.KEYS);
         kernel.getWallet().addAccountRandom();
 
@@ -709,8 +710,8 @@ public class Commands {
      */
     public String address(Bytes32 wrap, int page) {
         String ov = " OverView" + "\n"
-                + String.format(" address: %s", toBase58(hash2byte(wrap.mutableCopy()))) + "\n"
-                + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(hash2byte(wrap.mutableCopy())).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
+                + String.format(" address: %s", Base58.encodeCheck(hash2byte(wrap.mutableCopy()))) + "\n"
+                + String.format(" balance: %s", kernel.getAddressStore().getBalanceByAddress(hash2byte(wrap.mutableCopy()).toArray()).toDecimal(9, XUnit.XDAG).toPlainString()) + "\n";
 
         String txHisFormat = """
                 -----------------------------------------------------------------------------------------------------------------------------
@@ -749,7 +750,7 @@ public class Commands {
                                     .format(txHistory.getTimestamp())));
                 }
             } else {
-                tx.append(String.format(" snapshot: %s           %s   %s%n", (toBase58(BytesUtils.byte32ToArray(address.getAddress()))),
+                tx.append(String.format(" snapshot: %s           %s   %s%n", (Base58.encodeCheck(BytesUtils.byte32ToArray(address.getAddress()))),
                         address.getAmount().toDecimal(9, XUnit.XDAG).toPlainString(),
                         FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS")
                                 .format(txHistory.getTimestamp())));
@@ -774,7 +775,7 @@ public class Commands {
         String remark = "block balance to new address";
 
         // Transaction inputs
-        Map<Address, KeyPair> ourBlocks = Maps.newHashMap();
+        Map<Address, ECKeyPair> ourBlocks = Maps.newHashMap();
 
         // Select our blocks for transaction
         kernel.getBlockStore().fetchOurBlocks(pair -> {
@@ -795,7 +796,7 @@ public class Commands {
         });
 
         // Generate multiple transaction blocks
-        List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark, null);
+        List<BlockWrapper> txs = createTransactionBlock(ourBlocks, to, remark, null, XAmount.ZERO);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {
@@ -811,15 +812,15 @@ public class Commands {
      * @param paymentsToNodesMap Map of addresses and keypairs for node payments
      * @return StringBuilder containing transaction result message
      */
-    public StringBuilder xferToNode(Map<Address, KeyPair> paymentsToNodesMap) {
+    public StringBuilder xferToNode(Map<Address, ECKeyPair> paymentsToNodesMap) {
         StringBuilder str = new StringBuilder("Tx hash paid to the node :{");
         MutableBytes32 to = MutableBytes32.create();
         Bytes32 accountHash = keyPair2Hash(kernel.getWallet().getDefKey());
         to.set(8, accountHash.slice(8, 20));
         String remark = "Pay to " + kernel.getConfig().getNodeSpec().getNodeTag();
-        
+
         // Generate transaction blocks to reward node
-        List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark, null);
+        List<BlockWrapper> txs = createTransactionBlock(paymentsToNodesMap, to, remark, null, XAmount.ZERO);
         for (BlockWrapper blockWrapper : txs) {
             ImportResult result = kernel.getSyncMgr().validateAndAddNewBlock(blockWrapper);
             if (result == ImportResult.IMPORTED_BEST || result == ImportResult.IMPORTED_NOT_BEST) {

@@ -24,12 +24,12 @@
 package io.xdag.net.message.consensus;
 
 import io.xdag.core.XdagStats;
+import io.xdag.crypto.core.CryptoProvider;
 import io.xdag.net.message.MessageCode;
-import io.xdag.utils.XdagRandomUtils;
 
 public class BlocksRequestMessage extends XdagMessage {
     public BlocksRequestMessage(long starttime, long endtime, XdagStats xdagStats) {
-        super(MessageCode.BLOCKS_REQUEST, null, starttime, endtime, XdagRandomUtils.nextLong(Long.MAX_VALUE), xdagStats);
+        super(MessageCode.BLOCKS_REQUEST, null, starttime, endtime, CryptoProvider.nextLong(0, Long.MAX_VALUE), xdagStats);
     }
 
     public BlocksRequestMessage(byte[] body) {

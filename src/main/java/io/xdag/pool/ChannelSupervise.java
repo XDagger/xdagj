@@ -62,10 +62,6 @@ public class ChannelSupervise {// supervise channel
         return sb.toString();
     }
 
-    public static String findChannel(ChannelId id) {
-        return GlobalGroup.find(id).toString();
-    }
-
     public static void send2Pools(String info) {
         if (!ChannelMap.isEmpty()) {
             log.debug("There are active mining pools: {}", showChannel());

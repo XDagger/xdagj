@@ -48,6 +48,9 @@ public class TransactionRequest {
     @JsonProperty("nonce")
     private String nonce;
 
+    @JsonProperty("fee")
+    private String fee;
+
     // Add all-args constructor with JsonCreator
     @JsonCreator
     public TransactionRequest(
@@ -55,11 +58,13 @@ public class TransactionRequest {
             @JsonProperty("to") String to,
             @JsonProperty("value") String value,
             @JsonProperty("remark") String remark,
-            @JsonProperty("nonce") String nonce) {
+            @JsonProperty("nonce") String nonce,
+            @JsonProperty("fee") String fee) {
         this.from = from;
         this.to = to;
         this.value = value;
         this.remark = remark;
         this.nonce = nonce;
+        this.fee = fee;
     }
 }
