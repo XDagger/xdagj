@@ -21,27 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.utils;
-import io.xdag.crypto.hash.HashUtils;
-import static org.junit.Assert.assertEquals;
+package io.xdag.rpc.model.response;
 
-import java.nio.charset.StandardCharsets;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes32;
-import org.junit.Test;
+/**
+ *
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ConfigResponse {
+        String poolIp;
+        int poolPort;
+        String nodeIp;
+        int nodePort;
+        int globalMinerLimit;
+        int maxConnectMinerPerIp;
+        int maxMinerPerAccount;
 
-public class BytesTest {
-
-    @Test
-    public void testSetMutableBytes32() {
-        MutableBytes32 hashlow = MutableBytes32.create();
-        Bytes32 hash = HashUtils.doubleSha256(Bytes.wrap("123".getBytes(StandardCharsets.UTF_8)));
-        assertEquals("0x0000000000000000000000000000000000000000000000000000000000000000", hashlow.toHexString());
-        assertEquals("0x5a77d1e9612d350b3734f6282259b7ff0a3f87d62cfef5f35e91a5604c0490a3", hash.toHexString());
-        hashlow.set(8, hash.slice(8, 24));
-        assertEquals("0x00000000000000003734f6282259b7ff0a3f87d62cfef5f35e91a5604c0490a3", hashlow.toHexString());
-    }
-
+        String poolFeeRation;
+        String poolRewardRation;
+        String poolDirectRation;
+        String poolFundRation;
 }

@@ -23,11 +23,13 @@
  */
 package io.xdag.rpc.server.handler;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -35,6 +37,7 @@ import io.netty.handler.codec.http.*;
 import io.xdag.config.spec.RPCSpec;
 import io.xdag.rpc.error.JsonRpcError;
 import io.xdag.rpc.error.JsonRpcException;
+import io.xdag.rpc.server.protocol.JsonRpcErrorResponse;
 import io.xdag.rpc.server.protocol.JsonRpcRequest;
 import io.xdag.rpc.server.protocol.JsonRpcResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +58,8 @@ public class JsonRpcHandler extends SimpleChannelInboundHandler<FullHttpRequest>
                 .configure(JsonParser.Feature.INCLUDE_SOURCE_IN_LOCATION, true)
                 .configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
                 .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
-                .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+                .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
+                .setSerializationInclusion(JsonInclude.Include.ALWAYS);
     }
 
     public JsonRpcHandler(RPCSpec rpcSpec, List<JsonRpcRequestHandler> handlers) {
@@ -89,7 +93,7 @@ public class JsonRpcHandler extends SimpleChannelInboundHandler<FullHttpRequest>
         try {
             rpcRequest = MAPPER.readValue(content, JsonRpcRequest.class);
         } catch (JsonRpcException e) {
-            sendError(ctx, new JsonRpcError(e.getCode(), e.getMessage(), e.getData()), null);
+            sendError(ctx, new JsonRpcError(e.getCode(), e.getMessage()), null);
             return;
         } catch (Exception e) {
             log.debug("Failed to parse JSON-RPC request", e);
@@ -102,7 +106,7 @@ public class JsonRpcHandler extends SimpleChannelInboundHandler<FullHttpRequest>
             sendResponse(ctx, new JsonRpcResponse(rpcRequest.getId(), result));
         } catch (JsonRpcException e) {
             log.debug("RPC error: {}", e.getMessage());
-            sendError(ctx, new JsonRpcError(e.getCode(), e.getMessage(), e.getData()), rpcRequest);
+            sendError(ctx, new JsonRpcError(e.getCode(), e.getMessage()), rpcRequest);
         } catch (Exception e) {
             log.error("Error processing request", e);
             sendError(ctx, new JsonRpcError(JsonRpcError.ERR_INTERNAL, "Internal error: " + e.getMessage()), rpcRequest);
@@ -139,7 +143,7 @@ public class JsonRpcHandler extends SimpleChannelInboundHandler<FullHttpRequest>
     private void sendError(ChannelHandlerContext ctx, JsonRpcError error, JsonRpcRequest request) {
         try {
             ByteBuf content = Unpooled.copiedBuffer(
-                    MAPPER.writeValueAsString(new JsonRpcResponse(request != null ? request.getId() : null, null, error)),
+                    MAPPER.writeValueAsString(new JsonRpcErrorResponse(request != null ? request.getId() : null, error)),
                     StandardCharsets.UTF_8
             );
             sendHttpResponse(ctx, content, HttpResponseStatus.OK);
@@ -177,7 +181,12 @@ public class JsonRpcHandler extends SimpleChannelInboundHandler<FullHttpRequest>
                     .set(HttpHeaderNames.VARY, "Origin");
         }
 
-        ctx.writeAndFlush(response);
+//        ctx.writeAndFlush(response);
+        // Set connection to close after the response
+        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+
+        // Send the response and close the connection
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override

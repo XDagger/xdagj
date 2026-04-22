@@ -14,11 +14,11 @@
 - System environment
 
   ```yaml
-  JDK   : v17
+  JDK   : v21
   Maven : v3.9.1
   ```
 
-  Please make sure that the above environment is already available in your operating system, and the JDK version must be 17
+  Please make sure that the above environment is already available in your operating system, and the JDK version must be 21
 
 - Hardware parameters
 
@@ -62,8 +62,8 @@
   ```shell
   $mkdir run 
 
-  #Please copy xdag-devnet.conf, xdag.sh & xdagj-0.5.4-shaded.jar into /run
-  # xdag-devnet.conf is in /src-main-resources; xdag.sh is in /script; xdagj-0.5.4-shaded.jar is in /target
+  #Please copy xdag-devnet.conf, xdag.sh & xdagj-0.8.0-executable.jar into /run
+  # xdag-devnet.conf is in /src-main-resources; xdag.sh is in /script; xdagj-0.8.0-executable.jar is in /target
 
   $cd run
   $sh xdag.sh -d

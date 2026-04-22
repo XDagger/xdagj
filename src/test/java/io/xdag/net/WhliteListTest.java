@@ -27,11 +27,10 @@ package io.xdag.net;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import io.xdag.Kernel;
 import io.xdag.config.Config;
 import io.xdag.config.DevnetConfig;
-import io.xdag.crypto.Keys;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import java.net.InetSocketAddress;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -49,7 +48,7 @@ public class WhliteListTest {
 
     @Before
     public void setup() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        // 初始化白名单
+        // Initialize whitelist
         String[] list = new String[]{"124.34.34.1:1001", "127.0.0.1:1002"};
         List<InetSocketAddress> addressList = Lists.newArrayList();
         for (String address : list) {
@@ -61,10 +60,10 @@ public class WhliteListTest {
     @Test
     public void whileList()
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        PeerClient client = new PeerClient(config, Keys.createEcKeyPair());
-        // 新增白名单节点
+        PeerClient client = new PeerClient(config, ECKeyPair.generate());
+        // Add whitelist nodes
         client.addWhilteIP("127.0.0.1", 8882);
-        //白名单有的节点
+        // Some nodes are on the whitelist
         assertTrue(client.isAcceptable(new InetSocketAddress("124.34.34.1", 1001)));
         assertTrue(client.isAcceptable(new InetSocketAddress("127.0.0.1", 1002)));
         assertTrue(client.isAcceptable(new InetSocketAddress("127.0.0.1", 8882)));

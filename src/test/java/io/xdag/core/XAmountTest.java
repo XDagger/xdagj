@@ -76,12 +76,12 @@ public class XAmountTest {
 
     @Test
     public void testCompareTo() {
-        assertEquals(ZERO.compareTo(XAmount.of(0)), 0);
-        assertEquals(XAmount.of(1000).compareTo(XAmount.of(1, MICRO_XDAG)), 0);
+        assertEquals(0, ZERO.compareTo(XAmount.of(0)));
+        assertEquals(0, XAmount.of(1000).compareTo(XAmount.of(1, MICRO_XDAG)));
 
-        assertEquals(XAmount.TEN.compareTo(XAmount.of(10)), 0);
-        assertEquals(XAmount.of(5).compareTo(XAmount.of(10)), -1);
-        assertEquals(XAmount.of(10).compareTo(XAmount.of(5)), 1);
+        assertEquals(0, XAmount.TEN.compareTo(XAmount.of(10)));
+        assertEquals(-1, XAmount.of(5).compareTo(XAmount.of(10)));
+        assertEquals(1, XAmount.of(10).compareTo(XAmount.of(5)));
     }
 
     @Test

@@ -24,17 +24,19 @@
 
 package io.xdag.net;
 
-import static io.xdag.crypto.Keys.toBytesAddress;
-import static io.xdag.utils.WalletUtils.toBase58;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.xdag.config.Config;
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.node.Node;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
@@ -45,7 +47,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.hyperledger.besu.crypto.KeyPair;
 
 /**
  * Client implementation for peer-to-peer network communication
@@ -56,14 +57,14 @@ import org.hyperledger.besu.crypto.KeyPair;
 public class PeerClient {
 
     // Thread factory for client worker threads
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("XdagClient-thread-%d")
             .daemon(true)
             .build();
 
     private final String ip;
     private final int port;
-    private final KeyPair coinbase;
+    private final ECKeyPair coinbase;
     private final EventLoopGroup workerGroup;
     private final Config config;
     private final Set<InetSocketAddress> whitelist;
@@ -74,12 +75,12 @@ public class PeerClient {
      * @param config Network configuration
      * @param coinbase Keypair for node identity
      */
-    public PeerClient(Config config, KeyPair coinbase) {
+    public PeerClient(Config config, ECKeyPair coinbase) {
         this.config = config;
         this.ip = config.getNodeSpec().getNodeIp();
         this.port = config.getNodeSpec().getNodePort();
         this.coinbase = coinbase;
-        this.workerGroup = new NioEventLoopGroup(0, factory);
+        this.workerGroup = new MultiThreadIoEventLoopGroup(0, factory, NioIoHandler.newFactory());
         this.whitelist = new HashSet<>();
         initWhiteIPs();
     }
@@ -88,7 +89,7 @@ public class PeerClient {
      * Get peer ID derived from coinbase key
      */
     public String getPeerId() {
-        return toBase58(toBytesAddress(coinbase));
+        return Base58.encodeCheck(toBytesAddress(coinbase));
     }
 
     /**

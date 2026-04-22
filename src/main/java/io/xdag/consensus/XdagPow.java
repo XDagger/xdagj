@@ -30,9 +30,9 @@ import io.xdag.Kernel;
 import io.xdag.Wallet;
 import io.xdag.core.XdagLifecycle;
 import io.xdag.core.*;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.RandomX;
-import io.xdag.crypto.RandomXMemory;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.hash.HashUtils;
+import io.xdag.crypto.hash.XdagSha256Digest;
 import io.xdag.listener.BlockMessage;
 import io.xdag.listener.Listener;
 import io.xdag.listener.PretopMessage;
@@ -40,8 +40,6 @@ import io.xdag.net.ChannelManager;
 import io.xdag.pool.ChannelSupervise;
 import io.xdag.pool.PoolAwardManager;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagRandomUtils;
-import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +57,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.xdag.utils.BasicUtils.hash2byte;
 import static io.xdag.utils.BasicUtils.keyPair2Hash;
-import static io.xdag.utils.BytesUtils.compareTo;
-import static io.xdag.utils.BytesUtils.equalBytes;
+import static io.xdag.utils.BytesUtils.*;
+
 
 @Slf4j
 public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
@@ -86,18 +84,18 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
     protected AtomicLong taskIndex = new AtomicLong(0L);
     private boolean isWorking = false;
 
-    private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+    private final ExecutorService timerExecutor = Executors.newSingleThreadExecutor(BasicThreadFactory.builder()
             .namingPattern("XdagPow-timer-thread")
             .build());
 
-    private final ExecutorService mainExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+    private final ExecutorService mainExecutor = Executors.newSingleThreadExecutor(BasicThreadFactory.builder()
             .namingPattern("XdagPow-main-thread")
             .build());
 
-    private final ExecutorService broadcasterExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+    private final ExecutorService broadcasterExecutor = Executors.newSingleThreadExecutor(BasicThreadFactory.builder()
             .namingPattern("XdagPow-broadcaster-thread")
             .build());
-    private final ExecutorService getSharesExecutor = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder()
+    private final ExecutorService getSharesExecutor = Executors.newSingleThreadExecutor(BasicThreadFactory.builder()
             .namingPattern("XdagPow-getShares-thread")
             .build());
 
@@ -183,12 +181,11 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
 
     public Block generateRandomXBlock(long sendTime) {
         taskIndex.incrementAndGet();
-        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
+        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO, null);
         block.signOut(wallet.getDefKey());
-        // The first 20 bytes of the initial nonce are the node wallet address.
-        minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
-                XdagRandomUtils.nextNewBytes(12))));
-
+        // The last 20 bytes of the initial nonce are the node wallet address.
+        minShare.set(Bytes32.wrap(BytesUtils.merge(CryptoProvider.nextBytes(12),
+                hash2byte(keyPair2Hash(wallet.getDefKey())))));
         block.setNonce(minShare.get());
         minHash.set(Bytes32.fromHexString("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
         currentTask.set(createTaskByRandomXBlock(block, sendTime));
@@ -199,10 +196,11 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
 
     public Block generateBlock(long sendTime) {
         taskIndex.incrementAndGet();
-        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO);
+        Block block = blockchain.createNewBlock(null, null, true, null, XAmount.ZERO, null);
         block.signOut(wallet.getDefKey());
-        minShare.set(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())),
-                XdagRandomUtils.nextNewBytes(12))));
+        // The last 20 bytes of the initial nonce are the node wallet address.
+        minShare.set(Bytes32.wrap(BytesUtils.merge(CryptoProvider.nextBytes(12),
+                hash2byte(keyPair2Hash(wallet.getDefKey())))));
         block.setNonce(minShare.get());
         // initial nonce
         minHash.set(block.recalcHash());
@@ -323,7 +321,7 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
 
         RandomXMemory memory = randomXUtils.getGlobalMemory()[(int) randomXUtils.getRandomXPoolMemIndex() & 1];
 
-        Bytes32 preHash = Hash.sha256(block.getXdagBlock().getData().slice(0, 480));
+        Bytes32 preHash = HashUtils.sha256(block.getXdagBlock().getData().slice(0, 480));
         // task[0]=preHash
         task[0] = new XdagField(preHash.mutableCopy());
         // task[1]=taskSeed

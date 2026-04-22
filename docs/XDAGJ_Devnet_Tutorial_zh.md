@@ -15,11 +15,11 @@
 - 系统环境
 
   ```yaml
-  JDK   : v17
+  JDK   : v21
   Maven : v3.9.1
   ```
 
-  请确保您的操作系统中已经具备上述环境，其中JDK版本必须确保为17，maven 版本必须 > 3.8，否则无法与 JDK17 兼容
+  请确保您的操作系统中已经具备上述环境，其中JDK版本必须确保为21，maven 版本必须 > 3.8，否则无法与 JDK21 兼容
 
 - 硬件参数
 
@@ -67,11 +67,11 @@
 
   Xdag.sh 会对 xdagj 项目进行构建，构建成功之后会创建在工程根目录下创建一个 pool 的文件夹，用于存放程序运行时所需的配置文件以及数据。
 
-- 非首次启动 xdagj，或者想直接直接后台启动，可以在 pool 文件夹下找到对应的 xdagj-{version}-shaded.jar 包单独运行
+- 非首次启动 xdagj，或者想直接直接后台启动，可以在 pool 文件夹下找到对应的 xdagj-{version}-executable.jar 包单独运行
 
   ```shell
   cd pool
-  nohup java -jar xdagj-0.5.4-shaded.jar > xdagj.log 2>&1 &
+  nohup java -jar xdagj-0.8.0-executable.jar > xdagj.log 2>&1 &
   #等待系统启动完毕，采用telnet接入
   telnet 127.0.0.1:6001
   ```

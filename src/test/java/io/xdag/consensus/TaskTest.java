@@ -33,16 +33,15 @@ import io.xdag.config.DevnetConfig;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
 import io.xdag.crypto.SampleKeys;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.core.CryptoProvider;
+import io.xdag.crypto.hash.XdagSha256Digest;
 import io.xdag.pool.PoolAwardManagerImpl;
 import io.xdag.utils.BytesUtils;
-import io.xdag.utils.XdagRandomUtils;
-import io.xdag.utils.XdagSha256Digest;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +65,7 @@ public class TaskTest {
         Config config = new DevnetConfig();
         wallet = new Wallet(config);
         wallet.unlock(pwd);
-        KeyPair key = KeyPair.create(SampleKeys.SRIVATE_KEY, Sign.CURVE, Sign.CURVE_NAME);
+        ECKeyPair key = ECKeyPair.fromPrivateKey(SampleKeys.SRIVATE_KEY);
         wallet.setAccounts(Collections.singletonList(key));
         wallet.flush();
         wallet.lock();
@@ -118,8 +117,8 @@ public class TaskTest {
         // send to pool
         Task newTask = new Task();
         XdagField[] task = new XdagField[2];
-        MutableBytes preHash = MutableBytes.wrap(XdagRandomUtils.nextNewBytes(32));
-        MutableBytes taskSeed = MutableBytes.wrap(XdagRandomUtils.nextNewBytes(32));
+        MutableBytes preHash = MutableBytes.wrap(CryptoProvider.nextBytes(32));
+        MutableBytes taskSeed = MutableBytes.wrap(CryptoProvider.nextBytes(32));
         task[0] = new XdagField(preHash);
         task[0].setSum(1);
         task[0].setType(XdagField.FieldType.XDAG_FIELD_HEAD);
@@ -140,7 +139,7 @@ public class TaskTest {
         assertEquals(jsonObject.getAsJsonObject("msgContent").getAsJsonObject("task").get("taskSeed").getAsString(),
                 taskSeed.toUnprefixedHexString());
         assertEquals(jsonObject.getAsJsonObject("msgContent").get("taskTime").getAsLong(), currentTime);
-        assertEquals(jsonObject.getAsJsonObject("msgContent").get("taskIndex").getAsInt(), 1);
+        assertEquals(1, jsonObject.getAsJsonObject("msgContent").get("taskIndex").getAsInt());
         assertNull(jsonObject.getAsJsonObject("msgContent").get("digest"));
         assertEquals(1, jsonObject.get("msgType").getAsInt());
     }
@@ -168,9 +167,7 @@ public class TaskTest {
 
         Bytes randomBytes = Bytes.random(12);
         wallet.unlock("password");
-        transactionInfoSender.setShare(Bytes32.wrap(BytesUtils.merge(
-                hash2byte(keyPair2Hash(wallet.getDefKey())
-                ), randomBytes.toArray())));
+        transactionInfoSender.setShare(Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())), randomBytes.toArray())));
         transactionInfoSender.setFee(MIN_GAS.toDecimal(9, XDAG).toPlainString());
         XAmount amount = XAmount.of(64, XDAG);
         XAmount fundAmount = amount.multiply(div(fundRation, 100, 6));
@@ -182,9 +179,7 @@ public class TaskTest {
         JsonObject jsonObject = JsonParser.parseString(transactionInfoSender.toJsonString()).getAsJsonObject();
         assertEquals(jsonObject.get("txBlock").getAsString(), txHash.toUnprefixedHexString());
         assertEquals(jsonObject.get("preHash").getAsString(), preHash.toUnprefixedHexString());
-        assertEquals(jsonObject.get("share").getAsString(), Bytes32.wrap(BytesUtils.merge(
-                hash2byte(keyPair2Hash(wallet.getDefKey())
-                ), randomBytes.toArray())).toUnprefixedHexString());
+        assertEquals(jsonObject.get("share").getAsString(), Bytes32.wrap(BytesUtils.merge(hash2byte(keyPair2Hash(wallet.getDefKey())), randomBytes.toArray())).toUnprefixedHexString());
         assertEquals(jsonObject.get("amount").getAsString(), amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9,
                 XDAG).toPlainString());
         assertEquals(jsonObject.get("fee").getAsString(), MIN_GAS.toDecimal(9, XDAG).toPlainString());
@@ -200,7 +195,7 @@ public class TaskTest {
         int startIndex = (int) mainBlockTime >> 16 & awardEpoch;
         // 65536 (2^16) is the xdag time interval for generating the main block
         for (int i = 0; i < 10000000; ) {
-            assertEquals((((mainBlockTime + 65536L * i)) >> 16 & awardEpoch), startIndex);
+            assertEquals((((mainBlockTime + 65536L * i) >> 16 & awardEpoch)), startIndex);
             i += 16;
         }
     }
@@ -217,9 +212,9 @@ public class TaskTest {
         transactionInfoSender.setAmount(amount.subtract(MIN_GAS).subtract(fundAmount).toDecimal(9, XDAG).toPlainString());
         transactionInfoSender.setDonate(fundAmount.toDecimal(9, XDAG).toPlainString());
         for (int i = 0; i < 16; i++) {
-            Bytes32 preHash = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
-            Bytes32 txBlock = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
-            Bytes32 share = Bytes32.wrap(XdagRandomUtils.nextNewBytes(32));
+            Bytes32 preHash = Bytes32.wrap(CryptoProvider.nextBytes(32));
+            Bytes32 txBlock = Bytes32.wrap(CryptoProvider.nextBytes(32));
+            Bytes32 share = Bytes32.wrap(CryptoProvider.nextBytes(32));
             transactionInfoSender.setShare(share);
             transactionInfoSender.setTxBlock(txBlock);
             transactionInfoSender.setPreHash(preHash);
@@ -249,10 +244,10 @@ public class TaskTest {
                 "\"msgContent\":{\"share\":\"d5e79bae5fe5c7d7b7b8d4f4404c517b46fb1f7400000011a215bcbc071e0400\"," +
                 "\"hash\":\"f9ab3eb63317e36ae0c0eec512d47001b392e0330f46472ad9da6cf03b546f92\",\"taskIndex\":15}}\n";
         JsonObject shareJson = JsonParser.parseString(shareInfo).getAsJsonObject();
-        assertEquals(shareJson.get("msgType").getAsInt(), 2);
-        assertEquals(shareJson.getAsJsonObject("msgContent").get("share").getAsString(),
-                "d5e79bae5fe5c7d7b7b8d4f4404c517b46fb1f7400000011a215bcbc071e0400");
-        assertEquals(shareJson.getAsJsonObject("msgContent").get("taskIndex").getAsLong(), 15);
+        assertEquals(2, shareJson.get("msgType").getAsInt());
+        assertEquals("d5e79bae5fe5c7d7b7b8d4f4404c517b46fb1f7400000011a215bcbc071e0400",
+            shareJson.getAsJsonObject("msgContent").get("share").getAsString());
+        assertEquals(15, shareJson.getAsJsonObject("msgContent").get("taskIndex").getAsLong());
 
     }
 }

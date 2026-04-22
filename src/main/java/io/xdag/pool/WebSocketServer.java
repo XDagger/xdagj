@@ -25,7 +25,7 @@ package io.xdag.pool;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -47,8 +47,8 @@ public class WebSocketServer extends AbstractXdagLifecycle {
     private final PoolHandShakeHandler poolHandShakeHandler;
 
     public WebSocketServer(Kernel kernel, List<String> poolWhiteIPList, int port) {
-        this.bossGroup = new NioEventLoopGroup();
-        this.workerGroup = new NioEventLoopGroup();
+        this.bossGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
+        this.workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         this.poolHandShakeHandler = new PoolHandShakeHandler(kernel, poolWhiteIPList, port);
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)

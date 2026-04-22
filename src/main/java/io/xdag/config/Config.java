@@ -152,4 +152,6 @@ public interface Config {
      */
     FundSpec getFundSpec();
 
+    String getNodeTag();
+
 }

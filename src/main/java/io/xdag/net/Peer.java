@@ -62,6 +62,10 @@ public class Peer {
     @Setter
     private long latency;
 
+    private final boolean isGenerateBlock;
+
+    private final String nodeTag;
+
     /**
      * Creates a new Peer instance
      *
@@ -74,8 +78,18 @@ public class Peer {
      * @param capabilities Supported capabilities
      * @param latestBlockNumber Latest known block number
      */
-    public Peer(Network network, short networkVersion, String peerId, String ip, int port, String clientId,
-            String[] capabilities, long latestBlockNumber) {
+    public Peer(
+            Network network,
+            short networkVersion,
+            String peerId,
+            String ip,
+            int port,
+            String clientId,
+            String[] capabilities,
+            long latestBlockNumber,
+            boolean isGenerateBlock,
+            String nodeTag
+    ) {
         this.network = network;
         this.ip = ip;
         this.port = port;
@@ -84,6 +98,8 @@ public class Peer {
         this.clientId = clientId;
         this.capabilities = capabilities;
         this.latestBlockNumber = latestBlockNumber;
+        this.isGenerateBlock = isGenerateBlock;
+        this.nodeTag = nodeTag;
     }
 
     /**
@@ -91,6 +107,7 @@ public class Peer {
      */
     @Override
     public String toString() {
-        return getPeerId() + "@" + ip + ":" + port;
+        return getPeerId() + "@" + ip + ":" + port + ", NodeTag = " + this.nodeTag + ", GenerateBlock = " +
+                this.isGenerateBlock;
     }
 }

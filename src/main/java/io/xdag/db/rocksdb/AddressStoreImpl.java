@@ -130,4 +130,68 @@ public class AddressStoreImpl implements AddressStore {
         UInt64 u64V = balance.toXAmount();
         addressSource.put(address, u64V.toBytes().toArray());
     }
+
+    @Override
+    public void snapshotTxQuantity(byte[] address, UInt64 txQuantity) {
+        addressSource.put(address, txQuantity.toBytes().toArray());
+    }
+
+    @Override
+    public void snapshotExeTxNonceNum(byte[] address, UInt64 exeTxNonceNum) {
+        addressSource.put(address, exeTxNonceNum.toBytes().toArray());
+    }
+
+    @Override
+    public UInt64 getTxQuantity(byte[] address) {
+        byte[] key = BytesUtils.merge(CURRENT_TRANSACTION_QUANTITY, address);
+        byte[] txQuantity = addressSource.get(key);
+
+        if (txQuantity == null) {
+            return UInt64.ZERO;
+        } else {
+            return UInt64.fromBytes(Bytes.wrap(txQuantity));
+        }
+    }
+
+    @Override
+    public void updateTxQuantity(byte[] address, UInt64 newTxQuantity) {
+        byte[] key = BytesUtils.merge(CURRENT_TRANSACTION_QUANTITY, address);
+        addressSource.put(key,newTxQuantity.toBytes().toArray());
+    }
+
+    @Override
+    public void updateTxQuantity(byte[] address, UInt64 currentTxNonce, UInt64 currentExeNonce) {
+        UInt64 txNonce = currentTxNonce.toLong() >= currentExeNonce.toLong() ? currentTxNonce : currentExeNonce;
+        byte[] key = BytesUtils.merge(CURRENT_TRANSACTION_QUANTITY, address);
+        addressSource.put(key,txNonce.toBytes().toArray());
+    }
+
+    @Override
+    public UInt64 getExecutedNonceNum(byte[] address) {
+        byte[] key = BytesUtils.merge(EXECUTED_NONCE_NUM, address);
+        byte[] processedTxNonce = addressSource.get(key);
+        if(processedTxNonce == null){
+            addressSource.put(key,UInt64.ZERO.toBytes().toArray());
+            return UInt64.ZERO;
+        } else {
+            return UInt64.fromBytes(Bytes.wrap(processedTxNonce));
+        }
+    }
+
+    @Override
+    public void updateExcutedNonceNum(byte[] address, boolean addOrSubstract) {
+        byte[] key = BytesUtils.merge(EXECUTED_NONCE_NUM, address);
+        UInt64 before = getExecutedNonceNum(address);
+        UInt64 now;
+        if (addOrSubstract) {
+            now = before.add(UInt64.ONE);
+        }else {
+            if (before.compareTo(UInt64.ZERO) == 0) {
+                now = UInt64.ZERO;
+            }else {
+                now = before.subtract(UInt64.ONE);
+            }
+        }
+        addressSource.put(key,now.toBytes().toArray());
+    }
 }

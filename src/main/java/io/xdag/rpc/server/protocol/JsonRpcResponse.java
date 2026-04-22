@@ -25,7 +25,6 @@ package io.xdag.rpc.server.protocol;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.xdag.rpc.error.JsonRpcError;
 import lombok.Getter;
 
 @Getter
@@ -34,38 +33,17 @@ public class JsonRpcResponse {
     // Getters and Setters
     @JsonProperty("jsonrpc")
     private String jsonrpc = "2.0";
+
+    @JsonProperty("id")
+    private int id;
     
     @JsonProperty("result")
     private Object result;
-    
-    @JsonProperty("error")
-    private JsonRpcError error;
-    
-    @JsonProperty("id")
-    private String id;
 
-    public JsonRpcResponse(String id, Object result) {
-        this(id, result, null);
-    }
 
-    public JsonRpcResponse(String id, Object result, JsonRpcError error) {
+    public JsonRpcResponse(int id, Object result) {
         this.id = id;
-        this.result = error == null ? result : null;
-        this.error = error;
-    }
-
-    /**
-     * Creates an error response
-     * @param id the request id
-     * @param error the error object
-     * @return a new JsonRpcResponse with the error
-     * @throws IllegalArgumentException if error is null
-     */
-    public static JsonRpcResponse error(String id, JsonRpcError error) {
-        if (error == null) {
-            throw new IllegalArgumentException("Error cannot be null");
-        }
-        return new JsonRpcResponse(id, null, error);
+        this.result = result;
     }
 
     /**
@@ -74,8 +52,8 @@ public class JsonRpcResponse {
      * @param result the result object
      * @return a new JsonRpcResponse with the result
      */
-    public static JsonRpcResponse success(String id, Object result) {
-        return new JsonRpcResponse(id, result, null);
+    public static JsonRpcResponse success(int id, Object result) {
+        return new JsonRpcResponse(id, result);
     }
 
     /**
@@ -84,7 +62,7 @@ public class JsonRpcResponse {
      * @return a new JsonRpcResponse without id
      */
     public static JsonRpcResponse notification(Object result) {
-        return new JsonRpcResponse(null, result, null);
+        return new JsonRpcResponse(1, result);
     }
 
 }

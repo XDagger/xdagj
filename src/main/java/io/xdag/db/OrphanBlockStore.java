@@ -23,11 +23,13 @@
  */
 package io.xdag.db;
 
+import io.xdag.core.XAmount;
 import io.xdag.core.XdagLifecycle;
 import io.xdag.core.Address;
 import io.xdag.core.Block;
 import java.util.List;
 
+import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 
 public interface OrphanBlockStore extends XdagLifecycle {
@@ -40,11 +42,13 @@ public interface OrphanBlockStore extends XdagLifecycle {
 
     void reset();
 
-    List<Address> getOrphan(long num, long[] sendTime);
+    List<Address> getOrphan(long num, long[] sendTime, boolean isMain);
 
-    void deleteByHash(byte[] hashlow);
+    void deleteByKey(byte[] hashlow, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address);
 
-    void addOrphan(Block block);
+    void deleteFromQueue(Block block, boolean isTxBlock , UInt64 nonce, XAmount fee, byte[] address);
+
+    void addOrphan(Block block, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address);
 
     long getOrphanSize();
 

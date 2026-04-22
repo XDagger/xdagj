@@ -21,16 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package io.xdag.crypto;
 
-public class WalletTest {
-//    public static void main(String[] args) throws Exception {
-//        Native.init();
-//        if (Native.dnet_crypt_init() < 0) {
-//            throw new Exception("dnet crypt init failed");
-//        }
-//        byte[] array = new byte[8];
-//        byte[] random = Native.generate_random_bytes(array, 8);
-//        System.out.println(Hex.toHexString(random));
-//    }
+package io.xdag.consensus;
+
+import io.xdag.crypto.randomx.RandomXTemplate;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Represents the memory state for RandomX, holding 
+ * relevant parameters for the computation.
+ */
+@Getter
+@Setter
+public class RandomXMemory {
+
+    protected byte[] seed; // The seed used for RandomX
+    protected long seedHeight; // The height at which the seed was created
+    protected long seedTime; // The time when the seed was created
+    protected long switchTime; // The time when the algorithm switched
+    protected int isSwitched; // Flag to indicate if the algorithm has switched
+
+    protected RandomXTemplate poolTemplate; // Template for the pool
+    protected RandomXTemplate blockTemplate; // Template for the block
+
+    public RandomXMemory() {
+        this.switchTime = -1; // Initialize switchTime to -1 indicating no switch
+        this.isSwitched = -1; // Initialize isSwitched to -1 indicating not switched
+    }
 }

@@ -29,9 +29,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.epoll.EpollIoHandler;
+import io.netty.channel.kqueue.KQueueIoHandler;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.NettyRuntime;
 import io.xdag.Kernel;
@@ -66,14 +67,17 @@ public class PeerServer extends AbstractXdagLifecycle {
         try {
             // Choose appropriate EventLoopGroup implementation based on OS
             if(SystemUtils.IS_OS_LINUX) {
-                bossGroup = new EpollEventLoopGroup(1); // Set boss thread count to 1
-                workerGroup = new EpollEventLoopGroup(workerThreadPoolSize);
+                //bossGroup = new EpollEventLoopGroup(1); // Set boss thread count to 1
+                bossGroup = new MultiThreadIoEventLoopGroup(1, EpollIoHandler.newFactory());
+                workerGroup = new MultiThreadIoEventLoopGroup(workerThreadPoolSize, EpollIoHandler.newFactory());
+
+
             } else if(SystemUtils.IS_OS_MAC) {
-                bossGroup = new KQueueEventLoopGroup(1); // Set boss thread count to 1
-                workerGroup = new KQueueEventLoopGroup(workerThreadPoolSize);
+                bossGroup = new MultiThreadIoEventLoopGroup(1, KQueueIoHandler.newFactory()); // Set boss thread count to 1
+                workerGroup = new MultiThreadIoEventLoopGroup(workerThreadPoolSize, KQueueIoHandler.newFactory());
             } else {
-                bossGroup = new NioEventLoopGroup(1); // Set boss thread count to 1
-                workerGroup = new NioEventLoopGroup(workerThreadPoolSize);
+                bossGroup = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory()); // Set boss thread count to 1
+                workerGroup = new MultiThreadIoEventLoopGroup(workerThreadPoolSize, NioIoHandler.newFactory());
             }
 
             ServerBootstrap b = NettyUtils.nativeEventLoopGroup(bossGroup, workerGroup);

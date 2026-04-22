@@ -22,14 +22,12 @@
  * THE SOFTWARE.
  */
 package io.xdag.utils;
-
-import io.xdag.crypto.Keys;
-import io.xdag.utils.exception.AddressFormatException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.keys.AddressUtils;
+import io.xdag.crypto.exception.AddressFormatException;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes32;
-import org.hyperledger.besu.crypto.KeyPair;
+import io.xdag.crypto.keys.ECKeyPair;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,15 +37,15 @@ public class PubkeyAddressUtilsTest {
 
     @Test
     public void pulkeyAddressTest()
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        KeyPair key = Keys.createEcKeyPair();
-        byte[] hash160 = Keys.toBytesAddress(key);
-        String base58 = WalletUtils.toBase58(hash160);
-        assertArrayEquals(WalletUtils.fromBase58(base58), hash160);
+        throws AddressFormatException {
+        ECKeyPair key = ECKeyPair.generate();
+        Bytes hash160 = AddressUtils.toBytesAddress(key);
+        String base58 = Base58.encodeCheck(hash160);
+        assertEquals(WalletUtils.fromBase58(base58), hash160);
     }
 
     @Test(expected = AddressFormatException.class)
-    public void testAddressFormatException() {
+    public void testAddressFormatException() throws AddressFormatException {
         //the correct base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C"
         String base58 = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2a";
         WalletUtils.fromBase58(base58);
@@ -60,11 +58,11 @@ public class PubkeyAddressUtilsTest {
     }
 
     @Test
-    public void testToByte32(){
+    public void testToByte32() throws AddressFormatException {
         String addressStr = "7pWm5FZaNVV61wb4vQapqVixPaLC7Dh2C";
-        byte[] addressbyte = WalletUtils.fromBase58(addressStr);
+        byte[] addressbyte = WalletUtils.fromBase58(addressStr).toArray();
         MutableBytes32 address= BytesUtils.arrayToByte32(addressbyte);
-        String res = WalletUtils.toBase58(BytesUtils.byte32ToArray(address));
+        String res = Base58.encodeCheck(BytesUtils.byte32ToArray(address));
         Assert.assertEquals(addressStr, res);
     }
 }

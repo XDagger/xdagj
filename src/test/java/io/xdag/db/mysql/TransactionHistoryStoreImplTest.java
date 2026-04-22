@@ -27,14 +27,14 @@ import io.xdag.core.Address;
 import io.xdag.core.TxHistory;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
-import io.xdag.crypto.Sign;
+import io.xdag.crypto.encoding.Base58;
 import io.xdag.db.TransactionHistoryStore;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.DruidUtils;
 import io.xdag.utils.XdagTime;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SecureRandomProvider;
+import io.xdag.crypto.keys.PrivateKey;
+import java.security.SecureRandom;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,7 +47,6 @@ import java.util.List;
 
 import static io.xdag.utils.BasicUtils.hash2Address;
 import static io.xdag.utils.BasicUtils.hash2byte;
-import static io.xdag.utils.WalletUtils.toBase58;
 import static org.junit.Assert.*;
 
 public class TransactionHistoryStoreImplTest {
@@ -68,13 +67,13 @@ public class TransactionHistoryStoreImplTest {
                 KEY `faddress_index` (`faddress`)
                 )
             """;
-    long txPageSizeLimit = SecureRandomProvider.publicSecureRandom().nextLong();
+    long txPageSizeLimit = new SecureRandom().nextLong();
     private final TransactionHistoryStore txHistoryStore = new TransactionHistoryStoreImpl(txPageSizeLimit);
 
     BigInteger private_1 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aaf4", 16);
     BigInteger private_2 = new BigInteger("c85ef7d79691fe79573b1a7064c19c1a9819ebdbd1faaab1a8ec92344438aa66", 16);
-    SECPPrivateKey secretkey_1 = SECPPrivateKey.create(private_1, Sign.CURVE_NAME);
-    SECPPrivateKey secretkey_2 = SECPPrivateKey.create(private_2, Sign.CURVE_NAME);
+    PrivateKey secretkey_1 = PrivateKey.fromBigInteger(private_1);
+    PrivateKey secretkey_2 = PrivateKey.fromBigInteger(private_2);
     @BeforeClass
     public static void setUp() throws SQLException {
         Statement stmt = null;
@@ -98,19 +97,19 @@ public class TransactionHistoryStoreImplTest {
         String remark = "xdagj_test";
         String hash = BasicUtils.hash2Address(Bytes32.ZERO);
         TxHistory txHistory = new TxHistory();
-        Address input = new Address(secretkey_1.getEncodedBytes(), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
+        Address input = new Address(secretkey_1.toBytes(), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
         txHistory.setAddress(input);
         txHistory.setHash(hash);
         txHistory.setRemark(remark);
         txHistory.setTimestamp(XdagTime.msToXdagtimestamp(timestamp));
         assertTrue(txHistoryStore.saveTxHistory(txHistory));
 
-        String addr = input.getIsAddress()?toBase58(hash2byte(input.getAddress())):hash2Address(input.getAddress());
+        String addr = input.getIsAddress()? Base58.encodeCheck(hash2byte(input.getAddress())):hash2Address(input.getAddress());
         List<TxHistory> txHistoryList = txHistoryStore.listTxHistoryByAddress(addr, 1);
         assertNotNull(txHistoryList);
         assertEquals(1, txHistoryList.size());
 
-        TxHistory resTxHistory = txHistoryList.get(0);
+        TxHistory resTxHistory = txHistoryList.getFirst();
         int count = txHistoryStore.getTxHistoryCount(addr);
         assertEquals(1, count);
         assertEquals(remark, resTxHistory.getRemark());
@@ -120,17 +119,17 @@ public class TransactionHistoryStoreImplTest {
         long timestamp1 = System.currentTimeMillis();
         String hash1 = BasicUtils.hash2Address(Bytes32.ZERO);
         TxHistory txHistory1 = new TxHistory();
-        Address input1 = new Address(secretkey_2.getEncodedBytes(), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
+        Address input1 = new Address(Bytes32.wrap(secretkey_2.toBytes()), XdagField.FieldType.XDAG_FIELD_INPUT, XAmount.ZERO,true);
         txHistory1.setAddress(input1);
         txHistory1.setHash(hash1);
         txHistory1.setRemark(null);
         txHistory1.setTimestamp(XdagTime.msToXdagtimestamp(timestamp1));
         assertTrue(txHistoryStore.saveTxHistory(txHistory1));
 
-        String addr1 = input.getIsAddress()?toBase58(hash2byte(input.getAddress())):hash2Address(input.getAddress());
+        String addr1 = input.getIsAddress()?Base58.encodeCheck(hash2byte(input.getAddress())):hash2Address(input.getAddress());
         List<TxHistory> txHistoryList1 = txHistoryStore.listTxHistoryByAddress(addr1, 1);
-        TxHistory resTxHistory1 = txHistoryList1.get(0);
-//        assertEquals("", resTxHistory1.getRemark());
+        TxHistory resTxHistory1 = txHistoryList1.getFirst();
+//        assertEquals("", resTxHistory1.getRemark();
 
     }
 

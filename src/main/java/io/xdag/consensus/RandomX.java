@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package io.xdag.crypto;
+package io.xdag.consensus;
 
 import static io.xdag.config.RandomXConstants.RANDOMX_FORK_HEIGHT;
 import static io.xdag.config.RandomXConstants.RANDOMX_TESTNET_FORK_HEIGHT;
@@ -37,6 +37,7 @@ import java.util.Set;
 
 import io.xdag.core.AbstractXdagLifecycle;
 import io.xdag.crypto.randomx.*;
+import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.Arrays;
@@ -47,13 +48,13 @@ import io.xdag.config.MainnetConfig;
 import io.xdag.core.Block;
 import io.xdag.core.Blockchain;
 import io.xdag.utils.XdagTime;
-import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-@Data
+@Getter
+@Setter
 public class RandomX extends AbstractXdagLifecycle {
     protected final RandomXMemory[] globalMemory = new RandomXMemory[2];
     protected final Config config;
@@ -62,16 +63,11 @@ public class RandomX extends AbstractXdagLifecycle {
     protected Set<RandomXFlag> flagSet;
     protected long randomXForkSeedHeight;
     protected long randomXForkLag;
-
     // Default to maximum value
     protected long randomXForkTime = Long.MAX_VALUE;
-
     protected long randomXPoolMemIndex;
     protected long randomXHashEpochIndex;
-
-    @Setter
     protected Blockchain blockchain;
-
     protected boolean isFullMem;
     protected boolean isLargePages;
 
@@ -82,7 +78,7 @@ public class RandomX extends AbstractXdagLifecycle {
         }
         this.mineType = XDAG_RANDOMX;
 
-        flagSet = RandomXUtils.getFlagsSet();
+        flagSet = RandomXUtils.getRecommendedFlags();
         if (config.getRandomxSpec().getRandomxFlag()) {
             flagSet.add(RandomXFlag.LARGE_PAGES);
             flagSet.add(RandomXFlag.FULL_MEM);
@@ -220,8 +216,35 @@ public class RandomX extends AbstractXdagLifecycle {
     public void randomXPoolUpdateSeed(long memIndex) {
         RandomXMemory rx_memory = globalMemory[(int) (memIndex) & 1];
         // TODO: changeKey should re-initialize dataset
-        rx_memory.getPoolTemplate().changeKey(rx_memory.seed);
-        rx_memory.getBlockTemplate().changeKey(rx_memory.seed);
+        if (rx_memory.getPoolTemplate() == null) {
+            RandomXCache cache = new RandomXCache(flagSet);
+            cache.init(rx_memory.seed);
+            RandomXTemplate template = RandomXTemplate.builder()
+                    .cache(cache)
+                    .miningMode(config.getRandomxSpec().getRandomxFlag())
+                    .flags(flagSet)
+                    .build();
+            template.init();
+            rx_memory.setPoolTemplate(template);
+            rx_memory.getPoolTemplate().changeKey(rx_memory.seed);
+        } else {
+            rx_memory.getPoolTemplate().changeKey(rx_memory.seed);
+        }
+
+        if (rx_memory.getBlockTemplate() == null) {
+            RandomXCache cache = new RandomXCache(flagSet);
+            cache.init(rx_memory.seed);
+            RandomXTemplate template = RandomXTemplate.builder()
+                    .cache(cache)
+                    .miningMode(config.getRandomxSpec().getRandomxFlag())
+                    .flags(flagSet)
+                    .build();
+            template.init();
+            rx_memory.setBlockTemplate(template);
+            rx_memory.getBlockTemplate().changeKey(rx_memory.seed);
+        } else {
+            rx_memory.getBlockTemplate().changeKey(rx_memory.seed);
+        }
     }
 
     public void randomXLoadingSnapshot(byte[] preseed, long forkTime) {

@@ -26,9 +26,9 @@ package io.xdag.db;
 import io.xdag.core.BlockInfo;
 import io.xdag.core.PreBlockInfo;
 import io.xdag.core.XAmount;
+import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.db.rocksdb.RocksdbKVSource;
 import java.util.List;
-import org.hyperledger.besu.crypto.KeyPair;
 import org.rocksdb.RocksIterator;
 
 public interface SnapshotStore {
@@ -39,9 +39,9 @@ public interface SnapshotStore {
 
     void makeSnapshot(RocksdbKVSource blockSource,RocksdbKVSource indexSource,boolean b);
 
-    void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime);
+    void saveSnapshotToIndex(BlockStore blockStore, TransactionHistoryStore txHistoryStore, List<ECKeyPair> keys,long snapshotTime);
 
-    void saveAddress(BlockStore blockStore,AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<KeyPair> keys,long snapshotTime);
+    void saveAddress(BlockStore blockStore,AddressStore addressStore, TransactionHistoryStore txHistoryStore, List<ECKeyPair> keys,long snapshotTime);
 
     void save(RocksIterator iter, BlockInfo blockInfo);
 

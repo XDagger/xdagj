@@ -198,6 +198,13 @@ public class XAmount implements Comparable<XAmount> {
         return XAmount.of(b1.multiply(b2).longValue());
     }
 
+    public XAmount divide(long a) throws ArithmeticException {
+        if (a == 0) {
+            throw new ArithmeticException("Division by zero");
+        }
+        return new XAmount(this.nano / a);
+    }
+
     /**
      * Static helper for adding two amounts
      */

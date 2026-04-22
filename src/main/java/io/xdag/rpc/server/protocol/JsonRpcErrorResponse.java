@@ -21,32 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+package io.xdag.rpc.server.protocol;
 
-package io.xdag.crypto;
-
-import io.xdag.crypto.randomx.RandomXTemplate;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.xdag.rpc.error.JsonRpcError;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
- * Represents the memory state for RandomX, holding 
- * relevant parameters for the computation.
+ *
  */
 @Getter
-@Setter
-public class RandomXMemory {
+public class JsonRpcErrorResponse {
+    @JsonProperty("jsonrpc")
+    private String jsonrpc = "2.0";
 
-    protected byte[] seed; // The seed used for RandomX
-    protected long seedHeight; // The height at which the seed was created
-    protected long seedTime; // The time when the seed was created
-    protected long switchTime; // The time when the algorithm switched
-    protected int isSwitched; // Flag to indicate if the algorithm has switched
+    @JsonProperty("id")
+    private int id;
 
-    protected RandomXTemplate poolTemplate; // Template for the pool
-    protected RandomXTemplate blockTemplate; // Template for the block
+    @JsonProperty("error")
+    private JsonRpcError error;
 
-    public RandomXMemory() {
-        this.switchTime = -1; // Initialize switchTime to -1 indicating no switch
-        this.isSwitched = -1; // Initialize isSwitched to -1 indicating not switched
+    public JsonRpcErrorResponse(int id, JsonRpcError error) {
+        this.id = id;
+        this.error = error;
     }
 }

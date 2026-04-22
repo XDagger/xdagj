@@ -23,9 +23,8 @@
  */
 package io.xdag.net.message.p2p;
 
+import io.xdag.crypto.keys.ECKeyPair;
 import java.util.Arrays;
-
-import org.hyperledger.besu.crypto.KeyPair;
 
 import io.xdag.Network;
 import io.xdag.net.message.MessageCode;
@@ -33,11 +32,21 @@ import io.xdag.utils.BytesUtils;
 
 public class HelloMessage extends HandshakeMessage {
 
-    public HelloMessage(Network network, short networkVersion, String peerId, int port,
-            String clientId, String[] capabilities, long latestBlockNumber,
-            byte[] secret, KeyPair coinbase) {
+    public HelloMessage(
+            Network network,
+            short networkVersion,
+            String peerId,
+            int port,
+            String clientId,
+            String[] capabilities,
+            long latestBlockNumber,
+            byte[] secret,
+            ECKeyPair coinbase,
+            boolean isGenerateBlock,
+            String nodeTag
+    ) {
         super(MessageCode.HANDSHAKE_HELLO, WorldMessage.class, network, networkVersion, peerId, port, clientId,
-                capabilities, latestBlockNumber, secret, coinbase);
+                capabilities, latestBlockNumber, secret, coinbase, isGenerateBlock, nodeTag);
     }
 
     public HelloMessage(byte[] encoded) {
@@ -56,6 +65,8 @@ public class HelloMessage extends HandshakeMessage {
                 ", latestBlockNumber=" + latestBlockNumber +
                 ", secret=" + BytesUtils.toHexString(secret) +
                 ", timestamp=" + timestamp +
+                ", generateBlock=" + isGenerateBlock +
+                ", nodeTag=" + nodeTag +
                 '}';
     }
 }

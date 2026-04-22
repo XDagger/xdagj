@@ -50,13 +50,12 @@ public class CorsHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (!(msg instanceof HttpRequest)) {
+        if (!(msg instanceof HttpRequest request)) {
             ctx.fireChannelRead(msg);
             return;
         }
 
-        HttpRequest request = (HttpRequest) msg;
-        String origin = request.headers().get(HttpHeaderNames.ORIGIN);
+      String origin = request.headers().get(HttpHeaderNames.ORIGIN);
 
         if (request.method() == HttpMethod.OPTIONS) {
             handlePreflightRequest(ctx, request);

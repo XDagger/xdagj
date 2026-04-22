@@ -25,11 +25,9 @@
 package io.xdag.rpc.api;
 
 import io.xdag.core.XdagLifecycle;
-import io.xdag.rpc.model.response.BlockResponse;
+import io.xdag.crypto.exception.AddressFormatException;
+import io.xdag.rpc.model.response.*;
 import io.xdag.rpc.model.request.TransactionRequest;
-import io.xdag.rpc.model.response.NetConnResponse;
-import io.xdag.rpc.model.response.ProcessResponse;
-import io.xdag.rpc.model.response.XdagStatusResponse;
 
 import java.util.List;
 
@@ -38,6 +36,15 @@ import java.util.List;
  * It extends XdagLifecycle to manage the lifecycle of the API service.
  */
 public interface XdagApi extends XdagLifecycle {
+
+    BlockResponse xdag_getTransactionByHash(String hash, int page);
+
+    String xdag_getBalanceByNumber(String bnOrId);
+
+    ConfigResponse xdag_poolConfig();
+
+
+    String xdag_protocolVersion();
 
     /**
      * Get block information by its hash.
@@ -100,6 +107,8 @@ public interface XdagApi extends XdagLifecycle {
      */
     BlockResponse xdag_getBlockByNumber(String bnOrId, int page, int pageSize);
 
+    List<BlockResponse> xdag_getBlocksByNumber(String bnOrId);
+
     /**
      * Get the current block number of the XDAG blockchain.
      *
@@ -120,7 +129,22 @@ public interface XdagApi extends XdagLifecycle {
      * @param address XDAG address
      * @return Balance as string
      */
-    String xdag_getBalance(String address);
+    String xdag_getBalance(String address) throws AddressFormatException;
+
+    /**
+     * Get the transaction nonce of a specific address.
+     *
+     * @param address XDAG address
+     * @return Transaction nonce as string
+     */
+    String xdag_getTransactionNonce(String address) throws AddressFormatException;
+
+    /**
+     * Get the average fee of transactions packaged in the latest 64 main blocks.
+     *
+     * @return Average fee as string
+     */
+    String xdag_getAverageFee();
 
     /**
      * Get the total balance of the node.
@@ -144,6 +168,24 @@ public interface XdagApi extends XdagLifecycle {
      * @return Transaction process response
      */
     ProcessResponse xdag_personal_sendTransaction(TransactionRequest request, String passphrase);
+
+    /**
+     * Send a transaction with transaction nonce using the personal account.
+     *
+     * @param request Transaction request details
+     * @param passphrase Passphrase for account unlocking
+     * @return Transaction process response
+     */
+    ProcessResponse xdag_personal_sendSafeTransaction(TransactionRequest request, String passphrase);
+
+    /**
+     * Send a transaction with transaction nonce and transaction fee using the personal account.
+     *
+     * @param request Transaction request details
+     * @param passphrase Passphrase for account unlocking
+     * @return Transaction process response
+     */
+    ProcessResponse xdag_personal_sendSafeTransactionWithVariableFee(TransactionRequest request, String passphrase);
 
     /**
      * Get the reward amount for a specific block.
@@ -175,4 +217,6 @@ public interface XdagApi extends XdagLifecycle {
      * @return Network type as string
      */
     String xdag_netType();
+
+    Object xdag_syncing();
 }

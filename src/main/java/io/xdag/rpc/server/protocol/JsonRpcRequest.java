@@ -44,7 +44,7 @@ public class JsonRpcRequest {
     private Object[] params;
     
     @JsonProperty("id")
-    private String id;
+    private int id;
 
     /**
      * Validate the JSON-RPC request

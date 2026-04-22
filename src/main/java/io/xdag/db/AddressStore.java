@@ -33,6 +33,8 @@ public interface AddressStore extends XdagLifecycle {
     byte ADDRESS_SIZE = (byte) 0x10;
     byte AMOUNT_SUM = (byte) 0x20;
     byte ADDRESS = (byte) 0x30;
+    byte CURRENT_TRANSACTION_QUANTITY = (byte) 0x40;
+    byte EXECUTED_NONCE_NUM = (byte) 0x50;
 
     void reset();
 
@@ -56,4 +58,17 @@ public interface AddressStore extends XdagLifecycle {
 
     void snapshotAddress(byte[] address, XAmount balance);
 
+    void snapshotTxQuantity(byte[] address, UInt64 txQuantity);
+
+    void snapshotExeTxNonceNum(byte[] address, UInt64 exeTxNonceNum);
+
+    UInt64 getTxQuantity(byte[] address);
+
+    void updateTxQuantity(byte[] address, UInt64 newTxQuantity);
+
+    void updateTxQuantity(byte[] address, UInt64 currentTxNonce, UInt64 currentExeNonce);
+
+    UInt64 getExecutedNonceNum(byte[] address);
+
+    void updateExcutedNonceNum(byte[] address,boolean addOrSubstract);
 }

@@ -1,0 +1,53 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>distribution</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <!-- Create a base directory inside the zip, e.g., xdagj-${project.version}-distribution/ -->
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>xdagj-${project.version}</baseDirectory>
+
+    <fileSets>
+        <!-- The executable JAR -->
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>/</outputDirectory> <!-- Place it in the base directory of the zip -->
+            <includes>
+                <include>xdagj-${project.version}-executable.jar</include>
+            </includes>
+            <fileMode>0644</fileMode>
+        </fileSet>
+        <!-- Config files from src/main/resources -->
+        <fileSet>
+            <directory>src/main/resources</directory>
+            <outputDirectory>/</outputDirectory> <!-- Place them in the base directory of the zip -->
+            <includes>
+                <include>log4j2.xml</include>
+                <include>xdag-mainnet.conf</include>
+                <include>xdag-testnet.conf</include>
+                <include>xdag-devnet.conf</include>
+                <include>druid.properties</include>
+            </includes>
+            <fileMode>0644</fileMode>
+        </fileSet>
+        <!-- Scripts from target/filtered-scripts -->
+        <fileSet>
+            <directory>${project.build.directory}/filtered-scripts</directory>
+            <outputDirectory>/</outputDirectory> <!-- Place them in the base directory of the zip -->
+            <includes>
+                <include>xdag.bat</include>
+            </includes>
+            <fileMode>0644</fileMode> <!-- Bat file doesn't need execute bit on POSIX -->
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/filtered-scripts</directory>
+            <outputDirectory>/</outputDirectory> <!-- Place them in the base directory of the zip -->
+            <includes>
+                <include>xdag.sh</include>
+            </includes>
+            <fileMode>0755</fileMode> <!-- Shell script needs execute bit -->
+        </fileSet>
+    </fileSets>
+</assembly> 

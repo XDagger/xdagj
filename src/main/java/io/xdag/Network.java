@@ -78,14 +78,6 @@ public enum Network {
         return id;
     }
 
-    /**
-     * Get network label
-     * @return Network label string
-     */
-    public String label() {
-        return label;
-    }
-
     @Override
     public String toString() {
         return label;

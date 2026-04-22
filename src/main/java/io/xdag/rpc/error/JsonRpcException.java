@@ -29,21 +29,17 @@ import lombok.Getter;
 public class JsonRpcException extends RuntimeException {
     private final int code;
     private final String message;
-    private final Object data;
+
 
     public JsonRpcException(int code, String message) {
-        this(code, message, null);
-    }
-
-    public JsonRpcException(int code, String message, Object data) {
         super(message);
         this.code = code;
         this.message = message;
-        this.data = data;
+
     }
 
     public JsonRpcException(JsonRpcError error) {
-        this(error.getCode(), error.getMessage(), error.getData());
+        this(error.getCode(), error.getMessage());
     }
 
     public static JsonRpcException invalidRequest(String message) {

@@ -20,12 +20,12 @@
 ## System environment
 
 ```
-JDK: v17
+JDK: v21
 Maven: v3.9.1
 ```
 
-### JDK 17 Download
-Eclipse Temurin™ 17 Latest Releases(https://adoptium.net/temurin/releases/)
+### JDK 21 Download
+Eclipse Temurin™ 21 Latest Releases(https://adoptium.net/temurin/releases/?version=21)
 
 ### Maven 3.9.1 Download
 Apache Maven 3.9.x Latest Releases(https://maven.apache.org/download.cgi)

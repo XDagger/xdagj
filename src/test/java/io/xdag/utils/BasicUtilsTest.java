@@ -25,6 +25,8 @@
 package io.xdag.utils;
 
 import com.google.common.collect.Lists;
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.exception.AddressFormatException;
 import io.xdag.utils.exception.XdagOverFlowException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -37,7 +39,6 @@ import java.util.List;
 import java.util.Random;
 
 import static io.xdag.utils.BasicUtils.*;
-import static io.xdag.utils.WalletUtils.toBase58;
 import static org.junit.Assert.*;
 
 public class BasicUtilsTest {
@@ -89,7 +90,7 @@ public class BasicUtilsTest {
         String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
         String originhash = "4aa1ab5742feb010a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
         Bytes32 hash1 = Bytes32.fromHexString(originhash);
-        assertEquals(hash2Address(hash1), news);
+        assertEquals(news, hash2Address(hash1));
     }
 
     @Test
@@ -97,23 +98,24 @@ public class BasicUtilsTest {
         String news = "42cLWCMWZDKPZM8WJfpmI7Lbe3p83U2l";
         String originhashlow = "0000000000000000a54ddd7c7a7bdbb22366fa2516cf648f32641623580b67e3";
         Bytes32 hashlow = address2Hash(news);
-        assertEquals(hashlow.toUnprefixedHexString(), originhashlow);
+        assertEquals(originhashlow, hashlow.toUnprefixedHexString());
     }
 
     // hashLow => Base58
     @Test
     public void hash2PubAddress() {
         Bytes32 hash = Bytes32.fromHexString("0x00000000000000001eadb24287735969f08c33d5a410ca4aa2440fbc00000000");
-        assertEquals(toBase58(hash2byte(hash.mutableCopy())), "3oDMPTzmLvvy7mgkpvn1nhPDfW9tghrwB");
+        assertEquals("3oDMPTzmLvvy7mgkpvn1nhPDfW9tghrwB", Base58.encodeCheck(hash2byte(hash.mutableCopy())));
     }
 
     // Base58 => hashLow
     @Test
-    public void pubAddress2Hash() {
+    public void pubAddress2Hash() throws AddressFormatException {
         Bytes ret = Bytes.wrap(WalletUtils.fromBase58("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf"));
         MutableBytes32 res = MutableBytes32.create();
         res.set(8, ret);
-        assertEquals(res.toHexString(), "0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000");
+        assertEquals("0x0000000000000000c7bc5b48517bf2da9e845eacebacf65008e9e76300000000",
+            res.toHexString());
     }
 
     // HexPubAddress => hashLow
@@ -123,7 +125,8 @@ public class BasicUtilsTest {
         Bytes hash = Bytes.fromHexString(hexPubAddress);
         MutableBytes32 hashLow = MutableBytes32.create();
         hashLow.set(8, hash);
-        assertEquals(toBase58(hash2byte(hashLow.mutableCopy())), "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+        assertEquals("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf",
+            Base58.encodeCheck(hash2byte(hashLow.mutableCopy())));
         assertEquals(hashLow, BasicUtils.hexPubAddress2Hashlow("0xc7bc5b48517bf2da9e845eacebacf65008e9e763"));
     }
 
@@ -164,8 +167,8 @@ public class BasicUtilsTest {
         assertEquals(blockHashlow, data);
         MutableBytes32 addressHash = MutableBytes32.create();
         addressHash.set(8, this.data.slice(8, 20));
-        String walletAddress = toBase58(addressHash.slice(8, 20).toArray());
-        assertEquals(walletAddress, "KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf");
+        String walletAddress = Base58.encodeCheck(addressHash.slice(8, 20));
+        assertEquals("KD77RGFihFaqrJQrKK8MJ21hocJeq32Pf", walletAddress);
     }
 
     @Test

@@ -43,13 +43,23 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
             "xdag_blockNumber",
             "xdag_coinbase",
             "xdag_getBalance",
+            "xdag_getTransactionNonce",
+            "xdag_getAverageFee",
             "xdag_getTotalBalance",
             "xdag_getStatus",
             "xdag_personal_sendTransaction",
+            "xdag_personal_sendSafeTransaction",
+            "xdag_personal_sendSafeTransactionWithVariableFee",
             "xdag_sendRawTransaction",
             "xdag_netConnectionList",
             "xdag_netType",
-            "xdag_getRewardByNumber"
+            "xdag_getRewardByNumber",
+            "xdag_syncing",
+            "xdag_protocolVersion",
+            "xdag_getBlocksByNumber",
+            "xdag_getTransactionByHash",
+            "xdag_getBalanceByNumber",
+            "xdag_poolConfig"
     );
 
     private final XdagApi xdagApi;
@@ -67,25 +77,31 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
             return switch (method) {
                 case "xdag_getBlockByHash" -> {
                     validateParams(params, "Missing block hash parameter");
-                    if (params.length == 1) {
-                        yield xdagApi.xdag_getBlockByHash(params[0].toString(), 1);
-                    } else if (params.length == 2) {
-                        validatePageParam(params[1]);
+                    if (params.length == 2) {
+                        if (params[1] == null || params[1].toString().trim().isEmpty()) {
+                            params[1] = "0";
+                        }
                         yield xdagApi.xdag_getBlockByHash(params[0].toString(), Integer.parseInt(params[1].toString()));
                     } else if (params.length == 3) {
-                        validatePageParam(params[1]);
-                        validatePageSizeParam(params[2]);
+                        if (params[1] == null || params[1].toString().trim().isEmpty()) {
+                            params[1] = "0";
+                        }
+                        if (params[2] == null || params[2].toString().trim().isEmpty()) {
+                            params[2] = "0";
+                        }
                         yield xdagApi.xdag_getBlockByHash(params[0].toString(), Integer.parseInt(params[1].toString()), Integer.parseInt(params[2].toString()));
                     } else if (params.length == 4) {
-                        validatePageParam(params[1]);
-                        validateTimeParam(params[2], "Invalid start time");
-                        validateTimeParam(params[3], "Invalid end time");
+                        if (params[1] == null || params[1].toString().trim().isEmpty()) {
+                            params[1] = "0";
+                        }
                         yield xdagApi.xdag_getBlockByHash(params[0].toString(), Integer.parseInt(params[1].toString()), params[2].toString(), params[3].toString());
                     } else if (params.length == 5) {
-                        validatePageParam(params[1]);
-                        validateTimeParam(params[2], "Invalid start time");
-                        validateTimeParam(params[3], "Invalid end time");
-                        validatePageSizeParam(params[4]);
+                        if (params[1] == null || params[1].toString().trim().isEmpty()) {
+                            params[1] = "0";
+                        }
+                        if (params[4] == null || params[4].toString().trim().isEmpty()) {
+                            params[4] = "0";
+                        }
                         yield xdagApi.xdag_getBlockByHash(params[0].toString(), Integer.parseInt(params[1].toString()), params[2].toString(), params[3].toString(), Integer.parseInt(params[4].toString()));
                     } else {
                         throw JsonRpcException.invalidParams("Invalid number of parameters for xdag_getBlockByHash");
@@ -93,11 +109,19 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
                 }
                 case "xdag_getBlockByNumber" -> {
                     validateParams(params, "Missing block number parameter");
-                    if (params.length == 1) {
-                        yield xdagApi.xdag_getBlockByNumber(params[0].toString(), 1);
-                    } else if (params.length == 2) {
-                        validatePageParam(params[1]);
+                    if (params.length == 2) {
+                        if (params[1] == null || params[1].toString().trim().isEmpty()) {
+                            params[1] = "0";
+                        }
                         yield xdagApi.xdag_getBlockByNumber(params[0].toString(), Integer.parseInt(params[1].toString()));
+                    } else if (params.length == 3) {
+                        if (params[1] == null || params[1].toString().trim().isEmpty()) {
+                            params[1] = "0";
+                        }
+                        if (params[2] == null || params[2].toString().trim().isEmpty()) {
+                            params[2] = "0";
+                        }
+                        yield xdagApi.xdag_getBlockByNumber(params[0].toString(), Integer.parseInt(params[1].toString()), Integer.parseInt(params[2].toString()));
                     } else {
                         throw JsonRpcException.invalidParams("Invalid number of parameters for xdag_getBlockByNumber");
                     }
@@ -108,6 +132,11 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
                     validateParams(params, "Missing address parameter");
                     yield xdagApi.xdag_getBalance(params[0].toString());
                 }
+                case "xdag_getTransactionNonce" -> {
+                    validateParams(params, "Missing address parameter");
+                    yield xdagApi.xdag_getTransactionNonce(params[0].toString());
+                }
+                case "xdag_getAverageFee" -> xdagApi.xdag_getAverageFee();
                 case "xdag_getTotalBalance" -> xdagApi.xdag_getTotalBalance();
                 case "xdag_getStatus" -> xdagApi.xdag_getStatus();
                 case "xdag_netConnectionList" -> xdagApi.xdag_netConnectionList();
@@ -126,9 +155,46 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
                         throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
                     }
                     TransactionRequest txRequest = MAPPER.convertValue(params[0], TransactionRequest.class);
-                    validateTransactionRequest(txRequest);
+                    validateTransactionRequest(txRequest, false,false);
                     yield xdagApi.xdag_personal_sendTransaction(txRequest, params[1].toString());
                 }
+                case "xdag_personal_sendSafeTransaction" -> {
+                    validateParams(params, "Missing transaction arguments or passphrase");
+                    if (params.length < 2) {
+                        throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
+                    }
+                    TransactionRequest txRequest = MAPPER.convertValue(params[0], TransactionRequest.class);
+                    validateTransactionRequest(txRequest, true,false);
+                    yield xdagApi.xdag_personal_sendSafeTransaction(txRequest, params[1].toString());
+                }
+                case "xdag_personal_sendSafeTransactionWithVariableFee" -> {
+                    validateParams(params, "Missing transaction arguments or passphrase");
+                    if (params.length < 2) {
+                        throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
+                    }
+                    TransactionRequest txRequest = MAPPER.convertValue(params[0], TransactionRequest.class);
+                    validateTransactionRequest(txRequest, true,true);
+                    yield xdagApi.xdag_personal_sendSafeTransactionWithVariableFee(txRequest, params[1].toString());
+                }
+                case "xdag_syncing" -> xdagApi.xdag_syncing();
+                case "xdag_protocolVersion" -> xdagApi.xdag_protocolVersion();
+                case "xdag_getBlocksByNumber" -> {
+                    validateParams(params, "Missing block number parameter");
+                    yield xdagApi.xdag_getBlocksByNumber(params[0].toString());
+                }
+                case "xdag_getTransactionByHash" -> {
+                    validateParams(params, "Missing transaction arguments or passphrase");
+                    if (params.length < 2) {
+                        throw JsonRpcException.invalidParams("Missing transaction arguments or passphrase");
+                    }
+                    yield xdagApi.xdag_getTransactionByHash(params[0].toString(), Integer.parseInt(params[1].toString()));
+                }
+                case "xdag_getBalanceByNumber" -> {
+                    validateParams(params, "Missing transaction arguments or passphrase");
+                    yield xdagApi.xdag_getBalanceByNumber(params[0].toString());
+                }
+                case "xdag_poolConfig" -> xdagApi.xdag_poolConfig();
+
                 default -> throw JsonRpcException.methodNotFound(method);
             };
         } catch (JsonRpcException e) {
@@ -180,7 +246,7 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
         // Time format validation could be added here if needed
     }
 
-    private void validateTransactionRequest(TransactionRequest request) throws JsonRpcException {
+    private void validateTransactionRequest(TransactionRequest request, Boolean hasTxNonce, Boolean hasVariableFee) throws JsonRpcException {
         if (request == null) {
             throw JsonRpcException.invalidParams("Transaction request cannot be null");
         }
@@ -197,6 +263,12 @@ public class JsonRequestHandler implements JsonRpcRequestHandler {
             }
         } catch (NumberFormatException e) {
             throw JsonRpcException.invalidParams("Invalid transaction value format");
+        }
+        if (hasTxNonce && (request.getNonce() == null || request.getNonce().trim().isEmpty() || !request.getNonce().matches("^[0-9]+$"))) {
+            throw JsonRpcException.invalidParams("Transaction nonce cannot be empty and must be positive number");
+        }
+        if (hasVariableFee && (request.getFee() == null || request.getFee().trim().isEmpty() || !request.getFee().matches("^[0-9]+(\\.[0-9]+)?$"))) {
+            throw JsonRpcException.invalidParams("Transaction fee cannot be empty and must be non negative");
         }
     }
 

@@ -70,16 +70,8 @@ public class JsonRpcError {
     @JsonProperty("message")
     private final String message;
 
-    @JsonProperty("data")
-    private final Object data;
-
     public JsonRpcError(int code, String message) {
-        this(code, message, null);
-    }
-
-    public JsonRpcError(int code, String message, Object data) {
         this.code = code;
         this.message = message;
-        this.data = data;
     }
 }

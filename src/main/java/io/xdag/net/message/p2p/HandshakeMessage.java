@@ -23,23 +23,23 @@
  */
 package io.xdag.net.message.p2p;
 
-import static io.xdag.utils.WalletUtils.toBase58;
+import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
 
+import io.xdag.crypto.encoding.Base58;
+import io.xdag.crypto.hash.HashUtils;
+import io.xdag.crypto.keys.ECKeyPair;
+import io.xdag.crypto.keys.PublicKey;
+import io.xdag.crypto.keys.Signature;
+import io.xdag.crypto.keys.Signer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SECPSignature;
 
 import io.xdag.Network;
 import io.xdag.config.Config;
 import io.xdag.utils.SimpleEncoder;
-import io.xdag.crypto.Hash;
-import io.xdag.crypto.Keys;
-import io.xdag.crypto.Sign;
 import io.xdag.net.Peer;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageCode;
@@ -64,14 +64,27 @@ public abstract class HandshakeMessage extends Message {
 
     protected final byte[] secret;
     protected final long timestamp;
-    protected final SECPSignature signature;
+    protected final Signature signature;
 
-    protected SECPPublicKey publicKey;
+    protected PublicKey publicKey;
+    protected final boolean isGenerateBlock;
+    protected final String nodeTag;
 
-    public HandshakeMessage(MessageCode code, Class<?> responseMessageClass,
-            Network network, short networkVersion, String peerId, int port,
-            String clientId, String[] capabilities, long latestBlockNumber,
-            byte[] secret, KeyPair coinbase) {
+    public HandshakeMessage(
+            MessageCode code,
+            Class<?> responseMessageClass,
+            Network network,
+            short networkVersion,
+            String peerId,
+            int port,
+            String clientId,
+            String[] capabilities,
+            long latestBlockNumber,
+            byte[] secret,
+            ECKeyPair coinbase,
+            boolean isGenerateBlock,
+            String nodeTag
+    ) {
         super(code, responseMessageClass);
 
         this.network = network;
@@ -84,10 +97,12 @@ public abstract class HandshakeMessage extends Message {
         this.secret = secret;
         this.timestamp = System.currentTimeMillis();
         this.publicKey = coinbase.getPublicKey();
+        this.isGenerateBlock = isGenerateBlock;
+        this.nodeTag = nodeTag;
 
         SimpleEncoder enc = encodeBasicInfo();
-        Bytes32 hash = Hash.sha256(Bytes.wrap(enc.toBytes()));
-        this.signature = Sign.SECP256K1.sign(hash, coinbase);
+        Bytes32 hash = HashUtils.sha256(Bytes.wrap(enc.toBytes()));
+        this.signature = Signer.sign(hash, coinbase);
 
         enc.writeBytes(signature.encodedBytes().toArray());
 
@@ -111,7 +126,9 @@ public abstract class HandshakeMessage extends Message {
         this.latestBlockNumber = dec.readLong();
         this.secret = dec.readBytes();
         this.timestamp = dec.readLong();
-        this.signature = Sign.SECP256K1.decodeSignature(Bytes.wrap(dec.readBytes()));
+        this.isGenerateBlock = dec.readBoolean();
+        this.nodeTag = dec.readString();
+        this.signature = Signature.decode(Bytes.wrap(dec.readBytes()));
         this.body = body;
     }
 
@@ -130,15 +147,17 @@ public abstract class HandshakeMessage extends Message {
         enc.writeLong(latestBlockNumber);
         enc.writeBytes(secret);
         enc.writeLong(timestamp);
+        enc.writeBoolean(isGenerateBlock);
+        enc.writeString(nodeTag);
 
         return enc;
     }
 
     public boolean validate(Config config) {
         SimpleEncoder enc = encodeBasicInfo();
-        Bytes32 hash = Hash.sha256(Bytes.wrap(enc.toBytes()));
+        Bytes32 hash = HashUtils.sha256(Bytes.wrap(enc.toBytes()));
         if(publicKey == null && signature !=null) {
-            publicKey = Sign.SECP256K1.recoverPublicKeyFromSignature(hash, signature).get();
+            publicKey = Signer.recoverPublicKey(hash, signature);
         }
         if (network == config.getNodeSpec().getNetwork()
                 && networkVersion == config.getNodeSpec().getNetworkVersion()
@@ -149,9 +168,9 @@ public abstract class HandshakeMessage extends Message {
                 && secret != null && secret.length == InitMessage.SECRET_LENGTH
                 && Math.abs(System.currentTimeMillis() - timestamp) <= config.getNodeSpec().getNetHandshakeExpiry()
                 && signature != null
-                && peerId.equals(toBase58(Keys.toBytesAddress(publicKey)))) {
+                && peerId.equals(Base58.encodeCheck(toBytesAddress(publicKey)))) {
 
-            return Sign.SECP256K1.verify(hash, signature, publicKey);
+            return Signer.verify(hash, signature, publicKey);
         } else {
             return false;
         }
@@ -161,6 +180,7 @@ public abstract class HandshakeMessage extends Message {
      * Constructs a Peer object from the handshake info.
      */
     public Peer getPeer(String ip) {
-        return new Peer(network, networkVersion, peerId, ip, port, clientId, capabilities, latestBlockNumber);
+        return new Peer(network, networkVersion, peerId, ip, port, clientId, capabilities, latestBlockNumber,
+                isGenerateBlock, nodeTag);
     }
 }

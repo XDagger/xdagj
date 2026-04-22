@@ -13,7 +13,7 @@ Briefly describe your problem
 **Software information (please complete the following information)**
 - OS version : [eg. MacOS BigSur 11.1.2]
 - XDAGJ version  : [eg. XDAGJ-0.4.1-Aplha]
-- JDK version : [eg. JDK15.0.2]
+- JDK version : [eg. JDK21.0.2]
 
 **Describe the bug**
 A clear and concise description of what the bug is.

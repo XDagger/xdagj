@@ -58,7 +58,7 @@ public class DevnetConfig extends AbstractConfig {
         this.apolloForkHeight = 1000;
         this.apolloForkAmount = XAmount.ofXAmount(UInt64.valueOf(1L << 39).toLong());
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
-        this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
+        this.walletKeyFile = this.rootDir + "/wallet-devnet.dat";
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
     }
 

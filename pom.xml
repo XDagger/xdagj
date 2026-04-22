@@ -6,52 +6,45 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.7.2</version>
+    <version>0.8.1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <dist.phase>package</dist.phase>
         <dist.base>${project.basedir}/dist</dist.base>
 
-        <xdagj-native-randomx.version>0.2.0</xdagj-native-randomx.version>
-        <netty.version>4.1.116.Final</netty.version>
-        <tuweni.version>2.4.2</tuweni.version>
+        <xdagj-crypto.version>0.1.2</xdagj-crypto.version>
+        <xdagj-native-randomx.version>0.2.5</xdagj-native-randomx.version>
+        <netty.version>4.2.1.Final</netty.version>
         <jackson.version>2.18.2</jackson.version>
         <kryo.version>5.5.0</kryo.version>
-        <lombok.version>1.18.36</lombok.version>
-        <caffeine.version>3.1.8</caffeine.version>
-        <jline.version>3.28.0</jline.version>
+        <lombok.version>1.18.38</lombok.version>
+        <caffeine.version>3.2.0</caffeine.version>
+        <jline.version>3.30.0</jline.version>
         <junit.version>4.13.2</junit.version>
-        <mockito.version>5.14.2</mockito.version>
-        <system-stubs-jupiter.version>2.1.7</system-stubs-jupiter.version>
-        <log4j.version>2.24.2</log4j.version>
-        <commons-lang3.version>3.17.0</commons-lang3.version>
+        <mockito.version>5.17.0</mockito.version>
+        <system-stubs-jupiter.version>2.1.8</system-stubs-jupiter.version>
+        <log4j.version>2.24.3</log4j.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <commons-rng.version>1.6</commons-rng.version>
-        <commons-collections4.version>4.5.0-M2</commons-collections4.version>
-        <commons-codec.version>1.17.1</commons-codec.version>
-        <commons-io.version>2.18.0</commons-io.version>
+        <commons-collections4.version>4.5.0</commons-collections4.version>
+        <commons-codec.version>1.18.0</commons-codec.version>
+        <commons-io.version>2.19.0</commons-io.version>
         <commons-cli.version>1.9.0</commons-cli.version>
-        <guava.version>33.3.1-jre</guava.version>
-        <rocksdbjni.version>9.7.3</rocksdbjni.version>
-        <crypto.version>23.1.3</crypto.version>
-        <bcprov-jdk18on.version>1.79</bcprov-jdk18on.version>
-        <bcpkix-jdk18on.version>1.79</bcpkix-jdk18on.version>
+        <guava.version>33.4.8-jre</guava.version>
+        <rocksdbjni.version>9.8.4</rocksdbjni.version>
         <jws-api.version>2.1.0</jws-api.version>
         <config.version>1.4.3</config.version>
         <snappy-java.version>1.1.10.7</snappy-java.version>
         <druid.version>1.2.24</druid.version>
         <mysql-connector.version>8.4.0</mysql-connector.version>
         <h2.version>2.3.232</h2.version>
-        <gson.version>2.11.0</gson.version>
-        <surefire.test.excludes>
-            **/*RandomXSyncTest.java,
-            **/*SyncTest.java,
-            **/*SnapshotJTest.java,
-            **/*RewardTest.java
-        </surefire.test.excludes>
+        <gson.version>2.13.1</gson.version>
+        <surefire.test.excludes>**/*RandomXSyncTest.java,**/*SyncTest.java,**/*SnapshotJTest.java</surefire.test.excludes>
+        <byte-buddy-agent.version>1.15.11</byte-buddy-agent.version>
     </properties>
 
     <organization>
@@ -73,26 +66,6 @@
             <url>https://jcenter.bintray.com</url>
         </repository>
         <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <repository>
-            <id>consensys-maven</id>
-            <url>https://artifacts.consensys.net/public/maven/maven/</url>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>hyperledger.jfrog.io</id>
-            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
-        </repository>
-        <repository>
             <id>maven_central</id>
             <name>Maven Central</name>
             <url>https://repo.maven.apache.org/maven2/</url>
@@ -112,7 +85,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.14.0</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
@@ -127,8 +100,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.3</version>
                 <configuration>
+                    <argLine>-javaagent:${project.build.directory}/agents/byte-buddy-agent.jar -Xmx2048m</argLine>
                     <excludes>
                         <exclude>${surefire.test.excludes}</exclude>
                     </excludes>
@@ -193,84 +167,8 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>junit:junit</exclude>
-                                        <exclude>netdb-testnet.txt</exclude>
-                                        <exclude>netdb-white-testnet.txt</exclude>
-                                        <exclude>*.config</exclude>
-                                        <exclude>module-info.class</exclude>
-                                        <exclude>META-INF/versions/9/*.class</exclude>
-                                        <exclude>META-INF/DISCLAIMER</exclude>
-                                        <exclude>META-INF/NOTICE</exclude>
-                                        <exclude>META-INF/NOTICE.txt</exclude>
-                                        <exclude>META-INF/NOTICE.md</exclude>
-                                        <exclude>META-INF/LICENSE</exclude>
-                                        <exclude>META-INF/LICENSE.txt</exclude>
-                                        <exclude>META-INF/LICENSE.md</exclude>
-                                        <exclude>META-INF/DEPENDENCIES</exclude>
-                                        <exclude>META-INF/AL2.0</exclude>
-                                        <exclude>META-INF/LGPL2.1</exclude>
-                                        <exclude>META-INF/*.MF</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>about.html</exclude>
-                                        <exclude>log4j2.xml</exclude>
-                                        <exclude>druid.properties</exclude>
-                                        <exclude>xdag-devnet.conf</exclude>
-                                        <exclude>xdag-testnet.conf</exclude>
-                                        <exclude>xdag-mainnet.conf</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>shaded</shadedClassifierName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.DontIncludeResourceTransformer">
-                                    <resource>.SF</resource>
-                                    <resource>NOTICE</resource>
-                                    <resource>AL2.0</resource>
-                                    <resource>LGPL2.1</resource>
-                                    <resource>LICENSE.txt</resource>
-                                    <resource>NOTICE.txt</resource>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                                    <resource>LICENSE</resource>
-                                    <resource>en-mnemonic-word-list.txt</resource>
-                                </transformer>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <manifestEntries>
-                                        <Main-Class>io.xdag.Bootstrap</Main-Class>
-                                        <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
-                                        <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
-                                        <Multi-Release>true</Multi-Release>
-                                    </manifestEntries>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- version  -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <id>replace-version</id>
@@ -279,7 +177,7 @@
                             <goal>resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.basedir}/dist</outputDirectory>
+                            <outputDirectory>${project.build.directory}/filtered-scripts</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${project.basedir}/script</directory>
@@ -295,108 +193,94 @@
                 </executions>
             </plugin>
 
-            <!-- prepare distribution -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <id>package</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>dist</id>
-                        <phase>${dist.phase}</phase>
-                        <configuration>
-                            <target>
-                                <!-- windows build -->
-                                <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                      tofile="${dist.base}/windows/xdagj-${project.version}-shaded.jar"/>
-                                <copy file="src/main/resources/log4j2.xml"
-                                      tofile="${dist.base}/windows/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.conf"
-                                      tofile="${dist.base}/windows/xdag-mainnet.conf"/>
-                                <copy file="src/main/resources/xdag-testnet.conf"
-                                      tofile="${dist.base}/windows/xdag-testnet.conf"/>
-                                <copy file="src/main/resources/xdag-devnet.conf"
-                                      tofile="${dist.base}/windows/xdag-devnet.conf"/>
-                                <copy file="src/main/resources/druid.properties"
-                                      tofile="${dist.base}/windows/druid.properties"/>
-                                <copy file="${dist.base}/xdag.bat"
-                                      tofile="${dist.base}/windows/xdag.bat"/>
-                                <zip basedir="${dist.base}/windows/"
-                                     destfile="${dist.base}/xdagj-windows.zip"/>
-                                <delete dir="${dist.base}/windows/" includeemptydirs="true"/>
-
-                                <!-- linux build (executable jar) -->
-                                <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                      tofile="${dist.base}/linux/xdagj-${project.version}-shaded.jar"/>
-                                <copy file="src/main/resources/log4j2.xml"
-                                      tofile="${dist.base}/linux/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.conf"
-                                      tofile="${dist.base}/linux/xdag-mainnet.conf"/>
-                                <copy file="src/main/resources/xdag-testnet.conf"
-                                      tofile="${dist.base}/linux/xdag-testnet.conf"/>
-                                <copy file="src/main/resources/xdag-devnet.conf"
-                                      tofile="${dist.base}/linux/xdag-devnet.conf"/>
-                                <copy file="src/main/resources/druid.properties"
-                                      tofile="${dist.base}/linux/druid.properties"/>
-                                <copy file="${dist.base}/xdag.sh"
-                                      tofile="${dist.base}/linux/xdag.sh"/>
-                                <chmod file="${dist.base}/linux/xdag.sh" perm="755"/>
-                                <zip basedir="${dist.base}/linux/"
-                                     destfile="${dist.base}/xdagj-linux.zip"/>
-                                <delete dir="${dist.base}/linux/" includeemptydirs="true"/>
-
-                                <!-- macos build -->
-                                <copy file="${project.basedir}/target/xdagj-${project.version}-shaded.jar"
-                                      tofile="${dist.base}/macos/xdagj-${project.version}-shaded.jar"/>
-                                <copy file="src/main/resources/log4j2.xml"
-                                      tofile="${dist.base}/macos/log4j2.xml"/>
-                                <copy file="src/main/resources/xdag-mainnet.conf"
-                                      tofile="${dist.base}/macos/xdag-mainnet.conf"/>
-                                <copy file="src/main/resources/xdag-testnet.conf"
-                                      tofile="${dist.base}/macos/xdag-testnet.conf"/>
-                                <copy file="src/main/resources/xdag-devnet.conf"
-                                      tofile="${dist.base}/macos/xdag-devnet.conf"/>
-                                <copy file="src/main/resources/druid.properties"
-                                      tofile="${dist.base}/macos/druid.properties"/>
-                                <copy file="${dist.base}/xdag.sh"
-                                      tofile="${dist.base}/macos/xdag.sh"/>
-                                <chmod file="${dist.base}/macos/xdag.sh" perm="755"/>
-                                <zip basedir="${dist.base}/macos/"
-                                     destfile="${dist.base}/xdagj-macos.zip"/>
-                                <delete dir="${dist.base}/macos/" includeemptydirs="true"/>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- clean -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <filesets>
-                        <fileset>
-                            <directory>${dist.base}</directory>
-                        </fileset>
-                    </filesets>
-                </configuration>
+                <version>3.4.1</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version>
+                <executions>
+                    <execution>
+                        <id>make-executable-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/executable-jar.xml</descriptor>
+                            </descriptors>
+                            <attach>true</attach>
+                            <archive>
+                                <manifest>
+                                    <mainClass>io.xdag.Bootstrap</mainClass>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                </manifest>
+                                <manifestEntries>
+                                    <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+                                    <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+                                    <Multi-Release>true</Multi-Release>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>make-distribution-zip</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/distribution.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-byte-buddy-agent</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>net.bytebuddy</groupId>
+                                    <artifactId>byte-buddy-agent</artifactId>
+                                    <version>${byte-buddy-agent.version}</version>
+                                    <destFileName>byte-buddy-agent.jar</destFileName>
+                                    <outputDirectory>${project.build.directory}/agents</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
+
+        <!-- xdagj framework -->
+        <dependency>
+            <groupId>io.xdag</groupId>
+            <artifactId>xdagj-crypto</artifactId>
+            <version>${xdagj-crypto.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.xdag</groupId>
             <artifactId>xdagj-native-randomx</artifactId>
@@ -426,6 +310,12 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
         </dependency>
 
         <!-- Apache Commons -->
@@ -504,22 +394,6 @@
             <version>${netty.version}</version>
         </dependency>
 
-        <!-- linux epoll -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport-native-epoll</artifactId>
-            <version>${netty.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-
-        <!-- macos kqueue -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport-native-kqueue</artifactId>
-            <version>${netty.version}</version>
-            <classifier>osx-x86_64</classifier>
-        </dependency>
-
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
@@ -569,6 +443,16 @@
             <artifactId>system-stubs-jupiter</artifactId>
             <version>${system-stubs-jupiter.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>byte-buddy</artifactId>
+                    <groupId>net.bytebuddy</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>byte-buddy-agent</artifactId>
+                    <groupId>net.bytebuddy</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -576,110 +460,6 @@
             <artifactId>h2</artifactId>
             <version>${h2.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.tmio</groupId>
-            <artifactId>tuweni-bytes</artifactId>
-            <version>${tuweni.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>kotlin-stdlib</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.tmio</groupId>
-            <artifactId>tuweni-units</artifactId>
-            <version>${tuweni.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.tmio</groupId>
-            <artifactId>tuweni-io</artifactId>
-            <version>${tuweni.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-codec</artifactId>
-                    <groupId>commons-codec</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hyperledger.besu.internal</groupId>
-            <artifactId>crypto</artifactId>
-            <version>${crypto.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                    <groupId>org.bouncycastle</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>log4j-api</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>log4j-core</artifactId>
-                    <groupId>org.apache.logging.log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-bytes</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>tuweni-units</artifactId>
-                    <groupId>org.apache.tuweni</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>vertx-core</artifactId>
-                    <groupId>io.vertx</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-lang3</artifactId>
-                    <groupId>org.apache.commons</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jna</artifactId>
-                    <groupId>net.java.dev.jna</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>${bcprov-jdk18on.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bcpkix-jdk18on.version}</version>
         </dependency>
 
         <dependency>
@@ -748,6 +528,13 @@
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>${byte-buddy-agent.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

@@ -19,12 +19,12 @@
 ## 系统环境
 
 ```yaml
-JDK   : v17
+JDK   : v21
 Maven : v3.9.1
 ```
 
-### JDK 17 下载
-Eclipse Temurin™ 17 Latest Releases(https://adoptium.net/temurin/releases/)
+### JDK 下载
+Eclipse Temurin™ 21 Latest Releases(https://adoptium.net/temurin/releases/)
 
 ### Maven 3.9.x 下载
 Apache Maven 3.9.x Latest Releases(https://maven.apache.org/download.cgi)

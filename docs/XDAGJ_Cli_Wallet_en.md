@@ -19,17 +19,17 @@ If you want to learn about the structure of your XDAG wallet, you can use the "x
 ## System Environment
 
 ```yaml
-     JDK: v17
+     JDK: v21
      Script: xdag.sh
-       Jar: xdagj-0.x.y-shaded.jar
+       Jar: xdagj-0.x.y-executable.jar
 ```
 
 example:
 ```shell
 xdager@localhost xdag_full_node % java --version
-openjdk 17.0.2 2022-01-18
-OpenJDK Runtime Environment (build 17.0.2+8-86)
-OpenJDK 64-Bit Server VM (build 17.0.2+8-86, mixed mode, sharing)
+openjdk version "21.0.5" 2024-10-27 LTS
+OpenJDK Runtime Environment (build 21.0.5+1-LTS)
+OpenJDK 64-Bit Server VM (build 21.0.5+1-LTS, mixed mode, sharing)
 xdager@localhost xdag_full_node % mkdir -p /usr/local/xdag_full_node && cd /usr/local/xdag_full_node
 xdager@localhost xdag_full_node % pwd
 /usr/local/xdag_full_node
@@ -39,7 +39,7 @@ total 95464
 drwxr-xr-x   4 xdager  wheel       128  5 24 14:22 .
 drwxr-xr-x  16 xdager  wheel       512  5 24 14:21 ..
 -rwxr-xr-x   1 xdager  wheel       275  5 24 14:21 xdag.sh
--rw-r--r--   1 xdager  wheel  48869970  5 24 14:21 xdagj-0.6.5-shaded.jar
+-rw-r--r--   1 xdager  wheel  48869970  5 24 14:21 xdagj-0.8.0-executable.jar
 ```
 
 ## Usage

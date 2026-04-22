@@ -51,7 +51,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 @Slf4j
 public class NodeManager extends AbstractXdagLifecycle {
 
-    private static final ThreadFactory factory = new BasicThreadFactory.Builder()
+    private static final ThreadFactory factory = BasicThreadFactory.builder()
             .namingPattern("NodeManager-thread-%d")
             .daemon(true)
             .build();
@@ -74,6 +74,7 @@ public class NodeManager extends AbstractXdagLifecycle {
     private final NetDBManager netDBManager;
     private final Config config;
     private ScheduledFuture<?> connectFuture;
+    private ScheduledFuture<?> fetchFuture;
 
     public NodeManager(Kernel kernel) {
         this.kernel = kernel;
@@ -94,6 +95,9 @@ public class NodeManager extends AbstractXdagLifecycle {
 
         // every 0.5 seconds, delayed by 1 seconds (kernel boot up)
         connectFuture = exec.scheduleAtFixedRate(this::doConnect, 1000, 500, TimeUnit.MILLISECONDS);
+        // every 100 seconds, delayed by 5 seconds (public IP lookup)
+        fetchFuture = exec.scheduleAtFixedRate(this::doFetch, 5, 100, TimeUnit.SECONDS);
+
         log.debug("Node manager started");
     }
 
@@ -125,6 +129,12 @@ public class NodeManager extends AbstractXdagLifecycle {
         while (queueSize() > MAX_QUEUE_SIZE) {
             deque.removeLast();
         }
+    }
+
+    protected void doFetch() {
+        log.debug("Do fetch node size:{}", deque.size());
+        // 从白名单获得新节点
+        addNodes(getSeedNodes(netDBManager.getWhiteDB()));
     }
 
     public Set<Node> getSeedNodes(NetDB netDB) {

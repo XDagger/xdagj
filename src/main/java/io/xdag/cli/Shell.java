@@ -31,6 +31,7 @@ import io.xdag.utils.WalletUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.tuweni.bytes.Bytes32;
 import org.jline.builtins.Options;
@@ -80,6 +81,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("state", new CommandMethods(this::processState, this::defaultCompleter));
         commandExecute.put("stats", new CommandMethods(this::processStats, this::defaultCompleter));
         commandExecute.put("xfer", new CommandMethods(this::processXfer, this::defaultCompleter));
+        commandExecute.put("xferWithFee", new CommandMethods(this::processXferWithFee, this::defaultCompleter));
         commandExecute.put("xfertonew", new CommandMethods(this::processXferToNew, this::defaultCompleter));
         commandExecute.put("pool", new CommandMethods(this::processPool, this::defaultCompleter));
         commandExecute.put("keygen", new CommandMethods(this::processKeygen, this::defaultCompleter));
@@ -88,6 +90,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
         commandExecute.put("terminate", new CommandMethods(this::processTerminate, this::defaultCompleter));
         commandExecute.put("address", new CommandMethods(this::processAddress, this::defaultCompleter));
         commandExecute.put("oldbalance", new CommandMethods(this::processOldBalance, this::defaultCompleter));
+        commandExecute.put("txQuantity", new CommandMethods(this::processTxQuantity, this::defaultCompleter));
         registerCommands(commandExecute);
     }
 
@@ -183,8 +186,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.getFirst())) {
+                num = NumberUtils.toInt(argv.getFirst());
             }
             println(commands.account(num));
         } catch (Exception e) {
@@ -204,12 +207,29 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             List<String> argv = opt.args();
-            println(commands.balance(!argv.isEmpty() ? argv.get(0) : null));
+            println(commands.balance(!argv.isEmpty() ? argv.getFirst() : null));
         } catch (Exception e) {
             saveException(e);
         }
     }
 
+    private void processTxQuantity(CommandInput input) {
+        final String[] usage = {
+                "txQuantity -  print current transaction quantity of the address [ADDRESS] or current nonce of our address \n",
+                "Usage: txQuantity [ADDRESS](optional)",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+            List<String> argv = opt.args();
+            println(commands.txQuantity(!argv.isEmpty() ? argv.getFirst() : null));
+        } catch (Exception error) {
+            saveException(error);
+        }
+    }
 
     private void processBlock(CommandInput input) {
         final String[] usage = {
@@ -229,7 +249,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 return;
             }
 
-            String address = argv.get(0);
+            String address = argv.getFirst();
             try {
                 Bytes32 hash;
                 if (address.length() == 32) {
@@ -281,8 +301,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.getFirst())) {
+                num = NumberUtils.toInt(argv.getFirst());
             }
             println(commands.mainblocks(num));
         } catch (Exception e) {
@@ -303,8 +323,8 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 throw new Options.HelpException(opt.usage());
             }
             int num = DEFAULT_LIST_NUM;
-            if (!argv.isEmpty() && NumberUtils.isDigits(argv.get(0))) {
-                num = NumberUtils.toInt(argv.get(0));
+            if (!argv.isEmpty() && NumberUtils.isDigits(argv.getFirst())) {
+                num = NumberUtils.toInt(argv.getFirst());
             }
             println(commands.minedBlocks(num));
         } catch (Exception e) {
@@ -387,7 +407,61 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
                 println("The password is incorrect");
                 return;
             }
-            println(commands.xfer(amount, hash, remark));
+            double fee = 0.0;
+            println(commands.xfer(amount, hash, remark, fee));
+
+        } catch (Exception e) {
+            saveException(e);
+        }
+    }
+
+    private void processXferWithFee(CommandInput input) {
+        final String[] usage = {
+                "xfer -  transfer ([AMOUNT] - [Fee]) XDAG to the address [ADDRESS]",
+                "Usage: transfer [AMOUNT] [Fee] [ADDRESS]",
+                "  -? --help                    Show help",
+        };
+        try {
+            Options opt = parseOptions(usage, input.args());
+            List<String> argv = opt.args();
+            if (opt.isSet("help")) {
+                throw new Options.HelpException(opt.usage());
+            }
+
+            if (argv.size() < 3) {
+                println("Lost some param");
+                return;
+            }
+
+            Bytes32 hash;
+            double amount = BasicUtils.getDouble(argv.get(0));
+            double fee = BasicUtils.getDouble(argv.get(1));
+
+            String remark = argv.size() == 4 ? argv.get(3) : null;
+
+            if (amount < 0) {
+                println("The transfer amount must be greater than 0");
+                return;
+            }
+
+            if (fee < 0) {
+                println("The transfer fee must be greater than 0");
+                return;
+            }
+
+            if (WalletUtils.checkAddress(argv.get(2))) {
+                hash = pubAddress2Hash(argv.get(2));
+            } else {
+                println("Incorrect address");
+                return;
+            }
+
+            Wallet wallet = new Wallet(kernel.getConfig());
+            if (!wallet.unlock(readPassword())) {
+                println("The password is incorrect");
+                return;
+            }
+            println(commands.xfer(amount, hash, remark, fee));
 
         } catch (Exception e) {
             saveException(e);
@@ -542,7 +616,7 @@ public class Shell extends JlineCommandRegistry implements CommandRegistry, Teln
             try {
                 systemRegistry.cleanUp();
                 String line = reader.readLine(prompt);
-                if (StringUtils.startsWith(line, "exit")) {
+                if (Strings.CS.startsWith(line, "exit")) {
                     break;
                 }
                 systemRegistry.execute(line);
