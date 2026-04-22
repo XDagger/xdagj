@@ -603,6 +603,7 @@ public class BlockchainImpl implements Blockchain {
                     if ((txBlock.getInfo().flags & BI_MAIN_CHAIN) == 0) {
                         rollTxList.add(txBlock);
                         if ((txBlock.getInfo().flags & BI_REF) != 0) {
+                            txBlock=getBlockByHash(link.getAddress(),false);
                             updateBlockFlag(txBlock, BI_REF, false);
                             xdagStats.nnoref++;
                             blockStore.saveXdagStatus(xdagStats);
@@ -619,6 +620,7 @@ public class BlockchainImpl implements Blockchain {
                             mBlockTimedOut.remove(link.addressHash);
                             rollTxList.add(txBlock);
                             if ((txBlock.getInfo().flags & BI_REF) == 0) continue;
+                            txBlock=getBlockByHash(link.getAddress(),false);
                             updateBlockFlag(txBlock, BI_REF, false);
                             xdagStats.nnoref++;
                             blockStore.saveXdagStatus(xdagStats);
