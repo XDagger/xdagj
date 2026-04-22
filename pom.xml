@@ -6,7 +6,7 @@
 
     <groupId>io.xdag</groupId>
     <artifactId>xdagj</artifactId>
-    <version>0.8.1</version>
+    <version>0.8.2</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,7 +19,7 @@
         <xdagj-crypto.version>0.1.2</xdagj-crypto.version>
         <xdagj-native-randomx.version>0.2.5</xdagj-native-randomx.version>
         <netty.version>4.2.1.Final</netty.version>
-        <jackson.version>2.18.2</jackson.version>
+        <jackson.version>2.18.6</jackson.version>
         <kryo.version>5.5.0</kryo.version>
         <lombok.version>1.18.38</lombok.version>
         <caffeine.version>3.2.0</caffeine.version>
@@ -27,7 +27,7 @@
         <junit.version>4.13.2</junit.version>
         <mockito.version>5.17.0</mockito.version>
         <system-stubs-jupiter.version>2.1.8</system-stubs-jupiter.version>
-        <log4j.version>2.24.3</log4j.version>
+        <log4j.version>2.25.3</log4j.version>
         <commons-lang3.version>3.18.0</commons-lang3.version>
         <commons-rng.version>1.6</commons-rng.version>
         <commons-collections4.version>4.5.0</commons-collections4.version>
