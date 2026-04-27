@@ -137,7 +137,7 @@ public class BlockchainImpl implements Blockchain {
     private List<Block> rollTxList = new LinkedList<>();
 
     private final Cache<Bytes32, Byte> syncTxStatusCache = CacheBuilder.newBuilder()
-            .maximumSize(100000)
+            .maximumSize(500000)
             .expireAfterWrite(60, TimeUnit.MINUTES)
             .concurrencyLevel(Runtime.getRuntime().availableProcessors())
             .build();
@@ -706,9 +706,9 @@ public class BlockchainImpl implements Blockchain {
 
     public Byte getSyncTxStatus(Bytes32 txHash){
         Byte status = syncTxStatusCache.getIfPresent(txHash);
-        if (status != null) {
-            syncTxStatusCache.invalidate(txHash);
-        }
+//        if (status != null) {
+//            syncTxStatusCache.invalidate(txHash);
+//        }
         return status;
     }
 
@@ -1114,6 +1114,16 @@ public class BlockchainImpl implements Blockchain {
             return XAmount.ZERO;
         }
 
+        if(kernel.getSyncMgr() != null && (kernel.getSyncMgr().isSyncOld() || kernel.getSyncMgr().isSync()) && isTxBlock(block)){
+            Byte executionStatus = getSyncTxStatus(block.getHashLow());
+            if (executionStatus != null && executionStatus == 2){
+                log.debug("Execute Synchronization of Node Transaction Status：{}",block.getHashLow().toHexString());
+                return XAmount.ZERO.subtract(XAmount.ONE);
+            }
+        }else if(kernel.getSyncMgr() != null && !kernel.getSyncMgr().isSyncOld() && syncTxStatusCache.size() >0){
+            clearAllSyncTxStatus();
+        }
+
         // Actual amount processing
         XAmount blockGas = XAmount.ZERO;
         for (Address link : links) {
@@ -1137,15 +1147,7 @@ public class BlockchainImpl implements Blockchain {
             }
         }
 
-        if(kernel.getSyncMgr() != null && (kernel.getSyncMgr().isSyncOld() || kernel.getSyncMgr().isSync()) && isTxBlock(block)){
-            Byte executionStatus = getSyncTxStatus(block.getHashLow());
-            if (executionStatus != null && executionStatus == 2){
-                log.debug("Execute Synchronization of Node Transaction Status：{}",block.getHashLow().toHexString());
-                return XAmount.ZERO.subtract(XAmount.ONE);
-            }
-        }else if(kernel.getSyncMgr() != null && !kernel.getSyncMgr().isSyncOld() && syncTxStatusCache.size() >0){
-            clearAllSyncTxStatus();
-        }
+
 
         updateBlockFlag(block, BI_APPLIED, true);
 
