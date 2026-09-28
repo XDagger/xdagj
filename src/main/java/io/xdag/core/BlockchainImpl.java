@@ -555,7 +555,7 @@ public class BlockchainImpl implements Blockchain {
             } else {
                 saveBlock(block);
                 dealOrphan(block);
-                xdagStats.nnoref++;
+                incrementNnoref();
             }
             blockStore.saveXdagStatus(xdagStats);
 
@@ -605,7 +605,7 @@ public class BlockchainImpl implements Blockchain {
                         if ((txBlock.getInfo().flags & BI_REF) != 0) {
                             txBlock=getBlockByHash(link.getAddress(),false);
                             updateBlockFlag(txBlock, BI_REF, false);
-                            xdagStats.nnoref++;
+                            incrementNnoref();
                             blockStore.saveXdagStatus(xdagStats);
                         }
                         mBlockTx.remove(link.addressHash);
@@ -622,7 +622,7 @@ public class BlockchainImpl implements Blockchain {
                             if ((txBlock.getInfo().flags & BI_REF) == 0) continue;
                             txBlock=getBlockByHash(link.getAddress(),false);
                             updateBlockFlag(txBlock, BI_REF, false);
-                            xdagStats.nnoref++;
+                            incrementNnoref();
                             blockStore.saveXdagStatus(xdagStats);
                             log.debug("roll main txBlock :{} , txBlock :{} , mBlockTx size :{}", block.getHashLow(), link.addressHash, mBlockTx.size());
                             break;
@@ -1737,7 +1737,7 @@ public class BlockchainImpl implements Blockchain {
 
                 orphanBlockStore.deleteFromQueue(b, isTxBlock(b), nonce, fee, address);
                 orphanBlockStore.deleteByKey(b.getHashLow().toArray(), isTxBlock(b), nonce, fee, address);
-                xdagStats.nnoref--;
+                decrementNnoref();
             }
             // Update this block's flag
             updateBlockFlag(b, BI_REF, true);
@@ -1991,6 +1991,7 @@ public class BlockchainImpl implements Blockchain {
 
     public void checkState() {
         // Prohibit Non-mining nodes generate link blocks
+        xdagStats.setNnoref(orphanBlockStore.getOrphanSize());
         if (kernel.getConfig().getEnableGenerateBlock() &&
                 (kernel.getXdagState() == XdagState.SDST || XdagState.STST == kernel.getXdagState() || XdagState.SYNC == kernel.getXdagState())) {
             checkOrphan();
@@ -2269,6 +2270,13 @@ public class BlockchainImpl implements Blockchain {
             temp = getBlockByHash(Bytes32.wrap(temp.getInfo().getMaxDiffLink()), false);
         }
         return res;
+    }
+
+    public synchronized void decrementNnoref() {
+            xdagStats.nnoref--;
+    }
+    public synchronized void incrementNnoref() {
+        xdagStats.nnoref++;
     }
 
     enum OrphanRemoveActions {
