@@ -19,7 +19,7 @@
         <xdagj-crypto.version>0.1.2</xdagj-crypto.version>
         <xdagj-native-randomx.version>0.2.5</xdagj-native-randomx.version>
         <netty.version>4.2.1.Final</netty.version>
-        <jackson.version>2.18.9</jackson.version>
+        <jackson.version>2.18.10</jackson.version>
         <kryo.version>5.5.0</kryo.version>
         <lombok.version>1.18.38</lombok.version>
         <caffeine.version>3.2.0</caffeine.version>
