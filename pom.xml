@@ -17,7 +17,7 @@
         <dist.base>${project.basedir}/dist</dist.base>
 
         <xdagj-crypto.version>0.1.5</xdagj-crypto.version>
-        <xdagj-p2p.version>0.1.7</xdagj-p2p.version>
+        <xdagj-p2p.version>0.1.8</xdagj-p2p.version>
         <xdagj-native-randomx.version>0.2.5</xdagj-native-randomx.version>
         <netty.version>4.2.9.Final</netty.version>
         <jackson.version>2.18.9</jackson.version>

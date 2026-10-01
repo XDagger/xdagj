@@ -1,7 +1,7 @@
-# Security audit: xdagj 0.9.0 open network / xdagj-p2p 0.1.7
+# Security audit: xdagj 0.9.0 open network / xdagj-p2p 0.1.8
 
 Date: 2026-09-30. Scope: everything a node exposes to an untrusted network once the
-whitelist is gone - the P2P layer (xdagj-p2p 0.1.7), the XDAG protocol handler, block
+whitelist is gone - the P2P layer (xdagj-p2p 0.1.8), the XDAG protocol handler, block
 import and execution (`BlockchainImpl`), synchronisation (`XdagSync`, `SyncManager`), and
 the configuration that controls them. Out of scope: the mining pool websocket, RPC and
 telnet (operator-facing, unchanged), the wallet.
@@ -16,7 +16,7 @@ protocol to adversarial unit tests and a two-node loopback test.
 Severity: **H** an untrusted peer can break consensus, take funds, or stop the node;
 **M** an untrusted peer can degrade the node or the network; **L** hygiene / defence in depth.
 
-## 1. Findings in xdagj-p2p (all fixed in 0.1.7)
+## 1. Findings in xdagj-p2p (P1-P15 fixed in 0.1.7, P16 in 0.1.8)
 
 | # | sev | finding | fix |
 |---|-----|---------|-----|

@@ -108,7 +108,8 @@ independent (C6), which is why they are frozen rather than fixed.
 ## 3. The P2P layer
 
 The 0.8.x transport (`io.xdag.net`: frames, handshake, whitelist) is replaced by
-[xdagj-p2p](https://github.com/XDagger/xdagj-p2p) 0.1.7, hardened as part of this work:
+[xdagj-p2p](https://github.com/XDagger/xdagj-p2p) 0.1.8, hardened as part of this work
+(in 0.1.7; 0.1.8 adds two start-up fixes and is the same on the wire):
 
 * **Identity.** A node is known by the address of its *node key* (`node.keyFile`,
   created on first start), never by its wallet key. Handshake: `INIT(nonceA) → INIT(nonceB)
