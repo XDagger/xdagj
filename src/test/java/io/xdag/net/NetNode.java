@@ -97,9 +97,8 @@ public final class NetNode {
 
     /**
      * Waits until this node and each of the others see each other as peers. The P2P layer dials configured peers
-     * by itself, but the listener of a node is bound by a thread of its own, and a peer that dials before that
-     * is refused - and an address is not tried again for 30 s. A test does not want to wait that long: after a
-     * few seconds the missing peers are dialled again from here.
+     * by itself; should an attempt fail, it does not try the address again for 30 s. A test does not want to
+     * wait that long: after a few seconds the missing peers are dialled again from here.
      */
     public void awaitConnectedTo(long timeoutMs, NetNode... others) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;

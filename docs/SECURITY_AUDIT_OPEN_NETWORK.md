@@ -35,6 +35,7 @@ Severity: **H** an untrusted peer can break consensus, take funds, or stop the n
 | P13 | L | Host strings from other nodes were turned into socket addresses, which resolves names in the DNS. | `Node.isWellFormed()`: IP literals only, ports in range; names never resolved. |
 | P14 | L | Remote-triggered conditions logged at INFO/WARN (log flooding). | Downgraded to DEBUG/TRACE. |
 | P15 | L | `PeerClient.connect(host, port)` blocked until the connection closed; `stop()` without `start()` threw; tests leaked a server on a fixed port and needed the internet. | Waits for the connect only; null-safe; tests hermetic. |
+| P16 | L | `P2pService.start()` returned while the TCP listener and the discovery socket were still being bound on their own threads: a node started right after another was refused and - a failed address is not dialled again for 30 s - connected half a minute later; `stop()` called that early left the socket open for the life of the process. `setPermissionless(true)` before `start()` ran the connect loop on a service without a node table (a `NullPointerException`, logged as a warning at every start of an open node). | `start()` returns when both sockets are bound, or when it is clear that one cannot be (logged; `isListening()`); a stop during the bind closes the socket as soon as it is bound; on a service that is not running `setPermissionless` only changes the setting. Tests: `P2pServiceStartTest`, `PeerServerTest`, `DiscoverServerTest`. |
 
 Two datagram sizes deserve a note: a full neighbour list does not fit in one 1280-byte
 datagram, so answers are sent in datagrams of at most 8 nodes and accepted for 5 s after
@@ -96,7 +97,7 @@ the question, up to a bucket's worth.
 
 | suite | result |
 |-------|--------|
-| xdagj-p2p `mvn test` (offline, loopback only) | 910 tests, 0 failures, 2 skipped (need the internet: external-IP services) |
+| xdagj-p2p `mvn test` (offline, loopback only) | 923 tests, 0 failures, 2 skipped (need the internet: external-IP services) |
 | xdagj `mvn test` (offline, loopback only) | 263 tests, 0 failures |
 | `DeterminismTest.hardenedRulesGiveTheSameStateInAnyOrder`, seeds 1-600 | pass; two real bugs found on the way (skipped-transaction bookkeeping, fee clobbering by `removeOrphan`) plus the `BI_REF` confirmation order dependence |
 | `OpenNetForkTest` | 20 tests: legacy vs hardened behaviour for C1, C2, C4, C6, the crash paths, the latch, execution rules following the main block's epoch, sync hints dropped |
