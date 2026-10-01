@@ -77,7 +77,7 @@
 
 ## Modify pool config
 
-The configuration file is located in `src/main/resources/xdag-devnet.conf`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. The whitelist of XDAGJ is an optional mode. If the configuration item is empty, all nodes are allowed to join, and only the corresponding ip access is allowed after restriction
+The configuration file is located in `src/main/resources/xdag-devnet.conf`, the specific meaning is as follows, if you do not modify it, the default configuration is enabled. Since 0.9.0 there is no node whitelist: `node.seeds` are the entry points into the network and `node.trustedPeers` are peers the node always keeps; anybody may connect once the open-network fork is in force on the chain (from genesis on a devnet). See `docs/OPEN_NETWORK.md`.
 
 ```yaml
 # Admin Config
@@ -100,7 +100,8 @@ pool.directRation = 5          #Participation reward ratio (1-100)
 node.ip = 127.0.0.1            #The ip used to bind the Full XdagJ Node service
 node.port = 8001               #The port used to bind the Full XdagJ Node service
 node.maxInboundConnectionsPerIp = 8 #The max Inbound Connection used to bind the Full XdagJ Node service
-node.whiteIPs = 127.0.0.1:8001,127.0.0.1:8002 #The white IP list used to bind the Full XdagJ Node service(separated by ‘,’)
+node.seeds = ["127.0.0.1:8001","127.0.0.1:8002"]   # entry points into the network (node.whiteIPs is still read and treated as seeds + trusted peers)
+node.trustedPeers = []                              # peers that are always kept connected and never banned
 
 # Node libp2p Config
 node.libp2p.port = 9001        #The port for libp2p used to bind the Full XdagJ Node service

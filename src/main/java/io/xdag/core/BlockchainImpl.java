@@ -88,6 +88,7 @@ public class BlockchainImpl implements Blockchain {
     // Static gas fee accumulator
     private static XAmount sumGas = XAmount.ZERO;
     private static final long MAX_ORPHAN_SIZE = 3750;
+    public static final String IGNORE_INTERRUPTED_MAIN_UPDATE = "xdagj.ignoreInterruptedMainUpdate";
 
     // Thread factory for main chain checking
     private static final ThreadFactory factory = BasicThreadFactory.builder()
@@ -106,8 +107,10 @@ public class BlockchainImpl implements Blockchain {
     // Store for non-Extra orphan blocks
     private final OrphanBlockStore orphanBlockStore;
 
-    // In-memory pools and maps
-    private final LinkedHashMap<Bytes, Block> memOrphanPool = new LinkedHashMap<>();
+    // In-memory pools and maps.
+    // The pool is read by rpc / p2p threads (getBlockByHash) while the import thread changes it, so it has to be
+    // a synchronized map; iteration additionally locks the map itself.
+    private final Map<Bytes, Block> memOrphanPool = Collections.synchronizedMap(new LinkedHashMap<>());
     private final Map<Bytes, Integer> memOurBlocks = new ConcurrentHashMap<>();
 
     // Stats and status tracking
@@ -146,6 +149,20 @@ public class BlockchainImpl implements Blockchain {
 
     @Getter
     private byte[] preSeed;
+
+    /**
+     * Open-network hardening fork (see docs/OPEN_NETWORK.md). Blocks whose epoch is at or after this epoch are
+     * validated, scored and executed by the hardened rules.
+     */
+    private final long openNetForkEpoch;
+
+    /**
+     * Set once the main chain of this node contains a main block at or after {@link #openNetForkEpoch} and never
+     * cleared. From then on every newly imported block is handled by the hardened rules whatever its timestamp,
+     * so a block that claims an old timestamp cannot opt back into the legacy rules. The network layer only
+     * admits arbitrary peers while this is set.
+     */
+    private volatile boolean openNetLatched;
 
     // Constructor initializes all components and starts main chain checking
     public BlockchainImpl(Kernel kernel) {
@@ -201,6 +218,25 @@ public class BlockchainImpl implements Blockchain {
             }
             preSeed = blockStore.getPreSeed();
         }
+
+        if (blockStore.isMainUpdateInProgress()) {
+            String message = "The node was killed while it was confirming or unwinding a main block. Balances and "
+                    + "block flags in " + kernel.getConfig().getNodeSpec().getStoreDir() + " may be half updated, and a "
+                    + "node in that state silently disagrees with the network. Restore the database (snapshot) and "
+                    + "sync again. To start anyway, set -D" + IGNORE_INTERRUPTED_MAIN_UPDATE + "=true.";
+            if (!Boolean.getBoolean(IGNORE_INTERRUPTED_MAIN_UPDATE)) {
+                throw new IllegalStateException(message);
+            }
+            log.error(message);
+            blockStore.setMainUpdateInProgress(false);
+        }
+
+        // Open-network hardening fork
+        this.openNetForkEpoch = kernel.getConfig().getOpenNetForkEpoch();
+        Block latestMain = xdagStats.nmain > 0 ? blockStore.getBlockByHeight(xdagStats.nmain) : null;
+        this.openNetLatched = openNetForkEpoch == 0
+                || blockStore.isOpenNetForkLatched()
+                || (latestMain != null && XdagTime.getEpoch(latestMain.getTimestamp()) >= openNetForkEpoch);
 
         // Initialize RandomX
         randomx = kernel.getRandomx();
@@ -277,6 +313,80 @@ public class BlockchainImpl implements Blockchain {
         this.listeners.add(listener);
     }
 
+    /**
+     * Whether the open-network hardening fork is latched on this node's chain, i.e. whether the node runs an
+     * open (permissionless) network. See {@link #openNetLatched}.
+     */
+    @Override
+    public boolean isOpenNetLatched() {
+        return openNetLatched;
+    }
+
+    /**
+     * Whether a block is validated and scored by the hardened rules: its own epoch is at or after the fork, or
+     * the chain has already passed the fork (a block that claims an older timestamp gets no legacy treatment).
+     */
+    boolean isHardenedBlock(Block block) {
+        return openNetLatched || XdagTime.getEpoch(block.getTimestamp()) >= openNetForkEpoch;
+    }
+
+    /**
+     * Whether the transactions confirmed by a main block are executed by the hardened rules. This depends only
+     * on the main block, so every node executes a given main block in the same way.
+     */
+    boolean isHardenedExecution(Block mainBlock) {
+        return XdagTime.getEpoch(mainBlock.getTimestamp()) >= openNetForkEpoch;
+    }
+
+    private void latchOpenNet(Block mainBlock) {
+        if (!openNetLatched && isHardenedExecution(mainBlock)) {
+            blockStore.setOpenNetForkLatched();
+            openNetLatched = true;
+            log.info("Open-network hardening fork is now in force (main block {} at epoch {})",
+                    mainBlock.getHashLow().toHexString(), XdagTime.getEpoch(mainBlock.getTimestamp()));
+        }
+    }
+
+    /**
+     * Start time of the snapshot this node was booted from (0 if it was not). Everything before it is final.
+     */
+    private long snapshotFloorTime() {
+        return kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()
+                ? kernel.getConfig().getSnapshotSpec().getSnapshotTime() : 0;
+    }
+
+    /**
+     * Hardened rule: a node that was booted from a snapshot never reorganizes below the top of that snapshot.
+     * The blocks of the snapshot carry no data, so they cannot be unwound; all nodes of a release start from
+     * the same snapshot and therefore agree on this.
+     *
+     * @param ancestor the main-chain block a heavier chain branches off from (null: it does not join our chain)
+     */
+    private boolean mayReorganizeTo(Block ancestor) {
+        if (!openNetLatched || snapshotHeight <= 0 || !kernel.getConfig().getSnapshotSpec().isSnapshotEnabled()) {
+            return true;
+        }
+        if (ancestor == null) {
+            return false;
+        }
+        BlockInfo info = ancestor.getInfo();
+        return !info.isSnapshot() || info.getHeight() >= snapshotHeight;
+    }
+
+    private ImportResult invalid(String errorInfo, boolean misbehavior) {
+        ImportResult result = ImportResult.INVALID_BLOCK;
+        result.setErrorInfo(errorInfo);
+        result.setMisbehavior(misbehavior);
+        log.debug(errorInfo);
+        return result;
+    }
+
+    private ImportResult invalid(MutableBytes32 hashlow, String errorInfo, boolean misbehavior) {
+        ImportResult result = invalid(errorInfo, misbehavior);
+        result.setHashlow(hashlow);
+        return result;
+    }
+
     // Try to connect a new block to the chain
     @Override
     public synchronized ImportResult tryToConnect(Block block) {
@@ -285,6 +395,14 @@ public class BlockchainImpl implements Blockchain {
 
         try {
             ImportResult result = ImportResult.IMPORTED_NOT_BEST;
+            ImportResult.INVALID_BLOCK.setHashlow(null);
+            ImportResult.INVALID_BLOCK.setErrorInfo(null);
+            ImportResult.INVALID_BLOCK.setMisbehavior(false);
+            ImportResult.ERROR.setErrorInfo(null);
+            ImportResult.ERROR.setMisbehavior(false);
+
+            // Rules of the open-network hardening fork apply to this block (see docs/OPEN_NETWORK.md)
+            final boolean hardened = isHardenedBlock(block);
 
             // Validate block type
             long type = block.getType() & 0xf;
@@ -292,6 +410,7 @@ public class BlockchainImpl implements Blockchain {
                 if (type != XDAG_FIELD_HEAD.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a mainnet block");
+                    result.setMisbehavior(true);
                     log.debug("Block type error, is not a mainnet block");
                     return result;
                 }
@@ -299,26 +418,30 @@ public class BlockchainImpl implements Blockchain {
                 if (type != XDAG_FIELD_HEAD_TEST.asByte()) {
                     result = ImportResult.ERROR;
                     result.setErrorInfo("Block type error, is not a testnet block");
+                    result.setMisbehavior(true);
                     log.debug("Block type error, is not a testnet block");
                     return result;
                 }
             }
 
             // Validate block timestamp
-            if (block.getTimestamp() > (XdagTime.getCurrentTimestamp() + MAIN_CHAIN_PERIOD / 4)
-                    || block.getTimestamp() < kernel.getConfig().getXdagEra()
-            ) {
-                result = ImportResult.INVALID_BLOCK;
-                result.setErrorInfo("Block's time is illegal");
-                log.debug("Block's time is illegal");
-                return result;
+            if (block.getTimestamp() > (XdagTime.getCurrentTimestamp() + MAIN_CHAIN_PERIOD / 4)) {
+                // depends on the local clock: not a proof of misbehavior
+                return invalid("Block's time is illegal", false);
+            }
+            if (block.getTimestamp() < kernel.getConfig().getXdagEra()) {
+                return invalid("Block's time is illegal", true);
+            }
+            if (hardened && block.getTimestamp() < snapshotFloorTime()) {
+                // Everything before the snapshot is final. A node that was booted from the snapshot no longer
+                // knows which of the older blocks were executed, so it must not accept any of them again.
+                return invalid("Block's time is before the snapshot", false);
             }
 
-            if (isAccountTx(block) && orphanBlockStore.getOrphanSize() >= MAX_ORPHAN_SIZE) {
-                result = ImportResult.INVALID_BLOCK;
-                result.setErrorInfo("Orphan block pool is full");
-                log.debug("Orphan block pool is full");
-                return result;
+            if (!hardened && isAccountTx(block) && orphanBlockStore.getOrphanSize() >= MAX_ORPHAN_SIZE) {
+                // Legacy rule. Under the hardened rules a full pool is not a reason to call a block invalid
+                // (validity must not depend on local state); the block is just not queued for our own blocks.
+                return invalid("Orphan block pool is full", false);
             }
 
             // Check if block already exists
@@ -336,10 +459,12 @@ public class BlockchainImpl implements Blockchain {
             }
 
             if (isTxBlock(block) && XAmount.ZERO.compareTo(getTxFee(block)) == 0) {
-                result = ImportResult.INVALID_BLOCK;
-                result.setErrorInfo("There is a problem with the transaction fee of this transaction block");
-                log.debug("Block's fee is illegal");
-                return result;
+                return invalid("There is a problem with the transaction fee of this transaction block", true);
+            }
+            if (isAccountTx(block) && block.getOutputs().isEmpty()) {
+                // outPutLimit() divides by the number of outputs; the legacy code ran into that division below
+                // and refused the block with an ERROR result
+                return invalid("An account transaction needs at least one output", true);
             }
 
             // Validate block references
@@ -349,11 +474,7 @@ public class BlockchainImpl implements Blockchain {
             for (Address ref : all) {
                 if (ref != null && !ref.isAddress) {
                     if (ref.getType() == XDAG_FIELD_OUT && !ref.getAmount().isZero()) {
-                        result = ImportResult.INVALID_BLOCK;
-                        result.setHashlow(ref.getAddress());
-                        result.setErrorInfo("Address's amount isn't zero");
-                        log.debug("Address's amount isn't zero");
-                        return result;
+                        return invalid(ref.getAddress(), "Address's amount isn't zero", true);
                     }
                     Block refBlock = getBlockByHash(ref.getAddress(), false);
                     if (refBlock == null) {
@@ -365,19 +486,11 @@ public class BlockchainImpl implements Blockchain {
                     } else {
                         // Ensure ref block's time is earlier than block's time
                         if (refBlock.getTimestamp() >= block.getTimestamp()) {
-                            result = ImportResult.INVALID_BLOCK;
-                            result.setHashlow(refBlock.getHashLow());
-                            result.setErrorInfo("Ref block's time >= block's time");
-                            log.debug("Ref block's time >= block's time");
-                            return result;
+                            return invalid(refBlock.getHashLow(), "Ref block's time >= block's time", true);
                         }
                         // Ensure TX block's amount is enough to subtract minGas, Amount must >= 0.1
                         if (ref.getType() == XDAG_FIELD_IN && ref.getAmount().subtract(getTxFee(block)).isNegative()) {
-                            result = ImportResult.INVALID_BLOCK;
-                            result.setHashlow(ref.getAddress());
-                            result.setErrorInfo("Ref block's balance < fee");
-                            log.debug("Ref block's balance < fee");
-                            return result;
+                            return invalid(ref.getAddress(), "Ref block's balance < fee", true);
                         }
                     }
                 } else {
@@ -385,39 +498,28 @@ public class BlockchainImpl implements Blockchain {
                     if (ref != null && ref.type == XDAG_FIELD_INPUT) {
                         inputFieldCounter = inputFieldCounter + 1;
                         if (inputFieldCounter > 1) {
-                            result = ImportResult.INVALID_BLOCK;
-                            result.setErrorInfo("The quantity of the input must be exactly one.");
-                            log.debug("The quantity of the input must be exactly one.");
-                            return result;
+                            return invalid("The quantity of the input must be exactly one.", true);
                         }
                     }
-                    if (ref != null && ref.type == XDAG_FIELD_INPUT && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()).toArray())) {
-                        result = ImportResult.INVALID_BLOCK;
-                        result.setErrorInfo("Address isn't exist " + Base58.encodeCheck(
-                                BytesUtils.byte32ToArray(ref.getAddress())));
-                        log.debug("Address isn't exist {}",
-                                Base58.encodeCheck(BytesUtils.byte32ToArray(ref.getAddress())));
-                        return result;
+                    // Legacy rule: the spending address must already have a record. Whether it has one depends
+                    // on what this node has executed (and even on rollbacks it went through), so nodes can
+                    // disagree about the very same block. The hardened rules do not look at the state here:
+                    // a transfer from an address without funds simply fails when it is executed.
+                    if (!hardened && ref != null && ref.type == XDAG_FIELD_INPUT
+                            && !addressStore.addressIsExist(BytesUtils.byte32ToArray(ref.getAddress()).toArray())) {
+                        return invalid("Address isn't exist " + Base58.encodeCheck(
+                                BytesUtils.byte32ToArray(ref.getAddress())), false);
                     }
                     // Ensure TX block's input's & output's amount is enough to subtract minGas, Amount must >= 0.1
                     if (ref != null && (ref.getType() == XDAG_FIELD_INPUT || ref.getType() == XDAG_FIELD_OUTPUT)) {
                         if (getTxFee(block).isPositive() && outPutLimit(block).isPositive()) {
                             if (ref.getType() == XDAG_FIELD_INPUT && ref.getAmount().subtract(getTxFee(block)).isNegative()) {
-                                result = ImportResult.INVALID_BLOCK;
-                                result.setHashlow(ref.getAddress());
-                                result.setErrorInfo("Ref input amount < Gas");
-                                return result;
+                                return invalid(ref.getAddress(), "Ref input amount < Gas", true);
                             } else if (ref.getType() == XDAG_FIELD_OUTPUT && ref.getAmount().subtract(outPutLimit(block)).isNegative()) {
-                                result = ImportResult.INVALID_BLOCK;
-                                result.setHashlow(ref.getAddress());
-                                result.setErrorInfo("Ref output amount < Gas");
-                                log.debug("Ref output amount < Gas");
-                                return result;
+                                return invalid(ref.getAddress(), "Ref output amount < Gas", true);
                             }
                         } else {
-                            result = ImportResult.INVALID_BLOCK;
-                            result.setErrorInfo("When constructing a block, the fee entered is illegal");
-                            return result;
+                            return invalid("When constructing a block, the fee entered is illegal", true);
                         }
                     }
                 }
@@ -431,59 +533,52 @@ public class BlockchainImpl implements Blockchain {
 
             if (isAccountTx(block)) {
                 if(block.getTxNonceField() == null) {
-                    result = ImportResult.INVALID_BLOCK;
-                    result.setErrorInfo("Account transaction block must have nonce.");
-                    return result;
+                    return invalid("Account transaction block must have nonce.", true);
                 }
             } else if (isTxBlock(block)) {
                 if(block.getTxNonceField() != null) {
-                    result = ImportResult.INVALID_BLOCK;
-                    result.setErrorInfo("The main block transaction block should not contain nonce.");
-                    return result;
+                    return invalid("The main block transaction block should not contain nonce.", true);
                 }
             } else {
                 if(block.getTxNonceField() != null) {
-                    result = ImportResult.INVALID_BLOCK;
-                    result.setErrorInfo("The main block or link block should not contain nonce.");
-                    return result;
+                    return invalid("The main block or link block should not contain nonce.", true);
                 }
+            }
+
+            // Every block carries an output signature. The legacy code dereferenced it without a check, after
+            // it had already changed the state (links removed from the orphan pool, history written): a block
+            // without one ended in an exception and was dropped, but the damage was done.
+            if (block.getOutsig() == null) {
+                return invalid(block.getHashLow(), "Block has no output signature", true);
             }
 
             // Validate block inputs
             if (!canUseInput(block)) {
-                result = ImportResult.INVALID_BLOCK;
-                result.setHashlow(block.getHashLow());
-                result.setErrorInfo("Block's input can't be used");
-                log.debug("Block's input can't be used");
-                return ImportResult.INVALID_BLOCK;
+                return invalid(block.getHashLow(), "Block's input can't be used", true);
             }
 
-            int id = 0;
+            // Proof of work of the block itself. It only depends on the block (and on the RandomX seeds), so it
+            // is computed before anything is changed: if it cannot be computed the block is refused untouched.
+            BigInteger cuDiff = calculateCurrentBlockDiff(block);
+
+            // ------------------------------------------------------------------------------------------------
+            // The block is valid. Everything below changes the state and must not fail.
+            // ------------------------------------------------------------------------------------------------
+
             // Remove links
             for (Address ref : all) {
-                FieldType fType;
                 if (!ref.isAddress) {
                     removeOrphan(ref.getAddress(),
                             (block.getInfo().flags & BI_EXTRA) != 0
                                     ? OrphanRemoveActions.ORPHAN_REMOVE_EXTRA
                                     : OrphanRemoveActions.ORPHAN_REMOVE_NORMAL);
-
-                    fType = ref.getType().equals(XDAG_FIELD_IN) ? XDAG_FIELD_OUT : XDAG_FIELD_IN;
-                } else {
-                    fType = ref.getType().equals(XDAG_FIELD_INPUT) ? XDAG_FIELD_OUTPUT : XDAG_FIELD_INPUT;
                 }
-
-                if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
-                    if (fType.equals(XDAG_FIELD_OUT) || fType.equals(XDAG_FIELD_OUTPUT)) {
-                        onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
-                                block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
-                    } else {
-                        XAmount singleOutputFee = outPutLimit(block);
-                        onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount().subtract(singleOutputFee),
-                                block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
-                    }
-                }
-                id++;
+            }
+            if (!hardened) {
+                // 0.8.x wrote the transaction history when a block arrived, whether or not it was ever executed
+                // and without taking it back on a rollback. Under the hardened rules it is written when the
+                // transaction executes and removed when that execution is undone.
+                recordTxHistory(block);
             }
 
             // Check current main chain
@@ -496,19 +591,26 @@ public class BlockchainImpl implements Blockchain {
             }
 
             // Calculate block difficulty
-            BigInteger cuDiff = calculateCurrentBlockDiff(block);
             calculateBlockDiff(block, cuDiff);
 
             // Process extra blocks
             processExtraBlock();
 
             // Update main chain based on difficulty
-            if (block.getInfo().getDifficulty().compareTo(xdagTopStatus.getTopDiff()) > 0) {
+            Block blockRef = null;
+            boolean heavier = block.getInfo().getDifficulty().compareTo(xdagTopStatus.getTopDiff()) > 0;
+            if (heavier) {
+                // Find common ancestor
+                blockRef = findAncestor(block, isSyncFixFork(xdagStats.nmain));
+                if (!mayReorganizeTo(blockRef)) {
+                    log.warn("Block {} is heavier than our chain but branches off below the snapshot; not following it",
+                            block.getHashLow().toHexString());
+                    heavier = false;
+                }
+            }
+            if (heavier) {
                 // Fork chain
                 long currentHeight = xdagStats.nmain;
-
-                // Find common ancestor
-                Block blockRef = findAncestor(block, isSyncFixFork(xdagStats.nmain));
 
                 // Unwind main chain to ancestor
                 unWindMain(blockRef);
@@ -586,6 +688,7 @@ public class BlockchainImpl implements Blockchain {
             return result;
         } catch (Throwable e) {
             log.error(e.getMessage(), e);
+            ImportResult.ERROR.setErrorInfo(e.getClass().getSimpleName() + ": " + e.getMessage());
             return ImportResult.ERROR;
         }
     }
@@ -648,8 +751,76 @@ public class BlockchainImpl implements Blockchain {
                     }
                 }
             }
+            if (isHardenedBlock(block) && !admitToPool(block, address, nonce)) {
+                log.debug("Transaction {} is valid but not queued for our own blocks", block.getHashLow().toHexString());
+                return;
+            }
             getOrphanBlockStore().addOrphan(block, isTxBlock(block), nonce, fee, address);
         }
+    }
+
+    // Highest nonce, counted from the last executed one, that is still queued for an account
+    private static final long MAX_POOL_NONCE_GAP = 64;
+
+    /**
+     * Which transactions this node queues for the blocks it produces itself. This is local policy, not a consensus
+     * rule: a transaction that is not queued here is still a valid block, other blocks may refer to it, and it is
+     * executed like any other once a main block reaches it.
+     * <p>
+     * A transaction that cannot be paid for costs its sender nothing - it is rejected when executed, without a
+     * fee. Queuing such transactions would let anyone fill the pool (and, with a high declared fee, the front of
+     * the queue) for free, so only transactions that are covered right now are queued:
+     * <ul>
+     * <li>account transaction: the pool is not full, the nonce is one of the next few, and the balance covers this
+     *     transfer plus everything already queued for the account;</li>
+     * <li>transfer of block balances: every spent block currently holds what is taken from it.</li>
+     * </ul>
+     * Link blocks are always queued: they may refer to transactions that are waiting, which a block of ours has
+     * to reach.
+     */
+    private boolean admitToPool(Block block, byte[] account, UInt64 nonce) {
+        if (isAccountTx(block) && account != null) {
+            if (orphanBlockStore.getOrphanSize() >= MAX_ORPHAN_SIZE) {
+                return false;
+            }
+            UInt64 executed = addressStore.getExecutedNonceNum(account);
+            if (nonce.compareTo(executed) <= 0
+                    || nonce.toBigInteger().subtract(executed.toBigInteger()).compareTo(BigInteger.valueOf(MAX_POOL_NONCE_GAP)) > 0) {
+                return false;
+            }
+            XAmount needed = XAmount.ZERO;
+            List<Block> spending = new ArrayList<>();
+            spending.add(block);
+            for (Bytes32 queued : orphanBlockStore.getAccountOrphans(account)) {
+                Block queuedBlock = queued.equals(block.getHashLow()) ? null : getBlockByHash(queued, true);
+                if (queuedBlock != null) {
+                    spending.add(queuedBlock);
+                }
+            }
+            for (Block b : spending) {
+                for (Address in : b.getInputs()) {
+                    if (in.getType() == XDAG_FIELD_INPUT) {
+                        needed = addOrNull(needed, in.getAmount());
+                        if (needed == null) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return compareAmountTo(addressStore.getBalanceByAddress(account), needed) >= 0;
+        }
+        if (isMainTxBlock(block)) {
+            Map<Bytes32, XAmount> taken = new HashMap<>();
+            for (Address in : block.getInputs()) {
+                Block ref = getBlockByHash(in.getAddress(), false);
+                XAmount sum = addOrNull(taken.getOrDefault(Bytes32.wrap(in.getAddress()), XAmount.ZERO), in.getAmount());
+                if (ref == null || sum == null || compareAmountTo(ref.getInfo().getAmount(), sum) < 0) {
+                    return false;
+                }
+                taken.put(Bytes32.wrap(in.getAddress()), sum);
+            }
+        }
+        return true;
     }
 
     public XAmount getTxFee(Block block) {
@@ -698,7 +869,18 @@ public class BlockchainImpl implements Blockchain {
         return 0;
     }
 
+    /**
+     * Remember the execution status a peer attached to a block it served during sync.
+     * <p>
+     * The legacy rules let a syncing node skip a transaction because a peer said it had been rejected. That is
+     * only tolerable while every peer is one the operator chose (closed network before the fork). Once the fork
+     * is in force nothing a peer claims about the state is used: the hint is not even stored, and the hardened
+     * execution never reads it.
+     */
     public void putSyncTxStatus(Bytes32 txHash, byte executionStatus){
+        if (openNetLatched) {
+            return;
+        }
         if(executionStatus != 0){
             syncTxStatusCache.put(txHash, executionStatus);
         }
@@ -728,7 +910,7 @@ public class BlockchainImpl implements Blockchain {
         int inputCount = 0;
         for (Address ref : inputs) {
             if (ref.getType() == XDAG_FIELD_IN) {
-                return false; // 不允许出现 IN
+                return false; // an IN link is not allowed here
             } else if (ref.getType() == XDAG_FIELD_INPUT) {
                 inputCount++;
             }
@@ -773,6 +955,44 @@ public class BlockchainImpl implements Blockchain {
     }
 
     // Record transaction history
+    /** The history entries of a block: one per link that carries an amount, from the linked side's point of view. */
+    private void recordTxHistory(Block block) {
+        if (txHistoryStore == null) {
+            return;
+        }
+        int id = 0;
+        for (Address ref : block.getLinks()) {
+            FieldType fType;
+            if (!ref.isAddress) {
+                fType = ref.getType().equals(XDAG_FIELD_IN) ? XDAG_FIELD_OUT : XDAG_FIELD_IN;
+            } else {
+                fType = ref.getType().equals(XDAG_FIELD_INPUT) ? XDAG_FIELD_OUTPUT : XDAG_FIELD_INPUT;
+            }
+            if (compareAmountTo(ref.getAmount(), XAmount.ZERO) != 0) {
+                if (fType.equals(XDAG_FIELD_OUT) || fType.equals(XDAG_FIELD_OUTPUT)) {
+                    onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount(),
+                            block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
+                } else {
+                    XAmount singleOutputFee = outPutLimit(block);
+                    onNewTxHistory(ref.getAddress(), block.getHashLow(), fType, ref.getAmount().subtract(singleOutputFee),
+                            block.getTimestamp(), block.getInfo().getRemark(), ref.isAddress, id);
+                }
+            }
+            id++;
+        }
+    }
+
+    /** Takes the history entries of a block back (its execution was undone). */
+    private void forgetTxHistory(Block block) {
+        if (txHistoryStore != null) {
+            try {
+                txHistoryStore.deleteTxHistoryByHash(BasicUtils.hash2Address(block.getHashLow()));
+            } catch (RuntimeException e) {
+                log.warn("Cannot remove the history of {}: {}", block.getHashLow().toHexString(), e.toString());
+            }
+        }
+    }
+
     public void onNewTxHistory(Bytes32 addressHashlow, Bytes32 txHashlow, XdagField.FieldType type,
                                XAmount amount, long time, byte[] remark, boolean isAddress, int id) {
         if (txHistoryStore != null) {
@@ -920,7 +1140,10 @@ public class BlockchainImpl implements Blockchain {
     // Process extra blocks
     public void processExtraBlock() {
         if (memOrphanPool.size() > MAX_ALLOWED_EXTRA) {
-            Block reuse = memOrphanPool.entrySet().iterator().next().getValue();
+            Block reuse;
+            synchronized (memOrphanPool) {
+                reuse = memOrphanPool.entrySet().iterator().next().getValue();
+            }
             log.debug("Remove when extra too big");
             removeOrphan(reuse.getHashLow(), OrphanRemoveActions.ORPHAN_REMOVE_REUSE);
             xdagStats.nblocks--;
@@ -966,13 +1189,21 @@ public class BlockchainImpl implements Blockchain {
         }
         long ct = XdagTime.getCurrentTimestamp();
         if (p != null
-                && ((p.getInfo().flags & BI_REF) != 0)
+                && (((p.getInfo().flags & BI_REF) != 0) || isHardenedBlock(p))
                 && i > 1
                 && ct >= p.getTimestamp() + 2 * 1024) {
 //            log.info("setMain success block:{}", Hex.toHexString(p.getHashLow()));
             setMain(p);
         }
     }
+    // Why BI_REF is not asked for under the hardened rules: with i > 1 there is a block of the main chain above p
+    // whose link of maximum difficulty is p, so p is referred to by construction and the flag adds nothing. It does
+    // take something away, though. rollTx() clears the flag of every block that an unwound main block had executed,
+    // to have it linked again by a block of our own - also when that block is itself part of the chain we are
+    // switching to. The flag then only comes back when the block above it is linked by a later block, so a node that
+    // went through the reorganisation confirms p one block later than a node that did not (and a node that does not
+    // produce blocks waits for somebody else to do it). Which main blocks are confirmed must only depend on the
+    // blocks a node has, not on the order in which it received them.
 
     @Override
     public long getLatestMainBlockNumber() {
@@ -1019,10 +1250,223 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    // applyBlock results that are not fees: the block was executed before / its nonce did not fit
+    private static final XAmount MINUS_ONE = XAmount.ZERO.subtract(XAmount.ONE);
+    private static final XAmount SKIPPED = XAmount.of(-2);
+
     /**
-     * Execute block and return gas fee
+     * a + b, or null if the sum does not fit (XAmount arithmetic is exact and throws on overflow).
      */
-    private XAmount applyBlock(boolean flag, Block block) {
+    private static XAmount addOrNull(XAmount a, XAmount b) {
+        try {
+            return a.add(b);
+        } catch (ArithmeticException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Execute a block under the open-network hardening fork and return the fee it collected
+     * (-1: not executed by this main block, 0: nothing collected / transaction rejected).
+     * <p>
+     * It follows {@link #applyBlockLegacy} step by step - same order of execution, same nonce rules, same
+     * distribution of fees - and differs in exactly these points:
+     * <ol>
+     * <li>All IN links of a transaction that spend the same block are added up before they are compared with the
+     *     balance of that block. The legacy code compares every link with the untouched balance, so a block listed
+     *     twice is debited twice and ends with a negative balance: money from nothing.</li>
+     * <li>Amounts are added without overflow; a transaction whose amounts do not fit is rejected like any other
+     *     transaction whose inputs and outputs do not match. The legacy code throws out of the middle of setMain.</li>
+     * <li>A block without inputs moves no value, whatever is written in its amount fields. The legacy code throws
+     *     out of setMain if they are not zero.</li>
+     * <li>Blocks inherited from a snapshot are final and carry no data; they are never executed again. The legacy
+     *     code dereferences their missing data.</li>
+     * <li>The execution status a peer attached to a block during sync is not consulted.</li>
+     * <li>A transaction whose nonce does not fit is left unexecuted for good, as before, but the block that reached
+     *     it is recorded ({@link BlockStore#setTxSkippedBy}). The legacy code keeps no such record, so when it
+     *     unwinds <em>any</em> block that refers to such a transaction it puts the transaction back to "pending" -
+     *     also when a different main block, one that stays on the chain, was the one that skipped it. A node that
+     *     went through the reorganisation then executes the transaction later while a node that did not never
+     *     does. (It also forgets to undo the blocks that were executed below the skipped transaction.)</li>
+     * </ol>
+     * Nothing in here can throw for a block that passed {@link #tryToConnect}; the value is only moved after the
+     * whole transaction has been checked.
+     */
+    private XAmount applyBlockHardened(boolean flag, Block block) {
+        // Block already processed
+        if ((block.getInfo().flags & BI_MAIN_REF) != 0) {
+            return MINUS_ONE;
+        }
+
+        updateBlockFlag(block, BI_MAIN_REF, true);
+
+        List<Address> links = block.getLinks();
+        if (links == null || links.isEmpty()) {
+            updateBlockFlag(block, BI_APPLIED, true);
+            return XAmount.ZERO;
+        }
+
+        XAmount gasCollected = XAmount.ZERO;
+        if (flag) {
+            execLog.info("========== Main Block: {} ==========", block.getHashLow().toHexString());
+        }
+        for (Address link : links) {
+            if (!link.isAddress) {
+                Block ref = getBlockByHash(link.getAddress(), false);
+                if (ref == null || (ref.getInfo().flags & BI_MAIN_REF) != 0 || ref.getInfo().isSnapshot()) {
+                    continue;
+                }
+                ref = getBlockByHash(link.getAddress(), true);
+                if (ref == null) {
+                    continue;
+                }
+                ref.getInfo().setFee(XAmount.ZERO);
+
+                XAmount childGas = applyBlockHardened(false, ref);
+
+                int refFlag = ref.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+                int executionState = 0;
+                if (refFlag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                    executionState = 1; // 1C: applied
+                } else if (refFlag == (BI_REF | BI_MAIN_REF)) {
+                    executionState = 2; // 18: rejected
+                }
+                String blockType = isTxBlock(ref) ? "TxBlock  " : "LinkBlock";
+                execLog.info("{} | Hash: {} | State: {}", blockType, ref.getHashLow().toHexString(), executionState);
+
+                if (childGas.equals(SKIPPED)) {
+                    blockStore.setTxSkippedBy(ref.getHashLow(), block.getHashLow());
+                } else if (!childGas.equals(MINUS_ONE)) {
+                    XAmount sum = addOrNull(gasCollected, childGas);
+                    // fees are real money that was paid: their sum is bounded by the supply
+                    gasCollected = sum == null ? gasCollected : sum;
+                    updateBlockRef(ref, new Address(block));
+                }
+            }
+        }
+
+        if (!isTxBlock(block)) {
+            // main block candidate or link block: no value of its own to move
+            updateBlockFlag(block, BI_APPLIED, true);
+            if (!flag) {
+                block.getInfo().setFee(gasCollected);
+                blockStore.saveBlockInfo(block.getInfo());
+            }
+            return gasCollected;
+        }
+
+        // ---- transaction block: check everything first ----
+        Address accountInput = null;
+        XAmount sumIn = XAmount.ZERO;
+        XAmount sumOut = XAmount.ZERO;
+        boolean fits = true;
+        Map<Bytes32, XAmount> takenFromBlock = new HashMap<>();
+        for (Address link : links) {
+            MutableBytes32 linkAddress = link.getAddress();
+
+            if (link.getType() == XDAG_FIELD_INPUT) {
+                accountInput = link;
+                byte[] account = BasicUtils.hash2byte(linkAddress).toArray();
+                XAmount balance = addressStore.getBalanceByAddress(account);
+                UInt64 executedNonce = addressStore.getExecutedNonceNum(account);
+                if (block.getTxNonceField() == null) {
+                    // cannot happen: an account transaction without a nonce field is refused on import
+                    return XAmount.ZERO;
+                }
+                UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
+
+                if (blockNonce.compareTo(executedNonce.add(UInt64.ONE)) > 0) {
+                    log.info("tx nonce error, tx nonce: {}, executed nonce: {},hash:{}", blockNonce, executedNonce, block.getHashLow().toHexString());
+                    addressStore.updateTxQuantity(account, executedNonce);
+                    return SKIPPED;
+                }
+                if (blockNonce.compareTo(executedNonce) <= 0) {
+                    log.info("tx nonce is less than executed nonce,hash:{}", block.getHashLow().toHexString());
+                    return SKIPPED;
+                }
+                if (compareAmountTo(balance, link.getAmount()) < 0) {
+                    log.info("balance is less than amount,hash:{}", block.getHashLow().toHexString());
+                    processNonceAfterTransactionExecution(link);
+                    return XAmount.ZERO;
+                }
+                XAmount sum = addOrNull(sumIn, link.getAmount());
+                fits &= sum != null;
+                sumIn = sum == null ? sumIn : sum;
+
+            } else if (link.getType() == XDAG_FIELD_IN) {
+                Block ref = getBlockByHash(linkAddress, false);
+                if (ref == null) {
+                    return XAmount.ZERO;
+                }
+                // everything this transaction takes from that block, not just this one link
+                XAmount taken = addOrNull(takenFromBlock.getOrDefault(Bytes32.wrap(linkAddress), XAmount.ZERO), link.getAmount());
+                if (taken == null || compareAmountTo(ref.getInfo().getAmount(), taken) < 0) {
+                    log.info("ref balance is less than amount");
+                    return XAmount.ZERO;
+                }
+                takenFromBlock.put(Bytes32.wrap(linkAddress), taken);
+                XAmount sum = addOrNull(sumIn, link.getAmount());
+                fits &= sum != null;
+                sumIn = sum == null ? sumIn : sum;
+
+            } else {
+                XAmount sum = addOrNull(sumOut, link.getAmount());
+                fits &= sum != null;
+                sumOut = sum == null ? sumOut : sum;
+            }
+        }
+
+        XAmount available = addOrNull(block.getInfo().getAmount(), sumIn);
+        if (!fits || available == null
+                || compareAmountTo(available, sumOut) < 0
+                || compareAmountTo(block.getInfo().getAmount(), XAmount.ZERO) < 0
+                || compareAmountTo(sumIn, sumOut) != 0) {
+            if (accountInput != null) {
+                processNonceAfterTransactionExecution(accountInput);
+            }
+            log.info("block amount is not equal to sumIn - sumOut");
+            return XAmount.ZERO;
+        }
+
+        // ---- move the value ----
+        XAmount blockGas = XAmount.ZERO;
+        XAmount outputFee = outPutLimit(block);
+        for (Address link : links) {
+            MutableBytes32 linkAddress = link.addressHash;
+            if (!link.isAddress) {
+                if (link.getType() == XDAG_FIELD_IN) {
+                    Block ref = getBlockByHash(linkAddress, false);
+                    subtractAndAccept(ref, link.getAmount());
+                }
+            } else {
+                if (link.getType() == XDAG_FIELD_INPUT) {
+                    subtractAmount(BasicUtils.hash2byte(linkAddress), link.getAmount(), block);
+                    processNonceAfterTransactionExecution(link);
+                } else if (link.getType() == XDAG_FIELD_OUTPUT) {
+                    addAmount(BasicUtils.hash2byte(linkAddress), link.getAmount().subtract(outputFee), block);
+                    blockGas = blockGas.add(outputFee);
+                }
+            }
+        }
+
+        updateBlockFlag(block, BI_APPLIED, true);
+        recordTxHistory(block);
+
+        if (!flag) {
+            block.getInfo().setFee(blockGas);
+            blockStore.saveBlockInfo(block.getInfo());
+            return blockGas;
+        } else {
+            // If the transaction block has become the main block, then get blockGas; otherwise, return gasCollected.
+            return ((gasCollected.compareTo(XAmount.ZERO) == 0) && (blockGas.compareTo(XAmount.ZERO) > 0)) ? blockGas : gasCollected;
+        }
+    }
+
+    /**
+     * Execute block and return gas fee (rules of xdagj 0.8.x, kept as they are for main blocks before the
+     * open-network hardening fork so that the history of the network is reproduced exactly).
+     */
+    private XAmount applyBlockLegacy(boolean flag, Block block) {
         // Block already processed
         if ((block.getInfo().flags & BI_MAIN_REF) != 0) {
             return XAmount.ZERO.subtract(XAmount.ONE);
@@ -1047,7 +1491,7 @@ public class BlockchainImpl implements Blockchain {
                 ref = getBlockByHash(link.getAddress(), true);
                 ref.getInfo().setFee(XAmount.ZERO);
 
-                XAmount childGas = applyBlock(false, ref);
+                XAmount childGas = applyBlockLegacy(false, ref);
 
                 int refFlag = ref.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
                 int executionState = 0;
@@ -1132,9 +1576,6 @@ public class BlockchainImpl implements Blockchain {
                 Block ref = getBlockByHash(linkAddress, false);
                 if (link.getType() == XDAG_FIELD_IN) {
                     subtractAndAccept(ref, link.getAmount());
-                    XAmount allBalance = addressStore.getAllBalance();
-                    allBalance = allBalance.add(link.getAmount().subtract(getTxFee(block)));
-                    addressStore.updateAllBalance(allBalance);
                 }
             } else {
                 if (link.getType() == XDAG_FIELD_INPUT) {
@@ -1167,6 +1608,94 @@ public class BlockchainImpl implements Blockchain {
         }
     }
 
+    /**
+     * Undo {@link #applyBlockHardened} exactly, in reverse: first what the block itself did, then the blocks that
+     * were executed below it, last one first.
+     *
+     * @param flag true for the main block itself (its flags and fee are reset by unSetMain)
+     */
+    private void unApplyBlockHardened(Block block, boolean flag) {
+        if ((block.getInfo().flags & BI_MAIN_REF) == 0) {
+            return;
+        }
+        List<Address> links = block.getLinks();
+        Collections.reverse(links); // must be reverse
+        boolean skipped = blockStore.getTxSkippedBy(block.getHashLow()) != null;
+
+        if ((block.getInfo().flags & BI_APPLIED) != 0) {
+            if (isTxBlock(block)) {
+                XAmount outputFee = outPutLimit(block);
+                for (Address link : links) {
+                    if (!link.isAddress) {
+                        if (link.getType() == XDAG_FIELD_IN) {
+                            Block ref = getBlockByHash(link.getAddress(), false);
+                            if (ref != null) {
+                                addAndAccept(ref, link.getAmount());
+                            }
+                        }
+                    } else if (link.getType() == XDAG_FIELD_INPUT) {
+                        addAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount(), block);
+                        undoNonce(link);
+                    } else if (link.getType() == XDAG_FIELD_OUTPUT) {
+                        subtractAmount(BasicUtils.hash2byte(link.getAddress()), link.getAmount().subtract(outputFee), block);
+                    }
+                }
+                forgetTxHistory(block);
+            }
+            updateBlockFlag(block, BI_APPLIED, false);
+        } else if (!skipped && isAccountTx(block)) {
+            // a rejected account transaction used up its nonce
+            for (Address link : links) {
+                if (link.isAddress && link.getType() == XDAG_FIELD_INPUT) {
+                    undoNonce(link);
+                }
+            }
+        }
+
+        if (!flag) {
+            block.getInfo().setFee(XAmount.ZERO);
+            updateBlockFlag(block, BI_MAIN_REF, false);
+            updateBlockRef(block, null);
+            if (skipped) {
+                blockStore.setTxSkippedBy(block.getHashLow(), null);
+            }
+        }
+
+        for (Address link : links) {
+            if (link.isAddress) {
+                continue;
+            }
+            Block ref = getBlockByHash(link.getAddress(), false);
+            if (ref == null || ref.getInfo().isSnapshot() || (ref.getInfo().flags & BI_MAIN_REF) == 0) {
+                continue;
+            }
+            // only what was reached through this very block: executed below it, or skipped by it
+            boolean executedHere = ref.getInfo().getRef() != null
+                    && equalBytes(ref.getInfo().getRef(), block.getHashLow().toArray());
+            boolean skippedHere = ref.getInfo().getRef() == null
+                    && block.getHashLow().equals(blockStore.getTxSkippedBy(ref.getHashLow()));
+            if (executedHere || skippedHere) {
+                XAmount fee = ref.getFee();
+                ref = getBlockByHash(ref.getHashLow(), true);
+                if (ref == null) {
+                    continue;
+                }
+                ref.getInfo().setFee(fee);
+                unApplyBlockHardened(ref, false);
+            }
+        }
+    }
+
+    private void undoNonce(Address input) {
+        byte[] address = BytesUtils.byte32ToArray(input.getAddress()).toArray();
+        UInt64 exeNonce = addressStore.getExecutedNonceNum(address);
+        if (exeNonce.isZero()) {
+            return;
+        }
+        addressStore.updateExcutedNonceNum(address, false);
+        addressStore.updateTxQuantity(address, exeNonce.subtract(UInt64.ONE));
+    }
+
     // TODO: unapply block which in snapshot
     public void unApplyBlock(Block block, boolean flag) {
         if((block.getInfo().flags & BI_MAIN_REF) == 0 || block.getInfo().getRef() == null) {
@@ -1182,17 +1711,9 @@ public class BlockchainImpl implements Blockchain {
             for (Address link : links) {
                 if (!link.isAddress) {
                     Block ref = getBlockByHash(link.getAddress(), false);
-                    if (link.getType() == XDAG_FIELD_IN) {
+                    if (link.getType() == XDAG_FIELD_IN && ref != null) {
                         // Only input references to the main block transaction block will go through this.
                         addAndAccept(ref, link.getAmount());
-                        XAmount allBalance = addressStore.getAllBalance();
-                        // allBalance = allBalance.subtract(link.getAmount()); //fix subtract twice.
-                        try {
-                            allBalance = allBalance.subtract(link.getAmount().subtract(block.getFee()));
-                        } catch (Exception e) {
-                            log.debug("allBalance rollback");
-                        }
-                        addressStore.updateAllBalance(allBalance);
                     }
                 } else {
                     if (link.getType() == XDAG_FIELD_INPUT) {
@@ -1214,7 +1735,7 @@ public class BlockchainImpl implements Blockchain {
         } else {
             //When rolling back, the unaccepted transactions in the main block need to be processed, which is the number of confirmed transactions sent corresponding to their account addresses, nonce, needs to be reduced by one
             for(Address link : links) {
-                if (link.isAddress && link.getType() == XDAG_FIELD_INPUT){
+                if (link.isAddress && link.getType() == XDAG_FIELD_INPUT && block.getTxNonceField() != null){
                     Bytes address = byte32ToArray(link.getAddress());
                     UInt64 blockNonce = block.getTxNonceField().getTransactionNonce();
                     UInt64 exeNonce = addressStore.getExecutedNonceNum(address.toArray());
@@ -1239,6 +1760,12 @@ public class BlockchainImpl implements Blockchain {
         for (Address link : links) {
             if (!link.isAddress) {
                 Block ref = getBlockByHash(link.getAddress(), false);
+                // A block inherited from a snapshot has no data (and was not executed by this main block): there
+                // is nothing to undo below it. The code used to dereference the missing data, so unwinding the
+                // first main blocks after a snapshot - which link to the top of the snapshot - blew up half-way.
+                if (ref == null || getBlockByHash(ref.getHashLow(), true) == null) {
+                    continue;
+                }
                 XAmount fee;
                 // Even if mainBlock duplicate links the TX_block which other mainBlock handled, we can check if this TX ref is this mainBlock
                 if (ref.getInfo().getRef() != null
@@ -1265,6 +1792,18 @@ public class BlockchainImpl implements Blockchain {
      * Set the main chain with block as the main block - either fork or extend
      */
     public void setMain(Block block) {
+        synchronized (this) {
+            // see BlockStore#setMainUpdateInProgress: a process killed in here leaves a detectable mark
+            blockStore.setMainUpdateInProgress(true);
+            try {
+                doSetMain(block);
+            } finally {
+                blockStore.setMainUpdateInProgress(false);
+            }
+        }
+    }
+
+    private void doSetMain(Block block) {
 
         synchronized (this) {
             // Set reward
@@ -1278,8 +1817,11 @@ public class BlockchainImpl implements Blockchain {
             acceptAmount(block, reward);
             xdagStats.nmain++;
 
-            // Recursively execute blocks referenced by main block and get fees
-            XAmount mainBlockFee = applyBlock(true, block); //the mainBlock may have tx, return the fee to itself.
+            // Recursively execute blocks referenced by main block and get fees.
+            // Which rules apply is decided by the main block alone (its epoch), so it is the same on every node.
+            XAmount mainBlockFee = isHardenedExecution(block)
+                    ? applyBlockHardened(true, block)
+                    : applyBlockLegacy(true, block); //the mainBlock may have tx, return the fee to itself.
             if (mainBlockFee.compareTo(XAmount.ZERO) < 0) {// normal mainBlock will not go into this
                 return;
             } else {
@@ -1294,6 +1836,8 @@ public class BlockchainImpl implements Blockchain {
             if (randomx != null) {
                 randomx.randomXSetForkTime(block);
             }
+
+            latchOpenNet(block);
         }
 
     }
@@ -1303,6 +1847,17 @@ public class BlockchainImpl implements Blockchain {
      */
     // TODO: Change to new way to cancel main block reward
     public void unSetMain(Block block) {
+        synchronized (this) {
+            blockStore.setMainUpdateInProgress(true);
+            try {
+                doUnSetMain(block);
+            } finally {
+                blockStore.setMainUpdateInProgress(false);
+            }
+        }
+    }
+
+    private void doUnSetMain(Block block) {
 
         synchronized (this) {
 
@@ -1314,7 +1869,11 @@ public class BlockchainImpl implements Blockchain {
             xdagStats.nmain--;
 
             acceptAmount(block, XAmount.ZERO.subtract(reward));
-            unApplyBlock(block, true);
+            if (isHardenedExecution(block)) {
+                unApplyBlockHardened(block, true);
+            } else {
+                unApplyBlock(block, true);
+            }
 
             acceptAmount(block, XAmount.ZERO.subtract(block.getFee()));
             if (randomx != null) {
@@ -1528,6 +2087,10 @@ public class BlockchainImpl implements Blockchain {
         if (block.getInfo().getDifficulty() != null) {
             return block.getInfo().getDifficulty();
         }
+        if (isHardenedBlock(block)) {
+            return calculateHardenedBlockDiff(block);
+        }
+
         //TX block would not set diff, fix a diff = 1;
         if (!block.getInputs().isEmpty()) {
             return BigInteger.ONE;
@@ -1543,6 +2106,72 @@ public class BlockchainImpl implements Blockchain {
         }
 
         return blockDiff;
+    }
+
+    /**
+     * Own difficulty of a block under the open-network hardening fork: only proof of work counts.
+     * <p>
+     * The legacy rule gives every block without inputs the difficulty of its sha256d hash, and every transaction
+     * block a difficulty of 1. Since the RandomX fork only the block at the end of an epoch is mined with
+     * RandomX, so anyone with SHA-256 hardware could grind an ordinary block in the middle of an epoch (or one
+     * with a timestamp from before the RandomX fork) until it outweighs the RandomX main blocks: it would take the
+     * main block of its epoch, or - attached to an old main block - unwind the chain. A transaction block linked
+     * to the top becomes the main block of an epoch nobody mined in. Only the closed set of peers prevented this.
+     * <p>
+     * Hardened rule: a block has a difficulty of its own only if it is a main block candidate (timestamp at the
+     * end of an epoch, no inputs) and then only for the proof of work that is valid for its epoch.
+     */
+    private BigInteger calculateHardenedBlockDiff(Block block) {
+        if (!block.getInputs().isEmpty() || !XdagTime.isEndOfEpoch(block.getTimestamp())) {
+            return BigInteger.ZERO;
+        }
+        if (randomx == null) {
+            // RandomX is not part of this chain at all (unit tests)
+            return getDiffByRawHash(block.getHash());
+        }
+        long epoch = XdagTime.getEpoch(block.getTimestamp());
+        return switch (randomx.powOf(epoch, latestMainEpoch())) {
+            case RANDOMX -> {
+                BigInteger diff = getRandomXDiff(block, epoch);
+                yield diff == null ? BigInteger.ZERO : diff;
+            }
+            case SHA256D -> getDiffByRawHash(block.getHash());
+            case NONE -> BigInteger.ZERO;
+        };
+    }
+
+    @Override
+    public boolean usesRandomX(long epoch) {
+        if (randomx == null) {
+            return false;
+        }
+        if (openNetLatched || epoch >= openNetForkEpoch) {
+            return randomx.powOf(epoch, latestMainEpoch()) == RandomX.Pow.RANDOMX;
+        }
+        return randomx.isRandomxFork(epoch);
+    }
+
+    /**
+     * Epoch of the latest main block of this node, 0 if there is none.
+     */
+    private long latestMainEpoch() {
+        if (xdagStats.nmain <= 0) {
+            return 0;
+        }
+        Block main = blockStore.getBlockByHeight(xdagStats.nmain);
+        return main == null ? 0 : XdagTime.getEpoch(main.getTimestamp());
+    }
+
+    /**
+     * RandomX difficulty of a main block candidate, or null if this node has no seed for the epoch.
+     */
+    private BigInteger getRandomXDiff(Block block, long epoch) {
+        MutableBytes data = MutableBytes.create(64);
+        Bytes32 rxHash = HashUtils.sha256(block.getXdagBlock().getData().slice(0, 512 - 32));
+        data.set(0, rxHash);
+        data.set(32, block.getXdagBlock().getField(15).getData());
+        byte[] blockHash = randomx.randomXBlockHash(data.toArray(), epoch);
+        return blockHash == null ? null : getDiffByRawHash(Bytes32.wrap(Arrays.reverse(blockHash)));
     }
 
     /**
@@ -1720,23 +2349,30 @@ public class BlockchainImpl implements Blockchain {
                 updateBlockFlag(removeBlockRaw, BI_EXTRA, false);
                 xdagStats.nextra--;
             } else {
-                b = getBlockByHash(b.getHashLow(), true);
-                List<Address> in = b.getInputs();
-                UInt64 nonce = UInt64.ZERO;
-                XAmount fee = getTxFee(b);
-                byte[] address = null;
-                if (isAccountTx(b)) {
-                    for(Address ref : in) {
-                        if (ref.getType().equals(XDAG_FIELD_INPUT)) {
-                            address = BytesUtils.byte32ToArray(ref.getAddress()).toArray();
-                            nonce = b.getTxNonceField().getTransactionNonce();
-                            break;
+                // The block with its data is only needed to find it in the pool. The flag below is set on the
+                // stored info: a block parsed from its data carries the fee of its header, not the fee that was
+                // recorded when it was executed, and saving that would overwrite the recorded fee. (This happens
+                // when a transaction that was already executed is referred to again after rollTx() has cleared
+                // its BI_REF flag.)
+                Block raw = getBlockByHash(b.getHashLow(), true);
+                if (raw != null) {
+                    List<Address> in = raw.getInputs();
+                    UInt64 nonce = UInt64.ZERO;
+                    XAmount fee = getTxFee(raw);
+                    byte[] address = null;
+                    if (isAccountTx(raw)) {
+                        for(Address ref : in) {
+                            if (ref.getType().equals(XDAG_FIELD_INPUT)) {
+                                address = BytesUtils.byte32ToArray(ref.getAddress()).toArray();
+                                nonce = raw.getTxNonceField().getTransactionNonce();
+                                break;
+                            }
                         }
                     }
-                }
 
-                orphanBlockStore.deleteFromQueue(b, isTxBlock(b), nonce, fee, address);
-                orphanBlockStore.deleteByKey(b.getHashLow().toArray(), isTxBlock(b), nonce, fee, address);
+                    orphanBlockStore.deleteFromQueue(raw, isTxBlock(raw), nonce, fee, address);
+                    orphanBlockStore.deleteByKey(raw.getHashLow().toArray(), isTxBlock(raw), nonce, fee, address);
+                }
                 decrementNnoref();
             }
             // Update this block's flag
@@ -2101,10 +2737,23 @@ public class BlockchainImpl implements Blockchain {
                 finalAmount.toDecimal(9, XUnit.XDAG).toPlainString());
     }
 
+    /**
+     * "XDAG in address" statistic. It is adjusted exactly where an address balance changes, so executing and
+     * undoing a transaction cancel out (the two used to be computed by different formulas and drifted apart).
+     */
+    private void adjustAddressTotal(XAmount delta) {
+        try {
+            addressStore.updateAllBalance(addressStore.getAllBalance().add(delta));
+        } catch (Exception e) {
+            log.debug("address total not updated: {}", e.getMessage());
+        }
+    }
+
     private void subtractAmount(Bytes addressHash, XAmount amount, Block block) {
         XAmount balance = addressStore.getBalanceByAddress(addressHash.toArray());
         try {
             addressStore.updateBalance(addressHash.toArray(), balance.subtract(amount));
+            adjustAddressTotal(amount.negate());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, Base58.encodeCheck(addressHash), block.getHashLow());
@@ -2124,6 +2773,7 @@ public class BlockchainImpl implements Blockchain {
         XAmount balance = addressStore.getBalanceByAddress(addressHash.toArray());
         try {
             addressStore.updateBalance(addressHash.toArray(), balance.add(amount));
+            adjustAddressTotal(amount);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             log.debug("balance {}  amount {}  addressHsh {}  block {}", balance, amount, Base58.encodeCheck(addressHash), block.getHashLow());

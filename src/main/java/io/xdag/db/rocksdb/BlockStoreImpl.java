@@ -232,7 +232,7 @@ public class BlockStoreImpl implements BlockStore {
     }
 
 
-    // 状态也是存在区块里面的
+    // the status is kept in the block store as well
     public XdagStats getXdagStatus() {
         XdagStats status = null;
         byte[] value = indexSource.get(new byte[]{SETTING_STATS});
@@ -257,7 +257,7 @@ public class BlockStoreImpl implements BlockStore {
         indexSource.put(new byte[]{SETTING_TOP_STATUS}, value);
     }
 
-    // pretop状态
+    // pre-top status
     public XdagTopStatus getXdagTopStatus() {
         XdagTopStatus status = null;
         byte[] value = indexSource.get(new byte[]{SETTING_TOP_STATUS});
@@ -272,14 +272,14 @@ public class BlockStoreImpl implements BlockStore {
         return status;
     }
 
-    // 存储block的过程
+    // how a block is stored
     public void saveBlock(Block block) {
         long time = block.getTimestamp();
-        // Fix: time中只拿key的后缀（hashlow）就够了，值可以不存
+        // Fix: the time index only needs the suffix of the key (the hashlow); no value has to be stored
         timeSource.put(BlockUtils.getTimeKey(time, block.getHashLow()), new byte[]{0});
         blockSource.put(block.getHashLow().toArray(), block.getXdagBlock().getData().toArray());
         saveBlockSums(block);
-        //我们读取的fee，确保只能是我们自己节点执行该区块后赋的值才行，此时属于还没执行，统一置为零
+        // the fee read back later must only ever be what our own node assigned when it executed the block; it has not been executed yet, so zero is stored
         block.getInfo().setFee(XAmount.ZERO);
         saveBlockInfo(block.getInfo());
     }
@@ -411,7 +411,9 @@ public class BlockStoreImpl implements BlockStore {
         String key;
         endtime -= starttime;
 
-        if (endtime == 0 || (endtime & (endtime - 1)) != 0) {
+        // the span has to be a positive power of two: for 2^63 (negative) the power-of-two test below passes
+        // and the loop that derives the level from it never ends, because a negative number never shifts to 0
+        if (endtime <= 0 || (endtime & (endtime - 1)) != 0) {
             return -1;
         }
 //        if (endtime == 0 || (endtime & (endtime - 1)) != 0 || (endtime & 0xFFFEEEEEEEEFFFFFL) != 0) return -1;
@@ -474,8 +476,8 @@ public class BlockStoreImpl implements BlockStore {
             log.error(e.getMessage(), e);
         }
         indexSource.put(BytesUtils.merge(HASH_BLOCK_INFO, blockInfo.getHashlow()), value);
-        // 如果区块是主块的话顺便保存对应的高度信息
-        // TODO: paulochen 如果回滚了，对应高度的键值对该怎么更新(直接让其height=0的区块覆盖)
+        // if the block is a main block, store its height as well
+        // TODO: paulochen how should the height entry be updated on a rollback (for now a block with height 0 simply overwrites it)
 //        if (blockInfo.getHeight() > 0) {
         indexSource.put(BlockUtils.getHeight(blockInfo.getHeight()), blockInfo.getHashlow());
 //        } else {
@@ -520,7 +522,7 @@ public class BlockStoreImpl implements BlockStore {
         return blocks;
     }
 
-    // ADD: 通过高度获取区块
+    // ADD: get a block by its height
     public Block getBlockByHeight(long height) {
         byte[] hashlow = indexSource.get(BlockUtils.getHeight(height));
         if (hashlow == null) {
@@ -542,7 +544,7 @@ public class BlockStoreImpl implements BlockStore {
             return null;
         }
 //        log.debug("Data:{}",Hex.toHexString(blockSource.get(hashlow)));
-        // 没有源数据
+        // no raw data
         if (blockSource.get(hashlow.toArray()) == null) {
 //            log.error("No block origin data");
             return null;
@@ -612,6 +614,41 @@ public class BlockStoreImpl implements BlockStore {
 
     public void setSnapshotBoot() {
         indexSource.put(new byte[]{SNAPSHOT_BOOT}, BytesUtils.intToBytes(1, false));
+    }
+
+    public boolean isOpenNetForkLatched() {
+        byte[] data = indexSource.get(new byte[]{OPEN_NET_FORK_LATCH});
+        return data != null && data.length == 1 && data[0] == 1;
+    }
+
+    public void setOpenNetForkLatched() {
+        indexSource.put(new byte[]{OPEN_NET_FORK_LATCH}, new byte[]{1});
+    }
+
+    public void setMainUpdateInProgress(boolean inProgress) {
+        if (inProgress) {
+            indexSource.put(new byte[]{MAIN_UPDATE_MARK}, new byte[]{1});
+        } else {
+            indexSource.delete(new byte[]{MAIN_UPDATE_MARK});
+        }
+    }
+
+    public boolean isMainUpdateInProgress() {
+        return indexSource.get(new byte[]{MAIN_UPDATE_MARK}) != null;
+    }
+
+    public void setTxSkippedBy(Bytes32 txHashlow, Bytes32 byHashlow) {
+        byte[] key = BytesUtils.merge(TX_SKIPPED_BY, txHashlow.toArray());
+        if (byHashlow == null) {
+            indexSource.delete(key);
+        } else {
+            indexSource.put(key, byHashlow.toArray());
+        }
+    }
+
+    public Bytes32 getTxSkippedBy(Bytes32 txHashlow) {
+        byte[] value = indexSource.get(BytesUtils.merge(TX_SKIPPED_BY, txHashlow.toArray()));
+        return value == null || value.length != 32 ? null : Bytes32.wrap(value);
     }
 
     public void savePreSeed(byte[] preseed) {

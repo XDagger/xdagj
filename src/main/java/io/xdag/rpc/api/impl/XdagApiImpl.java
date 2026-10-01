@@ -70,7 +70,6 @@ import static io.xdag.core.BlockState.MAIN;
 import static io.xdag.core.BlockType.*;
 import static io.xdag.core.XdagField.FieldType.*;
 import static io.xdag.crypto.keys.AddressUtils.toBytesAddress;
-import static io.xdag.db.mysql.TransactionHistoryStoreImpl.totalPage;
 import static io.xdag.rpc.error.JsonRpcError.*;
 import static io.xdag.rpc.util.TypeConverter.toQuantityJsonHex;
 import static io.xdag.utils.BasicUtils.*;
@@ -563,9 +562,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                 .state("Accepted");
         if (page != 0) {
             BlockResultDTOBuilder.transactions(getTxHistory(address, page, parameters))
-                    .totalPage(totalPage);
+                    .totalPage(lastTotalPage());
         }
-        totalPage = 1;
         return BlockResultDTOBuilder.build();
     }
 
@@ -573,27 +571,32 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         if (null == block) {
             return null;
         }
+        // A block inherited from a snapshot has no data, but its record has a height, time, state, difficulty
+        // and remark: report them instead of the snapshot time and nothing else.
+        BlockInfo info = block.getInfo();
+        long time = info.getTimestamp() > 0 ? info.getTimestamp() : kernel.getConfig().getSnapshotSpec().getSnapshotTime();
         BlockResponse.BlockResponseBuilder BlockResultDTOBuilder = BlockResponse.builder();
         BlockResultDTOBuilder.address(hash2Address(block.getHash()))
                 .hash(block.getHash().toUnprefixedHexString())
-                .balance(String.format("%s", block.getInfo().getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
+                .balance(String.format("%s", info.getAmount().toDecimal(9, XUnit.XDAG).toPlainString()))
                 .type(SNAPSHOT.getDesc())
-                .blockTime(xdagTimestampToMs(kernel.getConfig().getSnapshotSpec().getSnapshotTime()))
-                .timeStamp(kernel.getConfig().getSnapshotSpec().getSnapshotTime());
-//                .flags(Integer.toHexString(block.getInfo().getFlags()))
-//                .diff(toQuantityJsonHex(block.getInfo().getDifficulty()))
-//                .remark(block.getInfo().getRemark() == null ? "" : new String(block.getInfo().getRemark(),
-//                        StandardCharsets.UTF_8).trim())
-//                .state(getStateByFlags(block.getInfo().getFlags()))
-//                .type(getType(block))
-//                .refs(getLinks(block))
-//                .height(block.getInfo().getHeight())
+                .blockTime(xdagTimestampToMs(time))
+                .timeStamp(time)
+                .flags(Integer.toHexString(info.getFlags()))
+                .diff(info.getDifficulty() == null ? null : toQuantityJsonHex(info.getDifficulty()))
+                .remark(info.getRemark() == null ? "" : new String(info.getRemark(), StandardCharsets.UTF_8).trim())
+                .state(getStateByFlags(info.getFlags()))
+                .height(info.getHeight());
         if (page != 0) {
             BlockResultDTOBuilder.transactions(getTxLinks(block, page, parameters))
-                    .totalPage(totalPage);
+                    .totalPage(lastTotalPage());
         }
-        totalPage = 1;
         return BlockResultDTOBuilder.build();
+    }
+
+    /** Pages of the listing this thread just fetched (1 without a history store). */
+    private int lastTotalPage() {
+        return kernel.getTxHistoryStore() == null ? 1 : kernel.getTxHistoryStore().lastTotalPage();
     }
 
     private List<BlockResponse.TxLink> getTxHistory(String address, int page, Object... parameters)
@@ -778,9 +781,8 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
                 .height(block.getInfo().getHeight());
         if (page != 0) {
             BlockResultDTOBuilder.transactions(getTxLinks(block, page, parameters))
-                    .totalPage(totalPage);
+                    .totalPage(lastTotalPage());
         }
-        totalPage = 1;
         return BlockResultDTOBuilder.build();
     }
 
@@ -871,35 +873,34 @@ public class XdagApiImpl extends AbstractXdagLifecycle implements XdagApi {
         // Transfer inputs
         Map<Address, ECKeyPair> ourAccounts = Maps.newHashMap();
 
-        // If no from address, search from node accounts
+        // If no from address, pick one of the node's accounts. An account transaction spends from exactly one
+        // account and carries that account's nonce (the former code gathered the amount from several accounts
+        // under the nonce of the first one, which no node accepts): the default account if it can pay, else
+        // the first one that can.
         if (fromAddress == null) {
-            log.debug("fromAddress is null, search all our blocks");
-            // our block select
-
-            List<ECKeyPair> accounts = kernel.getWallet().getAccounts();
+            log.debug("fromAddress is null, search all our accounts");
+            List<ECKeyPair> accounts = Lists.newArrayList(kernel.getWallet().getAccounts());
+            ECKeyPair defKey = kernel.getWallet().getDefKey();
+            if (defKey != null && accounts.remove(defKey)) {
+                accounts.addFirst(defKey);
+            }
             for (ECKeyPair account : accounts) {
                 Bytes addr = toBytesAddress(account);
                 XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr.toArray());
-
+                if (compareAmountTo(remain.get(), addrBalance) > 0) {
+                    continue;
+                }
+                UInt64 expected = kernel.getAddressStore().getTxQuantity(addr.toArray()).add(UInt64.ONE);
                 if (txNonce == null) {
-                    UInt64 currentTxQuantity = kernel.getAddressStore().getTxQuantity(addr.toArray());
-                    txNonce = currentTxQuantity.add(UInt64.ONE);
-                } else if (txNonce.compareTo(kernel.getAddressStore().getTxQuantity(addr.toArray()).add(UInt64.ONE)) != 0) {
+                    txNonce = expected;
+                } else if (txNonce.compareTo(expected) != 0) {
                     processResponse.setCode(ERR_XDAG_PARAM);
                     processResponse.setErrMsg("The nonce passed is incorrect. Please fill in the nonce according to the query value");
                     return;
                 }
-
-                if (compareAmountTo(remain.get(), addrBalance) <= 0) {
-                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(), true), account);
-                    remain.set(XAmount.ZERO);
-                    break;
-                } else {
-                    if (compareAmountTo(addrBalance, XAmount.ZERO) > 0) {
-                        remain.set(remain.get().subtract(addrBalance));
-                        ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance, true), account);
-                    }
-                }
+                ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(), true), account);
+                remain.set(XAmount.ZERO);
+                break;
             }
         } else {
             MutableBytes32 from = MutableBytes32.create();

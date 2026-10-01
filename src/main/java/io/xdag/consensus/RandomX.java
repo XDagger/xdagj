@@ -70,6 +70,18 @@ public class RandomX extends AbstractXdagLifecycle {
     protected Blockchain blockchain;
     protected boolean isFullMem;
     protected boolean isLargePages;
+    /**
+     * True if {@link #randomXForkTime} was derived from a snapshot taken after the RandomX fork rather than from
+     * the fork block itself: the sha256d era then lies entirely below the snapshot.
+     */
+    protected boolean forkTimeFromSnapshot;
+
+    /**
+     * Proof of work that counts for a main block candidate under the open-network hardening fork.
+     */
+    public enum Pow {
+        RANDOMX, SHA256D, NONE
+    }
 
     public RandomX(Config config) {
         this.config = config;
@@ -88,6 +100,39 @@ public class RandomX extends AbstractXdagLifecycle {
     // Public method to check if it's a RandomX fork
     public boolean isRandomxFork(long epoch) {
         return mineType == XDAG_RANDOMX && epoch > randomXForkTime;
+    }
+
+    /**
+     * Proof of work that is valid for a main block candidate of {@code epoch} under the open-network hardening
+     * fork.
+     * <ul>
+     * <li>RandomX has not forked on this chain yet: sha256d.</li>
+     * <li>The epoch is after the fork time: RandomX.</li>
+     * <li>The epoch is not after the fork time although RandomX has forked:
+     *   <ul>
+     *   <li>fork time taken from a post-fork snapshot: the real fork is long past and everything that can still
+     *       be added is a RandomX block (the two seeds this node keeps cover it), so RandomX;</li>
+     *   <li>chain followed from genesis: sha256d was the proof of work of those epochs, but it is only credited
+     *       while the node's own main chain is still inside them. Once the main chain has entered the RandomX
+     *       era a block claiming such an old timestamp gets nothing - otherwise a single sha256d block, which is
+     *       trivial to produce with SHA-256 hardware, would outweigh the whole RandomX chain.</li>
+     *   </ul></li>
+     * </ul>
+     *
+     * @param epoch           epoch of the candidate
+     * @param latestMainEpoch epoch of the node's latest main block (0 if none)
+     */
+    public Pow powOf(long epoch, long latestMainEpoch) {
+        if (mineType != XDAG_RANDOMX || randomXForkTime == Long.MAX_VALUE) {
+            return Pow.SHA256D;
+        }
+        if (epoch > randomXForkTime) {
+            return Pow.RANDOMX;
+        }
+        if (forkTimeFromSnapshot) {
+            return Pow.RANDOMX;
+        }
+        return latestMainEpoch > randomXForkTime ? Pow.NONE : Pow.SHA256D;
     }
 
     // Public method to set the fork time
@@ -129,7 +174,8 @@ public class RandomX extends AbstractXdagLifecycle {
         seedEpoch -= 1;
         if (block.getInfo().getHeight() >= randomXForkSeedHeight) {
             if (block.getInfo().getHeight() == randomXForkSeedHeight) {
-                randomXForkTime = -1;
+                // Back to "not forked". (This used to be -1, which made isRandomxFork() true for every epoch.)
+                randomXForkTime = Long.MAX_VALUE;
             }
             if ((block.getInfo().getHeight() & seedEpoch) == 0) {
                 RandomXMemory memory = globalMemory[(int) (randomXHashEpochIndex & 1)];
@@ -261,6 +307,7 @@ public class RandomX extends AbstractXdagLifecycle {
         randomXForkTime = XdagTime
                 .getEpoch(
                         blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight() - lag).getTimestamp());
+        forkTimeFromSnapshot = true;
         Block block;
         for (long i = lag; i >= 0; i--) {
             block = blockchain.getBlockByHeight(config.getSnapshotSpec().getSnapshotHeight() - i);
@@ -288,6 +335,7 @@ public class RandomX extends AbstractXdagLifecycle {
             block = blockchain.getBlockByHeight(
                     config.getSnapshotSpec().getSnapshotHeight());
             randomXForkTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag;
+            forkTimeFromSnapshot = true;
 
             seedEpoch -= 1;
             long seedHeight = blockchain.getXdagStats().nmain & ~seedEpoch;
@@ -342,6 +390,7 @@ public class RandomX extends AbstractXdagLifecycle {
                 block = blockchain.getBlockByHeight(
                         config.getSnapshotSpec().getSnapshotHeight() - config.getSnapshotSpec().getSnapshotHeight() % seedEpoch);
                 randomXForkTime = XdagTime.getEpoch(block.getTimestamp()) + randomXForkLag;
+                forkTimeFromSnapshot = true;
             }
             seedEpoch -= 1;
             long seedHeight = blockchain.getXdagStats().nmain & ~seedEpoch;

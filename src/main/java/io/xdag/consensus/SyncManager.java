@@ -43,10 +43,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -77,6 +79,18 @@ public class SyncManager extends AbstractXdagLifecycle {
     private AtomicLong importIdleTime = new AtomicLong();
     private AtomicBoolean syncDone = new AtomicBoolean(false);
     private AtomicBoolean isUpdateXdagStats = new AtomicBoolean(false);
+    /**
+     * When (wall clock, ms) the best chain last advanced through a block that was old when it arrived: the node
+     * was catching up with history then. 0: never.
+     */
+    private volatile long lastCatchUpTime;
+    /** A node is not called synchronised while it was catching up less than this long ago. */
+    private long quietMs = 30_000;
+    /** When the sync state is looked at for the first time after the start, and how often from then on. */
+    private long checkStateDelayMs = 64_000;
+    private long checkStatePeriodMs = 5_000;
+    /** What the peers {@link XdagSync} is holding a round with are sending, by peer id. */
+    private final Map<String, PeerEvidence> watched = new ConcurrentHashMap<>();
     private ChannelManager channelMgr;
 
     // Monitor whether to start itself
@@ -112,7 +126,8 @@ public class SyncManager extends AbstractXdagLifecycle {
     protected void doStart() {
         log.debug("Download receiveBlock run...");
         new Thread(this.stateListener, "xdag-stateListener").start();
-        checkStateFuture = checkStateTask.scheduleAtFixedRate(this::checkState, 64, 5, TimeUnit.SECONDS);
+        checkStateFuture = checkStateTask.scheduleAtFixedRate(this::checkState, checkStateDelayMs, checkStatePeriodMs,
+                TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -124,12 +139,31 @@ public class SyncManager extends AbstractXdagLifecycle {
         stopStateTask();
     }
 
-    private void checkState() {
+    /** A block that is this much older than now when it arrives is history, not news (one request span). */
+    static final long OLD_BLOCK_AGE = REQUEST_BLOCKS_MAX_TIME;
+
+    void checkState() {
+        try {
+            if (blockchain.isOpenNetLatched()) {
+                checkStateOpen();
+            } else {
+                checkStateClosed();
+            }
+        } catch (RuntimeException e) {
+            // an exception that escapes would silently cancel the periodic task
+            log.warn("checking the sync state failed: {}", e.toString());
+        }
+    }
+
+    /**
+     * Closed network (the open-network fork is not in force): the peers are the ones the operator configured,
+     * and what they report about the network decides, as in 0.8.x.
+     */
+    private void checkStateClosed() {
         if (!isUpdateXdagStats.get()) {
             return;
         }
         if (syncDone.get()) {
-            stopStateTask();
             return;
         }
 
@@ -150,13 +184,118 @@ public class SyncManager extends AbstractXdagLifecycle {
                     curHeight, maxHeight, xdagTopStatus.getTopDiff(), xdagStats.maxdifficulty);
             makeSyncDone();
         }
+    }
 
+    /**
+     * Open network: anybody can be a peer, so nothing a peer <em>says</em> decides (a peer that claims a huge
+     * height would keep the node "synchronising" forever), nothing about the node's own tip decides (a node that
+     * is behind can be handed blocks with current timestamps and no work, and they become its latest main
+     * blocks), and the sums of the comparison do not decide either (they are checksums; blocks made for the
+     * purpose make them equal). What decides is made of blocks, see {@link XdagSync}:
+     * <ul>
+     * <li>a cycle of rounds - one with every peer that was connected when it began, and they are at least half
+     *     of the peers the node has now - was held since the node last caught up with history, and</li>
+     * <li>of the peers that showed blocks from the present, most have none that this node cannot attach to its
+     *     own - which it can only do if it has the whole history behind them, and</li>
+     * <li>the best chain has not been advancing through old blocks lately: that is what catching up looks like,
+     *     and only a chain with more work than the one the node has can cause it.</li>
+     * </ul>
+     * The rounds go on afterwards. If history turns up after all ({@link #onCatchUp}), the node goes back to
+     * "synchronising" until it has caught up.
+     */
+    private void checkStateOpen() {
+        if (syncDone.get()) {
+            return;
+        }
+        long lastTime = kernel.getSync().getLastTime();
+        long curTime = msToXdagtimestamp(System.currentTimeMillis());
+        if (!isSync() && isSyncOld() && lastTime >= curTime - 32 * REQUEST_BLOCKS_MAX_TIME) {
+            // within reach of the present: news is worth processing now
+            setSyncState();
+        }
+
+        int peers = channelMgr == null ? 0 : channelMgr.getActiveChannels().size();
+        if (peers == 0) {
+            // nobody to compare with (a node that is alone starts by itself, see isTimeToStart)
+            return;
+        }
+        long since = lastCatchUpTime;
+        if (System.currentTimeMillis() - since < quietMs) {
+            return;
+        }
+        XdagSync.CycleResult cycle = kernel.getSync().getLastCycle();
+        if (cycle == null || cycle.startedAt() <= since) {
+            // not every peer has had its turn since the node last caught up
+            return;
+        }
+        if (cycle.attempted() * 2 < peers) {
+            // what was found is about a peer set that is not the one the node has now
+            return;
+        }
+        // Most of the peers that had something to say must have nothing this node lacks. A peer that did not
+        // answer counts against it (it may be the one that knows better). Peers that answered and showed
+        // nothing from the present - they are behind themselves, or there is no present: nobody produces
+        // blocks - say nothing either way; if that is all there is, having heard most peers is enough.
+        boolean agreed = cycle.inSync() + cycle.behind() > 0
+                ? cycle.inSync() * 2 > cycle.inSync() + cycle.behind() + cycle.failed()
+                : (cycle.attempted() - cycle.failed()) * 2 > cycle.attempted();
+        if (agreed) {
+            log.debug("rounds with {} peers since the last catch-up: {} have nothing we lack, {} have: sync done",
+                    cycle.attempted(), cycle.inSync(), cycle.behind());
+            makeSyncDone();
+        }
+    }
+
+    /**
+     * The best chain advanced through a block that was already old when it arrived. A node that is up to date
+     * only sees that if somebody has more work than the whole chain it follows; a node that is behind sees it
+     * all the time.
+     */
+    private void onCatchUp() {
+        lastCatchUpTime = System.currentTimeMillis();
+        if (syncDone.get() && blockchain.isOpenNetLatched()) {
+            revokeSyncDone();
+        }
+    }
+
+    /** The node called itself synchronised and was not: back to synchronising (no blocks are produced meanwhile). */
+    private void revokeSyncDone() {
+        if (syncDone.compareAndSet(true, false)) {
+            log.warn("Older blocks with more work than our chain are arriving: this node was not synchronised. "
+                    + "Back to synchronising, last main block number = {}", blockchain.getXdagStats().nmain);
+            setSyncState();
+            kernel.getSync().setStatus(XdagSync.Status.SYNCING);
+        }
+    }
+
+    /** Starts noting what a peer sends ({@link PeerEvidence}), until {@link #unwatch}. */
+    public PeerEvidence watch(String peerId) {
+        PeerEvidence evidence = new PeerEvidence();
+        watched.put(peerId, evidence);
+        return evidence;
+    }
+
+    public void unwatch(String peerId) {
+        watched.remove(peerId);
+    }
+
+    private PeerEvidence evidenceFor(BlockWrapper blockWrapper) {
+        if (watched.isEmpty()) {
+            return null;
+        }
+        Peer from = blockWrapper.getRemotePeer();
+        return from == null || from.getPeerId() == null ? null : watched.get(from.getPeerId());
     }
 
     /**
      * Monitor kernel state to determine if it's time to start
      */
     public boolean isTimeToStart() {
+        if (blockchain.isOpenNetLatched() && channelMgr != null && !channelMgr.getActiveChannels().isEmpty()) {
+            // An open node that has peers decides by what it found out with them (checkStateOpen). Having waited
+            // long enough is a reason to start only for a node that is alone.
+            return false;
+        }
         boolean res = false;
         Config config = kernel.getConfig();
         int waitEpoch = config.getNodeSpec().getWaitEpoch();
@@ -181,10 +320,14 @@ public class SyncManager extends AbstractXdagLifecycle {
         if (importResult == EXIST) {
             log.debug("Block have exist:{}", blockWrapper.getBlock().getHashLow());
         }
+        if (importResult == IMPORTED_BEST
+                && blockWrapper.getBlock().getTimestamp() < XdagTime.getCurrentTimestamp() - OLD_BLOCK_AGE) {
+            onCatchUp();
+        }
 
         if (!blockWrapper.isOld() && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
             Peer blockPeer = blockWrapper.getRemotePeer();
-            Node node = kernel.getClient().getNode();
+            Node node = kernel.getChannelMgr().getSelfNode();
             if (blockPeer == null || !StringUtils.equals(blockPeer.getIp(), node.getIp()) || blockPeer.getPort() != node.getPort()) {
                 if (blockWrapper.getTtl() > 0) {
                     distributeBlock(blockWrapper);
@@ -194,22 +337,27 @@ public class SyncManager extends AbstractXdagLifecycle {
         return importResult;
     }
 
+    /**
+     * @return the result of the import; null if the block was only looked at, which happens to history blocks of
+     *         a peer while {@link XdagSync} is searching for where this node's history ends ({@link PeerEvidence})
+     */
     public synchronized ImportResult validateAndAddNewBlock(BlockWrapper blockWrapper) {
         blockWrapper.getBlock().parse();
+        PeerEvidence evidence = evidenceFor(blockWrapper);
+        if (evidence != null && evidence.peek(blockWrapper, blockchain)) {
+            return null;
+        }
         ImportResult result = importBlock(blockWrapper);
+        if (evidence != null) {
+            evidence.saw(blockWrapper.getBlock(), result);
+        }
         log.debug("validateAndAddNewBlock:{}, {}", blockWrapper.getBlock().getHashLow(), result);
         switch (result) {
             case EXIST, IMPORTED_BEST, IMPORTED_NOT_BEST, IN_MEM -> syncPopBlock(blockWrapper);
             case NO_PARENT -> {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {//Return true to indicate that it has been more than 60 seconds since the last time it was placed here due to the lack of a parent reference, and request to inquire about the parent block from other nodes again
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
-                    List<Channel> channels = channelMgr.getActiveChannels();
-                    for (Channel channel : channels) {
-                        // if (channel.getRemotePeer().equals(blockWrapper.getRemotePeer())) {
-                        channel.getP2pHandler().sendGetBlock(result.getHashlow(), blockWrapper.isOld());
-                        //}
-                    }
-
+                    askForBlock(result.getHashlow(), blockWrapper);
                 }
             }
             case INVALID_BLOCK -> {
@@ -219,6 +367,35 @@ public class SyncManager extends AbstractXdagLifecycle {
             }
         }
         return result;
+    }
+
+    /**
+     * Asks for a block this node is missing: the peer that sent the block that needs it, if it is still
+     * connected, otherwise one peer chosen at random. (Every peer used to be asked, so somebody sending a
+     * stream of blocks with unknown parents made this node pester all of its peers - and get itself banned.)
+     */
+    private void askForBlock(MutableBytes32 hashLow, BlockWrapper needing) {
+        if (channelMgr == null) {
+            return;
+        }
+        List<Channel> channels = channelMgr.getActiveChannels();
+        if (channels.isEmpty()) {
+            return;
+        }
+        Channel chosen = null;
+        Peer from = needing.getRemotePeer();
+        if (from != null && from.getPeerId() != null) {
+            for (Channel c : channels) {
+                if (c.isActive() && from.getPeerId().equals(c.getRemotePeer().getPeerId())) {
+                    chosen = c;
+                    break;
+                }
+            }
+        }
+        if (chosen == null) {
+            chosen = channels.get(CryptoProvider.nextInt(0, channels.size()));
+        }
+        chosen.getP2pHandler().sendGetBlock(hashLow, needing.isOld());
     }
 
     /**
@@ -290,14 +467,7 @@ public class SyncManager extends AbstractXdagLifecycle {
                         if (syncPushBlock(bw, importResult.getHashlow())) {
                             log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow(),
                                     importResult.getHashlow().toHexString());
-                            List<Channel> channels = channelMgr.getActiveChannels();
-                            for (Channel channel : channels) {
-//                            Peer remotePeer = channel.getRemotePeer();
-//                            Peer blockPeer = bw.getRemotePeer();
-                                // if (StringUtils.equals(remotePeer.getIp(), blockPeer.getIp()) && remotePeer.getPort() == blockPeer.getPort() ) {
-                                channel.getP2pHandler().sendGetBlock(importResult.getHashlow(), blockWrapper.isOld());
-                                //}
-                            }
+                            askForBlock(importResult.getHashlow(), bw);
                         }
                     }
                     default -> {

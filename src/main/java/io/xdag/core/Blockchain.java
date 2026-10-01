@@ -120,4 +120,15 @@ public interface Blockchain {
 
     // Get the transaction block status
     void putSyncTxStatus(Bytes32 hash, byte status);
+
+    /**
+     * True once the open-network hardening fork is in force on this node's chain. Only then are blocks from
+     * arbitrary peers safe to accept, so only then does the node run an open (permissionless) network.
+     */
+    boolean isOpenNetLatched();
+
+    /**
+     * Whether the main block candidate of the given epoch is mined (and scored) with RandomX.
+     */
+    boolean usesRandomX(long epoch);
 }

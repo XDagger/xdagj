@@ -23,35 +23,27 @@
  */
 package io.xdag.net;
 
-import io.xdag.core.*;
-import io.xdag.crypto.core.CryptoProvider;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.bytes.MutableBytes32;
+import static io.xdag.config.Constants.BI_APPLIED;
+import static io.xdag.config.Constants.BI_MAIN_REF;
+import static io.xdag.config.Constants.BI_OURS;
+import static io.xdag.config.Constants.BI_REF;
+import static io.xdag.config.Constants.BI_REMARK;
+import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.config.Constants.REQUEST_WAIT;
 
 import com.google.common.util.concurrent.SettableFuture;
-
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.xdag.Kernel;
 import io.xdag.config.Config;
-import io.xdag.config.spec.NodeSpec;
 import io.xdag.consensus.SyncManager;
+import io.xdag.core.Block;
+import io.xdag.core.BlockWrapper;
+import io.xdag.core.Blockchain;
+import io.xdag.core.ImportResult;
+import io.xdag.core.XdagStats;
 import io.xdag.net.message.Message;
-import io.xdag.net.message.MessageQueue;
-import io.xdag.net.message.ReasonCode;
+import io.xdag.net.message.MessageCode;
+import io.xdag.net.message.MessageException;
+import io.xdag.net.message.MessageFactory;
 import io.xdag.net.message.consensus.BlockExtRequestMessage;
 import io.xdag.net.message.consensus.BlockRequestMessage;
 import io.xdag.net.message.consensus.BlocksReplyMessage;
@@ -62,374 +54,301 @@ import io.xdag.net.message.consensus.SumRequestMessage;
 import io.xdag.net.message.consensus.SyncBlockMessage;
 import io.xdag.net.message.consensus.SyncBlockRequestMessage;
 import io.xdag.net.message.consensus.XdagMessage;
-import io.xdag.net.message.p2p.DisconnectMessage;
-import io.xdag.net.message.p2p.HelloMessage;
-import io.xdag.net.message.p2p.InitMessage;
-import io.xdag.net.message.p2p.PingMessage;
-import io.xdag.net.message.p2p.PongMessage;
-import io.xdag.net.message.p2p.WorldMessage;
-import io.xdag.net.node.NodeManager;
 import io.xdag.utils.XdagTime;
-import io.xdag.utils.exception.UnreachableException;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
-import static io.xdag.config.Constants.*;
-import static io.xdag.config.Constants.BI_MAIN_REF;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 /**
- * Xdag P2P message handler
+ * The XDAG protocol over one connection: block gossip, block requests and the sums-based history sync.
+ *
+ * <p>Nothing a peer sends is taken on trust. Messages are decoded with bounds; requests are checked for the
+ * shapes the protocol produces (a sums request covers a power-of-sixteen span, a blocks request at most
+ * {@link io.xdag.config.Constants#REQUEST_BLOCKS_MAX_TIME}) and rate limited, so that no peer can make this node
+ * read its whole history for it; statistics a peer reports about the network are capped at what is physically
+ * possible; history is only taken in answer to a request - "sync blocks" always, and news that is dated more than
+ * {@link #NEWS_MAX_AGE} ago; a peer that sends what only a broken or hostile node would send is disconnected and
+ * its address refused for a while.
  */
 @Slf4j
-public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
+public class XdagP2pHandler {
 
-    private static final ScheduledExecutorService exec = Executors
-            .newSingleThreadScheduledExecutor(new ThreadFactory() {
-                private final AtomicInteger cnt = new AtomicInteger(0);
-
-                @Override
-                public Thread newThread(Runnable r) {
-                    return new Thread(r, "p2p-" + cnt.getAndIncrement());
-                }
-            });
+    /** Misbehaviour score at which the peer is dropped and banned. */
+    static final int BAN_SCORE = 100;
+    static final long BAN_TIME_MS = 10 * 60 * 1000L;
+    static final int SCORE_MALFORMED = 100;
+    static final int SCORE_INVALID_BLOCK = 20;
+    static final int SCORE_BAD_REQUEST = 20;
+    static final int SCORE_RATE = 5;
+    /** Most blocks streamed for one blocks request. */
+    static final int MAX_BLOCKS_PER_REQUEST = 65536;
+    /** How long the answer to a request counts as one (twice what the sync waits for it: late is still an answer). */
+    static final long ANSWER_WAIT_MS = 2 * REQUEST_WAIT * 1000;
+    /** Blocks asked for by hash that are remembered at a time. */
+    static final int MAX_ASKED_BLOCKS = 4096;
+    /**
+     * How old a block may be to be taken as news (about nine hours; the same span within which a node that is
+     * catching up begins to process news at all).
+     */
+    static final long NEWS_MAX_AGE = 32 * REQUEST_BLOCKS_MAX_TIME;
 
     private final Channel channel;
-
     private final Kernel kernel;
     private final Config config;
-    private final NodeSpec nodeSpec;
     private final Blockchain chain;
-    private final ChannelManager channelMgr;
-    private final NodeManager nodeMgr;
-    private final PeerClient client;
     private final SyncManager syncMgr;
+    private final MessageFactory messageFactory = new MessageFactory();
 
-    private final NetDBManager netdbMgr;
-    private final MessageQueue msgQueue;
-
-    private final AtomicBoolean isHandshakeDone = new AtomicBoolean(false);
-
-    private ScheduledFuture<?> getNodes = null;
-    private ScheduledFuture<?> pingPong = null;
-
-    private byte[] secret = CryptoProvider.nextBytes(InitMessage.SECRET_LENGTH);
-    private long timestamp = System.currentTimeMillis();
+    /** Requests that cost this node database work (blocks / sums / single blocks). */
+    private final TokenBucket requestLimit = new TokenBucket(32, 16);
+    /** Blocks the peer pushes as news (gossip); what it sends in answer to our sync requests is bounded by bandwidth. */
+    private final TokenBucket gossipLimit = new TokenBucket(5_000, 1_000);
+    private final TokenBucket syncBlockLimit = new TokenBucket(20_000, 4_000);
+    /**
+     * Requests we send to this peer, kept below what a node of this version accepts ({@link #requestLimit}) so
+     * that a flood of orphan blocks from somebody else cannot make this node pester its peers until they ban it.
+     */
+    private final TokenBucket outboundRequestLimit = new TokenBucket(24, 12);
+    /** Blocks requests sent to the peer that it has not answered yet, by request id: start, end, until when. */
+    private final Map<Long, long[]> askedSpans = new ConcurrentHashMap<>();
+    /** Blocks the peer was asked for by hash, and until when the answer counts. */
+    private final Map<Bytes32, Long> askedBlocks = Collections.synchronizedMap(new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Bytes32, Long> eldest) {
+            return size() > MAX_ASKED_BLOCKS;
+        }
+    });
+    @Getter
+    private volatile int misbehaviourScore;
 
     public XdagP2pHandler(Channel channel, Kernel kernel) {
         this.channel = channel;
         this.kernel = kernel;
         this.config = kernel.getConfig();
-        this.nodeSpec = kernel.getConfig().getNodeSpec();
-
         this.chain = kernel.getBlockchain();
-        this.channelMgr = kernel.getChannelMgr();
-        this.nodeMgr = kernel.getNodeMgr();
-        this.client = kernel.getClient();
-
         this.syncMgr = kernel.getSyncMgr();
-        this.netdbMgr = kernel.getNetDBMgr();
-        this.msgQueue = channel.getMessageQueue();
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("P2P handler active, remoteIp = {}, remotePort = {}", channel.getRemoteIp(), channel.getRemotePort());
+    // ---------------------------------------------------------------------------------------------------------
+    // inbound
+    // ---------------------------------------------------------------------------------------------------------
 
-        // activate message queue
-        msgQueue.activate(ctx);
-
-        // disconnect if too many connections
-        if (channel.isInbound() && channelMgr.size() >= config.getNodeSpec().getNetMaxInboundConnections()) {
-            msgQueue.disconnect(ReasonCode.TOO_MANY_PEERS);
+    /** A message from the peer as the P2P layer delivers it: {@code [code | body]}. */
+    public void onMessage(Bytes data) {
+        if (!channel.isActive()) {
             return;
         }
-
-        if (channel.isInbound()) {
-            msgQueue.sendMessage(new InitMessage(secret, timestamp));
-        }
-        super.channelActive(ctx);
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("P2P handler inactive, remoteIp = {}", channel.getRemoteIp());
-
-        // deactivate the message queue
-        msgQueue.deactivate();
-
-        // stop scheduled workers
-        if (getNodes != null) {
-            getNodes.cancel(false);
-            getNodes = null;
-        }
-
-        if (pingPong != null) {
-            pingPong.cancel(false);
-            pingPong = null;
-        }
-
-        super.channelInactive(ctx);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.debug("Exception in P2P handler, remoteIp = {}, remotePort = {}", channel.getRemoteIp(), channel.getRemotePort(),cause);
-
-        // close connection on exception
-        ctx.close();
-    }
-
-    @Override
-    public void channelRead0(final ChannelHandlerContext ctx, Message msg) {
-        log.trace("Received message: {}", msg);
-
-        switch (msg.getCode()) {
-            /* p2p */
-            case DISCONNECT -> onDisconnect(ctx, (DisconnectMessage) msg);
-            case PING -> onPing();
-            case PONG -> onPong();
-            case HANDSHAKE_INIT -> onHandshakeInit((InitMessage) msg);
-            case HANDSHAKE_HELLO -> onHandshakeHello((HelloMessage) msg);
-            case HANDSHAKE_WORLD -> onHandshakeWorld((WorldMessage) msg);
-
-            /* sync */
-            case BLOCKS_REQUEST, BLOCKS_REPLY, SUMS_REQUEST, SUMS_REPLY, BLOCKEXT_REQUEST, BLOCKEXT_REPLY, BLOCK_REQUEST, NEW_BLOCK, SYNC_BLOCK, SYNCBLOCK_REQUEST ->
-                    onXdag(msg);
-            default -> ctx.fireChannelRead(msg);
-        }
-    }
-
-    protected void onDisconnect(ChannelHandlerContext ctx, DisconnectMessage msg) {
-        ReasonCode reason = msg.getReason();
-        log.info("Received a DISCONNECT message: reason = {}, remoteIP = {}",
-                reason, channel.getRemoteIp());
-
-        ctx.close();
-    }
-
-    protected void onHandshakeInit(InitMessage msg) {
-        // unexpected
-        if (channel.isInbound()) {
+        if (data == null || data.isEmpty()) {
+            misbehave(SCORE_MALFORMED, "empty message");
             return;
         }
-
-        // check message
-        if (!msg.validate()) {
-            this.msgQueue.disconnect(ReasonCode.INVALID_HANDSHAKE);
+        Message msg;
+        try {
+            msg = messageFactory.create(data.get(0), data.slice(1).toArray());
+        } catch (MessageException e) {
+            misbehave(SCORE_MALFORMED, "malformed message: " + e.getMessage());
             return;
         }
-
-        // record the secret
-        this.secret = msg.getSecret();
-        this.timestamp = msg.getTimestamp();
-
-        // send the HELLO message
-        this.msgQueue.sendMessage(new HelloMessage(nodeSpec.getNetwork(), nodeSpec.getNetworkVersion(),
-                client.getPeerId(), client.getPort(), config.getClientId(), config.getClientCapabilities().toArray(),
-                chain.getLatestMainBlockNumber(), secret, client.getCoinbase(), config.getEnableGenerateBlock(),
-                config.getNodeTag()));
-    }
-
-    protected void onHandshakeHello(HelloMessage msg) {
-        // unexpected
-        if (channel.isOutbound()) {
+        if (msg == null) {
+            misbehave(SCORE_MALFORMED, "unknown message code " + data.get(0));
             return;
         }
-        Peer peer = msg.getPeer(channel.getRemoteIp());
-
-        // check peer
-        ReasonCode code = checkPeer(peer, true);
-        if (code != null) {
-            msgQueue.disconnect(code);
-            return;
-        }
-
-        // check message
-        if (!Arrays.equals(secret, msg.getSecret()) || !msg.validate(config)) {
-            msgQueue.disconnect(ReasonCode.INVALID_HANDSHAKE);
-            return;
-        }
-        // send the WORLD message
-        this.msgQueue.sendMessage(new WorldMessage(nodeSpec.getNetwork(), nodeSpec.getNetworkVersion(),
-                client.getPeerId(), client.getPort(), config.getClientId(), config.getClientCapabilities().toArray(),
-                chain.getLatestMainBlockNumber(), secret, client.getCoinbase(), config.getEnableGenerateBlock(),
-                config.getNodeTag()));
-
-        // handshake done
-        onHandshakeDone(peer);
-    }
-
-    protected void onHandshakeWorld(WorldMessage msg) {
-        // unexpected
-        if (channel.isInbound()) {
-            return;
-        }
-        Peer peer = msg.getPeer(channel.getRemoteIp());
-
-        // check peer
-        ReasonCode code = checkPeer(peer, true);
-        if (code != null) {
-            msgQueue.disconnect(code);
-            return;
-        }
-
-        // check message
-        if (!Arrays.equals(secret, msg.getSecret()) || !msg.validate(config)) {
-            msgQueue.disconnect(ReasonCode.INVALID_HANDSHAKE);
-            return;
-        }
-
-        // handshake done
-        onHandshakeDone(peer);
-    }
-
-    private long lastPing;
-
-    protected void onPing() {
-        PongMessage pong = new PongMessage();
-        msgQueue.sendMessage(pong);
-        lastPing = System.currentTimeMillis();
-    }
-
-    protected void onPong() {
-        if (lastPing > 0) {
-            long latency = System.currentTimeMillis() - lastPing;
-            channel.getRemotePeer().setLatency(latency);
-        }
-    }
-
-    protected void onXdag(Message msg) {
-        if (!isHandshakeDone.get()) {
-            return;
-        }
-
-        switch (msg.getCode()) {
-            case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
-            case BLOCK_REQUEST -> processBlockRequest((BlockRequestMessage) msg);
-            case BLOCKS_REQUEST -> processBlocksRequest((BlocksRequestMessage) msg);
-            case BLOCKS_REPLY -> processBlocksReply((BlocksReplyMessage) msg);
-            case SUMS_REQUEST -> processSumsRequest((SumRequestMessage) msg);
-            case SUMS_REPLY -> processSumsReply((SumReplyMessage) msg);
-            case BLOCKEXT_REQUEST -> processBlockExtRequest((BlockExtRequestMessage) msg);
-            case SYNC_BLOCK -> processSyncBlock((SyncBlockMessage) msg);
-            case SYNCBLOCK_REQUEST -> processSyncBlockRequest((SyncBlockRequestMessage) msg);
-            default -> throw new UnreachableException();
+        log.trace("Received message: {} from {}", msg, channel.getRemoteAddress());
+        try {
+            switch (msg.getCode()) {
+                case NEW_BLOCK -> processNewBlock((NewBlockMessage) msg);
+                case SYNC_BLOCK -> processSyncBlock((SyncBlockMessage) msg);
+                case BLOCK_REQUEST -> processBlockRequest((BlockRequestMessage) msg);
+                case SYNCBLOCK_REQUEST -> processSyncBlockRequest((SyncBlockRequestMessage) msg);
+                case BLOCKS_REQUEST -> processBlocksRequest((BlocksRequestMessage) msg);
+                case BLOCKS_REPLY -> processBlocksReply((BlocksReplyMessage) msg);
+                case SUMS_REQUEST -> processSumsRequest((SumRequestMessage) msg);
+                case SUMS_REPLY -> processSumsReply((SumReplyMessage) msg);
+                case BLOCKEXT_REQUEST -> processBlockExtRequest((BlockExtRequestMessage) msg);
+                case BLOCKEXT_REPLY -> {
+                    // not used
+                }
+            }
+        } catch (RuntimeException e) {
+            // a failure while handling one message must not take the connection or the node down
+            log.warn("Handling {} from {} failed: {}", msg.getCode(), channel.getRemoteAddress(), e.toString());
+            log.debug("Handling failed", e);
         }
     }
 
     /**
-     * Check whether the peer is valid to connect.
+     * Notes that the peer did something no correct node does. Beyond {@link #BAN_SCORE} it is dropped and its
+     * address refused for {@link #BAN_TIME_MS}.
      */
-    private ReasonCode checkPeer(Peer peer, boolean newHandShake) {
-        // has to be same network
-        if (newHandShake && !nodeSpec.getNetwork().equals(peer.getNetwork())) {
-            return ReasonCode.BAD_NETWORK;
-        }
-
-        // has to be compatible version
-        if (nodeSpec.getNetworkVersion() != peer.getNetworkVersion()) {
-            return ReasonCode.BAD_NETWORK_VERSION;
-        }
-
-        return null;
-    }
-
-    private void onHandshakeDone(Peer peer) {
-        if (isHandshakeDone.compareAndSet(false, true)) {
-            // register into channel manager
-            channelMgr.onChannelActive(channel, peer);
-
-            // start ping pong
-            pingPong = exec.scheduleAtFixedRate(() -> msgQueue.sendMessage(new PingMessage()),
-                    channel.isInbound() ? 1 : 0, 1, TimeUnit.MINUTES);
-        } else {
-            msgQueue.disconnect(ReasonCode.HANDSHAKE_EXISTS);
+    public void misbehave(int score, String why) {
+        misbehaviourScore += score;
+        log.debug("Peer {} misbehaves ({}): {}, score {}", channel.getRemoteAddress(), why, score, misbehaviourScore);
+        if (misbehaviourScore >= BAN_SCORE) {
+            log.info("Disconnecting peer {}: {}", channel.getRemoteAddress(), why);
+            channel.ban(BAN_TIME_MS);
         }
     }
 
-    /**
-     * ********************** Message Processing * ***********************
-     */
+    private boolean tooFast(TokenBucket bucket, String what) {
+        if (bucket.tryAcquire(1)) {
+            return false;
+        }
+        misbehave(SCORE_RATE, "too many " + what);
+        return true;
+    }
+
+    /** The hops a relayed block may still travel: what the peer said, minus one, never more than our own TTL. */
+    private int relayTtl(int received) {
+        return Math.max(0, Math.min(received - 1, config.getNodeSpec().getTTL()));
+    }
+
     protected void processNewBlock(NewBlockMessage msg) {
+        if (tooFast(gossipLimit, "new blocks")) {
+            return;
+        }
         Block block = msg.getBlock();
         if (syncMgr.isSyncOld()) {
             return;
         }
-
+        if (block.getTimestamp() < XdagTime.getCurrentTimestamp() - NEWS_MAX_AGE && !askedFor(block)) {
+            // News is new. A block dated long ago that nobody asked for is not taken, and so not passed on
+            // either: otherwise anybody could add blocks to any part of the past of every node, and every node
+            // that compares its history with a peer would have to fetch those parts again. (A block that is
+            // needed after all - something refers to it - is asked for by its hash, and then it is welcome.)
+            log.debug("Ignoring new block {} from {}: dated {} and not asked for", block.getHashLow(),
+                    channel.getRemoteAddress(), block.getTimestamp());
+            return;
+        }
         log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getRemoteAddress());
-        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), false);
-        syncMgr.validateAndAddNewBlock(bw);
+        BlockWrapper bw = new BlockWrapper(block, relayTtl(msg.getTtl()), channel.getRemotePeer(), false);
+        noteImport(syncMgr.validateAndAddNewBlock(bw));
     }
 
     protected void processSyncBlock(SyncBlockMessage msg) {
+        if (tooFast(syncBlockLimit, "sync blocks")) {
+            return;
+        }
         Block block = msg.getBlock();
+        if (!askedFor(block)) {
+            // History is sent in answer to a request and in no other way. A node that took whatever is pushed at
+            // it as history would let anybody fill its past with blocks, thousands a second.
+            log.debug("Ignoring sync block {} from {}: nobody asked for it", block.getHashLow(), channel.getRemoteAddress());
+            return;
+        }
+        // What the peer says about the execution of the block is only a hint (ignored under the hardened
+        // rules: a node reconstructs execution itself).
         chain.putSyncTxStatus(block.getHashLow(), msg.getExecutionState());
         log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getRemoteAddress());
-        BlockWrapper bw = new BlockWrapper(block, msg.getTtl() - 1, channel.getRemotePeer(), true);
-        syncMgr.validateAndAddNewBlock(bw);
+        BlockWrapper bw = new BlockWrapper(block, relayTtl(msg.getTtl()), channel.getRemotePeer(), true);
+        noteImport(syncMgr.validateAndAddNewBlock(bw));
     }
 
-    /**
-     * A block request responds to a block and starts a thread to continuously send blocks over a period of time. *
-     */
+    /** Whether a block the peer sends answers a request of this node: for the block itself, or for its span. */
+    private boolean askedFor(Block block) {
+        long now = System.currentTimeMillis();
+        Long until = askedBlocks.remove(Bytes32.wrap(block.getHashLow().toArray()));
+        if (until != null && until > now) {
+            return true;
+        }
+        long time = block.getTimestamp();
+        for (long[] span : askedSpans.values()) {
+            if (span[2] > now && time >= span[0] && time < span[1]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void noteImport(ImportResult result) {
+        if (result != null && result.isMisbehavior()) {
+            misbehave(SCORE_INVALID_BLOCK, "invalid block: " + result.getErrorInfo());
+        }
+    }
+
     protected void processBlocksRequest(BlocksRequestMessage msg) {
-        // Update the status of the entire network
+        if (tooFast(requestLimit, "requests")) {
+            return;
+        }
         updateXdagStats(msg);
         long startTime = msg.getStarttime();
         long endTime = msg.getEndtime();
         long random = msg.getRandom();
 
-        // TODO: paulochen Processing multi-block requests
-        //        // If it's greater than the snapshot point, I can send it.
-        //        if (startTime > 1658318225407L) {
-        //            // TODO: If the request interval is too long, a new thread will be started to send the request; this is to prevent attacks.
+        // A correct node asks for one span of at most REQUEST_BLOCKS_MAX_TIME at a time (XdagSync). Anything
+        // wider is not answered: it would have this node read and send an unbounded part of its history.
+        if (startTime < 0 || endTime < startTime || endTime - startTime > REQUEST_BLOCKS_MAX_TIME) {
+            misbehave(SCORE_BAD_REQUEST, "blocks request out of bounds");
+            return;
+        }
+
         log.debug("Send blocks between {} and {} to node {}",
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
                 channel.getRemoteAddress());
         List<Block> blocks = chain.getBlocksByTime(startTime, endTime);
+        int sent = 0;
         for (Block block : blocks) {
-            byte executionState = 0;
-            if (chain.isTxBlock(block)) {
-                int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
-                // 1C
-                if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
-                    executionState = 1;
-                } else if (flag == (BI_REF | BI_MAIN_REF)) {// 18
-                    executionState = 2;
-                }
+            if (sent++ >= MAX_BLOCKS_PER_REQUEST || !channel.isActive()) {
+                break;
             }
-            SyncBlockMessage blockMsg = new SyncBlockMessage(block, 1, executionState);
-            msgQueue.sendMessage(blockMsg);
+            sendMessage(new SyncBlockMessage(block, 1, executionStateOf(block)));
         }
-        msgQueue.sendMessage(new BlocksReplyMessage(startTime, endTime, random, chain.getXdagStats()));
+        sendMessage(new BlocksReplyMessage(startTime, endTime, random, chain.getXdagStats()));
+    }
+
+    private byte executionStateOf(Block block) {
+        byte executionState = 0;
+        if (chain.isTxBlock(block)) {
+            int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
+            if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
+                executionState = 1;
+            } else if (flag == (BI_REF | BI_MAIN_REF)) {
+                executionState = 2;
+            }
+        }
+        return executionState;
     }
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
         updateXdagStats(msg);
-        long randomSeq = msg.getRandom();
-        SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(randomSeq);
+        askedSpans.remove(msg.getRandom());
+        SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(msg.getRandom());
         if (sf != null) {
             sf.set(Bytes.wrap(new byte[]{0}));
         }
     }
 
-    /**
-     * Fill the last 8 fields of the sumRequest with your own sum, change the type to reply, and send.
-     */
     protected void processSumsRequest(SumRequestMessage msg) {
+        if (tooFast(requestLimit, "requests")) {
+            return;
+        }
         updateXdagStats(msg);
+        long start = msg.getStarttime();
+        long span = msg.getEndtime() - msg.getStarttime();
+        // The sync asks for spans of 16^n * REQUEST_BLOCKS_MAX_TIME up to 2^48; the store only answers powers
+        // of two anyway. (A span of 2^63 used to send the store into an endless loop.)
+        if (start < 0 || span < REQUEST_BLOCKS_MAX_TIME || span > (1L << 48) || Long.bitCount(span) != 1
+                || Long.numberOfTrailingZeros(span) % 4 != 0) {
+            misbehave(SCORE_BAD_REQUEST, "sums request out of bounds");
+            return;
+        }
         MutableBytes sums = MutableBytes.create(256);
-        // TODO: paulochen Handling SUM requests
-        kernel.getBlockStore().loadSum(msg.getStarttime(),msg.getEndtime(),sums);
-        SumReplyMessage reply = new SumReplyMessage(msg.getEndtime(), msg.getRandom(),
-                chain.getXdagStats(), sums);
-        msgQueue.sendMessage(reply);
+        kernel.getBlockStore().loadSum(msg.getStarttime(), msg.getEndtime(), sums);
+        sendMessage(new SumReplyMessage(msg.getEndtime(), msg.getRandom(), chain.getXdagStats(), sums));
     }
 
     protected void processSumsReply(SumReplyMessage msg) {
         updateXdagStats(msg);
-        long randomSeq = msg.getRandom();
-        SettableFuture<Bytes> sf = kernel.getSync().getSumsRequestMap().get(randomSeq);
+        SettableFuture<Bytes> sf = kernel.getSync().getSumsRequestMap().get(msg.getRandom());
         if (sf != null) {
             sf.set(msg.getSum());
         }
@@ -439,81 +358,162 @@ public class XdagP2pHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     protected void processBlockRequest(BlockRequestMessage msg) {
-        Bytes hash = msg.getHash();
-        Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
-        int ttl = config.getNodeSpec().getTTL();
+        if (tooFast(requestLimit, "requests")) {
+            return;
+        }
+        Bytes32 hash = msg.getHash();
+        Block block = chain.getBlockByHash(hash, true);
         if (block != null) {
-            log.debug("processBlockRequest: findBlock{}", Bytes32.wrap(hash).toHexString());
-            NewBlockMessage message = new NewBlockMessage(block, ttl);
-            msgQueue.sendMessage(message);
+            log.debug("processBlockRequest: findBlock{}", hash.toHexString());
+            sendMessage(new NewBlockMessage(block, config.getNodeSpec().getTTL()));
         }
     }
 
     private void processSyncBlockRequest(SyncBlockRequestMessage msg) {
-        Bytes hash = msg.getHash();
-        Block block = chain.getBlockByHash(Bytes32.wrap(hash), true);
+        if (tooFast(requestLimit, "requests")) {
+            return;
+        }
+        Bytes32 hash = msg.getHash();
+        Block block = chain.getBlockByHash(hash, true);
         if (block != null) {
-            log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", Bytes32.wrap(hash).toHexString(), channel.getRemoteAddress());
-            byte executionState = 0;
-            if (chain.isTxBlock(block)) {
-                int flag = block.getInfo().getFlags() & ~(BI_OURS | BI_REMARK);
-                // 1C,applied
-                if (flag == (BI_REF | BI_MAIN_REF | BI_APPLIED)) {
-                    executionState = 1;
-                } else if (flag == (BI_REF | BI_MAIN_REF)) {// 18 rejected
-                    executionState = 2;
-                }
-            }
-            SyncBlockMessage message = new SyncBlockMessage(block, 1, executionState);
-            msgQueue.sendMessage(message);
+            log.debug("processSyncBlockRequest, findBlock: {}, to node: {}", hash.toHexString(), channel.getRemoteAddress());
+            sendMessage(new SyncBlockMessage(block, 1, executionStateOf(block)));
         }
     }
 
-    /**
-     * ********************** Xdag Message ************************
-     */
-    public void sendNewBlock(Block newBlock, int TTL) {
+    // ---------------------------------------------------------------------------------------------------------
+    // outbound
+    // ---------------------------------------------------------------------------------------------------------
+
+    public void sendNewBlock(Block newBlock, int ttl) {
         log.debug("send block:{} to node:{}", newBlock.getHashLow(), channel.getRemoteAddress());
-        NewBlockMessage msg = new NewBlockMessage(newBlock, TTL);
-        sendMessage(msg);
+        sendMessage(new NewBlockMessage(newBlock, ttl));
+    }
+
+    /** Whether one more request may be sent to this peer right now. */
+    public boolean mayRequest() {
+        return outboundRequestLimit.tryAcquire(1);
     }
 
     public long sendGetBlocks(long startTime, long endTime) {
+        return sendGetBlocks(startTime, endTime, null);
+    }
+
+    /**
+     * Asks the peer for the blocks of a span.
+     *
+     * @param reply completed when the peer's reply arrives; registered before the request is sent, so that a
+     *              reply that is back before the caller continues is not lost (null: nobody waits)
+     * @return the id of the request, or -1 if no request may be sent to this peer right now
+     */
+    public long sendGetBlocks(long startTime, long endTime, SettableFuture<Bytes> reply) {
+        if (!mayRequest()) {
+            return -1;
+        }
         log.debug("Request blocks between {} and {} from node {}",
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(startTime)),
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
                 channel.getRemoteAddress());
         BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, chain.getXdagStats());
+        if (reply != null) {
+            kernel.getSync().getBlocksRequestMap().put(msg.getRandom(), reply);
+        }
+        long now = System.currentTimeMillis();
+        if (askedSpans.size() >= MAX_ASKED_BLOCKS) {
+            askedSpans.values().removeIf(span -> span[2] <= now);
+        }
+        askedSpans.put(msg.getRandom(), new long[]{startTime, endTime, now + ANSWER_WAIT_MS});
         sendMessage(msg);
         return msg.getRandom();
     }
 
     public long sendGetBlock(MutableBytes32 hash, boolean isOld) {
-        XdagMessage msg;
-        //        log.debug("sendGetBlock:[{}]", Hex.toHexString(hash));
-        msg = isOld ? new SyncBlockRequestMessage(hash, kernel.getBlockchain().getXdagStats())
-                : new BlockRequestMessage(hash, kernel.getBlockchain().getXdagStats());
-        log.debug("Request block {} isold: {} from node {}", hash, isOld,channel.getRemoteAddress());
+        if (!mayRequest()) {
+            log.debug("Not asking {} for {}: too many requests; it is asked again later", channel.getRemoteAddress(), hash);
+            return -1;
+        }
+        XdagMessage msg = isOld ? new SyncBlockRequestMessage(hash, chain.getXdagStats())
+                : new BlockRequestMessage(hash, chain.getXdagStats());
+        log.debug("Request block {} isold: {} from node {}", hash, isOld, channel.getRemoteAddress());
+        askedBlocks.put(Bytes32.wrap(hash.toArray()), System.currentTimeMillis() + ANSWER_WAIT_MS);
         sendMessage(msg);
         return msg.getRandom();
     }
 
     public long sendGetSums(long startTime, long endTime) {
+        return sendGetSums(startTime, endTime, null);
+    }
+
+    /**
+     * Asks the peer for the sums of a span; see {@link #sendGetBlocks(long, long, SettableFuture)} for
+     * {@code reply} and the result.
+     */
+    public long sendGetSums(long startTime, long endTime, SettableFuture<Bytes> reply) {
+        if (!mayRequest()) {
+            return -1;
+        }
         SumRequestMessage msg = new SumRequestMessage(startTime, endTime, chain.getXdagStats());
+        if (reply != null) {
+            kernel.getSync().getSumsRequestMap().put(msg.getRandom(), reply);
+        }
         sendMessage(msg);
-        log.debug("Request blocks time from startTime:{} ,endEime:{}" , startTime, endTime);
+        log.debug("Request sums from startTime:{} ,endTime:{}", startTime, endTime);
         return msg.getRandom();
     }
 
     public void sendMessage(Message message) {
-        msgQueue.sendMessage(message);
+        if (!channel.isActive()) {
+            return;
+        }
+        byte[] body = message.getBody() == null ? new byte[0] : message.getBody();
+        byte[] wire = new byte[1 + body.length];
+        wire[0] = message.getCode().toByte();
+        System.arraycopy(body, 0, wire, 1, body.length);
+        channel.getTransport().send(Bytes.wrap(wire));
     }
 
+    /**
+     * Takes note of what the peer says about the network. A claim that cannot be true - more main blocks than
+     * there have been epochs - is a lie and is ignored; the rest only ever raises the totals, as before.
+     */
     public void updateXdagStats(XdagMessage message) {
+        XdagStats remote = message.getXdagStats();
+        if (remote == null) {
+            return;
+        }
+        long maxPossibleMain = XdagTime.getCurrentEpoch() - XdagTime.getEpoch(config.getXdagEra()) + 2;
+        if (remote.totalnmain < 0 || remote.totalnmain > maxPossibleMain || remote.totalnblocks < 0
+                || (remote.maxdifficulty != null && remote.maxdifficulty.signum() < 0)) {
+            misbehave(SCORE_BAD_REQUEST, "impossible network statistics");
+            return;
+        }
         // Confirm that the remote stats has been updated, used to check local state.
         syncMgr.getIsUpdateXdagStats().compareAndSet(false, true);
-        XdagStats remoteXdagStats = message.getXdagStats();
-        chain.getXdagStats().update(remoteXdagStats);
+        chain.getXdagStats().update(remote);
     }
 
+    /** A token bucket: {@code rate} tokens per second, at most {@code burst} saved up. */
+    static final class TokenBucket {
+        private final double burst;
+        private final double rate;
+        private double tokens;
+        private long last = System.nanoTime();
+
+        TokenBucket(double burst, double rate) {
+            this.burst = burst;
+            this.rate = rate;
+            this.tokens = burst;
+        }
+
+        synchronized boolean tryAcquire(double n) {
+            long now = System.nanoTime();
+            tokens = Math.min(burst, tokens + (now - last) / 1e9 * rate);
+            last = now;
+            if (tokens >= n) {
+                tokens -= n;
+                return true;
+            }
+            return false;
+        }
+    }
 }

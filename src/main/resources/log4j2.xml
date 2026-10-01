@@ -24,7 +24,7 @@
                 <SizeBasedTriggeringPolicy size="100 MB"/>
                 <!--                <OnStartupTriggeringPolicy/>-->
             </Policies>
-            <!-- 删除策略配置 -->
+            <!-- deletion policy -->
             <DefaultRolloverStrategy max="5">
             <!-- Deleting policy configuration -->
                 <Delete basePath="${Logs_Dir}/history" maxDepth="1">

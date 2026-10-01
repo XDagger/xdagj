@@ -30,9 +30,6 @@ import io.xdag.Network;
 import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
-import io.xdag.net.Capability;
-import io.xdag.net.CapabilityTreeSet;
-import io.xdag.net.message.MessageCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -76,18 +73,21 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected int netHandshakeExpiry = 5 * 60 * 1000;
     protected int netChannelIdleTimeout = 2 * 60 * 1000;
 
-    // Prioritized network messages
-    protected Set<MessageCode> netPrioritizedMessages = new HashSet<>(Arrays.asList(
-            MessageCode.NEW_BLOCK,
-            MessageCode.BLOCK_REQUEST,
-            MessageCode.BLOCKS_REQUEST));
-
     // Node configuration
     protected String nodeIp;
     protected int nodePort;
     protected String nodeTag;
-    protected int maxConnections = 1024;
+    protected int maxConnections = 50;
+    protected int minConnections = 8;
+    protected int maxInboundConnections = 40;
     protected int maxInboundConnectionsPerIp = 8;
+    protected List<InetSocketAddress> seedNodes = Lists.newArrayList();
+    protected List<InetSocketAddress> trustedNodes = Lists.newArrayList();
+    protected boolean discoveryEnabled = true;
+    protected boolean allowPrivateAddresses = false;
+    protected boolean allowPrivateAddressesConfigured = false;
+    protected String nodeBindIp = "";
+    protected String nodeKeyFile;
     protected int connectionTimeout = 10000;
     protected int connectionReadTimeout = 10000;
     protected boolean enableTxHistory = false;
@@ -98,9 +98,7 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected String rootDir;
     protected String storeDir;
     protected String storeBackupDir;
-    protected String whiteListDir;
     protected String rejectAddress;
-    protected String netDBDir;
 
     protected int storeMaxOpenFiles = 1024;
     protected int storeMaxThreads = 1;
@@ -111,7 +109,6 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     protected String walletKeyFile;
 
     protected int TTL = 5;
-    protected List<InetSocketAddress> whiteIPList = Lists.newArrayList();
     protected List<String> poolWhiteIPList = Lists.newArrayList();
 
     // Wallet configuration
@@ -148,6 +145,17 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     // RandomX configuration
     protected boolean flag;
 
+    /**
+     * Epoch from which the open-network hardening fork is in force; {@link Constants#OPEN_NET_FORK_NOT_SCHEDULED}
+     * means the fork is not scheduled. Networks set their own default; test networks may override it with
+     * {@code consensus.opennet.forkEpoch} (a negative value means "not scheduled").
+     */
+    protected long openNetForkEpoch = Constants.OPEN_NET_FORK_NOT_SCHEDULED;
+    /**
+     * Value of {@code consensus.opennet.forkEpoch} in the config file, or null if absent.
+     */
+    protected Long configuredOpenNetForkEpoch;
+
     protected AbstractConfig(String rootDir, String configName, Network network, short networkVersion) {
         this.rootDir = rootDir;
         this.configName = configName;
@@ -160,6 +168,9 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     public void setDir() {
         storeDir = getRootDir() + "/rocksdb/xdagdb";
         storeBackupDir = getRootDir() + "/rocksdb/xdagdb/backupdata";
+        if (nodeKeyFile == null) {
+            nodeKeyFile = getRootDir() + "/node.key";
+        }
     }
 
     @Override
@@ -198,22 +209,12 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     @Override
-    public Set<MessageCode> getNetPrioritizedMessages() {
-        return this.netPrioritizedMessages;
-    }
-
-    @Override
     public String getClientId() {
         return String.format("%s/v%s-%s/%s",
                 Constants.CLIENT_NAME,
                 Constants.CLIENT_VERSION,
                 SystemUtils.OS_NAME,
                 SystemUtils.OS_ARCH);
-    }
-
-    @Override
-    public CapabilityTreeSet getClientCapabilities() {
-        return CapabilityTreeSet.of(Capability.FULL_NODE, Capability.LIGHT_NODE);
     }
 
     @Override
@@ -232,8 +233,11 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
     }
 
     public void getSetting() {
-        com.typesafe.config.Config config = ConfigFactory.load(getConfigName());
+        applySettings(ConfigFactory.load(getConfigName()));
+    }
 
+    /** Reads the settings from a parsed configuration (the file of this network, or anything a test builds). */
+    public void applySettings(com.typesafe.config.Config config) {
         adminTelnetIp = config.hasPath("admin.telnet.ip") ? config.getString("admin.telnet.ip") : "127.0.0.1";
         adminTelnetPort = config.hasPath("admin.telnet.port") ? config.getInt("admin.telnet.port") : 6001;
         adminTelnetPassword = config.getString("admin.telnet.password");
@@ -245,19 +249,56 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
         nodePort = config.hasPath("node.port") ? config.getInt("node.port") : 8001;
         nodeTag = config.hasPath("node.tag") ? config.getString("node.tag") : "xdagj";
         rejectAddress = config.hasPath("node.reject.transaction.address") ? config.getString("node.reject.transaction.address") : "";
-        maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
+        if (config.hasPath("node.maxInboundConnectionsPerIp")) {
+            maxInboundConnectionsPerIp = config.getInt("node.maxInboundConnectionsPerIp");
+        }
         enableTxHistory = config.hasPath("node.transaction.history.enable") && config.getBoolean("node.transaction.history.enable");
         enableGenerateBlock = config.hasPath("node.generate.block.enable") && config.getBoolean("node.generate.block.enable");
         txPageSizeLimit = config.hasPath("node.transaction.history.pageSizeLimit") ? config.getInt("node.transaction.history.pageSizeLimit") : 500;
         fundAddress = config.hasPath("fund.address") ? config.getString("fund.address") : "4duPWMbYUgAifVYkKDCWxLvRRkSByf5gb";
         fundRation = config.hasPath("fund.ration") ? config.getDouble("fund.ration") : 5;
         nodeRation = config.hasPath("node.ration") ? config.getDouble("node.ration") : 5;
-        List<String> whiteIpList = config.getStringList("node.whiteIPs");
-        log.debug("{} IP access", whiteIpList.size());
-        for (String addr : whiteIpList) {
-            String ip = addr.split(":")[0];
-            int port = Integer.parseInt(addr.split(":")[1]);
-            whiteIPList.add(new InetSocketAddress(ip, port));
+        // Peers. There is no whitelist any more: seeds are entry points, trusted peers are kept connected and
+        // never banned, and while the network is closed (open-network fork not in force) they are all there is.
+        if (config.hasPath("node.seeds")) {
+            seedNodes.clear();
+            seedNodes.addAll(parseAddresses(config.getStringList("node.seeds"), "node.seeds"));
+        }
+        if (config.hasPath("node.trustedPeers")) {
+            trustedNodes.clear();
+            trustedNodes.addAll(parseAddresses(config.getStringList("node.trustedPeers"), "node.trustedPeers"));
+        }
+        if (config.hasPath("node.whiteIPs")) {
+            // the former whitelist: its entries are what an operator would put into both lists today
+            List<InetSocketAddress> legacy = parseAddresses(config.getStringList("node.whiteIPs"), "node.whiteIPs");
+            log.warn("node.whiteIPs is no longer a whitelist; its {} entries are used as seeds and trusted peers "
+                    + "(see docs/OPEN_NETWORK.md)", legacy.size());
+            for (InetSocketAddress a : legacy) {
+                if (!seedNodes.contains(a)) {
+                    seedNodes.add(a);
+                }
+                if (!trustedNodes.contains(a)) {
+                    trustedNodes.add(a);
+                }
+            }
+        }
+        discoveryEnabled = !config.hasPath("node.discovery.enabled") || config.getBoolean("node.discovery.enabled");
+        if (config.hasPath("node.allowPrivateAddresses")) {
+            allowPrivateAddresses = config.getBoolean("node.allowPrivateAddresses");
+            allowPrivateAddressesConfigured = true;
+        }
+        nodeBindIp = config.hasPath("node.bindIp") ? config.getString("node.bindIp") : "";
+        if (config.hasPath("node.keyFile")) {
+            nodeKeyFile = config.getString("node.keyFile");
+        }
+        if (config.hasPath("node.minConnections")) {
+            minConnections = config.getInt("node.minConnections");
+        }
+        if (config.hasPath("node.maxConnections")) {
+            maxConnections = config.getInt("node.maxConnections");
+        }
+        if (config.hasPath("node.maxInboundConnections")) {
+            maxInboundConnections = config.getInt("node.maxInboundConnections");
         }
         // RPC configuration
         rpcHttpEnabled = config.hasPath("rpc.http.enabled") && config.getBoolean("rpc.http.enabled");
@@ -266,7 +307,36 @@ public class AbstractConfig implements Config, AdminSpec, NodeSpec, WalletSpec, 
             rpcHttpPort = config.hasPath("rpc.http.port") ? config.getInt("rpc.http.port") : 10001;
         }
         flag = config.hasPath("randomx.flags.fullmem") && config.getBoolean("randomx.flags.fullmem");
+        if (config.hasPath("consensus.opennet.forkEpoch")) {
+            long epoch = config.getLong("consensus.opennet.forkEpoch");
+            configuredOpenNetForkEpoch = epoch < 0 ? Constants.OPEN_NET_FORK_NOT_SCHEDULED : epoch;
+        }
 
+    }
+
+    /** Parses {@code host:port} entries; entries that do not parse or resolve are reported and skipped. */
+    protected static List<InetSocketAddress> parseAddresses(List<String> entries, String what) {
+        List<InetSocketAddress> result = new ArrayList<>();
+        for (String entry : entries) {
+            int colon = entry.lastIndexOf(':');
+            if (colon <= 0 || colon == entry.length() - 1) {
+                log.warn("{}: '{}' is not host:port, ignored", what, entry);
+                continue;
+            }
+            try {
+                String host = entry.substring(0, colon).replace("[", "").replace("]", "");
+                int port = Integer.parseInt(entry.substring(colon + 1));
+                InetSocketAddress address = new InetSocketAddress(host, port);
+                if (address.isUnresolved()) {
+                    log.warn("{}: '{}' cannot be resolved, ignored", what, entry);
+                    continue;
+                }
+                result.add(address);
+            } catch (RuntimeException e) {
+                log.warn("{}: '{}' is not usable ({}), ignored", what, entry, e.getMessage());
+            }
+        }
+        return result;
     }
 
     @Override

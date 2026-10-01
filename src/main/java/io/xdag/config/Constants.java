@@ -91,10 +91,17 @@ public class Constants {
         NEW_LINK
     }
 
-    public static final short MAINNET_VERSION = 0;
-    public static final short TESTNET_VERSION = 0;
-    public static final short DEVNET_VERSION = 0;
+    // Protocol generation announced in the handshake; nodes with different versions do not talk to each other.
+    // 1: xdagj-p2p transport (signed discovery, mutual handshake), XDAG messages at codes 0x20 and above.
+    public static final short MAINNET_VERSION = 1;
+    public static final short TESTNET_VERSION = 1;
+    public static final short DEVNET_VERSION = 1;
 
     public static final XAmount MIN_GAS = XAmount.of(100, XUnit.MILLI_XDAG);
+
+    /**
+     * Activation epoch value meaning "the open-network hardening fork is not scheduled".
+     */
+    public static final long OPEN_NET_FORK_NOT_SCHEDULED = Long.MAX_VALUE;
 
 }

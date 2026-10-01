@@ -21,142 +21,72 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package io.xdag.net;
 
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.xdag.Kernel;
-import io.xdag.net.message.MessageQueue;
-
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-
 import lombok.Getter;
-import lombok.Setter;
 
 /**
- * Channel represents a network connection between two peers in the XDAG network
+ * One connection to another node, as the rest of xdagj sees it: the peer, its address, and the XDAG protocol
+ * that runs over it ({@link #getP2pHandler()}). The transport underneath is xdagj-p2p's
+ * {@link io.xdag.p2p.channel.Channel}.
  */
 @Getter
-@Setter
 public class Channel {
 
-    private SocketChannel socket;
-  /**
-   * -- GETTER --
-   *  Checks if this is an inbound connection
-   */
-  private boolean isInbound;
-    private InetSocketAddress remoteAddress;
-    private Peer remotePeer;
-    private MessageQueue msgQueue;
-  /**
-   * -- GETTER --
-   *  Checks if the channel is active
-   */
-  private boolean isActive;
-    private XdagP2pHandler p2pHandler;
+    private final io.xdag.p2p.channel.Channel transport;
+    private final boolean isInbound;
+    private final InetSocketAddress remoteAddress;
+    private final Peer remotePeer;
+    private final XdagP2pHandler p2pHandler;
+    private volatile boolean isActive;
 
-    /**
-     * Creates a new channel instance with the given socket
-     * 
-     * @param socket The socket channel for network communication
-     */
-    public Channel(SocketChannel socket) {
-        this.socket = socket;
+    public Channel(io.xdag.p2p.channel.Channel transport, Peer remotePeer, Kernel kernel) {
+        this.transport = transport;
+        this.isInbound = !transport.isActive();
+        this.remoteAddress = transport.getRemoteAddress();
+        this.remotePeer = remotePeer;
+        this.p2pHandler = new XdagP2pHandler(this, kernel);
+        this.isActive = true;
     }
 
-    /**
-     * Initializes the channel with pipeline handlers and network settings
-     * 
-     * @param pipe Pipeline to add handlers to
-     * @param isInbound Whether this is an inbound connection
-     * @param remoteAddress Remote peer's address
-     * @param kernel Reference to the main kernel
-     */
-    public void init(ChannelPipeline pipe, boolean isInbound, InetSocketAddress remoteAddress, Kernel kernel) {
-        this.isInbound = isInbound;
-        this.remoteAddress = remoteAddress;
-        this.remotePeer = null;
-
-        this.msgQueue = new MessageQueue(kernel.getConfig());
-
-        // Register channel handlers
-        if (isInbound) {
-            pipe.addLast("inboundLimitHandler",
-                    new ConnectionLimitHandler(kernel.getConfig().getNodeSpec().getNetMaxInboundConnectionsPerIp()));
-        }
-        pipe.addLast("readTimeoutHandler", new ReadTimeoutHandler(kernel.getConfig().getNodeSpec().getNetChannelIdleTimeout(), TimeUnit.MILLISECONDS));
-        pipe.addLast("xdagFrameHandler", new XdagFrameHandler(kernel.getConfig()));
-        pipe.addLast("xdagMessageHandler", new XdagMessageHandler(kernel.getConfig()));
-        p2pHandler = new XdagP2pHandler(this, kernel);
-        pipe.addLast("xdagP2pHandler", p2pHandler);
-    }
-
-    /**
-     * Closes the socket connection
-     */
     public void close() {
-        socket.close();
+        isActive = false;
+        transport.closeWithoutBan();
     }
 
-    /**
-     * Gets the message queue for this channel
-     */
-    public MessageQueue getMessageQueue() {
-        return msgQueue;
+    /** Closes the connection and refuses the address for a while. */
+    public void ban(long banTimeMs) {
+        isActive = false;
+        transport.close(banTimeMs);
     }
 
-    /**
-     * Checks if this is an inbound connection
-     */
     public boolean isInbound() {
         return isInbound;
     }
 
-    /**
-     * Checks if this is an outbound connection
-     */
     public boolean isOutbound() {
-        return !isInbound();
+        return !isInbound;
     }
 
-    /**
-     * Checks if the channel is active
-     */
     public boolean isActive() {
-        return isActive;
+        return isActive && !transport.isDisconnect();
     }
 
-    /**
-     * Activates the channel with the given remote peer
-     *
-     * @param remotePeer The remote peer to activate with
-     */
-    public void setActive(Peer remotePeer) {
-        this.remotePeer = remotePeer;
-        this.isActive = true;
-    }
-
-    /**
-     * Deactivates the channel
-     */
     public void setInactive() {
         this.isActive = false;
     }
 
-    /**
-     * Gets the remote peer's IP address
-     */
+    /** Whether more data can be queued for the peer right now (see {@link io.xdag.p2p.channel.Channel#isWritable()}). */
+    public boolean isWritable() {
+        return transport.isWritable();
+    }
+
     public String getRemoteIp() {
         return remoteAddress.getAddress().getHostAddress();
     }
 
-    /**
-     * Gets the remote peer's port number
-     */
     public int getRemotePort() {
         return remoteAddress.getPort();
     }

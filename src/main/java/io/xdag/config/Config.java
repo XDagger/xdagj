@@ -27,7 +27,6 @@ package io.xdag.config;
 import io.xdag.config.spec.*;
 import io.xdag.core.XAmount;
 import io.xdag.core.XdagField;
-import io.xdag.net.CapabilityTreeSet;
 
 import java.util.List;
 
@@ -46,11 +45,6 @@ public interface Config {
      * Get the client identifier
      */
     String getClientId();
-
-    /**
-     * Get the client capabilities tree set
-     */
-    CapabilityTreeSet getClientCapabilities();
 
     /**
      * Get the root directory path for configuration
@@ -153,5 +147,11 @@ public interface Config {
     FundSpec getFundSpec();
 
     String getNodeTag();
+
+    /**
+     * Epoch ({@code timestamp >> 16}) from which the open-network hardening fork is in force.
+     * {@link Constants#OPEN_NET_FORK_NOT_SCHEDULED} means the fork is not scheduled on this network.
+     */
+    long getOpenNetForkEpoch();
 
 }

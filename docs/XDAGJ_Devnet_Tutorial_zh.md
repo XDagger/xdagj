@@ -86,7 +86,7 @@ TODO
 
 ## 修改矿池参数
 
-配置文件位于`src/main/resources/xdag-xxx.conf`，打包后位于程序的根目录下（./pool）具体的含义如下，不修改则启用默认配置。其中XDAGJ的白名单为可选模式，配置项为空则允许所有节点加入，限定后只允许对应的ip接入
+配置文件位于`src/main/resources/xdag-xxx.conf`，打包后位于程序的根目录下（./pool）具体的含义如下，不修改则启用默认配置。0.9.0 起不再有节点白名单：`node.seeds` 是入网的种子节点，`node.trustedPeers` 是始终保持连接的节点；链上开放网络分叉生效后（devnet 从创世起）任何节点都可以接入，见 `docs/OPEN_NETWORK.md`
 
 - xdag-devnet.conf 为例
 
@@ -111,7 +111,8 @@ directRation              # 参与奖励比例(1-100)，默认为 5
 node.ip                                          # 矿池之间相互连接的 ip，默认为 127.0.0.1
 node.port                                      # 矿池之间相互连接的端口，默认为 8001
 node.maxInboundConnectionsPerIp  # 矿池之间允许入站连接数，默认为 8
-node.whiteIPs                               # 白名单列表，可选。在该列表内的 ip 才允许被连接
+node.seeds                                  # 种子节点列表（旧的 node.whiteIPs 仍会被读取，作为种子及可信节点）
+node.trustedPeers                           # 始终保持连接、不会被封禁的节点
 
 # Node RPC Config
 rpc.enabled              # 是否开启 RPC 功能，默认为 true

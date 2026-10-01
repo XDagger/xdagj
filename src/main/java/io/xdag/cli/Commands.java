@@ -251,35 +251,29 @@ public class Commands {
         MutableBytes32 to = MutableBytes32.create();
         to.set(8, address.slice(8, 20));
 
-        // Track remaining amount to send
-        AtomicReference<XAmount> remain = new AtomicReference<>(amount);
-
-        // Collect input accounts
+        // An account transaction spends from exactly one account and carries that account's nonce. (The
+        // former code gathered the amount from several accounts under the nonce of the last one, which no
+        // node accepts.) The default account is tried first, then the others.
         Map<Address, ECKeyPair> ourAccounts = Maps.newHashMap();
-        List<ECKeyPair> accounts = kernel.getWallet().getAccounts();
         UInt64 txNonce = null;
-
+        List<ECKeyPair> accounts = Lists.newArrayList(kernel.getWallet().getAccounts());
+        ECKeyPair defKey = kernel.getWallet().getDefKey();
+        if (defKey != null && accounts.remove(defKey)) {
+            accounts.addFirst(defKey);
+        }
         for (ECKeyPair account : accounts) {
             byte[] addr = toBytesAddress(account).toArray();
             XAmount addrBalance = kernel.getAddressStore().getBalanceByAddress(addr);
-            UInt64 currentTxQuantity = kernel.getAddressStore().getTxQuantity(addr);
-            txNonce = currentTxQuantity.add(UInt64.ONE);
-
-            if (compareAmountTo(remain.get(), addrBalance) <= 0) {
-                ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, remain.get(), true), account);
-                remain.set(XAmount.ZERO);
+            if (compareAmountTo(amount, addrBalance) <= 0) {
+                ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, amount, true), account);
+                txNonce = kernel.getAddressStore().getTxQuantity(addr).add(UInt64.ONE);
                 break;
-            } else {
-                if (compareAmountTo(addrBalance, XAmount.ZERO) > 0) {
-                    remain.set(remain.get().subtract(addrBalance));
-                    ourAccounts.put(new Address(keyPair2Hash(account), XDAG_FIELD_INPUT, addrBalance, true), account);
-                }
             }
         }
 
         // Check if enough balance
-        if (compareAmountTo(remain.get(), XAmount.ZERO) > 0) {
-            return "Balance not enough.";
+        if (ourAccounts.isEmpty()) {
+            return "Balance not enough (no single account holds " + amount.toDecimal(9, XUnit.XDAG).toPlainString() + ").";
         }
 
         // Create and broadcast transaction blocks
@@ -429,7 +423,7 @@ public class Commands {
                           XDAG in address: %s
                         4 hr hashrate KHs: %.9f of %.9f
                         Number of Address: %d""",
-                kernel.getNetDB().getSize(), kernel.getNetDBMgr().getWhiteDB().getSize(),
+                kernel.getChannelMgr().getActiveChannels().size(), xdagStats.getTotalnhosts(),
                 xdagStats.getNblocks(), Math.max(xdagStats.getTotalnblocks(), xdagStats.getNblocks()),
                 xdagStats.getNmain(), Math.max(xdagStats.getTotalnmain(), xdagStats.getNmain()),
                 xdagStats.nextra,

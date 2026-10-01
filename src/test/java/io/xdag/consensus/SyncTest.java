@@ -145,10 +145,10 @@ public class SyncTest {
         result = blockchain.tryToConnect(secondBlock);
         assertEquals(IMPORTED_BEST, result);
 
-        if (direction) { //正向
+        if (direction) { // forward
             result = blockchain.tryToConnect(thirdBlock);
             result = blockchain.tryToConnect(fourthBlock);
-        } else { //反向
+        } else { // backward
             result = blockchain.tryToConnect(fourthBlock);
             result = blockchain.tryToConnect(thirdBlock);
         }
@@ -203,7 +203,7 @@ public class SyncTest {
             extraBlockList.add(extraBlock);
         }
 
-        // 第一个case
+        // the first case
         generateTime += 64000L;
         long tempTime = XdagTime.msToXdagtimestamp(generateTime);
         long firstTime = XdagTime.getEndOfEpoch(tempTime);

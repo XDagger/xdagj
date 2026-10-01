@@ -28,19 +28,19 @@ import io.xdag.rpc.server.protocol.JsonRpcRequest;
 
 public interface JsonRpcRequestHandler {
     /**
-     * 处理RPC请求
+     * Handles an RPC request
      *
-     * @param request RPC请求
-     * @return 处理结果
-     * @throws JsonRpcException 如果处理过程中出现错误
+     * @param request the RPC request
+     * @return the result of the request
+     * @throws JsonRpcException if handling the request fails
      */
     Object handle(JsonRpcRequest request) throws JsonRpcException;
 
     /**
-     * 检查方法是否支持
+     * Checks whether a method is supported
      *
-     * @param methodName 方法名
-     * @return 如果支持返回true
+     * @param methodName the method name
+     * @return true if the method is supported
      */
     boolean supportsMethod(String methodName);
 }

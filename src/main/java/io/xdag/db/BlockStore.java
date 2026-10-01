@@ -45,6 +45,9 @@ public interface BlockStore extends XdagLifecycle {
     byte BLOCK_HEIGHT = (byte) 0x80;
     byte SNAPSHOT_PRESEED = (byte) 0x90;
     byte TX_HISTORY = (byte) 0xa0;
+    byte OPEN_NET_FORK_LATCH = (byte) 0xb0;
+    byte MAIN_UPDATE_MARK = (byte) 0xc0;
+    byte TX_SKIPPED_BY = (byte) 0xd0;
     String SUM_FILE_NAME = "sums.dat";
 
     void reset();
@@ -115,5 +118,32 @@ public interface BlockStore extends XdagLifecycle {
     int loadSum(long starttime, long endtime, MutableBytes sums);
 
     void saveXdagStatus(XdagStats status);
+
+    /**
+     * Whether this node's main chain has ever contained a main block at or after the open-network hardening
+     * fork epoch. Once set the mark is never cleared (see BlockchainImpl#isOpenNetLatched).
+     */
+    boolean isOpenNetForkLatched();
+
+    void setOpenNetForkLatched();
+
+    /**
+     * Mark that a main block is being confirmed or unwound. The many writes this takes are not one atomic
+     * transaction, so a process that dies in between leaves balances and flags half updated. The mark makes
+     * that detectable on the next start (it survives a killed process; it cannot help against a power failure,
+     * where the last writes of several databases may be lost independently).
+     */
+    void setMainUpdateInProgress(boolean inProgress);
+
+    boolean isMainUpdateInProgress();
+
+    /**
+     * Record which block reached a transaction whose nonce did not fit (hardened execution). The transaction is
+     * left unexecuted for good, and this record is what lets exactly that block undo the decision when it is
+     * unwound. {@code byHashlow == null} removes the record.
+     */
+    void setTxSkippedBy(Bytes32 txHashlow, Bytes32 byHashlow);
+
+    Bytes32 getTxSkippedBy(Bytes32 txHashlow);
 
 }

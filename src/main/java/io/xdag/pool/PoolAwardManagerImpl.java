@@ -70,6 +70,14 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
     protected List<Bytes32> blockHashs = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     protected List<Bytes32> minShares = new CopyOnWriteArrayList<>(new ArrayList<>(16));
     private final Map<Address, ECKeyPair> paymentsToNodesMap = new HashMap<>(10);
+    /**
+     * Blocks that are waiting in {@link #paymentsToNodesMap}. An Address has no equality of its own, so the map
+     * alone would accept the same block twice; two IN links of one block in one transaction take the amount
+     * twice under the 0.8.x rules and leave the block with a negative balance.
+     */
+    private final java.util.Set<Bytes32> pendingNodePayments = new java.util.HashSet<>();
+    /** Where the reward bookkeeping is kept across restarts (see {@link #saveAwardState()}). */
+    private final java.nio.file.Path awardStateFile;
     private static final BlockingQueue<AwardBlock> awardBlockBlockingQueue = new LinkedBlockingQueue<>();
 
     private final ExecutorService workExecutor = Executors.newSingleThreadExecutor(BasicThreadFactory.builder()
@@ -86,6 +94,8 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         this.nodeRation = Math.max(0, Math.min(config.getNodeSpec().getNodeRation(), 100));
         this.blockchain = kernel.getBlockchain();
         this.commands = new Commands(kernel);
+        this.awardStateFile = config.getRootDir() == null ? null
+                : java.nio.file.Paths.get(config.getRootDir(), "pool-awards.txt");
         init();
     }
 
@@ -134,6 +144,64 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
             minShares.add(null);
             blockPreHashs.add(null);
         }
+        loadAwardState();
+    }
+
+    /**
+     * The rewards that are still to be paid are the 16 slots above. They used to live in memory only: a node
+     * restarted within 16 epochs of finding a main block never paid the pool for it. Now they are written to a
+     * small file whenever they change and read back on start.
+     */
+    private synchronized void saveAwardState() {
+        if (awardStateFile == null) {
+            return;
+        }
+        StringBuilder text = new StringBuilder("# xdagj pool awards v1: index preHash hash share\n");
+        for (int i = 0; i < 16; i++) {
+            if (blockHashs.get(i) != null && blockPreHashs.get(i) != null && minShares.get(i) != null) {
+                text.append(i).append(' ').append(blockPreHashs.get(i).toUnprefixedHexString()).append(' ')
+                        .append(blockHashs.get(i).toUnprefixedHexString()).append(' ')
+                        .append(minShares.get(i).toUnprefixedHexString()).append('\n');
+            }
+        }
+        try {
+            java.nio.file.Path tmp = awardStateFile.resolveSibling(awardStateFile.getFileName() + ".tmp");
+            java.nio.file.Files.createDirectories(awardStateFile.toAbsolutePath().getParent());
+            java.nio.file.Files.writeString(tmp, text.toString());
+            java.nio.file.Files.move(tmp, awardStateFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.io.IOException e) {
+            log.warn("Cannot save the pending pool awards to {}: {}", awardStateFile, e.toString());
+        }
+    }
+
+    private synchronized void loadAwardState() {
+        if (awardStateFile == null || !java.nio.file.Files.exists(awardStateFile)) {
+            return;
+        }
+        int loaded = 0;
+        try {
+            for (String line : java.nio.file.Files.readAllLines(awardStateFile)) {
+                if (line.isBlank() || line.startsWith("#")) {
+                    continue;
+                }
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length != 4) {
+                    continue;
+                }
+                int index = Integer.parseInt(parts[0]);
+                if (index < 0 || index >= 16) {
+                    continue;
+                }
+                blockPreHashs.set(index, Bytes32.fromHexString(parts[1]));
+                blockHashs.set(index, Bytes32.fromHexString(parts[2]));
+                minShares.set(index, Bytes32.fromHexString(parts[3]));
+                loaded++;
+            }
+            log.info("Restored {} pending pool awards from {}", loaded, awardStateFile);
+        } catch (RuntimeException | java.io.IOException e) {
+            log.warn("Cannot read the pending pool awards from {}: {}", awardStateFile, e.toString());
+        }
     }
 
     public void payAndAddNewAwardBlock(AwardBlock awardBlock) {
@@ -145,6 +213,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         blockPreHashs.set(awardBlockIndex, awardBlock.preHash);
         blockHashs.set(awardBlockIndex, awardBlock.hash);
         minShares.set(awardBlockIndex, awardBlock.share);
+        saveAwardState();
     }
 
     public int payPools(long time) {
@@ -177,13 +246,6 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
             log.debug("Can't find the block");
             return -2;
         }
-        // nonce = share(12 bytes) + pool wallet address(20 bytes)
-        if (compareTo(block.getNonce().slice(12, 20).toArray(), 0,
-                20, block.getCoinBase().getAddress().slice(8, 20).toArray(), 0, 20) == 0) {
-            log.debug("This block is not produced by mining and belongs to the node, block hash:{}",
-                    hashlow.toHexString());
-            return -3;
-        }
         if (kernel.getBlockchain().getMemOurBlocks().get(hashlow) == null) {
             keyPos = kernel.getBlockStore().getKeyIndexByHash(hashlow);
         } else {
@@ -197,6 +259,17 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
         if (compareAmountTo(allAmount, XAmount.ZERO) <= 0) {
             log.debug("no main block,can't pay");
             return -5;
+        }
+        // nonce = share(12 bytes) + pool wallet address(20 bytes)
+        if (compareTo(block.getNonce().slice(12, 20).toArray(), 0,
+                20, block.getCoinBase().getAddress().slice(8, 20).toArray(), 0, 20) == 0) {
+            // Found by the node itself, without a pool: there is nobody to share with, so the whole reward
+            // goes to the node's account with the next batch of node payments. (It used to stay in the main
+            // block forever.)
+            log.debug("This block is not produced by mining and belongs to the node, block hash:{}",
+                    hashlow.toHexString());
+            queueNodePayment(hashlow, allAmount, keyPos);
+            return -3;
         }
 
         Bytes32 poolWalletAddress = BasicUtils.hexPubAddress2Hashlow(String.valueOf(block.getNonce().slice(12, 20)));
@@ -220,14 +293,26 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
       return 0;
     }
 
-    public void doPayments(Bytes32 hashLow, XAmount allAmount, Bytes32 poolWalletAddress, int keyPos,
-                           TransactionInfoSender transactionInfoSender)
-        throws AddressFormatException {
-        if (paymentsToNodesMap.size() == 10) {
+    /** Queues the node's share of a main block; ten of them are paid to the node's account in one go. */
+    private synchronized void queueNodePayment(Bytes32 hashLow, XAmount amount, int keyPos) {
+        if (paymentsToNodesMap.size() >= 10) {
             StringBuilder txHash = commands.xferToNode(paymentsToNodesMap);
             log.info(String.valueOf(txHash));
             paymentsToNodesMap.clear();
+            pendingNodePayments.clear();
         }
+        if (!pendingNodePayments.add(Bytes32.wrap(hashLow))) {
+            log.debug("Block {} is already queued for the node payment", hashLow.toHexString());
+            return;
+        }
+        paymentsToNodesMap.put(new Address(hashLow, XDAG_FIELD_IN, amount, false), wallet.getAccount(keyPos));
+        log.info("The node's reward block was successfully placed,block hash:{},current Map size:{}",
+                hashLow.toHexString(), paymentsToNodesMap.size());
+    }
+
+    public void doPayments(Bytes32 hashLow, XAmount allAmount, Bytes32 poolWalletAddress, int keyPos,
+                           TransactionInfoSender transactionInfoSender)
+        throws AddressFormatException {
         // Foundation rewards, default reward ratio is 5%
         XAmount fundAmount = allAmount.multiply(div(fundRation, 100, 6));
         // Node rewards, default reward ratio is 5%
@@ -253,10 +338,7 @@ public class PoolAwardManagerImpl extends AbstractXdagLifecycle implements PoolA
             transactionInfoSender.setDonate(fundAmount.toDecimal(9, XUnit.XDAG).toPlainString());
             log.debug("Start payment...");
             transaction(hashLow, receipt, sendAmount, keyPos, transactionInfoSender);
-            paymentsToNodesMap.put(new Address(hashLow, XDAG_FIELD_IN, nodeAmount, false),
-                    wallet.getAccount(keyPos));
-            log.info("The node's reward block was successfully placed,block hash:{},current Map size:{}",
-                    hashLow.toHexString(), paymentsToNodesMap.size());
+            queueNodePayment(hashLow, nodeAmount, keyPos);
         } else {
             log.debug("The balance of block {} is insufficient and rewards will not be distributed. Maybe this block " +
                             "has been rollback. send balance:{}",

@@ -38,6 +38,14 @@ import io.xdag.core.XAmount;
 public class MainnetConfig extends AbstractConfig {
 
     /**
+     * Activation epoch of the open-network hardening fork on mainnet.
+     * <p>
+     * Not scheduled yet: until the maintainers publish a release with an agreed epoch, mainnet keeps the 0.8.x
+     * consensus rules and the node only talks to the peers listed in its configuration (see docs/OPEN_NETWORK.md).
+     */
+    public static final long OPEN_NET_FORK_EPOCH = Constants.OPEN_NET_FORK_NOT_SCHEDULED;
+
+    /**
      * Constructor initializes mainnet configuration with specific parameters:
      * - Network type: MAINNET
      * - Version: MAINNET_VERSION
@@ -58,6 +66,8 @@ public class MainnetConfig extends AbstractConfig {
         this.xdagFieldHeader = XDAG_FIELD_HEAD;
         this.walletKeyFile = this.rootDir + "/wallet.dat";
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
+        // A consensus parameter: it ships with the release and cannot be set per node.
+        this.openNetForkEpoch = OPEN_NET_FORK_EPOCH;
     }
 
 }

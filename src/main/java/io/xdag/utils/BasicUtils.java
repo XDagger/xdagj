@@ -84,10 +84,26 @@ public class BasicUtils {
      * @param value String number value
      * @return Double value rounded to 2 decimal places
      */
+    /**
+     * Parses an amount given in XDAG. It used to be rounded to two decimals, silently changing what the user
+     * asked for; now it is parsed exactly, with at most nine decimals (the resolution of an amount).
+     *
+     * @throws NumberFormatException if the text is not a number or has more than nine decimals
+     */
     public static double getDouble(String value) {
-        double num = Double.parseDouble(value);
-        BigDecimal bigDecimal = new BigDecimal(num);
-        return bigDecimal.setScale(2, RoundingMode.HALF_UP).doubleValue();
+        return parseAmount(value).doubleValue();
+    }
+
+    /** Exact decimal form of an amount given in XDAG, at most nine decimals. */
+    public static BigDecimal parseAmount(String value) {
+        BigDecimal amount = new BigDecimal(value.trim());
+        if (amount.scale() > 9) {
+            if (amount.stripTrailingZeros().scale() > 9) {
+                throw new NumberFormatException("at most 9 decimals: " + value);
+            }
+            amount = amount.setScale(9, RoundingMode.UNNECESSARY);
+        }
+        return amount;
     }
 
     /**

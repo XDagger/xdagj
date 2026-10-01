@@ -25,11 +25,9 @@
 package io.xdag.config.spec;
 
 import io.xdag.Network;
-import io.xdag.net.message.MessageCode;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Interface for node configuration specifications
@@ -48,7 +46,6 @@ public interface NodeSpec {
 
     // Network handshake and messaging
     int getNetHandshakeExpiry();
-    Set<MessageCode> getNetPrioritizedMessages();
     int getNetMaxInboundConnectionsPerIp();
     int getNetMaxInboundConnections();
     int getNetChannelIdleTimeout();
@@ -65,17 +62,38 @@ public interface NodeSpec {
     int getTTL();
     int getAwardEpoch();
 
-    // Whitelist management
-    List<InetSocketAddress> getWhiteIPList();
-    void setWhiteIPList(List<InetSocketAddress> list);
+    // Peers (see docs/OPEN_NETWORK.md)
+
+    /** Entry points into the network ({@code node.seeds}): dialled to find peers, no other privilege. */
+    List<InetSocketAddress> getSeedNodes();
+
+    /**
+     * Peers this node always stays connected to and never bans ({@code node.trustedPeers}). While the network
+     * is closed (open-network fork not yet in force), seeds and trusted peers are the only peers.
+     */
+    List<InetSocketAddress> getTrustedNodes();
+
+    /** Whether nodes are looked for by discovery (UDP Kademlia) once the network is open. */
+    boolean isDiscoveryEnabled();
+
+    /** Whether peers on private / loopback addresses learnt from others may be contacted (test networks). */
+    boolean isAllowPrivateAddresses();
+
+    /** Local address to listen on (empty: all interfaces). */
+    String getNodeBindIp();
+
+    /** File that holds the node's network key (created on first start). */
+    String getNodeKeyFile();
+
+    int getMinConnections();
+
+    int getMaxInboundConnections();
 
     // Storage configuration
     String getStoreDir();
     void setStoreDir(String dir);
     String getStoreBackupDir();
     void setStoreBackupDir(String dir);
-    String getWhiteListDir();
-    String getNetDBDir();
     int getStoreMaxOpenFiles();
     int getStoreMaxThreads();
     boolean isStoreFromBackup();

@@ -50,7 +50,7 @@ public class MessageTest {
     // nhosts/total_nhosts maintime The following 368 bytes are generated via netdbsend and sent to the other party along with my connected IP address and host.
     // 0400000004000000 3ef4780100000000 7f000001 611e 7f000001 b822 7f000001"
     // 7f000001 611e7f00
-    // 0001b822 7f000001 net dbsend修改
+    // 0001b822 7f000001 net db send, changed
     // ip port
     // 5f 767f000001 d49d 000000000000000000000000000000000000000000000000" +
     // 0000000000000000000000000000000000000000000000000000000000000000" +

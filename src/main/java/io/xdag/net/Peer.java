@@ -105,6 +105,13 @@ public class Peer {
     /**
      * Returns string representation of peer in format: peerId@ip:port
      */
+    /** The peer as the P2P layer reported it in the handshake. */
+    public static Peer of(io.xdag.p2p.Peer p) {
+        Network network = Network.of(p.getNetworkId());
+        return new Peer(network, p.getNetworkVersion(), p.getPeerId(), p.getIp(), p.getPort(), p.getClientId(),
+                p.getCapabilities(), p.getLatestBlockNumber(), p.isGenerateBlock(), p.getNodeTag());
+    }
+
     @Override
     public String toString() {
         return getPeerId() + "@" + ip + ":" + port + ", NodeTag = " + this.nodeTag + ", GenerateBlock = " +

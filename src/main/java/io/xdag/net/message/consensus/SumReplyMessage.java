@@ -50,7 +50,11 @@ public class SumReplyMessage extends XdagMessage {
         super(MessageCode.SUMS_REPLY, null, body);
 
         SimpleDecoder dec = super.decode();
-        this.sum = MutableBytes.wrap(dec.readBytes());
+        byte[] sums = dec.readBytes();
+        if (sums == null || sums.length != 256) {
+            throw new IllegalArgumentException("sums must be 256 bytes");
+        }
+        this.sum = MutableBytes.wrap(sums);
     }
 
 }
