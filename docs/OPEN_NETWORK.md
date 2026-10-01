@@ -13,8 +13,8 @@ non-determinism.
 
 In 0.8.x a node only accepted connections from `node.whiteIPs`. That list was not a
 convenience: it was the only thing standing between the network and a number of
-consensus and protocol flaws that any peer could exploit. Rewriting the node (the Rust
-port in `/root/xdag`, `docs/BUGS.md` there) surfaced them; the worst ones are:
+consensus and protocol flaws that any peer could exploit. Rewriting the node in Rust (a
+separate port, not part of this repository) surfaced them; the worst ones are:
 
 | id | flaw (0.8.4) | effect from an untrusted peer |
 |----|--------------|-------------------------------|
