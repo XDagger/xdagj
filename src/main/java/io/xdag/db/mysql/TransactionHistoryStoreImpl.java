@@ -57,6 +57,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             "famount,ftype,fremark,ftime from t_transaction_history where faddress= ? and ftime >= ? and ftime <= ? order by ftime desc limit ?,?";
 
     private static final String SQL_QUERY_TXHISTORY_COUNT = "select count(*) from t_transaction_history where faddress=?";
+    private static final String SQL_DELETE_BY_HASH = "delete from t_transaction_history where fhash=?";
 
     private static final String SQL_QUERY_TXHISTORY_COUNT_WITH_TIME = "select count(*) from t_transaction_history where faddress=? and ftime >=? and ftime <=?";
     private static final int BLOCK_ADDRESS_FLAG = 0;
@@ -67,7 +68,8 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
     private Connection connBatch = null;
     private PreparedStatement pstmtBatch = null;
     private int count = 0;
-    public static int totalPage = 1;
+    /** Pages of the last listing, per thread (see {@link TransactionHistoryStore#lastTotalPage()}). */
+    private static final ThreadLocal<Integer> LAST_TOTAL_PAGE = ThreadLocal.withInitial(() -> 1);
 
     public TransactionHistoryStoreImpl(long txPageSizeLimit) {
         this.TX_PAGE_SIZE_LIMIT = txPageSizeLimit;
@@ -212,7 +214,7 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
                 if (rs.next()) {
                     totalcount = rs.getInt(1);
                 }
-                totalPage = totalcount < PAGE_SIZE ? 1 : (int) Math.ceil((double) totalcount / PAGE_SIZE);
+                LAST_TOTAL_PAGE.set(totalcount < PAGE_SIZE ? 1 : (int) Math.ceil((double) totalcount / PAGE_SIZE));
 
                 pstmt = conn.prepareStatement(SQL_QUERY_TXHISTORY_BY_ADDRESS_WITH_TIME);
                 pstmt.setString(1, address);
@@ -244,6 +246,31 @@ public class TransactionHistoryStoreImpl implements TransactionHistoryStore {
             DruidUtils.close(conn, pstmt, rs);
         }
         return txHistoryList;
+    }
+
+    @Override
+    public boolean deleteTxHistoryByHash(String hash) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = DruidUtils.getConnection();
+            if (conn != null) {
+                pstmt = conn.prepareStatement(SQL_DELETE_BY_HASH);
+                pstmt.setString(1, hash);
+                pstmt.executeUpdate();
+                return true;
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            DruidUtils.close(conn, pstmt);
+        }
+        return false;
+    }
+
+    @Override
+    public int lastTotalPage() {
+        return LAST_TOTAL_PAGE.get();
     }
 
     @Override

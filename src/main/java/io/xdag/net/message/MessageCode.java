@@ -25,68 +25,26 @@ package io.xdag.net.message;
 
 import lombok.Getter;
 
+/**
+ * Codes of the XDAG protocol messages carried by the P2P layer (xdagj-p2p). Codes below 0x20 belong to the
+ * P2P layer itself (discovery, handshake, keep-alive); the application range starts at 0x20.
+ */
 @Getter
 public enum MessageCode {
 
     // =======================================
-    // [0x00, 0x0f] Reserved for p2p basics
+    // [0x20, 0x2f] XDAG node protocol
     // =======================================
-
-    /**
-     * [0x00] Inform peer of disconnecting.
-     */
-    DISCONNECT(0x00),
-
-    /**
-     * [0x01] A message containing a random bytes
-     */
-    HANDSHAKE_INIT(0x01),
-
-    /**
-     * [0x02] The new HELLO message
-     */
-    HANDSHAKE_HELLO(0x02),
-
-    /**
-     * [0x13] The new WORLD message.
-     */
-    HANDSHAKE_WORLD(0x03),
-
-    /**
-     * [0x04] Request an immediate reply from the peer.
-     */
-    PING(0x04),
-
-    /**
-     * [0x05] Response to a PING message.
-     */
-    PONG(0x05),
-
-//    /**
-//     * [0x06] Request peer to provide a list of known nodes.
-//     */
-//    GET_NODES(0x06),
-//
-//    /**
-//     * [0x07] Response to a GET_NODES message.
-//     */
-//    NODES(0x07),
-
-    // =======================================
-    // [0x10, 0x1f] Reserved for node
-    // =======================================
-    BLOCKS_REQUEST(0x10),
-    BLOCKS_REPLY(0x11),
-    SUMS_REQUEST(0x12),
-    SUMS_REPLY(0x13),
-    BLOCKEXT_REQUEST(0x14),
-    BLOCKEXT_REPLY(0x15),
-    BLOCK_REQUEST(0x16),
-//    RECEIVE_BLOCK(0x17),
-    NEW_BLOCK(0x18),
-    SYNC_BLOCK(0x19),
-    SYNCBLOCK_REQUEST(0x1A);
-
+    BLOCKS_REQUEST(0x20),
+    BLOCKS_REPLY(0x21),
+    SUMS_REQUEST(0x22),
+    SUMS_REPLY(0x23),
+    BLOCKEXT_REQUEST(0x24),
+    BLOCKEXT_REPLY(0x25),
+    BLOCK_REQUEST(0x26),
+    NEW_BLOCK(0x28),
+    SYNC_BLOCK(0x29),
+    SYNCBLOCK_REQUEST(0x2A);
 
     private static final MessageCode[] map = new MessageCode[256];
 
@@ -109,5 +67,4 @@ public enum MessageCode {
     public byte toByte() {
         return (byte) code;
     }
-
 }

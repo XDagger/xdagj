@@ -65,8 +65,8 @@ import io.xdag.core.XdagStats;
 import io.xdag.core.XdagTopStatus;
 import io.xdag.db.AddressStore;
 import io.xdag.db.BlockStore;
-import io.xdag.net.NetDBManager;
-import io.xdag.net.NetDB;
+import io.xdag.net.Channel;
+import io.xdag.net.ChannelManager;
 import io.xdag.utils.BasicUtils;
 import io.xdag.utils.BytesUtils;
 import io.xdag.utils.XdagTime;
@@ -181,9 +181,8 @@ public class CommandsTest {
 
     @Test
     public void testStats() {
-        NetDB netDB = new NetDB();
-        netDB.addNewIP("127.0.0.1:7001");
-        NetDBManager netDBManager = new NetDBManager(config);
+        ChannelManager channelManager = Mockito.mock(ChannelManager.class);
+        Mockito.when(channelManager.getActiveChannels()).thenReturn(List.of(Mockito.mock(Channel.class)));
 
         Mockito.when(blockchain.getXdagTopStatus()).thenReturn(new XdagTopStatus());
         Mockito.when(blockchain.getXdagStats()).thenReturn(new XdagStats());
@@ -191,8 +190,7 @@ public class CommandsTest {
         Mockito.when(blockchain.getSupply(Mockito.anyLong())).thenReturn(XAmount.of(1400000000, XUnit.XDAG));
         Mockito.when(addressStore.getAllBalance()).thenReturn(XAmount.of(100000, XUnit.XDAG));
         Mockito.when(addressStore.getAddressSize()).thenReturn(UInt64.valueOf(100));
-        Mockito.when(kernel.getNetDB()).thenReturn(netDB);
-        Mockito.when(kernel.getNetDBMgr()).thenReturn(netDBManager);
+        Mockito.when(kernel.getChannelMgr()).thenReturn(channelManager);
         String str = commands.stats();
         assertEquals("""
                 Statistics for ours and maximum known parameters:

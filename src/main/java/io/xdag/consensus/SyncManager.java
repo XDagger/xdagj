@@ -43,6 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.MutableBytes32;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -52,6 +53,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static io.xdag.core.ImportResult.*;
 import static io.xdag.core.XdagState.*;
@@ -124,6 +126,9 @@ public class SyncManager extends AbstractXdagLifecycle {
         stopStateTask();
     }
 
+    /** A chain whose latest main block is younger than this many epochs is current. */
+    static final long RECENT_TIP_EPOCHS = 4;
+
     private void checkState() {
         if (!isUpdateXdagStats.get()) {
             return;
@@ -144,10 +149,18 @@ public class SyncManager extends AbstractXdagLifecycle {
             log.debug("our node height:{} the max height:{}, set sync state", curHeight, maxHeight);
             setSyncState();
         }
-        // Confirm whether the synchronization is complete based on time and height.
-        if (curHeight >= maxHeight || xdagTopStatus.getTopDiff().compareTo(xdagStats.maxdifficulty) >= 0) {
-            log.debug("our node height:{} the max height:{}, our diff:{} max diff:{}, make sync done",
-                    curHeight, maxHeight, xdagTopStatus.getTopDiff(), xdagStats.maxdifficulty);
+        // Confirm whether the synchronization is complete based on time and height. The height and difficulty
+        // "of the network" are what peers claimed; in an open network a peer can claim anything (only the
+        // impossible is filtered out on arrival), and a node that believed a made-up height would never
+        // consider itself synchronised, never process new blocks and never produce any. So, under the hardened
+        // rules, a node is also done when its own chain is current: its latest main block is at most a few
+        // epochs old. That is this node's own evidence, and nobody can take it away.
+        boolean tipIsRecent = kernel.getBlockchain().isOpenNetLatched() && lastTime > 0
+                && lastTime >= curTime - RECENT_TIP_EPOCHS * MAIN_CHAIN_PERIOD;
+        if (curHeight >= maxHeight || tipIsRecent
+                || xdagTopStatus.getTopDiff().compareTo(xdagStats.maxdifficulty) >= 0) {
+            log.debug("our node height:{} the max height:{}, our diff:{} max diff:{}, tip recent:{}, make sync done",
+                    curHeight, maxHeight, xdagTopStatus.getTopDiff(), xdagStats.maxdifficulty, tipIsRecent);
             makeSyncDone();
         }
 
@@ -184,7 +197,7 @@ public class SyncManager extends AbstractXdagLifecycle {
 
         if (!blockWrapper.isOld() && (importResult == IMPORTED_BEST || importResult == IMPORTED_NOT_BEST)) {
             Peer blockPeer = blockWrapper.getRemotePeer();
-            Node node = kernel.getClient().getNode();
+            Node node = kernel.getChannelMgr().getSelfNode();
             if (blockPeer == null || !StringUtils.equals(blockPeer.getIp(), node.getIp()) || blockPeer.getPort() != node.getPort()) {
                 if (blockWrapper.getTtl() > 0) {
                     distributeBlock(blockWrapper);
@@ -203,13 +216,7 @@ public class SyncManager extends AbstractXdagLifecycle {
             case NO_PARENT -> {
                 if (syncPushBlock(blockWrapper, result.getHashlow())) {//Return true to indicate that it has been more than 60 seconds since the last time it was placed here due to the lack of a parent reference, and request to inquire about the parent block from other nodes again
                     log.debug("push block:{}, NO_PARENT {}", blockWrapper.getBlock().getHashLow(), result);
-                    List<Channel> channels = channelMgr.getActiveChannels();
-                    for (Channel channel : channels) {
-                        // if (channel.getRemotePeer().equals(blockWrapper.getRemotePeer())) {
-                        channel.getP2pHandler().sendGetBlock(result.getHashlow(), blockWrapper.isOld());
-                        //}
-                    }
-
+                    askForBlock(result.getHashlow(), blockWrapper);
                 }
             }
             case INVALID_BLOCK -> {
@@ -219,6 +226,35 @@ public class SyncManager extends AbstractXdagLifecycle {
             }
         }
         return result;
+    }
+
+    /**
+     * Asks for a block this node is missing: the peer that sent the block that needs it, if it is still
+     * connected, otherwise one peer chosen at random. (Every peer used to be asked, so somebody sending a
+     * stream of blocks with unknown parents made this node pester all of its peers - and get itself banned.)
+     */
+    private void askForBlock(MutableBytes32 hashLow, BlockWrapper needing) {
+        if (channelMgr == null) {
+            return;
+        }
+        List<Channel> channels = channelMgr.getActiveChannels();
+        if (channels.isEmpty()) {
+            return;
+        }
+        Channel chosen = null;
+        Peer from = needing.getRemotePeer();
+        if (from != null && from.getPeerId() != null) {
+            for (Channel c : channels) {
+                if (c.isActive() && from.getPeerId().equals(c.getRemotePeer().getPeerId())) {
+                    chosen = c;
+                    break;
+                }
+            }
+        }
+        if (chosen == null) {
+            chosen = channels.get(CryptoProvider.nextInt(0, channels.size()));
+        }
+        chosen.getP2pHandler().sendGetBlock(hashLow, needing.isOld());
     }
 
     /**
@@ -290,14 +326,7 @@ public class SyncManager extends AbstractXdagLifecycle {
                         if (syncPushBlock(bw, importResult.getHashlow())) {
                             log.debug("push block:{}, NO_PARENT {}", bw.getBlock().getHashLow(),
                                     importResult.getHashlow().toHexString());
-                            List<Channel> channels = channelMgr.getActiveChannels();
-                            for (Channel channel : channels) {
-//                            Peer remotePeer = channel.getRemotePeer();
-//                            Peer blockPeer = bw.getRemotePeer();
-                                // if (StringUtils.equals(remotePeer.getIp(), blockPeer.getIp()) && remotePeer.getPort() == blockPeer.getPort() ) {
-                                channel.getP2pHandler().sendGetBlock(importResult.getHashlow(), blockWrapper.isOld());
-                                //}
-                            }
+                            askForBlock(importResult.getHashlow(), bw);
                         }
                     }
                     default -> {

@@ -29,6 +29,7 @@ import io.xdag.core.Address;
 import io.xdag.core.Block;
 import java.util.List;
 
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt64;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -51,5 +52,10 @@ public interface OrphanBlockStore extends XdagLifecycle {
     void addOrphan(Block block, boolean isTxBlock, UInt64 nonce, XAmount fee, byte[] address);
 
     long getOrphanSize();
+
+    /**
+     * Hashes of the queued transactions that spend from the given account.
+     */
+    List<Bytes32> getAccountOrphans(byte[] address);
 
 }

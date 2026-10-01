@@ -46,6 +46,10 @@ public class NewBlockMessage extends Message {
         SimpleDecoder dec = new SimpleDecoder(body);
 
         this.body = dec.readBytes();
+        if (this.body == null || this.body.length != XdagBlock.XDAG_BLOCK_SIZE) {
+            // anything else is not a block; XdagBlock would accept it and fail later with an Error
+            throw new IllegalArgumentException("block data must be " + XdagBlock.XDAG_BLOCK_SIZE + " bytes");
+        }
         this.xdagBlock = new XdagBlock(this.body);
         this.block = new Block(this.xdagBlock);
         this.ttl = dec.readInt();

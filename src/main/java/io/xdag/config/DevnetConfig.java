@@ -60,6 +60,12 @@ public class DevnetConfig extends AbstractConfig {
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
         this.walletKeyFile = this.rootDir + "/wallet-devnet.dat";
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
+        // open-network hardening fork: in force from genesis unless the config file sets consensus.opennet.forkEpoch
+        this.openNetForkEpoch = configuredOpenNetForkEpoch != null ? configuredOpenNetForkEpoch : 0;
+        // a development network usually lives on one machine or one LAN
+        if (!allowPrivateAddressesConfigured) {
+            this.allowPrivateAddresses = true;
+        }
     }
 
 }

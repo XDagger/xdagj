@@ -359,7 +359,7 @@ public class BlockchainTest {
                 assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_MAIN_REF);
                 assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_REF);
                 //                assertNotEquals(0, blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().flags & BI_OURS);
-                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getRef(), blockchain.getBlockByHeight(1).getHashLow().toArray());//主块的ref为自己
+                assertArrayEquals(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getRef(), blockchain.getBlockByHeight(1).getHashLow().toArray());// a main block's ref is itself
                 // A main block with a height of 1, if it has no reference to itself, will have its maximum difficulty value pointed to null.
                 assertNull(blockchain.getBlockByHash(addressBlock.getHashLow(), false).getInfo().getMaxDiffLink());
             } else if (i > 2) {//3、4、5、6、7、8、9、10
@@ -729,7 +729,7 @@ public class BlockchainTest {
                 assertEquals(0, blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().flags & BI_MAIN_REF);
                 assertEquals(0, blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().flags & BI_REF);
 
-                //金额amount
+                // the amount
                 assertEquals("0.0", blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().getAmount().toDecimal(1, XUnit.XDAG).toString());
                 //todo:This is a bug because if a block is passed in and explicitly sets the balance to a non-zero number, the network doesn't process it. For example, here,
                 // a balance of 1000 is set out of thin air, which is very dangerous. The consensus mechanism needs to be modified to prevent this bug.
@@ -1075,7 +1075,7 @@ public class BlockchainTest {
                 //ref
                 assertNull(blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().getRef());
                 assertNull(blockchain.getBlockByHash(extraBlockList.get(11).getHashLow(), false).getInfo().getRef());
-                assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().getRef(), extraBlockList.get(10).getHashLow().toArray());//主块ref指向自己，这里有别于链接块和交易块
+                assertArrayEquals(blockchain.getBlockByHash(extraBlockList.get(10).getHashLow(), false).getInfo().getRef(), extraBlockList.get(10).getHashLow().toArray());// a main block's ref points to itself, unlike link blocks and transaction blocks
 
                 assertChainStatus(16, 12, 1, 0, blockchain);
             } else {
@@ -1249,7 +1249,7 @@ public class BlockchainTest {
         Address to = new Address(BytesUtils.arrayToByte32(addrKey.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         Address to1 = new Address(BytesUtils.arrayToByte32(addrKey1.toAddress().toArray()), XDAG_FIELD_OUTPUT, true);
         long xdagTime = XdagTime.getEndOfEpoch(XdagTime.msToXdagtimestamp(generateTime));
-        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG), XAmount.of(10, XUnit.XDAG), UInt64.ONE); //收10 Xdag 手续费
+        Block txBlock = generateNewTransactionBlock(config, poolKey, xdagTime - 1, from, to, XAmount.of(100, XUnit.XDAG), XAmount.of(10, XUnit.XDAG), UInt64.ONE); // charges a fee of 10 XDAG
 
         // 4. local check
         assertTrue(blockchain.canUseInput(txBlock));
@@ -2087,7 +2087,7 @@ public class BlockchainTest {
             extraBlockList.add(extraBlock);
             pending.clear();
             if (i == 2) {
-                pending.add(new Address(rewardDistriTx.getHashLow(), false));//重复引用
+                pending.add(new Address(rewardDistriTx.getHashLow(), false));// a duplicate reference
                 assertArrayEquals(blockchain1.getBlockByHash(extraBlockList.get(17).getHashLow(), false).getInfo().getMaxDiffLink(), extraBlockList.get(16).getHashLow().toArray());
             }
         }
@@ -2565,7 +2565,7 @@ public class BlockchainTest {
         /*
            time: t1 < t2 < t3 < t4
            account：a、b、c
-           nonce: a:2、 b:2、 c:2和3
+           nonce: a:2, b:2, c:2 and 3
            2.(t1,1,a,2)、(t2,2,b,2)、(t3,4,c,2)、(t4,8,c,3)
              Analysis: This simulates two transactions from the same account within an orphan pool.
              Even though the transaction with the larger nonce has a higher transaction fee than the transaction with the smaller nonce,
@@ -2643,7 +2643,7 @@ public class BlockchainTest {
         /*
            time: t1 < t2 < t3 < t4
            account：a、b、c
-           nonce: a:3和4、 b:3、 c:4
+           nonce: a:3 and 4, b:3, c:4
            3.(t1,0.4,a,3)、(t2,0.3,a,4)、(t3,0.5,b,3)、(t4,0.1,c,4)、(t5,0.35,mTX,null)
              Analysis: This considers the sorting process when there are both main block transaction blocks and ordinary transaction blocks.
              The expected order：(t3,0.5,b,3)、(t1,0.4,a,3)、(t5,0.35,mTX,null)、(t2,0.3,a,4)、(t4,0.1,c,4)
@@ -2881,7 +2881,7 @@ public class BlockchainTest {
         /*
             time: t1 < t2 < t3 < t4 < t5 < t6 < t7 < t8 < t9 < t10 < t11 < t12
             account：a、b、c、d
-            nonce: a:6、 b:7,8和9、 c:8,9和10、d:4和5
+            nonce: a:6, b:7,8 and 9, c:8,9 and 10, d:4 and 5
             type：Linked blocks, main blocks, transaction blocks, and regular transaction blocks
            +--------+--------+--------+--------+--------+----+----+----+----+----+----+----+----+----+
            |        | link   | mTX1   | mTX2   | mTX3   |  a |       b      |       c      |    d    |
@@ -3175,7 +3175,7 @@ public class BlockchainTest {
             extraBlockList.add(extraBlock);
             pending.clear();
             pending.add(new Address(ref, XDAG_FIELD_OUT, false));
-//            System.out.println("第" + i + "轮" + " ," + "generateTime = " + generateTime + " ," + "xdagTime = " + xdagTime);
+//            System.out.println("round " + i + " ," + "generateTime = " + generateTime + " ," + "xdagTime = " + xdagTime);
             if (i > 2) {
                 assertNotEquals(0, blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().flags & BI_MAIN_CHAIN);
                 assertArrayEquals(extraBlockList.get(i - 2).getHashLow().toArray(), blockchain.getBlockByHash(extraBlock.getHashLow(), false).getInfo().getMaxDiffLink());
@@ -3708,7 +3708,7 @@ public class BlockchainTest {
         //height33
         assertArrayEquals(extraBlockList.get(32).getHashLow().toArray(), blockchain.getBlockByHeight(33).getHashLow().toArray());
         //amount=1024+19.2-1043.2
-        assertEquals("1.700", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());// 因为之前测试案例并没有修改fee逻辑，导致新加的0.1没转走
+        assertEquals("1.700", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());// the earlier test cases did not change the fee logic, so the added 0.1 was not transferred
         assertEquals("20.900", blockchain.getBlockByHash(extraBlockList.get(32).getHashLow(), false).getFee().toDecimal(3, XUnit.XDAG).toString());
         //mTX3
         assertEquals("0.000", blockchain.getBlockByHash(mTX3.getHashLow(), false).getInfo().getAmount().toDecimal(3, XUnit.XDAG).toString());

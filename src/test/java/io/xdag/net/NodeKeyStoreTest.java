@@ -24,19 +24,42 @@
 package io.xdag.net;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import io.xdag.crypto.keys.ECKeyPair;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class CapabilityTest {
+public class NodeKeyStoreTest {
+
+    @Rule
+    public TemporaryFolder root = new TemporaryFolder();
 
     @Test
-    public void testIsSupported() {
-        assertFalse(CapabilityTreeSet.emptyList().isSupported(Capability.FULL_NODE));
-        assertFalse(CapabilityTreeSet.of("FULL_NODE").isSupported(Capability.LIGHT_NODE));
-        assertTrue(CapabilityTreeSet.of("FULL_NODE").isSupported(Capability.FULL_NODE));
-        assertTrue(CapabilityTreeSet.of(Capability.FULL_NODE).isSupported(Capability.FULL_NODE));
-        assertEquals(CapabilityTreeSet.of(Capability.FULL_NODE), CapabilityTreeSet.of(Capability.FULL_NODE));
+    public void keyIsCreatedOnceAndLoadedAfterwards() throws IOException {
+        Path file = new File(root.getRoot(), "sub/node.key").toPath();
+        ECKeyPair first = NodeKeyStore.loadOrCreate(file);
+        assertTrue(Files.exists(file));
+        ECKeyPair second = NodeKeyStore.loadOrCreate(file);
+        assertEquals(first.toBase58Address(), second.toBase58Address());
+        assertEquals(first.getPrivateKey().toBytes(), second.getPrivateKey().toBytes());
+    }
+
+    @Test
+    public void damagedKeyFileIsReported() throws IOException {
+        Path file = new File(root.getRoot(), "node.key").toPath();
+        Files.writeString(file, "not a key");
+        try {
+            NodeKeyStore.loadOrCreate(file);
+            fail("a damaged key file must not be silently replaced");
+        } catch (IOException expected) {
+            assertTrue(expected.getMessage().contains("node.key"));
+        }
     }
 }

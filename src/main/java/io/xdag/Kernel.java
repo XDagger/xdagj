@@ -41,7 +41,6 @@ import io.xdag.db.*;
 import io.xdag.db.mysql.TransactionHistoryStoreImpl;
 import io.xdag.db.rocksdb.*;
 import io.xdag.net.*;
-import io.xdag.net.message.MessageQueue;
 import io.xdag.net.node.NodeManager;
 import io.xdag.pool.WebSocketServer;
 import io.xdag.pool.PoolAwardManagerImpl;
@@ -74,12 +73,8 @@ public class Kernel {
 
     protected SnapshotStore snapshotStore;
     protected Blockchain blockchain;
-    protected NetDB netDB;
-    protected PeerClient client;
     protected ChannelManager channelMgr;
     protected NodeManager nodeMgr;
-    protected NetDBManager netDBMgr;
-    protected PeerServer p2p;
     protected XdagSync sync;
     protected XdagPow pow;
     private SyncManager syncMgr;
@@ -128,12 +123,9 @@ public class Kernel {
         isRunning.set(true);
         startEpoch = XdagTime.getCurrentEpoch();
 
-        // Initialize channel manager
+        // The network layer is created now (other components refer to it) and started once the chain and the
+        // synchronisation are in place, so that no peer is talked to before the node can handle it.
         channelMgr = new ChannelManager(this);
-        channelMgr.start();
-
-        netDBMgr = new NetDBManager(this.config);
-        netDBMgr.start();
 
         // Initialize database components
         dbFactory = new RocksdbFactory(this.config);
@@ -157,9 +149,6 @@ public class Kernel {
             txHistoryStore = new TransactionHistoryStoreImpl(txPageSizeLimit);
             log.info("Transaction History Store init.");
         }
-
-        // Initialize network components
-        netDB = new NetDB();
 
         // Initialize RandomX
         randomx = new RandomX(config);
@@ -210,15 +199,6 @@ public class Kernel {
             xdagState = XdagState.WDST;
         }
 
-        // Initialize P2P networking
-        p2p = new PeerServer(this);
-        p2p.start();
-        client = new PeerClient(this.config, this.coinbase);
-
-        // Initialize node management
-        nodeMgr = new NodeManager(this);
-        nodeMgr.start();
-
         // Initialize synchronization
         sync = new XdagSync(this);
         sync.start();
@@ -230,6 +210,11 @@ public class Kernel {
 
         // Initialize mining
         pow = new XdagPow(this);
+
+        // Initialize P2P networking (listening, seeds, discovery) and node management
+        channelMgr.start();
+        nodeMgr = new NodeManager(this);
+        nodeMgr.start();
 
         if (webSocketServer == null) {
             webSocketServer = new WebSocketServer(this, config.getPoolWhiteIPList(), config.getWebsocketServerPort());
@@ -272,13 +257,6 @@ public class Kernel {
         // Stop networking layer
         channelMgr.stop();
         nodeMgr.stop();
-
-        // Close message queue timer
-        MessageQueue.timer.shutdown();
-
-        // Close P2P networking
-        p2p.close();
-        client.close();
 
         // Stop data layer
         blockchain.stopCheckMain();

@@ -155,7 +155,7 @@ public class BlockTest {
      List<ECKey> keys = new ArrayList<>();
      keys.add(ecKey1);
      Block transaction1 = new Block(time, first.getFirstOutput(), links, null, false, keys, 0);
-     // 跟输入用的同一把密钥
+     // the same key as the one used for the input
      transaction1.signOut(ecKey1);
      printBlockInfo(transaction1);
 
@@ -167,7 +167,7 @@ public class BlockTest {
      keys = new ArrayList<>();
      keys.add(ecKey1);
      Block transaction2 = new Block(time, first.getFirstOutput(), links, null, false, keys, -1);
-     // 跟输入用的不是同一把密钥
+     // a different key from the one used for the input
      ECKey ecKey3 = new ECKey();
      transaction2.signIn(ecKey1);
      transaction2.signOut(ecKey3);
@@ -183,7 +183,7 @@ public class BlockTest {
      keys.add(ecKey1);
      keys.add(ecKey2);
      Block transaction3 = new Block(time, first.getFirstOutput(), links, null, false, keys, -1);
-     // 跟输入用的不是同一把密钥
+     // a different key from the one used for the input
      transaction3.signIn(ecKey1);
      transaction3.signIn(ecKey2);
      transaction3.signOut(ecKey3);
@@ -253,7 +253,7 @@ public class BlockTest {
      List<ECKey> ecKeys = transaction.verifiedKeys();
      for (Block inBlock : input) {
      boolean canUse = false;
-     // 获取签名与hash
+     // get the signature and the hash
      byte[] subdata = inBlock.getSubRawData(inBlock.getOutsigIndex() - 2);
      System.out.println(Hex.toHexString(subdata);
 
@@ -405,7 +405,7 @@ public class BlockTest {
      List<ECKey> keys = new ArrayList<>();
      keys.add(ecKey1);
      Block transaction1 = new Block(time, first.getFirstOutput(), links, null, false, keys, 0);
-     // 跟输入用的同一把密钥
+     // the same key as the one used for the input
      transaction1.signOut(ecKey1);
      printBlockInfo(transaction1);
 

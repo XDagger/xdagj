@@ -198,14 +198,26 @@ public class XdagSync extends AbstractXdagLifecycle {
      * Send request to get blocks from remote node
      * @param t request time
      */
+    /** A peer that does not answer within the wait is not much of a peer; a few such silences and it is dropped. */
+    static final int SCORE_NO_ANSWER = 25;
+
     private void sendGetBlocks(Channel xc, long t, SettableFuture<Bytes> sf) {
         long randomSeq = xc.getP2pHandler().sendGetBlocks(t, t + REQUEST_BLOCKS_MAX_TIME);
+        if (randomSeq < 0) {
+            return;
+        }
         blocksRequestMap.put(randomSeq, sf);
         try {
             sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+        } catch (TimeoutException e) {
+            blocksRequestMap.remove(randomSeq);
+            log.debug("Peer {} did not answer a blocks request in {} s", xc.getRemoteAddress(), REQUEST_WAIT);
+            xc.getP2pHandler().misbehave(SCORE_NO_ANSWER, "no answer to a blocks request");
+        } catch (InterruptedException | ExecutionException e) {
             blocksRequestMap.remove(randomSeq);
             log.error(e.getMessage(), e);
+        } finally {
+            blocksRequestMap.remove(randomSeq);
         }
     }
 
@@ -219,11 +231,19 @@ public class XdagSync extends AbstractXdagLifecycle {
             return;
         }
         long randomSeq = xc.getP2pHandler().sendGetSums(t, t + dt);
+        if (randomSeq < 0) {
+            return;
+        }
         sumsRequestMap.put(randomSeq, sf);
         try {
             Bytes sums = sf.get(REQUEST_WAIT, TimeUnit.SECONDS);
             rSums = sums.copy();
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+        } catch (TimeoutException e) {
+            sumsRequestMap.remove(randomSeq);
+            log.debug("Peer {} did not answer a sums request in {} s", xc.getRemoteAddress(), REQUEST_WAIT);
+            xc.getP2pHandler().misbehave(SCORE_NO_ANSWER, "no answer to a sums request");
+            return;
+        } catch (InterruptedException | ExecutionException e) {
             sumsRequestMap.remove(randomSeq);
             log.error(e.getMessage(), e);
             return;

@@ -140,7 +140,7 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
         log.debug("Start new block generate....");
         long sendTime = XdagTime.getMainTime();
         resetTimeout(sendTime);
-        if (randomXUtils != null && randomXUtils.isRandomxFork(XdagTime.getEpoch(sendTime))) {
+        if (randomXUtils != null && blockchain.usesRandomX(XdagTime.getEpoch(sendTime))) {
             if (randomXUtils.getRandomXPoolMemIndex() == 0) {
                 randomXUtils.setRandomXPoolMemIndex((randomXUtils.getRandomXHashEpochIndex() - 1) & 1);
             }
@@ -258,7 +258,7 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
             Task task = currentTask.get();
             Bytes32 hash;
             // if randomx fork
-            if (kernel.getRandomx().isRandomxFork(task.getTaskTime())) {
+            if (kernel.getRandomx() != null && blockchain.usesRandomX(task.getTaskTime())) {
                 MutableBytes taskData = MutableBytes.create(64);
 
                 taskData.set(0, task.getTask()[0].getData());// preHash

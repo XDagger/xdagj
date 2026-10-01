@@ -38,6 +38,6 @@ public class MessageFactoryTest {
     @Test(expected = MessageException.class)
     public void testWrongCodec() throws MessageException {
         MessageFactory factory = new MessageFactory();
-        factory.create((byte) 0x01, new byte[1]);
+        factory.create(MessageCode.BLOCKS_REQUEST.toByte(), new byte[1]);
     }
 }

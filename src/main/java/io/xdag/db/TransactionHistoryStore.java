@@ -35,4 +35,22 @@ public interface TransactionHistoryStore {
 
     int getTxHistoryCount(String address);
 
+    /**
+     * Removes every entry of a transaction (its execution was undone by a reorganisation).
+     *
+     * @param hash the transaction's hash in the form {@link #saveTxHistory} stored it
+     * @return true if the store supports removal and it succeeded
+     */
+    default boolean deleteTxHistoryByHash(String hash) {
+        return false;
+    }
+
+    /**
+     * Number of pages of the listing that {@link #listTxHistoryByAddress} last produced on the calling thread
+     * (1 if it produced none). Each request sees its own value: concurrent requests used to share one global.
+     */
+    default int lastTotalPage() {
+        return 1;
+    }
+
 }

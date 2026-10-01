@@ -21,47 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package io.xdag.net.message;
 
-import io.xdag.net.message.consensus.*;
-import io.xdag.net.message.p2p.DisconnectMessage;
-import io.xdag.net.message.p2p.HelloMessage;
-import io.xdag.net.message.p2p.InitMessage;
-import io.xdag.net.message.p2p.PingMessage;
-import io.xdag.net.message.p2p.PongMessage;
-import io.xdag.net.message.p2p.WorldMessage;
+import io.xdag.net.message.consensus.BlockExtReplyMessage;
+import io.xdag.net.message.consensus.BlockExtRequestMessage;
+import io.xdag.net.message.consensus.BlockRequestMessage;
+import io.xdag.net.message.consensus.BlocksReplyMessage;
+import io.xdag.net.message.consensus.BlocksRequestMessage;
+import io.xdag.net.message.consensus.NewBlockMessage;
+import io.xdag.net.message.consensus.SumReplyMessage;
+import io.xdag.net.message.consensus.SumRequestMessage;
+import io.xdag.net.message.consensus.SyncBlockMessage;
+import io.xdag.net.message.consensus.SyncBlockRequestMessage;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MessageFactory {
+
     /**
-     * Decode a raw message.
+     * Decodes a message that came from a peer. Nothing in the body is trusted: a body that does not decode
+     * into a message of the declared kind is a {@link MessageException}.
      *
-     * @param code
-     *            The message code
-     * @param body
-     *            The message body
-     * @return The decoded message, or NULL if the message type is not unknown
-     * @throws MessageException
-     *             when the encoding is illegal
+     * @return the message, or null if the code is not an XDAG message code
      */
     public Message create(byte code, byte[] body) throws MessageException {
-
         MessageCode c = MessageCode.of(code);
         if (c == null) {
-            //log.debug("Invalid message code: {}", Hex.encode0x(Bytes.of(code)));
             return null;
+        }
+        if (body == null) {
+            throw new MessageException("Message body is null for code: " + c);
         }
 
         try {
             return switch (c) {
-                case HANDSHAKE_INIT -> new InitMessage(body);
-                case HANDSHAKE_HELLO -> new HelloMessage(body);
-                case HANDSHAKE_WORLD -> new WorldMessage(body);
-                case DISCONNECT -> new DisconnectMessage(body);
-                case PING -> new PingMessage(body);
-                case PONG -> new PongMessage(body);
                 case BLOCKS_REQUEST -> new BlocksRequestMessage(body);
                 case BLOCKS_REPLY -> new BlocksReplyMessage(body);
                 case SUMS_REQUEST -> new SumRequestMessage(body);
@@ -74,8 +67,7 @@ public class MessageFactory {
                 case SYNCBLOCK_REQUEST -> new SyncBlockRequestMessage(body);
             };
         } catch (Exception e) {
-            throw new MessageException("Failed to decode message", e);
+            throw new MessageException("Failed to decode message " + c + ": " + e.getMessage(), e);
         }
     }
-
 }

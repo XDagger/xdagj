@@ -59,6 +59,8 @@ public class TestnetConfig extends AbstractConfig {
         this.xdagFieldHeader = XDAG_FIELD_HEAD_TEST;
         this.walletKeyFile = this.rootDir + "/wallet-testnet.dat";
         this.walletFilePath = this.rootDir + "/wallet/" + Constants.WALLET_FILE_NAME;
+        // open-network hardening fork: not scheduled unless the config file sets consensus.opennet.forkEpoch
+        this.openNetForkEpoch = configuredOpenNetForkEpoch != null ? configuredOpenNetForkEpoch : Constants.OPEN_NET_FORK_NOT_SCHEDULED;
     }
 
 }

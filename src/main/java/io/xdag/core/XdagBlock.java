@@ -35,6 +35,7 @@ import lombok.Getter;
 public class XdagBlock {
 
     public static final int XDAG_BLOCK_FIELDS = 16;
+    public static final int XDAG_BLOCK_SIZE = 512;
 
     /**
      * Block data with signature

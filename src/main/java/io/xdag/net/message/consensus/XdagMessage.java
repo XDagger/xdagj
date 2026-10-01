@@ -105,9 +105,17 @@ public abstract class XdagMessage extends Message  {
         this.starttime = dec.readLong();
         this.endtime = dec.readLong();
         this.random = dec.readLong();
-        this.hash = Bytes32.wrap(dec.readBytes());
+        byte[] hashBytes = dec.readBytes();
+        if (hashBytes == null || hashBytes.length != 32) {
+            throw new IllegalArgumentException("hash must be 32 bytes");
+        }
+        this.hash = Bytes32.wrap(hashBytes);
 
-        BigInteger maxdifficulty = Numeric.toBigInt(dec.readBytes());
+        byte[] difficultyBytes = dec.readBytes();
+        if (difficultyBytes == null || difficultyBytes.length > 16) {
+            throw new IllegalArgumentException("difficulty must be at most 16 bytes");
+        }
+        BigInteger maxdifficulty = Numeric.toBigInt(difficultyBytes);
         long totalnblocks = dec.readLong();
         long totalnmains = dec.readLong();
         int totalnhosts = dec.readInt();

@@ -93,7 +93,7 @@ Four stages:
 
 - [x] Decrease the threshold of mining pool users 
 
-- [ ] Open the whitelist to achieve complete decentralization
+- [x] Open the whitelist to achieve complete decentralization (0.9.0: no whitelist; see [docs/OPEN_NETWORK.md](docs/OPEN_NETWORK.md))
 
 
 #### Prosperity phase: XDAGJ & DeFi

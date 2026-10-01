@@ -254,7 +254,7 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         byte[] isTx = BytesUtils.byteToBytes((byte) (isTxBlock ? 1 : 0), false); // 1B
         byte[] key = BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(hashlow, nonceBytes, isTx));
 //        System.out.println("OrphanKey: " + Arrays.toString(key));
-        // value: time(8B) + fee(8B) + address(20B)，Non-account transaction blocks address 全 0
+        // value: time(8B) + fee(8B) + address(20B); the address is all zeros for blocks that are not account transactions
         byte[] timeBytes = BytesUtils.longToBytes(block.getTimestamp(), true);
 //        byte[] feeBytes = fee.toXAmount().toBytes().toArray(); // XAmount -> long -> 8B
         byte[] feeBytes = Bytes.wrap(BytesUtils.bigIntegerToBytes(fee.toXAmount(),8)).toArray();
@@ -439,6 +439,24 @@ public class OrphanBlockStoreImpl implements OrphanBlockStore {
         byte[] nonceBytes = BytesUtils.longToBytes(meta.nonce, false);
         byte[] isTx = BytesUtils.byteToBytes((byte) (meta.isTx ? 1 : 0), false);
         return BytesUtils.merge(ORPHAN_PREFEX, BytesUtils.merge(hashL, nonceBytes, isTx));
+    }
+
+    @Override
+    public List<Bytes32> getAccountOrphans(byte[] address) {
+        List<Bytes32> result = new ArrayList<>();
+        if (address == null) {
+            return result;
+        }
+        String addrKey = Hex.toHexString(address);
+        for (Map<String, Queue<OrphanMeta>> map : List.of(vipTxMap, accountTxMap)) {
+            Queue<OrphanMeta> queue = map.get(addrKey);
+            if (queue != null) {
+                for (OrphanMeta meta : queue) {
+                    result.add(meta.getHashlow());
+                }
+            }
+        }
+        return result;
     }
 
     public long getOrphanSize() {

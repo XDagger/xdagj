@@ -26,9 +26,6 @@ package io.xdag.core;
 
 import org.apache.tuweni.bytes.MutableBytes32;
 
-import lombok.Getter;
-import lombok.Setter;
-
 /**
  * Enum representing different results of block import operations
  * ERROR - Import failed with error
@@ -39,6 +36,10 @@ import lombok.Setter;
  * IMPORTED_EXTRA - Block imported as extra
  * IMPORTED_NOT_BEST - Block imported but not in main chain
  * IMPORTED_BEST - Block imported into main chain
+ * <p>
+ * The details of an import (missing parent, error text, whether the sender misbehaved) belong to the import that
+ * was just performed <em>by the calling thread</em>. They used to be plain fields of the shared enum constants,
+ * so concurrent imports (p2p, rpc, pow) overwrote each other's details; they are thread-confined now.
  */
 public enum ImportResult {
     ERROR,
@@ -51,20 +52,21 @@ public enum ImportResult {
     IMPORTED_NOT_BEST,
     IMPORTED_BEST;
 
-    // Truncated hash of the block
-    private MutableBytes32 hashLow;
+    // Truncated hash of the block (NO_PARENT: the missing parent)
+    private final ThreadLocal<MutableBytes32> hashLow = new ThreadLocal<>();
 
     // Error message if import failed
-    @Setter
-    @Getter
-    private String errorInfo;
+    private final ThreadLocal<String> errorInfo = new ThreadLocal<>();
+
+    // Whether the block can never be valid, whatever the local state and clock are
+    private final ThreadLocal<Boolean> misbehavior = new ThreadLocal<>();
 
     /**
      * Get the truncated hash of the block
      * @return The truncated hash as MutableBytes32
      */
     public MutableBytes32 getHashlow() {
-        return hashLow;
+        return hashLow.get();
     }
 
     /**
@@ -72,7 +74,29 @@ public enum ImportResult {
      * @param hashLow The truncated hash to set
      */
     public void setHashlow(MutableBytes32 hashLow) {
-        this.hashLow = hashLow;
+        this.hashLow.set(hashLow);
+    }
+
+    public String getErrorInfo() {
+        return errorInfo.get();
+    }
+
+    public void setErrorInfo(String errorInfo) {
+        this.errorInfo.set(errorInfo);
+    }
+
+    /**
+     * True if the block that was just imported by this thread is invalid for every node at any time (malformed,
+     * bad signature, inconsistent amounts, ...), so whoever relayed it did not validate it. False for rejections
+     * that depend on the local state or clock (unknown address under the legacy rules, timestamp in the future,
+     * full transaction pool), which an honest peer can run into.
+     */
+    public boolean isMisbehavior() {
+        return Boolean.TRUE.equals(misbehavior.get());
+    }
+
+    public void setMisbehavior(boolean misbehavior) {
+        this.misbehavior.set(misbehavior);
     }
 
 }
