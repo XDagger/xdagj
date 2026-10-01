@@ -23,6 +23,7 @@
  */
 package io.xdag.net;
 
+import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -38,9 +39,12 @@ import io.xdag.core.XdagStats;
 import io.xdag.crypto.keys.ECKeyPair;
 import io.xdag.net.message.Message;
 import io.xdag.net.message.MessageCode;
+import io.xdag.net.message.consensus.BlocksReplyMessage;
 import io.xdag.net.message.consensus.BlocksRequestMessage;
 import io.xdag.net.message.consensus.NewBlockMessage;
 import io.xdag.net.message.consensus.SumRequestMessage;
+import io.xdag.net.message.consensus.SyncBlockMessage;
+import io.xdag.utils.XdagTime;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -162,19 +166,42 @@ public class XdagP2pHandlerTest {
         assertTrue(handler.getMisbehaviourScore() > 0);
     }
 
+    /** End of the epoch before the last one: a time a block that is news can have. */
+    private static long lately() {
+        return XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()) - 2 * MAIN_CHAIN_PERIOD;
+    }
+
     @Test
     public void validBlockIsImported() {
-        Block b = h.candidate(0, nodeKey, "one");
+        Block b = h.candidateAt(lately(), nodeKey, "one");
         handler.onMessage(wire(new NewBlockMessage(b, 5)));
         assertNotNull(h.chain.getBlockByHash(b.getHashLow(), false));
         assertEquals(0, handler.getMisbehaviourScore());
     }
 
     @Test
+    public void newsDatedLongAgoIsOnlyTakenWhenAskedFor() {
+        Block old = h.candidate(0, nodeKey, "from 2020");
+        handler.onMessage(wire(new NewBlockMessage(old, 5)));
+        assertEquals("nobody asked for it", null, h.chain.getBlockByHash(old.getHashLow(), false));
+        assertEquals(0, handler.getMisbehaviourScore());
+
+        // something refers to it and the node asks for it by its hash: now it is taken
+        handler.sendGetBlock(old.getHashLow().mutableCopy(), false);
+        handler.onMessage(wire(new NewBlockMessage(old, 5)));
+        assertNotNull(h.chain.getBlockByHash(old.getHashLow(), false));
+
+        // a block of some hours ago still is news (a node that was away for a moment, a clock that is off)
+        Block hoursAgo = h.link(XdagTime.getCurrentTimestamp() - XdagP2pHandler.NEWS_MAX_AGE / 2, nodeKey, "hours ago");
+        handler.onMessage(wire(new NewBlockMessage(hoursAgo, 5)));
+        assertNotNull(h.chain.getBlockByHash(hoursAgo.getHashLow(), false));
+    }
+
+    @Test
     public void invalidBlockCountsAgainstThePeer() {
         // a transfer whose signature was damaged: no node can ever accept it, whatever its state
         ECKeyPair other = ECKeyPair.generate();
-        Block b = h.transfer(ChainHarness.timeIn(0, 10), nodeKey, other, io.xdag.core.XAmount.of(1, io.xdag.core.XUnit.XDAG), 1);
+        Block b = h.transfer(lately() - 100, nodeKey, other, io.xdag.core.XAmount.of(1, io.xdag.core.XUnit.XDAG), 1);
         byte[] data = b.toBytes();
         io.xdag.core.XdagBlock parsed = new io.xdag.core.XdagBlock(data);
         int signatureField = -1;
@@ -190,5 +217,33 @@ public class XdagP2pHandlerTest {
         handler.onMessage(wire(new NewBlockMessage(damaged, 5)));
         assertTrue(handler.getMisbehaviourScore() > 0);
         assertEquals(null, h.chain.getBlockByHash(damaged.getHashLow(), false));
+    }
+
+    @Test
+    public void historyIsOnlyTakenInAnswerToARequest() {
+        Block pushed = h.link(ChainHarness.timeIn(3, 10), nodeKey, "pushed");
+        handler.onMessage(wire(new SyncBlockMessage(pushed, 1)));
+        assertEquals("nobody asked for it", null, h.chain.getBlockByHash(pushed.getHashLow(), false));
+        assertEquals("(a slow peer's late answer looks the same: no penalty)", 0, handler.getMisbehaviourScore());
+
+        // a span was asked for: blocks of that span are taken until the peer says that was all
+        long start = pushed.getTimestamp() & -REQUEST_BLOCKS_MAX_TIME;
+        long request = handler.sendGetBlocks(start, start + REQUEST_BLOCKS_MAX_TIME);
+        Block outside = h.link(start + REQUEST_BLOCKS_MAX_TIME + 5, nodeKey, "outside");
+        handler.onMessage(wire(new SyncBlockMessage(pushed, 1)));
+        handler.onMessage(wire(new SyncBlockMessage(outside, 1)));
+        assertNotNull(h.chain.getBlockByHash(pushed.getHashLow(), false));
+        assertEquals("not in the span that was asked for", null, h.chain.getBlockByHash(outside.getHashLow(), false));
+        handler.onMessage(wire(new BlocksReplyMessage(start, start + REQUEST_BLOCKS_MAX_TIME, request, h.chain.getXdagStats())));
+        Block late = h.link(pushed.getTimestamp() + 1, nodeKey, "late");
+        handler.onMessage(wire(new SyncBlockMessage(late, 1)));
+        assertEquals("the request has been answered", null, h.chain.getBlockByHash(late.getHashLow(), false));
+
+        // a block asked for by its hash is taken, once
+        handler.sendGetBlock(late.getHashLow().mutableCopy(), true);
+        handler.onMessage(wire(new SyncBlockMessage(late, 1)));
+        assertNotNull(h.chain.getBlockByHash(late.getHashLow(), false));
+        handler.onMessage(wire(new SyncBlockMessage(outside, 1)));
+        assertEquals(null, h.chain.getBlockByHash(outside.getHashLow(), false));
     }
 }

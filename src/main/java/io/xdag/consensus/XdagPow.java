@@ -277,7 +277,10 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
                     minShare.set(share);
                     // put minShare into nonce
                     Block b = generateBlock.get();
-                    b.setNonce(minShare.get());
+                    if (b != null) {
+                        // null while production is paused (the node is synchronising again)
+                        b.setNonce(minShare.get());
+                    }
                     log.debug("New MinShare :{}", share.toHexString());
                     log.debug("New MinHash :{}", hash.toHexString());
                 }
@@ -379,6 +382,12 @@ public class XdagPow implements PoW, Listener, Runnable, XdagLifecycle {
                         if (kernel.getXdagState() == XdagState.SDST || kernel.getXdagState() == XdagState.STST
                                 || kernel.getXdagState() == XdagState.SYNC) {
                             onTimeout();
+                        } else {
+                            // Not synchronised (any more): no block is produced. The timer is only armed by
+                            // onTimeout(), so keep it ticking here, or production would never resume; and drop
+                            // the candidate that was being worked on, it belongs to a chain we no longer trust.
+                            generateBlock.set(null);
+                            timer.timeout(XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp() + 64));
                         }
                     }
                     case NEW_PRETOP -> {

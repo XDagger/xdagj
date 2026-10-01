@@ -152,7 +152,10 @@ public class ChannelManager extends AbstractXdagLifecycle {
 
     @Override
     protected void doStart() {
-        applyOpenness();
+        // The mode the service starts in. (Only the setting: there is nothing to open or close in a service that
+        // is not running yet, and telling it to would have it look for peers before it can.)
+        Blockchain chain = kernel.getBlockchain();
+        p2pConfig.setPermissionless(chain != null && chain.isOpenNetLatched());
         p2pService.start();
         blockDistributeThread.start();
         housekeeping.scheduleWithFixedDelay(this::applyOpenness, 10, 10, TimeUnit.SECONDS);

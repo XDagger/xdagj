@@ -142,9 +142,49 @@ The 0.8.x transport (`io.xdag.net`: frames, handshake, whitelist) is replaced by
   requests and pushed blocks are rate limited per peer; peers that send malformed
   messages, impossible requests or blocks that can never be valid accumulate a
   misbehaviour score and are banned for 10 minutes at 100; network statistics that cannot
-  be true (more main blocks than epochs) are ignored; under the hardened rules a node is
-  synchronised when its own latest main block is recent, so nobody can keep it "syncing"
-  with claims (N3).
+  be true (more main blocks than epochs) are ignored. Nobody writes into a node's past
+  unasked: history (`SYNC_BLOCK`) is taken only in answer to a request of this node - for
+  the span or for the block itself - and so is news (`NEW_BLOCK`) dated more than about
+  nine hours ago. A block that is needed after all, because something refers to it, is
+  asked for by its hash and then accepted.
+* **Synchronisation** (`XdagSync`, `SyncManager`). Three things a node could go by can be
+  had for free, so none of them decides anything: what peers *claim* (a claimed height
+  keeps a node "syncing" forever, N3); the node's own *tip* (a block without work but with
+  a current timestamp becomes the latest main block of any node that is behind); and the
+  *sums* of the history comparison (they are sums - blocks made for the purpose bring a
+  node's sums for a span it has not got to exactly those of an honest peer, and then
+  nothing is fetched there). What cannot be had for free: a block only becomes part of a
+  node's blocks when everything it refers to is there. So:
+  * `XdagSync` works in *rounds* with one peer at a time, in *cycles* in which every peer
+    that is connected when the cycle begins gets exactly one round (a peer that comes back
+    under a new name waits for the next cycle). Rounds never stop - not when the tip is
+    recent and not after the node called itself synchronised.
+  * A round compares the whole sums tree with the peer, wherever the tip is, down to the
+    snapshot the node was booted from, and fetches the request spans in which the peer has
+    more, oldest first. That is the fast path and all it takes among honest nodes. A span
+    fetched from a peer is settled for that peer while the peer's sums for it stay the
+    same; spans in which this node already holds at least as much as the peer (blocks only
+    this node has) are looked into a few per round, and a synchronised node fetches at
+    most 16 spans per round - so blocks nobody needs cannot make nodes fetch their history
+    from each other again and again.
+  * A node that is not synchronised then *verifies*: it fetches the two request spans that
+    are being written to, whatever the sums say. If the peer's newest blocks attach to its
+    own blocks, it has the history behind them. If they do not although the comparison
+    found nothing to fetch, the sums are wrong somewhere, and the node *recovers*: it looks
+    at spans of the peer, without importing them, until it has found where its own blocks
+    end, and fetches everything from there to the present regardless of the sums.
+  * In an open network a node is synchronised when (a) a cycle of rounds - with at least
+    half of the peers it has now - was held since it last caught up, (b) of the peers that
+    showed blocks from the present in that cycle, most had none that the node could not
+    attach (a peer that did not answer counts against), and (c) its best chain has not
+    advanced through blocks older than one request span for 30 s, which only a chain with
+    more work can cause. Peers that answered and showed nothing recent (they are behind
+    themselves) count neither way; if nobody did - a network on which no blocks are
+    produced yet - rounds with most peers are enough.
+  * If older blocks with more work turn up later, the node goes back to "synchronising"
+    and produces no blocks until it has caught up. Having waited `waitEpoch` epochs makes
+    a node start by itself only if it has no peers at all.
+  * In a closed network the 0.8.x rule (what the configured peers report) is unchanged.
 
 The wire protocol is **not compatible with 0.8.x** (frame version 2, `networkVersion` 1):
 upgrading a network is a flag day.

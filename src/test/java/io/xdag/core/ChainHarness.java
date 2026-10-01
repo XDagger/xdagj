@@ -155,12 +155,17 @@ public class ChainHarness {
      * {@code salt} makes competing candidates of the same epoch differ.
      */
     public Block candidate(int epoch, ECKeyPair miner, String salt, Bytes32... links) {
+        return candidateAt(candidateTime(epoch), miner, salt, links);
+    }
+
+    /** A main block candidate with the given end-of-epoch timestamp (e.g. one of the last few real epochs). */
+    public Block candidateAt(long time, ECKeyPair miner, String salt, Bytes32... links) {
         List<Address> pending = Lists.newArrayList();
         for (Bytes32 link : links) {
             pending.add(new Address(link, XDAG_FIELD_OUT, false));
         }
         pending.add(new Address(keyPair2Hash(miner), XDAG_FIELD_COINBASE, true));
-        Block b = new Block(config, candidateTime(epoch), null, pending, true, null, null, -1, XAmount.ZERO, null);
+        Block b = new Block(config, time, null, pending, true, null, null, -1, XAmount.ZERO, null);
         b.signOut(miner);
         b.setNonce(HashUtils.sha256(Bytes.wrap(salt.getBytes(StandardCharsets.UTF_8))));
         return b;

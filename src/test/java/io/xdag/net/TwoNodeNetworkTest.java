@@ -23,19 +23,19 @@
  */
 package io.xdag.net;
 
+import static io.xdag.config.Constants.MAIN_CHAIN_PERIOD;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.xdag.consensus.SyncManager;
-import io.xdag.consensus.XdagSync;
 import io.xdag.core.Block;
 import io.xdag.core.BlockWrapper;
 import io.xdag.core.ChainHarness;
 import io.xdag.crypto.keys.ECKeyPair;
 import java.io.File;
+import io.xdag.utils.XdagTime;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -56,57 +56,6 @@ public class TwoNodeNetworkTest {
 
     private NetNode a;
     private NetNode b;
-
-    /** A node: a chain in a temporary directory plus the network layer on a loopback port. */
-    static final class NetNode {
-        final ChainHarness h;
-        final ChannelManager channelMgr;
-        final ECKeyPair key;
-
-        NetNode(File dir, int port, List<InetSocketAddress> seeds) {
-            this(dir, port, seeds, List.of(), 0);
-        }
-
-        NetNode(File dir, int port, List<InetSocketAddress> seeds, List<InetSocketAddress> trusted, long forkEpoch) {
-            key = ECKeyPair.generate();
-            h = ChainHarness.create(dir, forkEpoch, key, c -> {
-                c.setRootDir(dir.getAbsolutePath());
-                c.setNodeKeyFile(new File(dir, "node.key").getAbsolutePath());
-                c.setNodeIp("127.0.0.1");
-                c.setNodeBindIp("127.0.0.1");
-                c.setNodePort(port);
-                c.getSeedNodes().clear();
-                c.getSeedNodes().addAll(seeds);
-                c.getTrustedNodes().clear();
-                c.getTrustedNodes().addAll(trusted);
-                c.setDiscoveryEnabled(true);
-                c.setAllowPrivateAddresses(true);
-                c.setMinConnections(1);
-            });
-            h.kernel.setBlockchain(h.chain);
-            channelMgr = new ChannelManager(h.kernel);
-            h.kernel.setChannelMgr(channelMgr);
-            h.kernel.setSyncMgr(new SyncManager(h.kernel));
-            h.kernel.setSync(new XdagSync(h.kernel));
-        }
-
-        void start() {
-            channelMgr.start();
-        }
-
-        void stop() {
-            try {
-                channelMgr.stop();
-            } finally {
-                h.close();
-            }
-        }
-
-        Channel peer() {
-            List<Channel> channels = channelMgr.getActiveChannels();
-            return channels.isEmpty() ? null : channels.getFirst();
-        }
-    }
 
     private static void await(String what, long timeoutMs, BooleanSupplier condition) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
@@ -142,7 +91,7 @@ public class TwoNodeNetworkTest {
         assertTrue(a.channelMgr.isOpen());
         assertTrue(b.channelMgr.isOpen());
 
-        await("the two nodes to connect", 20_000, () -> a.peer() != null && b.peer() != null);
+        b.awaitConnectedTo(20_000, a);
         Channel aSeesB = a.peer();
         Channel bSeesA = b.peer();
         assertEquals(b.channelMgr.getNodeKey().toBase58Address(), aSeesB.getRemotePeer().getPeerId());
@@ -151,14 +100,18 @@ public class TwoNodeNetworkTest {
         assertTrue(aSeesB.isInbound() != bSeesA.isInbound());
 
         // gossip: a block created on A reaches B
-        Block gossiped = a.h.candidate(0, a.key, "gossip");
+        long lately = XdagTime.getEndOfEpoch(XdagTime.getCurrentTimestamp()) - 2 * MAIN_CHAIN_PERIOD;
+        Block gossiped = a.h.candidateAt(lately, a.key, "gossip");
         a.h.add(gossiped);
         a.channelMgr.onNewForeignBlock(new BlockWrapper(gossiped, 5, null, false));
         await("the gossiped block on B", 10_000, () -> b.h.chain.getBlockByHash(gossiped.getHashLow(), false) != null);
 
-        // request: a block that only A has is fetched by B on request
-        Block requested = a.h.candidate(1, a.key, "requested", gossiped.getHashLow());
+        // request: a block that only A has is fetched by B on request - also one from long ago, which B would
+        // not take as news
+        Block requested = a.h.candidate(1, a.key, "requested");
         a.h.add(requested);
+        a.channelMgr.onNewForeignBlock(new BlockWrapper(requested, 5, null, false));
+        Thread.sleep(500);
         assertEquals(null, b.h.chain.getBlockByHash(requested.getHashLow(), false));
         bSeesA.getP2pHandler().sendGetBlock(requested.getHashLow().mutableCopy(), false);
         await("the requested block on B", 10_000, () -> b.h.chain.getBlockByHash(requested.getHashLow(), false) != null);

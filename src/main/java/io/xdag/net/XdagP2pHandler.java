@@ -29,6 +29,7 @@ import static io.xdag.config.Constants.BI_OURS;
 import static io.xdag.config.Constants.BI_REF;
 import static io.xdag.config.Constants.BI_REMARK;
 import static io.xdag.config.Constants.REQUEST_BLOCKS_MAX_TIME;
+import static io.xdag.config.Constants.REQUEST_WAIT;
 
 import com.google.common.util.concurrent.SettableFuture;
 import io.xdag.Kernel;
@@ -54,7 +55,11 @@ import io.xdag.net.message.consensus.SyncBlockMessage;
 import io.xdag.net.message.consensus.SyncBlockRequestMessage;
 import io.xdag.net.message.consensus.XdagMessage;
 import io.xdag.utils.XdagTime;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -70,8 +75,9 @@ import org.apache.tuweni.bytes.MutableBytes32;
  * shapes the protocol produces (a sums request covers a power-of-sixteen span, a blocks request at most
  * {@link io.xdag.config.Constants#REQUEST_BLOCKS_MAX_TIME}) and rate limited, so that no peer can make this node
  * read its whole history for it; statistics a peer reports about the network are capped at what is physically
- * possible; a peer that sends what only a broken or hostile node would send is disconnected and its address
- * refused for a while.
+ * possible; history is only taken in answer to a request - "sync blocks" always, and news that is dated more than
+ * {@link #NEWS_MAX_AGE} ago; a peer that sends what only a broken or hostile node would send is disconnected and
+ * its address refused for a while.
  */
 @Slf4j
 public class XdagP2pHandler {
@@ -85,6 +91,15 @@ public class XdagP2pHandler {
     static final int SCORE_RATE = 5;
     /** Most blocks streamed for one blocks request. */
     static final int MAX_BLOCKS_PER_REQUEST = 65536;
+    /** How long the answer to a request counts as one (twice what the sync waits for it: late is still an answer). */
+    static final long ANSWER_WAIT_MS = 2 * REQUEST_WAIT * 1000;
+    /** Blocks asked for by hash that are remembered at a time. */
+    static final int MAX_ASKED_BLOCKS = 4096;
+    /**
+     * How old a block may be to be taken as news (about nine hours; the same span within which a node that is
+     * catching up begins to process news at all).
+     */
+    static final long NEWS_MAX_AGE = 32 * REQUEST_BLOCKS_MAX_TIME;
 
     private final Channel channel;
     private final Kernel kernel;
@@ -103,6 +118,15 @@ public class XdagP2pHandler {
      * that a flood of orphan blocks from somebody else cannot make this node pester its peers until they ban it.
      */
     private final TokenBucket outboundRequestLimit = new TokenBucket(24, 12);
+    /** Blocks requests sent to the peer that it has not answered yet, by request id: start, end, until when. */
+    private final Map<Long, long[]> askedSpans = new ConcurrentHashMap<>();
+    /** Blocks the peer was asked for by hash, and until when the answer counts. */
+    private final Map<Bytes32, Long> askedBlocks = Collections.synchronizedMap(new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Bytes32, Long> eldest) {
+            return size() > MAX_ASKED_BLOCKS;
+        }
+    });
     @Getter
     private volatile int misbehaviourScore;
 
@@ -195,6 +219,15 @@ public class XdagP2pHandler {
         if (syncMgr.isSyncOld()) {
             return;
         }
+        if (block.getTimestamp() < XdagTime.getCurrentTimestamp() - NEWS_MAX_AGE && !askedFor(block)) {
+            // News is new. A block dated long ago that nobody asked for is not taken, and so not passed on
+            // either: otherwise anybody could add blocks to any part of the past of every node, and every node
+            // that compares its history with a peer would have to fetch those parts again. (A block that is
+            // needed after all - something refers to it - is asked for by its hash, and then it is welcome.)
+            log.debug("Ignoring new block {} from {}: dated {} and not asked for", block.getHashLow(),
+                    channel.getRemoteAddress(), block.getTimestamp());
+            return;
+        }
         log.debug("processNewBlock:{} from node {}", block.getHashLow(), channel.getRemoteAddress());
         BlockWrapper bw = new BlockWrapper(block, relayTtl(msg.getTtl()), channel.getRemotePeer(), false);
         noteImport(syncMgr.validateAndAddNewBlock(bw));
@@ -205,12 +238,34 @@ public class XdagP2pHandler {
             return;
         }
         Block block = msg.getBlock();
+        if (!askedFor(block)) {
+            // History is sent in answer to a request and in no other way. A node that took whatever is pushed at
+            // it as history would let anybody fill its past with blocks, thousands a second.
+            log.debug("Ignoring sync block {} from {}: nobody asked for it", block.getHashLow(), channel.getRemoteAddress());
+            return;
+        }
         // What the peer says about the execution of the block is only a hint (ignored under the hardened
         // rules: a node reconstructs execution itself).
         chain.putSyncTxStatus(block.getHashLow(), msg.getExecutionState());
         log.debug("processSyncBlock:{}  from node {}", block.getHashLow(), channel.getRemoteAddress());
         BlockWrapper bw = new BlockWrapper(block, relayTtl(msg.getTtl()), channel.getRemotePeer(), true);
         noteImport(syncMgr.validateAndAddNewBlock(bw));
+    }
+
+    /** Whether a block the peer sends answers a request of this node: for the block itself, or for its span. */
+    private boolean askedFor(Block block) {
+        long now = System.currentTimeMillis();
+        Long until = askedBlocks.remove(Bytes32.wrap(block.getHashLow().toArray()));
+        if (until != null && until > now) {
+            return true;
+        }
+        long time = block.getTimestamp();
+        for (long[] span : askedSpans.values()) {
+            if (span[2] > now && time >= span[0] && time < span[1]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void noteImport(ImportResult result) {
@@ -265,6 +320,7 @@ public class XdagP2pHandler {
 
     protected void processBlocksReply(BlocksReplyMessage msg) {
         updateXdagStats(msg);
+        askedSpans.remove(msg.getRandom());
         SettableFuture<Bytes> sf = kernel.getSync().getBlocksRequestMap().get(msg.getRandom());
         if (sf != null) {
             sf.set(Bytes.wrap(new byte[]{0}));
@@ -340,6 +396,17 @@ public class XdagP2pHandler {
     }
 
     public long sendGetBlocks(long startTime, long endTime) {
+        return sendGetBlocks(startTime, endTime, null);
+    }
+
+    /**
+     * Asks the peer for the blocks of a span.
+     *
+     * @param reply completed when the peer's reply arrives; registered before the request is sent, so that a
+     *              reply that is back before the caller continues is not lost (null: nobody waits)
+     * @return the id of the request, or -1 if no request may be sent to this peer right now
+     */
+    public long sendGetBlocks(long startTime, long endTime, SettableFuture<Bytes> reply) {
         if (!mayRequest()) {
             return -1;
         }
@@ -348,6 +415,14 @@ public class XdagP2pHandler {
                 FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSS").format(XdagTime.xdagTimestampToMs(endTime)),
                 channel.getRemoteAddress());
         BlocksRequestMessage msg = new BlocksRequestMessage(startTime, endTime, chain.getXdagStats());
+        if (reply != null) {
+            kernel.getSync().getBlocksRequestMap().put(msg.getRandom(), reply);
+        }
+        long now = System.currentTimeMillis();
+        if (askedSpans.size() >= MAX_ASKED_BLOCKS) {
+            askedSpans.values().removeIf(span -> span[2] <= now);
+        }
+        askedSpans.put(msg.getRandom(), new long[]{startTime, endTime, now + ANSWER_WAIT_MS});
         sendMessage(msg);
         return msg.getRandom();
     }
@@ -360,15 +435,27 @@ public class XdagP2pHandler {
         XdagMessage msg = isOld ? new SyncBlockRequestMessage(hash, chain.getXdagStats())
                 : new BlockRequestMessage(hash, chain.getXdagStats());
         log.debug("Request block {} isold: {} from node {}", hash, isOld, channel.getRemoteAddress());
+        askedBlocks.put(Bytes32.wrap(hash.toArray()), System.currentTimeMillis() + ANSWER_WAIT_MS);
         sendMessage(msg);
         return msg.getRandom();
     }
 
     public long sendGetSums(long startTime, long endTime) {
+        return sendGetSums(startTime, endTime, null);
+    }
+
+    /**
+     * Asks the peer for the sums of a span; see {@link #sendGetBlocks(long, long, SettableFuture)} for
+     * {@code reply} and the result.
+     */
+    public long sendGetSums(long startTime, long endTime, SettableFuture<Bytes> reply) {
         if (!mayRequest()) {
             return -1;
         }
         SumRequestMessage msg = new SumRequestMessage(startTime, endTime, chain.getXdagStats());
+        if (reply != null) {
+            kernel.getSync().getSumsRequestMap().put(msg.getRandom(), reply);
+        }
         sendMessage(msg);
         log.debug("Request sums from startTime:{} ,endTime:{}", startTime, endTime);
         return msg.getRandom();
