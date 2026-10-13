@@ -1,0 +1,82 @@
+---
+description: "Enforce IronBee DevTools for driving and verifying running applications. Each enabled platform (browser, node, backend) contributes its own section. Verify changes against the running app before finishing; use execute for multi-step flows."
+alwaysApply: true
+---
+
+# Use IronBee DevTools to drive and verify the running application
+
+**IronBee DevTools** is the verification and intelligence layer for this workspace. It is exposed as up
+to three MCP servers — one per platform enabled in the extension settings
+(`ironbeeDevTools.platform.<browser|node|backend>.enable`):
+
+- **Browser** (`ironbee-dt-browser`) — Playwright control of a real browser.
+- **Node** (`ironbee-dt-node`) — non-blocking debugging of Node.js processes.
+- **Backend** (`ironbee-dt-backend`) — runtime-agnostic backend verification (HTTP/gRPC/GraphQL/WebSocket) + log capture + database inspection.
+
+Only the platforms enabled for this project have a running MCP server. The section for each enabled
+platform appears below; a disabled platform's section is left as an HTML comment and has no effect.
+**Do not invoke a platform's tools when that platform's section below is still a comment** — there is
+no MCP server backing it.
+
+## Verify your changes against the running application before finishing
+
+Before you consider a task complete, **verify the change against the actual running system** — never
+rely on reading code alone. Use the platform that matches what you changed (see the enabled platform
+sections below for the exact tools and flow).
+
+- **Do not verify after every file edit.** Implement first, then verify once at the end.
+- If verification reveals a problem, fix it and verify again before finishing.
+- Skip verification **only** when the change has zero observable runtime effect (e.g. CI config, docs-only, non-app tooling).
+
+## Use Execute for multi-step flows
+
+- **Prefer the `execute` tool** for any flow that needs more than 2–3 sequential tool calls. Batch with `await callTool(name, input, returnOutput?)`.
+- **Use individual tool calls only** when you must inspect a result before deciding the next action.
+- **Do not issue long sequences of separate MCP calls** when one or two execute scripts express the same flow.
+- **Scenario** tools (`scenario_*`) save and replay reusable flows.
+
+<!--IRONBEE:PLATFORM:browser-->
+<!-- Browser platform is ENABLED for this project (ironbee-dt-browser MCP server). -->
+
+## Browser platform: only IronBee DevTools
+
+**For any browser-related work you MUST use only the IronBee DevTools browser tools.** It is
+**FORBIDDEN** to use:
+
+- Cursor's built-in browser agent, MCP, or skill
+- Any other external browser agent, MCP, or skill
+
+Navigation, screenshots, form filling, testing, debugging, or any web interaction must go through
+IronBee DevTools browser tools only.
+
+### Browser tools
+
+- **Navigation** – go to URL, reload, back/forward (`navigation_*`)
+- **Content** – full-page or element screenshots, HTML/text, PDF, video (`content_*`)
+- **Interaction** – click, fill, hover, scroll, keyboard, drag, select (`interaction_*`)
+- **Accessibility** – ARIA / AX tree snapshots; refs from `a11y_take-aria-snapshot` drive interaction (`a11y_*`)
+- **Observability** – Web Vitals, console messages, HTTP requests, trace IDs (`o11y_*`)
+- **Stubbing** – mock HTTP responses, intercept requests (`stub_*`)
+- **Sync** – wait for network idle (`sync_*`)
+- **React** – component / element inspection (`react_*`); **Figma** – compare page to design (`figma_*`); **Debug** – tracepoints, logpoints, exceptionpoints, probe snapshots (`debug_*`)
+
+### Verify a UI change
+
+Open the affected page (`navigation_go-to`) → functionally exercise the change (click / fill / submit —
+not just look at it) → confirm with a screenshot (`content_take-screenshot`) and/or an ARIA snapshot
+(`a11y_take-aria-snapshot`) → check `o11y_get-console-messages` for errors. Prefer one `execute` script
+when the flow is more than 2–3 calls.
+<!--/IRONBEE:PLATFORM:browser-->
+
+<!--IRONBEE:PLATFORM:node-->
+<!-- Node platform is OFF for this project. Enable it with the `ironbeeDevTools.platform.node.enable`
+     setting to debug running Node.js processes. While OFF, do NOT call node debug tools (`debug_*`) —
+     they only attach to Node/V8 processes and there is no node MCP server running. -->
+<!--/IRONBEE:PLATFORM:node-->
+
+<!--IRONBEE:PLATFORM:backend-->
+<!-- Backend platform is OFF for this project. Enable it with the `ironbeeDevTools.platform.backend.enable`
+     setting to verify backend services via real protocol calls, log capture, or database inspection.
+     While OFF, do NOT call backend tools (`request_*`, `log_*`, `db_*`) — there is no backend MCP
+     server running. -->
+<!--/IRONBEE:PLATFORM:backend-->

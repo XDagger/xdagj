@@ -1,0 +1,25 @@
+[Unit]
+Description=Xdagj
+After=network.target
+
+[Service]
+User=xdagj
+Group=xdagj
+Type=simple
+Restart=on-failure
+
+# For Mainnet node
+# ExecStart=/usr/local/xdagj/xdag.sh
+
+# For Testnet node
+# ExecStart=/usr/local/xdagj/xdagj.sh -t
+
+# For Devtnet node(Default)
+ExecStart=/usr/local/xdagj/xdagj.sh -d
+
+# XDAGJ_WALLET_PASSWORD environment variable is required to automatically unlock your wallet.data file.
+# Please ensure sure that the access permission of this service unit file is properly configured when you put your password here.
+Environment=XDAGJ_WALLET_PASSWORD=YOUR_WALLET_PASSWORD
+
+[Install]
+WantedBy=multi-user.target
