@@ -75,7 +75,7 @@ public class SyncBlockMessage extends Message {
 
     private SimpleEncoder encode() {
         SimpleEncoder enc = new SimpleEncoder();
-        enc.writeBytes(this.block.toBytes());
+        enc.writeBytes(this.block.getXdagBlock().getData().toArray());
         enc.writeInt(ttl);
         enc.writeByte(executionState);
         return enc;
