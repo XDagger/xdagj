@@ -34,7 +34,7 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <commons-io.version>2.19.0</commons-io.version>
         <commons-cli.version>1.9.0</commons-cli.version>
-        <guava.version>33.4.8-jre</guava.version>
+        <guava.version>33.7.1-jre</guava.version>
         <rocksdbjni.version>9.8.4</rocksdbjni.version>
         <jws-api.version>2.1.0</jws-api.version>
         <config.version>1.4.3</config.version>
