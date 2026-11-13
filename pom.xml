@@ -38,7 +38,7 @@
         <rocksdbjni.version>9.8.4</rocksdbjni.version>
         <jws-api.version>2.1.0</jws-api.version>
         <config.version>1.4.3</config.version>
-        <snappy-java.version>1.1.10.7</snappy-java.version>
+        <snappy-java.version>1.1.10.9</snappy-java.version>
         <druid.version>1.2.24</druid.version>
         <mysql-connector.version>8.4.0</mysql-connector.version>
         <h2.version>2.3.232</h2.version>
